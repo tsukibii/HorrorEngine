@@ -10,7 +10,9 @@
 ## opens). She walks to Via, then Approach, and stands there `pass_min` to `pass_max` seconds, breathing: the **close
 ## pass**. If you're hiding there she may find you: `find_chance`, times `held_factor` while you hold your breath
 ## (Space; 0: never while you do), certain if your flashlight's on. Seen in the open while she's out (in her view,
-## within `see_m` with your flashlight on, `see_dark_m` with it off, nothing between): found too. Found, she pulls you
+## within `see_m` with your flashlight on, `see_dark_m` with it off, nothing between): found too, or with a `chase`
+## (chase.gd) she gives chase, and it hands you back: lost, she searches where she last saw you; caught, her fright;
+## escaped, she's gone in a blink, back at her post. Found, she pulls you
 ## out and is in your face for a moment (a sting, you jump, turned to her), and that search is over; then, either way,
 ## she walks back to her post, her steps going away. After `searches` searches she's gone for good (0: never); stop() ends it any time (a
 ## scare that shows her elsewhere; a scare that hides her does too). While she's out the night's director holds its
@@ -38,13 +40,14 @@ signal search_over                                ## back at her post, whether s
 @export var see_m := 7.0                          ## she sees you in the open this far while she's out, your flashlight on
 @export var see_dark_m := 3.0                     ## and this far with it off
 @export var turn_you := true                      ## found, you're turned to her face
+@export var chase: Node                           ## chase.gd: seen in the open, she gives chase instead
 @export var searches := 0                         ## after this many she's gone for good (back at her post, hidden); 0: never
 @export var heard_says := ""                      ## a line the first time she hears you ("She heard that.")
 @export var step_sound := ""                      ## her steps off the shelf; empty: the floor's own (sound.gd)
 @export var breath_sound := "breath_close"        ## her breathing at a close pass
 @export var found_sound := "sting_big"
 
-var state := "idle"                               ## idle, listening, going, passing, found, leaving, gone
+var state := "idle"                               ## idle, listening, going, passing, found, leaving, held (a chase has her), gone
 var heard_at := Vector3.INF
 var passes := 0                                   ## close passes made (a check's)
 var times_found := 0
@@ -59,6 +62,7 @@ var _place: Node = null
 var _inside := Vector3.INF                        # the Via she went in by and hasn't come out of: her way back out
 var _rolled := false
 var _caught_you := false                          # found you this search: she's done looking
+var _from_chase := false                          # found at the end of a chase: gone in a blink after
 var _walked := 0.0
 var _said := false
 var _post := Vector3.INF
@@ -160,9 +164,15 @@ func _process(dt: float) -> void:
 		"found":
 			_t -= dt
 			if _t <= 0.0:
-				_leave()
+				if _from_chase:
+					_vanish_home()
+				else:
+					_leave()
 	if not _caught_you and (state == "going" or state == "passing" or state == "leaving") and _sees_you(her):
-		_find(her)
+		if chase != null and chase.has_method("start"):
+			chase.start()                            # after you (it holds her: hold())
+		else:
+			_find(her)
 
 
 # the hiding places to check, nearest where she heard you first (one you've hidden in three times before them all)
@@ -174,6 +184,10 @@ func _plan() -> void:
 		if ua != ub:
 			return ua
 		return (a as Node3D).global_position.distance_to(heard_at) < (b as Node3D).global_position.distance_to(heard_at))
+	near = near.filter(func(p):                       # not one behind a locked door: she can't get in
+		var v := (p as Node).get_node_or_null("Via") as Node3D
+		var d: Node3D = _door_near(v.global_position) if v != null else null
+		return d == null or bool(d.get("open")) or not d.has_method("lock") or str(d.lock()) == "")
 	checked = near.slice(0, checks)
 	_caught_you = false
 	_route = []
@@ -185,8 +199,9 @@ func _plan() -> void:
 		_route.append({"at": app.global_position if app != null else (p as Node3D).global_position, "place": p, "door": null, "way": ""})
 		if via != null:
 			_route.append({"at": via.global_position, "place": null, "door": null, "way": "out"})   # back out the way she came
-	if _route.is_empty():
-		_route.append({"at": heard_at, "place": null, "door": null, "way": ""})   # nowhere to look: where she heard you, then home
+	var her := _her()
+	if _route.is_empty() and her != null and _clear(her.global_position + Vector3.UP, heard_at + Vector3.UP):
+		_route.append({"at": heard_at, "place": null, "door": null, "way": ""})   # nowhere to look: where she heard you (in a straight line), then home
 	state = "going"
 
 
@@ -231,6 +246,50 @@ func _walk(her: Node3D, dt: float) -> void:
 		_walked = 0.0
 		steps += 1
 		_step(her.global_position)
+
+
+## held still while a chase moves her (chase.gd calls it)
+func hold() -> void:
+	state = "held"
+	_route = []
+	_wait = 0.0
+
+
+## a chase lost you: she searches the places to hide near where she last saw you (a shorter listen first)
+func search_at(p: Vector3) -> void:
+	heard_at = p
+	_caught_you = false
+	_inside = Vector3.INF
+	state = "listening"
+	_t = randf_range(listen_min, listen_max) * 0.5
+
+
+## a chase is over (you got away, or she gave up): gone in a blink, back at her post
+func give_up() -> void:
+	_vanish_home()
+
+
+## a chase caught you: her fright, then gone in a blink, back at her post
+func catch() -> void:
+	var her := _her()
+	if her != null:
+		_from_chase = true
+		_find(her)
+
+
+func _vanish_home() -> void:
+	var her := _her()
+	if her == null:
+		return
+	_from_chase = false
+	her.visible = false
+	her.global_position = _post
+	_place = null
+	_inside = Vector3.INF
+	_route = []
+	_home(her)                                       # the search over (her last: gone for good)
+	if state == "idle":
+		her.visible = true                           # back at her post, listening again
 
 
 # after a pass: the next place, or home
@@ -328,6 +387,14 @@ func _find(her: Node3D) -> void:
 		fear.scare()
 	_dread("raise", 0.35)
 	found.emit()
+
+
+func _clear(a: Vector3, b: Vector3) -> bool:
+	var q := PhysicsRayQueryParameters3D.create(a, b, 1)
+	var pl := get_tree().get_first_node_in_group("hs_player")
+	if pl is CollisionObject3D:
+		q.exclude = [(pl as CollisionObject3D).get_rid()]
+	return _her().get_world_3d().direct_space_state.intersect_ray(q).is_empty()
 
 
 # the interiors' door nearest `p` (its hinge within 1.2 m across the floor): the doorway she goes through

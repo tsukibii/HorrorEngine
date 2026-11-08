@@ -241,7 +241,7 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://starter/dread.gd", "dread"), ("Script", "res://starter/dread_moment.gd", "moment"), ("Script", "res://starter/menace.gd", "menace"),
        ("Script", "res://addons/horrorstudio_look/nodes/lightning_storm.gd", "lightning"),
        ("Script", "res://starter/cue.gd", "cue"), ("Script", "res://starter/seat.gd", "seat"), ("Script", "res://starter/cold_area.gd", "cold"), ("Script", "res://starter/steam_mirror.gd", "steam"),
-       ("Script", "res://starter/searcher.gd", "searcher"),
+       ("Script", "res://starter/searcher.gd", "searcher"), ("Script", "res://starter/chase.gd", "chase"),
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
@@ -463,7 +463,9 @@ nd("Shape", "Events/ColdSpot", "CollisionShape3D", props=['shape = SubResource("
 nd("Feet308", "Events", "Node3D", script="feet", props=[f"transform = {tf(feet_at)}", f'door = NodePath("../../Hotel/{P["door_door_308"]}")'], paths=["door"])   # someone behind 308's door
 person("Hunter", her_at, her_turn, False, parent="Events")              # her post: 308's door, where she goes back to
 nd("Searcher", "Events/Hunter", "Node", script="searcher", props=['replaces = NodePath("../../../Her")', 'hiding_places = [NodePath("../../../Things/Hide")]',
-   "searches = 1", 'heard_says = "She heard that."'], paths=["replaces", "hiding_places"])   # once the corridor's dark: one search by ear, then back into 308
+   "searches = 1", 'heard_says = "She heard that."', 'chase = NodePath("../Chase")'], paths=["replaces", "hiding_places", "chase"])   # once the corridor's dark: one search by ear, then back into 308
+nd("Chase", "Events/Hunter", "Node", script="chase", props=['searcher = NodePath("../Searcher")', 'safe_rooms = PackedStringArray("stairs", "landing_2f")',
+   'start_says = "Run."'], paths=["searcher"])   # seen in the open while she searches: she's after you; the stairwell's safe
 nd("Presence", "Events/Hunter", "Node", script="presence", props=['static_on = NodePath("../../../Things/Radio")'], paths=["static_on"])   # the radio and your flashlight as she comes
 # the player, its flashlight on a battery that's seen better days
 nd("Player", ".", inst="player", props=[f"transform = {tf(start['at'], start['turn'])}"])

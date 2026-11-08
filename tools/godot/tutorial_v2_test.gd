@@ -969,7 +969,122 @@ func _initialize() -> void:
 	if gasps[0] != 1 or heard_t[0] < 0.0 or found_n[0] != 1 or not pulled or near_her > 0.6 or faced < 0.9 or fear_at < minf(1.0, fear_before + 0.1) or over[0] != 2 or srch.state != "gone" or hunter.visible:
 		bad("found (searcher.gd): gasped %d, heard %s, found %d, pulled out %s, %.2f m off, turned %.2f, fear %.2f to %.2f, over %d, gone %s" % [
 			gasps[0], heard_t[0] >= 0.0, found_n[0], pulled, near_her, faced, fear_before, fear_at, over[0], srch.state])
-	torch.toggle()                                           # your light again
+	# a chase (chase.gd): seen in the open while she searches, she's after you; the stairwell is the way out
+	var chase: Node = hunter.get_node("Chase")
+	var starts := [0]
+	var escapes := [0]
+	var catches := [0]
+	var losts := [0]
+	chase.started.connect(func() -> void: starts[0] += 1)
+	chase.escaped.connect(func() -> void: escapes[0] += 1)
+	chase.caught.connect(func() -> void: catches[0] += 1)
+	chase.lost.connect(func() -> void: losts[0] += 1)
+	var sdoor := door("stair_door")
+	sdoor.open = true
+	var sdm := v3(cfg["boxes"]["door_stair_door"]["mid"])
+	srch.searches_done = 0
+	srch.arm()
+	torch.toggle()                                           # your light on: she sees you 7 m off
+	stand(Vector3(via.x + 2.8, fl + 0.02, cz), Vector3(via.x - 3.0, fl + 1.6, cz))
+	await frames(2)
+	player.set("_was", Vector3.INF)
+	key(KEY_SHIFT, true)
+	key(KEY_W, true)
+	await secs(0.8)                                          # heard running past the linen closet
+	key(KEY_W, false)
+	key(KEY_SHIFT, false)
+	stand(Vector3(via.x - 2.2, fl + 0.02, cz + 0.4), Vector3(via.x + 4.0, fl + 1.5, cz + 0.4))   # then out in the open, the way she'll come (clear of the stair door's leaf)
+	await frames(2)
+	player.set("_was", Vector3.INF)
+	var mood_before: String = sound.now_mood
+	var waited := 0.0
+	while chase.state == "idle" and waited < 30.0:
+		await frames(1)
+		waited += 1.0 / 60.0
+	var seen_at := Vector2(hunter.global_position.x - player.global_position.x, hunter.global_position.z - player.global_position.z).length()
+	var mood_in: String = sound.now_mood
+	look(player.global_position + Vector3(-5.0, 1.6, 0.0))   # turn and run: west, then into the stairwell
+	key(KEY_SHIFT, true)
+	key(KEY_W, true)
+	var gap_min := 99.0
+	for i in 60 * 6:
+		await frames(1)
+		gap_min = minf(gap_min, Vector2(hunter.global_position.x - player.global_position.x, hunter.global_position.z - player.global_position.z).length())
+		if player.global_position.x <= sdm.x and absf(player.rotation.y) > 0.1:
+			look(player.global_position + Vector3(0.0, 1.6, -5.0))
+		if escapes[0] > 0 or catches[0] > 0:
+			break
+	key(KEY_W, false)
+	key(KEY_SHIFT, false)
+	var her_speed := float(chase.ran) / maxf(float(chase.running_secs), 0.01)
+	await secs(2.5)
+	say("a chase", "seen in the open %.1f m off: the chase on %s, the music %s (it was %s); she ran at %.2f m/s (your run %.1f: %.2f of it), %.1f m behind at the nearest; into the stairwell: escaped %d, caught %d; after, the music %s, she's gone %s" % [
+		seen_at, starts[0] == 1, mood_in, mood_before, her_speed, float(player.run_speed), her_speed / float(player.run_speed), gap_min, escapes[0], catches[0], sound.now_mood, srch.state == "gone" and not hunter.visible])
+	if starts[0] != 1 or seen_at > 7.3 or mood_in != "chase" or absf(her_speed / float(player.run_speed) - 0.95) > 0.06 or escapes[0] != 1 or catches[0] != 0 \
+			or sound.now_mood != mood_before or srch.state != "gone" or hunter.visible or out_moments[0] != 0:
+		bad("the chase (chase.gd) to the stairwell: started %d, seen %.1f m off (7 at most), the music %s, her speed %.2f of yours (0.95), escaped %d, caught %d, the music after %s (%s), gone %s, the director's moments %d" % [
+			starts[0], seen_at, mood_in, her_speed / float(player.run_speed), escapes[0], catches[0], sound.now_mood, mood_before, srch.state, out_moments[0]])
+	# a door you shut behind you holds her 2 s and a bang; then she's through it, and you're caught
+	srch.searches_done = 0
+	srch.arm()
+	d304.open = true
+	var dm := v3(cfg["boxes"]["door_door_304"]["mid"])
+	stand(Vector3(dm.x, fl + 0.02, cz), Vector3(dm.x, fl + 1.5, dm.z + 3.0))   # in the corridor at 304's open door, facing it
+	hunter.global_position = Vector3(dm.x + 5.0, fl, cz)
+	await secs(1.0)
+	player.set("_was", Vector3.INF)
+	var found_b: int = found_n[0]
+	chase.start()
+	key(KEY_W, true)                                         # in through it
+	for i in 60 * 3:
+		await frames(1)
+		if player.global_position.z > dm.z + 0.9:
+			break
+	key(KEY_W, false)
+	d304.open = false                                        # and shut behind you
+	var door_hit := -1.0
+	var door_open_again := false
+	for i in 60 * 10:
+		await frames(1)
+		if chase.state == "door" and door_hit < 0.0:
+			door_hit = 0.0
+		if door_hit >= 0.0 and chase.state != "door" and not door_open_again:
+			door_open_again = d304.open
+		if catches[0] > 0:
+			break
+	await secs(1.5)
+	say("a door", "you shut 304's door behind you: she was held %d time(s) %.1f s, then it was open %s; caught %d, her fright %s; gone after %s" % [
+		int(chase.door_waits), float(chase.door_secs_held), door_open_again, catches[0], found_n[0] == found_b + 1, srch.state == "gone" and not hunter.visible])
+	if int(chase.door_waits) != 1 or absf(float(chase.door_secs_held) - 2.0) > 0.2 or not door_open_again or catches[0] != 1 or found_n[0] != found_b + 1 or srch.state != "gone" or hunter.visible:
+		bad("a door in a chase (chase.gd): held %d (1) for %.1f s (2), open after %s, caught %d, the fright %s, gone %s" % [
+			int(chase.door_waits), float(chase.door_secs_held), door_open_again, catches[0], found_n[0] == found_b + 1, srch.state])
+	# out of her sight 6 s, and she's lost you: she searches where she last saw you (you in the linen closet's corner, its
+	# door shut: she can't see you from the corridor and goes no further than she saw)
+	srch.searches_done = 0
+	srch.arm()
+	await use_at(eye_hide + (via - eye_hide).normalized() * 0.55 * Vector3(1, 0, 1) + Vector3(0, fl + 0.02 - eye_hide.y, 0), eye_hide + Vector3(0, -0.3, 0))
+	var linen := door("door_linen")
+	linen.open = false
+	hunter.global_position = Vector3(via.x + 4.5, fl, cz)
+	await secs(1.0)
+	var last_at := player.global_position
+	chase.start()
+	var unseen_t := 0.0
+	for i in 60 * 10:
+		await frames(1)
+		if not chase.seen:
+			unseen_t += 1.0 / 60.0
+		if losts[0] > 0:
+			break
+	var searching: bool = srch.state == "listening" and Vector2(srch.heard_at.x - last_at.x, srch.heard_at.z - last_at.z).length() < 1.2
+	say("lost", "out of her sight in the linen closet's corner: lost after %.1f s %s; she searches where she last saw you %s" % [unseen_t, losts[0] == 1, searching])
+	if losts[0] != 1 or absf(unseen_t - 6.0) > 0.4 or not searching:
+		bad("lost in a chase (chase.gd): lost %d after %.1f s (6), searching where she last saw you %s (%s at %s)" % [losts[0], unseen_t, searching, srch.state, srch.heard_at])
+	srch.stop()
+	if player.seat != null:
+		player.seat.leave()                                  # up again
+	if not torch.visible:
+		torch.toggle()                                       # your light again
 	# feet under 308's door (door_feet.gd, armed when the corridor went dark): the light under it, someone standing behind it
 	var ft: Node3D = main.get_node("Events/Feet308")
 	var came := [0]

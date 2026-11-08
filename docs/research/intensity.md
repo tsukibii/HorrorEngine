@@ -223,12 +223,15 @@ push it higher. The weakest evidence is for infrasound.
     used three times is the first she checks. Effort M.
     *Built for games made by hand (2026-11-08, night): the starter's `searcher.gd` and `noise.gd` as above, a shut
     door on her way opened, found once a search (pulled out, in your face), seen in the open 7 m with your light on
-    and 3 m without, then back to her post; tutorial v2's linen closet (§22). Chases next.*
+    and 3 m without, then back to her post; tutorial v2's linen closet (§22).*
 - **Chases.** Outlast 2 kept its chases "just the right length"; no designer gives seconds (Phasmophobia's 15 to 60 s
   hunts the nearest anchor, weak). `chase.gd` for the format's rounds: 20 to 40 s; her speed 0.9 to 1.0 of your run; a
   door you shut costs her 2 s and a bang; 6 s out of her sight and she searches instead; always a sure way out (a lit
   room, the stair door she won't pass); the chase mood, then a hush. Effort M. Pitfalls: searches you can't survive,
   chases learned by heart, long waits in a wardrobe.
+  *Built for games made by hand (2026-11-08, night): the starter's `chase.gd` as above, along your trail where she
+  saw you go (no navigation mesh), the searcher's sight starting it and its search taking over when she's lost you;
+  tutorial v2's corridor, the stairwell the way out (§22).*
 
 ## 5. The uncanny seen
 
@@ -382,7 +385,7 @@ mimicry; the pupils' answer to the beam waits, for there's no pupil reflex for t
 (`dread.gd`, `dread_moment.gd`, `menace.gd`; the night's set and its memory across runs not yet: the starter has no
 saves), §4's everyday moments for a hotel, and 10's lightning (the Look plugin's `HSLightning`, within the limits
 above), and 7 and 10's searches (`noise.gd`, `searcher.gd`, `seat.gd`'s hiding pose and the player's held breath:
-tutorial v2's linen closet). Not yet for the desk's export: no story words.
+tutorial v2's linen closet) and chases (`chase.gd`). Not yet for the desk's export: no story words.
 
 1. **Footsteps in 3D, and the behind-you layer** (S). The player's steps by floor at the feet (the by-hand player has
    none), then the phantom steps copying them 0.3 s late, one step too many, a door shutting out of sight.

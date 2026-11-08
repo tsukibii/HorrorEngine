@@ -70,11 +70,19 @@ the player's held breath (Space, 8 s, then a gasp). Tutorial v2's §22 *Hiding w
 dark she hunts from 308's door; the linen closet's far corner to hide in; one search, then back into 308; the jump
 scare stops her. TUTORIAL2 checks both runs (not found with your breath held; the gasp, found, pulled out).
 
-Still to build in this run (the tasks): **chases** (`chase.gd` for the format's rounds, intensity.md §4: 20 to 40 s,
-her speed 0.9 to 1.0 of your run, a door you shut costs her 2 s and a bang, 6 s out of her sight and she searches
-instead (searcher.gd), always a sure way out, the chase mood, then a hush). Not done for the desk's story format: a
-`cold` word (the export's runtime and Play), nor lightning's, nor hiding's held breath (the format's `hide` use and
-its hide-and-seek rounds have no breath, no close pass and no noises).
+**Chases** (intensity.md §4): the starter's **`chase.gd`** (after you at 0.95 of your run along the way she saw you
+go, no navigation mesh: your trail, and a step on the way you were heading where she lost you; a door you shut holds
+her 2 s and a bang, a locked one for good; 6 s out of her sight and she's lost you, her searcher searching there;
+caught, the searcher's fright; `safe_rooms` she won't follow you into; 20 to 40 s at most; the chase mood, then the
+hush and the mood before; `start()` from a signal or the searcher's sight, `stop()`); the searcher's `chase`, `hold`,
+`search_at`, `give_up`, `catch`, and no place behind a locked door, no walk to a noise through a wall. Tutorial v2's
+§22 *A chase*: seen in the open while she searches, she's after you; the stairwell is the way out. TUTORIAL2 checks
+the run to the stairwell (her speed, the gap, the mood), 304's door holding her 2 s, and being lost.
+
+That ends the run's list (the user's "the rest" of intensity.md §7; its 11, later, still later: the reflection out of
+step needs a body, Nexus Resonance waits). Not done for the desk's story format: a `cold` word (the export's runtime
+and Play), nor lightning's, nor hiding's held breath, the close pass, noises or a chase like this one (the format's
+`hide` use and its hide-and-seek and chase rounds have none of them): ask the user before carrying them there.
 
 Next:
 0. **The user's pick from intensity.md §7** (the first five are small: footsteps in 3D and the behind-you layer, presence signs, the dead stare, the edge figure and closer-each-time, the shadow that isn't yours).

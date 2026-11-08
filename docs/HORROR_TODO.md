@@ -294,6 +294,11 @@ sound played with its place and loudness (`sounds_heard`).
 
 **Checks:** TESTROOM and GDTESTROOM (a station: running past her door brings her out, crouching doesn't).
 
+**Built for games made by hand** (2026-11-08, night): the starter's `noise.gd` (the player's steps, a run, a door, a
+gasp, each a loudness; heard by whatever's in the group `hs_listener` as far as its ears reach) and `searcher.gd` (she
+listens, then comes to look: the places to hide nearest the noise) with `chase.gd` (seen, she's after you); tutorial
+v2's corridor. No crouch in the starter yet, and no falloff through walls: the format's `hears` is still to build.
+
 ## 10. ~~A log of everything read~~
 
 Dropped (DECISIONS 2026-11-07).

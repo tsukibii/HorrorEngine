@@ -129,7 +129,8 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   that dim and come back or go out one by one, a flashlight on batteries, a character who backs off from the light, and
   a jump scare with the hush before it; every sound with its room in it (Woohill's sound physics: the stairwell rings,
   a knock behind a door is muffled), footsteps, your body under fear (a heartbeat, breathing, the world going dull,
-  the beam shaking), steps behind you, and her hunting by ear once it's dark (a corner to hide in, your breath held).</li>
+  the beam shaking), steps behind you, and her hunting by ear once it's dark (a corner to hide in, your breath held,
+  a chase if she sees you).</li>
 </ul>
 <p>Every picture here is that game, drawn by Godot or the scene builder. <code>python tools/godot/tutorial_v2.py --keep ~/Games/Room304_done</code>
 builds it exactly as these steps do, so you can open the finished one beside yours. It goes in a folder of its own,
@@ -754,6 +755,21 @@ searches once and being found is a fright, not a death (wire <code>found</code> 
 While she's out the night's director keeps its moments back, and the Fear node feels her in the doorway. A place to
 hide used three times is the first she checks: give a level two or three.</p>
 <figure><img src="img/hunt.jpg" width="1600" height="900" alt="From the linen closet's corner: her standing in its doorway"><figcaption>From the corner: her in the linen closet's doorway, the dark corridor behind her.</figcaption></figure>
+
+<h3 id="chase">A chase</h3>
+<p>Give <code>Hunter</code> one more <span class="node">Node</span>, <code>Chase</code>, with
+<code>starter/chase.gd</code>: its <b>Searcher</b> <code>../Searcher</code>, <b>Safe Rooms</b> <code>stairs</code> and
+<code>landing_2f</code>, <b>Start Says</b> "Run." Then set the Searcher's <b>Chase</b> to it. Now, if she sees you out
+in the open while she's searching, she doesn't take you on the spot: a sting, a beat to turn round, and she runs at
+you at 0.95 of your run. Run straight and she keeps her distance; stop and she has you. A door you shut behind you
+holds her 2 seconds and a bang before she's through it (a locked one holds her for good).</p>
+<p>She goes only where she saw you go, and a step further the way you were heading. Get out of her sight (through a
+door, shut behind you, and on round a corner) and after 6 seconds she's lost you: she searches the places to hide
+near where she last saw you instead, the way she searches when she hears you. Caught, it's her fright, the same as
+being found. The stairwell is the sure way out: she won't follow you onto the stairs. And after 20 to 40 seconds she
+gives up anyway, so no chase is learned by heart. While it runs the music is the chase mood (the Sound node's); after
+it, the hush, then the mood that was playing before. There's no navigation mesh in this: she runs your trail, which in
+a corridor with rooms off it is all she needs.</p>
 
 <h3 id="lightning">Lightning</h3>
 <p>Add the Look plugin's <span class="node">HSLightningStorm</span> to <code>Weather</code> (or drop in

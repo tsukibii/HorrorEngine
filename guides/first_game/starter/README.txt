@@ -49,7 +49,12 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
   searcher.gd              under a copy of her: hunting by ear once armed; heard, she listens, comes for the places
                            to hide nearest the noise and stands at one breathing (the close pass); held breath halves
                            her chance of finding you, a light on makes it certain; found, she pulls you out; then
-                           back to her post; seen in the open while she looks; a number of searches, or stop()
+                           back to her post; seen in the open while she looks (or a chase); a number of
+                           searches, or stop()
+  chase.gd                 under a copy of her: after you at about your run speed, along the way she saw you go
+                           (no navigation mesh); a door you shut holds her 2 s; 6 s out of her sight and she's lost
+                           you (her searcher searches there); caught, a fright; safe rooms she won't follow you into;
+                           20 to 40 s at most; the chase mood, then the hush; start() from a signal, or a searcher's
   steam_mirror.gd          writing in the steam: a mirror (the Look plugin's HSMirrorSurface) fogs over from the
                            bottom, the words a finger left on it showing as it comes; it holds, then clears; fire()
                            from a cue or a signal
