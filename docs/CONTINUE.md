@@ -20,6 +20,36 @@ systems that open, hold, move and are read; 2026-11-05, night, on `gameplay-enha
 builder's floors, the street's steel stair, climbing in Godot and on the desk). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## Where it stopped last (2026-11-08, `ui-v3`): the quest marker v3, the HUD quieted, the UI a plugin
+
+The user (DECISIONS 2026-11-08): a better quest marker (seen roughly through the rooms, fainter far off and behind walls,
+clearer the nearer, still the diamond), "see what else can be enhanced in the ui"; then, while it was built, no glass
+panels ("the panel isn't as noticeable and the text is there") and "the ui should be part of the godot plugin for
+horrorengine". Two commits on `ui-v3`:
+- **The marker** (`marker.gd`, play.gd `guide_clear`/`guide_ctx`): strength a log-scale function of distance (nearly opaque
+  inside 3 m, a faint floor from 36 m, gone by 72), about half as strong behind walls (a throttled ray against walls,
+  floors, ceilings and doors: furniture isn't "another room"), a small core and the thing's name near, a pointer on an
+  ellipse toward it once it's been out of view a moment, the pause menu's Quest marker (Off, Subtle, Clear).
+- **The HUD** to the desk's design (play/ui/hud.css), quieted: OBJECTIVE and TO DO resting at 74% and up on a change, rows
+  kept so a tick eases (the marked task's bullet is the marker's diamond), the reticle a dot that opens into a ring, lines
+  in a serif over a scrim, chips for the keys (the old row ran off the screen), toasts, the chapter card centred with a
+  diamond rule, the dark while hidden, the menu's small capitals. **No panels**: the glass themes' panels are ghosts, a card
+  is its words with a soft edgeless dark behind (`halo.gdshader`), the inventory's row has no border.
+- **A plugin**: `GodotPlugins/HorrorStudioUI/addons/horrorstudio_ui/` (hud, marker, quest_marker = `HSQuestMarker`, theme,
+  menu, typing, halo, plugin.gd with Project Settings `horrorstudio/ui`); the runtime uses it by path; the export, the
+  Director's install and the by-hand projects copy it in; a game by hand adds an `HSHud` and `HSQuestMarker`s.
+- **GDUI** (`python tools/godot/ui_check.py`, headless, ~20 s): the marker's rules and every piece above in the Pilot, then
+  the by-hand half. Pictures: `--pictures` (the game, 1080p under xvfb), the plugin's `demo/hudlab.gd` (the HUD alone over a
+  picture, seconds each).
+Checks run here: GDUI, GDPLAY, GDEXPORT, DIRECTOR, FROMDESK, CHECKS ok; GDTESTROOM from `n_chores` and from `n_bath` the same
+as main (stations 6 and 13 fail on main too in a cloud checkout: they need the local Studio character export and made
+props; `--from n_bath` passes whole). FIRSTGAME and EXPORTS need the desk's server and local files: run them on the user's
+machine.
+Not done, if the user wants it: the **desk's Play HUD** (browser) has none of this; **the Director guide's pictures**
+(`guides/director/img`) show the old HUD (`godot_director.py guide` makes them again); the serif is a **system font chain**
+(the proxy blocked a font download: an OFL serif bundled in the plugin would make it the same on every machine); a
+per-game default for the quest marker (a `game.marker` word would grow STORY_FORMAT, the check and the runtime together).
+
 ## Where it stopped last (2026-11-06, last, `street-nature`): the rivers scrapped, the foliage and rocks kept as props
 
 The user (DECISIONS 2026-11-06, last): "Scrap the rivers, keep all the foliage and rocks you made as props to generate.
