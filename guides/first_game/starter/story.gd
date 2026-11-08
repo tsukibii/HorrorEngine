@@ -5,7 +5,8 @@
 ## for the key, an area ticks its tasks.
 ##   objective("Find room 304")      add_task("key", "Find the master key")      tick("key")
 ##   say("Locked.")                  card("A note", "...")                        end()  (or end_with(title, words))
-##   give("key_304"), has("key_304"), flag("met_her"), is_set("met_her"), holds("task:key") (what areas' `needs` say)
+##   give("key_304"), has("key_304"), flag("met_her"), is_set("met_her"), holds("task:key") (what areas' `needs` say),
+##   holds("on:out") (that task on the list and not done yet: you're on it)
 extends CanvasLayer
 
 signal task_added(id: String)
@@ -131,8 +132,9 @@ func is_set(fact: String) -> bool:
 	return flags.has(fact)
 
 
-## what an area's or a door's `needs` says: "" always, "task:<id>" that task done, "item:<name>" carried, any other word
-## a fact set, "!" in front for not; several apart by commas, all of them
+## what an area's, a door's or a cue's `needs` says: "" always, "task:<id>" that task done, "on:<id>" that task on the
+## list and not done yet (you're on it), "item:<name>" carried, any other word a fact set, "!" in front for not; several
+## apart by commas, all of them
 func holds(needs: String) -> bool:
 	for part in needs.split(",", false):
 		var w := part.strip_edges()
@@ -142,6 +144,8 @@ func holds(needs: String) -> bool:
 		var ok := false
 		if w.begins_with("task:"):
 			ok = done(w.substr(5))
+		elif w.begins_with("on:"):
+			ok = has_task(w.substr(3)) and not done(w.substr(3))
 		elif w.begins_with("item:"):
 			ok = has(w.substr(5))
 		elif w != "":

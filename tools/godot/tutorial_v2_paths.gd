@@ -35,6 +35,7 @@ func _initialize() -> void:
 					out["boxes"][k] = {"at": _v(ab.get_center()), "size": _v(ab.size)}
 					break
 	for k in ["r304_bath_fx_floor", "linen_kt_bookshelf_1", "vending_kt_desk_1", "r304_bath_fx_tub", "stairs_fx_half_1",
+			"r304_kt_bed_double_1", "r304_kt_dining_chair_1", "r304_kt_desk_1",
 			"stairs__wall_n0", "stairs__wall_n1", "stairs__wall_n2", "stairs__wall_n3"]:
 		var n := h.find_child(k, true, false) as Node3D
 		if n != null:

@@ -91,6 +91,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#her">Her, who hates the light</a></li>
     <li><a href="#jump">The jump scare and the hush</a></li>
     <li><a href="#intense">Making it intense</a></li>
+    <li><a href="#cues">Cues: when everything is so</a></li>
     <li><a href="#ending">The way out</a></li>
     <li><a href="#play">Play it</a></li>
     <li><a href="#next">Where to go next</a></li>
@@ -471,7 +472,8 @@ its own collider when the game runs, so E finds even a key. Make a <code>Things<
 <p>An <span class="node">Area3D</span> with <code>starter/event_area.gd</code> is a moment when you walk in. It can set
 the objective, add or tick tasks, say a line, set a fact, change the music's mood, or end the game. With
 <b>Interior</b> <code>Hotel</code> and a <b>Room</b> it fills that room. <b>Needs</b> holds it back until something's
-true: <code>task:find304</code> (a task done), <code>item:key_304</code> (carried), a fact, or <code>!</code> for not.
+true: <code>task:find304</code> (a task done), <code>on:out</code> (a task on the list, not done yet), <code>item:key_304</code>
+(carried), a fact, or <code>!</code> for not.
 Make an <code>Events</code> node and:</p>
 <table class="vals">
 <tr><td><code>UpStairs</code></td><td>Room <code>corridor</code>: Tick <code>up</code>, Say "The third floor."</td></tr>
@@ -721,8 +723,87 @@ setting (0 to 1: how bright the flash is) and turn it down for them when they as
 <figure><img src="img/lightning.jpg" width="1600" height="900" alt="The corridor in the lightning's flash, a figure against the end window"><figcaption>The first flash: someone by the end window. The second: nobody.</figcaption></figure>
 </section>
 
+<section id="cues">
+<h2><span class="n">23</span>Cues: when everything is so</h2>
+<p>A cue is one node that waits until everything you set is so, then does what you set. It can be a jump scare
+(someone there for a moment with a sound and an animation, then gone), or something that isn't a scare (a knock, a
+line, a task, a fact, the music, another node's <code>fire</code>). Put <code>starter/cue.gd</code> on a
+<span class="node">Node3D</span>. Its fields are in three groups, and a field left as it is doesn't count.</p>
+<table class="vals">
+<tr><th>Where you look</th><th></th></tr>
+<tr><td><b>Spot</b></td><td>where the event is. Empty: the head of what appears.</td></tr>
+<tr><td><b>Look</b></td><td>where that spot must be in your view. The frame is cut in thirds each way: <i>middle</i> is the
+middle third; <i>left</i>, <i>right</i>, <i>top</i> and <i>bottom</i> the outer thirds (<i>either side</i>: left or
+right); a corner (<i>top left</i>... <i>any corner</i>) where a side meets the top or the bottom; <i>edge</i> the outer
+sixth all round. Or <i>in view</i> anywhere, or <i>out of view</i> (behind you, off the frame, or with something in the
+way).</td></tr>
+<tr><td><b>Tolerance</b> 0.1</td><td>the range of acceptance: every region a tenth of the frame's half wider, so it needn't be
+exact. Near a line the spot counts on both sides of it.</td></tr>
+<tr><td><b>Line Of Sight</b></td><td>on: a spot behind a wall is out of view.</td></tr>
+<tr><th>What must be so</th><th></th></tr>
+<tr><td><b>Needs</b></td><td>the Story's words: <code>on:out</code> while the task <code>out</code> is on your list and not done
+yet (you're on that quest), <code>task:out</code> once it's done, <code>item:key_304</code>, a fact, <code>!</code> for
+not.</td></tr>
+<tr><td><b>Doing</b></td><td><i>standing</i>, <i>walking</i>, <i>running</i>, <i>still</i>, <i>moving</i>, <i>sitting</i>,
+<i>lying</i> (in bed) or <i>seated</i> (either).</td></tr>
+<tr><td><b>Flashlight</b></td><td><i>on</i> or <i>off</i>.</td></tr>
+<tr><td><b>Near M</b>, <b>Far M</b></td><td>how far your eye is from the spot.</td></tr>
+<tr><td><b>After Secs</b>, <b>Chance</b></td><td>all of it so this long first; then a roll once a second while it stays so.</td></tr>
+<tr><td><b>Armed</b>, <b>Once</b>, <b>Cooldown</b></td><td>Armed off: nothing until a signal calls <code>arm</code>. Once off: again after the cooldown.</td></tr>
+<tr><th>What happens</th><th></th></tr>
+<tr><td><b>Appear</b>, <b>Appear For</b></td><td>someone hidden until then, there this many seconds.</td></tr>
+<tr><td><b>Face You</b>, <b>Animation</b></td><td>turned to you; an animation played on an <span class="node">AnimationPlayer</span> under them.</td></tr>
+<tr><td><b>Until Looked At</b>, <b>Vanish</b></td><td>gone sooner once you look straight at them; then gone at once, in a blink of
+<b>Blink Lamp</b> and your flashlight, or once they're out of your view.</td></tr>
+<tr><td><b>Sound</b>, <b>Sound At</b>, <b>Hush</b></td><td>a shelf sound at them (or at Sound At), the hush before it.</td></tr>
+<tr><td><b>Scare</b></td><td>on: you jump (the Fear node) and the night's director hears it. Off for a cue that isn't a scare.</td></tr>
+<tr><td><b>Say</b>, <b>Objective</b>, <b>Add Tasks</b>, <b>Tick</b>, <b>Fact</b>, <b>Music</b>, <b>Target</b></td><td>the story's side, as an event area's; Target's <code>fire</code> too.</td></tr>
+</table>
+
+<h3 id="seats">A bed and a chair</h3>
+<p>Sitting and lying need somewhere to do it. Add two <span class="node">Node3D</span>s to <code>Things</code> with
+<code>starter/seat.gd</code>, each where your eye goes when you're there, turned the way you face. E on one sits you
+there or lays you down; E again, or a step, gets you up where you stood.</p>
+<table class="vals">
+<tr><td><code>Bed</code></td><td>over 304's pillow, 1.01 m up, turned −90° (toward the bed's foot): Pose <i>lying</i>, Look Up Deg 70,
+Reach Size 1.4 × 0.71 × 2.05, Reach At (0, −0.355, −0.725) (the box E finds it by, over the mattress), Say "The sheets
+are cold."</td></tr>
+<tr><td><code>Chair</code></td><td>over the desk chair's seat, 1.2 m up, facing the desk. The rest as it is.</td></tr>
+</table>
+<p>Why so high in the bed: the interior's export makes each piece of furniture one solid box to its top, the bed's
+to its headboard at 0.95 m. An ear inside that box hears every sound through its walls, so the eye sits just over it,
+and the seat's box reaches above it so E finds the seat and not the bed. (Put a seat lower and the player lifts your
+eye out by itself.) The seat's box is on collision layer 2: only E's aim looks there.</p>
+
+<h3 id="bedcue">Her on the ceiling</h3>
+<p>Add a <span class="node">Node3D</span> <code>BedCeiling</code> to <code>Events</code> with <code>starter/cue.gd</code>,
+and a copy of her under it called <code>Ceiling</code>: face down on the ceiling over the bed, her head over yours,
+her feet toward the bed's foot. Give her an <span class="node">AnimationPlayer</span> <code>Moves</code> with one
+animation, <code>lean</code>: her <b>position</b> 30 cm lower over 0.6 s, coming down off the ceiling at you.</p>
+<table class="vals">
+<tr><td><b>Look</b> <i>any corner</i>, <b>Tolerance</b> 0.1</td><td>from the pillow her head is in the top right corner of your view</td></tr>
+<tr><td><b>Needs</b> <code>on:out</code>, <b>Doing</b> <i>lying</i>, <b>After Secs</b> 2</td><td>only once you're getting out, only lying down, after two seconds of it</td></tr>
+<tr><td><b>Appear</b> <code>Ceiling</code>, <b>Appear For</b> 1, <b>Face You</b> off, <b>Animation</b> <code>lean</code></td><td>a second of her coming down at you</td></tr>
+<tr><td><b>Vanish</b> <i>in a blink</i>, <b>Blink Lamp</b> <code>Zones/Room304/Lamp</code></td><td>gone as the lamp blinks</td></tr>
+<tr><td><b>Sound</b> <code>sting_big</code>, <b>Hush</b> 1</td><td>out of a second's silence</td></tr>
+</table>
+<p>Lie down and look straight up at her place and nothing happens: she's in the middle of your view, not a corner.
+Stand by the bed with her place in a corner of your view and nothing happens either: you aren't lying down.</p>
+<figure><img src="img/cue.jpg" width="1600" height="900" alt="From 304's pillow, looking up: her face down on the ceiling over the bed"><figcaption>From the pillow: her head in the top right corner of your view.</figcaption></figure>
+
+<h3 id="deskcue">Knocks while you watch</h3>
+<p>Not every cue is a scare. Add <code>DeskKnock</code> to <code>Events</code> with <code>starter/cue.gd</code> and a
+<span class="node">Marker3D</span> <code>Door</code> under it, outside 304's door in the corridor:</p>
+<table class="vals">
+<tr><td><b>Spot</b> <code>Dressing/TV</code>, <b>Look</b> <i>middle</i></td><td>the TV's static in the middle of your view</td></tr>
+<tr><td><b>Doing</b> <i>sitting</i>, <b>After Secs</b> 2</td><td>sitting at the desk, watching it two seconds</td></tr>
+<tr><td><b>Scare</b> off, <b>Sound</b> <code>knock_three</code>, <b>Sound At</b> <code>Door</code></td><td>three knocks at the door, heard through it</td></tr>
+<tr><td><b>Say</b> "Three knocks. Someone is at the door.", <b>Fact</b> <code>knocked_304</code></td><td>a fact for whatever you build next</td></tr>
+</table>
+</section>
+
 <section id="ending">
-<h2><span class="n">23</span>The way out</h2>
+<h2><span class="n">24</span>The way out</h2>
 <p>With <code>Hotel</code>'s Editable Children on, select <code>hotel_floor/doors/door_corridor_e_door</code> (the fire
 door) and drag <code>starter/door.gd</code> onto it. Set its <b>Tick</b> to <code>out</code>. In the
 <span class="ui">Node</span> tab connect its <b>opened</b> signal to <code>Story</code> → <code>end</code>. Opening the
@@ -731,12 +812,12 @@ fire door ends the night: the screen goes black and the ending's title comes up.
 </section>
 
 <section id="play">
-<h2><span class="n">24</span>Play it</h2>
+<h2><span class="n">25</span>Play it</h2>
 <p>Press <kbd>F5</kbd>.</p>
 <table class="keys">
 <tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>walk (up the stairs too), <kbd>Shift</kbd> runs</td></tr>
 <tr><td>mouse</td><td>look</td></tr>
-<tr><td><kbd>E</kbd></td><td>open a door, pick a thing up, read a note; E again puts the note away</td></tr>
+<tr><td><kbd>E</kbd></td><td>open a door, pick a thing up, read a note, sit down, lie down; E again puts the note away or gets you up</td></tr>
 <tr><td><kbd>F</kbd></td><td>the flashlight</td></tr>
 <tr><td><kbd>Esc</kbd></td><td>let the mouse go</td></tr>
 </table>
@@ -744,7 +825,7 @@ fire door ends the night: the screen goes black and the ending's title comes up.
   <li>Up the stairwell. Open the door at the top. The corridor's tubes sag, then come back.</li>
   <li>304 is locked. Read the note on the carpet. Was someone at 308's door just then?</li>
   <li>The linen closet is dark: <kbd>F</kbd>. Take the key and the corridor goes out behind you, one tube at a time, then comes back.</li>
-  <li>Open 304 with the key. The TV's on. The music turns to dread. Look at the window, then back at the bath's door. And again. Then wash your face, and stand by the bath's wall with the lamp behind you.</li>
+  <li>Open 304 with the key. The TV's on. The music turns to dread. Look at the window, then back at the bath's door. And again. Then wash your face, and stand by the bath's wall with the lamp behind you. Lie on the bed and look up at the ceiling. Sit at the desk and watch the static.</li>
   <li>The flashlight dies. Batteries in the vending corner, where the radio's hissing. Walk back out and listen behind you.</li>
   <li>On the way out she's at the end of the corridor, the tubes stuttering round her, her head on one side. Walk, and she walks. Your heart picks up as you near her. Shine the light on her and she backs off. Do it twice and the corridor goes dark.</li>
   <li>Walk to the fire exit. Don't look under 308's door.</li>
@@ -752,7 +833,7 @@ fire door ends the night: the screen goes black and the ending's title comes up.
 </section>
 
 <section id="next">
-<h2><span class="n">25</span>Where to go next</h2>
+<h2><span class="n">26</span>Where to go next</h2>
 <ul>
   <li><b>Another floor</b>: in the scene builder, <span class="ui">copy ↑</span> copies a floor up with everything on it;
   export again, and the export's link puts it in your project at once.</li>

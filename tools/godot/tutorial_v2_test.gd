@@ -104,6 +104,19 @@ func _tape_now() -> String:
 	return "none"
 
 
+## the view turned, a little at a time, until the cue's spot is in `region` of the frame (true when it is)
+func aim_region(cue: Node, region: String) -> bool:
+	var eye := player.get_node("Eye") as Camera3D
+	for i in 60:
+		await frames(1)
+		if cue.regions(eye).has(region):
+			return true
+		player.rotation.y += deg_to_rad(2.0)                # turning left: the spot slides right
+		player.pitch -= deg_to_rad(1.2)                     # looking down: it rises
+		eye.rotation.x = player.pitch
+	return false
+
+
 func door(id: String) -> Node3D:
 	return main.get_node("Hotel").find_child("door_" + id, true, false) as Node3D
 
@@ -472,6 +485,150 @@ func _initialize() -> void:
 		bad("she should end 0.35 m behind your eye: %.2f m, behind %s" % [gap, at_back])
 	if caught[0] != 1 or cfig.visible or lamp_min > 0.5 or fear1 < fear0 + 0.2:
 		bad("turned round: caught %d, then gone in the lamp's blink (gone %s, the lamp to %.2f), the Fear node's scare (%.2f to %.2f)" % [caught[0], not cfig.visible, lamp_min, fear0, fear1])
+	# cues (cue.gd): what must be so, then what happens. Lying in 304's bed, her on the ceiling in the corner of your view
+	# (a jump scare); sitting at its desk, three knocks at the door after watching the TV a while (not a scare). Here,
+	# before she's in the corridor (she'd copy the steps walked below), and in the game's 16:9 frame (the regions are
+	# the frame's: headless, Godot's window is 64 px square), put back after
+	var size0 := root.size
+	root.size = Vector2i(1600, 900)
+	await frames(2)
+	var bc: Node = main.get_node("Events/BedCeiling")
+	var bfig: Node3D = bc.appear
+	var bed_seat: Node3D = main.get_node("Things/Bed")
+	var on_words := [story.holds("on:out"), story.holds("on:find304"), story.holds("on:batteries")]   # on the way out; 304 found; batteries not asked for yet
+	var by_bed := Vector3(bed_seat.global_position.x + 0.9, fl + 0.02, bed_seat.global_position.z + 1.05)
+	stand(by_bed, bc.where())
+	var corner_standing: bool = await aim_region(bc, "any corner")
+	await secs(3.5)
+	var standing_count: int = bc.count                       # standing: nothing, her corner in view or not
+	await use_at(by_bed, bed_seat.global_position + Vector3(0.9, -0.15, 0))   # E on the bed
+	await frames(3)
+	var lying_ok: bool = player.pose == "lying" and player.doing() == "lying" and eye.global_position.distance_to(bed_seat.global_position) < 0.05
+	look(bc.where())                                         # straight at her place: the middle, not a corner
+	await secs(3.5)
+	var middle_count: int = bc.count
+	player.rotation = Vector3(0, bed_seat.global_rotation.y, 0)   # the bed's own view, up past its foot
+	player.pitch = deg_to_rad(70.0)
+	eye.rotation = Vector3(player.pitch, 0, 0)
+	await frames(1)
+	var regs: Array = bc.regions(eye)
+	var fear_b := float(fear_n.level)
+	var dread_b := float(dread.intensity)
+	var p0 := bfig.position
+	var t_in := -1.0
+	var t_out := -1.0
+	var dropped := 0.0
+	var lamp_lo := 1.0
+	var fear_hi := fear_b
+	var dread_hi := dread_b
+	for i in 420:
+		await frames(1)
+		var t := (i + 1) / 60.0
+		if t_in < 0.0 and bfig.visible:
+			t_in = t
+		if t_in >= 0.0 and t_out < 0.0:
+			if bfig.visible:
+				dropped = maxf(dropped, p0.y - bfig.position.y)
+			else:
+				t_out = t
+		lamp_lo = minf(lamp_lo, float(lamp304.get_meta("hs_flick", 1.0)))
+		fear_hi = maxf(fear_hi, float(fear_n.level))
+		dread_hi = maxf(dread_hi, float(dread.intensity))
+		if t_out > 0.0 and t > t_out + 0.3:
+			break
+	var sting: String = str(bc.heard.stream.resource_path) if bc.heard != null and bc.heard.stream != null else "none"
+	var fired1: int = bc.count
+	var shown1 := float(bc.shown_for)
+	# and again with Until Looked At (the check's: no sound, not a scare): there while her place is in the corner of
+	# your view, gone at once as you turn to her
+	bc.once = false
+	bc.cooldown = 0.0
+	bc.hush = 0.0
+	bc.after_secs = 0.3
+	bc.appear_for = 3.0
+	bc.until_looked_at = true
+	bc.vanish = "at once"
+	bc.sound = ""
+	bc.scare = false
+	var seen2 := false
+	for i in 90:
+		await frames(1)
+		if bfig.visible:
+			seen2 = true
+			break
+	await frames(10)
+	var stayed2: bool = bfig.visible
+	look(bc.where())                                         # turn to her
+	var gone_in := -1
+	for i in 30:
+		await frames(1)
+		if not bfig.visible:
+			gone_in = i + 1
+			break
+	bc.armed = false
+	await press(KEY_E)                                       # up again
+	var up_ok: bool = player.pose == "standing" and player.global_position.distance_to(by_bed) < 0.05 and absf(eye.position.y - 1.6) < 0.01
+	say("cue in the bed", "on:out %s, on:find304 %s, on:batteries %s; standing with her corner in a corner of your view (%s): %d; lying %s; looking straight at it: %d; the bed's view %s: after %.2f s she was there %.2f s (shown %.2f), the sting %s, the lean %s (down %.2f m), the lamp's blink to %.2f, fear %.2f to %.2f, the director %.2f to %.2f; again until looked at: there %s, stayed in the corner of your view %s, gone %d frames after you turned to her; E: up where you stood %s" % [
+		on_words[0], on_words[1], on_words[2], corner_standing, standing_count, lying_ok, middle_count, str(regs), t_in, t_out - t_in, shown1, sting.get_file(),
+		bc.animated, dropped, lamp_lo, fear_b, fear_hi, dread_b, dread_hi, seen2, stayed2, gone_in, up_ok])
+	if on_words != [true, false, false]:
+		bad("the Story's on:<task> (story.gd holds): on:out %s (true), on:find304 %s (done: false), on:batteries %s (not on the list: false)" % on_words)
+	if not corner_standing or standing_count != 0 or not lying_ok or middle_count != 0:
+		bad("the bed's cue fired where it shouldn't, or you didn't lie down: her corner in view standing %s, fired %d; lying %s; looking straight at her place, fired %d" % [corner_standing, standing_count, lying_ok, middle_count])
+	if not regs.has("top right") or not regs.has("any corner") or regs.has("middle"):
+		bad("from the bed her place should be in the top right corner of your view: %s" % str(regs))
+	if fired1 != 1 or t_in < 2.9 or t_in > 3.5 or absf(t_out - t_in - 1.0) > 0.12 or absf(shown1 - 1.0) > 0.05 or not sting.contains("sting_big") or bc.animated != "lean" or dropped < 0.2:
+		bad("the bed's cue (cue.gd): fired %d, there after %.2f s (2 s lying, a 1 s hush), for %.2f s (1; its own count %.2f), the sting %s, the lean %s (down %.2f m)" % [fired1, t_in, t_out - t_in, shown1, sting, bc.animated, dropped])
+	if lamp_lo > 0.5 or fear_hi < minf(1.0, fear_b + 0.2) or dread_hi < minf(1.0, dread_b + 0.25):
+		bad("the bed's cue: gone in the lamp's blink (%.2f), you jumped (fear %.2f to %.2f), the director heard it (%.2f to %.2f)" % [lamp_lo, fear_b, fear_hi, dread_b, dread_hi])
+	if not seen2 or not stayed2 or gone_in < 1 or gone_in > 3:
+		bad("the bed's cue with Until Looked At: there %s, stayed while in the corner of your view %s, gone %d frames after you turned to her (at most 3)" % [seen2, stayed2, gone_in])
+	if not up_ok:
+		bad("E in the bed should get you up where you stood: %s at %s, the eye at %.2f" % [player.pose, str(player.global_position), eye.position.y])
+	var dk: Node = main.get_node("Events/DeskKnock")
+	var chair_seat: Node3D = main.get_node("Things/Chair")
+	var by_chair := Vector3(chair_seat.global_position.x - 0.75, fl + 0.02, chair_seat.global_position.z + 0.4)
+	await use_at(by_chair, chair_seat.global_position + Vector3(0, -0.6, 0))   # E on the chair
+	await frames(3)
+	var sitting_ok: bool = player.pose == "sitting" and player.doing() == "sitting" and eye.global_position.distance_to(chair_seat.global_position) < 0.05
+	look(v3(cfg["boxes"]["window_304"]["at"]))               # the window, not the TV
+	await secs(3.0)
+	var away_count: int = dk.count
+	look(dk.where())                                         # the TV's static, in the middle of your view
+	await frames(1)
+	var tv_regs: Array = dk.regions(eye)
+	var t_knock := -1.0
+	for i in 240:
+		await frames(1)
+		if dk.count > 0:
+			t_knock = (i + 1) / 60.0
+			break
+	await frames(3)
+	var knock_heard: String = str(dk.heard.stream.resource_path) if dk.heard != null and dk.heard.stream != null else "none"
+	var line: String = story._line.text if story._line.visible else ""
+	var knocked: bool = story.is_set("knocked_304")
+	var fear_k := float(fear_n.level)
+	await press(KEY_E)
+	var up2: bool = player.pose == "standing" and player.global_position.distance_to(by_chair) < 0.05
+	look(player.global_position + Vector3(0.0, 1.6, -3.0))   # north, into the room (west is the bed)
+	key(KEY_W, true)
+	await frames(20)
+	var walking: String = player.doing()
+	key(KEY_SHIFT, true)
+	await frames(20)
+	var running: String = player.doing()
+	key(KEY_SHIFT, false)
+	key(KEY_W, false)
+	await frames(6)
+	var still: String = player.doing()
+	say("cue at the desk", "sitting %s; looking at the window 3 s: %d; at the TV (%s): three knocks after %.2f s (%s), the line \"%s\", the fact %s, not a scare (fear %.2f); up %s; walking %s, running %s, then %s; %.0f s into the playthrough" % [
+		sitting_ok, away_count, str(tv_regs), t_knock, knock_heard.get_file(), line, knocked, fear_k, up2, walking, running, still, Engine.get_physics_frames() / 60.0])
+	if not sitting_ok or away_count != 0 or not tv_regs.has("middle") or dk.count != 1 or t_knock < 1.95 or t_knock > 2.3 or not knock_heard.contains("knock_three") or line != "Three knocks. Someone is at the door." or not knocked:
+		bad("the desk's cue (cue.gd): sitting %s, fired looking away %d, the TV in the middle %s, fired %d after %.2f s (2), its knock %s, the line \"%s\", the fact %s" % [sitting_ok, away_count, str(tv_regs), dk.count, t_knock, knock_heard, line, knocked])
+	if not up2 or walking != "walking" or running != "running" or still != "standing":
+		bad("the player's doing(): up from the chair %s, walking %s, running %s, still %s" % [up2, walking, running, still])
+	root.size = size0
+	await frames(2)
 	# only in the mirror (mirror_figure.gd, armed by InBath): her in the tub behind you in the bath's mirror; nobody when you turn round
 	var bd := door("door_304_bath")
 	var bdp := bd.global_position + bd.global_basis.x * 0.38 + Vector3.UP * 1.0

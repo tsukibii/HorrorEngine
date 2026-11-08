@@ -95,6 +95,7 @@ else:
         sys.exit("TUTORIAL2 FAILED: the hotel's places: " + (r.stdout + r.stderr)[-1200:])
 H = json.loads((proj / "hotel.json").read_text(encoding="utf-8"))
 need = ["tv_screen", "mirror", "end_glass", "window_304", "r304_bath_fx_floor", "linen_kt_bookshelf_1", "vending_kt_desk_1", "door_corridor_e_door", "door_door_304",
+        "r304_kt_bed_double_1", "r304_kt_dining_chair_1", "r304_kt_desk_1",
         "stair_glass", "stairs_fx_half_1", "stairs__wall_n1"]
 miss = [k for k in need if k not in H["paths"]] + [k for k in ["stairs", "corridor", "r304", "r304_entry", "r304_bath", "vending", "linen"] if k not in H["rooms"]]
 if miss:
@@ -113,6 +114,12 @@ def tf(pos, turn_deg=0.0):
 
 def q(s):
     return json.dumps(s, ensure_ascii=False)
+
+
+def basis_tf(pos, xc, yc, zc):
+    """a node at pos whose local x, y and z axes are xc, yc and zc"""
+    rows = [xc[0], yc[0], zc[0], xc[1], yc[1], zc[1], xc[2], yc[2], zc[2]]   # a .tscn writes the basis by rows
+    return "Transform3D(%s, %.4f, %.4f, %.4f)" % (", ".join("%.6f" % c for c in rows), pos[0], pos[1], pos[2])
 
 
 def look_tf(pos, target):
@@ -173,6 +180,22 @@ moments = [   # the night's small moments (dread_moment.gd): where each happens,
     ("Handle304", [d304[0] + 0.4, floor_y + 1.0, d304[2] - 0.25], ['sound = "latch"', "tier = 2", 'needs = "task:find304"', "where = \"out of sight\"", "near_m = 1.5", "far_m = 6.0", "once = true"]),
     ("Chain308", [d308[0] + 0.4, floor_y + 1.3, inside], ['sound = "chain_grind"', "tier = 3", 'needs = "task:find304"', "where = \"out of sight\"", "far_m = 9.0", "once = true"]),
 ]
+rr = R["r304"]
+bed, chair, desk304 = B["r304_kt_bed_double_1"], B["r304_kt_dining_chair_1"], B["r304_kt_desk_1"]
+if bed["size"][0] < bed["size"][2]:
+    sys.exit("TUTORIAL2 FAILED: 304's bed should lie east to west, its head at the west wall (the hotel set's layout)")
+bed_eye = [bed["at"][0] - bed["size"][0] / 2 + 0.3, bed["top"] + 0.06, bed["at"][2]]   # lying on your back, your head by the west wall: just over the bed's collider (the export's furniture is solid to its top, 0.95 m: an ear inside it hears everything through its walls)
+chair_eye = [chair["at"][0], floor_y + 1.2, chair["at"][2]]                           # sitting at 304's desk
+chair_turn = math.degrees(math.atan2(-(desk304["at"][0] - chair["at"][0]), -(desk304["at"][2] - chair["at"][2])))   # facing it
+ceil_y = rr["at"][1] + rr["size"][1] / 2 + 0.025                                     # 304's ceiling (its volume is 0.05 short of it)
+lp = math.radians(70.0)                                                               # the bed's view: east, 70 degrees up, the eye's 70 degree lens at 16:9
+fw, rt, upv = [math.cos(lp), math.sin(lp), 0.0], [0.0, 0.0, 1.0], [-math.sin(lp), math.cos(lp), 0.0]
+tv = math.tan(math.radians(35.0))
+look_dir = [fw[i] + 0.7 * tv * 16.0 / 9.0 * rt[i] + 0.6 * tv * upv[i] for i in range(3)]   # 0.7 of the way to the right edge, 0.6 to the top
+k = (ceil_y - 0.32 - bed_eye[1]) / look_dir[1]
+ceil_head = [bed_eye[i] + k * look_dir[i] for i in range(3)]                          # her head there, a body's thickness under the ceiling: the top right corner of that view
+along = [1.0, 0.0, 0.0]                                                                # from her head to her feet: along the bed toward its foot
+ceil_feet = [ceil_head[i] + along[i] * 1.5 for i in range(3)]
 sg = B["stair_glass"]["at"]                                             # the stairwell's window (its glass's middle)
 land = B["stairs_fx_half_1"]["top"]                                     # the half landing's top
 sill = B["stairs__wall_n1"]["top"]                                      # the wall under the window: up to the sill
@@ -195,6 +218,7 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://starter/door_feet.gd", "feet"), ("Script", "res://starter/uncanny.gd", "uncanny"),
        ("Script", "res://starter/dread.gd", "dread"), ("Script", "res://starter/dread_moment.gd", "moment"), ("Script", "res://starter/menace.gd", "menace"),
        ("Script", "res://addons/horrorstudio_look/nodes/lightning_storm.gd", "lightning"),
+       ("Script", "res://starter/cue.gd", "cue"), ("Script", "res://starter/seat.gd", "seat"),
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
@@ -225,7 +249,12 @@ subs = [("StandardMaterial3D", "paper", ["albedo_color = Color(0.93, 0.91, 0.84,
         ("StandardMaterial3D", "bakelite", ["albedo_color = Color(0.2, 0.13, 0.08, 1)", "roughness = 0.45"]),
         ("BoxMesh", "radiobox", ["size = Vector3(0.26, 0.15, 0.1)", 'material = SubResource("bakelite")']),
         ("StandardMaterial3D", "cloth", ["albedo_color = Color(0.55, 0.48, 0.36, 1)", "roughness = 0.95"]),
-        ("QuadMesh", "grille", ["size = Vector2(0.15, 0.1)", 'material = SubResource("cloth")'])]   # (her stand-in is a figure: a gown, arms, a head, hair down over her face)
+        ("QuadMesh", "grille", ["size = Vector2(0.15, 0.1)", 'material = SubResource("cloth")']),
+        ("Animation", "lean", ['resource_name = "lean"', "length = 0.8", 'tracks/0/type = "value"', "tracks/0/imported = false", "tracks/0/enabled = true",
+                               'tracks/0/path = NodePath(".:position")', "tracks/0/interp = 2", "tracks/0/loop_wrap = true",
+                               'tracks/0/keys = {\n"times": PackedFloat32Array(0, 0.6),\n"transitions": PackedFloat32Array(1, 1),\n"update": 0,\n"values": [%s, %s]\n}' % (
+                                   f3(ceil_feet), f3([ceil_feet[0], ceil_feet[1] - 0.3, ceil_feet[2]]))]),   # her body coming down off the ceiling toward you
+        ("AnimationLibrary", "moves", ['_data = {\n&"lean": SubResource("lean")\n}'])]   # (her stand-in is a figure: a gown, arms, a head, hair down over her face)
 lines = [f"[gd_scene load_steps={len(ext) + len(subs) + 1} format=3]", ""]
 lines += [f'[ext_resource type="{t}" path="{p}" id="{i}"]' for t, p, i in ext] + [""]
 for t, i, props in subs:
@@ -326,17 +355,22 @@ nd("Batteries", "Things", "Node3D", script="pickup", props=[f"transform = {tf(ba
 nd("Mesh", "Things/Batteries", "MeshInstance3D", props=['mesh = SubResource("pack")'])
 nd("Radio", "Things", "MeshInstance3D", props=[f"transform = {tf(radio_at, -8.0)}", 'mesh = SubResource("radiobox")'])   # someone's radio, left on: static as she nears
 nd("Grille", "Things/Radio", "MeshInstance3D", props=[f"transform = {tf([-0.04, 0.0, 0.051])}", 'mesh = SubResource("grille")'])
+nd("Bed", "Things", "Node3D", script="seat", props=[f"transform = {tf(bed_eye, -90.0)}", 'pose = "lying"', "look_up_deg = 70.0",   # 304's bed: lie on your back, looking up past its foot
+   f"reach_size = {f3([bed['size'][2], bed_eye[1] - floor_y - 0.3, bed['size'][0]])}", f"reach_at = {f3([0.0, -(bed_eye[1] - floor_y - 0.3) / 2.0, -(bed['size'][0] / 2 - 0.3)])}",
+   'say = "The sheets are cold."'])   # its box from 0.3 m up to the eye: over the bed's collider, so E finds it
+nd("Chair", "Things", "Node3D", script="seat", props=[f"transform = {tf(chair_eye, chair_turn)}"])   # 304's desk chair
 # her, and her again at the fire exit (the jump scare)
 
 
-def person(name, at, turn, shy, parent="."):
+def person(name, at, turn, shy, parent=".", xform=None):
     me = name if parent == "." else f"{parent}/{name}"
+    t = xform or tf(at, turn)
     if who:
-        nd(name, parent, inst="her", props=[f"transform = {tf(at, turn)}", "visible = false"])
+        nd(name, parent, inst="her", props=[f"transform = {t}", "visible = false"])
         nd("Look", me, "Node", script="charlook", props=["wetness = 0.6", "drips = 0.5"])   # wet: she came out of the bath
         nd("ArmsDown", me, "Node", script="arms")
     else:
-        nd(name, parent, "Node3D", props=[f"transform = {tf(at, turn)}", "visible = false"])     # a stand-in: a pale gown, long black hair over her face
+        nd(name, parent, "Node3D", props=[f"transform = {t}", "visible = false"])     # a stand-in: a pale gown, long black hair over her face
         nd("Gown", me, "MeshInstance3D", props=[f"transform = {tf([0, 0.68, 0])}", 'mesh = SubResource("gown")'])
         nd("ArmL", me, "MeshInstance3D", props=[f"transform = {tf([-0.185, 0.99, 0.02])}", 'mesh = SubResource("arm")'])
         nd("ArmR", me, "MeshInstance3D", props=[f"transform = {tf([0.185, 0.99, 0.02])}", 'mesh = SubResource("arm")'])
@@ -383,6 +417,14 @@ person("Figure", [0, 0, 0], 0.0, False, parent="Events/MirrorHer")
 nd("ShadowPass", "Events", "Node3D", script="shadowpass", props=['lamp = NodePath("../../Zones/Room304/Lamp")'], paths=["lamp"])   # a shadow that isn't yours
 person("Figure", [0, 0, 0], 0.0, False, parent="Events/ShadowPass")
 person("InTheFlash", [0.55, floor_y, corr["at"][2]], 90.0, False, parent="Events")   # by the end window, there only in the lightning (once)
+nd("BedCeiling", "Events", "Node3D", script="cue", props=['look = "any corner"', "tolerance = 0.1", 'needs = "on:out"', 'doing = "lying"', "after_secs = 2.0",
+   'appear = NodePath("Ceiling")', "appear_for = 1.0", "face_you = false", 'animation = "lean"', 'blink_lamp = NodePath("../../Zones/Room304/Lamp")',
+   'sound = "sting_big"', "sound_db = -3.0", "hush = 1.0"], paths=["appear", "blink_lamp"])   # lying in 304's bed: her on the ceiling in the corner of your view
+person("Ceiling", None, None, False, parent="Events/BedCeiling", xform=basis_tf(ceil_feet, [0.0, 0.0, 1.0], [-1.0, 0.0, 0.0], [0.0, -1.0, 0.0]))   # face down on the ceiling over the bed, her head over yours
+nd("Moves", "Events/BedCeiling/Ceiling", "AnimationPlayer", props=['libraries = {\n&"": SubResource("moves")\n}'])
+nd("DeskKnock", "Events", "Node3D", script="cue", props=['spot = NodePath("../../Dressing/TV")', 'look = "middle"', 'doing = "sitting"', "after_secs = 2.0", "scare = false",
+   'sound = "knock_three"', 'sound_at = NodePath("Door")', 'say = "Three knocks. Someone is at the door."', 'fact = "knocked_304"'], paths=["spot", "sound_at"])   # sitting at the desk, the TV's static in the middle of your view
+nd("Door", "Events/DeskKnock", "Marker3D", props=[f"transform = {tf([d304[0] + 0.4, floor_y + 1.3, d304[2] - 0.25])}"])   # outside 304's door, in the corridor
 nd("Feet308", "Events", "Node3D", script="feet", props=[f"transform = {tf(feet_at)}", f'door = NodePath("../../Hotel/{P["door_door_308"]}")'], paths=["door"])   # someone behind 308's door
 # the player, its flashlight on a battery that's seen better days
 nd("Player", ".", inst="player", props=[f"transform = {tf(start['at'], start['turn'])}"])
@@ -418,7 +460,7 @@ if "run/main_scene" not in pg:
     (proj / "project.godot").write_text(pg, encoding="utf-8")
 (proj / "tutorial.json").write_text(json.dumps({"who": who, "start": start, "her": her_at, "again": again_at, "note": note_at, "key": key_at, "batteries": bat_at,
                                                 "door304": d304, "fire": fire, "jump": jump, "floor": floor_y, "radio": radio_at, "glimpse": glimpse_at,
-                                                "closer": {n: a for n, a in closer_marks}, "mirror_her": mirror_her_at, "lamp304": [lamp[0], lamp_y, lamp[2]], "rooms": R, "lights": L, "paths": P, "boxes": B}, indent=1), encoding="utf-8")
+                                                "closer": {n: a for n, a in closer_marks}, "bed_eye": bed_eye, "chair_eye": chair_eye, "ceiling_head": ceil_head, "mirror_her": mirror_her_at, "lamp304": [lamp[0], lamp_y, lamp[2]], "rooms": R, "lights": L, "paths": P, "boxes": B}, indent=1), encoding="utf-8")
 for f in ["tutorial_v2_test.gd", "tutorial_v2_shots.gd"]:
     shutil.copy(ROOT / "tools/godot" / f, proj / f)
 

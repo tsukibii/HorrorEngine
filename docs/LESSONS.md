@@ -2046,3 +2046,19 @@ pale one shows.
 - **One pending time for a thing that can overlap is a bug**: the lightning kept its thunder's due time in one value,
   so a strike two seconds after another cancelled the first's thunder (thunder comes 3 s a kilometre later, often
   after the next flash). Each strike queues its own. The demo's stage strikes twice and times the first thunder.
+- **An interior's furniture is solid to its top**: the hotel's export gives each room one collider with every piece of
+  furniture in it as a box up to its highest point (304's bed to its headboard, 0.95 m). A seat's own box for E,
+  lower than that, was never reached: the aim stopped on the room's box. And an eye lying inside such a box would hear
+  every sound through its faces (the tracer's rays hit them on the way in). So a seat's eye goes just over what's
+  under it, its box reaches above it, and the player lifts an eye placed inside one. Before blaming a ray, print what
+  it hit.
+- **A walk in a check needs room to walk**: the check's walk from 304's chair went west, into the bed's box within half
+  a metre, and `doing()` read the stopped slide as standing. Walk where nothing's in the way, or watch the position.
+- **Headless, Godot's window is 64 px square**: a cue's regions are the frame's, and the frame's shape sets where a
+  thing lands in it. Her place from 304's pillow, 0.7 of the way to the right edge of the game's 16:9 view, was off a
+  square one (u 1.24) and read "out of view". The check gives the window the game's 1600 × 900 for the cues and puts
+  it back (the older checks were tuned in the square frame). Any check of where something is in the frame sets the
+  frame first.
+- **Steps walked in a check are heard**: the check's walk in 304 had her copying the steps from the corridor (uncanny.gd's
+  mimic), and the time there filled her menace gauge, so her own checks later started 2 m nearer. A part checked in the
+  middle of a playthrough goes where nothing else is listening: before she's out.

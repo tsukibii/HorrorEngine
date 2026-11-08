@@ -323,6 +323,9 @@ silence count, not volume; the player finds the scare (no forced look); the last
    for glimpses (25 to 50° off the centre, gone when looked at). A `swap` that never fires in view. Triggers *turned
    round* and *seen, then gone*.
 3. **Scares that wait for the eye:** a `jumpscare` held until its spot is looked at, or placed where the player looks.
+   **Built for games made by hand** (DECISIONS 2026-11-08, night, later): the starter's `cue.gd`, its spot in a
+   region of the frame with a tolerance, on a task, sitting or lying, for so long, then someone for a moment. Still
+   to do: the story format's `jumpscare` (the desk and the export).
 4. **Figures that move unseen:** mark by mark toward the player while unseen, and while the lights are out.
 5. **Chance and variety:** a random wait, a pool of scares drawn without repeats and kept with the save, and the check
    warning at the same trick three times in a night.

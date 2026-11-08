@@ -4,7 +4,8 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
   player.tscn, player.gd   the player: WASD, Shift runs, the mouse looks, E uses (or puts a note away), F the
                            flashlight, Esc frees the mouse; it steps up a tread or a kerb; stops when the Story ends;
                            its footsteps a stride walked, the floor's own (footsteps.gd, the Sound node); its eye never
-                           draws render layer 19 (what's only in mirrors)
+                           draws render layer 19 (what's only in mirrors); a seat sits it down or lays it down;
+                           doing(): standing, walking, running, sitting or lying
   flashlight.gd            the player's flashlight (on its Eye/Flashlight): batteries that run down, a bulb's or an
                            LED's curve, low and dead, spare sets going in by themselves; beam_on(point), weighed by
                            its cookie; its AirBeam child (the Look plugin's HSBeam) draws the beam in the air (an
@@ -15,7 +16,8 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
   door.gd                  a door from an interior's export swinging on its hinge (interior.gd puts it on every door);
                            locked by an item or a fact (the scene builder's lock comes with the export)
   story.gd                 the Story node: the objective, the to-do list, lines, a note's card, the pocket, facts,
-                           the ending
+                           the ending; holds(): what `needs` says (task:x done, on:x on the list and not done yet,
+                           item:x, a fact, ! for not)
   sound.gd                 the Sound node: the music by mood (music/), a room's tone, the hush before a scare; and
                            the sound physics (Woohill's): every sound it plays (play, step, shaped) traced through the
                            rooms, muffled through walls and doors, the room's reverb as rendered tails (sfx/_tails),
@@ -33,6 +35,14 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
   scare_area.gd            an Area3D: walked into (or fire() from a signal), the lights go out, dim, flicker or go out
                            one by one, for good or for a while; someone appears (for a moment: a jump scare); a sting;
                            a hush first; the fog rolled in; the tape breaking up for a moment (the scene's HSTape)
+  cue.gd                   a cue: something that happens when everything you set is so. Where you look (the event's
+                           spot in the middle, a side, a corner or the edge of your view, with a tolerance; in view,
+                           out of view), what the story says (needs: on:x for a task you're on), what you're doing
+                           (sitting, lying in bed, walking...), the flashlight, how near, for how long, a chance;
+                           then someone there for a moment with a sound and an animation, gone in a blink (a jump
+                           scare), and/or a line, a task, a fact, the music, a target's fire()
+  seat.gd                  somewhere to sit or lie down: E there and back up; its box on collision layer 2, which
+                           only E's aim finds (your body, the sound and sight pass through it)
   pickup.gd                a thing picked up with E into the Story's pocket (batteries: a spare set)
   note.gd                  a thing read with E: its words on the Story's card
   light_shy.gd             under a character: she backs off, freezes, vanishes or comes when the flashlight holds her;

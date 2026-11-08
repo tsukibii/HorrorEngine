@@ -2,6 +2,29 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-08, night, later (the user: a mechanic for jump scares by what's so, for other events too)
+
+- **The ask**: "can you add another mechanic if we dont have it for jump scares, with variabels like is player looking
+  at the events direction (can check if its looking on the sides of the frame, corners, or middle + range of acceptance
+  so it doesnt have to be exact), is player on x quest, is player doing certain action e.g. is player in bed or
+  sitting, if criteria met can show a brief jumpscare, can be an npc + sound + animation + disappears after x seconds
+  etc, can also use this mecchanism for non jumpscares too".
+- **What we had**:
+  - the by-hand starter kit's scare area: walked into, or fired by a signal;
+  - glimpse.gd: an angle off where you look, not a part of the frame;
+  - the dread director's moments: behind, in view or out of sight;
+  - the story format's `look` trigger (looked at for some seconds within a distance) and its `sit` and `sleep` uses.
+- **What we didn't have**: a part of the frame with a tolerance, being on a task as a condition, what the player's
+  doing (sitting, lying in bed) as a condition, or one piece that checks all of it and then plays someone, a sound
+  and an animation and takes them away.
+- **Read as**: a new starter kit piece, `cue.gd`, plus a seat to sit or lie on (`seat.gd`; the player gets a pose
+  and `doing()`) and the Story's `on:<task>` ("on that quest": the task on the list and not done). It goes into
+  tutorial v2 as two cues:
+  - a jump scare from 304's bed: her on the ceiling in the corner of your view;
+  - one that isn't a scare: knocks at 304's door while you sit and watch the TV.
+- The desk's story format and the Director keep their own `look` and `sit`; the cue's conditions can go there too
+  if the user wants.
+
 ## 2026-11-08, night (the user: build it; the reverb from Woohill; into the tutorial)
 
 - **The ask**: "I think for reverb you can lift the system we made in Woohill repo, feel free to work on the rest and

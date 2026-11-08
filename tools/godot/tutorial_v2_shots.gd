@@ -154,6 +154,14 @@ func _initialize() -> void:
 	sp.pose(you, 0.5)
 	await shot("shadow", you + Vector3(0, 1.6, 0), Vector3(you.x + 0.15, fl + 1.15, you.z - 2.0), 50)
 	(sp.get("figure") as Node3D).visible = false
+	# a cue: lying in 304's bed, looking up past its foot, her on the ceiling in the top right corner of your view
+	var bfig: Node3D = main.get_node("Events/BedCeiling").get("appear")
+	bfig.visible = true
+	hud_on.call(false)                                         # (the cue comes on the way out: the pictures' list is still the way in)
+	var be := v3(cfg["bed_eye"])
+	await shot("cue", be, be + Vector3(0.342, 0.940, 0.0), 50)
+	bfig.visible = false
+	hud_on.call(true)
 	var b: Dictionary = R["r304_bath"]
 	var bc := v3(b["at"])
 	await shot("bath", Vector3(bc.x + 0.85, eye - 0.15, bc.z + 0.7), Vector3(bc.x - 0.4, fl + 0.45, bc.z - 0.4))
