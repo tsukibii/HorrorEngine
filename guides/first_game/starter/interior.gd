@@ -24,6 +24,7 @@ const DOOR := preload("res://starter/door.gd")
 
 
 func _ready() -> void:
+	add_to_group("hs_interior")                  # (the Sound node reads its rooms' surfaces off its markers)
 	place()
 	_lights()
 	if Engine.is_editor_hint():

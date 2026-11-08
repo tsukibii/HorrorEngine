@@ -66,6 +66,17 @@ check fails a tone that isn't on the shelf and warns at one that isn't a loop.
 - `tools/director/sfx.js` holds all of this: `shelf()`, `playShelf(name, {pos, camera})`, `playStorySound`,
   `pickShelf`. PLAY checks that every shelf sound the Pilot names is served, decodes and plays.
 
+## 3b. In a game built by hand: the rooms' reverb (DECISIONS 2026-11-08, night)
+
+The starter kit's Sound node (`guides/first_game/starter/sound.gd`) traces every sound it plays through the level,
+Woohill's sound physics lifted (`acoustics.gd`): muffled through walls and doors, the room's reverb, an echo. The reverb
+is rendered, not Godot's (which rings on sharp hits): `python tools/sfx.py tails` convolves every one-shot sound on the
+shelf with each of the four reverb slots in `guides/first_game/starter/acoustics.json` (0.15, 0.55, 1.68 and 4.1 s)
+into `Saved/SFX/tails/<category>/<name>.<slot>.ogg` (about 13 MB, so not in git), the steps only with the short two,
+the loops and the stings none; `_generic/` holds each slot's tail alone for sounds without their own. Only what changed
+is made again (`--force` all of it, after a slot changes; `--check` fails on one missing or stale).
+`tools/godot_byhand.py` renders what's stale and copies them into a project's `sfx/_tails/`.
+
 ## 4. Into Unreal (next)
 
 The importer doesn't bring sounds in yet. When it does, a shelf sound goes to `/Game/Studio/SFX/<category>/<name>`

@@ -403,6 +403,30 @@ to the room's id; it takes the room's size by itself. Then drag a loop from <cod
 <tr><td>vending</td><td><code>electric_hum_03.ogg</code> (the fridge)</td></tr>
 </table>
 <p>They crossfade as you walk from room to room, and sit well under the music, barely there.</p>
+<p><b>Every sound has its room in it.</b> The Sound node traces each sound it plays through the level, the way Woohill
+does. It sends 32 rays out from the sound, bounces each one four times off the walls, floors and ceilings, and works
+out how the sound reaches your ear:</p>
+<ul>
+  <li><b>The room's reverb.</b> The concrete stairwell rings for seconds, the bathroom's tiles ring briefly, and the
+  carpeted corridor is nearly dry. The reverb is rendered ahead of time for every sound on the shelf (four lengths,
+  short to long). Godot's own reverb clangs on sharp hits.</li>
+  <li><b>Muffled through walls and doors.</b> A knock inside 304 with its door shut reaches you dull, only its low
+  thump. Open the door and it's clear.</li>
+  <li><b>An echo</b> off the farthest reflecting wall, when there's one late enough to hear.</li>
+</ul>
+<p>It knows what each room is made of from the hotel's export: each room's marker carries its floor and the sets on
+its walls and ceiling. Concrete and tile reflect, plaster less, carpet and tatami hardly at all.</p>
+<p><b>Footsteps.</b> The player now steps once every stride walked (0.8 m at a walk, longer when you run), on the floor
+under you: carpet in the corridor, concrete on the stairs, wood in a house, and wet on the bath's wet tiles or in the
+stairwell's puddle. Your own steps get only the short reverb, so nothing trails behind them.</p>
+<p>Your own sounds go through it too. A door's <code>Open</code>, <code>Close</code> and <code>Rattle</code>, and a scare's
+<code>Sound</code>, are shaped the same way. To play one from a script, call
+<code>get_tree().get_first_node_in_group("hs_sound").play("knock_slow", where)</code> with a name off the shelf and a point.</p>
+<div class="tip"><b>Tuning it:</b> <code>starter/acoustics.json</code> holds the numbers: what each material reflects
+and muffles, the four reverb lengths, the echo. After changing a reverb length, run
+<code>python tools/sfx.py tails --force</code> and install the project again
+(<code>python tools/godot_byhand.py install</code>). The Sound node's <b>Physics</b>, <b>Tails</b> and <b>Echoes</b>
+switch each part off.</div>
 </section>
 
 <section id="story">

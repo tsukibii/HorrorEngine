@@ -3,8 +3,12 @@
 ## pickup, a note) or puts a note's card away, F the flashlight (flashlight.gd's batteries when it has them), Esc lets
 ## the mouse go (a click takes it back). The camera is the player's eye. It steps up what's no higher than
 ## `step_height` (a kerb, a genkan's step, a stair's tread): Godot's CharacterBody3D takes any step for a wall. In the
-## group hs_player (the other starter scripts find it so); it stops when the Story ends.
+## group hs_player (the other starter scripts find it so); it stops when the Story ends. Its footsteps: one a stride
+## walked (footsteps.gd), the floor's own off the sound shelf through the Sound node (sound.gd step(): carpet, concrete,
+## wood, wet), traced through the room like every sound.
 extends CharacterBody3D
+
+const Footsteps := preload("res://starter/footsteps.gd")
 
 @export var walk_speed := 1.6          ## metres a second
 @export var run_speed := 3.2
@@ -14,6 +18,9 @@ extends CharacterBody3D
 @export var step_height := 0.5         ## the highest step it walks up
 
 var pitch := 0.0
+var steps := Footsteps.new()
+var steps_heard := 0                    ## footsteps played (a check's)
+var _was := Vector3.INF
 @onready var eye: Camera3D = $Eye
 @onready var aim: RayCast3D = $Eye/Aim
 @onready var torch: SpotLight3D = $Eye/Flashlight
@@ -90,6 +97,19 @@ func _physics_process(dt: float) -> void:
 	move_and_slide()
 	if grounded and is_on_wall() and want.length() > 0.1:
 		step_up(want * speed * dt)
+	_footsteps(dt, speed > walk_speed)
+
+
+## a step sounds every stride walked on the floor (the Sound node plays the floor's own)
+func _footsteps(dt: float, run: bool) -> void:
+	var at := global_position
+	var moved := Vector2(at.x - _was.x, at.z - _was.z).length() if _was != Vector3.INF else 0.0
+	_was = at
+	if steps.update(moved, dt, is_on_floor()):
+		var snd := get_tree().get_first_node_in_group("hs_sound")
+		if snd != null and snd.has_method("step"):
+			snd.step(at, run)
+			steps_heard += 1
 
 
 ## up onto a step in the way: room above it, nothing in the way up there, then down onto its top

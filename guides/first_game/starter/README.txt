@@ -2,7 +2,8 @@ The starter scripts of the by-hand guides (guides/first_game, guides/tutorial_v2
 res://starter/ by tools/godot_byhand.py. Yours to change.
 
   player.tscn, player.gd   the player: WASD, Shift runs, the mouse looks, E uses (or puts a note away), F the
-                           flashlight, Esc frees the mouse; it steps up a tread or a kerb; stops when the Story ends
+                           flashlight, Esc frees the mouse; it steps up a tread or a kerb; stops when the Story ends;
+                           its footsteps a stride walked, the floor's own (footsteps.gd, the Sound node)
   flashlight.gd            the player's flashlight (on its Eye/Flashlight): batteries that run down, a bulb's or an
                            LED's curve, low and dead, spare sets going in by themselves; beam_on(point), weighed by
                            its cookie; its AirBeam child (the Look plugin's HSBeam) draws the beam in the air (an
@@ -14,7 +15,13 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            locked by an item or a fact (the scene builder's lock comes with the export)
   story.gd                 the Story node: the objective, the to-do list, lines, a note's card, the pocket, facts,
                            the ending
-  sound.gd                 the Sound node: the music by mood (music/), a room's tone, the hush before a scare
+  sound.gd                 the Sound node: the music by mood (music/), a room's tone, the hush before a scare; and
+                           the sound physics (Woohill's): every sound it plays (play, step, shaped) traced through the
+                           rooms, muffled through walls and doors, the room's reverb as rendered tails (sfx/_tails),
+                           an echo; the buses World, SFX, Foley, Events, Tone, Verb, Echo, Muffled, Music, Body
+  acoustics.gd, .json      the sound physics' tracer (rays for occlusion and reflections) and its table: what each
+                           material reflects and muffles, the reverb's four lengths, a floor's footsteps
+  footsteps.gd             a step every stride walked (Woohill's)
   room_tone.gd             an Area3D: a room's tone while the player's in it
   event_area.gd            an Area3D: walked into, an objective, tasks added or ticked, a line, a fact, the music, the
                            air's fog rolled to a level (the scene's HSAtmosphere), the end

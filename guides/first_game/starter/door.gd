@@ -69,7 +69,10 @@ func use(_by: Node = null) -> void:
 
 func _play(child: String) -> void:
 	var s := get_node_or_null(child)
-	if s != null and s.has_method("play"):
+	var snd := get_tree().get_first_node_in_group("hs_sound")
+	if s is AudioStreamPlayer3D and snd != null and snd.has_method("shaped"):
+		snd.shaped(s)                            # traced through the rooms (sound.gd): muffled, its reverb, its echo
+	elif s != null and s.has_method("play"):
 		s.play()
 
 

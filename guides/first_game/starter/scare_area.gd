@@ -72,7 +72,9 @@ func fire(_a = null, _b = null) -> void:
 		if appear_for > 0.0:
 			get_tree().create_timer(appear_for).timeout.connect(func(): appear.visible = false)
 	var s := get_node_or_null("Sound")
-	if s != null and s.has_method("play"):
+	if s is AudioStreamPlayer3D and snd != null and snd.has_method("shaped"):
+		snd.shaped(s, "event")                   # traced through the rooms (a sting off the shelf's stings plays dry)
+	elif s != null and s.has_method("play"):
 		s.play()
 	if tape != "keep":
 		_tape()

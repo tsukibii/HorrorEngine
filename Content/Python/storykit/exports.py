@@ -37,7 +37,8 @@ Inside it:
                  Settings > Rendering > Occlusion Culling > Use Occlusion Culling)
   lights/        the level's lamps (OmniLight3D, SpotLight3D): delete them to light it all by hand
   markers/       player_start, every spot (spot_<id>) and trigger area (trigger_<id>) as empty nodes, their -Z
-                 their facing, what they are in their metadata
+                 their facing, what they are in their metadata; a room's trigger_<room>__volume also its floor's
+                 kind and the sets on its floor, walls and ceiling (the starter kit's sound and footsteps read them)
 {outside}
 The HorrorStudio Look plugin (GodotPlugins/HorrorStudioLook) gives it the studio's look: guides/godot_by_hand.
 """,

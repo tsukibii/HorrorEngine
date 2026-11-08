@@ -148,6 +148,10 @@ func _initialize() -> void:
 	say("landed", "on the stairwell's landing at %.2f m: %s" % [y0, "standing" if player.is_on_floor() else "NOT on a floor"])
 	if not player.is_on_floor() or absf(y0) > 0.1:
 		bad("the player didn't land on the stairwell's landing (y %.2f)" % y0)
+	var knock: AudioStream = sound.stream_of("knock_wood_01")
+	var ahead: Vector3 = player.global_position + Vector3(0, 1.4, 0) - (player.get_node("Eye") as Node3D).global_basis.z * 2.0
+	var in_well: Dictionary = sound.shape(knock, "SFX", ahead)
+	var well_r: Dictionary = sound.last.get("result", {})
 	var st: Dictionary = cfg["rooms"]["stairs"]
 	var sx := float(st["at"][0])
 	var half := float(st["size"][0]) / 4.0
@@ -215,6 +219,23 @@ func _initialize() -> void:
 		bad("the Sound: music %s (uneasy), a tone %s" % [sound.now_mood, sound.now_tone])
 	var in_corridor := float(air.now()["fog"])
 	say("corridor's air", "the fog back to %.2f (the level's %.2f), dust %.2f" % [in_corridor, air.fog, float(air.now()["dust"])])
+	# the sound physics (sound.gd, acoustics.gd: Woohill's): the rooms' surfaces, the floors' steps, the reverb
+	var rooms: Dictionary = sound.rooms()
+	var ahead2: Vector3 = player.global_position + Vector3(0, 1.4, 0) - (player.get_node("Eye") as Node3D).global_basis.z * 2.0
+	sound.shape(knock, "SFX", ahead2)
+	var corr_r: Dictionary = sound.last.get("result", {})
+	var long_well := float(well_r.get("gains", [0, 0, 0, 0])[2]) + float(well_r.get("gains", [0, 0, 0, 0])[3])
+	var long_corr := float(corr_r.get("gains", [0, 0, 0, 0])[2]) + float(corr_r.get("gains", [0, 0, 0, 0])[3])
+	var floor_here: String = sound.floor_at(player.global_position)
+	say("sound", "rooms %d (the stairwell's walls %s, the corridor's floor %s); the steps here %s (%d played so far); a knock's long tails in the stairwell %.3f, in the corridor %.3f; its stairwell hits %s" % [
+		rooms.size(), rooms.get("stairs", {}).get("walls", "?"), rooms.get("corridor", {}).get("floor", "?"), sound.steps_for(floor_here),
+		player.steps_heard, long_well, long_corr, str(well_r.get("hits", {}))])
+	if rooms.get("stairs", {}).get("walls", "") != "concrete" or rooms.get("corridor", {}).get("floor", "") != "carpet":
+		bad("the Sound didn't read the rooms' surfaces off the hotel's markers (the export's floor and sets): %s" % str(rooms).left(300))
+	if sound.steps_for(floor_here) != "step_carpet" or player.steps_heard < 6:
+		bad("the footsteps: the corridor's should be carpet (%s), and steps played on the way up (%d)" % [sound.steps_for(floor_here), player.steps_heard])
+	if not (long_well > long_corr * 1.5 and long_well > 0.05):
+		bad("the concrete stairwell should ring longer than the carpeted corridor: long tails %.3f against %.3f" % [long_well, long_corr])
 	if absf(in_corridor - air.fog) > 0.05:
 		bad("out of the stairwell the air didn't go back to the level's (%.2f against %.2f)" % [in_corridor, air.fog])
 	# 3. 304 locked; the note under its door
@@ -224,6 +245,10 @@ func _initialize() -> void:
 	say("304", "%s, it says %s" % ["SHUT" if not d304.open else "open", story._line.text])
 	if d304.open or story._line.text != "Locked.":
 		bad("304's door: locked and saying so (door.gd): open %s, '%s'" % [d304.open, story._line.text])
+	var inside := dc + (dc - player.global_position).normalized() * 2.2   # through the door, in 304
+	inside.y = fl + 1.2
+	var shut_bus := str(sound.shape(knock, "SFX", inside).get("bus", "?"))
+	var shut_bright := float(sound.last.get("result", {}).get("direct_bright", 1.0))
 	var note := main.get_node("Things/Note") as Node3D
 	await use_at(Vector3(note.global_position.x, fl + 0.02, note.global_position.z - 0.85), note.global_position)
 	await frames(5)
@@ -264,6 +289,14 @@ func _initialize() -> void:
 	await use_at(Vector3(dc.x, fl + 0.02, dc.z - 0.9), dc)
 	await frames(60)
 	say("304", "%s with the key" % ("open" if d304.open else "STILL SHUT"))
+	await frames(40)
+	stand(Vector3(dc.x, fl + 0.02, dc.z - 0.9), dc)
+	await frames(4)
+	var open_bus := str(sound.shape(knock, "SFX", inside).get("bus", "?"))
+	var open_bright := float(sound.last.get("result", {}).get("direct_bright", 0.0))
+	say("through 304's door", "a knock inside: shut, on %s (its highs %.2f); open, on %s (%.2f)" % [shut_bus, shut_bright, open_bus, open_bright])
+	if not shut_bus.begins_with("Muffled") or open_bright <= shut_bright + 0.2:
+		bad("a sound behind 304's shut door should be muffled, and clearer once it's open: %s %.2f, then %s %.2f" % [shut_bus, shut_bright, open_bus, open_bright])
 	if not d304.open:
 		bad("304 didn't open with the key")
 	var r304: Dictionary = cfg["rooms"]["r304"]

@@ -17,6 +17,7 @@ Godot instead of through Director I can"; guides/godot_by_hand): what guides/god
 
 Ends with what it did. The Director route instead: tools/godot_director.py."""
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -30,6 +31,7 @@ HUMAN = ROOT / "GodotPlugins" / "HumanShaders"
 STARTER = ROOT / "guides" / "first_game" / "starter"
 SFX = ROOT / "Content" / "Studio" / "SFX"                       # the sound shelf (docs/SFX.md, CC0)
 MOODS = ROOT / "Content" / "Studio" / "Music" / "moods"         # the music's moods (tools/score/moods.mjs)
+TAILS = ROOT / "Saved" / "SFX" / "tails"                         # the sounds' reverb tails (tools/sfx.py tails)
 
 
 def project_godot(name):
@@ -60,6 +62,13 @@ def install(proj, starter=True):
     if (starter or not (proj / "sfx").exists()) and (SFX / "index.json").is_file():
         shutil.copytree(SFX, proj / "sfx", dirs_exist_ok=True, ignore=shutil.ignore_patterns("*.import", "__pycache__", "*.py"))
         did.append("sfx")
+        # the rooms' reverb for the sound physics (starter/sound.gd): every sound's tails, rendered when stale
+        # (tools/sfx.py tails: Saved/SFX/tails), into sfx/_tails
+        if shutil.which("ffmpeg"):
+            subprocess.run([sys.executable, str(ROOT / "tools" / "sfx.py"), "tails"], capture_output=True, text=True)
+        if TAILS.is_dir():
+            shutil.copytree(TAILS, proj / "sfx" / "_tails", dirs_exist_ok=True, ignore=shutil.ignore_patterns("*.import"))
+            did.append("sfx/_tails")
     if (starter or not (proj / "music").exists()) and MOODS.is_dir():
         (proj / "music").mkdir(exist_ok=True)
         for f in MOODS.glob("*.ogg"):

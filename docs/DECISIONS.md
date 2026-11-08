@@ -2,6 +2,22 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-08, night (the user: build it; the reverb from Woohill; into the tutorial)
+
+- **The ask**: "I think for reverb you can lift the system we made in Woohill repo, feel free to work on the rest and
+  include them as part of the new tutorial too".
+- **Read as**:
+  - the sound of rooms is Woohill's sound physics (`tsukibii/woohill`: `game/audio/acoustics.gd` rays for occlusion
+    and reflections into four reverb slots, `cinema_mix.gd` the buses and each play's shape, `sound_bank.gd` the tails
+    and echoes, `footsteps.gd` a step a stride, `tools/sfx/tails.py` the tails rendered offline), lifted into the
+    by-hand starter kit;
+  - "the rest" is docs/research/intensity.md §7, built in steps (a commit each);
+  - "the new tutorial" is tutorial v2 (Room 304), which gets each step.
+- **Its three decisions, taken by me since "feel free"** (say if not):
+  - only in the mirror: the mirrors' last layer (19) becomes the reflection-only layer;
+  - the player gets no body yet (the out-of-step reflection waits);
+  - Nexus Resonance (binaural) waits; the mix pans as Godot does.
+
 ## 2026-11-08, later (the user: more atmospheric horror, researched)
 
 - **The ask**: "Any other atmospheric horror elements you can think of adding? Research some more things that could
