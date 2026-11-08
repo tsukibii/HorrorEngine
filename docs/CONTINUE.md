@@ -60,7 +60,21 @@ what mustn't set them off (standing, looking straight at her place, the window),
 Not done: the desk's story format and the Director have their own `look` trigger and `sit`/`sleep` uses, without the
 frame's regions or what the player's doing; ask the user before carrying the cue's conditions there.
 
-Still to build in this run (the tasks): being hunted (hiding, held breath, the search's close pass, chases). Not done for the desk's story format: a `cold` word (the export's runtime and Play), nor lightning's.
+**Being hunted, first step** (intensity.md §4, HORROR_TODO 5): the starter's **`noise.gd`** (a noise heard by the
+group `hs_listener`: the player's steps, a run, a door, a gasp), **`searcher.gd`** (a copy of her armed in her other
+self's place; heard, she listens 3 to 6 s, comes for the places to hide nearest the noise, opening a shut door on the
+way, and stands at one 2 to 4 s breathing, 1 to 1.5 m from you: the close pass; held breath halves her chance, a light
+on makes it certain; found, you're pulled out and she's in your face, once a search; seen in the open 7 m lit, 3 m
+dark; back to her post; `searches`; `stop()`; the director held back while she's out), `seat.gd`'s `hiding` pose and
+the player's held breath (Space, 8 s, then a gasp). Tutorial v2's §22 *Hiding while she searches*: once the corridor's
+dark she hunts from 308's door; the linen closet's far corner to hide in; one search, then back into 308; the jump
+scare stops her. TUTORIAL2 checks both runs (not found with your breath held; the gasp, found, pulled out).
+
+Still to build in this run (the tasks): **chases** (`chase.gd` for the format's rounds, intensity.md §4: 20 to 40 s,
+her speed 0.9 to 1.0 of your run, a door you shut costs her 2 s and a bang, 6 s out of her sight and she searches
+instead (searcher.gd), always a sure way out, the chase mood, then a hush). Not done for the desk's story format: a
+`cold` word (the export's runtime and Play), nor lightning's, nor hiding's held breath (the format's `hide` use and
+its hide-and-seek rounds have no breath, no close pass and no noises).
 
 Next:
 0. **The user's pick from intensity.md §7** (the first five are small: footsteps in 3D and the behind-you layer, presence signs, the dead stare, the edge figure and closer-each-time, the shadow that isn't yours).

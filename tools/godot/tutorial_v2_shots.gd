@@ -247,6 +247,21 @@ func _initialize() -> void:
 	torch.visible = false                                      # the light under the door alone
 	var fp := ft.global_position
 	await shot("feet", fp + ft.global_basis.z * 1.3 + Vector3(-1.4, 1.55, 0.0), fp + Vector3(0.0, 0.05, 0.0), 60)
+	# hiding: from the linen closet's corner, her in its doorway (the close pass), the dark corridor behind her
+	var hunter := main.get_node("Events/Hunter") as Node3D
+	var he := v3(cfg["hide_eye"])
+	var ha := v3(cfg["hide_app"])
+	var linen := main.get_node("Hotel").find_child("door_door_linen", true, false)
+	if linen != null:
+		linen.set("open", true)                                # she opened it coming in
+	hunter.global_position = Vector3(ha.x, fl, ha.z)
+	var hto := he - hunter.global_position
+	hunter.global_rotation.y = atan2(hto.x, hto.z)             # facing your corner
+	hunter.visible = true
+	hud_on.call(false)
+	await shot("hunt", he, Vector3(ha.x, fl + 1.2, ha.z), 60)
+	hunter.visible = false
+	hud_on.call(true)
 	# the jump scare: her right there by the fire door
 	her.visible = false
 	again.visible = true

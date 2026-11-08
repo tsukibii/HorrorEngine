@@ -6,6 +6,8 @@
 ## (the Story's pocket: pickup.gd) or the fact is set; flag:never, never.
 extends Node3D
 
+const Noises := preload("res://starter/noise.gd")
+
 signal opened
 signal closed
 signal rattled                                  ## tried while it's locked
@@ -65,6 +67,7 @@ func use(_by: Node = null) -> void:
 		if st != null:
 			st.say(unlocked_says)
 	open = not open
+	Noises.make(get_tree(), global_position, Noises.DOOR)   # a door heard (a searcher, noise.gd)
 
 
 func _play(child: String) -> void:

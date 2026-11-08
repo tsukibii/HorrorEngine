@@ -196,6 +196,28 @@ k = (ceil_y - 0.32 - bed_eye[1]) / look_dir[1]
 ceil_head = [bed_eye[i] + k * look_dir[i] for i in range(3)]                          # her head there, a body's thickness under the ceiling: the top right corner of that view
 along = [1.0, 0.0, 0.0]                                                                # from her head to her feet: along the bed toward its foot
 ceil_feet = [ceil_head[i] + along[i] * 1.5 for i in range(3)]
+lin = R["linen"]
+ldoor = B["door_door_linen"]
+ldm = ldoor.get("mid", ldoor["at"])                                     # its doorway's middle (the leaf's, shut)
+inward = [lin["at"][0] - ldm[0], lin["at"][2] - ldm[2]]                 # from the doorway into the closet
+nrm = math.hypot(*inward)
+inward = [inward[0] / nrm, inward[1] / nrm]
+hide_eye = [lin["at"][0] + lin["size"][0] / 2 - 0.3, floor_y + 0.95, lin["at"][2] - lin["size"][2] / 2 + 0.35]   # crouched in the far corner, beside the shelf
+hide_turn = math.degrees(math.atan2(-(ldm[0] - hide_eye[0]), -(ldm[2] - hide_eye[2])))   # facing the doorway
+hide_via = [ldm[0] - inward[0] * 0.55, floor_y, ldm[2] - inward[1] * 0.55]             # in the corridor, in front of its doorway
+hide_app = [ldm[0] + inward[0] * 0.8, floor_y, ldm[2] + inward[1] * 0.8]               # just inside: where she stands to look
+if not 1.0 <= math.hypot(hide_app[0] - hide_eye[0], hide_app[2] - hide_eye[2]) <= 1.5:
+    sys.exit("TUTORIAL2 FAILED: the linen closet's close pass should stand 1 to 1.5 m from where you hide")
+
+
+def local_of(pos, turn_deg, p):
+    """p (a world point) in the frame of a node at pos turned turn_deg about Y (tf's)"""
+    a = math.radians(turn_deg)
+    c, s_ = math.cos(a), math.sin(a)
+    d = [p[i] - pos[i] for i in range(3)]
+    return [c * d[0] - s_ * d[2], d[1], s_ * d[0] + c * d[2]]
+
+
 sg = B["stair_glass"]["at"]                                             # the stairwell's window (its glass's middle)
 land = B["stairs_fx_half_1"]["top"]                                     # the half landing's top
 sill = B["stairs__wall_n1"]["top"]                                      # the wall under the window: up to the sill
@@ -219,6 +241,7 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://starter/dread.gd", "dread"), ("Script", "res://starter/dread_moment.gd", "moment"), ("Script", "res://starter/menace.gd", "menace"),
        ("Script", "res://addons/horrorstudio_look/nodes/lightning_storm.gd", "lightning"),
        ("Script", "res://starter/cue.gd", "cue"), ("Script", "res://starter/seat.gd", "seat"), ("Script", "res://starter/cold_area.gd", "cold"), ("Script", "res://starter/steam_mirror.gd", "steam"),
+       ("Script", "res://starter/searcher.gd", "searcher"),
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
@@ -360,6 +383,10 @@ nd("Bed", "Things", "Node3D", script="seat", props=[f"transform = {tf(bed_eye, -
    f"reach_size = {f3([bed['size'][2], bed_eye[1] - floor_y - 0.3, bed['size'][0]])}", f"reach_at = {f3([0.0, -(bed_eye[1] - floor_y - 0.3) / 2.0, -(bed['size'][0] / 2 - 0.3)])}",
    'say = "The sheets are cold."'])   # its box from 0.3 m up to the eye: over the bed's collider, so E finds it
 nd("Chair", "Things", "Node3D", script="seat", props=[f"transform = {tf(chair_eye, chair_turn)}"])   # 304's desk chair
+nd("Hide", "Things", "Node3D", script="seat", props=[f"transform = {tf(hide_eye, hide_turn)}", 'pose = "hiding"', "reach_size = Vector3(0.6, 1.3, 0.6)",
+   "reach_at = Vector3(0, -0.3, 0)", 'say = "Crouched in the corner. Space holds your breath."'])   # the linen closet's far corner, facing its doorway
+nd("Approach", "Things/Hide", "Marker3D", props=[f"transform = {tf(local_of(hide_eye, hide_turn, hide_app))}"])   # where she stands to look: 1 to 1.5 m from you
+nd("Via", "Things/Hide", "Marker3D", props=[f"transform = {tf(local_of(hide_eye, hide_turn, hide_via))}"])        # the corridor in front of its doorway
 # her, and her again at the fire exit (the jump scare)
 
 
@@ -434,6 +461,10 @@ nd("ColdSpot", "Events", "Area3D", script="cold", props=[f"transform = {tf([corr
    'panes = [NodePath("../../Weather/Pane")]'], paths=["panes"])   # the metre by the end window: freezing (your breath, the glass frosting)
 nd("Shape", "Events/ColdSpot", "CollisionShape3D", props=['shape = SubResource("coldbox")'])
 nd("Feet308", "Events", "Node3D", script="feet", props=[f"transform = {tf(feet_at)}", f'door = NodePath("../../Hotel/{P["door_door_308"]}")'], paths=["door"])   # someone behind 308's door
+person("Hunter", her_at, her_turn, False, parent="Events")              # her post: 308's door, where she goes back to
+nd("Searcher", "Events/Hunter", "Node", script="searcher", props=['replaces = NodePath("../../../Her")', 'hiding_places = [NodePath("../../../Things/Hide")]',
+   "searches = 1", 'heard_says = "She heard that."'], paths=["replaces", "hiding_places"])   # once the corridor's dark: one search by ear, then back into 308
+nd("Presence", "Events/Hunter", "Node", script="presence", props=['static_on = NodePath("../../../Things/Radio")'], paths=["static_on"])   # the radio and your flashlight as she comes
 # the player, its flashlight on a battery that's seen better days
 nd("Player", ".", inst="player", props=[f"transform = {tf(start['at'], start['turn'])}"])
 nd("Flashlight", "Player/Eye", props=["battery = 90.0", "charge = 0.5", "low_at = 0.3", 'low_says = "The flashlight is dying."',
@@ -461,6 +492,8 @@ lines += ['[connection signal="picked" from="Things/Key" to="Events/LightsDie" m
           '[connection signal="gone" from="Events/MirrorHer" to="Events/ShadowPass" method="arm"]',
           '[connection signal="gone" from="Events/MirrorHer" to="Events/MirrorSteam" method="arm"]',
           '[connection signal="scared" from="Events/LightsOut" to="Events/Feet308" method="arm"]',
+          '[connection signal="scared" from="Events/LightsOut" to="Events/Hunter/Searcher" method="arm"]',
+          '[connection signal="scared" from="Events/Jump" to="Events/Hunter/Searcher" method="stop"]',
           f'[connection signal="opened" from="Hotel/{P["door_corridor_e_door"]}" to="Story" method="end"]', "", '[editable path="Hotel"]', '[editable path="Player"]', ""]
 (proj / "main.tscn").write_text("\n".join(lines), encoding="utf-8")
 pg = (proj / "project.godot").read_text(encoding="utf-8")
@@ -469,7 +502,7 @@ if "run/main_scene" not in pg:
     (proj / "project.godot").write_text(pg, encoding="utf-8")
 (proj / "tutorial.json").write_text(json.dumps({"who": who, "start": start, "her": her_at, "again": again_at, "note": note_at, "key": key_at, "batteries": bat_at,
                                                 "door304": d304, "fire": fire, "jump": jump, "floor": floor_y, "radio": radio_at, "glimpse": glimpse_at,
-                                                "closer": {n: a for n, a in closer_marks}, "bed_eye": bed_eye, "chair_eye": chair_eye, "ceiling_head": ceil_head, "mirror_her": mirror_her_at, "lamp304": [lamp[0], lamp_y, lamp[2]], "rooms": R, "lights": L, "paths": P, "boxes": B}, indent=1), encoding="utf-8")
+                                                "closer": {n: a for n, a in closer_marks}, "bed_eye": bed_eye, "chair_eye": chair_eye, "hide_eye": hide_eye, "hide_via": hide_via, "hide_app": hide_app, "ceiling_head": ceil_head, "mirror_her": mirror_her_at, "lamp304": [lamp[0], lamp_y, lamp[2]], "rooms": R, "lights": L, "paths": P, "boxes": B}, indent=1), encoding="utf-8")
 for f in ["tutorial_v2_test.gd", "tutorial_v2_shots.gd"]:
     shutil.copy(ROOT / "tools/godot" / f, proj / f)
 

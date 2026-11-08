@@ -1,8 +1,9 @@
-## A place to sit or lie down (guides/tutorial_v2: 304's desk chair and its bed). Put it on a Node3D where your eye goes
+## A place to sit, lie down or hide (guides/tutorial_v2: 304's desk chair and its bed, the linen closet's corner). Put it on a Node3D where your eye goes
 ## when you're there, its -Z the way you face (a chair: toward the desk; a bed: toward its foot, `look_up_deg` tilting
 ## you up to the ceiling). E on it (an invisible box `reach_size` at `reach_at` from it, in its own turn, made when the
 ## game runs: over the chair's back, over the mattress) sits you there or lays you down; E again, or a step, gets you up
-## where you stood. While you're there the player's doing() says sitting or lying, which a cue (cue.gd) asks. The box
+## where you stood. While you're there the player's doing() says sitting, lying or hiding, which a cue (cue.gd) asks;
+## a searcher (searcher.gd) checks a place to hide from its Approach (and Via) Marker3D children. The box
 ## is on collision layer 2, the seats': the player's aim looks there, but your body walks, the sound travels and sight
 ## passes through it, so lying in the bed doesn't muffle the room round you.
 extends Node3D
@@ -12,13 +13,14 @@ const LAYER := 2                                  ## collision layer 2 (its bit)
 signal sat(by: Node)                              ## sat down or lay down
 signal left(by: Node)                             ## up again
 
-@export_enum("sitting", "lying") var pose := "sitting"
+@export_enum("sitting", "lying", "hiding") var pose := "sitting"
 @export_range(-30.0, 85.0) var look_up_deg := 0.0    ## the eye tilted up as you settle (lying on your back: 70)
 @export var reach_size := Vector3(0.55, 0.9, 0.55)   ## the box E finds it by (a chair's: from the floor to over its back)
 @export var reach_at := Vector3(0, -0.7, 0)           ## the box's middle, from here (a chair's eye is 1.2 m up)
 @export var say := ""                                ## a line as you settle
 
 var by: Node = null                               ## who's there
+var uses := 0                                     ## times someone's been here (a searcher checks one used three times first)
 
 
 func _ready() -> void:
@@ -45,6 +47,7 @@ func use(p: Node = null) -> void:
 		leave()
 		return
 	by = p
+	uses += 1
 	p.settle(self)
 	if say != "":
 		var st := get_tree().get_first_node_in_group("hs_story")

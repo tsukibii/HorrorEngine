@@ -50,7 +50,13 @@ func _initialize() -> void:
 	for d in h.find_children("door_*", "", true, false):
 		if str(d.get_parent().name) == "doors":
 			out["paths"][str(d.name)] = str(h.get_path_to(d))
-			out["boxes"][str(d.name)] = {"at": _v((d as Node3D).global_position)}
+			var leaf := AABB()
+			var some := false
+			for mi in d.find_children("*", "MeshInstance3D", true, false):
+				var ab: AABB = mi.global_transform * mi.get_aabb()
+				leaf = ab if not some else leaf.merge(ab)
+				some = true
+			out["boxes"][str(d.name)] = {"at": _v((d as Node3D).global_position), "mid": _v(leaf.get_center()) if some else _v((d as Node3D).global_position)}
 	var f := FileAccess.open("res://hotel.json", FileAccess.WRITE)
 	f.store_string(JSON.stringify(out, "  "))
 	f.close()

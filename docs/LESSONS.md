@@ -2082,3 +2082,9 @@ pale one shows.
   last frame, so the check's jump was a step, she copied it, and she started the later walk one step nearer the 2.5 m
   she stops at. The light was blamed first, wrongly: turning it off changed nothing. A check that moves the player
   while something listens to its steps clears the last position (`_was`), as settle() and rise() do.
+- **A script constant can't take a native class's name**: the starter's preload of noise.gd as `const Noise` failed to
+  parse in every script that held it, because Godot has a class `Noise` (FastNoiseLite's base). It's `Noises`. Name a
+  preload after what it is, not the obvious word, and parse each new script (`--check-only -s`) before a long run.
+- **A state that leads back to its own trigger loops**: in the hunt's check she found you 30 times in a row, because
+  finding you pulled you out into the open in front of her, she turned to go, saw you, and found you again. A
+  reaction that puts the player where its own trigger fires needs a once: a search finds you at most once now.

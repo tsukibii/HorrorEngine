@@ -221,6 +221,9 @@ push it higher. The weakest evidence is for infrasound.
     the one or two nearest hiding places (25 to 45 s in all); a **close pass**, stopped 1 to 1.5 m from you for 2 to 4 s,
     breathing, then leaving so you hear her go; holding your breath halves the chance she finds you; a hiding place
     used three times is the first she checks. Effort M.
+    *Built for games made by hand (2026-11-08, night): the starter's `searcher.gd` and `noise.gd` as above, a shut
+    door on her way opened, found once a search (pulled out, in your face), seen in the open 7 m with your light on
+    and 3 m without, then back to her post; tutorial v2's linen closet (§22). Chases next.*
 - **Chases.** Outlast 2 kept its chases "just the right length"; no designer gives seconds (Phasmophobia's 15 to 60 s
   hunts the nearest anchor, weak). `chase.gd` for the format's rounds: 20 to 40 s; her speed 0.9 to 1.0 of your run; a
   door you shut costs her 2 s and a bang; 6 s out of her sight and she searches instead; always a sure way out (a lit
@@ -378,7 +381,8 @@ breath near her waits for the cold), 4 (`glimpse.gd`, `closer.gd`), 6 (Woohill's
 mimicry; the pupils' answer to the beam waits, for there's no pupil reflex for the living to differ from yet), 9
 (`dread.gd`, `dread_moment.gd`, `menace.gd`; the night's set and its memory across runs not yet: the starter has no
 saves), §4's everyday moments for a hotel, and 10's lightning (the Look plugin's `HSLightning`, within the limits
-above). Not yet for the desk's export: no story words.
+above), and 7 and 10's searches (`noise.gd`, `searcher.gd`, `seat.gd`'s hiding pose and the player's held breath:
+tutorial v2's linen closet). Not yet for the desk's export: no story words.
 
 1. **Footsteps in 3D, and the behind-you layer** (S). The player's steps by floor at the feet (the by-hand player has
    none), then the phantom steps copying them 0.3 s late, one step too many, a door shutting out of sight.

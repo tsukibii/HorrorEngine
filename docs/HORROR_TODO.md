@@ -224,6 +224,12 @@ The street builder's motel takes its plates and its sign by the rooms' numbers.
 
 **Checks:** TESTROOM and GDTESTROOM (station 12's hiding gets the two kinds), PLAY.
 
+**Built for games made by hand** (2026-11-08, night): the starter's `seat.gd` with the pose `hiding` (crouched in a
+corner, E there and back up) and `searcher.gd` (she hears your noises, `noise.gd`, and checks the places to hide
+nearest them from each one's `Approach`, through its `Via`; the close pass; held breath, Space, halving her chance;
+a gasp past 8 s; pulled out when found); tutorial v2's linen closet. Not yet the story format's: its `hide` and
+`locker` have no breath, no close pass and no noises, and the `under` and `curtain` kinds above are still to build.
+
 ## 6. The door tried from outside, its chain, something slid under it (small)
 
 **Now:** a `door` locks, unlocks, opens, closes and slams; there's `knock`, the latch and the peephole. A note can be

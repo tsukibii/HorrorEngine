@@ -129,7 +129,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   that dim and come back or go out one by one, a flashlight on batteries, a character who backs off from the light, and
   a jump scare with the hush before it; every sound with its room in it (Woohill's sound physics: the stairwell rings,
   a knock behind a door is muffled), footsteps, your body under fear (a heartbeat, breathing, the world going dull,
-  the beam shaking) and steps behind you.</li>
+  the beam shaking), steps behind you, and her hunting by ear once it's dark (a corner to hide in, your breath held).</li>
 </ul>
 <p>Every picture here is that game, drawn by Godot or the scene builder. <code>python tools/godot/tutorial_v2.py --keep ~/Games/Room304_done</code>
 builds it exactly as these steps do, so you can open the finished one beside yours. It goes in a folder of its own,
@@ -725,6 +725,35 @@ you're within 8 m of her and faster while you can see her, and drains when you'r
 a minute and she withdraws: gone for a minute or two, while the director relaxes, then she's back where she was.
 Alien: Isolation's alien does this, and its designers said why: "As soon as the player can predict a pattern in the
 Alien, it stops being scary." Her presence can't be stared down, and she can't be counted on.</p>
+
+<h3 id="hunted">Hiding while she searches</h3>
+<p>Once the corridor's dark she hunts by ear. First somewhere to hide: a <span class="node">Node3D</span> called
+<code>Hide</code> under <code>Things</code> with <code>starter/seat.gd</code>, <b>Pose</b> <i>hiding</i>, in the linen
+closet's far corner beside the shelf, 0.95 m up (crouched), its −Z toward the doorway; <b>Reach Size</b> 0.6 × 1.3 ×
+0.6, <b>Reach At</b> (0, −0.3, 0), <b>Say</b> "Crouched in the corner. Space holds your breath." Give it two
+<span class="node">Marker3D</span> children: <code>Approach</code> just inside the doorway, where she'll stand to look
+(1 to 1.5 m from your eye), and <code>Via</code> in the corridor in front of the doorway.</p>
+<p>Then one more copy of her under <code>Events</code>, called <code>Hunter</code>, on her spot by 308's door: her
+post, where she goes back to. Give it a <span class="node">Node</span> <code>Searcher</code> with
+<code>starter/searcher.gd</code>: <b>Replaces</b> <code>Her</code>, <b>Hiding Places</b> <code>Things/Hide</code>,
+<b>Searches</b> 1, <b>Heard Says</b> "She heard that." Give it a <code>Presence</code> too, its <b>Static On</b> the
+radio: the static and your flashlight tell you she's coming. Connect <code>LightsOut</code>'s <b>scared</b> to the
+Searcher's <code>arm</code>, and <code>Jump</code>'s <b>scared</b> to its <code>stop</code> (one of her at a time).</p>
+<p>When the corridor goes dark she takes the first one's place and listens. Your steps carry about 4 m, a run 12, a
+door 6 and a gasp 11 (<code>starter/noise.gd</code>'s loudness times her <b>Hear M</b>, 12; anything of yours can
+make one with <code>Noises.make(get_tree(), where, how_loud)</code>). Heard, she stops and listens 3 to 6 seconds,
+turned toward it, then walks to the hiding places nearest where she heard you (within 6 m), opening a shut door on her
+way, and stands in the doorway 2 to 4 seconds, breathing: the close pass. Hold your breath (Space) and her chance of
+finding you halves (<b>Held Factor</b> 0.5); with your flashlight on she finds you for sure. Hold it more than 8
+seconds and you gasp, and she hears that too. Found, she pulls you out and is in your face for a moment. Either way she
+walks back to 308's door, her steps going away, and after one search she's gone back in. Out in the open while she's
+looking she sees you 7 m off with your light on, 3 m with it off.</p>
+<p>Alien: Isolation gave its players the held breath, Outlast the being pulled out, Resident Evil 2's Mr. X footsteps
+that tell how far he is. Their pitfalls were searches you can't survive and long waits in a wardrobe, so here she
+searches once and being found is a fright, not a death (wire <code>found</code> to an ending if you want it to be).
+While she's out the night's director keeps its moments back, and the Fear node feels her in the doorway. A place to
+hide used three times is the first she checks: give a level two or three.</p>
+<figure><img src="img/hunt.jpg" width="1600" height="900" alt="From the linen closet's corner: her standing in its doorway"><figcaption>From the corner: her in the linen closet's doorway, the dark corridor behind her.</figcaption></figure>
 
 <h3 id="lightning">Lightning</h3>
 <p>Add the Look plugin's <span class="node">HSLightningStorm</span> to <code>Weather</code> (or drop in

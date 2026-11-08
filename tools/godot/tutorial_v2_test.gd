@@ -12,7 +12,8 @@
 ## you look away (out of 304's bath, then behind you), her in the bath's mirror only (in the tub behind you, nobody when
 ## you turn round), a shadow that isn't yours (crossing 304's wall, the lamp behind you), feet under 308's door once the
 ## corridor's dark, her signs (the tubes by her and your flashlight dipping, the radio's static), her menace sending her
-## away a while, and the night's director (its moments, never in the stairwell or under a card, its peak and relax). Prints `TUTORIAL <what> <how>` lines and `TUTORIAL result {errors}`, quits.
+## away a while, being hunted once the corridor's dark (heard running, she comes for the linen closet's corner and stands
+## in its doorway, your breath held; your gasp brings her back and she pulls you out), and the night's director (its moments, never in the stairwell or under a card, its peak and relax). Prints `TUTORIAL <what> <how>` lines and `TUTORIAL result {errors}`, quits.
 extends SceneTree
 
 const Lights := preload("res://starter/lights.gd")
@@ -129,7 +130,7 @@ func _watchdog() -> void:
 
 
 func _initialize() -> void:
-	create_timer(480.0).timeout.connect(_watchdog)
+	create_timer(720.0).timeout.connect(_watchdog)
 	cfg = JSON.parse_string(FileAccess.get_file_as_string("res://tutorial.json"))
 	var ms := load("res://main.tscn") as PackedScene
 	if ms == null:
@@ -861,6 +862,114 @@ func _initialize() -> void:
 	say("fog", "rolled in to %.2f with the dark (LightsOut's fog 0.55), the environment's density %.4f" % [rolled, HSAir.environment_of(air).volumetric_fog_density])
 	if absf(rolled - 0.55) > 0.02:
 		bad("the fog didn't roll in when the corridor went dark (scare_area.gd fog: %.2f)" % rolled)
+	# being hunted (searcher.gd, armed when the corridor went dark): heard running, she listens, comes for the linen
+	# closet's corner and stands in its doorway; your breath held, she doesn't find you. Then you hold it too long: the
+	# gasp brings her, and this time she pulls you out
+	var hunter: Node3D = main.get_node("Events/Hunter")
+	var srch: Node = hunter.get_node("Searcher")
+	var hide: Node3D = main.get_node("Things/Hide")
+	var post := v3(cfg["her"])
+	var took := hunter.global_position.distance_to(her.global_position)
+	say("hunted", "armed when the corridor went dark %s, she where the first one stood (%.2f m off), that one hidden %s" % [srch.armed, took, not her.visible])
+	if not srch.armed or not hunter.visible or her.visible or took > 0.05:
+		bad("the hunt (searcher.gd) should start when the corridor goes dark, she in the first one's place and it hidden: armed %s, shown %s, the first one shown %s, %.2f m" % [
+			srch.armed, hunter.visible, her.visible, took])
+	srch.find_chance = 1.0                                   # (the check's: found for sure, but never while you hold your breath)
+	srch.held_factor = 0.0
+	if torch.visible:
+		torch.toggle()                                       # your light off: she'd find you for sure with it on
+	var heard_t := [-1.0]
+	var clock := [0.0]
+	var over := [0]
+	var found_n := [0]
+	var out_moments := [0]
+	srch.heard_you.connect(func(_at: Vector3) -> void: heard_t[0] = clock[0])
+	srch.search_over.connect(func() -> void: over[0] += 1)
+	srch.found.connect(func() -> void: found_n[0] += 1)
+	dread.moment.connect(func(_nm: String) -> void:
+		if srch.state != "idle" and srch.state != "gone":
+			out_moments[0] += 1)
+	var via := v3(cfg["hide_via"])
+	stand(Vector3(via.x + 2.8, fl + 0.02, cz), Vector3(via.x - 3.0, fl + 1.6, cz))
+	await frames(2)
+	player.set("_was", Vector3.INF)                          # (a teleport is a step to the player)
+	key(KEY_SHIFT, true)
+	key(KEY_W, true)
+	await secs(0.8)                                          # running past the linen closet: heard 12 m off
+	key(KEY_W, false)
+	key(KEY_SHIFT, false)
+	await frames(2)
+	var listening: bool = srch.state == "listening"
+	var eye_hide := v3(cfg["hide_eye"])
+	var hid := await use_at(eye_hide + (via - eye_hide).normalized() * 0.55 * Vector3(1, 0, 1) + Vector3(0, fl + 0.02 - eye_hide.y, 0), eye_hide + Vector3(0, -0.3, 0))
+	var hiding: bool = hid == hide and player.doing() == "hiding"
+	var listened := -1.0
+	var pass_t := 0.0
+	var pass_d := 9.0
+	var hunt_fear := 0.0
+	var held_all := true
+	var she_left := false
+	for i in 60 * 45:
+		await frames(1)
+		clock[0] += 1.0 / 60.0
+		if listened < 0.0 and srch.state != "listening" and heard_t[0] >= 0.0:
+			listened = clock[0] - heard_t[0]
+		if srch.state == "passing":
+			key(KEY_SPACE, true)                             # her in the doorway: your breath held
+			pass_t += 1.0 / 60.0
+			var eye_at := (player.get_node("Eye") as Node3D).global_position
+			pass_d = minf(pass_d, Vector2(hunter.global_position.x - eye_at.x, hunter.global_position.z - eye_at.z).length())
+			hunt_fear = maxf(hunt_fear, float(main.get_node("Fear").level))
+			if pass_t > 0.1:
+				held_all = held_all and bool(player.holding)   # (from the frame after Space went down)
+		elif srch.state == "leaving":
+			key(KEY_SPACE, false)
+			she_left = true
+		if over[0] > 0:
+			break
+	key(KEY_SPACE, false)
+	var back_m := Vector2(hunter.global_position.x - post.x, hunter.global_position.z - post.z).length()
+	say("the close pass", "heard you running %s, you hiding in the linen closet's corner %s; she listened %.1f s, stood in its doorway %.1f s %.2f m from you (your fear to %.2f), your breath held %s; found %d; she went %s, %d steps, back at 308's door %.2f m, gone for good %s; the director's moments while she was out %d" % [
+		listening, hiding, listened, pass_t, pass_d, hunt_fear, held_all, found_n[0], she_left, int(srch.steps), back_m, srch.state == "gone" and not hunter.visible, out_moments[0]])
+	if not listening or not hiding or listened < 2.9 or listened > 6.2 or pass_t < 1.9 or pass_t > 4.2 or pass_d < 1.0 or pass_d > 1.6 or not held_all or found_n[0] != 0 \
+			or not she_left or int(srch.steps) < 15 or back_m > 0.1 or srch.state != "gone" or hunter.visible or out_moments[0] != 0:
+		bad("the search (searcher.gd): heard %s, hiding %s, listened %.1f s (3 to 6), the pass %.1f s (2 to 4) at %.2f m (1 to 1.5), held %s, found %d (0), went %s, %d steps, back %.2f m, gone %s, moments %d" % [
+			listening, hiding, listened, pass_t, pass_d, held_all, found_n[0], she_left, int(srch.steps), back_m, srch.state, out_moments[0]])
+	# the gasp: she's back hunting (the check's: armed again), you hold your breath too long, she hears it and comes
+	srch.searches_done = 0
+	srch.arm()
+	var gasps := [0]
+	player.gasped.connect(func() -> void: gasps[0] += 1)
+	heard_t[0] = -1.0
+	key(KEY_SPACE, true)
+	var near_her := 9.0
+	var faced := -1.0
+	var pulled := false
+	var fear_at := 0.0
+	var fear_before := 0.0
+	for i in 60 * 50:
+		await frames(1)
+		clock[0] += 1.0 / 60.0
+		if gasps[0] > 0:
+			key(KEY_SPACE, false)
+		if found_n[0] == 0:
+			fear_before = float(main.get_node("Fear").level)
+		elif faced < 0.0:
+			var eye_n := player.get_node("Eye") as Node3D
+			var to_her := hunter.global_position + Vector3.UP * 1.45 - eye_n.global_position
+			near_her = Vector2(to_her.x, to_her.z).length()
+			faced = (-eye_n.global_basis.z).dot(to_her.normalized())
+			pulled = player.seat == null and player.doing() != "hiding"
+			fear_at = float(main.get_node("Fear").level)
+		if over[0] > 1:
+			break
+	key(KEY_SPACE, false)
+	say("found", "held your breath too long: gasped %d, she heard it %s and came; found %d, pulled out %s, in your face %.2f m off, turned to her %.2f, your fear %.2f to %.2f; she went back, gone %s" % [
+		gasps[0], heard_t[0] >= 0.0, found_n[0], pulled, near_her, faced, fear_before, fear_at, srch.state == "gone" and not hunter.visible])
+	if gasps[0] != 1 or heard_t[0] < 0.0 or found_n[0] != 1 or not pulled or near_her > 0.6 or faced < 0.9 or fear_at < minf(1.0, fear_before + 0.1) or over[0] != 2 or srch.state != "gone" or hunter.visible:
+		bad("found (searcher.gd): gasped %d, heard %s, found %d, pulled out %s, %.2f m off, turned %.2f, fear %.2f to %.2f, over %d, gone %s" % [
+			gasps[0], heard_t[0] >= 0.0, found_n[0], pulled, near_her, faced, fear_before, fear_at, over[0], srch.state])
+	torch.toggle()                                           # your light again
 	# feet under 308's door (door_feet.gd, armed when the corridor went dark): the light under it, someone standing behind it
 	var ft: Node3D = main.get_node("Events/Feet308")
 	var came := [0]

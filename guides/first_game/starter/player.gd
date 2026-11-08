@@ -7,14 +7,18 @@
 ## walked (footsteps.gd), the floor's own off the sound shelf through the Sound node (sound.gd step(): carpet, concrete,
 ## wood, wet), traced through the room like every sound. A seat (seat.gd) sits you down or lays you down: the eye at
 ## the seat, the body resting on what's under it; E or a step gets you up where you stood. doing() says what you're
-## doing (standing, walking, running, sitting, lying), which a cue (cue.gd) asks.
+## doing (standing, walking, running, sitting, lying, hiding), which a cue (cue.gd) asks. Space holds your breath (the
+## Fear node's breathing stops) for up to `breath_secs`; past it you gasp, loud. Your steps (louder running), a gasp
+## and the doors you use are noises a searcher (searcher.gd) hears (noise.gd).
 extends CharacterBody3D
 
 const Footsteps := preload("res://starter/footsteps.gd")
+const Noises := preload("res://starter/noise.gd")
 
 signal stepped(at: Vector3, run: bool)  ## each footstep (behind_you.gd answers them)
 signal sat(seat: Node)                  ## sat down or lay down (seat.gd)
 signal stood                            ## up again
+signal gasped                           ## you held your breath too long
 
 @export var walk_speed := 1.6          ## metres a second
 @export var run_speed := 3.2
@@ -22,11 +26,16 @@ signal stood                            ## up again
 @export var reach := 2.0               ## how far E reaches
 @export var gravity := 9.8
 @export var step_height := 0.5         ## the highest step it walks up
+@export var breath_secs := 8.0         ## how long you can hold your breath (Space)
+@export var gasp_sound := "breath_02"  ## off the shelf: the gasp when you can't any longer
 
 var pitch := 0.0
 var steps := Footsteps.new()
 var steps_heard := 0                    ## footsteps played (a check's)
-var pose := "standing"                  ## standing, sitting or lying (a seat's)
+var pose := "standing"                  ## standing, sitting, lying or hiding (a seat's)
+var holding := false                    ## holding your breath now (Space)
+var breath_left := 8.0
+var _gasp_wait := 0.0
 var seat: Node3D = null                 ## the seat you're on
 var _was := Vector3.INF
 var _stood := Transform3D()             # where you stood before you sat
@@ -45,6 +54,7 @@ func _ready() -> void:
 	aim.collision_mask |= 2                  # and layer 2: the seats (seat.gd), which only E finds
 	eye.cull_mask &= ~(1 << 18)              # layer 19: what's only in mirrors (the Look plugin's HSMirror.MIRROR_ONLY) is never seen straight
 	_eye_y = eye.position.y
+	breath_left = breath_secs
 
 
 func _unhandled_input(e: InputEvent) -> void:
@@ -84,7 +94,37 @@ func ended() -> bool:
 	return st != null and bool(st.get("over"))
 
 
-## what you're doing now: sitting or lying while on a seat, else running, walking or standing by how fast you go
+## your breath: held while Space is down (the Fear node's breathing stops), up to breath_secs; then a gasp, loud, and
+## a few seconds before you can again
+func _process(dt: float) -> void:
+	var want := Input.is_physical_key_pressed(KEY_SPACE) and _gasp_wait <= 0.0 and not ended()
+	var fear := get_tree().get_first_node_in_group("hs_fear")
+	if want and not holding:
+		holding = true
+		if fear != null:
+			fear.hold_breath(true)
+	elif holding and not want:
+		holding = false
+		if fear != null:
+			fear.hold_breath(false)
+	if holding:
+		breath_left -= dt
+		if breath_left <= 0.0:
+			holding = false
+			_gasp_wait = 3.0
+			if fear != null:
+				fear.hold_breath(false)
+			var snd := get_tree().get_first_node_in_group("hs_sound")
+			if snd != null and snd.has_method("play"):
+				snd.play(gasp_sound, Vector3.INF, 0.0, "foley")
+			Noises.make(get_tree(), eye.global_position, Noises.GASP)
+			gasped.emit()
+	else:
+		breath_left = minf(breath_secs, breath_left + dt * 1.5)
+		_gasp_wait = maxf(0.0, _gasp_wait - dt)
+
+
+## what you're doing now: sitting, lying or hiding while on a seat, else running, walking or standing by how fast you go
 func doing() -> String:
 	if seat != null:
 		return pose
@@ -190,6 +230,7 @@ func _footsteps(dt: float, run: bool) -> void:
 		if snd != null and snd.has_method("step"):
 			snd.step(at, run)
 			steps_heard += 1
+		Noises.make(get_tree(), at, Noises.RUN if run else Noises.STEP)
 		stepped.emit(at, run)
 
 

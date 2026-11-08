@@ -11,8 +11,8 @@
 ##   anywhere, or out of view (behind you, off the frame, or with something in the way when `line_of_sight` is on);
 ## - **what the story says**: `needs`, the Story's words (on:x while task x is on your list and not done yet: you're on
 ##   that quest; task:x once it's done; item:x carried; a fact; ! for not; several apart by commas);
-## - **what you're doing**: `doing` standing, walking, running, still, moving, sitting, lying (in bed) or seated (either:
-##   seat.gd puts you there); `flashlight` on or off;
+## - **what you're doing**: `doing` standing, walking, running, still, moving, sitting, lying (in bed), hiding, or
+##   seated (any of the three: seat.gd puts you there); `flashlight` on or off;
 ## - **how near**: `near_m` to `far_m` from your eye to the spot;
 ## - **for how long**: `after_secs` all of it so first; then `chance`, rolled once a second while it stays so.
 ## Never under a note's card, nor after the ending.
@@ -43,7 +43,7 @@ signal ended                                      ## over: what appeared is gone
 @export var line_of_sight := true                 ## seen only with nothing in the way (else it's out of view)
 @export_group("What must be so")
 @export var needs := ""                           ## on:x (task x on your list, not done), task:x (done), item:x, a fact; ! for not
-@export_enum("any", "standing", "walking", "running", "still", "moving", "sitting", "lying", "seated") var doing := "any"
+@export_enum("any", "standing", "walking", "running", "still", "moving", "sitting", "lying", "seated", "hiding") var doing := "any"
 @export_enum("any", "on", "off") var flashlight := "any"
 @export var near_m := 0.0                         ## from your eye to the spot
 @export var far_m := 100.0
@@ -140,7 +140,7 @@ func doing_now(pl: Node) -> bool:
 	match doing:
 		"still": return now == "standing" or now == "sitting" or now == "lying"
 		"moving": return now == "walking" or now == "running"
-		"seated": return now == "sitting" or now == "lying"
+		"seated": return now == "sitting" or now == "lying" or now == "hiding"
 	return now == doing
 
 
