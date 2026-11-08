@@ -2062,3 +2062,18 @@ pale one shows.
 - **Steps walked in a check are heard**: the check's walk in 304 had her copying the steps from the corridor (uncanny.gd's
   mimic), and the time there filled her menace gauge, so her own checks later started 2 m nearer. A part checked in the
   middle of a playthrough goes where nothing else is listening: before she's out.
+- **Breath is light scattered, not a cloud painted on**: the first breath, puff.gdshader's look lit by the scene, showed
+  as a bluish ball in the dark (the ambient lit it) and darkened what was behind it when unlit (mixed, not added).
+  Breath scatters light and hides nothing: lit by direct lights only and added, the dark hides it and a beam shows it.
+  And a flashlight's beam starts at the hand, 18 cm right and 20 cm down: breath 15 cm ahead of the mouth is outside
+  it until it's carried 60 cm out. Before tuning a look, check the thing is where the light is (print its place
+  against the light's cone), and measure it against a background that can show it (white added to white is nothing).
+- **A flashlight's cookie is part of its light**: in the hotel the breath hardly showed in the beam that lit it in the
+  demo, because the game's flashlight wears a cookie (a hot core, a ring, a dim spill) and breath carried a metre out
+  sits 15 to 20° off the beam's axis, in the spill. The demo's spot had none. Measure an effect with the light the
+  game gives it. Breath also reads best backlit (droplets scatter forward), so its shader has a forward lobe of its
+  own and the guide's picture faces the street lamp.
+- **A spot light's projector needs its shadow setup**: the cold stage's flashlight wore the game's cookie (HSBeam's
+  projector) and went almost black, breath and frost with it, until its shadows were turned on as the starter's
+  flashlight has them. Godot projects a spot's cookie through the light's shadow matrix. A light given a projector in
+  code gets `shadow_enabled` with it.

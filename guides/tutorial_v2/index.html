@@ -721,6 +721,21 @@ apart, too many, so here a strike is one flash, its flickers riding on a glow th
 none counts as a flash of its own), then at least a second of dark before the next. Give your players a <b>Reduce</b>
 setting (0 to 1: how bright the flash is) and turn it down for them when they ask.</p>
 <figure><img src="img/lightning.jpg" width="1600" height="900" alt="The corridor in the lightning's flash, a figure against the end window"><figcaption>The first flash: someone by the end window. The second: nobody.</figcaption></figure>
+
+<h3 id="cold">The cold</h3>
+<p>Where she stood in the flash, it's freezing. Add an <span class="node">Area3D</span> <code>ColdSpot</code> to
+<code>Events</code> with <code>starter/cold_area.gd</code> and its own <span class="node">CollisionShape3D</span>: a box
+1 × 2.5 × 1.9 m filling the metre in front of the end window. Add <code>Weather/Pane</code> (the end window's
+<span class="node">HSWindowPane</span>) to its <b>Panes</b>. The rest as it is: <b>Frost</b> 0.8 in <b>Frost Seconds</b> 8,
+<b>Thaw Seconds</b> 30, <b>Breath After</b> 1.</p>
+<p>Walk up to the window and your breath shows: a puff every few seconds, out in front of you. The window frosts up
+from its bottom edge while you watch, and through the frost the street lamp is a blur. Walk away and the breath stops;
+the frost goes slowly. Your breath is the Look plugin's <span class="node">HSBreath</span>, made at your eye the first
+time. It's seen only where a light reaches it: in the dark it isn't there at all, your flashlight catches it softly
+where it crosses the beam, from about 60 cm out, and a lamp behind it lights it up (water droplets throw light
+forward). Breath shows below about 7 °C. Keep it for one place, or it reads as weather.</p>
+<figure><img src="img/cold.jpg" width="1600" height="900" alt="The end window frosted up from the bottom in the flashlight's beam"><figcaption>At the end window, the corridor dark: the glass frosting up from its bottom edge.</figcaption></figure>
+<figure><img src="img/breath.jpg" width="1600" height="900" alt="Breath crossing the flashlight's beam in the dark corridor"><figcaption>Your breath there, crossing the beam. Against the beam's own spot on a near wall you'd hardly see it: it shows against the dark.</figcaption></figure>
 </section>
 
 <section id="cues">

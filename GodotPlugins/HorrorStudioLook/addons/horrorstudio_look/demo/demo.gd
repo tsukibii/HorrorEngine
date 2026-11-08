@@ -64,8 +64,13 @@ var crt_mat: ShaderMaterial = null
 var crt_lamp: OmniLight3D = null
 var crt_means: Array = []
 var crt_rect := Rect2i()
+var cold_breath: HSBreath = null         # the cold stage: a breath in a flashlight's beam and in the dark; a pane frosting over
+var cold_spot: SpotLight3D = null
+var cold_pane: MeshInstance3D = null
+var cold_imgs := {}
+var cold_back: OmniLight3D = null
 
-const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "lightning", "iris", "leak", "hair", "grade", "crt"]
+const STAGES := ["plain", "realism", "wet", "blood_rain", "mirror", "skin", "soften_off", "soften", "pattern", "shaft", "sweep", "lightning", "iris", "leak", "hair", "grade", "crt", "cold"]
 
 
 func _initialize() -> void:
@@ -393,6 +398,41 @@ func _process(_d: float) -> bool:
 			crt_view(35.0, 0.45)                                 # the set and its snow, close
 		if n < 150:
 			return false
+	if STAGES[stage] == "cold" and cold_breath != null:
+		if n == 20:
+			cold_imgs["none_lit"] = root.get_texture().get_image()      # no breath yet, the flashlight on
+			cold_breath.exhale()
+		if n == 68:
+			cold_imgs["breath_lit"] = root.get_texture().get_image()    # 0.8 s into a breath, out in the beam
+			cold_imgs["breath_lit"].save_png(out_dir.path_join("cold_breath_lit.png"))
+			cold_spot.visible = false
+		if n == 170:
+			cold_imgs["none_dark"] = root.get_texture().get_image()     # its puffs gone, the flashlight off
+			cold_breath.exhale()
+		if n == 218:
+			cold_imgs["breath_dark"] = root.get_texture().get_image()   # a breath in the dark: nothing to light it
+			cold_imgs["breath_dark"].save_png(out_dir.path_join("cold_breath_dark.png"))
+			cold_back = OmniLight3D.new()                              # a lamp behind the breath (as a street lamp outside the window it's breathed at)
+			cold_back.light_energy = 1.0
+			cold_back.omni_range = 4.0
+			world.add_child(cold_back)
+			cold_back.global_position = cam.global_position + Vector3(0.0, -0.1, -1.6)
+		if n == 330:
+			cold_imgs["none_back"] = root.get_texture().get_image()
+			cold_breath.exhale()
+		if n == 378:
+			cold_imgs["breath_back"] = root.get_texture().get_image()   # backlit: droplets throw light forward, at the eye
+			cold_imgs["breath_back"].save_png(out_dir.path_join("cold_breath_back.png"))
+			cold_back.visible = false
+			cold_spot.visible = true
+		if n == 520:
+			cold_imgs["clear"] = root.get_texture().get_image()         # the puffs gone: the pane clear
+			HSGlass.frost(cold_pane, 0.6)
+		if n == 550:
+			cold_imgs["frost"] = root.get_texture().get_image()         # frosted from its bottom edge
+			cold_breath.exhale()                                       # and a breath in front of it, for the stage's picture
+		if n < 598:
+			return false
 	if n < 24:                                 # the first frames: TAA settles, the lamp's shadow maps
 		return false
 	var name: String = STAGES[stage]
@@ -609,6 +649,20 @@ func _process(_d: float) -> bool:
 				sum += m
 			report["crt_flicker"] = (hi - lo) / max(sum / max(crt_means.size(), 1), 1e-6)
 			report["crt_frames"] = crt_means.size()
+		"cold":
+			shot("cold")                                                # the frosted pane, a breath in front of it in the beam
+			var low := Rect2i(400, 380, 480, 300)                       # where the breath goes: below the middle, out into the beam, against the dark
+			var r := screen_rect(cold_pane, Vector2(1.0, 1.0))
+			var bottom := Rect2i(r.position.x, r.position.y + int(r.size.y * 0.72), r.size.x, int(r.size.y * 0.26))
+			var top := Rect2i(r.position.x, r.position.y + 2, r.size.x, int(r.size.y * 0.22))
+			report["cold"] = {"breaths": cold_breath.count,
+				"breath_lit": diff(cold_imgs["breath_lit"], cold_imgs["none_lit"], low.position.x, low.position.y, low.end.x, low.end.y),
+				"breath_dark": diff(cold_imgs["breath_dark"], cold_imgs["none_dark"], low.position.x, low.position.y, low.end.x, low.end.y),
+				"breath_back": diff(cold_imgs["breath_back"], cold_imgs["none_back"], low.position.x, low.position.y, low.end.x, low.end.y),
+				"clear_bottom": sharpness(cold_imgs["clear"], bottom), "frost_bottom": sharpness(cold_imgs["frost"], bottom),
+				"clear_top": sharpness(cold_imgs["clear"], top), "frost_top": sharpness(cold_imgs["frost"], top),
+				"frost_bottom_mean": measure(cold_imgs["frost"], bottom.position.x, bottom.position.y, bottom.end.x, bottom.end.y)["mean"],
+				"clear_bottom_mean": measure(cold_imgs["clear"], bottom.position.x, bottom.position.y, bottom.end.x, bottom.end.y)["mean"]}
 	stage += 1
 	if stage >= STAGES.size() or only != "":
 		finish()
@@ -687,6 +741,33 @@ func setup(name: String) -> void:
 			world.add_child(glow_q)
 		"soften":
 			HSSoften.attach(cam).set_amounts(0.9, 7.0, 1.6, 0.25)
+		"cold":
+			if post_n != null:
+				post_n.apply("none")
+			cam.fov = 75.0
+			var at := Vector3(30.0, 1.5, 0.0)                         # a set of its own, away from the room: a checker seen through a pane, in the dark
+			checker_quad(1.3, 13, at + Vector3(0.0, 0.62, -1.0))     # high in the view: the breath crosses the beam below it against the dark
+			cold_pane = MeshInstance3D.new()
+			var pq := QuadMesh.new()
+			pq.size = Vector2(1.0, 1.0)
+			cold_pane.mesh = pq
+			world.add_child(cold_pane)
+			cold_pane.position = at + Vector3(0.0, 0.55, -0.6)
+			HSGlass.pane(cold_pane, Vector2(1.0, 1.0), 3.0, {"rain": 0.0})
+			cam.look_at_from_position(at + Vector3(0.0, 0.0, 1.2), at + Vector3(0.0, 0.0, -0.6))   # level: the pane above the middle, the breath below it
+			cold_spot = SpotLight3D.new()                             # the starter's flashlight, where it sits by the eye
+			cold_spot.light_energy = 4.0
+			cold_spot.spot_range = 14.0
+			cold_spot.spot_angle = 24.0
+			cold_spot.spot_angle_attenuation = 2.5
+			cold_spot.shadow_enabled = true                           # as the starter's (a projector needs the light's shadow setup)
+			cam.add_child(cold_spot)
+			cold_spot.position = Vector3(0.18, -0.2, -0.1)
+			var cb := HSBeam.new()                                    # with its cookie, as the game's: the breath beside the beam's core gets its spill
+			cb.cookie = "flashlight"
+			cold_spot.add_child(cb)
+			cold_breath = HSBreath.make(cam, {"on": false, "strength": 1.0})   # the eye's breath, breathed only when asked
+			world.add_child(cold_breath)
 		"crt":
 			if post_n != null:
 				post_n.apply("none")                                 # the grade off: the screen's own numbers

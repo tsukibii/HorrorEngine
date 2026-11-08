@@ -218,7 +218,7 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://starter/door_feet.gd", "feet"), ("Script", "res://starter/uncanny.gd", "uncanny"),
        ("Script", "res://starter/dread.gd", "dread"), ("Script", "res://starter/dread_moment.gd", "moment"), ("Script", "res://starter/menace.gd", "menace"),
        ("Script", "res://addons/horrorstudio_look/nodes/lightning_storm.gd", "lightning"),
-       ("Script", "res://starter/cue.gd", "cue"), ("Script", "res://starter/seat.gd", "seat"),
+       ("Script", "res://starter/cue.gd", "cue"), ("Script", "res://starter/seat.gd", "seat"), ("Script", "res://starter/cold_area.gd", "cold"),
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
@@ -236,6 +236,7 @@ subs = [("StandardMaterial3D", "paper", ["albedo_color = Color(0.93, 0.91, 0.84,
         ("StandardMaterial3D", "cells", ["albedo_color = Color(0.12, 0.12, 0.13, 1)", "roughness = 0.5"]),
         ("BoxMesh", "pack", ["size = Vector3(0.06, 0.022, 0.09)", 'material = SubResource("cells")']),
         ("BoxShape3D", "jumpbox", ["size = Vector3(1.0, 2.5, 1.9)"]),
+        ("BoxShape3D", "coldbox", [f"size = Vector3(1.0, 2.5, {corr['size'][2]:.2f})"]),
         ("StandardMaterial3D", "skin", ['resource_name = "skin"', "albedo_color = Color(0.82, 0.8, 0.78, 1)", "roughness = 0.8"]),
         ("QuadMesh", "screen", [f"size = Vector2({B['tv_screen']['size'][2] - 0.02:.3f}, {B['tv_screen']['size'][1] - 0.02:.3f})"]),
         ("StandardMaterial3D", "dress", ["albedo_color = Color(0.86, 0.85, 0.81, 1)", "roughness = 0.85"]),
@@ -425,6 +426,9 @@ nd("Moves", "Events/BedCeiling/Ceiling", "AnimationPlayer", props=['libraries = 
 nd("DeskKnock", "Events", "Node3D", script="cue", props=['spot = NodePath("../../Dressing/TV")', 'look = "middle"', 'doing = "sitting"', "after_secs = 2.0", "scare = false",
    'sound = "knock_three"', 'sound_at = NodePath("Door")', 'say = "Three knocks. Someone is at the door."', 'fact = "knocked_304"'], paths=["spot", "sound_at"])   # sitting at the desk, the TV's static in the middle of your view
 nd("Door", "Events/DeskKnock", "Marker3D", props=[f"transform = {tf([d304[0] + 0.4, floor_y + 1.3, d304[2] - 0.25])}"])   # outside 304's door, in the corridor
+nd("ColdSpot", "Events", "Area3D", script="cold", props=[f"transform = {tf([corr['at'][0] - corr['size'][0] / 2 + 0.5, corr['at'][1], corr['at'][2]])}",
+   'panes = [NodePath("../../Weather/Pane")]'], paths=["panes"])   # the metre by the end window: freezing (your breath, the glass frosting)
+nd("Shape", "Events/ColdSpot", "CollisionShape3D", props=['shape = SubResource("coldbox")'])
 nd("Feet308", "Events", "Node3D", script="feet", props=[f"transform = {tf(feet_at)}", f'door = NodePath("../../Hotel/{P["door_door_308"]}")'], paths=["door"])   # someone behind 308's door
 # the player, its flashlight on a battery that's seen better days
 nd("Player", ".", inst="player", props=[f"transform = {tf(start['at'], start['turn'])}"])

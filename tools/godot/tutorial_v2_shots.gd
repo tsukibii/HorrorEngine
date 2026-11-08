@@ -179,6 +179,35 @@ func _initialize() -> void:
 	bulb.amount = 1.0
 	# the end window: rain on it
 	await shot("window", Vector3(1.05, eye, cz + 0.15), Vector3(0.0, eye - 0.15, cz - 0.05))
+	# the cold: the end window frosted up from its bottom edge, your breath in the flashlight's beam
+	var pane_n := main.get_node("Weather/Pane")
+	pane_n.frost = 0.8
+	var cb := HSBreath.make(cam, {"on": false, "strength": 1.0})
+	main.add_child(cb)
+	torch.visible = true
+	hud_on.call(false)
+	for l in tubes():                                          # the corridor dark (as it will be): the breath shows in the beam, not against a lit wall
+		Lights.set_on(l, false)
+	var cold_from := Vector3(2.3, eye, cz + 0.25)                  # back from the window: the breath crosses the beam against the dim wall under it
+	var cold_to := Vector3(0.0, eye - 0.45, cz - 0.05)
+	cam.global_position = cold_from
+	cam.look_at(cold_to, Vector3.UP)
+	await shot("cold", cold_from, cold_to, 42)
+	# and your breath there, facing down the dark corridor: the beam carried off into the dark, the breath crossing it
+	var breath_from := Vector3(0.55, eye, cz + 0.1)
+	var breath_to := Vector3(10.0, eye - 0.35, cz)
+	cam.global_position = breath_from
+	cam.look_at(breath_to, Vector3.UP)
+	for i in 20:
+		await process_frame
+	cb.exhale()
+	await shot("breath", breath_from, breath_to, 40)
+	pane_n.frost = 0.0
+	torch.visible = false
+	hud_on.call(true)
+	for l in tubes():
+		Lights.set_on(l, true)
+	cb.queue_free()
 	# lightning: the corridor from the middle toward the end window, the flash through it, someone standing there in it
 	var storm := main.get_node("Weather/Lightning")
 	await process_frame

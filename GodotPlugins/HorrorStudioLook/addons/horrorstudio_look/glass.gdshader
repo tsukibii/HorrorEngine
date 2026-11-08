@@ -2,7 +2,9 @@
 // on it running down: a grid of cells with a drop each sliding down at its own pace, a trail of beads above it, and
 // a mist of fine static droplets; each drop a little dome that bends what's seen through the glass (the screen
 // behind, read through the drop's normal) and catches the lights. After the "Heartfelt" rain-on-glass idea, kept
-// small. `rain` 0 is dry glass.
+// small. `rain` 0 is dry glass. In the cold, `frost` (HSGlass.frost: docs/GODOT_LOOK.md §5l) rises from the pane's
+// bottom edge, its coldest part, by its height in the world (`frost_bottom`, `frost_top`): below its ragged line the
+// room behind seen as a blur through crystals that take the lights, a mist of condensation above it.
 shader_type spatial;
 render_mode blend_mix, depth_draw_never, cull_disabled, diffuse_burley, specular_schlick_ggx, ambient_light_disabled;   // no flat ambient haze on the glass: the lights' own glints only
 
@@ -15,10 +17,20 @@ uniform float drop_cm = 2.2;                              // a cell's width, cm
 uniform float speed = 1.0;
 uniform float bend = 0.02;                                // how far a drop bends the view (screen fraction)
 uniform float seed = 1.0;
+uniform float frost : hint_range(0.0, 1.0) = 0.0;         // how far up it's frosted (1: three quarters of the way)
+uniform float frost_bottom = 0.0;                         // the pane's bottom and top edges, world height
+uniform float frost_top = 1.0;
+uniform vec4 frost_tint : source_color = vec4(0.9, 0.94, 0.98, 1.0);
 
 varying vec2 v_uv;
+varying float v_wy;
 
 float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+float vnoise(vec2 p) {
+	vec2 i = floor(p), f = fract(p), u = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash12(i), hash12(i + vec2(1.0, 0.0)), u.x), mix(hash12(i + vec2(0.0, 1.0)), hash12(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int k = 0; k < 4; k++) { v += a * vnoise(p); p = p * 2.03 + 17.1; a *= 0.5; } return v; }
 vec2 hash22(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973)); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.xx + p3.yz) * p3.zy); }
 
 // one layer of running drops: returns the drop's height field gradient (xy) and its coverage (z)
@@ -59,6 +71,7 @@ vec3 drops(vec2 p, float t, float layer_seed) {
 
 void vertex() {
 	v_uv = UV;
+	v_wy = (MODEL_MATRIX * vec4(VERTEX, 1.0)).y;
 }
 
 void fragment() {
@@ -78,14 +91,33 @@ void fragment() {
 		g.xy += (fract(m) - 0.5) * mist * 0.12;
 		g *= rain;
 	}
+	// frost: up from the bottom edge to a ragged line, crystals at a centimetre's grain, a mist of condensation above
+	float fm = 0.0;
+	vec2 ice = vec2(0.0);
+	if (frost > 0.0) {
+		float h = clamp((v_wy - frost_bottom) / max(frost_top - frost_bottom, 0.01), 0.0, 1.0);
+		vec2 cm = v_uv * size_m * 100.0;
+		float ragged = fbm(cm * 0.07 + seed * 7.0);       // the line's ins and outs, about 15 cm across
+		float grain = fbm(cm * 0.8 + seed * 3.0);         // the crystals
+		float line = frost * 0.75 + (ragged - 0.5) * 0.22;
+		fm = smoothstep(line + 0.03, line - 0.07, h) * (0.7 + 0.3 * grain);
+		fm += smoothstep(line + 0.22, line, h) * 0.3 * (1.0 - fm);
+		ice = vec2(fbm(cm * 1.7 + 11.0) - 0.5, fbm(cm * 1.7 + 23.0) - 0.5) * fm;
+		g.z = max(g.z, fm);
+	}
 	vec2 offs = g.xy * bend;
 	vec3 seen = texture(screen_tex, clamp(SCREEN_UV + offs, vec2(0.001), vec2(0.999))).rgb;
-	ALBEDO = vec3(0.0);                                    // no diffuse of its own: what's behind comes through as it is
+	if (fm > 0.0) {
+		vec3 blurred = textureLod(screen_tex, clamp(SCREEN_UV + ice * 0.01, vec2(0.001), vec2(0.999)), 4.5).rgb;
+		seen = mix(seen, blurred * 0.85, fm);                    // through frost the room behind is a blur
+	}
+	ALBEDO = frost_tint.rgb * fm * 0.6;                    // no diffuse of its own but the frost's: the lights in front whiten it
 	EMISSION = seen * tint.rgb * clarity;
 	ALPHA = 1.0;
-	// the glass takes the lights: clear, a little rougher where the drops lie; the drops' normal for their glints
-	NORMAL = normalize(NORMAL + TANGENT * g.x * 0.6 + BINORMAL * g.y * 0.6);
-	ROUGHNESS = mix(0.04, 0.12, g.z);
+	// the glass takes the lights: clear, a little rougher where the drops lie and rough where it's frosted; the drops'
+	// normal and the crystals' for their glints
+	NORMAL = normalize(NORMAL + TANGENT * (g.x * 0.6 + ice.x * 1.5) + BINORMAL * (g.y * 0.6 + ice.y * 1.5));
+	ROUGHNESS = mix(mix(0.04, 0.12, g.z), 0.45, fm);
 	SPECULAR = 0.5;
 	METALLIC = 0.0;
 }

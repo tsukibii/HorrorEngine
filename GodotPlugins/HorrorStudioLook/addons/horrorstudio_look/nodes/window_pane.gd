@@ -1,6 +1,7 @@
 ## A window pane (HSGlass; docs/GODOT_LOOK.md §0): glass on a flat mesh in a window's opening (a quad or a thin box),
 ## bending the room behind it a little, with rain running down it (`rain` 0 dry, 1 a downpour) and a mist. Drop it
-## under the pane's mesh. `size_m` the glass in metres for the drops' real size (zero: the mesh's own).
+## under the pane's mesh. `size_m` the glass in metres for the drops' real size (zero: the mesh's own). `frost` (0 to 1)
+## frosts it over from its bottom edge, live (a cold area raises it while you watch: §5l).
 @tool
 @icon("res://addons/horrorstudio_look/icons/pane.svg")
 class_name HSWindowPane
@@ -14,6 +15,12 @@ extends HSOnMesh
 @export_range(0.5, 6.0) var drop_cm: float = 2.2
 @export_range(0.0, 4.0) var speed: float = 1.0
 @export_range(0.0, 0.1) var bend: float = 0.02
+@export_range(0.0, 1.0) var frost: float = 0.0:    ## frost up from its bottom edge (1: three quarters up): set live, nothing rebuilt
+	set(v):
+		frost = v
+		for mi in applied:
+			if is_instance_valid(mi):
+				HSGlass.frost(mi, frost)
 
 
 func _settings() -> Dictionary:
@@ -29,3 +36,4 @@ func _apply(ms: Array) -> void:
 			d.sort()
 			sz = Vector2(d[2], d[1])                  # the glass's two long sides
 		HSGlass.pane(mi, sz, seed, {"rain": rain, "clarity": clarity, "tint": tint, "drop_cm": drop_cm, "speed": speed, "bend": bend})
+		HSGlass.frost(mi, frost)

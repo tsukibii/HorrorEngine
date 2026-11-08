@@ -149,6 +149,11 @@ def demo_checks(rep):
     checks.append(("lightning within the flash limits: each strike one flash (one rise past half, its glow dipping no more than a tenth between three brightenings), a second strike asked for during the first waiting a second of dark, the thunder 3 s a kilometre after, someone there only in the flash, the room lit by it",
                    lg.get("strikes") == 2 and lg.get("rises") == [1, 1] and lg.get("glow_min", 0) >= 0.89 and lg.get("brightenings") == 3 and lg.get("dark_between_s", 0) >= 0.98
                    and abs(lg.get("thunder_s", -9) - 3.0 * lg.get("km", 1.0)) < 0.05 and lg.get("figure_ok") is True and lg.get("lit_gain", 0) > 1.3))
+    cd = rep.get("cold", {})
+    checks.append(("the cold: a breath shows in a flashlight's beam (%.3f over the same frame without it), more with a lamp behind it (%.3f: droplets throw light forward) and not in the dark (%.3f); a pane frosts from its bottom edge, the room behind blurred there (its sharpness %.4f from %.4f clear) and sharp above the frost line (%.4f from %.4f)"
+                   % (cd.get("breath_lit", 0), cd.get("breath_back", 0), cd.get("breath_dark", 9), cd.get("frost_bottom", 9), cd.get("clear_bottom", 0), cd.get("frost_top", 0), cd.get("clear_top", 9)),
+                   cd.get("breaths", 0) >= 3 and cd.get("breath_lit", 0) > 0.01 and cd.get("breath_back", 0) > cd.get("breath_lit", 0) * 1.5 and cd.get("breath_dark", 9) < cd.get("breath_lit", 0) * 0.35
+                   and cd.get("frost_bottom", 9) < cd.get("clear_bottom", 0) * 0.4 and cd.get("frost_top", 0) > cd.get("clear_top", 9) * 0.7))
     mo = rep.get("mirror_only", {})
     checks.append(("only in the mirror and never in it (layer 19 drawn by the mirrors' cameras alone, layer 20 by every camera but theirs): the green box in the mirror's picture and not the eye's, the red box in the eye's and not the mirror's",
                    mo.get("in_mirror_view") is True and mo.get("in_eye_view") is True and mo.get("eye_mask_19") is False and mo.get("mirror_mask_19") is True and mo.get("mirror_mask_20") is False

@@ -362,6 +362,30 @@ func _initialize() -> void:
 		lit_max, lit_seen, fig_in_flash, not fig_after, storm.storm.player.bus, "heard" if thunder_heard else "NOT HEARD"])
 	if not lit_seen or lit_max < 3.9 or not fig_in_flash or fig_after or not thunder_heard:
 		bad("the lightning (HSLightningStorm): the flash %.1f, the figure in it %s and gone after %s, the thunder %s" % [lit_max, fig_in_flash, not fig_after, thunder_heard])
+	# the cold (cold_area.gd, the Look plugin's HSBreath and HSGlass.frost): the metre by the end window is freezing. Your
+	# breath shows, the window frosts up from its bottom edge; walk away and the breath stops, the frost going
+	var cold: Area3D = main.get_node("Events/ColdSpot")
+	var pane_n: Node = main.get_node("Weather/Pane")
+	var lvl0 := float(cold.level)
+	stand(Vector3(0.45, fl + 0.02, cz + 0.2), Vector3(0.0, fl + 1.3, cz))     # at the end window, looking at it
+	await secs(2.5)
+	var br: HSBreath = player.get_node_or_null("Eye/Breath")
+	var breaths: int = br.count if br != null else 0
+	var puffs_now: int = br.puffs() if br != null else 0
+	var lvl1 := float(cold.level)
+	var glass_frost := 0.0
+	for gm in pane_n.applied:
+		var sm := (gm as MeshInstance3D).material_override as ShaderMaterial
+		if sm != null:
+			glass_frost = maxf(glass_frost, float(sm.get_shader_parameter("frost")))
+	stand(Vector3(4.0, fl + 0.02, cz), Vector3(8.0, fl + 1.5, cz))              # back down the corridor
+	await secs(1.0)
+	var lvl2 := float(cold.level)
+	var still_breathing: bool = br != null and br.on
+	say("the cold", "by the end window (frost %.2f before): %d breaths out in 2.5 s (%d puffs in the air), the window frosting up to %.2f (its glass at %.2f); walked away: breathing %s, the frost going to %.2f" % [
+		lvl0, breaths, puffs_now, lvl1, glass_frost, still_breathing, lvl2])
+	if lvl0 > 0.01 or breaths < 1 or puffs_now < 1 or lvl1 < 0.2 or absf(glass_frost - lvl1) > 0.02 or still_breathing or lvl2 >= lvl1:
+		bad("the cold (cold_area.gd): frost before %.2f, breaths %d, puffs %d, the frost %.2f (its glass %.2f), still breathing after %s, thawing %.2f to %.2f" % [lvl0, breaths, puffs_now, lvl1, glass_frost, still_breathing, lvl1, lvl2])
 	# 4. the linen closet: its door, the key; the corridor's lights out one by one, the farthest first, and back
 	var ld := door("door_linen")
 	var lc := ld.global_position + ld.global_basis.x * 0.38 + Vector3.UP * 1.0

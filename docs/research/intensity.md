@@ -306,6 +306,9 @@ push it higher. The weakest evidence is for infrasound.
   `puff.gdshader`, 15 cm ahead of and 10 cm under the eye, every 3 to 5 s, lit by the beam) and a frost mask on the
   window pane's shader rising from the bottom edge. Faint near the camera; saved for the cold spot, or it reads as
   weather. (eye_candy.md's "breath in the cold", now with a source.)
+  *Built (2026-11-08, night) for games made by hand: the Look plugin's `HSBreath` (lit by direct lights only and
+  added: a flashlight's beam shows the breath where it crosses it, the dark hides it) and `HSGlass.frost`, the
+  starter's `cold_area.gd`, tutorial v2's end window (GODOT_LOOK §5l). The story format's `cold` word is still to do.*
 
 ### 5.6 Wrong bodies and faces
 

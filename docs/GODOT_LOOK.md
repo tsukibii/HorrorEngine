@@ -1089,6 +1089,41 @@ a fixed 60 fps: each strike one rise past half, the glow never under 0.89 betwee
 second of dark between, the first thunder 3 s after for a kilometre, the figure shown exactly while the flash is
 over half, the room brighter; the nodes demo strikes the preset once to full and back.
 
+## 5l. The cold: breath and frost (`breath.gd`, `breath.gdshader`, `HSBreath`, `HSBreathPuffs`; `HSGlass.frost`; DECISIONS 2026-11-08, night)
+
+docs/research/intensity.md §5.5: breath shows when 34 °C breath, saturated, mixes with air cold enough to pass
+saturation (below about 7 °C, warmer in damp air); frost and mist start at a pane's bottom edge, its coldest part.
+
+- **Breath**: `HSBreath.make(mouth, settings)` breathes out every `every` seconds, jittered a quarter either way.
+  - Each breath is four puffs 60 ms apart from `offset` in the mouth's space (an eye's: 10 cm under it, 15 cm ahead),
+    carried out at 1.4 m/s and slowed by the air (about a metre in all), a little downward as breath leaves the mouth
+    and rising as it slows, spreading as a plume, growing from 3 to 32 cm and thinning over `life` (2 s).
+  - The puffs are a top-level MultiMesh: they stay where they were breathed.
+  - `breath.gdshader` is puff.gdshader's noise-eroded disc made wispy, lit only by the lights that reach it (no
+    ambient) and added, not mixed. Breath scatters light and hides nothing, so a dark room hides it entirely.
+  - It has a light of its own: droplets throw light forward. A lamp behind the breath lights it up toward the eye
+    (`forward`), like a street lamp outside a window you breathe at. Your own flashlight, from beside you, catches it
+    softly (`wrap`): held at the chest, its beam takes the falling breath in from about 60 cm on, in the cookie's ring
+    and spill (its hot core is only 4 to 8° wide).
+  - It's faded into what's behind it and right at the lens.
+  - `HSBreathPuffs` is the node: put it where breath comes out (under the player's Eye, a character's head), with `on`,
+    `every`, `strength`, and nothing in the editor unless `preview`.
+- **Frost**: `HSGlass.frost(mesh_instance, k)` frosts a pane from its bottom edge, by world height (`frost_bottom`,
+  `frost_top` from the mesh's box), so it works whatever the glass's UVs.
+  - The line sits at k × 0.75 of the way up, ragged by noise about 15 cm across.
+  - Below it the room behind is seen as a blur (the screen texture's fourth to fifth mip), through crystals that take
+    the lights (their own white, rough, a normal of centimetre grain); a mist of condensation lies above it.
+  - `HSWindowPane.frost` sets it live, without rebuilding the pane, so a cold area can raise it while you watch.
+- The starter's `cold_area.gd` uses both: walk in and the panes frost up over `frost_seconds` and your breath shows
+  after `breath_after`; walk out and the breath stops and the frost thaws over `thaw_seconds`.
+
+LOOKPLUGIN's cold stage is a set of its own: a checker seen through a pane, the starter's flashlight by the eye (its
+cookie and its shadows: a spot's projector needs the light's shadow setup).
+- **Breath**: a breath half a metre to a metre out, against the dark below the pane, adds light where the beam takes
+  it, half again as much with a lamp behind it, and a breath in the dark changes nothing.
+- **Frost**: frosted to 0.6, the pane's bottom quarter loses its sharpness (the Laplacian's variance under 0.4 of the
+  clear glass's) while the top, above the line, keeps it.
+
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 
 A street baked in Blender (`tools/street.py bake`, docs/STREET_TEXTURING.md) comes as plain glTF:
