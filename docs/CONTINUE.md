@@ -20,7 +20,24 @@ systems that open, hold, move and are read; 2026-11-05, night, on `gameplay-enha
 builder's floors, the street's steel stair, climbing in Godot and on the desk). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-07, night, `claude/optimistic-tesla-q01qg6`): Tutorial v2, Room 304
+## Where it stopped last (2026-11-08, `claude/optimistic-tesla-q01qg6`): eye candy researched, the atmosphere next
+
+The user asked for a better flashlight and the level's air: "a beam in a fog", a fog level adjuster, dust in the
+light, with eye candy researched first and the system then put into tutorial v2 (DECISIONS 2026-11-08). The research
+is docs/research/eye_candy.md. The fog lab, measured in Godot 4.7 (its sheet `docs/godot_sheets/2026-11-08_fog_beam.jpg`),
+found:
+- the balanced haze hides the flashlight's beam;
+- Godot's froxel fog only draws a glow;
+- a beam drawn by its own shader with the flashlight's cookie reads as a beam.
+
+Next, in order:
+1. HSAtmosphere, HSBeam, the cookie and HSDust (the note's §2.4) with a check;
+2. eye candy A (the TV's light, a pickup's glint, eyeshine, moths, dust shaken down);
+3. all of it in tutorial v2, with the Look nodes it doesn't use yet.
+
+Blender's module is set up here (`vendor/blender`), for made props in the tutorial.
+
+## Where it stopped before (2026-11-07, night, `claude/optimistic-tesla-q01qg6`): Tutorial v2, Room 304
 
 The user asked for "tutorial v2": a hotel floor modelled in the scene builder, then the story built by hand in Godot
 with the Look plugin (not the Director), using every aspect so far (DECISIONS 2026-11-07, night). Built:

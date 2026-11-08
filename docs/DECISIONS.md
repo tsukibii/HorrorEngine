@@ -2,6 +2,34 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-08 (the user: a better flashlight and the level's air: "a beam in a fog", a fog level, dust; eye candy first)
+
+- **The ask**: "Anyway we could work on a better flashlight + level atmosphere system, you know when we put a light in
+  real life in the woods it's more like a beam in a fog, maybe have a fog level adjuster and dust particle visible,
+  before you do anything do eye candy research meaning the little visual things that make the game feel more immersion
+  and then work on this, include this system part of the tutorial too".
+- **Read as**:
+  1. research first: docs/research/eye_candy.md;
+  2. then build the system;
+  3. then put it into tutorial v2.
+- **The research found** (the fog lab, measured in Godot 4.7):
+  - The balanced look's haze (0.009 at anisotropy 0.55) leaves the flashlight's beam **invisible** from the player's
+    eye: 0 out of 255 in the air 6 m out. The forward-scattering 0.55 takes about 90% of the beam a holder would see.
+  - Godot's froxel fog only draws a soft glow, and froxels at 128 cost 9.5× for an edge 2 px sharper.
+  - A beam drawn by its own shader with a flashlight's cookie reads as a beam, costs a quarter of the froxels' time and
+    leaves no ghost.
+  - Dust motes show only in light, but need a back lobe to glint in your own beam and a knee so the moon doesn't
+    speckle the sky.
+- **To build** (the note's §2.4):
+  - **HSAtmosphere**, the fog level: one number, ground mist drifting on the wind, dust, `fog_to` for moments, presets;
+  - **HSBeam**, a light's beam in that air, on the flashlight by default; the flashlight's own froxel fog energy off;
+  - **the flashlight's cookie**: a hot core, a ring, the spill;
+  - **HSDust**, motes lit by every light.
+- **Then eye candy A**: the TV lighting the room, a pickup's glint in the beam, eyeshine, moths round a lamp, dust
+  shaken down.
+- **Then into tutorial v2**: the atmosphere and the eye candy, with the Look nodes it doesn't use yet (the tape, a
+  shaft, a pattern light, a puddle, a leak, her look).
+
 ## 2026-11-07, night (the user: "tutorial v2": a hotel floor from the scene builder to a story built by hand in Godot)
 
 - **The ask**: "can you make a tutorial that goes from modelling an interior for a floor in a hotel to building out the
