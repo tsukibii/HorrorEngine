@@ -166,6 +166,7 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://starter/room_tone.gd", "tone"), ("Script", "res://starter/event_area.gd", "event"), ("Script", "res://starter/scare_area.gd", "scare"),
        ("Script", "res://starter/pickup.gd", "pickup"), ("Script", "res://starter/note.gd", "note"), ("Script", "res://starter/door.gd", "door"),
        ("Script", "res://starter/light_shy.gd", "shy"), ("Script", "res://addons/horrorstudio_look/nodes/atmosphere.gd", "air"),
+       ("Script", "res://starter/fear.gd", "fear"), ("Script", "res://starter/behind_you.gd", "behind"),
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
@@ -337,9 +338,12 @@ nd("Story", ".", "CanvasLayer", script="story", props=['objective_text = "Room 3
    'tasks = PackedStringArray("up: Go up to the third floor", "find304: Find room 304")', 'ending_title = "Checked out"',
    'ending_text = "The fire stairs took you down to the street. Nobody ever asked who was staying in 308."'])
 nd("Sound", ".", "Node", script="sound", props=['mood = "uneasy"'])
+nd("Fear", ".", "Node", script="fear")                                    # your body: the heartbeat, breath, the world dulled, the beam shaking
+nd("BehindYou", ".", "Node", script="behind")                             # the steps behind you, from the batteries back to her
 # the fire door: given door.gd in the scene (Hotel's Editable Children) so its signal can end the game
 nd(P["door_corridor_e_door"].split("/")[-1], "Hotel/" + "/".join(P["door_corridor_e_door"].split("/")[:-1]), script="door", props=['tick = "out"'])
 lines += ['[connection signal="picked" from="Things/Key" to="Events/LightsDie" method="fire"]',
+          '[connection signal="picked" from="Things/Batteries" to="BehindYou" method="start"]',
           '[connection signal="flashed_twice" from="Her/LightShy" to="Events/LightsOut" method="fire"]',
           f'[connection signal="opened" from="Hotel/{P["door_corridor_e_door"]}" to="Story" method="end"]', "", '[editable path="Hotel"]', '[editable path="Player"]', ""]
 (proj / "main.tscn").write_text("\n".join(lines), encoding="utf-8")

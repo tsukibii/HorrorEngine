@@ -10,6 +10,8 @@ extends CharacterBody3D
 
 const Footsteps := preload("res://starter/footsteps.gd")
 
+signal stepped(at: Vector3, run: bool)  ## each footstep (behind_you.gd answers them)
+
 @export var walk_speed := 1.6          ## metres a second
 @export var run_speed := 3.2
 @export var mouse_turn := 0.0025       ## radians a pixel
@@ -110,6 +112,7 @@ func _footsteps(dt: float, run: bool) -> void:
 		if snd != null and snd.has_method("step"):
 			snd.step(at, run)
 			steps_heard += 1
+		stepped.emit(at, run)
 
 
 ## up onto a step in the way: room above it, nothing in the way up there, then down onto its top

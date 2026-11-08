@@ -90,6 +90,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#flashlight">The flashlight's batteries</a></li>
     <li><a href="#her">Her, who hates the light</a></li>
     <li><a href="#jump">The jump scare and the hush</a></li>
+    <li><a href="#intense">Making it intense</a></li>
     <li><a href="#ending">The way out</a></li>
     <li><a href="#play">Play it</a></li>
     <li><a href="#next">Where to go next</a></li>
@@ -125,7 +126,9 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   itself: haze, dust that glints in the light, the fog rolling in, and your flashlight a beam in it.</li>
   <li><b>The starter kit:</b> a to-do list on screen, notes, keys and pickups, music by mood, a tone for each room, lights
   that dim and come back or go out one by one, a flashlight on batteries, a character who backs off from the light, and
-  a jump scare with the hush before it.</li>
+  a jump scare with the hush before it; every sound with its room in it (Woohill's sound physics: the stairwell rings,
+  a knock behind a door is muffled), footsteps, your body under fear (a heartbeat, breathing, the world going dull,
+  the beam shaking) and steps behind you.</li>
 </ul>
 <p>Every picture here is that game, drawn by Godot or the scene builder. <code>python tools/godot/tutorial_v2.py --keep ~/Games/Room304_done</code>
 builds it exactly as these steps do, so you can open the finished one beside yours. It goes in a folder of its own,
@@ -546,8 +549,41 @@ the hit lets it land, and the music creeping back afterwards is the release. The
 <figure><img src="img/jump.jpg" width="1600" height="900" alt="Her right in front of you by the fire door"><figcaption>The jump: 0.9 seconds of her out of silence, the tape breaking up.</figcaption></figure>
 </section>
 
+<section id="intense">
+<h2><span class="n">22</span>Making it intense</h2>
+<p>What's left makes the same night more intense without any more story: your own body, the things that tell you
+she's near, what you half see, the night outside. Each is a node or two from the starter kit or the Look plugin. The
+studio's research behind them is in <code>docs/research/intensity.md</code>.</p>
+
+<h3 id="body">Your body</h3>
+<p>Add a <span class="node">Node</span> called <code>Fear</code> with <code>starter/fear.gd</code>. It keeps one
+number, how afraid you are, from 0 to 1. It rises as she comes within 8 m, more when you can see her, and jumps with
+every scare; it falls back slowly. What it does with it:</p>
+<ul>
+  <li><b>A heartbeat</b>, from a quarter of the way up: 60 beats a minute rising to 140, a little uneven.</li>
+  <li><b>Breathing</b>, quicker and heavier as it climbs.</li>
+  <li><b>The world dulled</b>: everything you hear loses its highs and gets a little quieter, but your heart and breath
+  don't. People in danger say the world goes quiet like this.</li>
+  <li><b>A vignette</b> closing in on the grade.</li>
+  <li><b>Your flashlight's beam shaking</b> in your hand, 8 to 10 times a second. Only the light shakes, never your
+  view: a shaking camera makes people sick.</li>
+</ul>
+<p>Each has its own switch on the node (<b>Heartbeat</b>, <b>Breathing</b>, <b>Dull</b>, <b>Vignette</b>,
+<b>Tremor</b>). Leave them on, but give your players the same switches in your settings: heartbeats bother some people
+a lot. The heartbeat and breath play on the <code>Body</code> bus, which has its own fader. <code>ring(4)</code> from
+a script muffles the world after a bang and brings it back over four seconds.</p>
+
+<h3 id="behind">Steps behind you</h3>
+<p>Add a <span class="node">Node</span> called <code>BehindYou</code> with <code>starter/behind_you.gd</code>, and
+connect the batteries' <b>picked</b> signal to its <code>start</code>. On the walk back from the vending corner every
+step you take is answered a moment later from three metres behind you, on wood while you're on carpet: someone
+else's. Stop, and it takes one step too many, then it's quiet. Turn round and there's nobody.</p>
+<p>Use it once or twice a game at most: the second time it's already less frightening. With <b>Chance Per Min</b>
+above 0 it can also come by itself while you're afraid, but never again within <b>Rest</b> seconds (ten minutes).</p>
+</section>
+
 <section id="ending">
-<h2><span class="n">22</span>The way out</h2>
+<h2><span class="n">23</span>The way out</h2>
 <p>With <code>Hotel</code>'s Editable Children on, select <code>hotel_floor/doors/door_corridor_e_door</code> (the fire
 door) and drag <code>starter/door.gd</code> onto it. Set its <b>Tick</b> to <code>out</code>. In the
 <span class="ui">Node</span> tab connect its <b>opened</b> signal to <code>Story</code> → <code>end</code>. Opening the
@@ -556,7 +592,7 @@ fire door ends the night: the screen goes black and the ending's title comes up.
 </section>
 
 <section id="play">
-<h2><span class="n">23</span>Play it</h2>
+<h2><span class="n">24</span>Play it</h2>
 <p>Press <kbd>F5</kbd>.</p>
 <table class="keys">
 <tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>walk (up the stairs too), <kbd>Shift</kbd> runs</td></tr>
@@ -570,14 +606,14 @@ fire door ends the night: the screen goes black and the ending's title comes up.
   <li>304 is locked. Read the note on the carpet.</li>
   <li>The linen closet is dark: <kbd>F</kbd>. Take the key and the corridor goes out behind you, one tube at a time, then comes back.</li>
   <li>Open 304 with the key. The TV's on. The music turns to dread. Look in the bath.</li>
-  <li>The flashlight dies. Batteries in the vending corner.</li>
-  <li>On the way out she's at the end of the corridor. Shine the light on her and she backs off. Do it twice and the corridor goes dark.</li>
+  <li>The flashlight dies. Batteries in the vending corner. Walk back out and listen behind you.</li>
+  <li>On the way out she's at the end of the corridor. Your heart picks up as you near her. Shine the light on her and she backs off. Do it twice and the corridor goes dark.</li>
   <li>Walk to the fire exit.</li>
 </ol>
 </section>
 
 <section id="next">
-<h2><span class="n">24</span>Where to go next</h2>
+<h2><span class="n">25</span>Where to go next</h2>
 <ul>
   <li><b>Another floor</b>: in the scene builder, <span class="ui">copy ↑</span> copies a floor up with everything on it;
   export again, and the export's link puts it in your project at once.</li>

@@ -27,6 +27,8 @@ const WARM := 2100.0
 
 var is_dead := false
 var changing := false
+var tremor := 0.0                               ## degrees the beam shakes in your hand (the Fear node sets it: 8 to 10 a second)
+var _rot0 = null
 var b := 1.0                                    # the beam now, 0..1
 var _T := 0.0
 var _low_t = null
@@ -58,6 +60,11 @@ func add_spare() -> void:
 
 func _process(dt: float) -> void:
 	_T += dt
+	if _rot0 == null:
+		_rot0 = rotation
+	if tremor > 0.001 or rotation != _rot0:     # the hand shaking: the light only (its beam with it), never the view
+		var a := deg_to_rad(tremor)
+		rotation = _rot0 + Vector3(sin(_T * 54.7 + 1.3) * 0.6 + sin(_T * 64.1) * 0.4, sin(_T * 59.3 + 0.4) * 0.6 + sin(_T * 51.2 + 2.1) * 0.4, 0.0) * a
 	if is_dead or changing or battery <= 0.0:
 		return
 	if visible:

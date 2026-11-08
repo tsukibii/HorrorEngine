@@ -1201,6 +1201,22 @@
    "license": "CC0-1.0",
    "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/grunt_03.ogg"
   },
+  "heart_beat": {
+   "file": "body/heart_beat.ogg",
+   "category": "body",
+   "tags": [
+    "heartbeat",
+    "heart",
+    "body",
+    "fear",
+    "lub-dub"
+   ],
+   "secs": 0.69,
+   "loop": false,
+   "credit": "HorrorStudio (made by tools/sfx.py)",
+   "license": "ours",
+   "source": "made"
+  },
   "hinge_metal_01": {
    "file": "doors/hinge_metal_01.ogg",
    "category": "doors",

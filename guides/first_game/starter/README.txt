@@ -22,6 +22,10 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
   acoustics.gd, .json      the sound physics' tracer (rays for occlusion and reflections) and its table: what each
                            material reflects and muffles, the reverb's four lengths, a floor's footsteps
   footsteps.gd             a step every stride walked (Woohill's)
+  fear.gd                  the Fear node: how afraid you are (her near, a scare), a heartbeat, breathing, the world
+                           dulled, a vignette, the flashlight's beam shaking; each its own switch; ring() after a bang
+  behind_you.gd            the steps behind you: yours answered a beat later from behind, one step too many when you
+                           stop; start() from a signal, or by itself now and then while you're afraid
   room_tone.gd             an Area3D: a room's tone while the player's in it
   event_area.gd            an Area3D: walked into, an objective, tasks added or ticked, a line, a fact, the music, the
                            air's fog rolled to a level (the scene's HSAtmosphere), the end

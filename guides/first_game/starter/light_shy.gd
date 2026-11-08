@@ -27,6 +27,11 @@ var _dark_for := 0.0
 var _clock := 0.0
 
 
+func _ready() -> void:
+	if get_parent() != null:
+		get_parent().add_to_group.call_deferred("hs_threat")   # (the Fear node feels her near)
+
+
 func _process(dt: float) -> void:
 	_clock += dt
 	var her := get_parent() as Node3D

@@ -193,6 +193,7 @@ BUILT = {
 # Sounds made here from nothing (ours): name -> (category, tags, maker)
 MADE = {
     "machine_beep": ("house", ["beep", "answering machine", "phone", "electronic"], "beep"),
+    "heart_beat": ("body", ["heartbeat", "heart", "body", "fear", "lub-dub"], "heart"),
 }
 
 
@@ -265,6 +266,19 @@ def made(kind):
         x = 0.6 * np.sin(2 * math.pi * 1000 * t) + 0.08 * np.sin(2 * math.pi * 3000 * t)
         env = np.minimum(1, np.minimum(t / 0.01, (t[-1] - t) / 0.02))
         return (x * env).astype(np.float32)
+    if kind == "heart":                                      # one beat, lub-dub: two low thumps 0.3 s apart (the starter's fear.gd
+        t = np.arange(int(0.75 * SR)) / SR                   # plays it on the Body bus at 60 to 140 a minute)
+        x = np.zeros_like(t)
+        rng = np.random.default_rng(7)
+        for at, f0, amp, dec in ((0.0, 52.0, 1.0, 0.07), (0.30, 61.0, 0.7, 0.06)):
+            u = np.clip(t - at, 0, None)
+            on = t >= at
+            env = (1 - np.exp(-u / 0.006)) * np.exp(-u / dec)
+            thump = np.sin(2 * math.pi * (f0 * u - 18 * u * u)) * env          # a falling low tone
+            body = np.convolve(rng.standard_normal(len(t)) * env, np.ones(40) / 40, "same") * 0.25
+            x += amp * on * (thump + body)
+        x /= max(1e-9, np.abs(x).max()) / 0.85
+        return x.astype(np.float32)
     raise ValueError(kind)
 
 

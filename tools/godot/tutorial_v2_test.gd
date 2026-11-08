@@ -341,6 +341,17 @@ func _initialize() -> void:
 	say("batteries", "picked %s, the flashlight %s at %.2f, the task %s" % [story.has("batteries"), "lit" if torch.visible else "DARK", torch.charge, "ticked" if story.done("batteries") else "NOT ticked"])
 	if not torch.visible or torch.charge < 0.99 or not story.done("batteries"):
 		bad("the batteries (pickup.gd): the flashlight lit again at full, the task ticked")
+	# the steps behind you (behind_you.gd, started by the batteries' picked): out of the vending corner
+	var bh: Node = main.get_node("BehindYou")
+	var bh_on: bool = bh.running
+	stand(Vector3(bt.global_position.x, fl + 0.02, bt.global_position.z + 0.6), Vector3(bt.global_position.x, fl + 1.6, cz + 0.5))
+	await frames(4)
+	await hold(KEY_W, 2.2)
+	var bh_mid: int = bh.heard
+	await secs(2.5)
+	say("behind you", "started by the batteries %s; %d of its steps behind yours as you walked, then the step too many %s, over %s" % [bh_on, bh_mid, bh.extra, not bh.running])
+	if not bh_on or bh_mid < 2 or not bh.extra or bh.running:
+		bad("the steps behind you (behind_you.gd): started %s, %d steps, the extra one %s, still running %s" % [bh_on, bh_mid, bh.extra, bh.running])
 	# 8. her in the beam: she backs off; flashed twice, the corridor goes dark
 	var hx0 := her.global_position.x
 	stand(Vector3(hx0 - 4.5, fl + 0.02, cz), her.global_position + Vector3.UP * 1.3)
@@ -350,6 +361,12 @@ func _initialize() -> void:
 	await secs(0.5)
 	look(her.global_position + Vector3.UP * 1.3)             # on her again: twice
 	await secs(1.5)
+	var fear: Node = main.get_node("Fear")
+	var fs: Dictionary = fear.state()
+	say("fear", "facing her %.1f m off: fear %.2f, %d heartbeats, %d breaths, the world's highs at %d Hz, the vignette %.2f, the beam shaking %.2f deg" % [
+		her.global_position.distance_to(player.global_position), float(fs.level), int(fs.beats), int(fs.breaths), int(fs.cutoff), float(fs.vignette), float(torch.tremor)])
+	if float(fs.level) < 0.3 or int(fs.beats) < 2 or float(fs.cutoff) > 19000.0 or float(torch.tremor) <= 0.0:
+		bad("the Fear node near her (fear.gd): fear %.2f, beats %d, the world's highs %d Hz, the tremor %.2f" % [float(fs.level), int(fs.beats), int(fs.cutoff), float(torch.tremor)])
 	var dark := tubes().filter(func(l): return not Lights.is_on(l)).size()
 	say("in the beam", "she backed off %.2f m; flashed twice, %d of %d tubes out" % [moved, dark, tubes().size()])
 	if not (moved > 0.5):

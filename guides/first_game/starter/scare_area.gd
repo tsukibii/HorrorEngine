@@ -39,6 +39,7 @@ var busy := false
 
 
 func _ready() -> void:
+	add_to_group("hs_scare")                     # (the Fear node jumps with every scare)
 	body_entered.connect(_entered)
 	if appear != null:
 		appear.visible = false
