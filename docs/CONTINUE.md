@@ -45,7 +45,10 @@ light, eye candy researched first, the system then put into tutorial v2 (DECISIO
   the jump. Its play test checks each (and the tubes' glass going out with them); two new pictures (`landing`, `air`).
 - **Checked**: LOOKPLUGIN (`demo/air.gd`; `demo/zones.gd` now with a fitting's glass), TUTORIAL2, FIRSTGAME.
 
+Then the user asked for more atmospheric horror, researched (DECISIONS 2026-11-08, later): docs/research/intensity.md (sound and the body, pacing and the threat's signs, the uncanny seen; §7 what to build first, §7's three decisions for the user). Nothing of it built: the user picks.
+
 Next:
+0. **The user's pick from intensity.md §7** (the first five are small: footsteps in 3D and the behind-you layer, presence signs, the dead stare, the edge figure and closer-each-time, the shadow that isn't yours).
 1. **Eye candy A** (research §4): the TV lighting the room, a pickup's glint, eyeshine, moths, dust shaken down.
 2. **The export's torch** (play.gd: a hot spot and a spill) has no beam yet. It wants the story's `air` word (the
    level's fog, a room's) with the desk's side, the check and STORY_FORMAT in one commit; GDPLAY, GDTESTROOM, DIRECTOR.
