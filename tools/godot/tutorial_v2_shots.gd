@@ -82,6 +82,7 @@ func _initialize() -> void:
 	var her := main.get_node("Her") as Node3D
 	var again := main.get_node("HerAgain") as Node3D
 	her.get_node("Presence").process_mode = Node.PROCESS_MODE_DISABLED   # her signs held still: no lamp caught mid-dip
+	her.get_node("Uncanny").mimic = false                                 # (her head stays bent; she doesn't walk in the pictures)
 	# the stairwell from its foot, up the first flight
 	var sx := float(st["at"][0])
 	var south := float(st["at"][2]) + float(st["size"][2]) / 2.0

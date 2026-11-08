@@ -348,6 +348,39 @@ func _initialize() -> void:
 	# closer each time you look away (closer.gd, armed by In304's entered): out of the bath a mark at a time, then behind you
 	var cl: Node3D = main.get_node("Events/Closer")
 	var cfig: Node3D = cl.figure
+	# her face, wrong (uncanny.gd): a made-up face with MHR's shapes under her (the stand-in has none), her blinker
+	var face := MeshInstance3D.new()
+	face.name = "FaceProbe"
+	var am := ArrayMesh.new()
+	var shape_names := ["eyesClosed_L", "eyesClosed_R", "lipCornerPuller_L", "lipCornerPuller_R", "cheekRaiser_L", "cheekRaiser_R"]
+	for nm in shape_names:
+		am.add_blend_shape(nm)
+	var arr := []
+	arr.resize(Mesh.ARRAY_MAX)
+	arr[Mesh.ARRAY_VERTEX] = PackedVector3Array([Vector3(0, 1.5, 0.1), Vector3(0.05, 1.5, 0.1), Vector3(0, 1.55, 0.1)])
+	var blends := []
+	for nm in shape_names:
+		var b := []
+		b.resize(Mesh.ARRAY_MAX)
+		b[Mesh.ARRAY_VERTEX] = PackedVector3Array([Vector3(0, 1.5, 0.11), Vector3(0.05, 1.5, 0.11), Vector3(0, 1.55, 0.11)])
+		blends.append(b)
+	am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr, blends)
+	face.mesh = am
+	cfig.add_child(face)
+	face.set_blend_shape_value(face.find_blend_shape_by_name("cheekRaiser_L"), 1.0)   # a real smile's cheeks, which she mustn't have
+	var blinker := HSBlink.attach(cfig)
+	var unc: Node = cfig.get_node("Uncanny")
+	unc.stare = true
+	unc._hook()
+	await frames(3)
+	var smile_l := face.get_blend_shape_value(face.find_blend_shape_by_name("lipCornerPuller_L"))
+	var cheek_l := face.get_blend_shape_value(face.find_blend_shape_by_name("cheekRaiser_L"))
+	say("her face, wrong", "the wrong smile: her mouth's corners %.2f, her cheeks %.2f; the dead stare: her blinker %s, idle %s" % [smile_l, cheek_l, "there" if blinker != null else "MISSING", blinker.idle if blinker != null else "?"])
+	if absf(smile_l - 0.6) > 0.01 or cheek_l != 0.0 or blinker == null or blinker.idle:
+		bad("uncanny.gd's face: the smile %.2f (0.6) with the cheeks %.2f (0), the blink off %s" % [smile_l, cheek_l, blinker != null and not blinker.idle])
+	face.queue_free()
+	if blinker != null:
+		blinker.queue_free()
 	var win := v3(cfg["boxes"]["window_304"]["at"])
 	var caught := [0]
 	cl.caught.connect(func() -> void: caught[0] += 1)
@@ -480,11 +513,23 @@ func _initialize() -> void:
 	if not radio_on or float(pres.near) <= 0.0 or hiss.volume_db < -40.0:
 		bad("her signs (presence.gd) by the batteries: the signs %.2f, the radio's static %s" % [float(pres.near), radio_on])
 	# the steps behind you (behind_you.gd, started by the batteries' picked): out of the vending corner
+	var unc_her: Node = her.get_node("Uncanny")
+	var head := her.get_node("Head") as Node3D
+	var bent := rad_to_deg(head.global_basis.y.angle_to(her.global_basis.y))
+	var her_x0 := her.global_position.x
+	var her_steps0: int = unc_her.steps
 	var bh: Node = main.get_node("BehindYou")
 	var bh_on: bool = bh.running
 	stand(Vector3(bt.global_position.x, fl + 0.02, bt.global_position.z + 0.6), Vector3(bt.global_position.x, fl + 1.6, cz + 0.5))
 	await frames(4)
 	await hold(KEY_W, 2.2)
+	var her_steps: int = unc_her.steps - her_steps0
+	var her_came := her_x0 - her.global_position.x
+	await secs(1.2)
+	var after_stop: int = unc_her.steps - her_steps0 - her_steps
+	say("her, wrong", "her head bent %.0f deg (%s); as you walked out she took %d steps toward you (%.2f m), and %d after you stopped" % [bent, str(unc_her.tilted), her_steps, her_came, after_stop])
+	if absf(bent - 48.0) > 3.0 or her_steps < 2 or her_came < 0.5 or after_stop != 0:
+		bad("uncanny.gd: her head bent %.0f deg (48), her steps copying yours %d (%.2f m), none after you stopped (%d)" % [bent, her_steps, her_came, after_stop])
 	var bh_mid: int = bh.heard
 	await secs(2.5)
 	say("behind you", "started by the batteries %s; %d of its steps behind yours as you walked, then the step too many %s, over %s" % [bh_on, bh_mid, bh.extra, not bh.running])

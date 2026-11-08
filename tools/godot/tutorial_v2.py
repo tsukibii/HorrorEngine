@@ -180,7 +180,7 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://starter/fear.gd", "fear"), ("Script", "res://starter/behind_you.gd", "behind"),
        ("Script", "res://starter/presence.gd", "presence"), ("Script", "res://starter/glimpse.gd", "glimpse"), ("Script", "res://starter/closer.gd", "closer"),
        ("Script", "res://starter/mirror_figure.gd", "mirrorfig"), ("Script", "res://starter/shadow_pass.gd", "shadowpass"),
-       ("Script", "res://starter/door_feet.gd", "feet"),
+       ("Script", "res://starter/door_feet.gd", "feet"), ("Script", "res://starter/uncanny.gd", "uncanny"),
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
@@ -334,6 +334,7 @@ def person(name, at, turn, shy, parent="."):
 
 person("Her", her_at, her_turn, True)
 nd("Presence", "Her", "Node", script="presence", props=['static_on = NodePath("../../Things/Radio")'], paths=["static_on"])   # the signs that she's near
+nd("Uncanny", "Her", "Node", script="uncanny", props=["tilt_deg = 48.0", "mimic = true"])   # her head bent too far, her steps copying yours
 person("HerAgain", again_at, her_turn, False)
 # the moments and the scares
 nd("Events", ".", "Node3D")
@@ -358,6 +359,7 @@ nd("Closer", "Events", "Node3D", script="closer", props=['blink = NodePath("../.
 for i, (name, at) in enumerate(closer_marks):
     nd(name, "Events/Closer", "Marker3D", props=[f"transform = {tf(at, 180.0)}"])     # facing into the room (a marker's -Z)
 person("Figure", [0, 0, 0], 0.0, False, parent="Events/Closer")
+nd("Uncanny", "Events/Closer/Figure", "Node", script="uncanny", props=["smile = 0.6"])   # behind you at 35 cm: a smile with no eyes in it
 area("InBath", "Events", "event", "r304_bath")                           # walking into the bath: only its signal
 nd("MirrorHer", "Events", "Node3D", script="mirrorfig", props=[f"transform = {tf(mirror_her_at, 180.0)}"])   # in the tub, facing the mirror
 person("Figure", [0, 0, 0], 0.0, False, parent="Events/MirrorHer")

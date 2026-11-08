@@ -108,7 +108,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   <b>scene builder</b>, then build the whole game in Godot by hand: the <b>Look plugin</b> for the light, the weather and
   the surfaces, and the <b>starter scripts</b> for the story, the sound and the scares. No Director.</p>
   <div class="chips"><span class="chip">about two hours</span><span class="chip">Godot 4.7</span><span class="chip">the scene builder</span>
-  <span class="chip">the HorrorStudio Look plugin</span><span class="chip">25 starter scripts</span><span class="chip">the sound shelf and the four moods</span></div>
+  <span class="chip">the HorrorStudio Look plugin</span><span class="chip">26 starter scripts</span><span class="chip">the sound shelf and the four moods</span></div>
 </header>
 
 <section id="what">
@@ -662,6 +662,18 @@ and when you come within 4 m and look at it, two shadows walk into it and stop: 
 door. Four seconds later they walk away. They wait for your eyes, so they never come while you're looking at her. The
 note asked you not to knock on 308.</p>
 <figure><img src="img/feet.jpg" width="1600" height="900" alt="The dark corridor: light under 308's door, two feet in it"><figcaption>The light under 308's door, and someone standing behind it.</figcaption></figure>
+
+<h3 id="wrong">Something wrong with her</h3>
+<p>Give <code>Her</code> a <span class="node">Node</span> called <code>Uncanny</code> with
+<code>starter/uncanny.gd</code>: <b>Tilt Deg</b> 48 and <b>Mimic</b> on. Her head is bent to the side further than a
+neck goes (about 42°), and she steps when you step and stops when you stop, a step toward you for each of yours, never
+nearer than 2.5 m and never while your light is on her. Give the closer's figure (<code>Events/Closer/Figure</code>)
+one too, with <b>Smile</b> 0.6: when you turn round to her 35 cm behind you, she's smiling with her mouth and not her
+eyes (MHR's lip corner puller without the cheek raiser). <b>Stare</b> turns her blink off: people blink about 17 times
+a minute, and a face that never does isn't alive.</p>
+<p>The smile and the stare need a Character Studio character (her face's shapes and her blink); the stand-in has
+neither, so the bent head and the steps are what you'll see with it. One wrong thing a face: put them all on one face
+and she reads as a monster instead of a person.</p>
 </section>
 
 <section id="ending">
@@ -689,7 +701,7 @@ fire door ends the night: the screen goes black and the ending's title comes up.
   <li>The linen closet is dark: <kbd>F</kbd>. Take the key and the corridor goes out behind you, one tube at a time, then comes back.</li>
   <li>Open 304 with the key. The TV's on. The music turns to dread. Look at the window, then back at the bath's door. And again. Then wash your face, and stand by the bath's wall with the lamp behind you.</li>
   <li>The flashlight dies. Batteries in the vending corner, where the radio's hissing. Walk back out and listen behind you.</li>
-  <li>On the way out she's at the end of the corridor, the tubes stuttering round her. Your heart picks up as you near her. Shine the light on her and she backs off. Do it twice and the corridor goes dark.</li>
+  <li>On the way out she's at the end of the corridor, the tubes stuttering round her, her head on one side. Walk, and she walks. Your heart picks up as you near her. Shine the light on her and she backs off. Do it twice and the corridor goes dark.</li>
   <li>Walk to the fire exit. Don't look under 308's door.</li>
 </ol>
 </section>

@@ -2034,3 +2034,7 @@ pale one shows.
   the wall measured nothing (0.1419 against 0.1418): the shade's mesh casts shadows. A fabric shade lets light
   through, so interior.gd turns the kit lamps' shadows off as it does the windows' glass. Before blaming a faint
   shadow, render the frame with and without the thing and compare.
+- **Only an ArrayMesh answers about blend shapes**: `mesh.get_blend_shape_count()` is ArrayMesh's, so HSBlink's search
+  for the blink's shapes stopped with a script error on the stand-in's CylinderMesh (a box in a character's hand would
+  have done the same). Ask the MeshInstance3D (`get_blend_shape_count`, `find_blend_shape_by_name`) or check
+  `mesh is ArrayMesh` first.

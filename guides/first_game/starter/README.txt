@@ -49,6 +49,8 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            lamp's behind you and a wall ahead; arm() from a signal
   door_feet.gd             the light under a door and someone's feet walking into it, standing, walking away; it sits
                            itself under its door; arm() from a signal
+  uncanny.gd               under a character: one thing wrong; her blink off, a smile with no eyes in it (MHR's
+                           shapes), her head bent too far, her steps copying yours
   arms_down.gd             under a Character Studio character: its arms down by its sides
   lights.gd, reach.gd      helpers the others use: lights switched, dimmed, flickered and blinked as the Look plugin
                            keeps them, a collider round a thing you use
