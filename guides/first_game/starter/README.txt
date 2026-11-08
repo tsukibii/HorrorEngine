@@ -51,6 +51,12 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            itself under its door; arm() from a signal
   uncanny.gd               under a character: one thing wrong; her blink off, a smile with no eyes in it (MHR's
                            shapes), her head bent too far, her steps copying yours
+  dread.gd                 the night's director: its intensity from the scares, small moments between the story's
+                           beats while it builds, a peak held, then quiet; safe rooms; gentle, normal, relentless
+  dread_moment.gd          a small moment where it stands (a sound off the shelf, a target's fire()): its tier,
+                           weight, cooldown, distance and where (behind you, in view, out of sight)
+  menace.gd                under her: a gauge filling while you're near her and see her; full, she withdraws a
+                           while and the director relaxes
   arms_down.gd             under a Character Studio character: its arms down by its sides
   lights.gd, reach.gd      helpers the others use: lights switched, dimmed, flickered and blinked as the Look plugin
                            keeps them, a collider round a thing you use

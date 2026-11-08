@@ -161,6 +161,18 @@ closer_marks = [("BathDoor", [r304b["at"][0] - 0.9, floor_y, r304b["at"][2] + 0.
                 ("BedFoot", [r304b["at"][0] - 1.0, floor_y, r304b["at"][2] + 2.3])]      # at the foot of the bed
 mirror_her_at = [tub["at"][0], tub["at"][1] - tub["size"][1] / 2 + 0.08, tub["at"][2] + 0.4]   # standing in the tub, behind you at the bath's mirror
 feet_at = [d308[0] + 0.4, floor_y, corr["at"][2] + corr["size"][2] / 2 - 0.3]   # by 308's door on the corridor's side: door_feet.gd sits itself at its foot
+d302 = B["door_door_302"]["at"]
+d306 = B["door_door_306"]["at"]
+sdoor = B["door_stair_door"]["at"]
+inside = corr["at"][2] + corr["size"][2] / 2 + 0.3                     # just behind the south doors, in their rooms
+moments = [   # the night's small moments (dread_moment.gd): where each happens, its sound, how often and when
+    ("Knock302", [d302[0] + 0.4, floor_y + 1.2, inside], ['sound = "knock_three"', "tier = 2", "where = \"out of sight\"", "far_m = 18.0", "cooldown = 240.0"]),
+    ("DoorBelow", [sdoor[0] - 0.4, floor_y - 1.5, sdoor[2] - 1.5], ['sound = "door_close_02"', "tier = 1", "where = \"out of sight\"", "near_m = 5.0", "cooldown = 200.0"]),
+    ("StepsAbove", [corr["at"][0], floor_y + 2.95, corr["at"][2]], ['sound = "steps_upstairs"', "db = -4.0", "tier = 2", "far_m = 12.0", "cooldown = 300.0"]),
+    ("Thud306", [d306[0] + 0.5, floor_y + 0.3, inside + 0.8], ['sound = "thud_soft_02"', "tier = 1", "where = \"out of sight\"", "far_m = 10.0", "cooldown = 150.0"]),
+    ("Handle304", [d304[0] + 0.4, floor_y + 1.0, d304[2] - 0.25], ['sound = "latch"', "tier = 2", 'needs = "task:find304"', "where = \"out of sight\"", "near_m = 1.5", "far_m = 6.0", "once = true"]),
+    ("Chain308", [d308[0] + 0.4, floor_y + 1.3, inside], ['sound = "chain_grind"', "tier = 3", 'needs = "task:find304"', "where = \"out of sight\"", "far_m = 9.0", "once = true"]),
+]
 sg = B["stair_glass"]["at"]                                             # the stairwell's window (its glass's middle)
 land = B["stairs_fx_half_1"]["top"]                                     # the half landing's top
 sill = B["stairs__wall_n1"]["top"]                                      # the wall under the window: up to the sill
@@ -181,6 +193,7 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://starter/presence.gd", "presence"), ("Script", "res://starter/glimpse.gd", "glimpse"), ("Script", "res://starter/closer.gd", "closer"),
        ("Script", "res://starter/mirror_figure.gd", "mirrorfig"), ("Script", "res://starter/shadow_pass.gd", "shadowpass"),
        ("Script", "res://starter/door_feet.gd", "feet"), ("Script", "res://starter/uncanny.gd", "uncanny"),
+       ("Script", "res://starter/dread.gd", "dread"), ("Script", "res://starter/dread_moment.gd", "moment"), ("Script", "res://starter/menace.gd", "menace"),
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
@@ -335,6 +348,7 @@ def person(name, at, turn, shy, parent="."):
 person("Her", her_at, her_turn, True)
 nd("Presence", "Her", "Node", script="presence", props=['static_on = NodePath("../../Things/Radio")'], paths=["static_on"])   # the signs that she's near
 nd("Uncanny", "Her", "Node", script="uncanny", props=["tilt_deg = 48.0", "mimic = true"])   # her head bent too far, her steps copying yours
+nd("Menace", "Her", "Node", script="menace", props=["near_rate = 0.02", "seen_rate = 0.03"])  # stay near her half a minute and she goes
 person("HerAgain", again_at, her_turn, False)
 # the moments and the scares
 nd("Events", ".", "Node3D")
@@ -376,6 +390,10 @@ nd("Story", ".", "CanvasLayer", script="story", props=['objective_text = "Room 3
 nd("Sound", ".", "Node", script="sound", props=['mood = "uneasy"'])
 nd("Fear", ".", "Node", script="fear")                                    # your body: the heartbeat, breath, the world dulled, the beam shaking
 nd("BehindYou", ".", "Node", script="behind")                             # the steps behind you, from the batteries back to her
+nd("Dread", ".", "Node", script="dread", props=['safe_rooms = PackedStringArray("stairs", "landing_2f")'])   # the night's director: small moments between the story's
+nd("Moments", ".", "Node3D")
+for name, at, props in moments:
+    nd(name, "Moments", "Node3D", script="moment", props=[f"transform = {tf(at)}"] + props)
 # the fire door: given door.gd in the scene (Hotel's Editable Children) so its signal can end the game
 nd(P["door_corridor_e_door"].split("/")[-1], "Hotel/" + "/".join(P["door_corridor_e_door"].split("/")[:-1]), script="door", props=['tick = "out"'])
 lines += ['[connection signal="picked" from="Things/Key" to="Events/LightsDie" method="fire"]',

@@ -68,6 +68,7 @@ func fire(_a = null, _b = null) -> void:
 	_lights(lamps)
 	if hide != null:
 		hide.visible = false
+		hide.set_meta("hs_hidden", true)            # (her menace won't bring her back after this: menace.gd)
 	if appear != null:
 		appear.visible = true
 		if appear_for > 0.0:

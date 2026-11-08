@@ -108,7 +108,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   <b>scene builder</b>, then build the whole game in Godot by hand: the <b>Look plugin</b> for the light, the weather and
   the surfaces, and the <b>starter scripts</b> for the story, the sound and the scares. No Director.</p>
   <div class="chips"><span class="chip">about two hours</span><span class="chip">Godot 4.7</span><span class="chip">the scene builder</span>
-  <span class="chip">the HorrorStudio Look plugin</span><span class="chip">26 starter scripts</span><span class="chip">the sound shelf and the four moods</span></div>
+  <span class="chip">the HorrorStudio Look plugin</span><span class="chip">29 starter scripts</span><span class="chip">the sound shelf and the four moods</span></div>
 </header>
 
 <section id="what">
@@ -674,6 +674,37 @@ a minute, and a face that never does isn't alive.</p>
 <p>The smile and the stare need a Character Studio character (her face's shapes and her blink); the stand-in has
 neither, so the bent head and the steps are what you'll see with it. One wrong thing a face: put them all on one face
 and she reads as a monster instead of a person.</p>
+
+<h3 id="director">The night's director</h3>
+<p>The story's moments happen where you put them. Between them, a director can fill the gaps with small things, the
+way Left 4 Dead's does: add a <span class="node">Node</span> called <code>Dread</code> with
+<code>starter/dread.gd</code>, its <b>Safe Rooms</b> <code>stairs</code> and <code>landing_2f</code> (nothing happens
+on the way up), and a <span class="node">Node3D</span> called <code>Moments</code> with a <span class="node">Node3D</span>
+for each small thing, each with <code>starter/dread_moment.gd</code>, standing where it happens:</p>
+<table class="vals">
+<tr><td><code>Knock302</code></td><td>just inside 302's door: <b>Sound</b> <code>knock_three</code>, <b>Tier</b> 2, <b>Where</b> <i>out of sight</i>, <b>Far M</b> 18. Three knocks from inside a room, then nothing.</td></tr>
+<tr><td><code>DoorBelow</code></td><td>in the stairwell by the second floor's door: <code>door_close_02</code>, tier 1, <i>out of sight</i>, <b>Near M</b> 5</td></tr>
+<tr><td><code>StepsAbove</code></td><td>over the corridor's ceiling: <code>steps_upstairs</code>, tier 2, <b>Far M</b> 12. The sound physics muffle it through the ceiling.</td></tr>
+<tr><td><code>Thud306</code></td><td>inside 306: <code>thud_soft_02</code>, tier 1, <i>out of sight</i></td></tr>
+<tr><td><code>Handle304</code></td><td>outside 304's door: <code>latch</code>, tier 2, <b>Needs</b> <code>task:find304</code>, <b>Once</b>. Someone tries the handle while you're inside.</td></tr>
+<tr><td><code>Chain308</code></td><td>just inside 308's door: <code>chain_grind</code>, tier 3, needs <code>task:find304</code>, once</td></tr>
+</table>
+<p>The director keeps one number, how intense the night is: every scare raises it, being flashed twice raises it,
+its own moments raise it a little, and it falls slowly. While it builds, a moment comes every 25 to 70 seconds (never
+on a beat: a steady gap reads as a clock), picked among the ready ones by their <b>Weight</b>, never the same one twice
+running and never the same tier when another will do. At 0.85 it holds its peak for four seconds, then relaxes for 30
+to 60 seconds with nothing at all. Nothing comes in a safe room, while a note's card is up, or after the ending.
+<b>Pace</b> <i>gentle</i> or <i>relentless</i> stretches or shortens the gaps; give your players that setting.</p>
+<p>A moment can <code>fire()</code> anything too (its <b>Target</b>: a scare with <b>Walk In</b> off), so a light
+dying or her glimpse can be one of the director's. Keep tier 1 rare: a creak every minute becomes wallpaper.</p>
+
+<h3 id="menace">Her menace</h3>
+<p>Give <code>Her</code> a <span class="node">Node</span> called <code>Menace</code> with
+<code>starter/menace.gd</code>, <b>Near Rate</b> 0.02 and <b>Seen Rate</b> 0.03. It's a gauge that fills while
+you're within 8 m of her and faster while you can see her, and drains when you're not near. Stay near her about half
+a minute and she withdraws: gone for a minute or two, while the director relaxes, then she's back where she was.
+Alien: Isolation's alien does this, and its designers said why: "As soon as the player can predict a pattern in the
+Alien, it stops being scary." Her presence can't be stared down, and she can't be counted on.</p>
 </section>
 
 <section id="ending">

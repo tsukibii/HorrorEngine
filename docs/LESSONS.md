@@ -2038,3 +2038,8 @@ pale one shows.
   for the blink's shapes stopped with a script error on the stand-in's CylinderMesh (a box in a character's hand would
   have done the same). Ask the MeshInstance3D (`get_blend_shape_count`, `find_blend_shape_by_name`) or check
   `mesh is ArrayMesh` first.
+- **A compressed playthrough leaves a director little room**: tutorial v2's play test fires a scare every 20 s or so,
+  so the dread director spent most of it at its peak or relaxing (its intensity falls 0.01 a second), and two of its
+  moments came, not the three the check first wanted, and on the next run one. Check what it's for (its phases,
+  moments in place, none twice running) and bring its moments on deliberately where they're ready (its gap cut to
+  nothing in the corridor); a count left to chance is luck.

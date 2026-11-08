@@ -11,7 +11,8 @@
 ## under fear, the figure at the corner of your eye (at 308's door, gone as you turn to it), the one closer each time
 ## you look away (out of 304's bath, then behind you), her in the bath's mirror only (in the tub behind you, nobody when
 ## you turn round), a shadow that isn't yours (crossing 304's wall, the lamp behind you), feet under 308's door once the
-## corridor's dark, her signs (the tubes by her and your flashlight dipping, the radio's static). Prints `TUTORIAL <what> <how>` lines and `TUTORIAL result {errors}`, quits.
+## corridor's dark, her signs (the tubes by her and your flashlight dipping, the radio's static), her menace sending her
+## away a while, and the night's director (its moments, never in the stairwell or under a card, its peak and relax). Prints `TUTORIAL <what> <how>` lines and `TUTORIAL result {errors}`, quits.
 extends SceneTree
 
 const Lights := preload("res://starter/lights.gd")
@@ -133,6 +134,21 @@ func _initialize() -> void:
 	var her := main.get_node("Her") as Node3D
 	var again := main.get_node("HerAgain") as Node3D
 	var fl := float(cfg["floor"])
+	# the night's director (dread.gd): faster for the check (the game's own gaps are 25 to 70 s); each moment checked as it comes
+	var dread: Node = main.get_node("Dread")
+	dread.gap_min = 6.0
+	dread.gap_max = 9.0
+	dread.relax_min = 8.0
+	dread.relax_max = 10.0
+	var phases := {}
+	process_frame.connect(func() -> void: phases[dread.phase] = true)
+	var moment_bad: Array = []
+	var moment_prev := [""]
+	dread.moment.connect(func(nm: String) -> void:
+		var stairs_y := player.global_position.y < fl - 0.5 or player.global_position.z < float(cfg["rooms"]["corridor"]["at"][2]) - float(cfg["rooms"]["corridor"]["size"][2]) / 2.0 - 0.2 and player.global_position.x < 2.6
+		if story.card_up() or story.over or nm == moment_prev[0] or stairs_y:
+			moment_bad.append("%s (card %s, over %s, again %s, in the stairwell %s)" % [nm, story.card_up(), story.over, nm == moment_prev[0], stairs_y])
+		moment_prev[0] = nm)
 	# 0. the scene as the guide builds it
 	var d304 := door("door_304")
 	var fire := door("corridor_e_door")
@@ -294,6 +310,18 @@ func _initialize() -> void:
 		bad("the glimpse (glimpse.gd): armed by the note's read %s, shown 30 to 42 deg off where you look %s (%.0f)" % [was_armed, g_seen, g_ang])
 	if gfig.visible or gl.went_at < 25.0 or g_blink > 0.5:
 		bad("the glimpse should go as you turn to it, before 25 deg, in the tube's blink: still there %s, at %.0f deg, the tube to %.2f" % [gfig.visible, gl.went_at, g_blink])
+	# the director's moments, brought on here in the corridor (its gap cut to nothing twice): two, not the same, each played
+	var asked := []
+	for k in 2:
+		dread.intensity = 0.2
+		dread.phase = "build"
+		dread._next = 0.0
+		await frames(3)
+		asked.append(dread.fired.back()["name"] if not dread.fired.is_empty() else "")
+	var played: bool = asked.all(func(nm): return nm != "" and int(main.get_node("Moments/" + nm).count) >= 1)
+	say("the director here", "brought on twice in the corridor: %s, each played %s" % [str(asked), played])
+	if asked[0] == asked[1] or not played:
+		bad("the dread director's moments (dread.gd, dread_moment.gd): %s, played %s (two, not the same)" % [str(asked), played])
 	# 4. the linen closet: its door, the key; the corridor's lights out one by one, the farthest first, and back
 	var ld := door("door_linen")
 	var lc := ld.global_position + ld.global_basis.x * 0.38 + Vector3.UP * 1.0
@@ -512,6 +540,21 @@ func _initialize() -> void:
 		float(pres.near), "on" if radio_on else "OFF", hiss.volume_db if hiss != null else -80.0, int(pres.dips)])
 	if not radio_on or float(pres.near) <= 0.0 or hiss.volume_db < -40.0:
 		bad("her signs (presence.gd) by the batteries: the signs %.2f, the radio's static %s" % [float(pres.near), radio_on])
+	# her menace (menace.gd): filling while you're near her; full, she withdraws a while (the director relaxing), then she's back
+	var men: Node = her.get_node("Menace")
+	var men_level := float(men.level)
+	var her_home := her.global_position
+	men.away_min = 1.5                                     # (the check's: the game's are 60 to 120 s)
+	men.away_max = 1.5
+	men.withdraw()
+	await frames(2)
+	var men_gone := not her.visible
+	var men_relax: bool = dread.phase == "relax"
+	await secs(2.0)
+	say("her menace", "near her the gauge at %.2f; full, she withdrew %s (the director relaxing %s), and came back %s where she stood %s" % [
+		men_level, men_gone, men_relax, her.visible, her.global_position.distance_to(her_home) < 0.01])
+	if men_level <= 0.0 or not men_gone or not men_relax or not her.visible or her.global_position.distance_to(her_home) > 0.01:
+		bad("her menace (menace.gd): the gauge %.2f near her, withdrew %s, the director relaxing %s, back %s" % [men_level, men_gone, men_relax, her.visible])
 	# the steps behind you (behind_you.gd, started by the batteries' picked): out of the vending corner
 	var unc_her: Node = her.get_node("Uncanny")
 	var head := her.get_node("Head") as Node3D
@@ -650,5 +693,10 @@ func _initialize() -> void:
 	say("ending", "the fire door %s, the story %s, out ticked %s" % ["open" if fire.open else "SHUT", "over" if story.over else "NOT over", story.done("out")])
 	if not fire.open or not story.over or not story.done("out"):
 		bad("the fire door's ending: open, the story over, out ticked")
+	var rep: Dictionary = dread.report()
+	var names: Array = rep["fired"].map(func(f): return f["name"])
+	say("the director", "%d moments (%s); phases %s; at the end %s at %.2f; out of place: %s" % [int(rep["moments"]), ", ".join(names), str(phases.keys()), rep["phase"], float(rep["intensity"]), str(moment_bad)])
+	if int(rep["moments"]) < 2 or not moment_bad.is_empty() or not (phases.has("build") and phases.has("peak") and phases.has("relax")):   # (its own come by chance in a compressed night: two were brought on above)
+		bad("the dread director (dread.gd): %d moments, out of place %s, phases %s (build, peak and relax)" % [int(rep["moments"]), str(moment_bad), str(phases.keys())])
 	print("TUTORIAL result " + JSON.stringify({"errors": errors}))
 	quit()

@@ -371,8 +371,9 @@ tutorial too"; the starter kit and tutorial v2's §22): 1 (`footsteps.gd`, `behi
 breath near her waits for the cold), 4 (`glimpse.gd`, `closer.gd`), 6 (Woohill's sound physics: `acoustics.gd`,
 `sound.gd`), 8 (`fear.gd`), 10's occlusion and 5 (`mirror_figure.gd` with the Look plugin's layer 19,
 `shadow_pass.gd`, `door_feet.gd`), 3 (`uncanny.gd`: the dead stare and the wrong smile, with §5.6's posture and
-mimicry; the pupils' answer to the beam waits, for there's no pupil reflex for the living to differ from yet). Not
-yet for the desk's export: no story words.
+mimicry; the pupils' answer to the beam waits, for there's no pupil reflex for the living to differ from yet), 9
+(`dread.gd`, `dread_moment.gd`, `menace.gd`; the night's set and its memory across runs not yet: the starter has no
+saves) and §4's everyday moments for a hotel. Not yet for the desk's export: no story words.
 
 1. **Footsteps in 3D, and the behind-you layer** (S). The player's steps by floor at the feet (the by-hand player has
    none), then the phantom steps copying them 0.3 s late, one step too many, a door shutting out of sight.
