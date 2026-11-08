@@ -2,6 +2,14 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-08, later (the user: more atmospheric horror, researched)
+
+- **The ask**: "Any other atmospheric horror elements you can think of adding? Research some more things that could
+  elevate our simple game to a more intense level".
+- **Read as**: research only, then the user picks (docs/research/intensity.md). What's researched already isn't
+  repeated (jump scares, the dread curve, loop games, story in objects, the eye candy catalogue, HORROR_TODO); this
+  covers what isn't: sound and the player's own body, pacing and the threat's warning signs, the uncanny seen.
+
 ## 2026-11-08 (the user: a better flashlight and the level's air: "a beam in a fog", a fog level, dust; eye candy first)
 
 - **The ask**: "Anyway we could work on a better flashlight + level atmosphere system, you know when we put a light in
