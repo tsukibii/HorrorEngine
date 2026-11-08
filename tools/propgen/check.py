@@ -26,7 +26,8 @@ CASES = {"soda_can": (115, 6000), "soda_can_crushed": (125, 14000), "water_bottl
          "pot_cactus": (320, 5000), "pillow_bed": (680, 4000), "futon_folded": (820, 5000), "kakebuton_turned": (1650, 8000),
          "curtain_tied": (2300, 15000), "table_farmhouse": (2000, 4000), "chair_dining": (880, 4000),
          "suitcase_hardshell": (600, 12000), "clothes_folded_tee": (314, 1000), "closet_oshiire": (1865, 4000), "journal_diary": (241, 5000),
-         "rock_boulder": (1300, 3000), "pebbles_river": (500, 2600)}
+         "rock_boulder": (1300, 3000), "pebbles_river": (500, 2600),
+         "retro_cooker": (290, 2000), "retro_door_a": (2100, 1200), "retro_spruce_g": (1800, 600)}
 
 
 def _glb(path):

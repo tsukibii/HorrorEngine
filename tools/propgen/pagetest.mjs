@@ -83,6 +83,26 @@ try {
     if (kept && !(await page.locator('.card[data-name="soda_can"] img').count())) throw new Error("the kept can's picture isn't on its card");
     return `${cards} cards` + (kept ? ", the can's kept picture on its card" : " (no kept picture in the project to show)");
   });
+  await step("the retro pack a tab of its own, first after all; its groups as chips and headings (PROPGEN §29)", async () => {
+    const retro = Object.entries(book()).filter(([k, r]) => !k.startsWith("_") && r.family === "retro");
+    if (!retro.length) return "no retro recipes in the book: skipped";
+    const order = await page.evaluate(() => [...document.querySelectorAll("#fams button[data-fam]")].map(b => b.dataset.fam));
+    if (order[0] !== "" || order[1] !== "retro") throw new Error(`the bar reads ${order.slice(0, 3).join(", ")}: retro isn't first after all`);
+    if (!(await page.locator('#fams button[data-fam="retro"].tab').count())) throw new Error("the retro button isn't marked a tab");
+    await page.click('#fams button[data-fam="retro"]');
+    const groups = [...new Set(retro.map(([, r]) => r.group))];
+    const cards = await page.locator("#gallery .card").count(), heads = await page.locator("#gallery h4").count();
+    if (cards !== retro.length) throw new Error(`${cards} cards under the tab for ${retro.length} retro recipes`);
+    if (heads !== groups.length) throw new Error(`${heads} group headings for ${groups.length} groups`);
+    const g = groups[0], inG = retro.filter(([, r]) => r.group === g).length;
+    await page.click(`#gallery .groups button[data-grp="${g}"]`);
+    const shown = await page.locator("#gallery .card").count();
+    if (shown !== inG) throw new Error(`the ${g} chip shows ${shown} cards, its group has ${inG}`);
+    await page.click('#fams button[data-fam=""]');
+    const all = await page.locator("#gallery .card").count(), n = Object.keys(book()).filter(k => !k.startsWith("_")).length;
+    if (all !== n) throw new Error(`back to all: ${all} cards for ${n} recipes`);
+    return `${retro.length} cards in ${groups.length} groups, the ${g} chip ${inG}`;
+  });
   await step("a recipe opened into its form, its words changed there", async () => {
     await page.click('.card[data-name="ema"]');
     await page.waitForFunction(() => window.__pp.name === "ema");

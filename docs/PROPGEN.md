@@ -1318,3 +1318,63 @@ centre, so the shape and the paint read one source:
   (`prop: "props/rock_mossy"`, `fit` its size, `top` to sink it: STREET_BUILDER §7d).
 
 The check (PROPGEN) makes `rock_boulder` and `pebbles_river` small.
+
+## 29. The retro pack: your old low-poly models, enhanced, in a tab of their own (DECISIONS 2026-11-08)
+
+The user (2026-11-08): "I want you to analyse the old 3 models I made in the past, add them to the prop tool but with a
+more adjusted to match our style of higher quality textures pbrs/materials etc, and smoothign if requried for more low
+poly psx. Start by looking through whats in the folder, then create a reference for quality off of some of our best
+props (use maybe 15 references). Then start going through the ones added, check if their vertex/models are good
+enough, if they pass, then enhance the textures where required (more pbr, style match with our current game style props
+etc), then create a ne w genre/tab in our prop tool called retro" (the folder holds two packs of 3D models, read as
+"the old 3D models").
+
+- **The pack** (`retro/`, 193 .glb from Blender): *3D_Retro_World 0.01* (camp, gas station and gas store props, road
+  tiles and signs, rocks, trees, bushes and grass) and *Utility Infrastructure* (concrete and wooden poles at three LODs
+  each, their insulators, a transformer, a street lamp). Low poly throughout (2 to 13,500 triangles), small textures
+  (128 to 512 px, the trees' atlases 2048), a base colour only: every material metallic 0, roughness 1, double-sided,
+  some solid things flagged BLEND, no normal or occlusion map. The trees carry their LODs side by side and a billboard.
+- **The bar** (`tools/propgen/quality.py`, `Content/Studio/Props/quality_reference.json`): fifteen of the best made
+  props measured from their .glb alone (no Blender): soda_can_crushed, coffee_can, trash_bag, saucepan, frying_pan,
+  rice_cooker_retro, candle_votive, table_farmhouse, suitcase_softside, hokora, rock_boulder, rock_mossy, cedar_real,
+  zelkova_real, hakone_grass (painted and bare metal, film, plastic, glass and wax, wood, fabric, stone, foliage: the
+  pack's materials). Each material's maps (every one has base colour, ORM and normal), texel density, the base colour's
+  lightness range, saturation and fine detail, roughness and its spread, the occlusion and the normal map's relief;
+  each measure's range is its 10th to 90th percentile over their materials. `python tools/propgen.py quality reference`
+  makes it again; `quality made <names>` holds made props to it.
+- **The audit** (`python tools/propgen.py quality audit`, `Content/Studio/Props/retro_audit.json`): every file's
+  nearest LOD measured (triangles and size, degenerate and inside-out faces, open and non-manifold edges, facets,
+  shading, its UVs: in 0-1 or tiled, overlapping, the share of the texture used) and judged: it fails without UVs on a
+  textured material, with most of its UV triangles collapsed, with more than 5% of its faces degenerate, or by the hand
+  review (`Content/Studio/Props/retro_review.json`, which also carries the notes: a trademark to swap, a texture under
+  someone else's licence). Over a low-poly budget for its size (a hand prop 2000 triangles, a chair's size 3500, a
+  car's 6000, a pole's 8000, a tree's 10000) is a note: the pack's LOD1 is taken where it has one.
+- **The `retro` family** (`families/retro.py`): the model kept (its triangles, its UVs where they're good), what the
+  made props have given to it. Read with numpy (its nearest LOD; a billboard never; `node` one piece of a file of
+  several), glTF's y-up as z-up, welded so a smooth surface shades smooth (`smooth`, the angle an edge stays hard past:
+  the low poly smoothed, its corners kept), or its own normals kept (`normals: "keep"`: foliage cards whose normals bend
+  out of the crown), each face wound by its own normals (the double-sided drawing hid faces inside out), degenerate
+  faces dropped. Each material's texture: its own UVs kept where they're unique and use enough of the texture, laid out
+  again over the whole canvas where they're stacked or share an atlas with other models (the picture carried over texel
+  by texel from where the old UVs read it), kept as a repeat for cards and tiled bark (`layout`). Then, by its `kind`
+  (fabric, paint, metal, steel, plastic, rubber, wood, weathered, stone, concrete, asphalt, bark, foliage, print, glass,
+  card): upscaled smooth (or `pixel`: its pixels kept square), its baked light evened out (`delight`), its darkest
+  lifted to the bar's (`floor`), a shelf set's grain laid over its colours at real size (`detail`, `tile`), a fine
+  grain of its own (never finer than 2.5 texels), relief from its colours into the normal map (on the source's features,
+  not its pixels' edges), roughness and metalness by what it is (`metal: "grey"`: bare metal where the colour is a light,
+  clean grey; white stays print), what glows lit (`glow`), the occlusion baked from the mesh and the made props' wear,
+  its worn edges and creased dirt found by each texel's distance to the mesh's hard edges (`edge_mm`: a low mesh's own
+  vertex curvature spreads over whole faces), no texel left black after the dirt; cut-outs cut (alpha scissor, never
+  blended), glass see-through (its kind's tint and opacity, whatever alpha it came with), one-sided unless it's a card or
+  an open shell. `pivot`: on the floor (a prop), its own origin kept (`keep`: kit pieces that snap, walls, roads, the
+  canopy, the kerbed paving), on its trunk (a tree). `enhance: false` makes it as it came (its texture's own pixels,
+  fully rough, no metal, occlusion or wear), for a comparison in the same studio.
+- **The tab**: a family whose module says `TAB = True` is listed first in the page's families bar, after *all*; its
+  recipes' `group` (camp, gas station, gas store, road, rocks, trees, plants, utility) are chips over its cards and
+  headings between them. 174 recipes `retro_<name>`, written from the audit's passes (Content/Studio/Props/presets.json);
+  their pictures kept in `Content/Studio/Props/thumbs/`.
+- **Found on the way**: Blender decodes a 16-bit PNG into a float buffer and, the image tagged sRGB by default, turns it
+  linear; every ambientCG normal map on the shelf is 16-bit, so `paint.read_image` had given each set's normal map
+  tilted about 37 degrees everywhere (the trees' bark and leaves among them) and the pack's 16-bit textures at half their
+  lightness. Images read inside Blender are tagged Non-Color first now (docs/LESSONS.md, 2026-11-08).
+
