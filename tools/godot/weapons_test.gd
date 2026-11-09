@@ -518,6 +518,23 @@ func _initialize() -> void:
 	if absf(at0.x - (vsz.x - 46.0 * u)) > 1.0 or absf(at0.y - (vsz.y - 42.0 * u)) > 1.0:          # (headless, the view is tiny: its rule, not pixels)
 		bad("the shells' row isn't low on the right (%.0f, %.0f of %.0f x %.0f)" % [at0.x, at0.y, vsz.x, vsz.y])
 
+	# 8d. running (the starter's 3.2 m/s): carried low and turned in; walking, back up
+	var run_most := 0.0
+	var start_at := player.global_position
+	for i in 70:
+		player.global_position += Vector3(-3.2 / 60.0, 0, 0)
+		await process_frame
+		run_most = maxf(run_most, float(g("_run")))
+	var walk_k := 1.0
+	for i in 70:
+		player.global_position += Vector3(1.6 / 60.0, 0, 0)
+		await process_frame
+		walk_k = float(g("_run"))
+	player.global_position = start_at
+	say("run", "running the gun carried low (%.2f), walking up again (%.2f)" % [run_most, walk_k])
+	if run_most < 0.9 or walk_k > 0.05:
+		bad("the gun isn't carried low while running and up while walking (%.2f, %.2f)" % [run_most, walk_k])
+
 	# 9. lowered: out of view, the flashlight back on the eye, no shot; raised again
 	gun.set_raised(false)
 	await secs(0.5)

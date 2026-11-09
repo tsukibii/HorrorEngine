@@ -22,7 +22,7 @@ The user's answers, newest first. They override the plan, the research and the d
   one on the wrist) were taken out; the gun is held by no one, as in the reference, and in the reload each shell rises by
   itself from under the gun, its nose into the loading port, and is pushed on into the tube.
 - **Refined from other sides** (the user's "analyse and refine it through diff perspectives"): the feel (the view's
-  kick settling back by itself, a little aside; the gun rocking back with the pump), aiming on the right button (the
+  kick settling back by itself, a little aside; the gun rocking back with the pump, carried low while running), aiming on the right button (the
   barrel straight ahead under the eye with the stock out of view, the lens 58°, the cone tighter), the tape's 4:3 picture
   (the gun and its shells drawn in), the shells as marks in the UI plugin's colours, four spare shells to start with
   (every one counts), holes that stay on what they hit (a door, a crate), a sound for each pickup, the gun shown in the

@@ -59,7 +59,7 @@ const DIR := "res://addons/horrorstudio_weapons/"
 @export var fit_tape := true                      ## drawn in to sit in the tape's 4:3 picture when one's on (HSTape)
 @export_group("Aim")
 @export var aim := true                           ## the right button raises it to the eye, the barrel straight ahead
-@export var aim_hold := Vector3(0.0, -0.05, -0.22)    ## where the chamber sits from the eye when aimed (the stock under the view)
+@export var aim_hold := Vector3(0.0, -0.064, -0.21)   ## where the chamber sits from the eye when aimed (the stock under the view)
 @export var aim_zero_m := 8.0                     ## aimed, the bore's line crosses the view's middle this far ahead
 @export var aim_fov := 58.0                       ## the camera's lens while aimed (0: as it is)
 @export var aim_spread := 0.75                    ## the cone narrowed by aiming
@@ -96,6 +96,8 @@ var _kick := 0.0
 var _kick_v := 0.0
 var _pose := 0.0                                  # 0 held, 1 turned for the loading port
 var _pumping := 0.0                               # 0..1 the pump's way back: the gun rocks with it
+var _run := 0.0                                   # 0..1 carried low and turned while running
+var _fired_t := -10.0
 var _lower := 0.0                                 # 0 raised, 1 lowered out of view
 var _last_fwd := Vector3.ZERO
 var _sway := Vector2.ZERO
@@ -486,6 +488,7 @@ func _fire() -> void:
 		return
 	chambered = false
 	shots += 1
+	_fired_t = _t
 	_shoot()
 	_show_hud()
 	busy = true
@@ -957,6 +960,10 @@ func _process(dt: float) -> void:
 			spd = minf(Vector2(p.x - _prev.x, p.z - _prev.z).length() / dt, 6.0)
 		_prev = p
 	var amp := clampf(spd / 3.2, 0.0, 1.0) * bob * (1.0 - 0.75 * ak)
+	# running (the starter's 3.2 m/s; walking is 1.6): carried low and turned in, up again to aim, shoot or reload
+	var want_run := clampf((spd - 2.2) / 0.8, 0.0, 1.0) if not (aiming or busy or reloading) and _t - _fired_t > 0.5 else 0.0
+	_run = move_toward(_run, want_run, dt * (2.5 if want_run > _run else 5.0))
+	var rk := _run * _run * (3.0 - 2.0 * _run)
 	_bob_t += dt * (2.0 + spd * 2.3)
 	# the recoil's spring
 	_kick_v += (-_kick * 120.0 - _kick_v * 16.0) * dt
@@ -965,9 +972,10 @@ func _process(dt: float) -> void:
 	off += Vector3(0.0, 0.0, 0.05 * _kick + 0.012 * _pumping)
 	off += Vector3(-0.07, 0.035, 0.035) * _pose
 	off += Vector3(0.02, -0.26, 0.06) * _lower
-	var rx := deg_to_rad(9.0) * _kick + deg_to_rad(2.2) * _pumping + deg_to_rad(10.0) * _pose - deg_to_rad(38.0) * _lower + _sway.y * 0.5 + sin(_t * 1.7) * 0.003
-	var ry := _sway.x * 0.6 + deg_to_rad(8.0) * _pose
-	var rz := deg_to_rad(-48.0) * _pose + deg_to_rad(1.4) * _pumping + _sway.x * 0.3 + sin(_bob_t) * 0.01 * amp
+	off += Vector3(-0.02, -0.035, 0.03) * rk
+	var rx := deg_to_rad(9.0) * _kick + deg_to_rad(2.2) * _pumping - deg_to_rad(16.0) * rk + deg_to_rad(10.0) * _pose - deg_to_rad(38.0) * _lower + _sway.y * 0.5 + sin(_t * 1.7) * 0.003
+	var ry := _sway.x * 0.6 + deg_to_rad(8.0) * _pose + deg_to_rad(7.0) * rk
+	var rz := deg_to_rad(-48.0) * _pose + deg_to_rad(1.4) * _pumping + deg_to_rad(9.0) * rk + _sway.x * 0.3 + sin(_bob_t) * 0.01 * amp
 	var pivot := _hip().lerp(aim_hold, ak)
 	var r := Basis.from_euler(Vector3(rx, ry, rz))
 	_rig.transform = Transform3D(Basis(), pivot + off) * Transform3D(r, Vector3.ZERO) * Transform3D(Basis(), -pivot)

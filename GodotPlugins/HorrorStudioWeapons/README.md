@@ -45,6 +45,8 @@ The guide for the user, with these pictures: `guides/weapons/index.html`.
 - **Aimed** (the right button, `aim`): the chamber under the eye (`aim_hold`), the barrel straight ahead with its bead
   just under the view's middle, the lens 58° (`aim_fov`, from the camera's own), the cone 0.75 as wide, the sway and bob
   less; never while reloading or lowered.
+- **Running** (over 2.2 m/s: the starter runs at 3.2, walks at 1.6): carried low and turned in, up again to aim, shoot
+  or reload.
 - **The pump**: 0.17 s after the shot, back 0.16 s (the gun rocking back with it, the bolt's face gone, the hull thrown
   out of the ejection port to the right, onto the floor), 0.05 s, forward 0.14 s: a shot every 0.53 s at most, under
   two a second (the flash limit is three).

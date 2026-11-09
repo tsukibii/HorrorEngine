@@ -39,7 +39,7 @@ gun"; DECISIONS 2026-11-09). Built:
   the gun or a box of shells. `godot_byhand.py` copies and enables it in every project made by hand.
 - **WEAPONS** (`tools/godot/weapons_check.py`): built into tutorial v2's hotel corridor and played headless; `--pictures`.
 - **Refined** (the user's "refine it through diff perspectives"): the kick settling back, the gun rocking with the
-  pump, aiming on the right button, the tape's 4:3, the shells as marks, holes staying on doors and crates, pickup
+  pump, carried low while running, aiming on the right button, the tape's 4:3, the shells as marks, holes staying on doors and crates, pickup
   sounds, the editor's preview, `HSShootable` (shot: gone a while, shoved, a cry, a line, a target; `hit`, `down`), and
   the guide `guides/weapons/index.html` (its pictures WEAPONS's).
 
