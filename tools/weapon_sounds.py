@@ -127,9 +127,40 @@ def shells_box(rng):
     return x
 
 
+def double_open(rng):
+    """The top lever pushed over (a click), the barrels unlatching and dropping on the hinge (a metal clack, a low thunk)."""
+    t = t_(0.42)
+    x = tick(t, 0.004, 2000, 9000, 0.002, 0.5, rng) + modes(t, 0.006, [2600, 4300], [0.010, 0.007], [0.4, 0.25], rng)
+    x += modes(t, 0.07, [1500, 2700, 4100], [0.030, 0.020, 0.012], [0.8, 0.5, 0.3], rng) + tick(t, 0.07, 800, 6000, 0.004, 0.6, rng)
+    thunk = band(rng.standard_normal(len(t)), 90, 520) * decay(t, 0.03, 0.10)
+    return x + thunk / max(np.abs(thunk).max(), 1e-9) * 0.7
+
+
+def double_close(rng):
+    """The barrels swung up and locked: a hard clack with the gun's body behind it, the lever snapping back."""
+    t = t_(0.40)
+    x = modes(t, 0.0, [1900, 3300, 5200, 7400], [0.035, 0.022, 0.014, 0.008], [1.0, 0.6, 0.35, 0.2], rng)
+    x += tick(t, 0.0, 600, 9000, 0.003, 0.9, rng)
+    body = band(rng.standard_normal(len(t)), 70, 400) * decay(t, 0.045, 0.0)
+    x += body / max(np.abs(body).max(), 1e-9) * 0.9
+    return x + modes(t, 0.055, [2900, 4600], [0.008, 0.006], [0.3, 0.2], rng)
+
+
+def double_flick(rng):
+    """The ejectors' springs throwing the hulls out: two sharp pings close together and the hulls' plastic rattle."""
+    t = t_(0.30)
+    x = np.zeros_like(t)
+    for at in (0.0, 0.018):
+        x += modes(t, at, [3300, 5600, 8100], [0.012, 0.008, 0.005], [0.7, 0.45, 0.25], rng) + tick(t, at, 1500, 9000, 0.002, 0.5, rng)
+    for at in (0.05, 0.075, 0.11):
+        x += 0.25 * modes(t, at, [1250, 2500], [0.010, 0.007], [0.6, 0.3], rng)
+    return x
+
+
 SOUNDS = {"shotgun_fire": (blast, -0.5), "shotgun_pump_back": (pump_back, -4.0), "shotgun_pump_forward": (pump_forward, -3.0),
           "shotgun_shell_insert": (shell_insert, -6.0), "shotgun_dry": (dry_click, -8.0), "shell_drop": (shell_drop, -10.0),
-          "shotgun_handle": (handle, -10.0), "shells_box": (shells_box, -9.0)}       # (new ones last: each one's seed is its place)
+          "shotgun_handle": (handle, -10.0), "shells_box": (shells_box, -9.0),       # (new ones last: each one's seed is its place)
+          "double_open": (double_open, -5.0), "double_close": (double_close, -3.0), "double_flick": (double_flick, -8.0)}
 
 
 def write(path, x, peak_db):

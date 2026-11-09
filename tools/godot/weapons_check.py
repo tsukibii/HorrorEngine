@@ -128,12 +128,16 @@ for i, z in enumerate((cz - 0.55, cz + 0.5)):                                  #
     nd("Mesh", f"Crate{i}", "MeshInstance3D", props=['mesh = SubResource("boxmesh")'])
 lines += ['[editable path="Player"]', ""]
 (proj / "main.tscn").write_text("\n".join(lines), encoding="utf-8")
+# the double barrel (v2) in the same corridor: the same scene with an HSDoubleBarrel under the eye
+dbl = "\n".join(lines).replace('path="res://addons/horrorstudio_weapons/shotgun.gd"', 'path="res://addons/horrorstudio_weapons/double.gd"')
+dbl = dbl.replace('[node name="Shotgun" type="Node3D" parent="Player/Eye"', '[node name="Double" type="Node3D" parent="Player/Eye"')
+(proj / "double.tscn").write_text(dbl, encoding="utf-8")
 pg = (proj / "project.godot").read_text(encoding="utf-8")
 if "run/main_scene" not in pg:
     pg = pg.replace('config/name="Weapons"', 'config/name="Weapons"\nrun/main_scene="res://main.tscn"') + "\n[display]\nwindow/size/viewport_width=1600\nwindow/size/viewport_height=900\n"
     (proj / "project.godot").write_text(pg, encoding="utf-8")
 (proj / "weapons.json").write_text(json.dumps({"start": start, "floor": fl, "corridor": corr}, indent=1), encoding="utf-8")
-for f in ["weapons_test.gd", "weapons_shots.gd"]:
+for f in ["weapons_test.gd", "weapons_shots.gd", "weapons_double_test.gd", "weapons_double_shots.gd"]:
     if (ROOT / "tools/godot" / f).is_file():
         shutil.copy(ROOT / "tools/godot" / f, proj / f)
 
@@ -148,6 +152,18 @@ if res is None:
 errs += res.get("errors", [])
 errs += [f"a script error: {ln.strip()}" for ln in (r.stdout + r.stderr).splitlines() if "SCRIPT ERROR" in ln or "Parse Error" in ln][:6]
 
+# the double barrel's half
+r = run([G, "--headless", "--path", str(proj), "--fixed-fps", "60", "-s", "weapons_double_test.gd"], timeout=900)
+got = [ln for ln in r.stdout.splitlines() if ln.startswith("DOUBLE ")]
+for ln in got:
+    print("  double " + ln[7:])
+res = next((json.loads(ln.split(" ", 2)[2]) for ln in got if ln.startswith("DOUBLE result ")), None)
+if res is None:
+    errs.append("the double's test said nothing: " + (r.stdout + r.stderr)[-2500:])
+else:
+    errs += ["double: " + e for e in res.get("errors", [])]
+errs += [f"a script error (double): {ln.strip()}" for ln in (r.stdout + r.stderr).splitlines() if "SCRIPT ERROR" in ln or "Parse Error" in ln][:6]
+
 if "--pictures" in args and not errs:
     from PIL import Image
     shots = proj / "_shots"
@@ -155,12 +171,13 @@ if "--pictures" in args and not errs:
     (shots / ".gdignore").touch()
     for old in shots.glob("*.png"):
         old.unlink()
-    cmd = [G, "--path", str(proj), "--rendering-driver", "vulkan", "--fixed-fps", "30", "-s", "weapons_shots.gd", "--", f"--out={shots}"]
-    if "--only" in args:
-        cmd.append("--only=" + args[args.index("--only") + 1])
-    if shutil.which("xvfb-run"):
-        cmd = ["xvfb-run", "-a", "-s", "-screen 0 1920x1080x24"] + cmd
-    r = run(cmd, timeout=1800)
+    for script in ("weapons_shots.gd", "weapons_double_shots.gd"):
+        cmd = [G, "--path", str(proj), "--rendering-driver", "vulkan", "--fixed-fps", "30", "-s", script, "--", f"--out={shots}"]
+        if "--only" in args:
+            cmd.append("--only=" + args[args.index("--only") + 1])
+        if shutil.which("xvfb-run"):
+            cmd = ["xvfb-run", "-a", "-s", "-screen 0 1920x1080x24"] + cmd
+        r = run(cmd, timeout=1800)
     made = sorted(shots.glob("*.png"))
     if not made:
         errs.append("no pictures came out of Godot: " + (r.stdout + r.stderr)[-800:])

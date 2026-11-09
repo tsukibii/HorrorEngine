@@ -2,22 +2,23 @@
 class_name HSWeaponPickup
 extends Node3D
 ## Something for the weapon, taken with E (the starter's player uses whatever has use()): `kind` shotgun (the gun itself,
-## lying on its side where you put this, `shells` coming with it into the pocket) or shells (a box of them). Taken, the
-## player's HSShotgun (the group hs_weapon) is given the gun or the shells, a line is said (the Story's, `say`) and this
-## is gone. `taken` to wire anything to (a scare when you pick it up).
+## lying on its side where you put this, `shells` coming with it into the pocket), double (the double barrel, for a
+## player with an HSDoubleBarrel) or shells (a box of them, for the gun you carry). Taken, the player's gun (the group
+## hs_weapon) is given the gun or the shells, a line is said (the Story's, `say`) and this is gone. `taken` to wire
+## anything to (a scare when you pick it up).
 signal taken
 
 const DIR := "res://addons/horrorstudio_weapons/"
 
-@export_enum("shotgun", "shells") var kind := "shotgun"
+@export_enum("shotgun", "shells", "double") var kind := "shotgun"
 @export var shells := 5
 @export var say := ""
 
 
 func _ready() -> void:
 	var box := Vector3(0.9, 0.08, 0.2)
-	if kind == "shotgun":
-		var g := (load(DIR + "models/shotgun_pump.glb") as PackedScene).instantiate() as Node3D
+	if kind == "shotgun" or kind == "double":
+		var g := (load(DIR + "models/%s.glb" % ("shotgun_double" if kind == "double" else "shotgun_pump")) as PackedScene).instantiate() as Node3D
 		add_child(g)
 		g.rotation = Vector3(deg_to_rad(90.0), 0.0, 0.0)          # on its side
 		g.position = Vector3(0, 0.024, 0)
@@ -50,10 +51,16 @@ func _ready() -> void:
 
 
 func use(_by: Node = null) -> void:
-	var w := get_tree().get_first_node_in_group("hs_weapon")
+	var w: Node = null
+	for g in get_tree().get_nodes_in_group("hs_weapon"):    # (the gun of its kind; shells to the one you carry)
+		var dbl: bool = g.get_script() != null and (g.get_script() as Script).get_global_name() == &"HSDoubleBarrel"
+		if (kind == "double" and dbl) or (kind == "shotgun" and not dbl) or (kind == "shells" and (w == null or bool(g.get("owned")))):
+			w = g
+			if kind != "shells":
+				break
 	if w == null:
 		return
-	if kind == "shotgun":
+	if kind == "shotgun" or kind == "double":
 		w.give(shells)
 	else:
 		w.add_shells(shells)
