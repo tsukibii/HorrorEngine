@@ -10,7 +10,7 @@ loads from outside). `index.html` lists every guide, including the two that live
 | Godot by hand: setting up | `godot_by_hand/index.html` | the same (`interior_top`, `street_top`, `character`) |
 | Tutorial v2: Room 304 | `tutorial_v2/index.html` (the same starter kit as the first game's, grown: `first_game/starter/`) | `python tools/godot/tutorial_v2.py --pictures` (TUTORIAL2: the hotel floor set exported, the game built as its steps say, played through headless; Godot's pictures under xvfb, `tutorial_v2_shots.gd`, and the scene builder's in a headless browser, `tutorial_v2_builder.mjs`) |
 | The HorrorStudio Look plugin | `look_plugin/index.html` | the plugin's own check (`python tools/godot/plugin_check.py`, LOOKPLUGIN), copied by `first_game.py --pictures` |
-| The HorrorStudio Weapons plugin | `weapons/index.html` | the plugin's own check (`python tools/godot/weapons_check.py --pictures`, WEAPONS: `weapons_shots.gd`, `weapons_double_shots.gd` under xvfb) |
+| The HorrorStudio Weapons plugin | `weapons/index.html` | the plugin's own check (`python tools/godot/weapons_check.py --pictures`, WEAPONS: `weapons_shots.gd`, `muzzle_shots.gd` under xvfb) |
 | The prop customizer | `prop_customizer/index.html` (its two example pictures in `examples/`) | `node tools/propgen/guide_shots.mjs` (GUIDEPROPS: the prop generator's page on a scratch copy of the recipes, driven in a headless browser; the box of shells and a shell made here first) |
 | The director's desk | `tools/director/guide.html` (served by the desk at /guide.html) | `node tools/director/guide_shots.mjs` (GUIDE) |
 | An exported game's | `guide/index.html` in each exported project (`storykit/godot_guide.py`) | the export (`--pictures`) |
