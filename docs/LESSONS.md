@@ -24,6 +24,21 @@ the fix.
 - **A Godot script's `--out` path is read from the project's folder**: `godot --path P -s s.gd -- --out=shots` saved
   nowhere useful; pass an absolute path.
 - **presets.json is appended to as text, never rewritten by `json.dumps`**: dumping it whole re-indented 7,000 lines.
+- **Hiding a character is `visible = false` (and `hs_hidden`), never PROCESS_MODE_DISABLED**: HSShootable's "gone"
+  first disabled her, which froze every script under her (a chase under way never ended, its music for good) and left a
+  CSG collider solid; the starter's hunters already stand down when she isn't visible or carries `hs_hidden`. Gone now
+  hides her, takes her colliders' layers (and CSG's use_collision) away and marks her; back, puts them as they were.
+  And what's hidden isn't shot: a pellet goes through a body that isn't visible (her collider is there before she is).
+- **A light put out for good is marked so**: the Look plugin's light zones and the starter's lights turn a light on by
+  its `hs_lit` meta, so a lamp shot out (visible false only) lit again when its room came back into view. `hs_lit`
+  false, its energy 0.
+- **A spring stepped by the frame's dt flies apart on a hitch**: the gun's kick and sway springs (stiffness 120 and 160)
+  blew up past about 0.09 s; a 0.3 s frame after the first shot would have thrown the gun round. Stepped in 12 ms
+  substeps now; the check gives it a 0.3 s frame.
+- **A script that moves a node another script shakes keeps the shake**: carrying the flashlight, the gun set its
+  rotation outright every frame and the Fear node's tremor never showed; it keeps flashlight.gd's offset from `_rot0`
+  now, and leaves the light alone when it isn't carrying it. (The check holds the Fear node still: it sets the tremor
+  from its level every frame.)
 - **ffmpeg's Ogg muxer gives every file a random stream serial**: the weapon's sounds made again from the same seeds came
   out as seven changed files. `-fflags +bitexact -flags:a +bitexact` makes a run's bytes the same as the last's.
 - **The tape's `camhybrid` preset pillarboxes the frame**: a view model at the bottom right is cut off; picture a view

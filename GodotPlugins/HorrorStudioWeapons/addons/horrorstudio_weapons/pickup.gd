@@ -57,7 +57,7 @@ func use(_by: Node = null) -> void:
 		w.give(shells)
 	else:
 		w.add_shells(shells)
-	var snd := load(DIR + "sounds/%s.ogg" % ("shotgun_handle" if kind == "shotgun" else "shells_box")) as AudioStream
+	var snd := load(DIR + "sounds/shells_box.ogg") as AudioStream if kind == "shells" else null   # (the gun's own handling plays as it's drawn)
 	if snd != null and w.has_method("sound"):
 		w.sound(snd, global_position, -4.0, "foley")
 	var st := get_tree().get_first_node_in_group("hs_story")

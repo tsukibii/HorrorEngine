@@ -55,8 +55,9 @@ const DIR := "res://addons/horrorstudio_weapons/"
 @export var shell_model: PackedScene
 @export var spent_model: PackedScene
 @export_group("Hold")
-@export var hold := Vector3(0.16, -0.13, -0.32)   ## where the chamber sits from the eye (metres: x right, y up, -z ahead)
-@export var aim_at_m := 4.0                       ## the barrel's line meets the middle of the view this far ahead
+@export var hold := Vector3(0.14, -0.165, -0.34)  ## where the chamber sits from the eye (metres: x right, y up, -z ahead)
+@export var aim_at_m := 1.1                       ## the barrel's line meets the middle of the view this far ahead (the muzzle just under it, as the user's reference)
+@export var beam_at_m := 12.0                     ## the carried flashlight's beam meets the middle of the view this far ahead
 @export var cant_deg := 7.0                       ## the gun leaned in
 @export var fov := 0.0                            ## the gun's own lens (0: the camera's)
 @export var sway := 1.0
@@ -126,6 +127,8 @@ var _hud_ui: Node = null                          # the studio's HSHud, if the g
 var _hud_look := 0.0
 var _hud_t := 0.0
 var _dust_mesh: Mesh
+var _stars: Array = []
+var _carried := false                             # the flashlight under the barrel now (its own script owns it otherwise)
 var _holes: Array = []
 var _hulls: Array = []                            # the hulls in the room (the last 16)
 var _falling: Array = []                          # those still on their way: {node, v, spin, hits, floor, still}
@@ -274,7 +277,9 @@ func _make_flash() -> void:
 	fm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	fm.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 	fm.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	fm.albedo_texture = _make_star()
+	_stars = [_make_star(7), _make_star(23), _make_star(41)]
+	fm.albedo_texture = _stars[0]
+	fm.billboard_keep_scale = true                   # (a billboard ignores the node's scale without it)
 	fm.albedo_color = Color(1.0, 0.78, 0.45)
 	fm.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_flash.material_override = fm
@@ -505,9 +510,9 @@ func _fire() -> void:
 	chambered = false
 	shots += 1
 	_fired_t = _t
+	busy = true                                      # (before the shot: a fired or shot() hook can't start a reload mid-rack)
 	_shoot()
 	_show_hud()
-	busy = true
 	await get_tree().create_timer(0.17).timeout
 	await _rack(true)
 	busy = false
@@ -612,11 +617,18 @@ func _shoot() -> void:
 		var a := randf() * TAU
 		var dir := (fwd + (side * cos(a) + up * sin(a)) * tan(r)).normalized()
 		var q := PhysicsRayQueryParameters3D.create(from, from + dir * reach_m, 1)
-		q.exclude = ex
-		var hit := space.intersect_ray(q)
+		var skip := ex.duplicate()
+		var hit := {}
+		for k in 5:
+			q.exclude = skip
+			hit = space.intersect_ray(q)
+			if hit.is_empty() or not (hit["collider"] is CollisionObject3D) or (hit["collider"] as Node3D).is_visible_in_tree():
+				break
+			skip.append((hit["collider"] as CollisionObject3D).get_rid())   # (hidden: someone not there yet still has her collider)
+			hit = {}
 		if hit.is_empty():
 			continue
-		var h := {"point": hit["position"], "normal": hit["normal"], "collider": hit["collider"], "pellet": i}
+		var h := {"point": hit["position"], "normal": hit["normal"], "collider": hit["collider"], "pellet": i, "from": from, "dir": dir}
 		hits.append(h)
 		_hole(hit["position"], hit["normal"], hit["collider"])
 		var c: Object = hit["collider"]
@@ -633,7 +645,9 @@ func _shoot() -> void:
 	last_hits = hits
 	# the flash, the smoke, the kick
 	_flash.visible = true
-	_flash.rotation.z = randf() * TAU
+	var fmat := _flash.material_override as StandardMaterial3D
+	if fmat != null and not _stars.is_empty():
+		fmat.albedo_texture = _stars[randi() % _stars.size()]   # (a billboard turns to face you: its look, not its roll, varies)
 	_flash.scale = Vector3.ONE * randf_range(0.8, 1.25)
 	_flash_t = 0.06
 	_flash_light.light_energy = flash_energy
@@ -738,7 +752,19 @@ func _dust(hits: Array) -> void:
 # ---- the action ---------------------------------------------------------------------------------------------------------
 
 func _rack(spent: bool) -> void:
-	if _pump == null:
+	if _pump == null:                                # (a model with no pump part: the action without the stroke)
+		_play(back_sound, _at("eject"), -3.0, "foley")
+		await get_tree().create_timer(0.16).timeout
+		if spent or chambered:
+			_eject(spent)
+			chambered = false
+		await get_tree().create_timer(0.19).timeout
+		_play(forward_sound, _at("eject"), -2.0, "foley")
+		if loaded > 0:
+			loaded -= 1
+			chambered = true
+		_show_hud()
+		racked.emit(spent)
 		return
 	_play(back_sound, _at("eject"), -3.0, "foley")
 	var tw := create_tween()
@@ -991,8 +1017,13 @@ func _process(dt: float) -> void:
 			var v := cam.global_basis.inverse() * _last_fwd
 			_sway_v += Vector2(v.x, v.y) * 45.0 * sway * (1.0 - 0.6 * _aim)
 		_last_fwd = fwd
-	_sway_v += (-_sway * 160.0 - _sway_v * 18.0) * dt
-	_sway += _sway_v * dt
+	var n_sub := clampi(int(ceil(dt / 0.012)), 1, 30)          # (the springs in steps of 12 ms at most: a hitch can't throw them)
+	var h_sub := dt / float(n_sub)
+	for i in n_sub:
+		_sway_v += (-_sway * 160.0 - _sway_v * 18.0) * h_sub
+		_sway += _sway_v * h_sub
+		_kick_v += (-_kick * 120.0 - _kick_v * 16.0) * h_sub
+		_kick += _kick_v * h_sub
 	_sway = _sway.clamp(Vector2(-0.25, -0.25), Vector2(0.25, 0.25))
 	# bob: from how fast the eye moves over the ground
 	var spd := 0.0
@@ -1007,9 +1038,6 @@ func _process(dt: float) -> void:
 	_run = move_toward(_run, want_run, dt * (2.5 if want_run > _run else 5.0))
 	var rk := _run * _run * (3.0 - 2.0 * _run)
 	_bob_t += dt * (2.0 + spd * 2.3)
-	# the recoil's spring
-	_kick_v += (-_kick * 120.0 - _kick_v * 16.0) * dt
-	_kick += _kick_v * dt
 	var off := Vector3(sin(_bob_t) * 0.007 * amp, -absf(cos(_bob_t)) * 0.009 * amp + sin(_t * 1.7) * 0.0012, 0.0)
 	off += Vector3(0.0, 0.0, 0.05 * _kick + 0.012 * _pumping)
 	off += Vector3(-0.07, 0.035, 0.035) * _pose
@@ -1043,16 +1071,23 @@ func _carry_light(cam: Node3D) -> void:
 	var s := _sock.get("light") as Node3D
 	if s == null:
 		return
-	var k := 1.0 - _lower
+	var k := 1.0 - _lower if owned else 0.0
+	if k <= 0.0 and not _carried:
+		return                                       # (lowered and at rest: the flashlight's own script owns it)
 	var g := cam.global_transform.affine_inverse() * s.global_transform
-	var fwd := g.basis.y.normalized()                  # a socket's arrow is its +Y
-	var b := Basis.looking_at(fwd, Vector3.UP)
-	var want := Transform3D(b, g.origin)
+	# at the socket under the barrel, but its beam on the view's middle `beam_at_m` ahead whatever the barrel's angle
+	# (the gun's held pointing in toward the middle of the view: along the bore, the beam would light the left wall)
+	var fwd := (Vector3(0, 0, -beam_at_m) - g.origin).normalized()
+	var want := Transform3D(Basis.looking_at(fwd, Vector3.UP), g.origin)
 	var xf := _light_rest.interpolate_with(want, k)
+	var base := xf.basis.get_euler()
+	var shake := Vector3.ZERO                        # (what flashlight.gd's tremor added this frame: kept)
+	if "_rot0" in _light and _light.get("_rot0") != null:
+		shake = _light.rotation - (_light.get("_rot0") as Vector3)
+		_light.set("_rot0", base)
 	_light.position = xf.origin
-	_light.rotation = xf.basis.get_euler()
-	if "_rot0" in _light:
-		_light.set("_rot0", _light.rotation)          # (flashlight.gd shakes the beam round it)
+	_light.rotation = base + shake
+	_carried = k > 0.0
 
 
 # ---- small things -----------------------------------------------------------------------------------------------------
@@ -1093,11 +1128,11 @@ func _play(st: AudioStream, at: Vector3, db: float, kind: String) -> void:
 	p.finished.connect(p.queue_free)
 
 
-func _make_star() -> Texture2D:
+func _make_star(sd := 7) -> Texture2D:
 	var n := 128
 	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 7
+	rng.seed = sd
 	var rays: Array = []
 	for i in 7:
 		rays.append([rng.randf() * TAU, rng.randf_range(0.55, 1.0), rng.randf_range(0.05, 0.12)])

@@ -101,7 +101,7 @@ you carry) and <span class="node">HSWeaponPickup</span> (the gun, or a box of sh
 prop generator's <code>shotgun_pump</code>: its pump slides, the bolt's face leaves the ejection port while the action's
 open, the trigger moves, and its sockets (the muzzle, the ports, where a flashlight goes) tell the plugin where
 everything is. The shells are <code>shell_12ga</code> and <code>shell_12ga_spent</code>; the sounds are made in code.</p>
-<figure><img src="img/idle.jpg" width="1600" height="900" alt="The shotgun held low on the right in the hotel corridor at night"><figcaption>Held at the hip: low on the right, the barrel's line meeting the middle of the view 4 m ahead.</figcaption></figure>
+<figure><img src="img/idle.jpg" width="1600" height="900" alt="The shotgun held low on the right in the hotel corridor at night"><figcaption>Held at the hip: low on the right and pointing in, its muzzle just under the middle of the view (the barrel's line meets it 1.1 m ahead).</figcaption></figure>
 </section>
 
 <section id="try">
@@ -135,7 +135,8 @@ python tools/godot_byhand.py install ~/Games/MyGame      # a project you have: t
   <li>Set <b>Light</b> to the flashlight (<span class="node">Eye/Flashlight</span>): while the gun is up the flashlight is carried
   under its barrel, its beam along the bore; lowered, it's back where it was.</li>
   <li>Tune the hold in the Inspector and watch the preview move: <b>Hold</b> (where the chamber sits from the eye, in
-  metres), <b>Aim At M</b> (where the barrel's line crosses the middle of the view), <b>Cant Deg</b> (leaned in).</li>
+  metres), <b>Aim At M</b> (where the barrel's line crosses the middle of the view: 1.1 m puts the muzzle just under it),
+  <b>Cant Deg</b> (leaned in). The flashlight's beam stays on the middle of the view (<b>Beam At M</b>) whatever the barrel's angle.</li>
   <li>Not carried from the start? Untick <b>Owned</b> and put a pickup where it lies (section 6).</li>
 </ol>
 <div class="tip"><b>A view model.</b> The gun is drawn in front of the wall you stand against (it never pokes through) and
@@ -192,7 +193,8 @@ the tube is full or your pocket is empty. If the chamber was empty, the pump is 
 <p>Put an <span class="node">HSShootable</span> under a character (or a doll, a lamp): a shot that lands on it is a hit.
 <b>Hits</b> is how many it takes to bring it down; each hit can make it <b>gone</b> for a few seconds (vanished, its
 collision with it, then back: a ghost doesn't die), <b>push</b> it back, play a <b>cry</b>, <b>say</b> a line, or
-<b>fire</b> a <b>target</b> (a scare area, a cue, the lights). Down, a gone one is gone for good. Its <code>hit</code> and
+<b>fire</b> a <b>target</b> (a scare area, a cue, the lights). Down, a gone one is gone for good. Under a lamp, tick
+<b>Lights Out</b>: shot, its lights go dark for good in a few sparks (the dark is the price of the shot). Its <code>hit</code> and
 <code>down</code> signals are there for anything else: your own scripts, an animation, the story moving on.</p>
 </section>
 

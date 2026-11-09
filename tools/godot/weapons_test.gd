@@ -181,10 +181,25 @@ func _initialize() -> void:
 		bad("the gun isn't a view model (%d meshes, %d shadows, %d not z-clipped)" % [meshes, shadowy, unclipped])
 	var ls := gun.get("_sock")["light"] as Node3D
 	var off := eye.to_local(torch.global_position).distance_to(eye.to_local(ls.global_position))
-	var ang := rad_to_deg((-torch.global_basis.z).angle_to(ls.global_basis.y))
-	say("flashlight", "carried %.1f cm from the barrel's light socket, its beam %.1f° off the socket's way" % [off * 100.0, ang])
-	if off > 0.01 or ang > 3.0:
-		bad("the flashlight isn't under the barrel while it's raised (%.1f cm, %.1f°)" % [off * 100.0, ang])
+	var mid_far := eye.to_global(Vector3(0, 0, -float(g("beam_at_m"))))
+	var ang := rad_to_deg((-torch.global_basis.z).angle_to(mid_far - torch.global_position))
+	say("flashlight", "carried %.1f cm from the barrel's light socket, its beam %.1f° off the view's middle %.0f m ahead" % [off * 100.0, ang, float(g("beam_at_m"))])
+	if off > 0.01 or ang > 1.5:
+		bad("the flashlight isn't under the barrel with its beam on the view's middle (%.1f cm, %.1f°)" % [off * 100.0, ang])
+	fear.process_mode = Node.PROCESS_MODE_DISABLED  # (the Fear node sets the tremor from its level each frame: held still)
+	torch.set("tremor", 6.0)                       # (its shake: it must still show while the gun carries it)
+	var shook := 0.0
+	for i in 20:
+		await process_frame
+		var r0 = torch.get("_rot0")
+		if r0 != null:
+			shook = maxf(shook, rad_to_deg((torch.rotation - (r0 as Vector3)).length()))
+	torch.set("tremor", 0.0)
+	fear.process_mode = Node.PROCESS_MODE_INHERIT
+	await frames(5)
+	say("tremor", "the flashlight's shake while carried: up to %.2f°" % shook)
+	if shook < 0.05:
+		bad("the flashlight's tremor doesn't show while the gun carries it")
 	var mode_ok := Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 
 	# 2. a shot at a dummy that knows it's shot
@@ -234,6 +249,11 @@ func _initialize() -> void:
 		bad("no shells drawn low on the right (the HUD's Shells)")
 	if (g("_flash_light") as Light3D).light_energy < 1.0 or not (g("_flash") as Node3D).visible:
 		bad("no muzzle flash at the shot")
+	gun.call("_process", 0.3)                       # (a hitch just after a shot: a 0.3 s frame)
+	var kick_after := float(g("_kick"))
+	say("hitch", "a 0.3 s frame just after the shot: the kick's spring at %.2f" % kick_after)
+	if absf(kick_after) > 0.6:
+		bad("a long frame threw the kick's spring (%.2f)" % kick_after)
 
 	# 3. the pump racked by itself: back to its stop (the bolt's face gone), the hull out, forward, the next shell in
 	var pump := g("_pump") as Node3D
@@ -315,6 +335,20 @@ func _initialize() -> void:
 		bad("the lens didn't narrow while aimed and come back (%.1f, then %.1f from %.1f)" % [afov, eye.fov, fov0])
 	if aspread > float(g("spread_deg")) * float(g("aim_spread")) + 0.25:
 		bad("aimed, the cone isn't tighter (%.1f°)" % aspread)
+
+	# 3b2. someone hidden (not there yet, her collider still is) isn't shot: the pellets go through to what's behind
+	dummy.visible = false
+	look(dummy.global_position + Vector3(0, 0.25, 0))
+	await frames(3)
+	gun.pull()
+	await frames(1)
+	var through: Array = g("last_hits")
+	var on_hidden := through.filter(func(h): return h["collider"] == dummy).size()
+	say("hidden", "a shot at a hidden body: %d pellets on it, %d on what's behind" % [on_hidden, through.size() - on_hidden])
+	if on_hidden > 0 or through.size() == 0:
+		bad("a hidden body was shot (%d pellets on it)" % on_hidden)
+	dummy.visible = true
+	await until(func() -> bool: return not g("busy"), 1.5)
 
 	# 3c. under a 4:3 tape (the Look plugin's), the gun drawn in to sit in its picture; back without it
 	var vhs = main.get_node("Tape").get("vhs")
@@ -485,9 +519,9 @@ func _initialize() -> void:
 	await frames(3)
 	gun.pull()
 	await frames(2)
-	var gone1: bool = not ghost.visible and ghost.process_mode == Node.PROCESS_MODE_DISABLED
+	var gone1: bool = not ghost.visible and gb.collision_layer == 0 and bool(ghost.get_meta("hs_hidden", false))
 	await secs(0.7)
-	var back: bool = ghost.visible and ghost.process_mode != Node.PROCESS_MODE_DISABLED
+	var back: bool = ghost.visible and gb.collision_layer != 0 and not bool(ghost.get_meta("hs_hidden", false))
 	await until(func() -> bool: return not g("busy"), 1.0)
 	gun.pull()
 	await frames(2)
@@ -498,6 +532,38 @@ func _initialize() -> void:
 	if g_hits.size() != 2 or not gone1 or not back or not gone_for_good:
 		bad("an HSShootable didn't answer its hits (hits %d, gone %s, back %s, down %s)" % [g_hits.size(), gone1, back, gone_for_good])
 	await until(func() -> bool: return not g("busy"), 1.0)
+
+	# 8b2. a lamp shot out (an HSShootable with lights_out under it): its light dark when it's down
+	var lamp := Node3D.new()
+	lamp.name = "Lamp"
+	main.add_child(lamp)
+	lamp.global_position = Vector3(player.global_position.x - 2.4, fl + 1.5, player.global_position.z)
+	var lb := StaticBody3D.new()
+	var lcs := CollisionShape3D.new()
+	var lbox := BoxShape3D.new()
+	lbox.size = Vector3(0.3, 0.3, 0.3)
+	lcs.shape = lbox
+	lb.add_child(lcs)
+	lamp.add_child(lb)
+	var bulb := OmniLight3D.new()
+	lamp.add_child(bulb)
+	var lsh := Node.new()
+	lsh.set_script(load("res://addons/horrorstudio_weapons/shootable.gd"))
+	lsh.set("lights_out", true)
+	lamp.add_child(lsh)
+	gun.set("loaded", 2)
+	gun.set("chambered", true)
+	await until(func() -> bool: return not g("busy"), 1.0)
+	look(lamp.global_position)
+	await frames(3)
+	var lit_before := bulb.visible
+	gun.pull()
+	await frames(3)
+	say("lamp", "a lamp lit %s, shot: its light %s, down %s, marked unlit %s" % [lit_before, "dark" if not bulb.visible else "STILL LIT", lsh.get("is_down"), not bool(bulb.get_meta("hs_lit", true))])
+	if not lit_before or bulb.visible or not lsh.get("is_down") or bool(bulb.get_meta("hs_lit", true)) or bulb.light_energy > 0.0:
+		bad("a lamp with lights_out wasn't shot out (lit %s, now %s)" % [lit_before, bulb.visible])
+	await until(func() -> bool: return not g("busy"), 1.0)
+	lamp.queue_free()
 
 	# 8c. the shells' row low on the right: inside the tape's 4:3 picture, and above the studio HUD's keys when there's an HSHud
 	var vsz := gun.get_viewport().get_visible_rect().size

@@ -13,9 +13,9 @@ The guide for the user, with these pictures: `guides/weapons/index.html`.
 
 | Piece | File | Use |
 |---|---|---|
-| **The shotgun** | `shotgun.gd` (`HSShotgun`, a Node3D) | put one under the player's camera. Held low on the right, its barrel's line meeting the middle of the view `aim_at_m` ahead (as the user's reference); it sways behind the view as it turns, bobs as you walk, breathes, kicks, and never pokes through a wall; held to the eye on the right button. The shells low on the right as marks (the tube's four, the chamber's, filled where there's a shell) and the pocket's count, in the HorrorStudio UI's colours. `pull()`, `rack()`, `reload()`, `set_aim(on)`, `set_raised(up)`, `give(shells)`, `add_shells(n)`; `loaded`, `chambered`, `spare`, `capacity`, `aiming` |
+| **The shotgun** | `shotgun.gd` (`HSShotgun`, a Node3D) | put one under the player's camera. Held low on the right and pointing in, its muzzle just under the middle of the view (its barrel's line meets the middle `aim_at_m` 1.1 m ahead, as the user's reference); the carried flashlight's beam on the middle `beam_at_m` 12 m ahead; it sways behind the view as it turns, bobs as you walk, breathes, kicks, and never pokes through a wall; held to the eye on the right button. The shells low on the right as marks (the tube's four, the chamber's, filled where there's a shell) and the pocket's count, in the HorrorStudio UI's colours. `pull()`, `rack()`, `reload()`, `set_aim(on)`, `set_raised(up)`, `give(shells)`, `add_shells(n)`; `loaded`, `chambered`, `spare`, `capacity`, `aiming` |
 | **Pickups** | `pickup.gd` (`HSWeaponPickup`, a Node3D) | `kind` shotgun (the gun lying on its side, `shells` coming with it) or shells (a box of them); E takes it (the starter's player uses anything with `use()`), `say` a line through the Story, `taken` to wire a scare to |
-| **Something to shoot** | `shootable.gd` (`HSShootable`, a Node) | put one under what can be shot (a character, a doll, a lamp): a shot with a pellet on its parent is a hit, `hit(info)`, and after `hits` of them `down`. Each a switch: `gone_secs` (gone at once and back after that long, its collision with it: a ghost's way; down, gone for good), `push_m` (shoved back), `cry` (a sound), `say` (a line), `target` (its `fire()`: a scare, a cue) |
+| **Something to shoot** | `shootable.gd` (`HSShootable`, a Node) | put one under what can be shot (a character, a doll, a lamp): a shot with a pellet on its parent is a hit, `hit(info)`, and after `hits` of them `down`. Each a switch: `gone_secs` (gone at once and back after that long, its collision with it: a ghost's way; down, gone for good), `push_m` (shoved back), `cry` (a sound), `say` (a line), `target` (its `fire()`: a scare, a cue), `lights_out` (a lamp shot out: every light under it dark when it's down, a few sparks: the dark is the price) |
 | **The models** | `models/` | the prop generator's `shotgun_pump` (its pump a part that slides, the bolt's face a part there only while the action is shut, the trigger on its hinge; sockets `muzzle`, `eject`, `port`, `chamber`, `pump`, `grip`, `trigger`, `shoulder`, `light`), `shell_12ga` and `shell_12ga_spent` (`tools/propgen.py make <name>`, docs/PROPGEN.md §30; `shotgun_pump_black` the synthetic stock to swap in) |
 | **The sounds** | `sounds/` | made in code (`tools/weapon_sounds.py`: numpy, then ffmpeg to Ogg): the blast with its tail, the pump back and forward, a shell clicking in, the dry click, a hull on the floor, the handling |
 
@@ -73,6 +73,12 @@ shoot): open it in Godot and press F5.
 - **On tape** (the Look plugin's HSTape, its picture 4:3): the gun is drawn in toward the middle (`fit_tape`) so it sits
   in the tape's picture as it does in the whole view.
 - **Few shells**: the pocket starts with 4 (`spare`): every one counts.
+- **What isn't there isn't shot**: a pellet passes through a body that isn't visible (someone hidden at her post still
+  has her collider); an HSShootable that's gone (hidden, its colliders off, `hs_hidden` set so the starter's hunters
+  stand down) can't be hit until it's back; a lamp shot out stays out (`hs_lit` false, as the light zones read it).
+- **Your hooks are safe**: the gun is busy from the moment it fires, so a `fired` or `shot()` hook can't start a reload
+  during the rack; the kick and sway springs are stepped finely, so a long frame can't throw the gun; the flashlight's
+  own shake (the Fear node's tremor) shows while it's carried.
 - No crosshair of its own: the HUD's reticle (HorrorStudio UI) is the middle of the cone. The shells left show low on the
   right a moment after each change (`hud`).
 - `tools/godot/weapons_check.py` (WEAPONS) builds it into the hotel corridor of tutorial v2 and plays it headless;

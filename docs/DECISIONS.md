@@ -28,7 +28,9 @@ The user's answers, newest first. They override the plan, the research and the d
   (every one counts), holes that stay on what they hit (a door, a crate), a sound for each pickup, the gun shown in the
   editor where it'll be held, **HSShootable** (something to shoot: gone a while like a ghost, shoved, a cry, a line, a
   target fired; `hit`, `down`), the sound levels measured (the shot 13 to 25 dB over the action), and a guide
-  (`guides/weapons/`).
+  (`guides/weapons/`). Measured against the screenshot side by side, the hold was brought in to match it: the muzzle
+  just under the middle of the view and the gun dropping steeply to the bottom edge (`hold` 0.14, -0.165, -0.34;
+  `aim_at_m` 1.1), the carried flashlight's beam kept on the middle of the view (`beam_at_m`).
 
 ## 2026-11-08 (the user: a better quest marker, and the rest of the UI, on the branch `ui-v3`)
 
