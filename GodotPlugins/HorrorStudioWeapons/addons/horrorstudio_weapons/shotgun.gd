@@ -128,6 +128,7 @@ var _hud_look := 0.0
 var _hud_t := 0.0
 var _dust_mesh: Mesh
 var _stars: Array = []
+var _flash_fresh := false
 var _carried := false                             # the flashlight under the barrel now (its own script owns it otherwise)
 var _holes: Array = []
 var _hulls: Array = []                            # the hulls in the room (the last 16)
@@ -651,6 +652,7 @@ func _shoot() -> void:
 	_flash.scale = Vector3.ONE * randf_range(0.8, 1.25)
 	_flash_t = 0.06
 	_flash_light.light_energy = flash_energy
+	_flash_fresh = true
 	# the flash's light and smoke at the muzzle, or this side of a wall the muzzle is past (the gun's drawn in front of the
 	# wall you stand against, its muzzle beyond it: the light would be in the next room)
 	var mz := _at("muzzle")
@@ -1055,7 +1057,10 @@ func _process(dt: float) -> void:
 		_flash_t -= dt
 		if _flash_t <= 0.0:
 			_flash.visible = false
-	_flash_light.light_energy = maxf(0.0, _flash_light.light_energy - dt * 110.0)
+	if _flash_fresh:
+		_flash_fresh = false                          # (the first frame drawn after the shot gets the whole flash, at any rate)
+	else:
+		_flash_light.light_energy = maxf(0.0, _flash_light.light_energy - dt * 110.0)
 	if _flying.size() > 0:
 		_fly(dt)
 	_carry_light(cam)
