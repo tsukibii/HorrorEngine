@@ -217,6 +217,8 @@ func shot(info: Dictionary) -&gt; void:     # {point, normal, dir, from, pellet}
 <ul>
   <li><b>Fewer flashes</b>: lower <b>Flash Energy</b> (1.5: a glow, not a flash) for players who need it.</li>
   <li><b>A click never fires while the mouse is free</b> (a menu open, or the click that takes the mouse back).</li>
+  <li><b>Against a wall</b> the gun is still drawn whole, its muzzle past the wall: the flash lights your side and the
+  smoke stays with you; a hull thrown into a wall beside you comes down on your side.</li>
   <li><b>The hulls fall by rays of their own</b>, not as physics bodies: something that small would sink through a
   level's thin floor. The last 16 stay.</li>
   <li><b>No crosshair of its own</b>: the HUD's dot (HorrorStudio UI) is the middle of the cone.</li>

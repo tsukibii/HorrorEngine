@@ -59,7 +59,9 @@ The guide for the user, with these pictures: `guides/weapons/index.html`.
 ## Notes
 
 - A view model: every material's z clip scale (0.35) keeps the gun in front of the wall you stand against while the
-  room still lights it; it casts no shadow. `fov` gives it a lens of its own (0: the camera's).
+  room still lights it; it casts no shadow. `fov` gives it a lens of its own (0: the camera's). Against a wall its
+  muzzle is past it: the flash's light and smoke stay this side, and a hull thrown into a wall beside you comes down
+  this side of it.
 - The gun is drawn by the hold's numbers (`hold`, `aim_at_m`, `cant_deg`), not posed by hand: change those to hold it
   higher or lower.
 - **On tape** (the Look plugin's HSTape, its picture 4:3): the gun is drawn in toward the middle (`fit_tape`) so it sits

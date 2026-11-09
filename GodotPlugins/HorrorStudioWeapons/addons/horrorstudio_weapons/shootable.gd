@@ -89,6 +89,8 @@ func _on_fired(shot_hits: Array) -> void:
 
 # gone at once (drawn, processed and solid no more), back after `secs` (never, below 0)
 func _gone(host: Node, secs: float) -> void:
+	var was := host.process_mode
+	var shown := (host as Node3D).visible if host is Node3D else true
 	if host is Node3D:
 		(host as Node3D).visible = false
 	host.process_mode = Node.PROCESS_MODE_DISABLED           # (its collision leaves the world with it)
@@ -97,6 +99,6 @@ func _gone(host: Node, secs: float) -> void:
 		return
 	await get_tree().create_timer(secs).timeout
 	if is_instance_valid(host) and not is_down:
-		host.process_mode = Node.PROCESS_MODE_INHERIT
+		host.process_mode = was                                # (as it was: inherit, always, pausable...)
 		if host is Node3D:
-			(host as Node3D).visible = true
+			(host as Node3D).visible = shown

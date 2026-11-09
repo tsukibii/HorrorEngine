@@ -621,6 +621,19 @@ func _shoot() -> void:
 	_flash.scale = Vector3.ONE * randf_range(0.8, 1.25)
 	_flash_t = 0.06
 	_flash_light.light_energy = flash_energy
+	# the flash's light and smoke at the muzzle, or this side of a wall the muzzle is past (the gun's drawn in front of the
+	# wall you stand against, its muzzle beyond it: the light would be in the next room)
+	var mz := _at("muzzle")
+	var way := (mz - from).normalized()
+	var q2 := PhysicsRayQueryParameters3D.create(from, mz + way * 0.08, 1)
+	q2.exclude = ex
+	var wall := space.intersect_ray(q2)
+	_flash_light.position = Vector3(0, 0.05, 0)
+	_smoke.position = Vector3.ZERO
+	if not wall.is_empty():
+		var near := (wall["position"] as Vector3) - way * 0.12
+		_flash_light.global_position = near
+		_smoke.global_position = near
 	_smoke.restart()
 	_kick_v += 16.0
 	_turn_view(deg_to_rad(recoil_deg), deg_to_rad(randf_range(-0.12, 0.12) * recoil_deg))   # up, and a little aside
@@ -776,6 +789,19 @@ func _fly(dt: float) -> void:
 func _drop(hull: Node3D, vel: Vector3, spent: bool) -> void:
 	var at := hull.global_transform
 	hull.queue_free()
+	# out of the view through a wall you stand by (it was drawn in front of it): this side of it, bounced off it
+	var cam := get_viewport().get_camera_3d()
+	if cam != null:
+		var pl := get_tree().get_first_node_in_group("hs_player")
+		var q := PhysicsRayQueryParameters3D.create(cam.global_position, at.origin, 1)
+		if pl is CollisionObject3D:
+			q.exclude = [(pl as CollisionObject3D).get_rid()]
+		var hit := get_world_3d().direct_space_state.intersect_ray(q)
+		if not hit.is_empty():
+			var n: Vector3 = hit["normal"]
+			at.origin = (hit["position"] as Vector3) + n * 0.04
+			if vel.dot(n) < 0.0:
+				vel = (vel - n * vel.dot(n) * 1.35) * 0.6
 	var m := (spent_model if spent else shell_model).instantiate() as Node3D
 	_host().add_child(m)
 	m.global_transform = at

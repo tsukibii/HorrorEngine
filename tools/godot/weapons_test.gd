@@ -535,6 +535,42 @@ func _initialize() -> void:
 	if run_most < 0.9 or walk_k > 0.05:
 		bad("the gun isn't carried low while running and up while walking (%.2f, %.2f)" % [run_most, walk_k])
 
+	# 8e. against a wall: the muzzle (drawn in front of it) is past it, but the flash's light and smoke stay this side;
+	# a hull thrown into the wall at your right comes down this side of it
+	var corr: Dictionary = cfg["corridor"]
+	var zn := float(corr["at"][2]) + float(corr["size"][2]) / 2.0          # the corridor's north wall
+	var zs := float(corr["at"][2]) - float(corr["size"][2]) / 2.0          # and its south
+	var spot := player.global_position
+	gun.set("loaded", 3)
+	gun.set("chambered", true)
+	player.global_position = Vector3(spot.x, spot.y, zn - 0.45)
+	look(Vector3(spot.x, eye.global_position.y, zn + 2.0))
+	await frames(5)
+	var wall_mz: Vector3 = gun.call("_at", "muzzle")
+	gun.pull()
+	await frames(1)
+	var fl_at := (g("_flash_light") as Node3D).global_position
+	var sm_at := (g("_smoke") as Node3D).global_position
+	await until(func() -> bool: return not g("busy"), 1.5)
+	var hulls0 := (g("_hulls") as Array).size()
+	player.global_position = Vector3(spot.x, spot.y, zs + 0.38)        # the south wall at your right (looking west)
+	look(Vector3(spot.x - 3.0, eye.global_position.y, zs + 0.38))
+	await frames(5)
+	gun.pull()
+	await until(func() -> bool: return not g("busy"), 1.5)
+	await until(func() -> bool: return (g("_falling") as Array).is_empty(), 3.0)
+	var hl: Array = g("_hulls")
+	var last_hull := hl[hl.size() - 1] as Node3D if hl.size() > 0 else null
+	say("wall", "facing a wall 0.45 m off: the muzzle %.2f m past it, the flash's light %.2f m and its smoke %.2f m this side; a hull thrown at the wall at your right lying %.2f m inside it" % [
+		wall_mz.z - zn, zn - fl_at.z, zn - sm_at.z, (last_hull.global_position.z - zs) if last_hull != null else -9.0])
+	if wall_mz.z <= zn:
+		bad("the check's set-up: the muzzle isn't past the wall (%.2f)" % (wall_mz.z - zn))
+	if fl_at.z >= zn or sm_at.z >= zn:
+		bad("the flash's light or smoke went through the wall you stand against (%.2f, %.2f past it)" % [fl_at.z - zn, sm_at.z - zn])
+	if last_hull == null or last_hull.global_position.z <= zs or hl.size() <= hulls0:
+		bad("the hull thrown at the wall at your right came down on its far side (%s)" % (str(last_hull.global_position) if last_hull else "none"))
+	player.global_position = spot
+
 	# 9. lowered: out of view, the flashlight back on the eye, no shot; raised again
 	gun.set_raised(false)
 	await secs(0.5)

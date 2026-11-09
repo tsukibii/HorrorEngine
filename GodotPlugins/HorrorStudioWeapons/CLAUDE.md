@@ -40,6 +40,7 @@ narrower and back, the cone tighter); under a 4:3 tape the gun drawn in and back
 under the flash limit; the reload's four shells each from under the
 gun into the tube, the count, the rack; a reload stopped by a shot that fires; R and Q (a click needs a captured mouse:
 not headless); an HSShootable gone at its first hit, back, and down at its second; the shells' row low on the
-right by its rule and above an HSHud's keys (headless the view is 64 x 64: rules, not pixels); carried low while
+right by its rule and above an HSHud's keys; against a wall the flash's light and smoke this side and a hull thrown into
+the wall at your right down this side (headless the view is 64 x 64: rules, not pixels); carried low while
 running; lowered and raised (the flashlight back); the box of shells and the gun itself taken with E.
 `weapons_shots.gd` draws the pictures under xvfb (idle, aim, fire, rack, reload, floor, tape).
