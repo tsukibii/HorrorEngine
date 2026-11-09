@@ -1,4 +1,5 @@
 @tool
+@icon("res://addons/horrorstudio_weapons/icons/shotgun.svg")
 class_name HSShotgun
 extends Node3D
 ## A pump-action 12-gauge held in first person (the weapons plugin, DECISIONS 2026-11-09). Put it under the player's
@@ -26,15 +27,17 @@ signal raised_changed(up: bool)
 
 const DIR := "res://addons/horrorstudio_weapons/"
 
-@export var model: PackedScene
-@export var shell_model: PackedScene
-@export var spent_model: PackedScene
 @export var owned := true                         ## carried: a pickup gives it (HSWeaponPickup)
 @export var raised := true                        ## up in view (false: lowered out of it)
+@export var light: Light3D                        ## a flashlight (the starter's) carried under the barrel while raised
+@export var input := true                         ## left click fires, right aims, R reloads, Q raises and lowers
+@export var hud := true                           ## the shells, low on the right: the tube's, the chamber's, the pocket's
+@export_group("Shells")
 @export var capacity := 4                         ## the tube's
 @export var loaded := 4                           ## in the tube now
 @export var chambered := true
 @export var spare := 4                            ## shells in the pocket (few: every one counts)
+@export_group("Shot")
 @export var pellets := 9                          ## 00 buckshot
 @export var spread_deg := 2.6                     ## the cone's half angle
 @export var reach_m := 45.0
@@ -43,12 +46,14 @@ const DIR := "res://addons/horrorstudio_weapons/"
 @export var ring_secs := 2.5                      ## the ears ringing after a shot (the Fear node's ring; 0 none)
 @export var recoil_deg := 3.2                     ## the view kicked up by a shot
 @export var recover := 0.6                        ## how much of the kick the view settles back by itself
-@export var flash_energy := 5.0                   ## the muzzle flash's light (for a frame or two)
+@export var flash_energy := 5.0                   ## the muzzle flash's light (for a frame or two; 1.5 for fewer flashes)
+@export_group("Reload")
 @export var insert_secs := 0.34                   ## a shell from under the gun into the tube
 @export var insert_gap := 0.12                    ## between one shell and the next
-@export var light: Light3D                        ## a flashlight (the starter's) carried under the barrel while raised
-@export var input := true                         ## left click fires, right aims, R reloads, Q raises and lowers
-@export var hud := true                           ## the shells, low on the right: the tube's, the chamber's, the pocket's
+@export_group("Models")
+@export var model: PackedScene                    ## the gun (the prop generator's shotgun_pump: its parts and sockets)
+@export var shell_model: PackedScene
+@export var spent_model: PackedScene
 @export_group("Hold")
 @export var hold := Vector3(0.16, -0.13, -0.32)   ## where the chamber sits from the eye (metres: x right, y up, -z ahead)
 @export var aim_at_m := 4.0                       ## the barrel's line meets the middle of the view this far ahead
@@ -428,11 +433,22 @@ func _hud_chips() -> Control:
 		_hud_ui = null
 		if _hud_look == 0.0 or _t - _hud_look > (1.0 if _t < 5.0 else 4.0):   # (looked for now and then: a HUD added later)
 			_hud_look = maxf(_t, 0.001)
-			for n in get_tree().root.find_children("*", "CanvasLayer", true, false):
-				if n.get_script() != null and (n.get_script() as Script).get_global_name() == &"HSHud":
-					_hud_ui = n
-					break
+			_hud_ui = _near_top(get_tree().root, &"HSHud", 3)      # (a HUD sits near the top: never the whole tree)
 	return _hud_ui.get("hint_el") as Control if _hud_ui != null else null
+
+
+# the first node of a class (by its script's class_name) within `depth` levels under `at`
+func _near_top(at: Node, cls: StringName, depth: int) -> Node:
+	for c in at.get_children():
+		var sc := c.get_script() as Script
+		if sc != null and sc.get_global_name() == cls:
+			return c
+	if depth > 1:
+		for c in at.get_children():
+			var f := _near_top(c, cls, depth - 1)
+			if f != null:
+				return f
+	return null
 
 
 func _mark(r: Rect2, on: bool, full: Color, empty: Color, u: float) -> void:

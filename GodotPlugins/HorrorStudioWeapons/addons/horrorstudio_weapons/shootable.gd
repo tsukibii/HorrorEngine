@@ -1,3 +1,4 @@
+@icon("res://addons/horrorstudio_weapons/icons/shootable.svg")
 class_name HSShootable
 extends Node
 ## What being shot does to the thing it's under: put one as a child of a character, a doll, a lamp. A shot with a pellet

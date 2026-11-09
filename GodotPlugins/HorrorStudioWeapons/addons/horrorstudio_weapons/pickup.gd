@@ -1,3 +1,4 @@
+@icon("res://addons/horrorstudio_weapons/icons/shells.svg")
 class_name HSWeaponPickup
 extends Node3D
 ## Something for the weapon, taken with E (the starter's player uses whatever has use()): `kind` shotgun (the gun itself,

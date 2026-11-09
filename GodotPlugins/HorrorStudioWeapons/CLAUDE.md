@@ -14,6 +14,7 @@ export and the Director's projects don't copy it yet (nothing in the runtime use
 | `shootable.gd` | `HSShootable`: under what can be shot; listens to every `hs_weapon`'s `fired(hits)` (found again every half second for a gun made later), a hit when a pellet's collider is its parent or under it; `hit`, `down`; `gone_secs` hides its parent and disables its processing (its collision leaves the world) and brings it back, `push_m`, `cry`, `say`, `target.fire()` |
 | `pickup.gd` | `HSWeaponPickup`: the gun (lying on its side) or a box of shells, a StaticBody3D box so the player's E ray finds it; `use()` gives it to the `hs_weapon` |
 | `plugin.gd`, `plugin.cfg` | the plugin (nothing to register: the classes are `class_name`s) |
+| `icons/` | the classes' icons in Add Node (`@icon`): `shotgun.svg`, `shells.svg` (the pickup), `shootable.svg` |
 | `models/` | the prop generator's makes, copied in: `shotgun_pump.glb`, `shell_12ga.glb`, `shell_12ga_spent.glb` (`tools/propgen.py make <name>`, then copy from `Saved/Props/<name>/`) |
 | `sounds/` | `tools/weapon_sounds.py` (WEAPONSOUNDS) writes them |
 | `guides/weapons/` (the repo's) | the user's guide, `index.html`, and its pictures in `img/` (`tools/godot/weapons_check.py --pictures`, `weapons_shots.gd`) |
