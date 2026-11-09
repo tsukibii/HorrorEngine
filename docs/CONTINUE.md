@@ -66,10 +66,28 @@ gun"; DECISIONS 2026-11-09). Built:
   `shells_box_25`. The guide `guides/prop_customizer/` (GUIDEPROPS makes its pictures from the real page). A quarter-turned
   slot's wanted size and template turned upright (sizes.py, picedit.js).
 
-**Next, if the user wants it**: the gun in tutorial v2 itself (found in a room, her an HSShootable that's gone a while when
+- **The muzzle flash, a muzzle system, two kinds of shell and what a shot leaves** (the user, with two pictures: "a
+  muzzle flare for the shotgun (the closest one that leaves a trail of smoke behind)", "a generic muzzle system that
+  can be used later for other guns" with their technique (each wing a series of slightly elongated intersecting spheres,
+  fronts culled, a noise triplanar on each blended by the view's normal dotted with the surface's, the blend a burn),
+  shell kinds easy to add ("a normal shell and explosive shell"), and "a response... a pbr mask to make it like pieces
+  are missing"; DECISIONS 2026-11-09, latest). In the weapons plugin: `HSMuzzle` + `HSMuzzleFlash` (`muzzle/`: the wings
+  as one MultiMesh of spheres laid out each shot, the burn in `flash.gdshaderinc`, added or solid, the light with its
+  haze kept low, sparks, puffs, **the smoke trail** left behind as the gun moves, smoke's light capped and a faint glow
+  of its own), `HSShellType` (`shells/`: buckshot and explosive; the tube, chamber, barrels and pocket keep kinds; T),
+  `HSImpact` + `HSImpacts` (`impacts/`: a crater decal with albedo, normal and ORM from one height field, tinted by the
+  surface, dust and chips; the explosive's blast: fireball, scorch with embers, push, damage, shake, noise), the maps
+  by `tools/weapon_fx.py` (WEAPONFX, in check_all), the burst's sound; the explosive shell, its hull and box as
+  customizable recipes (`shell_12ga_explosive`, `_spent`, `shells_box_5_explosive`). WEAPONS checks it all (§8f, §8g,
+  the double's §7b) and pictures it (`trail`, `marks`, `explosive`, `blast`, `scorch`, `flash_parts`); the guide's
+  sections 8 to 10. The lab used to tune the look was a throwaway script in the check's project; `muzzle_shots.gd`
+  keeps its useful part (the flash taken apart).
+
+**Next, if the user wants it**: their eye on the flash in their own lighting (its `energy`, the trail's `smoke_glow`
+and density are the knobs), the gun in tutorial v2 itself (found in a room, her an HSShootable that's gone a while when
 shot, the searcher coming at the noise), the export and the Director's projects copying the plugin in (nothing in the
-runtime uses it yet), aiming down the barrel on the right button, a melee shove, more weapons as recipes in the same
-family (a revolver, a hunting rifle) with the same sockets.
+runtime uses it yet), a melee shove, more shell kinds (slugs, dragon's breath, rock salt for ghosts) as duplicated
+resources, more weapons as recipes in the same family (a revolver, a hunting rifle) with HSMuzzles at their muzzles.
 
 ## Where it stopped last (2026-11-08, `claude/optimistic-tesla-q01qg6`): the air built and in tutorial v2
 

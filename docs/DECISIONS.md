@@ -2,6 +2,47 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-09, latest (the user: a muzzle flash, a muzzle system, two kinds of shell, and what a shot leaves)
+
+- **"Can you create a muzzle flare for the shotgun (the closest one that leaves a trail of smoke behind), as well as a
+  generic muzzle system that can be used later for other guns but also integrate this technique into it: 'How I made
+  it: Each "wing" of the muzzle flash is a series of slightly elongated intersecting spheres with their front culled.
+  In the shader I used the dot product of the view normal with the surface normal to blend a noise texture that is
+  triplanar mapped onto the sphere. The blend function is a burn'"** (with two pictures: guns firing in a Godot view,
+  the nearest leaving grey smoke behind it; a flash as a star of noisy petals, white-yellow in their middles, orange
+  and red where they burn out). Built in the weapons plugin as **HSMuzzle** (`muzzle/muzzle.gd`, any gun's muzzle:
+  its -Z along the barrel, `fire(look)`) playing an **HSMuzzleFlash** (`muzzle/muzzle_flash.gd`, a resource: the wings
+  round the bore (a STAR, or a BURST for a ball of fire), each a run of elongated spheres that intersect, a plume out
+  of the bore, a core; their colours, energy, the noise, the burn, the erosion; the light; sparks; the smoke thrown out
+  and **the trail**: smoke left behind wherever the muzzle goes, a ribbon through where it's been, rising and spreading).
+  The user's way exactly: the spheres one MultiMesh laid out again every shot, **fronts culled**, the noise
+  (`fx/flash_noise.png`) **mapped triplanar** on each sphere, **burnt by the facing** (the view's normal dotted with the
+  surface's) through **a colour burn**, 1 - (1 - noise) / facing (`muzzle/flash.gdshaderinc`): the noise itself where a
+  sphere faces the eye, eaten away toward its rim, then a ramp from red to orange to white-yellow; drawn added (a
+  glow, the default) or solid (`blend`). The smoke's light capped (`smoke_light.gdshaderinc`: lit by the flash from a
+  few centimetres it glowed as a ball the size of the room; LESSONS).
+- **"In the future I will want to have different types of particle effects depending on the type of shell the player
+  uses, so make sure it's easily expandable/modifiable, for now can you create two types of systems, a normal shell
+  and explosive shell."** **HSShellType** (`shells/shell_type.gd`): a kind of shell as a resource, its pellets and
+  their spread, push and damage, its recoil and noise, **its muzzle flash, its impact, its shell models**; the plugin's
+  two, `shells/buckshot.tres` (the normal one) and `shells/explosive.tres` (one slug that bursts where it lands, a
+  bigger, fiercer flash with more sparks). A new kind is a duplicated resource. The guns keep every shell's kind: the
+  tube's in order, the chamber's, each of the double's barrels'; the pocket by kind (`spare` the kind loaded next's,
+  the others in `pocket`); **T** picks the kind R loads; the shells' marks in their kinds' colours. The explosive
+  shell, its fired hull and a box of five as customizable recipes (the prop standard: `shell_12ga_explosive`,
+  `shell_12ga_explosive_spent`, `shells_box_5_explosive`, PROPGEN §31); the pickup's `shell` takes a kind and its box.
+- **"Can you also create a response (so if we shoot a wall we should visually see the effect and maybe a pbr mask to
+  make it like pieces are missing from whatever was shot)."** **HSImpact** (`impacts/impact.gd`, what a hit does) played
+  by **HSImpacts** (`impacts/impacts.gd`, one in a scene): every pellet a **crater**, a Decal with three maps made from
+  one height field (`tools/weapon_fx.py`, WEAPONFX: the albedo the material under the surface where pieces are gone and
+  black down the hole, the normal map leaning into it so the light finds its walls, the ORM's occlusion darkening its
+  depths), tinted by what was hit (its `hs_surface`, the sound physics' `acoustic`, the starter's rooms: plaster,
+  concrete, wood, tile, metal, carpet...), the surface's dust and chips flying (wood splinters, metal sparks and only a
+  dent); the explosive shell's **blast**: a scorched crater with cracks and embers glowing in it, a ball of fire (an
+  HSMuzzle laid out as a burst), what's in its reach and its sight pushed and told (`shot(info)`, `blast`, `damage`
+  falling to its edge; an HSShootable counts it), the view shaken, heard far, the ears ringing, its sound
+  (`shell_burst`, WEAPONSOUNDS).
+
 ## 2026-11-09, later still (the user: a customizable cartridge prop, and a guide to the customizer)
 
 - **"can you make a cartlidge [cartridge] prop for the shells that I can customize similar to cans and books. Can you

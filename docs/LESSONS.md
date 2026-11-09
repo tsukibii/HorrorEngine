@@ -3,6 +3,37 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The muzzle flash, the shell kinds and what a shot leaves (2026-11-09, latest)
+
+- **Smoke a few centimetres from a light glows as a ball the size of the room**: the first flashes were a white blob
+  filling the view. With the smoke off the flash's wings were a neat star; with the light off too; both on, the blob.
+  The puffs sat 2 to 5 cm from the flash's OmniLight3D, and a point light's falloff makes that a thousand times a lamp
+  across the room: even a puff faded almost to nothing glowed, and the bloom spread it. Delaying the puffs until the
+  light was out fixed one shot, not the next, which lit the first shot's smoke still hanging there. The fix is in the
+  smoke's own shading: `smoke_light.gdshaderinc` caps the light any one source gives it (`light_cap`), so a light
+  beside it lights it as a bright lamp would and no more. Every layer is spoken for (the zones 2 to 10, the mirrors 11
+  to 20), so a light-cull layer for smoke wasn't free. The old flash had the same ball in its picture: the flash's
+  light lit the corridor's haze at full strength; it lights the haze a tenth now (`light_fog`).
+- **The burn's order matters**: the user's "blend a noise texture by the facing, the blend a burn" is burn(noise,
+  facing) = 1 - (1 - noise) / facing, the noise as the base. The first try had it the other way round (the facing
+  burnt by the noise): a flat white middle and holes wherever the noise dipped. The right way, the middle shows the
+  noise (white-yellow where it's bright, orange where it isn't) and the rim burns away along it. Read a blend mode's
+  base and blend layers off the words before writing it.
+- **A plugin's textures come in without mipmaps**: the install copies no `.import` files, so a project imports the
+  flash's noise with mipmaps off, and minified on a sphere 40 pixels wide it aliased into grit. `HSMuzzle.tex()`
+  builds the mipmaps itself when a texture has none (from the imported image, so it works in an exported game).
+- **A headless renderer keeps no MultiMesh**: the check read the flash's spheres back with get_instance_transform and
+  got nothing (the dummy renderer stores no instances), so every sphere looked like a run of its own at the origin.
+  The muzzle keeps its layout on the script's side (`sphere_list()`); anything a check reads back is kept so.
+- **A ribbon of points tears when neighbours drift apart**: the smoke trail's points each had a random drift, so two
+  points a few millimetres apart drifted centimetres apart and the strip zig-zagged into slivers and twisted. The drift
+  is now a function of when each point was left (neighbours drift alike), points are left by distance or time (not
+  every frame), the tangent spans two points each way, and the side is never flipped between neighbours.
+- **A JSON round trip reformats a hand-kept file**: adding three recipes by json.load and json.dump rewrote all 8000
+  lines of presets.json in another layout. Insert into a hand-formatted file as text and check `git diff --stat`.
+- **A local can hide a member**: `var tube := ...` (the tube's height, a float) in `_insert_one` hid the new `tube`
+  array (the shells' kinds) and the whole script failed to parse. Name a new member after a grep for the word.
+
 ## Cartridges and the customizer's guide (2026-11-09, later still)
 
 - **The wear's edges and dirt need a mesh dense enough for its curvature**: a card box made of flat panels (a vertex at
