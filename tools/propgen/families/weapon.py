@@ -1,5 +1,5 @@
 """Firearms for the first-person weapon system (DECISIONS 2026-11-09, the user's `weapon-system`): a pump-action
-12-gauge shotgun at a riot gun's real sizes and the shells it takes.
+12-gauge shotgun at a riot gun's real sizes and the user's own double barrel.
 
 The shotgun: a receiver 200 mm long, an 18.5" (470 mm) barrel with its bore and a bead at the muzzle, the magazine
 tube under it holding four (its cap and the band that ties it to the barrel), the pump (the fore-end, grooved, on
@@ -19,14 +19,13 @@ case-hardened and faded, walnut with its grain along the gun, the bores and cham
 `muzzle_r`, `muzzle_l`, `chamber`, `chamber_r`, `chamber_l`, `hinge`, `breech`, `grip`, `trigger`, `shoulder`, `light`,
 all found from the model.
 
-The shell: a 2 3/4" 12-gauge, its brass head (rim, extractor groove, primer), its plastic hull and the six-point star
-crimp closing its front; `spent` opens the crimp into a mouth, its inside dark, the brass a little scorched.
+The shells are the `ammo` family's (families/ammo.py: customizable, printed, and their box); `kind: "shell"` here still
+makes one.
 
     {"family": "weapon", "kind": "shotgun", "steel": "#2b2e33", "wood": "#5b3a24", "furniture": "wood" | "synthetic",
      "barrel_mm": 470, "finish": "satin", "age": "rust", "age_amount": 0.15}
     {"family": "weapon", "kind": "double", "model": "Content/Studio/Props/models/dbl_barrel.fbx", "barrel_mm": 711,
      "steel": "#1e2227", "action": "#8b8f95", "wood": "#4a2c1a"}
-    {"family": "weapon", "kind": "shell", "hull": "#a3241f", "brass_mm": 16, "spent": false}
 """
 import math
 import os
@@ -653,71 +652,9 @@ def _double(spec, th):
     return th
 
 
-def _shell(spec, th):
-    seed = int(spec.get("seed", 0))
-    spent = bool(spec.get("spent", False))
-    hb = float(spec.get("brass_mm", 16)) * 0.001
-    th.material("brass", "metal", px=int(spec.get("tex", 512)), color="#c9a25e", rough=0.28, metal=1.0)
-    th.material("hull", "paint", px=int(spec.get("tex", 512)), color=spec.get("hull", "#a3241f"), rough=0.42)
-    th.island("head", 2 * math.pi * 11.4, hb * 1000 + 6, "brass", wrap=True)
-    th.island("base", 23, 23, "brass")
-    th.island("hull", 2 * math.pi * 10.3, (0.070 - hb) * 1000 + 6, "hull", wrap=True)
-    th.island("crimp", 21, 21, "hull")
-    th.pack()
-    I = th.islands
-    mats = ["brass", "hull"]
-
-    def build(hi):
-        n = 36 if hi else 18
-        st = 0.0006 if hi else 0.002
-        base = M.Seg([(0.0, 0.0), (0.0040, 0.0), (0.0041, 0.0003), (0.0108, 0.0002), (0.01135, 0.0004)], "base", "bottom", disc=0.0114)
-        head = M.Seg([(0.01135, 0.0004), (0.01135, 0.0014), (0.0102, 0.0016), (0.0102, 0.0026), (0.0105, 0.0030), (0.0105, hb)], "head", "band")
-        if spent:
-            # the crimp opened: the mouth flared a little, its lip, the hull's inside down to the wad's seat, dark
-            hull = M.Seg([(0.0103, hb), (0.0103, 0.0690), (0.0106, 0.0702), (0.0098, 0.0705), (0.0094, 0.0690), (0.0094, 0.026),
-                          (0.0, 0.026)], "hull", "band")
-            segs = [base, head, hull]
-        else:
-            hull = M.Seg([(0.0103, hb), (0.0103, 0.0630), (0.0100, 0.0646), (0.0092, 0.0652)], "hull", "band")
-            crimp = M.Seg([(0.0092, 0.0652), (0.0040, 0.0640), (0.0, 0.0636)], "crimp", "top", disc=0.0095)
-            segs = [base, head, hull, crimp]
-        return M.lathe(segs, n, I, step=st, mats=mats)
-
-    th.low = build(False)
-    th.high = build(True)
-    th.sockets = {"front": ((0.0, 0.0, 0.066), (0.0, 0.0, 1.0)), "back": ((0.0, 0.0, 0.0), (0.0, 0.0, -1.0))}
-    th.extras["weapon"] = {"kind": "shell", "gauge": 12, "spent": spent, "length_m": 0.0705 if spent else 0.0652}
-    th.pose = "stand"
-    th.view = {"azim": -30, "elev": 20}
-    th.reach = 0.002
-    th.cage = 0.001
-
-    def paint(fr):
-        FN.metal(fr["head"], "satin", "brass", seed, along=90.0, age="tarnish" if spent else None, age_amount=0.3)
-        f = fr["base"]
-        FN.metal(f, "satin", "brass", seed + 1)
-        f.ellipse(f.W / 2, f.H / 2, 3.6, color="#b07a4a", rough=0.3, metal=1.0)          # the primer, copper
-        if spent:
-            f.ellipse(f.W / 2, f.H / 2, 1.2, height=-0.2, add_height=True)                  # the firing pin's dent
-        f = fr["hull"]
-        X, Y = f.grid()
-        g = N.fbm3(np.stack([X / 3.0, Y / 0.2, np.full_like(X, seed * 0.1)], -1), seed + 3, 2)
-        f.lay_island(np.ones_like(X), height=(0.004 * g).astype(np.float32), add_height=True)  # the hull's extruded streaks, along it
-        if spent:
-            m = (Y > f.H * 0.86).astype(np.float32)                                          # the inside, dark
-            f.lay_island(m, color="#160c0a", rough=0.8)
-        else:
-            f = fr["crimp"]
-            X, Y = f.grid()
-            a = np.arctan2(Y - f.H / 2, X - f.W / 2)
-            rr = np.hypot(X - f.W / 2, Y - f.H / 2)
-            fold = np.abs(np.sin(3 * a)) ** 8 * np.clip(rr / 9.0, 0, 1)                       # the six folds of the star
-            f.lay_island(np.clip(fold, 0, 1).astype(np.float32), height=-0.12, add_height=True, color="#5a1410")
-
-    th.paint = paint
-    return th
-
-
 def make(spec, th):
     kind = spec.get("kind", "shotgun")
-    return _shell(spec, th) if kind == "shell" else _double(spec, th) if kind == "double" else _shotgun(spec, th)
+    if kind == "shell":                                  # the shells are the ammo family's now (customizable, with their box)
+        from . import ammo
+        return ammo.make(spec, th)
+    return _double(spec, th) if kind == "double" else _shotgun(spec, th)
