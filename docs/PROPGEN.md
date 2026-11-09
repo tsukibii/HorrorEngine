@@ -1389,10 +1389,10 @@ etc), then create a ne w genre/tab in our prop tool called retro" (the folder ho
   tilted about 37 degrees everywhere (the trees' bark and leaves among them) and the pack's 16-bit textures at half their
   lightness. Images read inside Blender are tagged Non-Color first now (docs/LESSONS.md, 2026-11-08).
 
-## 30. Weapons: a pump shotgun and its shells, for the first-person weapon system (DECISIONS 2026-11-09)
+## 30. Weapons: a pump shotgun, the user's double barrel and their shells, for the first-person weapon system (DECISIONS 2026-11-09)
 
 The user (2026-11-09): "create a shot gun asset and have its pov in godots horror engine similar to the screenshot";
-the prop standard (HORROR_TODO) makes it a recipe. The `weapon` family (`families/weapon.py`), two kinds:
+the prop standard (HORROR_TODO) makes it a recipe. The `weapon` family (`families/weapon.py`), three kinds:
 
 - **`shotgun`**: a pump-action 12-gauge at a riot gun's sizes: a receiver 200 mm long with its ejection port (right)
   and loading port (underneath) as dark plates, an 18.5" barrel (`barrel_mm` 470) with its bore and a brass bead, the
@@ -1403,11 +1403,34 @@ the prop standard (HORROR_TODO) makes it a recipe. The `weapon` family (`familie
   `shoulder`, `light` (where a flashlight goes under the barrel). Steel by `finish` (`FN.metal`: satin; its `age`),
   the furniture `wood` (flat-sawn, `FU.paint_wood`) or `synthetic` (black, a fine stipple); `extras.weapon` carries its
   numbers (gauge, capacity, travel, barrel). About 15,000 triangles, 985 mm long, its texture 2048.
+- **`double`** (the user's v2, DECISIONS 2026-11-09, later): **the user's own side-by-side**, modelled in Blender:
+  `model`, an .fbx in `Content/Studio/Props/models/` (`dbl_barrel.fbx`: its objects `double_barrel` the stock and
+  action, `double_barrel_gun` the barrels and fore-end, `double_barrel_separator` the top lever,
+  `double_barrel_Right_Trigger` and `_Left_Trigger`, and `shotgun_shutter` (the fore-end's tip) and `shotgun_trigger`
+  from an older gun; `pieces` names them otherwise), brought in at its real size by the barrels' length end to end
+  (`barrel_mm` 711), its muzzles turned to +x (`muzzle` "-x": where they point in the file). Each object's loose parts
+  are sorted into three materials by where they are: the stock (the part reaching furthest back) and the fore-end (a
+  long part under the barrels, and `wood_objects`) `wood`, the action's wide parts (its body, the fences, the pins
+  through it) `action`, the rest `steel`. **Round barrels** (`round` 32): the model's eight-sided tubes measured (each
+  bore's axis, and the bore's and the tube's radius at both ends: they taper, 24 mm to 18 mm across the bore) and
+  rebuilt as round tubes of that many sides (`round: 0` keeps the model's own). **Parts**: `barrels` (the fore-end with
+  them) on the hinge pin, the action's foremost pin under the bores, opening 38°; `lever` turning 30° to the right
+  about its boss; `trigger` (the front, the right barrel's) and `trigger2` (the rear) on their tops. **Sockets** measured
+  on it: `muzzle`, `muzzle_r`, `muzzle_l`, `chamber`, `chamber_r` and `chamber_l` (each bore's axis at the breech face:
+  where a shell's head sits), `hinge`, `breech`, `grip`, `trigger`, `shoulder`, `light`. Smart UVs a material, each
+  one's texels a millimetre measured for the relief and the wear's scale. Painted by each texel's place (`texel_paint`):
+  the steel blued and polished along the gun, the bores (their faces turned to the axis) dark and kept so through the
+  wear (`after_wear`), the crowns worn bright, the breech faces machined, the rib matted, the bead brass; the action
+  case-hardened and faded (straw, blue and purple mottling over grey); walnut as the furniture's wood in the solid (5 mm
+  rings round a pith along the gun, wandering, fibres, pores, a slow tone, walnut's dark streaks), diamond checkering
+  in ovals at the wrist and on the fore-end, an ebonite butt plate; the wear halved on the small steel parts (the
+  lever, the tang, the guard, the triggers: thin, all edge). About 2,200 triangles, 1.08 m long, its textures 2048 (the
+  action 1024).
 - **`shell`**: a 2 3/4" 12-gauge (70 mm): the brass head (`brass_mm` 16: its rim, the extractor groove, the primer), the
   plastic hull (`hull`, a colour) with its moulding streaks, the six-point star crimp; `spent` opens the crimp into a
   mouth, dark inside, the brass scorched. Sockets `front`, `back`. About 1,800 triangles, its texture 512.
 
 Recipes: `shotgun_pump` (blued steel, dark walnut), `shotgun_pump_black` (the synthetic stock and fore-end),
-`shell_12ga` (red), `shell_12ga_spent`. Made, they go into the weapons plugin (`GodotPlugins/HorrorStudioWeapons/
+`shotgun_double` (the user's model: blued, case-hardened, checkered walnut), `shell_12ga` (red), `shell_12ga_spent`. Made, they go into the weapons plugin (`GodotPlugins/HorrorStudioWeapons/
 addons/horrorstudio_weapons/models/`), which reads the parts and sockets by name: a remade gun holds itself.
 

@@ -1193,5 +1193,8 @@
  "shell_12ga": {"label": "a 12-gauge shell, red hull, high brass", "family": "weapon", "kind": "shell", "seed": 1, "tex": 512,
    "hull": "#a3241f", "brass_mm": 16, "wear": {"edges": 0.3, "grime": 0.15}},
  "shell_12ga_spent": {"label": "a fired 12-gauge shell, its crimp opened", "from": "shell_12ga", "spent": true, "seed": 2,
-   "wear": {"edges": 0.4, "grime": 0.3}}
+   "wear": {"edges": 0.4, "grime": 0.3}},
+ "shotgun_double": {"label": "the user's side-by-side 12-gauge that breaks open (their model), 28\" barrels blued, the action case-hardened, walnut checkered",
+   "family": "weapon", "kind": "double", "model": "Content/Studio/Props/models/dbl_barrel.fbx", "barrel_mm": 711, "seed": 5, "tex": 2048,
+   "steel": "#262a30", "action": "#8b8f95", "wood": "#45291a", "wear": {"edges": 0.28, "scratches": 0.1, "grime": 0.3, "dirt": 0.2}}
 }

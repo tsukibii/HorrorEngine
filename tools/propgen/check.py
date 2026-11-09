@@ -28,7 +28,7 @@ CASES = {"soda_can": (115, 6000), "soda_can_crushed": (125, 14000), "water_bottl
          "suitcase_hardshell": (600, 12000), "clothes_folded_tee": (314, 1000), "closet_oshiire": (1865, 4000), "journal_diary": (241, 5000),
          "rock_boulder": (1300, 3000), "pebbles_river": (500, 2600),
          "retro_cooker": (290, 2000), "retro_door_a": (2100, 1200), "retro_spruce_g": (1800, 600),
-         "shotgun_pump": (985, 16000), "shell_12ga": (70, 2600)}
+         "shotgun_pump": (985, 16000), "shotgun_double": (1081, 4000), "shell_12ga": (70, 2600)}
 
 
 def _glb(path):
