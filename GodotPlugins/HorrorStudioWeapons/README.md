@@ -19,6 +19,12 @@ The guide for the user, with these pictures: `guides/weapons/index.html`.
 | **The models** | `models/` | the prop generator's `shotgun_pump` (its pump a part that slides, the bolt's face a part there only while the action is shut, the trigger on its hinge; sockets `muzzle`, `eject`, `port`, `chamber`, `pump`, `grip`, `trigger`, `shoulder`, `light`), `shell_12ga` and `shell_12ga_spent` (`tools/propgen.py make <name>`, docs/PROPGEN.md §30; `shotgun_pump_black` the synthetic stock to swap in) |
 | **The sounds** | `sounds/` | made in code (`tools/weapon_sounds.py`: numpy, then ffmpeg to Ogg): the blast with its tail, the pump back and forward, a shell clicking in, the dry click, a hull on the floor, the handling |
 
+## Try it
+
+`python tools/godot/weapons_check.py --keep ~/Games/ShotgunRange` builds the check's project in a folder of your own
+(tutorial v2's hotel floor at night, the starter's player with the gun and its flashlight, a box of shells, two boxes to
+shoot): open it in Godot and press F5.
+
 ## By hand
 
 1. `python tools/godot_byhand.py new ~/Games/MyGame` (or `install` into a project you have: the plugin's copied in and
@@ -70,4 +76,4 @@ The guide for the user, with these pictures: `guides/weapons/index.html`.
 - No crosshair of its own: the HUD's reticle (HorrorStudio UI) is the middle of the cone. The shells left show low on the
   right a moment after each change (`hud`).
 - `tools/godot/weapons_check.py` (WEAPONS) builds it into the hotel corridor of tutorial v2 and plays it headless;
-  `--pictures` draws `img/`.
+  `--pictures` draws the guide's pictures (`guides/weapons/img/`).

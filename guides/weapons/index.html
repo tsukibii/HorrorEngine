@@ -70,6 +70,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   <div class="brand">HorrorStudio Weapons</div>
   <ol>
     <li><a href="#what">What it is</a></li>
+    <li><a href="#try">Try it first</a></li>
     <li><a href="#install">Putting it in a project</a></li>
     <li><a href="#hold">The shotgun under the camera</a></li>
     <li><a href="#play">Playing it</a></li>
@@ -96,15 +97,28 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
 <section id="what">
 <h2><span class="n">1</span>What it is</h2>
 <p>One add-on, <code>addons/horrorstudio_weapons/</code>, with nothing to build: <span class="node">HSShotgun</span> (the gun
-in your hands) and <span class="node">HSWeaponPickup</span> (the gun, or a box of shells, lying somewhere). The model is the
+you carry) and <span class="node">HSWeaponPickup</span> (the gun, or a box of shells, lying somewhere). The model is the
 prop generator's <code>shotgun_pump</code>: its pump slides, the bolt's face leaves the ejection port while the action's
 open, the trigger moves, and its sockets (the muzzle, the ports, where a flashlight goes) tell the plugin where
 everything is. The shells are <code>shell_12ga</code> and <code>shell_12ga_spent</code>; the sounds are made in code.</p>
 <figure><img src="img/idle.jpg" width="1600" height="900" alt="The shotgun held low on the right in the hotel corridor at night"><figcaption>Held at the hip: low on the right, the barrel's line meeting the middle of the view 4 m ahead.</figcaption></figure>
 </section>
 
+<section id="try">
+<h2><span class="n">2</span>Try it first</h2>
+<p>The plugin's own check builds a whole project to play: Tutorial v2's hotel floor at night, the starter's player with
+the shotgun and its flashlight, a box of shells on the carpet and two boxes to shoot. Keep it in a folder of your own
+and open it in Godot:</p>
+<pre>python tools/godot/weapons_check.py --keep ~/Games/ShotgunRange
+godot ~/Games/ShotgunRange/project.godot      # then F5</pre>
+<p>(From the project folder, as the other guides' commands. It plays itself through once headless first, the check, and
+says <code>WEAPONS ok</code>.)</p>
+<p>Click into the window to take the mouse, then <kbd>Left click</kbd>, <kbd>Right button</kbd>, <kbd>R</kbd>, <kbd>Q</kbd>,
+<kbd>E</kbd> on the box. It's the same project the pictures here come from.</p>
+</section>
+
 <section id="install">
-<h2><span class="n">2</span>Putting it in a project</h2>
+<h2><span class="n">3</span>Putting it in a project</h2>
 <p>A new project made by <code>tools/godot_byhand.py</code> has it already, enabled, beside the Look and UI plugins and the
 starter kit:</p>
 <pre>python tools/godot_byhand.py new ~/Games/MyGame
@@ -113,7 +127,7 @@ python tools/godot_byhand.py install ~/Games/MyGame      # a project you have: t
 </section>
 
 <section id="hold">
-<h2><span class="n">3</span>The shotgun under the camera</h2>
+<h2><span class="n">4</span>The shotgun under the camera</h2>
 <ol class="steps">
   <li>Open your player (the starter's <code>player.tscn</code>, or your own) and select its camera, <span class="node">Eye</span>.</li>
   <li><span class="ui">Add Child Node</span>, type <code>HSShotgun</code>. The gun appears in the editor where it'll be held
@@ -134,7 +148,7 @@ it's drawn in to sit in the tape's picture.</div>
 </section>
 
 <section id="play">
-<h2><span class="n">4</span>Playing it</h2>
+<h2><span class="n">5</span>Playing it</h2>
 <table class="keys">
   <tr><td><kbd>Left click</kbd></td><td>fire: nine pellets in a narrow cone from the middle of the view. Then the pump is racked by itself: the spent hull thrown out of the ejection port to the right and onto the floor, the next shell in.</td></tr>
   <tr><td><kbd>Right button</kbd></td><td>held: aimed, the barrel straight ahead under your eye, the lens a little narrower, the cone tighter, the sway calmer.</td></tr>
@@ -155,7 +169,7 @@ pocket's count: faint at rest, clear for a moment when they change.</p>
 </section>
 
 <section id="reload">
-<h2><span class="n">5</span>The reload</h2>
+<h2><span class="n">6</span>The reload</h2>
 <p>Like a shotgun: the gun is turned to bare its loading port underneath, and each shell rises from under the gun, its
 nose into the port, levels on the tube's line and is pushed in until it clicks past the latch, one after another until
 the tube is full or your pocket is empty. If the chamber was empty, the pump is racked at the end.</p>
@@ -166,7 +180,7 @@ the tube is full or your pocket is empty. If the chamber was empty, the pump is 
 </section>
 
 <section id="found">
-<h2><span class="n">6</span>Found in a room, and shot at</h2>
+<h2><span class="n">7</span>Found in a room, and shot at</h2>
 <p>Add a Node3D, give it <code>pickup.gd</code> (or add an <span class="node">HSWeaponPickup</span>), and set its <b>Kind</b>:</p>
 <div class="cols">
   <div class="card"><h4>shotgun</h4><p>The gun lying on its side. Taken with <kbd>E</kbd>, the player's HSShotgun (its Owned
@@ -183,7 +197,7 @@ collision with it, then back: a ghost doesn't die), <b>push</b> it back, play a 
 </section>
 
 <section id="code">
-<h2><span class="n">7</span>In your own scripts</h2>
+<h2><span class="n">8</span>In your own scripts</h2>
 <pre>$Player/Eye/Shotgun.fired.connect(func(hits): print(hits.size(), " pellets hit"))
 $Player/Eye/Shotgun.shell_in.connect(func(n): print(n, " in the tube"))
 $Player/Eye/Shotgun.give(4)              # the gun, and four shells with it
@@ -201,7 +215,7 @@ func shot(info: Dictionary) -&gt; void:     # {point, normal, dir, from, pellet}
 </section>
 
 <section id="numbers">
-<h2><span class="n">8</span>The numbers</h2>
+<h2><span class="n">9</span>The numbers</h2>
 <ul>
   <li><b>The shot</b>: nine pellets in a cone of 2.6° (23 cm across at 5 m), 45 m reach; the view kicked 3.2° and settling
   back 60% of it; heard as loud as three runs.</li>
@@ -213,7 +227,7 @@ func shot(info: Dictionary) -&gt; void:     # {point, normal, dir, from, pellet}
 </section>
 
 <section id="rules">
-<h2><span class="n">9</span>Good to know</h2>
+<h2><span class="n">10</span>Good to know</h2>
 <ul>
   <li><b>Fewer flashes</b>: lower <b>Flash Energy</b> (1.5: a glow, not a flash) for players who need it.</li>
   <li><b>A click never fires while the mouse is free</b> (a menu open, or the click that takes the mouse back).</li>
