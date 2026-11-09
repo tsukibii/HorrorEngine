@@ -345,8 +345,8 @@ def soot(seed=0, n=256):
     r = np.sqrt(u * u + v * v)
     a = np.arctan2(v, u)
     fan = polar(spectral(256, 2.0, seed * 7 + 11, lo=3.0, hi=30), a, r, 1, 0.06)
-    reach = 0.55 * (0.8 + 0.25 * np.tanh(fan))
-    sooty = np.clip(1.0 - r / reach, 0.0, 1.0) ** 1.4 * (0.88 + 0.12 * np.tanh(spectral(n, 1.8, seed * 7 + 12, lo=4.0, hi=50)))
+    reach = 0.74 * (0.8 + 0.25 * np.tanh(fan))
+    sooty = np.clip(1.0 - r / reach, 0.0, 1.0) ** 0.75 * (0.88 + 0.12 * np.tanh(spectral(n, 1.8, seed * 7 + 12, lo=4.0, hi=50)))
     specks = np.zeros((n, n))
     for i in range(70):                                         # a few burnt grains caught in the smoke
         rr = 0.6 * np.sqrt(rng.uniform(0, 1)) ** 0.8
