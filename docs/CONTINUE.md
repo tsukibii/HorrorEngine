@@ -38,6 +38,12 @@ gun"; DECISIONS 2026-11-09). Built:
   port, a click during it fires as soon as it can, Q lowers it, the flashlight carried under the barrel; `HSWeaponPickup`
   the gun or a box of shells. `godot_byhand.py` copies and enables it in every project made by hand.
 - **WEAPONS** (`tools/godot/weapons_check.py`): built into tutorial v2's hotel corridor and played headless; `--pictures`.
+- **Held as in the reference**: set side by side with the user's screenshot, the muzzle just under the middle of the
+  view and the gun dropping steeply to the bottom edge (`hold` 0.14, -0.165, -0.34; `aim_at_m` 1.1), the carried
+  flashlight's beam on the middle of the view (`beam_at_m` 12).
+- **Reviewed** by an independent read of the scripts; its ten real findings fixed and held by WEAPONS (LESSONS
+  2026-11-09: hiding with `visible` and `hs_hidden`, never disabling; `hs_lit` for a light out for good; springs in
+  substeps; a shake kept when another script moves the node).
 - **Refined** (the user's "refine it through diff perspectives"): the kick settling back, the gun rocking with the
   pump, carried low while running, aiming on the right button, the tape's 4:3, the shells as marks, holes staying on doors and crates, pickup
   sounds, the editor's preview, `HSShootable` (shot: gone a while, shoved, a cry, a line, a target; `hit`, `down`), and
