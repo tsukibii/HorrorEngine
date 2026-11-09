@@ -21,6 +21,29 @@ builder's floors, the street's steel stair, climbing in Godot and on the desk; 2
 `claude/friendly-newton-9o2xey`, from the user's `retro-enhance`: the retro pack in the prop generator). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## Where it stopped last (2026-11-09, `weapon-system`): a shotgun held in first person
+
+PR #18 merged into main; this branch is new from it (the user: "make a new branch called weapon-system, create a shot
+gun asset and have its pov in godots horror engine similar to the screenshot", then "I don't need a hand holding the
+gun"; DECISIONS 2026-11-09). Built:
+
+- **The assets** by the prop standard: the prop generator's `weapon` family (PROPGEN §30): `shotgun_pump` (a riot
+  gun's sizes, its pump sliding, the bolt's face shown only while the action's shut, the trigger on its hinge, sockets
+  for the muzzle, ejection port, loading port, chamber, flashlight...), `shotgun_pump_black` (synthetic),
+  `shell_12ga` and `shell_12ga_spent`; PROPGEN's cases have the gun and a shell. The sounds in code:
+  `tools/weapon_sounds.py`.
+- **HorrorStudio Weapons**, a Godot plugin (`GodotPlugins/HorrorStudioWeapons/`, README, CLAUDE.md, `img/`): `HSShotgun`
+  under the player's camera, no hands; held low on the right, the barrel's line on the view's middle; fire, the pump
+  racked by itself (hulls falling and rolling by rays), the reload a shell at a time from under the gun into the loading
+  port, a click during it fires as soon as it can, Q lowers it, the flashlight carried under the barrel; `HSWeaponPickup`
+  the gun or a box of shells. `godot_byhand.py` copies and enables it in every project made by hand.
+- **WEAPONS** (`tools/godot/weapons_check.py`): built into tutorial v2's hotel corridor and played headless; `--pictures`.
+
+**Next, if the user wants it**: the gun in tutorial v2 itself (found in a room, her reacting to being shot: `shot(info)`
+on her, the searcher coming at the noise), the export and the Director's projects copying the plugin in (nothing in the
+runtime uses it yet), aiming down the barrel on the right button, a melee shove, more weapons as recipes in the same
+family (a revolver, a hunting rifle) with the same sockets.
+
 ## Where it stopped last (2026-11-08, `claude/optimistic-tesla-q01qg6`): the air built and in tutorial v2
 
 **Merged** (2026-11-08, the user: "make a pr for this, then merge in" `ui-v3` and `claude/friendly-newton-9o2xey`):

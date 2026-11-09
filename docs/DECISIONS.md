@@ -2,6 +2,26 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-09 (the user: a shotgun held in first person, on the branch `weapon-system`)
+
+- **"Make a new branch called weapon-system, create a shot gun asset and have its pov in godots horror engine similar
+  to the screenshot, it should be equitable [equippable], can shoot, and reloads like a shotgun with shells entering
+  it, spend 3 hours on it, if you think you're done early analyse and refine it through diff perspectives."** The
+  screenshot: a dim, cold hotel corridor at night, a dark pump gun coming in from the lower right with its barrel
+  toward the middle of the view, soft as on tape. Built as **HorrorStudio Weapons**, a Godot plugin of its own
+  (`GodotPlugins/HorrorStudioWeapons/`, README and CLAUDE.md as the others; every project made by hand gets it):
+  `HSShotgun` under the player's camera (held low on the right, the barrel's line on the view's middle 4 m ahead,
+  swaying, bobbing, kicking, never through a wall), left click fires nine pellets (holes, dust, things pushed, a
+  `shot(info)` on what's hit, the flash and smoke, the noise every listener hears, the ears ringing), the pump racked by
+  itself (the hull out of the ejection port and onto the floor), R reloads a shell at a time through the loading port, Q
+  lowers and raises it, and `HSWeaponPickup` the gun or a box of shells taken with E. The assets by the prop standard
+  (HORROR_TODO): the prop generator's `weapon` family (PROPGEN §30: `shotgun_pump` with its pump, bolt face and trigger
+  as parts and its sockets, `shotgun_pump_black`, `shell_12ga`, `shell_12ga_spent`); the sounds made in code
+  (`tools/weapon_sounds.py`). The check WEAPONS (`tools/godot/weapons_check.py`).
+- **"Just to add I don't need a hand holding the gun"** (mid-build): the gloved hands made in code (a hand on the pump,
+  one on the wrist) were taken out; the gun is held by no one, as in the reference, and in the reload each shell rises by
+  itself from under the gun, its nose into the loading port, and is pushed on into the tube.
+
 ## 2026-11-08 (the user: a better quest marker, and the rest of the UI, on the branch `ui-v3`)
 
 - **"Make an enhanced ui quest marker (something that tells the player where to go/who to speak to), so even if it's in

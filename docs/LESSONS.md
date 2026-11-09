@@ -3,6 +3,30 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The shotgun: things that took a second try (2026-11-09)
+
+- **A tiny rigid body sinks through a level's floor**: a spent hull (a cylinder 1 cm in radius) bounced once on the
+  hotel's floor and then sank through it and fell for ever. The floor is a trimesh with no thickness, and the physics
+  engine lets bodies sink 2 cm into what they rest on (Jolt's penetration slop): a body thinner than that passes the
+  surface's middle and the contact turns round. Small debris falls by rays of its own (the weapon's `_falling`); a
+  RigidBody3D only for things thicker than about 5 cm.
+- **A node property written as `node_paths` in a .tscn needs a Node-typed export**: the shotgun's `light` was an
+  `@export var light: NodePath` and the check's scene wrote it the way Godot writes a node reference
+  (`node_paths=PackedStringArray("light")`): it came through empty and the flashlight was never carried. Export the
+  node's type (`@export var light: Light3D`): the Inspector gets a node picker too.
+- **A made prop's `propgen_part` extras arrive in Godot as JSON text**, not a Dictionary: parse it (`JSON.parse_string`)
+  before reading `name`, `axis`, `open` (the shotgun's pump, bolt and trigger were never found until then; the runtime's
+  `parts.gd` already did).
+- **Smoke drawn with alpha blending darkens a dim room**: the muzzle's smoke was a dark cloud over the corridor at night
+  (lit by the room's low light, it was darker than the wall behind it). Smoke scatters light: draw it additive and lit,
+  so it shows where light reaches it and never darkens what's behind it. Found by rendering the same frame with one
+  thing off at a time (the smoke, the fog, the flash's shadow, its light).
+- **A Godot script's `--out` path is read from the project's folder**: `godot --path P -s s.gd -- --out=shots` saved
+  nowhere useful; pass an absolute path.
+- **presets.json is appended to as text, never rewritten by `json.dumps`**: dumping it whole re-indented 7,000 lines.
+- **The tape's `camhybrid` preset pillarboxes the frame**: a view model at the bottom right is cut off; picture a view
+  model with the tape off.
+
 ## The retro pack: pictures read inside Blender, and a mask read upside down (2026-11-08)
 
 - **An image read inside Blender is tagged Non-Color before its pixels are touched**: Blender hands back an 8-bit
