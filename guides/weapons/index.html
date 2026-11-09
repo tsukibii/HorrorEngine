@@ -204,9 +204,12 @@ it flashes is an <span class="node">HSMuzzleFlash</span>, a resource (<code>muzz
   <li><b>A noise is mapped triplanar onto each sphere and blended by the view's normal dotted with the surface's, the
   blend a burn</b>: where you look at a sphere's middle the noise shows (white-yellow where it's bright, orange where it
   isn't), toward its rim it burns away, red at the edges where it burns out. Where spheres overlap the fire adds up.</li>
-  <li><b>Then smoke</b>: a puff thrown out with the shot, and smoke <b>trailing from the muzzle</b> for a second and a half
-  after, wherever the gun goes (swung round, broken open, lowered), left behind in the air, rising and spreading, lit by
-  your flashlight and the room's lamps.</li>
+  <li><b>Then smoke</b>: a cloud thrown out with the shot, and smoke <b>trailing from the muzzle</b> for a second and a
+  half after, wherever the gun goes (swung round, broken open, lowered), left behind in the air. It leaves the barrel
+  thick and straight, then curls, rises and parts into wisps that fray as they age; a gun held still sends up a curling
+  thread. It's made the way real-time games make smoke trails: soft sprites along a smoothed curve through where the
+  muzzle has been (no corners, nothing to fold), drifting in curl noise, all of them and the cloud's puffs reading one
+  noise in the air so they're one smoke, worn away by it as they age, and faded where they meet a wall or the gun.</li>
   <li><b>The second barrel through the first's smoke</b>: the left barrel fires into the cloud the right left a quarter
   second before. The flash lights it from inside, but no brighter than <b>Smoke Light Cap</b>, and a thick cloud glows its
   own lit colour rather than adding up to white: the second star shows through it.</li>
@@ -217,7 +220,8 @@ it flashes is an <span class="node">HSMuzzleFlash</span>, a resource (<code>muzz
 Duplicate) and open it in the Inspector: <b>Wings</b> (how many, how far they lean, how long, how many spheres, how
 stretched), <b>Plume</b>, <b>Fire</b> (its colours, how bright, the noise's size, how hard it burns, how fast it burns
 away, <b>Blend</b> Add for a glow or Solid for crisp orange edges), <b>Light</b>, <b>Sparks</b>, <b>Smoke</b> (the puffs, the
-trail, its glow and how much light it takes). To watch it as you change it, add an <span class="node">HSMuzzle</span> to a
+trail: how long, how wide, how many strands and how far they part, how much it curls and frays; its glow and how much
+light it takes). To watch it as you change it, add an <span class="node">HSMuzzle</span> to a
 scene, give it your flash and tick <b>Preview</b>: it shows frozen at <b>Preview Age</b> (0 the first frame);
 <b>Preview Seed</b> lays it out another way.</p></div>
 </section>

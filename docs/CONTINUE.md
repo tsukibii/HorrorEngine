@@ -96,8 +96,19 @@ gun"; DECISIONS 2026-11-09). Built:
   double (`weapons_double_test.gd` folded in, §8g the damage) and one set of pictures (`fire_left`, `open`, `pop`,
   `damage_*`).
 
+- **The smoke trail made to read as smoke** (the user, with four of the guide's pictures: "the smoke trails look a bit
+  unrealistic and fake and show sharp lines, enhance it, research how to do realistic smoke if required first in godot";
+  DECISIONS 2026-11-09, after the last). Researched (docs/research/muzzle_smoke.md), then rebuilt:
+  - The trail drifts in curl noise ramping in with age.
+  - It's soft sprites along a smoothed curve, in strands that part (a strip folded in the curls).
+  - The trail and the puffs read one warped noise in the world, eroded as they age, so they agree (beads, rope and
+    grit before).
+  - Soft particles against walls and the lens.
+  - A still barrel sends up a curling thread.
+  The probe `Saved/Godot/_weapons/trail_probe.gd` (five moments, before and after); the guide's pictures made again.
+
 **Next, if the user wants it**: their eye on the flash and the damage in their own lighting (the flash's `energy`,
-the smoke's `smoke_glow`, `smoke_light_cap` and density, the impact's `merge_m`, `soot_m`, `powder_m`, `wad_m` are the
+the smoke's `smoke_glow`, `smoke_light_cap`, density and the trail's turbulence, strands and erosion, the impact's `merge_m`, `soot_m`, `powder_m`, `wad_m` are the
 knobs), pellets through a thin wall into the next room and ricochets off concrete (docs/research/shotgun_damage.md §5),
 the gun in tutorial v2 itself (found in a room, her an HSShootable that's gone a while when shot, the searcher coming
 at the noise), the export and the Director's projects copying the plugin in (nothing in the runtime uses it yet), a

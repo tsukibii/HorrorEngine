@@ -2,6 +2,20 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-09, after the last (the user: the smoke trails look fake)
+
+- **"In the screenshot the smoke trails look a bit unrealistic and fake and show sharp lines, enhance it, research how
+  to do realistic smoke if required first in godot"** (with four of the weapons guide's pictures: broken open, a shell
+  popping in, the tape, the trail: the trail a flat band, two straight strips meeting in a sharp V, a cut-off end).
+  Researched first (docs/research/muzzle_smoke.md). The trail rebuilt to that recipe:
+  - **Motion:** it drifts in a curl-noise field that ramps in as it ages, so it curls, spreads and rises without
+    piling up.
+  - **Shape:** it's smoothed through its points (no sharp corners), split into strands that part as they age, and its
+    ends taper.
+  - **The shader:** world-space noise instead of noise stretched along the ribbon (the streaks), a soft profile across
+    each strand, subtractive erosion that frays it as it ages, faded where it meets a wall or the gun (soft particles)
+    and near the lens, drawn premultiplied.
+
 ## 2026-11-09, last (the user: the double barrel alone, how it looks with the muzzle, what a wall should show)
 
 - **"Note I don't want the single barrel shotgun, only the double barrel one, inspect how it looks with the muzzle and

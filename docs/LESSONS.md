@@ -3,6 +3,25 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## A muzzle's smoke trail that reads as smoke (2026-11-09, after the last)
+
+- **A camera-facing strip folds in a tight curl**: the trail's first rebuild kept one strip a strand and drifted its
+  points in curl noise. It curled, but where it turned sharply it folded over itself into bright creased facets, worst
+  at a still barrel where the points bunch. Soft sprites close along the smoothed curve, each stretched along it and
+  turned to the eye, can't fold. Use a strip for a gentle line, sprites for anything that curls.
+- **Overlapping sprites must agree on their noise, and erode the noise, not themselves**: eroding each sprite's own
+  body by the noise left every sprite's core standing, so the strands came out beaded like rope. A random noise seed
+  per sprite averaged several noises where they overlapped into flat cotton. One noise read in the world, the same for
+  every sprite on a spot, eroded by itself, with each sprite's body only its soft footprint, reads as one wisp
+  (`smoke_noise.gdshaderinc`, shared with the puffs, which looked like sand beside it for the same reason).
+- **Fractal value noise sits near its middle**: four octaves averaged leave little contrast, so an erosion threshold
+  either kept everything or nothing. Stretch its contrast (about twice round 0.5) before eroding it.
+- **`INSTANCE_CUSTOM` is the vertex function's only**: the puff shader failed to compile reading the particle's phase
+  in `fragment()`. Pass it through a varying.
+- **`| head` on a running Godot kills it**: a probe's output piped to `head -10` closed the pipe after ten lines (the
+  ALSA warnings), Godot died on its next print, and only three of five pictures came out. Write the output to a file
+  and grep that.
+
 ## The double barrel alone and what a 12-gauge leaves on a wall (2026-11-09, last)
 
 - **A check that passes on the dice hides a bug**: the merged test's first green run had both flicked hulls this side
