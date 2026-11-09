@@ -1,7 +1,7 @@
 ## The weapons plugin's pictures (tools/godot/weapons_check.py --pictures): the shotgun in the hotel's corridor at
 ## night as the player sees it. idle, aim (held to the eye), fire (the flash's frame), rack (the pump back, the hull in
 ## the air), reload (a shell going into the port), floor (the hulls on the carpet in the flashlight), tape (the gun in
-## the tape's 4:3 picture, camhybrid).
+## the tape's 4:3 picture, camhybrid), box and box_open (the box of shells where it lies, shut and open).
 ##   godot --path PROJECT --rendering-driver vulkan --fixed-fps 30 -s weapons_shots.gd -- --out=DIR [--only=idle,fire]
 extends SceneTree
 
@@ -109,4 +109,34 @@ func _initialize() -> void:
 	var vhs = main.get_node("Tape").get("vhs")
 	vhs.call("preset", "camhybrid")
 	await shot("tape", 40)
+	vhs.call("preset", "off")
+	await box_shots()
 	quit()
+
+
+# the box of shells where it lies (the ammo family's shells_box_5), close under a held light: shut, then its lid open
+func box_shots() -> void:
+	if not only.is_empty() and not only.has("box") and not only.has("box_open"):
+		return
+	var pk := main.get_node_or_null("Shells") as Node3D
+	if pk == null:
+		return
+	var at := pk.global_position + Vector3(0, 0.015, 0)
+	var cam := Camera3D.new()
+	main.add_child(cam)
+	cam.fov = 45.0
+	cam.global_position = at + Vector3(-0.10, 0.30, 0.40)
+	cam.look_at(at, Vector3.UP)
+	cam.current = true
+	var sp := SpotLight3D.new()
+	main.add_child(sp)
+	sp.global_position = at + Vector3(-0.25, 0.55, 0.35)
+	sp.look_at(at, Vector3.UP)
+	sp.spot_angle = 22.0
+	sp.light_energy = 2.5
+	sp.spot_range = 3.0
+	sp.light_color = Color(1.0, 0.94, 0.84)
+	sp.shadow_enabled = true
+	await shot("box", 40)
+	pk.call("_open_lid", pk.get_child(0), 100.0)
+	await shot("box_open", 20)

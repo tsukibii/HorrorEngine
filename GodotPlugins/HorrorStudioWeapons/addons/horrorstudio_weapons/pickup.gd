@@ -13,6 +13,7 @@ const DIR := "res://addons/horrorstudio_weapons/"
 @export_enum("shotgun", "shells", "double") var kind := "shotgun"
 @export var shells := 5
 @export var say := ""
+@export_range(0.0, 110.0) var lid_open := 0.0     ## a box of shells' lid, degrees open (0 shut): the shells inside show
 
 
 func _ready() -> void:
@@ -23,23 +24,18 @@ func _ready() -> void:
 		g.rotation = Vector3(deg_to_rad(90.0), 0.0, 0.0)          # on its side
 		g.position = Vector3(0, 0.024, 0)
 	else:
-		box = Vector3(0.12, 0.08, 0.1)
-		var b := MeshInstance3D.new()
-		var bm := BoxMesh.new()
-		bm.size = Vector3(0.11, 0.036, 0.075)
-		b.mesh = bm
-		var m := StandardMaterial3D.new()
-		m.albedo_color = Color(0.55, 0.12, 0.1)
-		m.roughness = 0.8
-		b.material_override = m
-		b.position = Vector3(0, 0.018, 0)
+		box = Vector3(0.15, 0.06, 0.12)
+		var b := (load(DIR + "models/shells_box_5.glb") as PackedScene).instantiate() as Node3D   # (the prop generator's box of five)
 		add_child(b)
+		b.rotation = Vector3(0, deg_to_rad(-8.0), 0)
+		if lid_open > 0.0:
+			_open_lid(b, lid_open)
 		var sh := load(DIR + "models/shell_12ga.glb") as PackedScene
-		for i in 3:
+		for i in 2:                                          # two spilled beside it
 			var s := sh.instantiate() as Node3D
 			add_child(s)
-			s.rotation = Vector3(0, deg_to_rad(20.0 + 35.0 * i), deg_to_rad(90.0))
-			s.position = Vector3(-0.03 + 0.03 * i, 0.0105, 0.07)
+			s.rotation = Vector3(0, deg_to_rad(25.0 + 70.0 * i), deg_to_rad(90.0))
+			s.position = Vector3(0.088 + 0.018 * i, 0.0114, 0.032 - 0.058 * i)
 	var body := StaticBody3D.new()
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
@@ -48,6 +44,19 @@ func _ready() -> void:
 	cs.position = Vector3(0, box.y / 2, 0)
 	body.add_child(cs)
 	add_child(body)
+
+
+# the box's lid (its glb's part `lid`, at its hinge) turned open by `deg`
+func _open_lid(b: Node3D, deg: float) -> void:
+	for n in b.find_children("*", "Node3D", true, false):
+		var ex: Dictionary = n.get_meta("extras", {}) if n.has_meta("extras") else {}
+		var part = ex.get("propgen_part")
+		if part is String:
+			part = JSON.parse_string(part)                # (the exporter writes it as JSON text)
+		if part is Dictionary and str(part.get("name", "")) == "lid":
+			var ax: Array = part.get("axis", [-1, 0, 0])
+			(n as Node3D).rotate_object_local(Vector3(float(ax[0]), float(ax[1]), float(ax[2])).normalized(), deg_to_rad(deg))
+			return
 
 
 func use(_by: Node = null) -> void:
