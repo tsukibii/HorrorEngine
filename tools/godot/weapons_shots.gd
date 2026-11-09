@@ -1,6 +1,7 @@
 ## The weapons plugin's pictures (tools/godot/weapons_check.py --pictures): the shotgun in the hotel's corridor at
-## night as the player sees it, the tape on (the user's camhybrid). idle, fire (the flash's frame), rack (the pump
-## back, the hull in the air), reload (a shell going into the port), floor (the hulls on the carpet).
+## night as the player sees it. idle, aim (held to the eye), fire (the flash's frame), rack (the pump back, the hull in
+## the air), reload (a shell going into the port), floor (the hulls on the carpet in the flashlight), tape (the gun in
+## the tape's 4:3 picture, camhybrid).
 ##   godot --path PROJECT --rendering-driver vulkan --fixed-fps 30 -s weapons_shots.gd -- --out=DIR [--only=idle,fire]
 extends SceneTree
 
@@ -57,6 +58,10 @@ func _initialize() -> void:
 		(l as Light3D).light_color = Color(0.78, 0.86, 1.0)
 	await frames(20)
 	await shot("idle", 50)
+	gun.set_aim(true)
+	await shot("aim", 25)
+	gun.set_aim(false)
+	await frames(20)
 	gun.pull()
 	await frames(1)
 	await now("fire")
@@ -73,9 +78,35 @@ func _initialize() -> void:
 			await now("reload")
 			break
 	await frames(90)
+	for i in 2:                                                   # two more hulls on the floor
+		gun.pull()
+		await frames(36)
+	await frames(60)
 	var eye := player.get_node("Eye") as Camera3D
-	player.set("pitch", deg_to_rad(-62.0))
-	eye.rotation.x = deg_to_rad(-62.0)
-	player.rotation.y += deg_to_rad(-25.0)
+	var torch := player.get_node("Eye/Flashlight") as Node3D
+	torch.visible = true                                          # the flashlight on: the hulls in its beam
+	var hs: Array = gun.get("_hulls")
+	var mid := Vector3.ZERO
+	for h in hs:
+		mid += (h as Node3D).global_position / float(hs.size())
+	var yaw0 := player.rotation.y
+	var d := mid - player.global_position                         # looking at the hulls where they lie
+	player.rotation.y = atan2(-d.x, -d.z)
+	var e := mid - eye.global_position
+	var pt := atan2(e.y, Vector2(e.x, e.z).length())
+	player.set("pitch", pt)
+	eye.rotation.x = pt
+	var lamps := main.get_node("Hotel").find_children("*", "Light3D", true, false)
+	for l in lamps:
+		(l as Light3D).light_energy /= 0.13                       # (the lights up for this one: the hulls on the carpet)
 	await shot("floor", 30)
+	for l in lamps:
+		(l as Light3D).light_energy *= 0.13
+	torch.visible = false
+	player.set("pitch", 0.0)
+	eye.rotation.x = 0.0
+	player.rotation.y = yaw0
+	var vhs = main.get_node("Tape").get("vhs")
+	vhs.call("preset", "camhybrid")
+	await shot("tape", 40)
 	quit()

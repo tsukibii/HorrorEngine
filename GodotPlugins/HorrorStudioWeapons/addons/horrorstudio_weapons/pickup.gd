@@ -56,6 +56,9 @@ func use(_by: Node = null) -> void:
 		w.give(shells)
 	else:
 		w.add_shells(shells)
+	var snd := load(DIR + "sounds/%s.ogg" % ("shotgun_handle" if kind == "shotgun" else "shells_box")) as AudioStream
+	if snd != null and w.has_method("sound"):
+		w.sound(snd, global_position, -4.0, "foley")
 	var st := get_tree().get_first_node_in_group("hs_story")
 	if say != "" and st != null and st.has_method("say"):
 		st.say(say)

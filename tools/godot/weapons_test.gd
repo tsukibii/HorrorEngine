@@ -211,6 +211,7 @@ func _initialize() -> void:
 		var d: Vector3 = (h["point"] as Vector3) - from0
 		spread = maxf(spread, rad_to_deg(d.angle_to(fwd0)))
 	var kick := rad_to_deg(float(player.get("pitch")) - p0)
+	var hud_ctl := gun.find_child("Shells", true, false) as Control
 	var heard: Array = listener.get("got")
 	say("shot", "%d pellets hit (%d on the dummy, told %d times), the widest %.1f° off the middle, %d holes, heard %s, the ears ringing %.1f s, the view kicked %.1f°, the flash %.1f" % [
 		hits.size(), on_dummy, (dummy.get("got") as Array).size(), spread, (g("_holes") as Array).size(),
@@ -227,8 +228,10 @@ func _initialize() -> void:
 		bad("the listeners didn't hear the shot as loud as it is (%s)" % str(heard))
 	if float(fear.get("_ring")) < 1.0:
 		bad("the ears aren't ringing after the shot (the Fear node's ring)")
-	if absf(kick - float(g("recoil_deg"))) > 0.3:
+	if kick < float(g("recoil_deg")) - 0.5 or kick > float(g("recoil_deg")) + 0.1:
 		bad("the view wasn't kicked up by the recoil (%.2f°)" % kick)
+	if hud_ctl == null:
+		bad("no shells drawn low on the right (the HUD's Shells)")
 	if (g("_flash_light") as Light3D).light_energy < 1.0 or not (g("_flash") as Node3D).visible:
 		bad("no muzzle flash at the shot")
 
@@ -250,6 +253,11 @@ func _initialize() -> void:
 		if not (g("_bolt") as Node3D).visible:
 			bolt_gone = true
 	await until(func() -> bool: return not g("busy"), 1.0)
+	var settled := rad_to_deg(float(player.get("pitch")) - p0)
+	var want_settle := float(g("recoil_deg")) * (1.0 - float(g("recover")))
+	say("recoil", "the view kicked %.1f° and settled back to %.1f° above where it was (%.1f wanted)" % [kick, settled, want_settle])
+	if absf(settled - want_settle) > 0.35:
+		bad("the view didn't settle back after the kick (%.2f°, want %.2f°)" % [settled, want_settle])
 	say("rack", "the pump %.1f of %.1f cm back after %.2f s, the bolt's face %s, %d hull out, %s; back home %.1f mm off, loaded %d, chambered %s" % [
 		most * 100.0, travel * 100.0, t_back, "gone while open" if bolt_gone else "NEVER GONE", int(g("ejected")), str(racked_log),
 		pump.position.distance_to(pump0) * 1000.0, int(g("loaded")), g("chambered")])
@@ -278,6 +286,49 @@ func _initialize() -> void:
 		if up < 0.006 or up > 0.02 or lying > 5.0:
 			bad("the hull isn't lying on the floor on its side (its middle %.1f cm up, its axis %.0f° off flat)" % [up * 100.0, lying])
 
+	# 3b. aimed (the right button): the barrel straight ahead under the eye, the lens narrower, the cone tighter
+	look(dummy.global_position + Vector3(0, 0.25, 0))
+	await frames(3)
+	var fov0 := eye.fov
+	gun.set_aim(true)
+	await secs(0.5)
+	var am := eye.to_local(gun.call("_at", "muzzle"))
+	var ac := eye.to_local(gun.call("_at", "chamber"))
+	var abore := rad_to_deg((am - ac).normalized().angle_to(Vector3(0, 0, -1)))
+	var asm := on_screen(am)
+	var afov := eye.fov
+	var afwd := -eye.global_basis.z
+	var afrom := eye.global_position
+	gun.pull()
+	await frames(1)
+	var aspread := 0.0
+	for h in (g("last_hits") as Array):
+		aspread = maxf(aspread, rad_to_deg(((h["point"] as Vector3) - afrom).angle_to(afwd)))
+	await until(func() -> bool: return not g("busy"), 1.5)
+	gun.set_aim(false)
+	await secs(0.5)
+	say("aim", "aimed: the muzzle at (%.2f, %.2f) of the view, the bore %.1f° off straight ahead, the lens %.0f° (from %.0f), the widest pellet %.1f° off; let go: the lens %.0f°, at the hip %s" % [
+		asm.x, asm.y, abore, afov, fov0, aspread, eye.fov, float(g("_aim")) < 0.001])
+	if absf(asm.x - 0.5) > 0.03 or asm.y < 0.5 or asm.y > 0.6 or abore > 1.0:
+		bad("aimed, the barrel isn't straight ahead under the view's middle (%.2f, %.2f; %.1f°)" % [asm.x, asm.y, abore])
+	if absf(afov - float(g("aim_fov"))) > 0.5 or absf(eye.fov - fov0) > 0.01:
+		bad("the lens didn't narrow while aimed and come back (%.1f, then %.1f from %.1f)" % [afov, eye.fov, fov0])
+	if aspread > float(g("spread_deg")) * float(g("aim_spread")) + 0.25:
+		bad("aimed, the cone isn't tighter (%.1f°)" % aspread)
+
+	# 3c. under a 4:3 tape (the Look plugin's), the gun drawn in to sit in its picture; back without it
+	var vhs = main.get_node("Tape").get("vhs")
+	var hip0 := eye.to_local(gun.call("_at", "chamber")).x
+	vhs.call("preset", "camhybrid")
+	await frames(3)
+	var hip1 := eye.to_local(gun.call("_at", "chamber")).x
+	vhs.call("preset", "off")
+	await frames(3)
+	var hip2 := eye.to_local(gun.call("_at", "chamber")).x
+	say("tape", "the chamber %.3f m right of the eye, %.3f under the tape's 4:3, %.3f after" % [hip0, hip1, hip2])
+	if absf(hip1 - hip0 * 0.75) > 0.01 or absf(hip2 - hip0) > 0.01:
+		bad("the gun isn't drawn into the tape's 4:3 picture and back (%.3f, %.3f, %.3f)" % [hip0, hip1, hip2])
+
 	# 4. a crate shoved by the shot
 	var crate := main.get_node("Crate0") as RigidBody3D
 	var cp := crate.global_position
@@ -286,9 +337,12 @@ func _initialize() -> void:
 	gun.pull()
 	await secs(1.0)
 	var moved := crate.global_position.distance_to(cp)
-	say("crate", "moved %.2f m by the shot" % moved)
+	var carried := crate.get_children().filter(func(c): return c is Decal).size()
+	say("crate", "moved %.2f m by the shot, %d holes in it carried with it" % [moved, carried])
 	if moved < 0.05:
 		bad("the crate didn't move when it was shot (%.3f m)" % moved)
+	if carried < 1:
+		bad("the holes in the crate stayed where it was (none of its own)")
 	await until(func() -> bool: return not g("busy"), 1.0)
 
 	# 5. fired dry: the rest of the tube, then a click; never faster than the flash limit
@@ -399,6 +453,70 @@ func _initialize() -> void:
 	say("keys", "R put %d in, Q lowered it %s and raised it %s; a click %s" % [shell_log.size(), down, up, clicked])
 	if shell_log.is_empty() or not down or not up:
 		bad("the keys don't work (R %d shells, Q down %s, up %s)" % [shell_log.size(), down, up])
+
+	# 8b. something that reacts to being shot (an HSShootable under it): gone a moment at the first hit, down at the second
+	if is_instance_valid(dummy):
+		dummy.queue_free()
+	var ghost := Node3D.new()
+	ghost.name = "Ghost"
+	main.add_child(ghost)
+	ghost.global_position = Vector3(player.global_position.x - 2.6, fl, player.global_position.z)
+	var gb := StaticBody3D.new()
+	var gcs := CollisionShape3D.new()
+	var gbox := BoxShape3D.new()
+	gbox.size = Vector3(0.4, 1.6, 0.5)
+	gcs.shape = gbox
+	gb.add_child(gcs)
+	ghost.add_child(gb)
+	gb.position = Vector3(0, 0.8, 0)
+	var sh := Node.new()
+	sh.set_script(load("res://addons/horrorstudio_weapons/shootable.gd"))
+	sh.set("hits", 2)
+	sh.set("gone_secs", 0.5)
+	ghost.add_child(sh)
+	var g_hits: Array = []
+	var g_down := [false]
+	sh.hit.connect(func(info: Dictionary) -> void: g_hits.append(info))
+	sh.down.connect(func() -> void: g_down[0] = true)
+	gun.set("loaded", 3)
+	gun.set("chambered", true)
+	await frames(30)
+	look(ghost.global_position + Vector3(0, 1.1, 0))
+	await frames(3)
+	gun.pull()
+	await frames(2)
+	var gone1: bool = not ghost.visible and ghost.process_mode == Node.PROCESS_MODE_DISABLED
+	await secs(0.7)
+	var back: bool = ghost.visible and ghost.process_mode != Node.PROCESS_MODE_DISABLED
+	await until(func() -> bool: return not g("busy"), 1.0)
+	gun.pull()
+	await frames(2)
+	await secs(0.8)
+	var gone_for_good: bool = not ghost.visible and g_down[0]
+	say("shootable", "hit %d times (%s pellets each), gone at the first %s and back after %s, down at the second %s" % [
+		g_hits.size(), str(g_hits.map(func(x): return x["hits"])), gone1, back, gone_for_good])
+	if g_hits.size() != 2 or not gone1 or not back or not gone_for_good:
+		bad("an HSShootable didn't answer its hits (hits %d, gone %s, back %s, down %s)" % [g_hits.size(), gone1, back, gone_for_good])
+	await until(func() -> bool: return not g("busy"), 1.0)
+
+	# 8c. the shells' row low on the right: inside the tape's 4:3 picture, and above the studio HUD's keys when there's an HSHud
+	var vsz := gun.get_viewport().get_visible_rect().size
+	var u := clampf(vsz.y / 1080.0, 0.5, 3.0)
+	var at0: Vector2 = gun.call("_hud_at", vsz, u)
+	var hud_ui: Node = null
+	if ResourceLoader.exists("res://addons/horrorstudio_ui/hud.gd"):
+		hud_ui = (load("res://addons/horrorstudio_ui/hud.gd") as GDScript).new()
+		main.add_child(hud_ui)
+		await secs(4.5)                                          # (the gun looks for a HUD now and then)
+		var chips := hud_ui.get("hint_el") as Control
+		var at1: Vector2 = gun.call("_hud_at", vsz, u)
+		var top := chips.get_global_rect().position.y if chips != null else -1.0
+		say("shells row", "at (%.0f, %.0f) of %.0f x %.0f; with an HSHud its keys' top at %.0f and the row's baseline at %.0f" % [at0.x, at0.y, vsz.x, vsz.y, top, at1.y])
+		if chips == null or chips.get_child_count() == 0 or absf(at1.y - (top - 12.0 * u)) > 1.0 or at1.y >= at0.y:
+			bad("the shells' row isn't above the HSHud's keys (%.0f, the keys at %.0f)" % [at1.y, top])
+		hud_ui.queue_free()
+	if absf(at0.x - (vsz.x - 46.0 * u)) > 1.0 or absf(at0.y - (vsz.y - 42.0 * u)) > 1.0:          # (headless, the view is tiny: its rule, not pixels)
+		bad("the shells' row isn't low on the right (%.0f, %.0f of %.0f x %.0f)" % [at0.x, at0.y, vsz.x, vsz.y])
 
 	# 9. lowered: out of view, the flashlight back on the eye, no shot; raised again
 	gun.set_raised(false)

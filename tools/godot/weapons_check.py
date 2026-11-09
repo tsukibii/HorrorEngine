@@ -6,13 +6,14 @@ starter's player standing in its corridor at night, an HSShotgun under the playe
 its barrel, a box of shells on the floor, a dummy that knows it's shot, boxes that move when hit. Played headless
 (`weapons_test.gd`): the gun low on the right with its barrel's line on the view's middle; a shot (pellets in their
 cone, holes, the push, the flash, the noise heard, the ears ringing, the kick), the pump racked by itself (the hull out
-of the ejection port and onto the floor, the next shell chambered), the tube emptied to a click, the reload a shell at
+of the ejection port and onto the floor, the next shell chambered), aimed and under a 4:3 tape, the tube emptied to a
+click, the reload a shell at
 a time through the loading port (each one into the port, the count, the pump racked at the end), a reload stopped by a
 shot, the box of shells taken, lowered and raised, the flashlight carried and given back.
 
     python tools/godot/weapons_check.py [--reuse] [--pictures [--only idle,fire]] [--keep DIR]
 
-`--pictures` draws the guide's pictures under xvfb (`weapons_shots.gd`) into GodotPlugins/HorrorStudioWeapons/img/.
+`--pictures` draws the guide's pictures under xvfb (`weapons_shots.gd`) into guides/weapons/img/.
 """
 import json
 import math
@@ -30,7 +31,7 @@ args = sys.argv[1:]
 G = os.environ.get("GODOT") or shutil.which("godot") or shutil.which("godot-mono")
 node = shutil.which("node") or "node"
 proj = Path(args[args.index("--keep") + 1]).resolve() if "--keep" in args else ROOT / "Saved" / "Godot" / "_weapons"
-IMG = ROOT / "GodotPlugins" / "HorrorStudioWeapons" / "img"
+IMG = ROOT / "guides" / "weapons" / "img"
 errs = []
 
 
@@ -167,7 +168,7 @@ if "--pictures" in args and not errs:
     for p in made:
         im = Image.open(p).convert("RGB")
         im.save(IMG / f"{p.stem}.jpg", quality=86, optimize=True)
-        print(f"  picture: GodotPlugins/HorrorStudioWeapons/img/{p.stem}.jpg ({im.width}x{im.height})")
+        print(f"  picture: guides/weapons/img/{p.stem}.jpg ({im.width}x{im.height})")
 
 for e in errs:
     print("ERROR: " + e)

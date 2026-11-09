@@ -24,6 +24,8 @@ the fix.
 - **A Godot script's `--out` path is read from the project's folder**: `godot --path P -s s.gd -- --out=shots` saved
   nowhere useful; pass an absolute path.
 - **presets.json is appended to as text, never rewritten by `json.dumps`**: dumping it whole re-indented 7,000 lines.
+- **ffmpeg's Ogg muxer gives every file a random stream serial**: the weapon's sounds made again from the same seeds came
+  out as seven changed files. `-fflags +bitexact -flags:a +bitexact` makes a run's bytes the same as the last's.
 - **The tape's `camhybrid` preset pillarboxes the frame**: a view model at the bottom right is cut off; picture a view
   model with the tape off.
 

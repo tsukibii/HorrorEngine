@@ -1,6 +1,6 @@
 """The weapons plugin's sounds, made from nothing (numpy, then ffmpeg for the Ogg; DECISIONS 2026-11-09): a 12-gauge's
 blast, its pump racked back and run forward, a shell pushed into the loading port, the dry click on an empty chamber,
-a spent hull dropping on the floor, the gun raised and lowered. Each is mono (the Sound node places it in the room and
+a spent hull dropping on the floor, the gun raised and lowered, a box of shells picked up. Each is mono (the Sound node places it in the room and
 the sound physics give it the room's reverb, so the blast carries no room of its own: a short tail only).
 
     python tools/weapon_sounds.py [--out DIR]     (default GodotPlugins/HorrorStudioWeapons/addons/horrorstudio_weapons/sounds)
@@ -114,9 +114,22 @@ def handle(rng):
     return x
 
 
+def shells_box(rng):
+    """A box of shells picked up: the cardboard's soft thump, the shells inside knocking together."""
+    t = t_(0.45)
+    thump = band(rng.standard_normal(len(t)), 120, 700) * decay(t, 0.025, 0.004)
+    x = thump / max(np.abs(thump).max(), 1e-9) * 0.5
+    for i in range(7):
+        at = 0.012 + rng.uniform(0.0, 0.26) * (0.5 + 0.5 * i / 7)
+        a = rng.uniform(0.25, 0.6) * (1.0 - i / 10)
+        x += a * (modes(t, at, [1350 * rng.uniform(0.9, 1.1), 2700 * rng.uniform(0.9, 1.1), 4300], [0.012, 0.008, 0.005],
+                        [0.6, 0.35, 0.15], rng) + tick(t, at, 1500, 8000, 0.002, 0.3, rng))
+    return x
+
+
 SOUNDS = {"shotgun_fire": (blast, -0.5), "shotgun_pump_back": (pump_back, -4.0), "shotgun_pump_forward": (pump_forward, -3.0),
           "shotgun_shell_insert": (shell_insert, -6.0), "shotgun_dry": (dry_click, -8.0), "shell_drop": (shell_drop, -10.0),
-          "shotgun_handle": (handle, -10.0)}
+          "shotgun_handle": (handle, -10.0), "shells_box": (shells_box, -9.0)}       # (new ones last: each one's seed is its place)
 
 
 def write(path, x, peak_db):
@@ -130,7 +143,9 @@ def write(path, x, peak_db):
             f.setsampwidth(2)
             f.setframerate(SR)
             f.writeframes((np.clip(x, -1, 1) * 32767).astype("<i2").tobytes())
-        r = subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(w), "-c:a", "libvorbis", "-q:a", "6", str(path)],
+        # bitexact: the same bytes every run (the Ogg muxer's stream serial is random otherwise)
+        r = subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(w), "-c:a", "libvorbis", "-q:a", "6",
+                            "-fflags", "+bitexact", "-flags:a", "+bitexact", str(path)],
                            capture_output=True, text=True)
         if r.returncode:
             sys.exit("ffmpeg: " + r.stderr[-400:])

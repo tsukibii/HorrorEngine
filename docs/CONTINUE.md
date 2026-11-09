@@ -38,9 +38,13 @@ gun"; DECISIONS 2026-11-09). Built:
   port, a click during it fires as soon as it can, Q lowers it, the flashlight carried under the barrel; `HSWeaponPickup`
   the gun or a box of shells. `godot_byhand.py` copies and enables it in every project made by hand.
 - **WEAPONS** (`tools/godot/weapons_check.py`): built into tutorial v2's hotel corridor and played headless; `--pictures`.
+- **Refined** (the user's "refine it through diff perspectives"): the kick settling back, the gun rocking with the
+  pump, aiming on the right button, the tape's 4:3, the shells as marks, holes staying on doors and crates, pickup
+  sounds, the editor's preview, `HSShootable` (shot: gone a while, shoved, a cry, a line, a target; `hit`, `down`), and
+  the guide `guides/weapons/index.html` (its pictures WEAPONS's).
 
-**Next, if the user wants it**: the gun in tutorial v2 itself (found in a room, her reacting to being shot: `shot(info)`
-on her, the searcher coming at the noise), the export and the Director's projects copying the plugin in (nothing in the
+**Next, if the user wants it**: the gun in tutorial v2 itself (found in a room, her an HSShootable that's gone a while when
+shot, the searcher coming at the noise), the export and the Director's projects copying the plugin in (nothing in the
 runtime uses it yet), aiming down the barrel on the right button, a melee shove, more weapons as recipes in the same
 family (a revolver, a hunting rifle) with the same sockets.
 
