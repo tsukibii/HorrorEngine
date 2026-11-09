@@ -1542,7 +1542,8 @@ function slotProps(box, id) {
   const cut = ["logo", "flourish", "stamp", "text"].includes(sl.kind), round = isl.wrap && sl.box[2] >= isl.mm[0] * 0.95;
   const what = sl.relief ? "pressed in or raised: where it's opaque, or dark on white" : slotFit(sl) === "tile" ? "it repeats: a tile seamless all round" :
     (cut ? "PNG, transparent round it" : "PNG or JPEG") + (round ? ", seamless left to right" : "");
-  box.append(sizeNote(sl.island, sl.box[2], sl.box[3], what));
+  const q = quarters(sl);                                     // a slot turned a quarter: the size your picture wants upright
+  box.append(sizeNote(sl.island, q % 2 ? sl.box[3] : sl.box[2], q % 2 ? sl.box[2] : sl.box[3], what));
   if (E.pending.has(sl.id)) box.append(el("div", { class: "pe-note" }, "The generator's own drawing comes back here on the next Make (the canvas shows what's under it)."));
   box.append(btns(btn("Its template", () => slotTemplate(sl), "the generator's own drawing there at the size it wants: paint over it"),
     btn("Zoom to it", () => zoomTo({ kind: "slot", id: sl.id }))));
@@ -1971,13 +1972,20 @@ async function partTemplate(n) {
   c.getContext("2d").drawImage(full, r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0, 0, 0, w, h);
   download(new Blob([await pngOf(c)], { type: "image/png" }), `${M.name}_${n}.png`);
 }
+// how many quarter turns a slot's picture is laid at (a print along a shell's hull or up an energy can: 1)
+function quarters(sl) { return ((Math.round((sl.rot || 0) / 90) % 4) + 4) % 4; }
 async function slotTemplate(sl) {
   const M = M_(), isl = M.islands[sl.island], px = texPx(isl.mat), [bx, by, bw, bh] = sl.box;
   const [a0, b1] = mmT(isl, px, bx, by), [a1, b0] = mmT(isl, px, bx + bw, by + bh), [w, h] = wants(sl.island, bw, bh);
-  const im = await loaded(madeUrl(isl.mat)), c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
-  c.getContext("2d").drawImage(im, a0 * iw(im) / px, b0 * ih(im) / px, (a1 - a0) * iw(im) / px, (b1 - b0) * ih(im) / px, 0, 0, w, h);
+  const im = await loaded(madeUrl(isl.mat)), c = document.createElement("canvas"), q = quarters(sl);
+  // turned back upright (clockwise, as the make turns your picture anticlockwise into the box): painted over and
+  // dropped back, it goes in as it was
+  c.width = q % 2 ? h : w;
+  c.height = q % 2 ? w : h;
+  const g = c.getContext("2d");
+  g.translate(c.width / 2, c.height / 2);
+  g.rotate(q * Math.PI / 2);
+  g.drawImage(im, a0 * iw(im) / px, b0 * ih(im) / px, (a1 - a0) * iw(im) / px, (b1 - b0) * ih(im) / px, -w / 2, -h / 2, w, h);
   download(new Blob([await pngOf(c)], { type: "image/png" }), `${M.name}_${sl.id.replace(".", "_")}.png`);
 }
 
