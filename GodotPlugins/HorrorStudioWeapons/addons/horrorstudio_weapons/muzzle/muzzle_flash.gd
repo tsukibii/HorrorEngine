@@ -68,6 +68,10 @@ enum Blend { SOLID, ADD }
 @export var trail_life_s := 2.2                       ## each bit of the trail's
 @export var trail_width_m := Vector2(0.025, 0.14)     ## the trail's width where it leaves the muzzle and where it dies
 @export var trail_rise := 0.07                        ## m/s up
+@export_range(1, 5) var trail_strands := 3            ## the trail drawn as this many strands parting as they age: wisps, not a band
+@export var trail_spread := 0.045                     ## how far apart the strands have drifted by the end of their life (m)
+@export var trail_turbulence := 0.22                  ## the curl noise's drift on the oldest of it (m/s): it leaves the barrel straight and curls as it goes
+@export_range(0.0, 1.0) var trail_erode := 0.55       ## how much it frays into wisps as it ages (docs/research/muzzle_smoke.md)
 @export var smoke_color := Color(0.82, 0.8, 0.77)
 @export_range(0.0, 2.0) var smoke_density := 1.0
 @export_range(0.0, 1.0) var smoke_glow := 0.6                ## a light of its own, so it reads as grey wisps in a dim room as in the user's reference (0: lit by the room's lights only)

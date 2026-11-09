@@ -818,12 +818,39 @@ func _initialize() -> void:
 	var same: Array = (muz.trail_bits() as Array).filter(func(b) -> bool: return not b0.is_empty() and is_equal_approx(float(b["born"]), float(b0["born"])))
 	var swung := muz.global_position.distance_to(mz0)
 	var stayed := (same[0]["at"] as Vector3).distance_to(b0["at"]) if same.size() > 0 else 9.0
-	say("trail", "%d bits of smoke trailed after the shot; the muzzle swung %.2f m away and the bit it had just left moved %.2f m (left where it was)" % [pts1.size(), swung, stayed])
+	var drawn: Dictionary = muz.trail_drawn()
+	var want_strands := int((muz.get("look") as Resource).get("trail_strands"))
+	say("trail", "%d bits of smoke trailed after the shot; the muzzle swung %.2f m away and the bit it had just left moved %.2f m (left where it was); drawn as %d sprites in %d strands" % [
+		pts1.size(), swung, stayed, int(drawn["sprites"]), int(drawn["strands"])])
 	if pts1.size() < 6 or swung < 0.15 or stayed > 0.08:
 		bad("the muzzle didn't leave a trail of smoke behind it (%d bits, swung %.2f, moved %.2f)" % [pts1.size(), swung, stayed])
+	if int(drawn["strands"]) != want_strands or int(drawn["sprites"]) < want_strands * 6:
+		bad("the trail isn't drawn as soft sprites along its strands (%s, %d strands wanted)" % [str(drawn), want_strands])
 	await until(func() -> bool: return (muz.trail_points() as Array).is_empty(), 5.0)
 	if not (muz.trail_points() as Array).is_empty():
 		bad("the trail never cleared (%d bits)" % (muz.trail_points() as Array).size())
+	await until(func() -> bool: return not g("busy"), 1.5)
+
+	# 8f2. a still barrel's smoke curls as it rises (docs/research/muzzle_smoke.md): held still after a shot, its bits
+	# older than half a second spread across the barrel's line, which only the curl noise does (the rise is up, the
+	# shot's push along the barrel)
+	await fill()
+	look(Vector3(spot.x - 4.0, eye.global_position.y - 0.3, spot.z))
+	await frames(5)
+	gun.pull()
+	await secs(1.3)
+	var bside := (-muz.global_basis.z).cross(Vector3.UP).normalized()
+	var olds: Array = (muz.trail_bits() as Array).filter(func(b) -> bool: return float(b["age"]) > 0.5)
+	var mean_s := 0.0
+	for b in olds:
+		mean_s += (b["at"] as Vector3).dot(bside) / float(maxi(olds.size(), 1))
+	var var_s := 0.0
+	for b in olds:
+		var_s += pow((b["at"] as Vector3).dot(bside) - mean_s, 2.0) / float(maxi(olds.size(), 1))
+	say("curl", "held still 1.3 s after a shot: %d bits older than half a second, spread %.1f cm across the barrel's line" % [olds.size(), sqrt(var_s) * 100.0])
+	if olds.size() < 5 or sqrt(var_s) < 0.01:
+		bad("a still barrel's smoke doesn't curl as it rises (%d bits, %.1f cm across)" % [olds.size(), sqrt(var_s) * 100.0])
+	await until(func() -> bool: return (muz.trail_points() as Array).is_empty(), 5.0)
 	await until(func() -> bool: return not g("busy"), 1.5)
 
 	# 8g. what a 12-gauge leaves on a wall (docs/research/shotgun_damage.md), by the muzzle's distance from it (the

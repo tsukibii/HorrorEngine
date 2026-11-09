@@ -67,6 +67,9 @@ var _clock := 0.0
 var _last_at := Vector3.INF
 var _last_t := -1.0
 var _imesh: ImmediateMesh
+var _curl: FastNoiseLite                                # the trail's drift: the curl of this noise (Bridson's curl noise)
+var _drawn_strands := 0                                 # what the trail drew last frame (trail_drawn)
+var _drawn_sprites := 0
 var _from := Vector3.INF                                # this shot's smoke and light from here (a wall between the eye and the muzzle), else the muzzle
 var _dirty := true
 var _ed_t := 0.0
@@ -142,9 +145,14 @@ func trail_points() -> Array:
 	return _pts.map(func(p): return p[0])
 
 
-## The trail's points with when each was left: [{at, born}], oldest first (a check follows one by its `born`).
+## The trail's points with when each was left: [{at, born, age}], oldest first (a check follows one by its `born`).
 func trail_bits() -> Array:
-	return _pts.map(func(p): return {"at": p[0], "born": p[4]})
+	return _pts.map(func(p): return {"at": p[0], "born": p[4], "age": p[2]})
+
+
+## What the trail drew last frame (a check's): {strands, sprites}.
+func trail_drawn() -> Dictionary:
+	return {"strands": _drawn_strands, "sprites": _drawn_sprites}
 
 
 func _look() -> HSMuzzleFlash:
@@ -222,7 +230,6 @@ func _build() -> void:
 	trail.mesh = _imesh
 	var tm := ShaderMaterial.new()
 	tm.shader = load(DIR + "muzzle/smoke.gdshader")
-	tm.set_shader_parameter("noise_tex", noise)
 	trail.material_override = tm
 	trail.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(trail)
@@ -297,6 +304,7 @@ func _shade(lk: HSMuzzleFlash) -> void:
 		tm.set_shader_parameter("glow", lk.smoke_glow)
 		tm.set_shader_parameter("density", clampf(lk.smoke_density, 0.0, 2.0))
 		tm.set_shader_parameter("light_cap", lk.smoke_light_cap)
+		tm.set_shader_parameter("erode", lk.trail_erode)
 	var pm := puffs.mesh.surface_get_material(0) as ShaderMaterial if puffs.mesh != null else null
 	if pm != null:
 		pm.set_shader_parameter("glow", lk.smoke_glow)
@@ -465,10 +473,10 @@ func _trail(dt: float) -> void:
 		_trail_left -= dt
 		var k := clampf(_trail_left / maxf(look.trail_s, 0.001), 0.0, 1.0)
 		var at := global_position if _from == Vector3.INF else _from
-		# a point when the muzzle has moved a few millimetres or a moment has gone by (one a frame zig-zags)
-		if _pts.is_empty() or at.distance_to(_last_at) > 0.006 or _clock - _last_t > 0.045:
+		# a point when the muzzle has moved a centimetre or a moment has gone by (a still barrel smokes too)
+		if _pts.is_empty() or at.distance_to(_last_at) > 0.012 or _clock - _last_t > 0.045:
 			var fwd := -global_basis.z
-			_pts.append([at, fwd * 0.1 * k + Vector3.UP * look.trail_rise * 0.5, 0.0, look.smoke_density * pow(k, 0.7), _clock])
+			_pts.append([at, fwd * 0.1 * k + Vector3.UP * look.trail_rise * 0.5, 0.0, look.smoke_density * pow(k, 1.4), _clock])   # (thick just after the shot, thin wisps after)
 			_last_at = at
 			_last_t = _clock
 	var keep: Array = []
@@ -477,54 +485,140 @@ func _trail(dt: float) -> void:
 		p[2] = age
 		if age >= life:
 			continue
-		var born: float = p[4]
 		var v: Vector3 = p[1]
 		v = v * pow(0.35, dt) + Vector3.UP * look.trail_rise * dt
-		# the drift: a slow swirl that changes along the trail smoothly (by when each part was left), so neighbours
-		# drift alike and the ribbon bends instead of tearing
-		v += Vector3(sin(_clock * 1.1 + born * 2.3), 0.0, cos(_clock * 0.9 + born * 1.9)) * 0.04 * dt
 		p[1] = v
-		p[0] = (p[0] as Vector3) + v * dt
+		# the curl noise's swirl, ramping in as it ages: it leaves the barrel straight and curls, spreads and rises
+		# without piling up anywhere (docs/research/muzzle_smoke.md); neighbours in the air drift alike
+		var swirl := _curl_at(p[0], _clock) * look.trail_turbulence * smoothstep(0.03, 0.7, age)
+		p[0] = (p[0] as Vector3) + (v + swirl) * dt
 		keep.append(p)
 	_pts = keep
 	var cam := get_viewport().get_camera_3d() if is_inside_tree() else null
 	_imesh.clear_surfaces()
+	_drawn_strands = 0
+	_drawn_sprites = 0
 	if _pts.size() < 2 or cam == null:
 		return
-	var eye := cam.global_position
+	for s in maxi(look.trail_strands, 1):
+		_strand(s, life, cam.global_position)
+
+
+# the curl of a noise potential at p: three components of one noise at far-apart places, their slopes by differences;
+# about unit size, swirling through itself as time goes by
+func _curl_at(p: Vector3, t: float) -> Vector3:
+	if _curl == null:
+		_curl = FastNoiseLite.new()
+		_curl.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		_curl.frequency = 2.2                            # (swirls about half a metre)
+		_curl.fractal_type = FastNoiseLite.FRACTAL_FBM
+		_curl.fractal_octaves = 2
+		_curl.seed = 7
+	var q := p + Vector3(0.0, -t * 0.35, t * 0.11)
+	var e := 0.04
+	var by := Vector3(31.7, 0.0, 0.0)
+	var bz := Vector3(0.0, 0.0, 47.3)
+	var ax := _curl.get_noise_3dv(q)
+	var ay := _curl.get_noise_3dv(q + by)
+	var az := _curl.get_noise_3dv(q + bz)
+	var dz_dy := (_curl.get_noise_3dv(q + bz + Vector3(0, e, 0)) - az) / e
+	var dy_dz := (_curl.get_noise_3dv(q + by + Vector3(0, 0, e)) - ay) / e
+	var dx_dz := (_curl.get_noise_3dv(q + Vector3(0, 0, e)) - ax) / e
+	var dz_dx := (_curl.get_noise_3dv(q + bz + Vector3(e, 0, 0)) - az) / e
+	var dy_dx := (_curl.get_noise_3dv(q + by + Vector3(e, 0, 0)) - ay) / e
+	var dx_dy := (_curl.get_noise_3dv(q + Vector3(0, e, 0)) - ax) / e
+	return Vector3(dz_dy - dy_dz, dx_dz - dz_dx, dy_dx - dx_dy) * 0.22
+
+
+# one strand of the trail: its points moved off the trail's line by the strand's own drift (parting as they age, in a
+# frame fixed in the world, so they don't swim as you turn), smoothed through them (a Catmull-Rom curve: no corners),
+# and drawn as soft sprites close along it, each stretched along the curve where it lies and turned to the eye: they
+# read one noise in the world (smoke.gdshader), so together they're one wisp, not beads, and a sprite can't fold over
+# itself the way a strip does in a tight curl. Tapering in at the muzzle, thinning out with age
+func _strand(s: int, life: float, eye: Vector3) -> void:
 	var n := _pts.size()
-	var along := 0.0
-	var last_side := Vector3.ZERO
-	_imesh.surface_begin(Mesh.PRIMITIVE_TRIANGLE_STRIP)
-	for i in range(n - 1, -1, -1):                      # from the muzzle out: the noise flows away from it
+	var count := maxi(look.trail_strands, 1)
+	var offs := 0.0 if count == 1 else float(s) / float(count - 1) - 0.5    # -0.5 .. 0.5 across
+	var wide := 1.0 if absf(offs) < 0.01 else 0.75
+	var seed_s := fmod(0.13 + float(s) * 0.37, 1.0)
+	var pos: Array[Vector3] = []
+	var info: Array[Vector3] = []                        # (age 0..1, density, born)
+	for i in n:
 		var p: Vector3 = _pts[i][0]
-		var nxt: Vector3 = _pts[maxi(i - 2, 0)][0]
-		var prv: Vector3 = _pts[mini(i + 2, n - 1)][0]
-		if i < n - 1:
-			along += p.distance_to(_pts[i + 1][0])
-		var tg := nxt - prv
-		if tg.length() < 1e-5:
-			tg = Vector3.UP
-		var to_eye := (eye - p).normalized()
-		var side := tg.cross(to_eye)
-		side = side.normalized() if side.length() > 1e-6 else (last_side if last_side != Vector3.ZERO else Vector3.RIGHT)
-		if last_side != Vector3.ZERO and side.dot(last_side) < 0.0:
-			side = -side                                 # (never flipped between two points: a twist)
-		last_side = side
-		var age: float = _pts[i][2]
-		var u := clampf(age / life, 0.0, 1.0)
-		var w := lerpf(look.trail_width_m.x, look.trail_width_m.y, sqrt(u))
-		var dens: float = float(_pts[i][3]) * smoothstep(look.light_s, look.light_s + 0.1, age) * pow(1.0 - u, 1.3)   # (out of the flash's light first)
-		var col := Color(1.0, fmod(float(_pts[i][4]) * 0.37, 1.0), 0.0, dens)
-		_imesh.surface_set_normal(to_eye)
-		_imesh.surface_set_color(col)
-		_imesh.surface_set_uv(Vector2(0.0, along))
-		_imesh.surface_add_vertex(p - side * w * 0.5)
-		_imesh.surface_set_normal(to_eye)
-		_imesh.surface_set_color(col)
-		_imesh.surface_set_uv(Vector2(1.0, along))
-		_imesh.surface_add_vertex(p + side * w * 0.5)
+		var tg: Vector3 = (_pts[maxi(i - 1, 0)][0] as Vector3) - (_pts[mini(i + 1, n - 1)][0] as Vector3)
+		tg = tg.normalized() if tg.length() > 1e-5 else Vector3.FORWARD
+		var a := tg.cross(Vector3.UP)
+		a = a.normalized() if a.length() > 0.1 else tg.cross(Vector3.RIGHT).normalized()
+		var b := tg.cross(a).normalized()
+		var u := clampf(float(_pts[i][2]) / life, 0.0, 1.0)
+		var born: float = _pts[i][4]
+		var part := look.trail_spread * sqrt(u)
+		var wob := Vector2(sin(born * 3.1 + float(s) * 2.0 + _clock * 0.6), cos(born * 2.3 + float(s) * 1.3 + _clock * 0.45))
+		pos.append(p + a * (offs * 2.0 * part + wob.x * part * 0.25) + b * (wob.y * part * 0.3))
+		info.append(Vector3(u, float(_pts[i][3]), born))
+	# smoothed: each span cut into steps of 2 cm at most (six at most a span), from the muzzle out
+	var sp: Array[Vector3] = []
+	var si: Array[Vector3] = []
+	for i in range(n - 1, 0, -1):
+		var p1: Vector3 = pos[i]
+		var p2: Vector3 = pos[i - 1]
+		var p0: Vector3 = pos[mini(i + 1, n - 1)]
+		var p3: Vector3 = pos[maxi(i - 2, 0)]
+		var steps := clampi(ceili(p1.distance_to(p2) / 0.02), 1, 6)
+		for k in steps:
+			var t := float(k) / float(steps)
+			var t2 := t * t
+			var t3 := t2 * t
+			sp.append(0.5 * (2.0 * p1 + (p2 - p0) * t + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2 + (3.0 * p1 - p0 - 3.0 * p2 + p3) * t3))
+			si.append(info[i].lerp(info[i - 1], t))
+	sp.append(pos[0])
+	si.append(info[0])
+	var m := sp.size()
+	if m < 2:
+		return
+	_imesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+	var along := 0.0
+	var next_at := 0.0
+	for i in range(1, m):
+		var a0 := sp[i - 1]
+		var a1 := sp[i]
+		var seg := a0.distance_to(a1)
+		if seg < 1e-6:
+			continue
+		while next_at <= along + seg:
+			var f := (next_at - along) / seg
+			var c := a0.lerp(a1, f)
+			var inf := si[i - 1].lerp(si[i], f)
+			var u := inf.x
+			var age := u * life
+			var w := lerpf(look.trail_width_m.x, look.trail_width_m.y, sqrt(u)) * wide
+			var gap := clampf(w * 0.3, 0.006, 0.035)
+			var dens := inf.y * smoothstep(look.light_s, look.light_s + 0.1, age) * pow(1.0 - u, 1.3)   # (out of the flash's light first)
+			dens *= smoothstep(0.0, 0.05, next_at)       # (tapering in at the muzzle: no cut end)
+			var jit := fposmod(sin(inf.z * 91.7 + float(s) * 13.1) * 437.5, 1.0)
+			var size := w * (0.85 + 0.3 * jit)
+			var half_l := maxf(size * 0.6, gap * 1.6)
+			var half_w := size * 0.5
+			# its share of the wisp: as many overlap as the gap says, so the whole doesn't thicken where they're close
+			dens *= gap / half_l * 0.9
+			var to_eye := (eye - c).normalized()
+			var tg := a1 - a0
+			var ts := tg - to_eye * tg.dot(to_eye)
+			ts = ts.normalized() if ts.length() > 1e-6 else Vector3.RIGHT
+			var bs := to_eye.cross(ts).normalized()
+			var col := Color(u, seed_s, 0.0, dens)       # (the strand's own noise: every sprite on it agrees)
+			var corners := [c - ts * half_l - bs * half_w, c + ts * half_l - bs * half_w, c + ts * half_l + bs * half_w, c - ts * half_l + bs * half_w]
+			var uvs := [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)]
+			for q in [0, 1, 2, 0, 2, 3]:
+				_imesh.surface_set_normal(to_eye)
+				_imesh.surface_set_color(col)
+				_imesh.surface_set_uv(uvs[q])
+				_imesh.surface_add_vertex(corners[q])
+			_drawn_sprites += 1
+			next_at += gap
+		along += seg
 	_imesh.surface_end()
+	_drawn_strands += 1
 
 
 # in the editor: the flash frozen at preview_age while `preview` is on, laid out again as the look changes
