@@ -1389,3 +1389,25 @@ etc), then create a ne w genre/tab in our prop tool called retro" (the folder ho
   tilted about 37 degrees everywhere (the trees' bark and leaves among them) and the pack's 16-bit textures at half their
   lightness. Images read inside Blender are tagged Non-Color first now (docs/LESSONS.md, 2026-11-08).
 
+## 30. Weapons: a pump shotgun and its shells, for the first-person weapon system (DECISIONS 2026-11-09)
+
+The user (2026-11-09): "create a shot gun asset and have its pov in godots horror engine similar to the screenshot";
+the prop standard (HORROR_TODO) makes it a recipe. The `weapon` family (`families/weapon.py`), two kinds:
+
+- **`shotgun`**: a pump-action 12-gauge at a riot gun's sizes: a receiver 200 mm long with its ejection port (right)
+  and loading port (underneath) as dark plates, an 18.5" barrel (`barrel_mm` 470) with its bore and a brass bead, the
+  magazine tube under it for four (its knurled cap and the band to the barrel), the pump (a grooved fore-end on its
+  90 mm track with the action bars into the receiver), the trigger in its guard, a stock narrowed at the wrist and a
+  stippled rubber pad. **Parts** (§26): `pump` slides back its stroke, `bolt` (the bolt's face) is shown only while the
+  action is shut, `trigger` on its hinge. **Sockets**: `muzzle`, `eject`, `port`, `chamber`, `pump`, `grip`, `trigger`,
+  `shoulder`, `light` (where a flashlight goes under the barrel). Steel by `finish` (`FN.metal`: satin; its `age`),
+  the furniture `wood` (flat-sawn, `FU.paint_wood`) or `synthetic` (black, a fine stipple); `extras.weapon` carries its
+  numbers (gauge, capacity, travel, barrel). About 15,000 triangles, 985 mm long, its texture 2048.
+- **`shell`**: a 2 3/4" 12-gauge (70 mm): the brass head (`brass_mm` 16: its rim, the extractor groove, the primer), the
+  plastic hull (`hull`, a colour) with its moulding streaks, the six-point star crimp; `spent` opens the crimp into a
+  mouth, dark inside, the brass scorched. Sockets `front`, `back`. About 1,800 triangles, its texture 512.
+
+Recipes: `shotgun_pump` (blued steel, dark walnut), `shotgun_pump_black` (the synthetic stock and fore-end),
+`shell_12ga` (red), `shell_12ga_spent`. Made, they go into the weapons plugin (`GodotPlugins/HorrorStudioWeapons/
+addons/horrorstudio_weapons/models/`), which reads the parts and sockets by name: a remade gun holds itself.
+

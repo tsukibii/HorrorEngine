@@ -1184,5 +1184,14 @@
    "materials": {"*": {"kind": "metal", "rough": 0.5}}, "wear": {"dirt": 0.3, "grime": 0.3, "edges": 0.2}},
  "retro_transformer": {"family": "retro", "label": "utility: a pole-mounted transformer, its bushings on top", "group": "utility",
    "file": "retro/Utility Infrastructure/Electric Utilities/Poles/prop_transformer.glb", "smooth": 40,
-   "materials": {"*": {"kind": "paint"}}, "wear": {"dirt": 0.35, "grime": 0.3, "edges": 0.15}}
+   "materials": {"*": {"kind": "paint"}}, "wear": {"dirt": 0.35, "grime": 0.3, "edges": 0.15}},
+ "shotgun_pump": {"label": "a pump-action 12-gauge, an 18.5\" barrel, walnut and blued steel, carried a long time", "family": "weapon",
+   "kind": "shotgun", "seed": 3, "tex": 2048, "steel": "#26292d", "wood": "#3f2617", "finish": "satin",
+   "wear": {"edges": 0.35, "scratches": 0.35, "grime": 0.3, "dirt": 0.25}},
+ "shotgun_pump_black": {"label": "the same shotgun in black synthetic furniture", "from": "shotgun_pump", "furniture": "synthetic", "seed": 4,
+   "wear": {"edges": 0.45, "scratches": 0.4, "grime": 0.25}},
+ "shell_12ga": {"label": "a 12-gauge shell, red hull, high brass", "family": "weapon", "kind": "shell", "seed": 1, "tex": 512,
+   "hull": "#a3241f", "brass_mm": 16, "wear": {"edges": 0.3, "grime": 0.15}},
+ "shell_12ga_spent": {"label": "a fired 12-gauge shell, its crimp opened", "from": "shell_12ga", "spent": true, "seed": 2,
+   "wear": {"edges": 0.4, "grime": 0.3}}
 }
