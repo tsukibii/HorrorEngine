@@ -58,6 +58,14 @@ gun"; DECISIONS 2026-11-09). Built:
   middle of the view), the hulls flicked out past your face, a shell popping into each chamber, shut. WEAPONS's double
   half and its pictures (double_*.jpg); PROPGEN's cases have it.
 
+- **Cartridges you can customize, and a guide** (the user: "a cartlidge prop for the shells that I can customize similar
+  to cans and books", "a guide on how to use the prop customizer"; DECISIONS 2026-11-09, later still): the `ammo`
+  family (PROPGEN §31, customizable): the shell (moved from the weapon family) printed along its hull and stamped, and a
+  printed card box of shells (five lying, twenty-five standing, its lid a part that opens); `shell_12ga`,
+  `shell_12ga_spent`, `shells_box_5` (the weapons plugin's box of shells now, `lid_open`), `shells_box_5_open`,
+  `shells_box_25`. The guide `guides/prop_customizer/` (GUIDEPROPS makes its pictures from the real page). A quarter-turned
+  slot's wanted size and template turned upright (sizes.py, picedit.js).
+
 **Next, if the user wants it**: the gun in tutorial v2 itself (found in a room, her an HSShootable that's gone a while when
 shot, the searcher coming at the noise), the export and the Director's projects copying the plugin in (nothing in the
 runtime uses it yet), aiming down the barrel on the right button, a melee shove, more weapons as recipes in the same

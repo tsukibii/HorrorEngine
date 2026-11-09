@@ -2,6 +2,23 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-09, later still (the user: a customizable cartridge prop, and a guide to the customizer)
+
+- **"can you make a cartlidge [cartridge] prop for the shells that I can customize similar to cans and books. Can you
+  also make a guide on how to use to prop customizer"**. Read as the shells' own box (a cartridge box, what the shells
+  come in) and the shells themselves, both customizable as cans and books are: a new customizable family, **`ammo`**
+  (PROPGEN §31): the 12-gauge shell moved in from the weapon family, its hull now printed along its length (brand,
+  load, a mark) and its head stamped round the primer, each one of its own pictures (`hull.brand`, `hull.load`,
+  `hull.mark`, `base.stamp`); and **a printed card box of shells** (`kind: "box"`: five lying side by side, or
+  twenty-five standing heads up, any count; its lid hinged with a tuck flap, a part that opens; the shells inside),
+  its lid, front, back, ends, bottom and flap printed with its own pictures (`lid.brand`, `lid.gauge`, `lid.load`,
+  `lid.specs`, `lid.count`, `lid.art`, `front.brand`...). Recipes `shell_12ga`, `shell_12ga_spent`, `shells_box_5`,
+  `shells_box_5_open`, `shells_box_25`; every brand made up (HARROW). The weapons plugin's box of shells
+  (`HSWeaponPickup`, kind shells) is now `shells_box_5`, two shells spilled beside it, `lid_open` to show it open.
+- **The guide**: `guides/prop_customizer/` (in `guides/index.html`): the prop generator's page from opening it to
+  making and keeping a prop, its pictures the real page driven in a headless browser (`tools/propgen/guide_shots.mjs`,
+  GUIDEPROPS) on the box of shells and a shell, with two example pictures to try it with (`examples/`).
+
 ## 2026-11-09, later (the user: a v2 double barrel, from their own model)
 
 - **"Can you make a v2 double barrel shotgun, wher[e] only the barrel is visible in frame, unless we reload then it

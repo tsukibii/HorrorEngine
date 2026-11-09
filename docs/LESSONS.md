@@ -3,6 +3,25 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## Cartridges and the customizer's guide (2026-11-09, later still)
+
+- **The wear's edges and dirt need a mesh dense enough for its curvature**: a card box made of flat panels (a vertex at
+  each corner, nothing between) came out speckled all over, white and black: the curvature is reckoned per vertex and
+  spread over each face from its corners, so every face read as an edge and a crease, and the noise did the rest. A
+  flat-panelled thing turns them off (a material's own `wear`: `edges` 0, `dirt` 0) and paints its worn edges by each
+  texel's distance from its face's edges (ammo.py `_worn_edges`).
+- **A part's `built` is the state its mesh is in, not a wish**: the two open boxes rendered shut, because the lid was
+  built shut and only said `built=105`. A part made open is built turned (about its pivot, its axis, by `built`); the
+  set-down turns it back to `shut` to measure the box.
+- **A drop on one of a prop's own pictures takes its place**: the guide's price sticker, dropped at a spot inside the
+  lid's gauge disc's box, replaced the disc instead of being placed. Drop clear of the dashed boxes (or hold Alt).
+- **The weapons check's project carries a copy of the plugin**: a picture taken there after editing `pickup.gd` showed
+  the old pickup. `weapons_check.py --reuse` installs the plugin again first; a hand-run script there needs the copy
+  refreshed.
+- **A slot turned a quarter wants its picture turned too**: the shell's print runs along its hull (`rot` 90), so the
+  size it wants is the box's turned (192 x 64, not 64 x 192) and its template is drawn upright (sizes.py, picedit.js
+  `quarters`): painted over and dropped back, it goes in as it was.
+
 ## The double barrel: the user's model, worn (2026-11-09, later)
 
 - **A check timed by the wall clock passes nothing under `--fixed-fps`**: the double's reload measured 0.06 s, because a
