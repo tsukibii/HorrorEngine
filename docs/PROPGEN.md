@@ -1475,6 +1475,11 @@ printed or stamped thing on them one of their own pictures (§15), seen on the p
   through the print to the board, the corners most), from the recipe's `wear.edges`.
 
 Recipes: `shell_12ga` (red, high brass), `shell_12ga_spent`, `shells_box_5` (five lying, shut: the weapons plugin's box
-of shells), `shells_box_5_open` (open 105°), `shells_box_25` (twenty-five standing in a green box of birdshot, open).
-PROPGEN's cases have `shell_12ga`, `shells_box_5` and `shells_box_25`; THUMBS keeps all five with their passes. Into the
-weapons plugin: `shell_12ga.glb`, `shell_12ga_spent.glb` and `shells_box_5.glb` copied into its `models/`.
+of shells), `shells_box_5_open` (open 105°), `shells_box_25` (twenty-five standing in a green box of birdshot, open);
+**the explosive kind's** (DECISIONS 2026-11-09, latest: the weapons plugin's second shell kind) `shell_12ga_explosive` (a
+black hull printed in orange, high brass, its head stamped `12 GA HE`), `shell_12ga_explosive_spent` and
+`shells_box_5_explosive` (a black and orange box of five, "HE BURST SLUG", its warning its own), each `from` its normal
+one with what differs. PROPGEN's cases have `shell_12ga`, `shells_box_5` and `shells_box_25`; THUMBS keeps all eight with
+their passes. Into the weapons plugin: `shell_12ga.glb`, `shell_12ga_spent.glb`, `shells_box_5.glb` and the three
+explosive ones copied into its `models/` (the explosive kind, `shells/explosive.tres`, wears its shell and hull; a
+pickup of that kind its box).
