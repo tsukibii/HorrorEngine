@@ -1432,8 +1432,10 @@ the prop standard (HORROR_TODO) makes it a recipe. The `weapon` family (`familie
   mouth, dark inside, the brass scorched. Sockets `front`, `back`. About 1,800 triangles, its texture 512.
 
 Recipes: `shotgun_pump` (blued steel, dark walnut), `shotgun_pump_black` (the synthetic stock and fore-end),
-`shotgun_double` (the user's model: blued, case-hardened, checkered walnut), `shell_12ga` (red), `shell_12ga_spent`. Made, they go into the weapons plugin (`GodotPlugins/HorrorStudioWeapons/
-addons/horrorstudio_weapons/models/`), which reads the parts and sockets by name: a remade gun holds itself.
+`shotgun_double` (the user's model: blued, case-hardened, checkered walnut), `shell_12ga` (red), `shell_12ga_spent`. Made, the double and
+the shells go into the weapons plugin (`GodotPlugins/HorrorStudioWeapons/addons/horrorstudio_weapons/models/`), which reads the
+parts and sockets by name: a remade gun holds itself. The pump guns stay props: the plugin carries the double alone (DECISIONS
+2026-11-09, last: "I don't want the single barrel shotgun, only the double barrel one").
 
 
 

@@ -79,15 +79,30 @@ gun"; DECISIONS 2026-11-09). Built:
   surface, dust and chips; the explosive's blast: fireball, scorch with embers, push, damage, shake, noise), the maps
   by `tools/weapon_fx.py` (WEAPONFX, in check_all), the burst's sound; the explosive shell, its hull and box as
   customizable recipes (`shell_12ga_explosive`, `_spent`, `shells_box_5_explosive`). WEAPONS checks it all (§8f, §8g,
-  the double's §7b) and pictures it (`trail`, `marks`, `explosive`, `blast`, `scorch`, `flash_parts`); the guide's
+  the double's §7b) and pictures it (`trail`, `explosive`, `blast`, `scorch`, `flash_parts`); the guide's
   sections 8 to 10. The lab used to tune the look was a throwaway script in the check's project; `muzzle_shots.gd`
   keeps its useful part (the flash taken apart).
 
-**Next, if the user wants it**: their eye on the flash in their own lighting (its `energy`, the trail's `smoke_glow`
-and density are the knobs), the gun in tutorial v2 itself (found in a room, her an HSShootable that's gone a while when
-shot, the searcher coming at the noise), the export and the Director's projects copying the plugin in (nothing in the
-runtime uses it yet), a melee shove, more shell kinds (slugs, dragon's breath, rock salt for ghosts) as duplicated
-resources, more weapons as recipes in the same family (a revolver, a hunting rifle) with HSMuzzles at their muzzles.
+- **The double barrel alone, how it looks with the muzzle, what a wall shows** (the user: "I don't want the single
+  barrel shotgun, only the double barrel one, inspect how it looks with the muzzle and what kind of wall damage it should
+  have"; DECISIONS 2026-11-09, last). The pump gun is gone from the plugin (its class, model, icon and two sounds; its
+  recipes stay as props). `HSGun` (`gun.gd`, abstract) is what both shared; `HSDoubleBarrel` extends it; `shotgun.gd` is
+  the double under the old path. Inspected in the corridor: the second barrel's flash was a white ball in the first's
+  smoke; the puffs are premultiplied now and capped at `smoke_light_cap`, and it reads. The damage
+  (docs/research/shotgun_damage.md): each barrel's own choke, the pattern spread from the muzzle, pellets within 1.6 cm
+  torn into one hole (`fx/blast_*`), the powder's soot and grains close up (`fx/soot_0`, `fx/grains_0`), the wad's
+  dent from 1.5 m (`fx/wad_0`), lead smears on hard walls (`fx/smear_*`); `HSImpacts.last_shot`. A hull could fall or
+  roll through a wall (the door's collider stops short of its jamb): three rays now (LESSONS). One WEAPONS test for the
+  double (`weapons_double_test.gd` folded in, §8g the damage) and one set of pictures (`fire_left`, `open`, `pop`,
+  `damage_*`).
+
+**Next, if the user wants it**: their eye on the flash and the damage in their own lighting (the flash's `energy`,
+the smoke's `smoke_glow`, `smoke_light_cap` and density, the impact's `merge_m`, `soot_m`, `powder_m`, `wad_m` are the
+knobs), pellets through a thin wall into the next room and ricochets off concrete (docs/research/shotgun_damage.md §5),
+the gun in tutorial v2 itself (found in a room, her an HSShootable that's gone a while when shot, the searcher coming
+at the noise), the export and the Director's projects copying the plugin in (nothing in the runtime uses it yet), a
+melee shove, more shell kinds (slugs, dragon's breath, rock salt for ghosts) as duplicated resources, more weapons
+extending HSGun (a revolver, a hunting rifle) with HSMuzzles at their muzzles.
 
 ## Where it stopped last (2026-11-08, `claude/optimistic-tesla-q01qg6`): the air built and in tutorial v2
 

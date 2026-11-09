@@ -3,6 +3,32 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The double barrel alone and what a 12-gauge leaves on a wall (2026-11-09, last)
+
+- **A check that passes on the dice hides a bug**: the merged test's first green run had both flicked hulls this side
+  of the wall at the player's right; the next, with other random flicks, had one 21 cm inside room 301. A hull lying
+  on the floor rolled with no check at all (the rolling branch moved it by its speed, nothing more), and while
+  falling it was a single point, which slipped through the 2 to 3 cm the exported door leaf's collider stops short of
+  its jamb. A hull moves by three rays now (its base's end, its middle, its mouth's end: `HULL_POINTS`, `_hull_hit`),
+  rolling or falling, and the hand-off from the gun's frame checks all three. When a check's subject is random, probe
+  it over many seeds (`hull_probe.gd` in the scratch project: six seeds at three places) before trusting a pass.
+- **A pattern spread from the eye is a pattern from a metre behind the muzzle**: the double's muzzles are 0.98 m ahead
+  of the eye, so pellets fanned from the camera landed 40% wider than a real gun's at room range (10 cm across at 2.5 m
+  from the muzzle; the sources say 5 to 8). The cone's apex is the muzzle's point on the view's line now: the shot
+  still goes where you look, the pattern's size is the muzzle's distance's, and a wall nearer than the muzzle takes the
+  whole charge where the line meets it. Simulate a spread's law (numpy, thousands of shots) before setting a check's
+  bounds: they hold for any seed, and the seeded run shows the typical case.
+- **Added smoke sums to white, and premultiplied smoke only helps if what it converges to is under white**: the left
+  barrel's flash, a quarter second after the right's, was a white ball. Ten puffs from the first shot, each lit by the
+  second flash a few centimetres away, added up past white. Drawn premultiplied (`blend_premul_alpha`,
+  `PREMUL_ALPHA_FACTOR` the cover, `ALPHA` the cover times `occlude`), a stack converges to its own lit colour instead
+  of summing. That alone changed little, because each puff was lit to about 1.7 before blending, so it converged to
+  white too. With the near light capped at 0.5 (`smoke_light_cap`) the cloud converges to a glow and the second star
+  reads through it. Look at a value's ceiling as well as how it adds up.
+- **A script's `loaded` has to reach the double's chambers**: the double read `loaded` once in `_ready` (into `live`),
+  so the checks' `gun.set("loaded", 2)` did nothing, where the pump's tube healed to it. The double's chambers follow
+  `loaded` whenever it isn't busy (`_load_to`); a member a script is told it can set is honoured at any time.
+
 ## The muzzle flash, the shell kinds and what a shot leaves (2026-11-09, latest)
 
 - **Smoke a few centimetres from a light glows as a ball the size of the room**: the first flashes were a white blob

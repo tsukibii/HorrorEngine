@@ -2,6 +2,37 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-09, last (the user: the double barrel alone, how it looks with the muzzle, what a wall should show)
+
+- **"Note I don't want the single barrel shotgun, only the double barrel one, inspect how it looks with the muzzle and
+  what kind of wall damage it should have."** The pump-action shotgun is gone from the weapons plugin: its class, model,
+  icon and its two sounds (the pump back and forward); **HSDoubleBarrel is the shotgun**. What both guns shared is
+  **HSGun** (`gun.gd`, abstract: carried, raised, aimed, lowered, run with; the kinds of shell, the shot, the muzzles,
+  the hulls in the room, the HUD); the double fills in its fire, its reload and its marks. `shotgun.gd` stays only as
+  the double under its old path, so a scene made before still loads. The pickup's `kind` is `double` (or `shells`; an
+  old `shotgun` gives the double). The pump's prop recipes (`shotgun_pump`, `shotgun_pump_black`) stay in the prop
+  generator as props. The double's chambers now follow a script's `loaded`, as the pump's tube did.
+- **How it looks with the muzzle**, inspected in the corridor at night:
+  - The right barrel's flash reads as the user's star.
+  - The left barrel's, a quarter second later, was a white ball: the first shot's smoke, still in front of the muzzle,
+    lit by the second flash and its puffs summed to white.
+  - Fixed: the smoke now hides a little of what's behind it as it covers (premultiplied: a thick cloud glows its lit
+    colour instead of summing), and a flash beside it lights it no brighter than `smoke_light_cap` (0.5). The second
+    star now reads through the first's smoke. The dust at an impact still only adds light.
+  - The hulls flicked out over the shoulder could fall through a wall beside you (LESSONS); they move by three rays
+    now.
+- **What kind of wall damage it should have** (docs/research/shotgun_damage.md, from pattern tests and forensic
+  references):
+  - Each barrel has its own choke: the right improved cylinder (0.9°), the left modified (0.7°).
+  - The pattern spreads from the muzzle: about 6 cm across 2.5 m out, 11 cm at 4.5 m, 22 cm at 9 m.
+  - Pellets landing within 1.6 cm of each other tear one hole (`fx/blast_*`: the paper torn back in flaps, the plaster
+    broken out, cracks): at an arm's length the whole charge is one hole; across a room, a torn middle with holes round
+    it; down a corridor, each pellet its own crater.
+  - The smoke's soot within 40 cm of the muzzle (`fx/soot_0`), the powder's grains within 90 cm (`fx/grains_0`).
+  - The wad's own dent from 1.5 to 5 m (`fx/wad_0`).
+  - On concrete, stone and steel the lead smears (`fx/smear_*`) instead of going in.
+  - Not built: pellets through a thin wall into the next room, ricochets, the wad lying on the floor.
+
 ## 2026-11-09, latest (the user: a muzzle flash, a muzzle system, two kinds of shell, and what a shot leaves)
 
 - **"Can you create a muzzle flare for the shotgun (the closest one that leaves a trail of smoke behind), as well as a
