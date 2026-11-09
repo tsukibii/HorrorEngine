@@ -13,7 +13,8 @@ shot, the box of shells taken, lowered and raised, the flashlight carried and gi
 
     python tools/godot/weapons_check.py [--reuse] [--pictures [--only idle,fire]] [--keep DIR]
 
-`--pictures` draws the guide's pictures under xvfb (`weapons_shots.gd`) into guides/weapons/img/.
+`--pictures` draws the guide's pictures under xvfb (`weapons_shots.gd`, `weapons_double_shots.gd`, `muzzle_shots.gd`) into
+guides/weapons/img/.
 """
 import json
 import math
@@ -137,7 +138,7 @@ if "run/main_scene" not in pg:
     pg = pg.replace('config/name="Weapons"', 'config/name="Weapons"\nrun/main_scene="res://main.tscn"') + "\n[display]\nwindow/size/viewport_width=1600\nwindow/size/viewport_height=900\n"
     (proj / "project.godot").write_text(pg, encoding="utf-8")
 (proj / "weapons.json").write_text(json.dumps({"start": start, "floor": fl, "corridor": corr}, indent=1), encoding="utf-8")
-for f in ["weapons_test.gd", "weapons_shots.gd", "weapons_double_test.gd", "weapons_double_shots.gd"]:
+for f in ["weapons_test.gd", "weapons_shots.gd", "weapons_double_test.gd", "weapons_double_shots.gd", "muzzle_shots.gd"]:
     if (ROOT / "tools/godot" / f).is_file():
         shutil.copy(ROOT / "tools/godot" / f, proj / f)
 
@@ -171,10 +172,13 @@ if "--pictures" in args and not errs:
     (shots / ".gdignore").touch()
     for old in shots.glob("*.png"):
         old.unlink()
-    for script in ("weapons_shots.gd", "weapons_double_shots.gd"):
+    only = args[args.index("--only") + 1].split(",") if "--only" in args else []
+    for script in ("weapons_shots.gd", "weapons_double_shots.gd", "muzzle_shots.gd"):
+        if script == "muzzle_shots.gd" and only and "flash_parts" not in only:
+            continue
         cmd = [G, "--path", str(proj), "--rendering-driver", "vulkan", "--fixed-fps", "30", "-s", script, "--", f"--out={shots}"]
-        if "--only" in args:
-            cmd.append("--only=" + args[args.index("--only") + 1])
+        if only:
+            cmd.append("--only=" + ",".join(only))
         if shutil.which("xvfb-run"):
             cmd = ["xvfb-run", "-a", "-s", "-screen 0 1920x1080x24"] + cmd
         r = run(cmd, timeout=1800)

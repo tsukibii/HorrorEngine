@@ -27,6 +27,12 @@ func bad(e: String) -> void:
 	print("WEAPONS ERROR %s" % e)
 
 
+# the marks shots have left in the world (HSImpacts)
+func marks() -> int:
+	var im := get_first_node_in_group("hs_impacts")
+	return (im.get("marks") as Array).size() if im != null else 0
+
+
 func frames(n: int) -> void:
 	for i in n:
 		await physics_frame
@@ -105,7 +111,7 @@ func _watchdog() -> void:
 
 
 func _initialize() -> void:
-	create_timer(240.0).timeout.connect(_watchdog)
+	create_timer(330.0).timeout.connect(_watchdog)
 	cfg = JSON.parse_string(FileAccess.get_file_as_string("res://weapons.json"))
 	root.size = Vector2i(1600, 900)
 	var ms := load("res://main.tscn") as PackedScene
@@ -214,6 +220,7 @@ func _initialize() -> void:
 	dummy.global_position = Vector3(player.global_position.x - 2.5, fl + 0.8, player.global_position.z)
 	look(dummy.global_position + Vector3(0, 0.25, 0))
 	await frames(5)
+	var marks0 := marks()
 	var p0: float = player.get("pitch")
 	var fwd0 := -eye.global_basis.z
 	var from0 := eye.global_position
@@ -229,16 +236,16 @@ func _initialize() -> void:
 	var hud_ctl := gun.find_child("Shells", true, false) as Control
 	var heard: Array = listener.get("got")
 	say("shot", "%d pellets hit (%d on the dummy, told %d times), the widest %.1f° off the middle, %d holes, heard %s, the ears ringing %.1f s, the view kicked %.1f°, the flash %.1f" % [
-		hits.size(), on_dummy, (dummy.get("got") as Array).size(), spread, (g("_holes") as Array).size(),
-		str(heard.map(func(x): return x[1])), float(fear.get("_ring")), kick, (g("_flash_light") as Light3D).light_energy])
+		hits.size(), on_dummy, (dummy.get("got") as Array).size(), spread, marks() - marks0,
+		str(heard.map(func(x): return x[1])), float(fear.get("_ring")), kick, gun.muzzle().light.light_energy])
 	if int(g("shots")) != 1 or g("chambered"):
 		bad("the shot didn't use the chambered shell (shots %d, chambered %s)" % [int(g("shots")), g("chambered")])
 	if on_dummy < int(g("pellets")) - 1 or (dummy.get("got") as Array).size() != on_dummy:
 		bad("the pellets missed the dummy 2.5 m ahead or it wasn't told (%d of %d hit, told %d)" % [on_dummy, int(g("pellets")), (dummy.get("got") as Array).size()])
 	if spread > float(g("spread_deg")) + 0.6:
 		bad("a pellet left the cone (%.1f° > %.1f°)" % [spread, float(g("spread_deg"))])
-	if (g("_holes") as Array).size() != hits.size():
-		bad("not a hole for each pellet (%d holes, %d hits)" % [(g("_holes") as Array).size(), hits.size()])
+	if marks() - marks0 != hits.size():
+		bad("not a mark for each pellet (%d marks, %d hits)" % [marks() - marks0, hits.size()])
 	if heard.size() != 1 or absf(float(heard[0][1]) - float(g("noise"))) > 0.01:
 		bad("the listeners didn't hear the shot as loud as it is (%s)" % str(heard))
 	if float(fear.get("_ring")) < 1.0:
@@ -247,7 +254,7 @@ func _initialize() -> void:
 		bad("the view wasn't kicked up by the recoil (%.2f°)" % kick)
 	if hud_ctl == null:
 		bad("no shells drawn low on the right (the HUD's Shells)")
-	if (g("_flash_light") as Light3D).light_energy < 1.0 or not (g("_flash") as Node3D).visible:
+	if gun.muzzle().light.light_energy < 1.0 or not gun.muzzle().wings.visible:
 		bad("no muzzle flash at the shot")
 	gun.call("_process", 0.3)                       # (a hitch just after a shot: a 0.3 s frame)
 	var kick_after := float(g("_kick"))
@@ -615,8 +622,8 @@ func _initialize() -> void:
 	var wall_mz: Vector3 = gun.call("_at", "muzzle")
 	gun.pull()
 	await frames(1)
-	var fl_at := (g("_flash_light") as Node3D).global_position
-	var sm_at := (g("_smoke") as Node3D).global_position
+	var fl_at: Vector3 = gun.muzzle().light.global_position
+	var sm_at: Vector3 = gun.muzzle().puffs.global_position
 	await until(func() -> bool: return not g("busy"), 1.5)
 	var hulls0 := (g("_hulls") as Array).size()
 	player.global_position = Vector3(spot.x, spot.y, zs + 0.38)        # the south wall at your right (looking west)
@@ -635,6 +642,229 @@ func _initialize() -> void:
 		bad("the flash's light or smoke went through the wall you stand against (%.2f, %.2f past it)" % [fl_at.z - zn, sm_at.z - zn])
 	if last_hull == null or last_hull.global_position.z <= zs or hl.size() <= hulls0:
 		bad("the hull thrown at the wall at your right came down on its far side (%s)" % (str(last_hull.global_position) if last_hull else "none"))
+	player.global_position = spot
+
+	# 8f. the muzzle (DECISIONS 2026-11-09, latest): its flash a star of wings round the bore and a plume out of it, each
+	# a run of elongated spheres that intersect, their fronts culled, burnt by the facing through a colour burn; out
+	# in a frame or three; its smoke trailing after it and left where the muzzle was as the gun turns. Every pellet a
+	# mark whose three maps make pieces look missing, tinted by what it's made of, with that surface's dust and chips
+	look(Vector3(spot.x - 4.0, eye.global_position.y - 0.3, spot.z))
+	gun.set("loaded", 3)
+	gun.set("chambered", true)
+	await until(func() -> bool: return not g("busy"), 1.5)
+	await frames(5)
+	var muz: Node3D = gun.muzzle()
+	var marks1 := marks()
+	gun.pull()
+	await frames(1)
+	var rep: Dictionary = muz.report()
+	var sph: Array = muz.sphere_list()
+	var wing_dirs: Array = []
+	var chains := 0
+	var apart := 0
+	var plume_far := 0.0
+	var tips: Array = []                                  # each run's last sphere: a wing's way, read at its tip
+	for i in sph.size():
+		var xf: Transform3D = sph[i]["transform"]
+		var along: float = sph[i]["along"]
+		var prev_along: float = sph[i - 1]["along"] if i > 0 else 2.0
+		if along <= prev_along:
+			chains += 1                                   # a new run: its root
+			tips.append(xf.origin)
+		else:
+			tips[tips.size() - 1] = xf.origin
+		if along <= prev_along:
+			pass
+		elif i > 0:
+			var pxf: Transform3D = sph[i - 1]["transform"]
+			var reach := pxf.basis.z.length() + xf.basis.z.length()   # (their half-lengths along the run)
+			if pxf.origin.distance_to(xf.origin) >= reach:
+				apart += 1
+		plume_far = minf(plume_far, xf.origin.z)
+	for tp in tips:
+		var d: Vector3 = (tp as Vector3).normalized() if (tp as Vector3).length() > 0.001 else Vector3(0, 0, -1)
+		if absf(d.z) < 0.97:                              # (the plume runs straight out, the core sits on it: not wings)
+			wing_dirs.append(atan2(d.y, d.x))
+	wing_dirs.sort()
+	var gap := 0.0
+	for i in wing_dirs.size():
+		var nx: float = wing_dirs[(i + 1) % wing_dirs.size()] + (TAU if i == wing_dirs.size() - 1 else 0.0)
+		gap = maxf(gap, rad_to_deg(nx - float(wing_dirs[i])))
+	var wmat := muz.wings.material_override as ShaderMaterial
+	var code := wmat.shader.code if wmat != null and wmat.shader != null else ""
+	var inc := FileAccess.get_file_as_string("res://addons/horrorstudio_weapons/muzzle/flash.gdshaderinc")
+	var burns := inc.contains("color_burn(base, facing)") and inc.contains("1.0 - (1.0 - base) / max(blend")
+	var light_at_shot := float(rep["light"])
+	say("muzzle", "the %s flash: %d spheres in %d runs (%d wings round the bore, the widest gap %.0f°, the plume %.2f m out), %d spheres not touching the one before; fronts culled %s, burnt %s; its light %.1f" % [
+		rep["look"], rep["spheres"], chains, wing_dirs.size(), gap, -plume_far, apart, code.contains("cull_front"), burns, light_at_shot])
+	if not bool(rep["drawn"]) or int(rep["spheres"]) < 20 or wing_dirs.size() < 4 or gap > 115.0 or apart > 0 or plume_far > -0.15:
+		bad("the muzzle flash isn't a star of wings of intersecting spheres with a plume (%s, %d wings, gap %.0f°, %d apart, plume %.2f)" % [str(rep), wing_dirs.size(), gap, apart, plume_far])
+	if not code.contains("cull_front") or not burns:
+		bad("the flash's spheres aren't drawn with their fronts culled and burnt by the facing (cull_front %s, burn %s)" % [code.contains("cull_front"), burns])
+	if light_at_shot < 1.0:
+		bad("the muzzle's light didn't flash (%.2f)" % light_at_shot)
+	var hits2: Array = g("last_hits")
+	var pellet_hits := hits2.filter(func(h): return not h.has("blast")).size()
+	var im := get_first_node_in_group("hs_impacts")
+	var made_marks: Array = (im.get("marks") as Array).slice(marks1)
+	var maps_ok := made_marks.all(func(d) -> bool: return d is Decal and (d as Decal).texture_albedo != null and (d as Decal).texture_normal != null and (d as Decal).texture_orm != null)
+	var lastimp: Dictionary = im.get("last")
+	var surf := str(lastimp.get("surface", ""))
+	var tint: Color = (im.get_script() as GDScript).get_script_constant_map()["SURFACES"].get(surf, {}).get("tint", Color.WHITE)
+	var tinted := made_marks.all(func(d) -> bool: return (d as Decal).modulate.is_equal_approx(tint) or not (d as Decal).modulate.is_equal_approx(Color.WHITE))
+	var dust_n := 0
+	var chip_n := 0
+	for e in im.get_children():
+		if e is CPUParticles3D and (e as CPUParticles3D).emitting:
+			if (e as CPUParticles3D).mesh is QuadMesh:
+				dust_n += 1
+			else:
+				chip_n += 1
+	say("marks", "%d pellets, %d marks each with its albedo, normal and ORM %s, on %s tinted %s; %d bursts of dust and sparks, %d of chips flying" % [
+		pellet_hits, made_marks.size(), maps_ok, surf, tinted, dust_n, chip_n])
+	if made_marks.size() != pellet_hits or not maps_ok or not tinted or surf == "":
+		bad("not a mark with its three maps for each pellet, tinted by its surface (%d of %d, maps %s, %s)" % [made_marks.size(), pellet_hits, maps_ok, surf])
+	if dust_n < 1 or chip_n < 1:
+		bad("no dust or chips flying off where the pellets landed (%d, %d)" % [dust_n, chip_n])
+	await frames(6)
+	var rep2: Dictionary = muz.report()
+	say("flash out", "6 frames on: drawn %s, its light %.2f" % [rep2["drawn"], float(rep2["light"])])
+	if bool(rep2["drawn"]) or float(rep2["light"]) > 0.01:
+		bad("the flash is still there 6 frames on (%s)" % str(rep2))
+	await frames(14)
+	var bits0: Array = muz.trail_bits()
+	var b0: Dictionary = bits0.back() if bits0.size() > 0 else {}          # the newest bit: followed by when it was left
+	var mz0 := muz.global_position
+	look(Vector3(spot.x, eye.global_position.y - 0.3, spot.z + 4.0))       # turned away: the muzzle swings round
+	await frames(20)
+	var pts1: Array = muz.trail_points()
+	var same: Array = (muz.trail_bits() as Array).filter(func(b) -> bool: return not b0.is_empty() and is_equal_approx(float(b["born"]), float(b0["born"])))
+	var swung := muz.global_position.distance_to(mz0)
+	var stayed := (same[0]["at"] as Vector3).distance_to(b0["at"]) if same.size() > 0 else 9.0
+	say("trail", "%d bits of smoke trailed after the shot; the muzzle swung %.2f m away and the bit it had just left moved %.2f m (left where it was)" % [pts1.size(), swung, stayed])
+	if pts1.size() < 6 or swung < 0.15 or stayed > 0.08:
+		bad("the muzzle didn't leave a trail of smoke behind it (%d bits, swung %.2f, moved %.2f)" % [pts1.size(), swung, stayed])
+	await until(func() -> bool: return (muz.trail_points() as Array).is_empty(), 5.0)
+	if not (muz.trail_points() as Array).is_empty():
+		bad("the trail never cleared (%d bits)" % (muz.trail_points() as Array).size())
+	await until(func() -> bool: return not g("busy"), 1.5)
+
+	# 8g. the shell kinds: the explosive loaded with T, the tube in order, a single slug, a bigger flash; its blast at
+	# the floor ahead pushing a crate and telling a dummy within its reach (not one past it), hitting a shootable, a
+	# scorch with its embers glowing, a ball of fire laid out as a burst, the view shaken, heard far; T back again
+	var exk = load("res://addons/horrorstudio_weapons/shells/explosive.tres")
+	var spare_n := int(g("spare"))
+	gun.set("loaded", 0)
+	gun.set("chambered", false)
+	gun.set("tube", [])
+	gun.add_shells(3, exk)
+	var pocket_had := int((g("pocket") as Dictionary).get("explosive", 0))
+	await press(KEY_T)
+	var kind_now := str((g("load_kind") as Resource).get("id"))
+	var spare_ex := int(g("spare"))
+	gun.reload()
+	await frames(2)
+	await until(func() -> bool: return not g("busy"), 5.0)
+	var tube_ids: Array = (g("tube") as Array).map(func(k): return str(k.get("id")))
+	var ch_id := str((g("chamber_kind") as Resource).get("id")) if g("chamber_kind") != null else "none"
+	say("kinds", "%d explosive shells into the pocket (%d), T: loading %s with %d of them (%d buckshot kept); reloaded: the chamber %s, the tube %s" % [
+		3, pocket_had, kind_now, spare_ex, int((g("pocket") as Dictionary).get("buckshot", -1)), ch_id, str(tube_ids)])
+	if pocket_had != 3 or kind_now != "explosive" or spare_ex != 3 or int((g("pocket") as Dictionary).get("buckshot", -1)) != spare_n:
+		bad("T didn't switch the pocket to the explosive shells (%d, %s, %d)" % [pocket_had, kind_now, spare_ex])
+	if ch_id != "explosive" or tube_ids != ["explosive", "explosive"]:
+		bad("the explosive shells didn't go into the tube in order and on into the chamber (%s, %s)" % [ch_id, str(tube_ids)])
+	var target := Vector3(spot.x - 2.8, fl, spot.z)
+	var crate2 := RigidBody3D.new()
+	var ccs := CollisionShape3D.new()
+	var cbs := BoxShape3D.new()
+	cbs.size = Vector3(0.3, 0.3, 0.3)
+	ccs.shape = cbs
+	crate2.add_child(ccs)
+	main.add_child(crate2)
+	crate2.global_position = target + Vector3(0.0, 0.16, 0.5)
+	var dum2 := StaticBody3D.new()
+	dum2.set_script(made("extends StaticBody3D\nvar got: Array = []\nfunc shot(info: Dictionary) -> void:\n\tgot.append(info)\n"))
+	var dcs2 := CollisionShape3D.new()
+	var dbox2 := BoxShape3D.new()
+	dbox2.size = Vector3(0.3, 1.2, 0.3)
+	dcs2.shape = dbox2
+	dum2.add_child(dcs2)
+	main.add_child(dum2)
+	dum2.global_position = target + Vector3(-1.0, 0.6, -0.6)
+	var far2 := StaticBody3D.new()
+	far2.set_script(made("extends StaticBody3D\nvar got: Array = []\nfunc shot(info: Dictionary) -> void:\n\tgot.append(info)\n"))
+	var fcs := CollisionShape3D.new()
+	var fbox := BoxShape3D.new()
+	fbox.size = Vector3(0.3, 1.2, 0.3)
+	fcs.shape = fbox
+	far2.add_child(fcs)
+	main.add_child(far2)
+	far2.global_position = target + Vector3(-3.4, 0.6, 0.0)
+	var ghost2 := StaticBody3D.new()
+	var gcs2 := CollisionShape3D.new()
+	var gbox2 := BoxShape3D.new()
+	gbox2.size = Vector3(0.3, 1.2, 0.3)
+	gcs2.shape = gbox2
+	ghost2.add_child(gcs2)
+	main.add_child(ghost2)
+	ghost2.global_position = target + Vector3(-0.5, 0.6, -0.9)
+	var shoot_me := (load("res://addons/horrorstudio_weapons/shootable.gd") as GDScript).new() as Node
+	shoot_me.set("hits", 3)
+	ghost2.add_child(shoot_me)
+	await frames(3)
+	look(target)
+	await frames(5)
+	var heard0 := (listener.get("got") as Array).size()
+	var crate_at := crate2.global_position
+	var blasts0 := int(im.get("blasts"))
+	var bl_shook := 0.0
+	gun.pull()
+	await frames(1)
+	var rex: Dictionary = muz.report()
+	var exhits: Array = g("last_hits")
+	var slug_hits := exhits.filter(func(h): return not h.has("blast")).size()
+	var blast_hits := exhits.filter(func(h): return h.has("blast"))
+	for i in 30:
+		bl_shook = maxf(bl_shook, Vector2(eye.h_offset, eye.v_offset).length())
+		await process_frame
+	var fb: Node = im.get_node_or_null("Fireball")
+	var fb_rep: Dictionary = fb.report() if fb != null else {}
+	var scorch: Decal = (im.get("marks") as Array).back() as Decal
+	var embers := scorch.emission_energy if scorch != null and scorch.texture_emission != null else 0.0
+	var told: Array = dum2.get("got")
+	var far_told: Array = far2.get("got")
+	var heard2: Array = (listener.get("got") as Array).slice(heard0)
+	var pushed := crate2.global_position - crate_at
+	var away := (crate_at - (target + Vector3(0, 0.08, 0))).normalized()
+	await frames(40)
+	var bl_settled := Vector2(eye.h_offset, eye.v_offset).length()
+	say("explosive", "the %s flash (%d sparks), %d slug, %d blast %s; a ball of fire of %d spheres (%s); a scorch with embers at %.1f; the crate pushed %.2f m (%.2f of it away from the blast); the dummy told %s, the one 3.4 m off %d times; the shootable hit %d; heard %s; the view shaken %.3f, back to %.3f" % [
+		rex["look"], int(rex["sparks"]), slug_hits, int(im.get("blasts")) - blasts0, str(blast_hits.map(func(h): return str((h["collider"] as Node).name))), int(fb_rep.get("spheres", 0)), fb_rep.get("look", "none"), embers,
+		pushed.length(), pushed.normalized().dot(away) if pushed.length() > 0.001 else 0.0, str(told.map(func(x): return [x.get("blast", false), snappedf(float(x.get("damage", 0.0)), 0.1)])), far_told.size(),
+		int(shoot_me.get("count")), str(heard2.map(func(x): return x[1])), bl_shook, bl_settled])
+	if str(rex["look"]) != "Explosive" or int(rex["sparks"]) < 20 or slug_hits != 1:
+		bad("the explosive shell didn't fire a single slug with its own bigger flash (%s, %d slug hits)" % [str(rex), slug_hits])
+	if int(im.get("blasts")) - blasts0 != 1 or fb == null or int(fb_rep.get("spheres", 0)) < 20:
+		bad("no blast with its ball of fire where the slug landed (%d, %s)" % [int(im.get("blasts")) - blasts0, str(fb_rep)])
+	if embers <= 0.0:
+		bad("no scorch with its embers glowing where it burst")
+	if pushed.length() < 0.05 or pushed.normalized().dot(away) < 0.3:
+		bad("the blast didn't push the crate away from it (%.2f m, %.2f)" % [pushed.length(), pushed.normalized().dot(away) if pushed.length() > 0.001 else 0.0])
+	if told.is_empty() or not bool(told[0].get("blast", false)) or float(told[0].get("damage", 0.0)) <= 0.0 or not far_told.is_empty():
+		bad("the blast didn't tell the dummy in its reach (and only it) with its damage (%s, far %d)" % [str(told), far_told.size()])
+	if int(shoot_me.get("count")) != 1:
+		bad("the blast didn't count as a hit on the shootable in its reach (%d)" % int(shoot_me.get("count")))
+	if heard2.filter(func(x): return float(x[1]) >= 5.0).is_empty():
+		bad("the blast wasn't heard as loud as it is (%s)" % str(heard2))
+	if bl_shook < 0.002 or bl_settled > 0.0005:
+		bad("the view wasn't shaken by the blast and bl_settled after (%.3f, %.3f)" % [bl_shook, bl_settled])
+	await press(KEY_T)
+	say("kinds back", "T: loading %s again, %d of them" % [str((g("load_kind") as Resource).get("id")), int(g("spare"))])
+	if str((g("load_kind") as Resource).get("id")) != "buckshot" or int(g("spare")) != spare_n:
+		bad("T didn't go back to the buckshot (%s, %d)" % [str((g("load_kind") as Resource).get("id")), int(g("spare"))])
+	for n in [crate2, dum2, far2, ghost2]:
+		n.queue_free()
+	await until(func() -> bool: return not g("busy"), 2.0)
 	player.global_position = spot
 
 	# 9. lowered: out of view, the flashlight back on the eye, no shot; raised again

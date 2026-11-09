@@ -3,9 +3,11 @@ class_name HSWeaponPickup
 extends Node3D
 ## Something for the weapon, taken with E (the starter's player uses whatever has use()): `kind` shotgun (the gun itself,
 ## lying on its side where you put this, `shells` coming with it into the pocket), double (the double barrel, for a
-## player with an HSDoubleBarrel) or shells (a box of them, for the gun you carry). Taken, the player's gun (the group
-## hs_weapon) is given the gun or the shells, a line is said (the Story's, `say`) and this is gone. `taken` to wire
-## anything to (a scare when you pick it up).
+## player with an HSDoubleBarrel) or shells (a box of them, for the gun you carry). `shell` the kind of shells
+## (HSShellType: the plugin's `shells/explosive.tres`, or one of your own; none, the gun's normal buckshot): its box is
+## the kind's own when the plugin has one (`models/shells_box_5_<id>.glb`), or `box_model`. Taken, the player's gun (the
+## group hs_weapon) is given the gun or the shells, a line is said (the Story's, `say`) and this is gone. `taken` to
+## wire anything to (a scare when you pick it up).
 signal taken
 
 const DIR := "res://addons/horrorstudio_weapons/"
@@ -14,6 +16,8 @@ const DIR := "res://addons/horrorstudio_weapons/"
 @export var shells := 5
 @export var say := ""
 @export_range(0.0, 110.0) var lid_open := 0.0     ## a box of shells' lid, degrees open (0 shut): the shells inside show
+@export var shell: HSShellType                    ## the kind of shells (none: the gun's normal kind)
+@export var box_model: PackedScene                ## the box (none: the kind's own box, else the plugin's box of five)
 
 
 func _ready() -> void:
@@ -25,12 +29,17 @@ func _ready() -> void:
 		g.position = Vector3(0, 0.024, 0)
 	else:
 		box = Vector3(0.15, 0.06, 0.12)
-		var b := (load(DIR + "models/shells_box_5.glb") as PackedScene).instantiate() as Node3D   # (the prop generator's box of five)
+		var bm: PackedScene = box_model
+		if bm == null and shell != null and ResourceLoader.exists(DIR + "models/shells_box_5_%s.glb" % shell.id):
+			bm = load(DIR + "models/shells_box_5_%s.glb" % shell.id)
+		if bm == null:
+			bm = load(DIR + "models/shells_box_5.glb")          # (the prop generator's box of five)
+		var b := bm.instantiate() as Node3D
 		add_child(b)
 		b.rotation = Vector3(0, deg_to_rad(-8.0), 0)
 		if lid_open > 0.0:
 			_open_lid(b, lid_open)
-		var sh := load(DIR + "models/shell_12ga.glb") as PackedScene
+		var sh: PackedScene = shell.model if shell != null and shell.model != null else load(DIR + "models/shell_12ga.glb")
 		for i in 2:                                          # two spilled beside it
 			var s := sh.instantiate() as Node3D
 			add_child(s)
@@ -70,9 +79,9 @@ func use(_by: Node = null) -> void:
 	if w == null:
 		return
 	if kind == "shotgun" or kind == "double":
-		w.give(shells)
+		w.give(shells, shell)
 	else:
-		w.add_shells(shells)
+		w.add_shells(shells, shell)
 	var snd := load(DIR + "sounds/shells_box.ogg") as AudioStream if kind == "shells" else null   # (the gun's own handling plays as it's drawn)
 	if snd != null and w.has_method("sound"):
 		w.sound(snd, global_position, -4.0, "foley")

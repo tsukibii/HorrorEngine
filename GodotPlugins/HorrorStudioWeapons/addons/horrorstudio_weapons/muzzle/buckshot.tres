@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="HSMuzzleFlash" format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_weapons/muzzle/muzzle_flash.gd" id="1_flash"]
+
+[resource]
+script = ExtResource("1_flash")
+title = "Buckshot"
+layout = 0
+wings = 5
+wing_angle_deg = 76.0
+wing_length_m = 0.13
+wing_spheres = 6
+wing_radius_m = 0.028
+taper = 0.45
+stretch = 1.6
+jitter = 0.35
+plume_length_m = 0.34
+plume_spheres = 7
+plume_radius_m = 0.045
+core_radius_m = 0.032
+blend = 1
+core_color = Color(1, 0.96, 0.8, 1)
+mid_color = Color(1, 0.6, 0.18, 1)
+edge_color = Color(0.72, 0.14, 0.03, 1)
+energy = 2.0
+noise_scale = 0.55
+burn = 1.0
+erode = 0.75
+tip_burn = 0.3
+swell = 0.35
+life_s = 0.055
+light_scale = 1.0
+light_color = Color(1, 0.72, 0.42, 1)
+light_range_m = 9.0
+light_s = 0.05
+light_fog = 0.12
+sparks = 6
+spark_speed = Vector2(4, 9)
+spark_spread_deg = 16.0
+spark_life_s = 0.14
+spark_length_m = 0.06
+spark_gravity = 3.0
+spark_color = Color(1, 0.72, 0.32, 1)
+puffs = 10
+puff_size_m = Vector2(0.06, 0.11)
+puff_grow = 3.2
+puff_speed = Vector2(0.35, 0.9)
+puff_life_s = 1.6
+trail_s = 1.4
+trail_life_s = 2.2
+trail_width_m = Vector2(0.025, 0.14)
+trail_rise = 0.07
+smoke_color = Color(0.82, 0.8, 0.77, 1)
+smoke_density = 1.0
+smoke_glow = 0.6

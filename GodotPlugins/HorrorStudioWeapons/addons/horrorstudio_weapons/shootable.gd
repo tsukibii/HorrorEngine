@@ -6,7 +6,8 @@ extends Node
 ## each a switch: `gone_secs` (gone at once and back after that long, its collision with it: a ghost's way; down, gone
 ## for good), `push_m` (shoved back along the shot), `cry` (a sound there, through the Sound node), `say` (a line, the
 ## Story's), `target` (its fire(): a scare, a cue, the lights), `lights_out` (a lamp shot out: its lights dark and a few
-## sparks when it's down). Listens to every HSShotgun (the group hs_weapon).
+## sparks when it's down). Listens to every HSShotgun (the group hs_weapon): a pellet on it, or an explosive shell's
+## blast reaching it (its hits carry `blast` and `damage`), is a hit.
 
 signal hit(info: Dictionary)                      ## {point, normal, collider, pellet, hits (pellets on it), count}
 signal down
@@ -28,6 +29,7 @@ var _t := 0.0
 
 
 func _ready() -> void:
+	add_to_group("hs_shootable")                  # (a blast reaching its parent counts it as hit: HSImpacts)
 	_listen()
 
 

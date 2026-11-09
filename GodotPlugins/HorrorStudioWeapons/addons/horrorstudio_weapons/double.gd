@@ -25,6 +25,7 @@ signal closed                                     ## snapped shut
 
 var live := [true, true]                          ## a live shell in the right and the left chamber
 var spent := [false, false]                       ## a fired hull still in it
+var barrel_kind := [null, null]                   ## the kind of shell in each chamber (HSShellType; none: the normal kind)
 var opened := 0.0                                 ## 0 shut, 1 broken open (a check's)
 var flicked := 0                                  ## hulls the ejectors have thrown out (a check's)
 var _barrels: Node3D
@@ -65,6 +66,7 @@ func _ready() -> void:
 		return
 	live = [loaded >= 1, loaded >= 2]
 	spent = [false, false]
+	barrel_kind = [normal_kind(), normal_kind()]
 	for b in 2:
 		if live[b]:
 			_seat(b, false)
@@ -132,12 +134,13 @@ func _fire() -> void:
 		return
 	live[b] = false
 	spent[b] = true
+	var kind: HSShellType = barrel_kind[b] if barrel_kind[b] != null else normal_kind()
 	_seat(b, true)                                   # (the hull in its chamber now spent: seen when it's broken open)
 	_count()
 	shots += 1
 	_fired_t = _t
 	busy = true
-	_shoot()
+	_shoot(kind, b)
 	_kick_v += 4.0                                   # (light and short: it kicks harder than the pump gun)
 	_show_hud()
 	await get_tree().create_timer(0.24).timeout      # (the trigger let go: a double fires as fast as it's pulled)
@@ -216,7 +219,7 @@ func _seat(b: int, as_spent: bool) -> Node3D:
 	var old = _in_chamber[b]
 	if old != null and is_instance_valid(old):
 		old.queue_free()
-	var s := (spent_model if as_spent else shell_model).instantiate() as Node3D
+	var s := _model_of(barrel_kind[b], as_spent).instantiate() as Node3D
 	_barrels.add_child(s)
 	_view_model(s)
 	s.transform = _seated(b)
@@ -240,13 +243,14 @@ func _flick(b: int) -> void:
 	(h as Node3D).reparent(_gun, true)
 	var side := 1.0 if b == 0 else -1.0             # (the right one out to the right: the gun's +z)
 	var v := Vector3(randf_range(-0.9, -0.5), randf_range(2.5, 3.1), side * randf_range(1.0, 1.4))   # (up and out past the face)
-	_flying.append([h, v, Vector3(randf_range(-16, 16), 0.0, randf_range(-16, 16)), 0.0, true])
+	_flying.append([h, v, Vector3(randf_range(-16, 16), 0.0, randf_range(-16, 16)), 0.0, _model_of(barrel_kind[b], true)])
 	flicked += 1
 
 
 # a shell popping in: from behind the breech and a little over it, along the bore into the chamber, quick, seated
 func _pop_in(b: int) -> void:
-	var s := shell_model.instantiate() as Node3D
+	var kind: HSShellType = load_kind if load_kind != null else normal_kind()
+	var s := _model_of(kind, false).instantiate() as Node3D
 	_barrels.add_child(s)
 	_view_model(s)
 	var seat := _seated(b)
@@ -260,6 +264,7 @@ func _pop_in(b: int) -> void:
 		old.queue_free()
 	_in_chamber[b] = s
 	live[b] = true
+	barrel_kind[b] = kind
 	spare -= 1
 	_count()
 	_play(insert_sound, _at("breech"), -3.0, "foley")
@@ -298,6 +303,12 @@ func _draw_hud() -> void:
 	var top := at.y - h + 1.0 * u
 	var full := Color(text, text.a * k)
 	var empty_c := Color(muted, muted.a * k * 0.7)
+	_kind_dot(Vector2(at.x - tw * 0.5, at.y + 5.0 * u), load_kind, u, k)
 	for b in [0, 1]:                                 # (as they lie: the right barrel's mark the right one)
-		_mark(Rect2(x, top, w, h), bool(live[b]), full, empty_c, u)
+		_mark(Rect2(x, top, w, h), bool(live[b]), _tint(full, barrel_kind[b]), empty_c, u)
 		x -= w + 4.0 * u
+
+
+# a muzzle a barrel: the right's, the left's (the one between them on a model without)
+func _muzzle_names() -> Array:
+	return ["muzzle_r", "muzzle_l"] if _sock.has("muzzle_r") and _sock.has("muzzle_l") else ["muzzle"]

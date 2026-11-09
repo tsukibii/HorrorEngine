@@ -1,6 +1,7 @@
 """The weapons plugin's sounds, made from nothing (numpy, then ffmpeg for the Ogg; DECISIONS 2026-11-09): a 12-gauge's
 blast, its pump racked back and run forward, a shell pushed into the loading port, the dry click on an empty chamber,
-a spent hull dropping on the floor, the gun raised and lowered, a box of shells picked up. Each is mono (the Sound node places it in the room and
+a spent hull dropping on the floor, the gun raised and lowered, a box of shells picked up, an explosive shell bursting
+where it lands. Each is mono (the Sound node places it in the room and
 the sound physics give it the room's reverb, so the blast carries no room of its own: a short tail only).
 
     python tools/weapon_sounds.py [--out DIR]     (default GodotPlugins/HorrorStudioWeapons/addons/horrorstudio_weapons/sounds)
@@ -157,10 +158,30 @@ def double_flick(rng):
     return x
 
 
+def shell_burst(rng):
+    """An explosive shell bursting where it lands: a hard crack, a deep boom whose pitch falls, bits and grit
+    rattling down after it, a low rumble going on (the room's reverb comes from the sound physics)."""
+    t = t_(2.6)
+    crack = band(rng.standard_normal(len(t)), 700, 10000) * decay(t, 0.009, 0, 0.0002)
+    body = band(rng.standard_normal(len(t)), 40, 1200) * decay(t, 0.12, 0, 0.0004)
+    f = 70 * np.exp(-t / 0.12) + 28                                    # the boom, its pitch falling
+    boom = np.sin(2 * np.pi * np.cumsum(f) / SR) * decay(t, 0.22, 0, 0.002)
+    rumble = band(rng.standard_normal(len(t)), 25, 260) * decay(t, 0.75, 0.03, 0.04)
+    grit = np.zeros(len(t))
+    for i in range(70):                                                 # bits coming down, thinning out
+        at = 0.12 + rng.exponential(0.35)
+        if at < 2.3:
+            grit += tick(t, at, 1500, 7000, 0.004, rng.uniform(0.05, 0.3) * np.exp(-at / 0.8), rng)
+    x = (1.0 * crack / np.abs(crack).max() + 0.95 * body / np.abs(body).max() + 1.0 * boom
+         + 0.35 * rumble / np.abs(rumble).max() + 0.5 * grit / max(np.abs(grit).max(), 1e-9))
+    return np.tanh(2.0 * x)
+
+
 SOUNDS = {"shotgun_fire": (blast, -0.5), "shotgun_pump_back": (pump_back, -4.0), "shotgun_pump_forward": (pump_forward, -3.0),
           "shotgun_shell_insert": (shell_insert, -6.0), "shotgun_dry": (dry_click, -8.0), "shell_drop": (shell_drop, -10.0),
           "shotgun_handle": (handle, -10.0), "shells_box": (shells_box, -9.0),       # (new ones last: each one's seed is its place)
-          "double_open": (double_open, -5.0), "double_close": (double_close, -3.0), "double_flick": (double_flick, -8.0)}
+          "double_open": (double_open, -5.0), "double_close": (double_close, -3.0), "double_flick": (double_flick, -8.0),
+          "shell_burst": (shell_burst, -0.3)}
 
 
 def write(path, x, peak_db):

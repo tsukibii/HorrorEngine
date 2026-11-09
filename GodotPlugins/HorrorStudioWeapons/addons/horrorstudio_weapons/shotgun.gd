@@ -9,10 +9,13 @@ extends Node3D
 ## behind the view as it turns, bobs as you walk, breathes, and never pokes through a wall (its materials' z clip
 ## scale: drawn in front of the world it's in, lit by it).
 ##
-## Left click fires: nine pellets in a cone of `spread_deg` from the middle of the view, a hole and dust where each
-## lands (a thing that moves pushed, one with a shot(info) method told), the flash lighting the room for a moment,
-## smoke from the muzzle, the gun kicking and the view with it, the blast through the Sound node (the room's echo), a
-## noise every listener hears (`noise`: a run is 1) and your ears ringing (the Fear node's ring). Then the pump is
+## Left click fires the chambered shell: its pellets in a cone of `spread_deg` from the middle of the view, its impact
+## where each lands (HSImpact through HSImpacts: a crater whose maps make pieces look missing, the surface's dust and
+## chips; the explosive shell's blast), a thing that moves pushed, one with a shot(info) method told; the muzzle
+## flashing (HSMuzzle: the shell's HSMuzzleFlash, its light, sparks, smoke thrown out and trailing after the muzzle),
+## the gun kicking and the view with it, the blast through the Sound node (the room's echo), a noise every listener
+## hears (`noise`: a run is 1) and your ears ringing (the Fear node's ring). Every shell has a kind (HSShellType: the
+## plugin's buckshot and explosive, `kinds`), kept in the tube in order; T picks the kind loaded next. Then the pump is
 ## racked by itself: back (the bolt open, the spent hull thrown out of the ejection port, onto the floor), forward (a
 ## shell from the tube into the chamber, if there's one). An empty chamber clicks. R reloads like a shotgun: the gun
 ## turned to bare its loading port, a shell at a time from the pocket rising nose first into the port and pushed
@@ -26,6 +29,7 @@ signal empty                                      ## the trigger pulled on an em
 signal raised_changed(up: bool)
 
 const DIR := "res://addons/horrorstudio_weapons/"
+const VIEW_LAYER := 1 << 19                       # layer 20 (the Look plugin's): your eye draws it, no mirror does, no mark lands on it
 
 @export var owned := true                         ## carried: a pickup gives it (HSWeaponPickup)
 @export var raised := true                        ## up in view (false: lowered out of it)
@@ -36,7 +40,8 @@ const DIR := "res://addons/horrorstudio_weapons/"
 @export var capacity := 4                         ## the tube's
 @export var loaded := 4                           ## in the tube now
 @export var chambered := true
-@export var spare := 4                            ## shells in the pocket (few: every one counts)
+@export var spare := 4                            ## shells in the pocket of the kind loaded next (few: every one counts); the other kinds' in `pocket`
+@export var kinds: Array[HSShellType] = []        ## the kinds of shell it takes, the normal one first (none: the plugin's buckshot and explosive)
 @export_group("Shot")
 @export var pellets := 9                          ## 00 buckshot
 @export var spread_deg := 2.6                     ## the cone's half angle
@@ -46,7 +51,7 @@ const DIR := "res://addons/horrorstudio_weapons/"
 @export var ring_secs := 2.5                      ## the ears ringing after a shot (the Fear node's ring; 0 none)
 @export var recoil_deg := 3.2                     ## the view kicked up by a shot
 @export var recover := 0.6                        ## how much of the kick the view settles back by itself
-@export var flash_energy := 5.0                   ## the muzzle flash's light (for a frame or two; 1.5 for fewer flashes)
+@export var flash_energy := 5.0                   ## the muzzle flash's light (for a frame or two; 1.5 for fewer flashes), times the shell's look's light_scale
 @export_group("Reload")
 @export var insert_secs := 0.34                   ## a shell from under the gun into the tube
 @export var insert_gap := 0.12                    ## between one shell and the next
@@ -93,10 +98,12 @@ var _bolt: Node3D
 var _trigger: Node3D
 var _trig0 := Vector3.ZERO
 var _sock := {}
-var _flash: MeshInstance3D
-var _flash_light: OmniLight3D
-var _flash_t := 0.0
-var _smoke: CPUParticles3D
+var muzzles: Array = []                           ## its HSMuzzles (the double's: the right barrel's, the left's)
+var tube: Array = []                              ## the kinds of the shells in the tube, the next one first (as many as `loaded`)
+var chamber_kind: HSShellType                     ## the chambered shell's kind
+var load_kind: HSShellType                        ## the kind R loads (T picks the next)
+var pocket := {}                                  ## the other kinds' shells in the pocket, by id ({"explosive": 2})
+var last_kind: HSShellType                        ## the kind of the last shot (a check's)
 var _cancel := false
 var _kick := 0.0
 var _kick_v := 0.0
@@ -128,17 +135,12 @@ var _hud_font: Font
 var _hud_ui: Node = null                          # the studio's HSHud, if the game has one
 var _hud_look := 0.0
 var _hud_t := 0.0
-var _dust_mesh: Mesh
-var _stars: Array = []
-var _flash_fresh := false
 var _carried := false                             # the flashlight under the barrel now (its own script owns it otherwise)
-var _holes: Array = []
 var _hulls: Array = []                            # the hulls in the room (the last 16)
 var _falling: Array = []                          # those still on their way: {node, v, spin, hits, floor, still}
 var _flying: Array = []                           # [node, velocity (gun frame), spin, age]
 var _light: Light3D
 var _light_rest := Transform3D()
-var _hole_tex: Texture2D
 var _view_mats := {}
 
 
@@ -169,9 +171,9 @@ func _ready() -> void:
 	_tape = _find_tape()
 	_tape_on = _tape != null and bool(_tape.get("visible"))
 	_place_gun()
-	_make_flash()
+	_kinds_ready()
+	_make_muzzles()
 	_view_model(_rig)
-	_hole_tex = _make_hole()
 	if hud:
 		_make_hud()
 	_light = light
@@ -268,74 +270,119 @@ func _find_tape() -> Node:
 	return null
 
 
-func _make_flash() -> void:
-	var mz := _sock.get("muzzle") as Node3D
-	var at: Node3D = mz if mz != null else _gun
-	_flash = MeshInstance3D.new()
-	var q := QuadMesh.new()
-	q.size = Vector2(0.2, 0.2)
-	_flash.mesh = q
-	var fm := StandardMaterial3D.new()
-	fm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	fm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	fm.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	fm.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	_stars = [_make_star(7), _make_star(23), _make_star(41)]
-	fm.albedo_texture = _stars[0]
-	fm.billboard_keep_scale = true                   # (a billboard ignores the node's scale without it)
-	fm.albedo_color = Color(1.0, 0.78, 0.45)
-	fm.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_flash.material_override = fm
-	_flash.visible = false
-	_flash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	at.add_child(_flash)
-	_flash.position = Vector3(0, 0.03, 0) if mz != null else Vector3.ZERO
-	_flash_light = OmniLight3D.new()
-	_flash_light.light_color = Color(1.0, 0.72, 0.42)
-	_flash_light.light_energy = 0.0
-	_flash_light.omni_range = 9.0
-	_flash_light.shadow_enabled = true
-	_flash_light.add_to_group("hs_no_zone")           # (a light zone doesn't claim it)
-	at.add_child(_flash_light)
-	_flash_light.position = Vector3(0, 0.05, 0)
-	_smoke = CPUParticles3D.new()
-	_smoke.emitting = false
-	_smoke.one_shot = true
-	_smoke.amount = 10
-	_smoke.lifetime = 1.6
-	_smoke.explosiveness = 0.85
-	_smoke.local_coords = false
-	_smoke.direction = Vector3(0, 1, 0)               # the socket's +Y is the barrel's way
-	_smoke.spread = 22.0
-	_smoke.initial_velocity_min = 0.35
-	_smoke.initial_velocity_max = 0.9
-	_smoke.damping_min = 0.9
-	_smoke.damping_max = 1.4
-	_smoke.gravity = Vector3(0, 0.12, 0)
-	_smoke.scale_amount_min = 0.06
-	_smoke.scale_amount_max = 0.11
-	var sc := Curve.new()
-	sc.add_point(Vector2(0, 0.4))
-	sc.add_point(Vector2(1, 3.2))
-	_smoke.scale_amount_curve = sc
-	var g := Gradient.new()
-	g.set_color(0, Color(0.8, 0.79, 0.77, 0.5))
-	g.set_color(1, Color(0.8, 0.79, 0.77, 0.0))
-	_smoke.color_ramp = g
-	var sq := QuadMesh.new()
-	var sm := StandardMaterial3D.new()
-	sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	sm.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	sm.vertex_color_use_as_albedo = true
-	sm.albedo_texture = _make_puff()
-	sm.blend_mode = BaseMaterial3D.BLEND_MODE_ADD                # smoke scatters the light that reaches it: it never darkens
-	sm.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT_WRAP          # what's behind it (a dark cloud in a dim room otherwise)
-	sm.backlight_enabled = true
-	sm.backlight = Color(0.7, 0.7, 0.7)
-	sm.cull_mode = BaseMaterial3D.CULL_DISABLED
-	sq.material = sm
-	_smoke.mesh = sq
-	at.add_child(_smoke)
+# the shell kinds: the plugin's buckshot and explosive when it's given none; the normal one loaded first, the tube and
+# the chamber holding it
+func _kinds_ready() -> void:
+	if kinds.is_empty():
+		for f in ["buckshot", "explosive"]:
+			var k = load(DIR + "shells/%s.tres" % f)
+			if k is HSShellType:
+				kinds.append(k)
+	if kinds.is_empty():
+		kinds.append(HSShellType.new())
+	if load_kind == null:
+		load_kind = kinds[0]
+
+
+## The normal kind (the first of `kinds`): what a shell is when nothing says otherwise.
+func normal_kind() -> HSShellType:
+	if kinds.is_empty():
+		_kinds_ready()
+	return kinds[0]
+
+
+# the tube's kinds kept as many as `loaded` (a script that sets `loaded` gets the normal kind for the new ones)
+func _tube_fit() -> void:
+	while tube.size() < loaded:
+		tube.append(normal_kind())
+	while tube.size() > loaded:
+		tube.pop_back()
+
+
+## How many shells of a kind are in the pocket.
+func shells_of(kind: HSShellType) -> int:
+	if kind == null or kind == load_kind:
+		return spare
+	return int(pocket.get(kind.id, 0))
+
+
+## Shells into the pocket (a box picked up): of `kind` (none: the normal kind).
+func add_shells(n: int, kind: HSShellType = null) -> void:
+	if n <= 0:
+		return
+	var k := kind if kind != null else normal_kind()
+	if load_kind == null:
+		_kinds_ready()
+	if k == load_kind:
+		spare += n
+	else:
+		pocket[k.id] = int(pocket.get(k.id, 0)) + n
+		if not kinds.has(k):
+			kinds.append(k)
+	_show_hud()
+
+
+## The kind R loads from now on (its shells' count becomes `spare`, the others' wait in `pocket`).
+func set_load_kind(kind: HSShellType) -> void:
+	if kind == null or kind == load_kind:
+		return
+	if not kinds.has(kind):
+		kinds.append(kind)
+	if load_kind != null:
+		pocket[load_kind.id] = spare
+	spare = int(pocket.get(kind.id, 0))
+	pocket.erase(kind.id)
+	load_kind = kind
+	_show_hud()
+
+
+## T: the next kind in `kinds` that's in the pocket (any next kind when none is).
+func next_kind() -> void:
+	if kinds.size() < 2:
+		return
+	var i := kinds.find(load_kind)
+	for step in range(1, kinds.size() + 1):
+		var k: HSShellType = kinds[(i + step) % kinds.size()]
+		if k != load_kind and shells_of(k) > 0:
+			set_load_kind(k)
+			return
+	set_load_kind(kinds[(i + 1) % kinds.size()])
+
+
+# a shell's model, live or spent, by its kind (the gun's own when the kind has none)
+func _model_of(kind: HSShellType, spent: bool) -> PackedScene:
+	if kind != null:
+		var m: PackedScene = kind.spent_model if spent else kind.model
+		if m != null:
+			return m
+	return spent_model if spent else shell_model
+
+
+# the muzzles: an HSMuzzle at each muzzle socket (its -Z along the socket's +Y, the barrel's way), drawn as the gun is
+func _make_muzzles() -> void:
+	for nm in _muzzle_names():
+		var s := _sock.get(nm) as Node3D
+		var at: Node3D = s if s != null else _gun
+		var m := HSMuzzle.new()
+		m.name = "Muzzle_" + nm
+		m.view_model = true
+		m.fov = fov
+		m.light_energy = flash_energy
+		at.add_child(m)
+		m.transform = Transform3D(Basis(Vector3.RIGHT, deg_to_rad(90.0)), Vector3(0, 0.01, 0) if s != null else Vector3.ZERO)
+		muzzles.append(m)
+
+
+# the sockets the muzzles go at (the double's: one a barrel)
+func _muzzle_names() -> Array:
+	return ["muzzle"]
+
+
+## The muzzle of a barrel (0: the pump gun's one, the double's right; 1 the double's left).
+func muzzle(barrel := 0) -> HSMuzzle:
+	if muzzles.is_empty():
+		return null
+	return muzzles[clampi(barrel, 0, muzzles.size() - 1)]
 
 
 # every mesh the gun is drawn with: in front of the world it's in (its depth pulled toward the eye), no shadow of its own
@@ -343,6 +390,7 @@ func _view_model(root: Node) -> void:
 	for n in root.find_children("*", "GeometryInstance3D", true, false):
 		var gi := n as GeometryInstance3D
 		gi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		gi.layers = VIEW_LAYER
 		if gi.material_override != null:
 			gi.material_override = _vm(gi.material_override)
 		if gi is MeshInstance3D and (gi as MeshInstance3D).mesh != null:
@@ -417,11 +465,27 @@ func _draw_hud() -> void:
 	var top := base - h + 1.0 * u
 	var full := Color(text, text.a * k)
 	var empty := Color(muted, muted.a * k * 0.7)
-	_mark(Rect2(x, top, w, h), chambered, full, empty, u)                # the chamber
+	_kind_dot(Vector2(right - tw * 0.5, base + 5.0 * u), load_kind, u, k)    # the kind R loads, under its count
+	_tube_fit()
+	_mark(Rect2(x, top, w, h), chambered, _tint(full, chamber_kind), empty, u)    # the chamber
 	x -= 9.0 * u
 	for i in capacity:                                                   # the tube, its front shell nearest the chamber
 		x -= w + 3.0 * u
-		_mark(Rect2(x, top, w, h), i < loaded, full, empty, u)
+		_mark(Rect2(x, top, w, h), i < loaded, _tint(full, tube[i] if i < tube.size() else null), empty, u)
+
+
+# a mark's colour: the HUD's own for the normal kind, the kind's for any other
+func _tint(full: Color, kind: HSShellType) -> Color:
+	if kind == null or kind == normal_kind():
+		return full
+	return Color(kind.color, full.a)
+
+
+# a small dot in the kind's colour under the pocket's count, when it isn't the normal kind
+func _kind_dot(at: Vector2, kind: HSShellType, u: float, k: float) -> void:
+	if kind == null or kind == normal_kind():
+		return
+	_hud_ctl.draw_circle(at, 2.2 * u, Color(kind.color, 0.9 * k))
 
 
 # where the shells' row ends (its right) and stands (its baseline): low on the right, inside a tape's 4:3 picture,
@@ -488,6 +552,8 @@ func _unhandled_input(e: InputEvent) -> void:
 				reload()
 			KEY_Q:
 				set_raised(not raised)
+			KEY_T:
+				next_kind()
 
 
 ## pull the trigger: a shot if one's chambered (then the pump racked by itself), a click if not; during a reload it
@@ -511,10 +577,11 @@ func _fire() -> void:
 		empty.emit()
 		return
 	chambered = false
+	var kind := chamber_kind if chamber_kind != null else normal_kind()
 	shots += 1
 	_fired_t = _t
 	busy = true                                      # (before the shot: a fired or shot() hook can't start a reload mid-rack)
-	_shoot()
+	_shoot(kind)
 	_show_hud()
 	await get_tree().create_timer(0.17).timeout
 	await _rack(true)
@@ -569,19 +636,13 @@ func set_aim(on: bool) -> void:
 	aiming = on and aim and owned and raised and not reloading and _lower < 0.05
 
 
-## give it (a pickup), and some shells with it
-func give(shells := 0) -> void:
-	spare += shells
+## give it (a pickup), and some shells with it (`kind`: none, the normal kind)
+func give(shells := 0, kind: HSShellType = null) -> void:
+	add_shells(shells, kind)
 	if not owned:
 		owned = true
 		raised = false                               # (lowered out of view until now: drawn up into it)
 		set_raised(true)
-	_show_hud()
-
-
-## shells into the pocket (a box picked up)
-func add_shells(n: int) -> void:
-	spare += max(n, 0)
 	_show_hud()
 
 
@@ -602,7 +663,11 @@ func set_raised(up: bool) -> void:
 
 # ---- the shot ----------------------------------------------------------------------------------------------------------
 
-func _shoot() -> void:
+## A shot of a kind out of a barrel's muzzle (the double's: 0 the right, 1 the left), without the action: the pellets,
+## what they do where they land, the muzzle's flash, the kick, the noise. The gun's trigger calls it; a script can too.
+func _shoot(kind: HSShellType = null, barrel := 0) -> void:
+	kind = kind if kind != null else normal_kind()
+	last_kind = kind
 	var cam := get_viewport().get_camera_3d()
 	var from := cam.global_position if cam != null else global_position
 	var fwd := -(cam.global_basis.z if cam != null else global_basis.z)
@@ -614,12 +679,14 @@ func _shoot() -> void:
 		ex.append((pl as CollisionObject3D).get_rid())
 	var hits: Array = []
 	var side := fwd.cross(up).normalized()
-	var cone := deg_to_rad(spread_deg * lerpf(1.0, aim_spread, _aim))
-	for i in pellets:
+	var cone := deg_to_rad(spread_deg * kind.spread_scale * lerpf(1.0, aim_spread, _aim))
+	var n := kind.pellets if kind.pellets > 0 else pellets
+	var reach := reach_m * kind.reach_scale
+	for i in n:
 		var r := cone * sqrt(randf())
 		var a := randf() * TAU
 		var dir := (fwd + (side * cos(a) + up * sin(a)) * tan(r)).normalized()
-		var q := PhysicsRayQueryParameters3D.create(from, from + dir * reach_m, 1)
+		var q := PhysicsRayQueryParameters3D.create(from, from + dir * reach, 1)
 		var skip := ex.duplicate()
 		var hit := {}
 		for k in 5:
@@ -631,49 +698,53 @@ func _shoot() -> void:
 			hit = {}
 		if hit.is_empty():
 			continue
-		var h := {"point": hit["position"], "normal": hit["normal"], "collider": hit["collider"], "pellet": i, "from": from, "dir": dir}
+		var h := {"point": hit["position"], "normal": hit["normal"], "collider": hit["collider"], "pellet": i, "from": from, "dir": dir,
+			"damage": kind.damage, "kind": kind.id}
 		hits.append(h)
-		_hole(hit["position"], hit["normal"], hit["collider"])
 		var c: Object = hit["collider"]
 		if c is RigidBody3D:
-			(c as RigidBody3D).apply_impulse(dir * push, (hit["position"] as Vector3) - (c as RigidBody3D).global_position)
-		var n := c as Node
-		while n != null:
-			if n.has_method("shot"):
-				n.shot({"point": hit["position"], "normal": hit["normal"], "dir": dir, "from": from, "pellet": i})
+			(c as RigidBody3D).apply_impulse(dir * push * kind.push_scale, (hit["position"] as Vector3) - (c as RigidBody3D).global_position)
+		var nd := c as Node
+		while nd != null:
+			if nd.has_method("shot"):
+				nd.shot({"point": hit["position"], "normal": hit["normal"], "dir": dir, "from": from, "pellet": i, "damage": kind.damage, "kind": kind.id})
 				break
-			n = n.get_parent()
+			nd = nd.get_parent()
+	# what each pellet does where it lands (its mark, the surface's dust and chips; a blast's push and harm: what it
+	# reaches counts as hit too)
 	if hits.size() > 0:
-		_dust(hits)
+		hits.append_array(HSImpacts.of(get_tree()).play_shot(kind.impact, hits))
 	last_hits = hits
-	# the flash, the smoke, the kick
-	_flash.visible = true
-	var fmat := _flash.material_override as StandardMaterial3D
-	if fmat != null and not _stars.is_empty():
-		fmat.albedo_texture = _stars[randi() % _stars.size()]   # (a billboard turns to face you: its look, not its roll, varies)
-	_flash.scale = Vector3.ONE * randf_range(0.8, 1.25)
-	_flash_t = 0.06
-	_flash_light.light_energy = flash_energy
-	_flash_fresh = true
-	# the flash's light and smoke at the muzzle, or this side of a wall the muzzle is past (the gun's drawn in front of the
-	# wall you stand against, its muzzle beyond it: the light would be in the next room)
-	var mz := _at("muzzle")
-	var way := (mz - from).normalized()
-	var q2 := PhysicsRayQueryParameters3D.create(from, mz + way * 0.08, 1)
-	q2.exclude = ex
-	var wall := space.intersect_ray(q2)
-	_flash_light.position = Vector3(0, 0.05, 0)
-	_smoke.position = Vector3.ZERO
-	if not wall.is_empty():
-		var near := (wall["position"] as Vector3) - way * 0.12
-		_flash_light.global_position = near
-		_smoke.global_position = near
-	_smoke.restart()
-	_kick_v += 16.0
-	_turn_view(deg_to_rad(recoil_deg), deg_to_rad(randf_range(-0.12, 0.12) * recoil_deg))   # up, and a little aside
-	_recover += deg_to_rad(recoil_deg) * recover
-	_play(fire_sound, _at("muzzle"), 0.0, "event")
-	get_tree().call_group("hs_listener", "heard", from, noise)    # (noise.gd's way: every listener hears it)
+	# the muzzle's flash, its light and smoke, this side of a wall the muzzle is past (the gun's drawn in front of the
+	# wall you stand against, its muzzle beyond it: the light would be in the next room); its plume no longer than
+	# the room ahead of it
+	var mz := muzzle(barrel)
+	if mz != null:
+		var at := mz.global_position
+		var way := (at - from).normalized()
+		var q2 := PhysicsRayQueryParameters3D.create(from, at + way * 0.08, 1)
+		q2.exclude = ex
+		var wall := space.intersect_ray(q2)
+		var this_side := Vector3.INF
+		var clear := INF
+		if not wall.is_empty():
+			this_side = (wall["position"] as Vector3) - way * 0.12
+			clear = 0.0
+		else:
+			var bore := -mz.global_basis.z
+			var q3 := PhysicsRayQueryParameters3D.create(at, at + bore * 2.0, 1)
+			q3.exclude = ex
+			var ahead := space.intersect_ray(q3)
+			if not ahead.is_empty():
+				clear = at.distance_to(ahead["position"])
+		mz.light_energy = flash_energy
+		mz.fire(kind.muzzle, clear, this_side)
+	_kick_v += 16.0 * kind.recoil_scale
+	var rk := recoil_deg * kind.recoil_scale
+	_turn_view(deg_to_rad(rk), deg_to_rad(randf_range(-0.12, 0.12) * rk))   # up, and a little aside
+	_recover += deg_to_rad(rk) * recover
+	_play(fire_sound, mz.global_position if mz != null else _at("muzzle"), 0.0, "event")
+	get_tree().call_group("hs_listener", "heard", from, noise * kind.noise_scale)    # (noise.gd's way: every listener hears it)
 	var fear := get_tree().get_first_node_in_group("hs_fear")
 	if fear != null and ring_secs > 0.0 and fear.has_method("ring"):
 		fear.ring(ring_secs)
@@ -697,62 +768,6 @@ func _turn_view(dp: float, dy: float) -> void:
 		cam.rotation.y += dy
 
 
-# a hole where a pellet landed, on what it hit (a door swings with its holes, a crate carries them away)
-func _hole(p: Vector3, n: Vector3, on: Object = null) -> void:
-	var d := Decal.new()
-	d.texture_albedo = _hole_tex
-	d.size = Vector3(0.026, 0.05, 0.026)
-	d.cull_mask = 1
-	var host: Node = on as Node3D if on is Node3D and not (on as Node).is_queued_for_deletion() else _host()
-	host.add_child(d)
-	var y := n.normalized()
-	var x := y.cross(Vector3.UP if absf(y.y) < 0.9 else Vector3.RIGHT).normalized()
-	d.global_transform = Transform3D(Basis(x, y, x.cross(y)).rotated(y, randf() * TAU), p + y * 0.005)
-	_holes.append(d)
-	while _holes.size() > 180:
-		var o = _holes.pop_front()
-		if is_instance_valid(o):
-			o.queue_free()
-
-
-func _dust(hits: Array) -> void:
-	var host := _host()
-	for h in hits.slice(0, 6):
-		var p := CPUParticles3D.new()
-		p.one_shot = true
-		p.amount = 6
-		p.lifetime = 0.7
-		p.explosiveness = 1.0
-		p.local_coords = false
-		p.direction = Vector3(0, 1, 0)
-		p.spread = 40.0
-		p.initial_velocity_min = 0.4
-		p.initial_velocity_max = 1.4
-		p.gravity = Vector3(0, -2.5, 0)
-		p.scale_amount_min = 0.01
-		p.scale_amount_max = 0.025
-		if _dust_mesh == null:
-			var bm := BoxMesh.new()
-			bm.size = Vector3.ONE
-			var mm := StandardMaterial3D.new()
-			mm.vertex_color_use_as_albedo = true
-			mm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-			bm.material = mm
-			_dust_mesh = bm
-		var g := Gradient.new()
-		g.set_color(0, Color(0.55, 0.52, 0.48, 0.7))
-		g.set_color(1, Color(0.55, 0.52, 0.48, 0.0))
-		p.color_ramp = g
-		p.mesh = _dust_mesh
-		host.add_child(p)
-		var nrm := (h["normal"] as Vector3).normalized()
-		p.global_position = h["point"] + nrm * 0.01
-		p.global_basis = Basis(nrm.cross(Vector3.FORWARD if absf(nrm.z) < 0.9 else Vector3.RIGHT).normalized(), nrm,
-			nrm.cross(Vector3.FORWARD if absf(nrm.z) < 0.9 else Vector3.RIGHT).normalized().cross(nrm)).orthonormalized()
-		p.emitting = true
-		get_tree().create_timer(1.2).timeout.connect(p.queue_free)
-
-
 # ---- the action ---------------------------------------------------------------------------------------------------------
 
 func _rack(spent: bool) -> void:
@@ -760,13 +775,13 @@ func _rack(spent: bool) -> void:
 		_play(back_sound, _at("eject"), -3.0, "foley")
 		await get_tree().create_timer(0.16).timeout
 		if spent or chambered:
-			_eject(spent)
+			_eject(spent, last_kind if spent else chamber_kind)
 			chambered = false
+			chamber_kind = null
 		await get_tree().create_timer(0.19).timeout
 		_play(forward_sound, _at("eject"), -2.0, "foley")
 		if loaded > 0:
-			loaded -= 1
-			chambered = true
+			_chamber_next()
 		_show_hud()
 		racked.emit(spent)
 		return
@@ -778,8 +793,9 @@ func _rack(spent: bool) -> void:
 	if _bolt != null:
 		_bolt.visible = false                        # the action open: the port dark
 	if spent or chambered:
-		_eject(spent)
+		_eject(spent, last_kind if spent else chamber_kind)
 		chambered = false
+		chamber_kind = null
 	await get_tree().create_timer(0.05).timeout
 	_play(forward_sound, _at("eject"), -2.0, "foley")
 	var tw2 := create_tween()
@@ -789,25 +805,33 @@ func _rack(spent: bool) -> void:
 	if _bolt != null:
 		_bolt.visible = true
 	if loaded > 0:
-		loaded -= 1
-		chambered = true
+		_chamber_next()
 	_kick_v += 3.0
 	_show_hud()
 	racked.emit(spent)
 
 
-# a hull out of the ejection port: drawn as the gun is for a moment, then a body falling to the floor
-func _eject(spent: bool) -> void:
+# the tube's front shell into the chamber, its kind with it
+func _chamber_next() -> void:
+	_tube_fit()
+	chamber_kind = tube.pop_front() if not tube.is_empty() else normal_kind()
+	loaded -= 1
+	chambered = true
+
+
+# a hull out of the ejection port (its kind's model): drawn as the gun is for a moment, then a body falling to the floor
+func _eject(spent: bool, kind: HSShellType = null) -> void:
 	var s := _sock.get("eject") as Node3D
 	if s == null:
 		return
-	var hull := (spent_model if spent else shell_model).instantiate() as Node3D
+	var model := _model_of(kind, spent)
+	var hull := model.instantiate() as Node3D
 	_gun.add_child(hull)
 	hull.position = _gun.to_local(s.global_position)
 	hull.basis = Basis(Vector3(0, 0, 1), deg_to_rad(90.0)) * Basis(Vector3(1, 0, 0), deg_to_rad(randf_range(-15, 15)))
 	_view_model(hull)
 	var v := Vector3(randf_range(-0.4, -0.1), randf_range(1.2, 1.8), randf_range(1.9, 2.6))   # gun frame: up, out to the right
-	_flying.append([hull, v, Vector3(randf_range(-14, 14), randf_range(-6, 6), randf_range(10, 18)), 0.0, spent])
+	_flying.append([hull, v, Vector3(randf_range(-14, 14), randf_range(-6, 6), randf_range(10, 18)), 0.0, model])
 	ejected += 1
 
 
@@ -832,7 +856,7 @@ func _fly(dt: float) -> void:
 
 # the hull in the room: falling, bouncing off what it meets, rolling along the floor on its side and lying still (by
 # rays of its own: a body this small sinks through a level's thin floor in a physics engine's slop)
-func _drop(hull: Node3D, vel: Vector3, spent: bool) -> void:
+func _drop(hull: Node3D, vel: Vector3, model: PackedScene) -> void:
 	var at := hull.global_transform
 	hull.queue_free()
 	# out of the view through a wall you stand by (it was drawn in front of it): this side of it, bounced off it
@@ -848,7 +872,7 @@ func _drop(hull: Node3D, vel: Vector3, spent: bool) -> void:
 			at.origin = (hit["position"] as Vector3) + n * 0.04
 			if vel.dot(n) < 0.0:
 				vel = (vel - n * vel.dot(n) * 1.35) * 0.6
-	var m := (spent_model if spent else shell_model).instantiate() as Node3D
+	var m := model.instantiate() as Node3D
 	_host().add_child(m)
 	m.global_transform = at
 	for gi in m.find_children("*", "GeometryInstance3D", true, false):
@@ -954,16 +978,16 @@ func _to_pose(k: float, secs: float) -> void:
 # then pushed forward into the tube until its rim's past the latch (the click)
 func _insert_one() -> void:
 	var port := _sock_at("port")
-	var shell := shell_model.instantiate() as Node3D
+	var shell := _model_of(load_kind, false).instantiate() as Node3D
 	_gun.add_child(shell)
 	_view_model(shell)
 	var level := Basis(Vector3(0, 0, -1), deg_to_rad(90.0))          # the shell's +Y (its crimp) toward the muzzle
 	var tilt := Basis(Vector3(0, 0, 1), deg_to_rad(30.0)) * level     # its nose up toward the port
-	var tube := _pump0.y - port.y if _pump != null else 0.0135        # the tube's axis over the port's face
+	var tube_y := _pump0.y - port.y if _pump != null else 0.0135      # the tube's axis over the port's face
 	var s_from := Transform3D(tilt, port + Vector3(-0.075, -0.15, 0.025))
 	var s_tip := Transform3D(tilt, port + Vector3(-0.052, -0.030, 0.0))          # its nose just in the port
-	var s_up := Transform3D(level, port + Vector3(-0.030, tube, 0.0))            # in the port on the tube's line
-	var s_in := Transform3D(level, port + Vector3(0.046, tube, 0.0))             # its base past the tube's mouth
+	var s_up := Transform3D(level, port + Vector3(-0.030, tube_y, 0.0))          # in the port on the tube's line
+	var s_in := Transform3D(level, port + Vector3(0.046, tube_y, 0.0))           # its base past the tube's mouth
 	shell.transform = s_from
 	var tw := create_tween()
 	tw.tween_property(shell, "transform", s_tip, insert_secs * 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
@@ -972,6 +996,8 @@ func _insert_one() -> void:
 	await tw.finished
 	_play(insert_sound, _at("port"), -4.0, "foley")
 	shell.queue_free()
+	_tube_fit()
+	tube.append(load_kind if load_kind != null else normal_kind())
 	loaded += 1
 	spare -= 1
 	_kick_v += 1.5
@@ -1054,15 +1080,6 @@ func _process(dt: float) -> void:
 	var r := Basis.from_euler(Vector3(rx, ry, rz))
 	_rig.transform = Transform3D(Basis(), pivot + off) * Transform3D(r, Vector3.ZERO) * Transform3D(Basis(), -pivot)
 	visible = owned and _lower < 0.999
-	# the flash: out after a frame or two, the light falling off
-	if _flash_t > 0.0:
-		_flash_t -= dt
-		if _flash_t <= 0.0:
-			_flash.visible = false
-	if _flash_fresh:
-		_flash_fresh = false                          # (the first frame drawn after the shot gets the whole flash, at any rate)
-	else:
-		_flash_light.light_energy = maxf(0.0, _flash_light.light_energy - dt * 110.0)
 	if _flying.size() > 0:
 		_fly(dt)
 	_carry_light(cam)
@@ -1133,65 +1150,3 @@ func _play(st: AudioStream, at: Vector3, db: float, kind: String) -> void:
 	p.global_position = at
 	p.play()
 	p.finished.connect(p.queue_free)
-
-
-func _make_star(sd := 7) -> Texture2D:
-	var n := 128
-	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = sd
-	var rays: Array = []
-	for i in 7:
-		rays.append([rng.randf() * TAU, rng.randf_range(0.55, 1.0), rng.randf_range(0.05, 0.12)])
-	for y in n:
-		for x in n:
-			var u := (x + 0.5) / n * 2.0 - 1.0
-			var v := (y + 0.5) / n * 2.0 - 1.0
-			var r := sqrt(u * u + v * v)
-			var a := atan2(v, u)
-			var c := exp(-r * r * 22.0) * 1.2
-			for ray in rays:
-				var da := absf(wrapf(a - float(ray[0]), -PI, PI))
-				c += exp(-da * da / (float(ray[2]) * float(ray[2]))) * clampf(1.0 - r / float(ray[1]), 0.0, 1.0) * 0.7
-			c = clampf(c, 0.0, 1.0)
-			img.set_pixel(x, y, Color(1.0, 0.85 + 0.15 * c, 0.6 + 0.4 * c, c))
-	return ImageTexture.create_from_image(img)
-
-
-func _make_puff() -> Texture2D:
-	var n := 64
-	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
-	var noise_t := FastNoiseLite.new()
-	noise_t.seed = 3
-	noise_t.frequency = 0.08
-	for y in n:
-		for x in n:
-			var u := (x + 0.5) / n * 2.0 - 1.0
-			var v := (y + 0.5) / n * 2.0 - 1.0
-			var r := sqrt(u * u + v * v)
-			var a := clampf(1.0 - r, 0.0, 1.0)
-			a = a * a * (0.65 + 0.35 * noise_t.get_noise_2d(x, y))
-			img.set_pixel(x, y, Color(1, 1, 1, clampf(a, 0.0, 1.0)))
-	return ImageTexture.create_from_image(img)
-
-
-func _make_hole() -> Texture2D:
-	var n := 64
-	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 11
-	var noise_t := FastNoiseLite.new()
-	noise_t.seed = 5
-	noise_t.frequency = 0.2
-	for y in n:
-		for x in n:
-			var u := (x + 0.5) / n * 2.0 - 1.0
-			var v := (y + 0.5) / n * 2.0 - 1.0
-			var r := sqrt(u * u + v * v) + 0.12 * noise_t.get_noise_2d(x, y)
-			var hole := clampf((0.32 - r) / 0.06, 0.0, 1.0)            # the hole, black
-			var ring := clampf(1.0 - absf(r - 0.42) / 0.16, 0.0, 1.0) * 0.6   # the chipped edge round it, lighter
-			var a := maxf(hole, ring * 0.7)
-			var c := Color(0.02, 0.02, 0.02).lerp(Color(0.55, 0.52, 0.48), ring * (1.0 - hole))
-			c.a = a
-			img.set_pixel(x, y, c)
-	return ImageTexture.create_from_image(img)

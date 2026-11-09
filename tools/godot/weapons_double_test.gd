@@ -244,6 +244,39 @@ func _initialize() -> void:
 	if shell_log.size() != 1 or not fired_ok or float(g("opened")) > 0.01 or g("reloading"):
 		bad("a shot during the reload didn't stop it, shut it and fire (%d in, fired %s)" % [shell_log.size(), fired_ok])
 
+	# 7b. a shell of another kind in one barrel: the explosive popped into the right one (the only one of its kind in
+	# the pocket), the left left empty; fired, the right barrel's muzzle flashes its own way, the left's doesn't
+	for i in 3:
+		gun.pull()
+		await until(func() -> bool: return not g("busy"), 1.0)
+	var exk = load("res://addons/horrorstudio_weapons/shells/explosive.tres")
+	var normal = gun.normal_kind()
+	gun.add_shells(1, exk)
+	gun.set_load_kind(exk)
+	var buck_kept := int((g("pocket") as Dictionary).get("buckshot", -1))
+	gun.reload()
+	await until(func() -> bool: return not g("busy"), 4.0)
+	var kinds_in: Array = (g("barrel_kind") as Array).map(func(k): return str(k.get("id")) if k != null else "none")
+	var m0 = gun.muzzle(0)
+	var m1 = gun.muzzle(1)
+	var s0 := int(m0.get("shots"))
+	var s1 := int(m1.get("shots"))
+	var im := get_first_node_in_group("hs_impacts")
+	var blasts0 := int(im.get("blasts")) if im != null else 0
+	gun.pull()
+	await frames(1)
+	var r0: Dictionary = m0.report()
+	im = get_first_node_in_group("hs_impacts")
+	var blasted := (int(im.get("blasts")) if im != null else 0) - blasts0
+	await until(func() -> bool: return not g("busy"), 2.0)
+	say("kinds", "live %s, the chambers' kinds %s; fired: the right muzzle flashed %d (%s), the left %d; %d blast" % [
+		str(g("live")), str(kinds_in), int(m0.get("shots")) - s0, r0["look"], int(m1.get("shots")) - s1, blasted])
+	if g("live") != [false, false] or kinds_in[0] != "explosive" or int(m0.get("shots")) - s0 != 1 or int(m1.get("shots")) - s1 != 0 or str(r0["look"]) != "Explosive" or blasted != 1:
+		bad("the explosive shell in the right barrel didn't fire from its own muzzle with its own flash and blast (%s, %s, %s)" % [str(kinds_in), str(r0), blasted])
+	gun.set_load_kind(normal)
+	if int(g("spare")) != buck_kept:
+		bad("the buckshot kept in the pocket didn't come back with T (%d, %d)" % [int(g("spare")), buck_kept])
+
 	# 8. the double found lying in the room and taken: carried and drawn up
 	gun.set("owned", false)
 	gun.set("_lower", 1.0)
