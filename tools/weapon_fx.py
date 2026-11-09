@@ -11,6 +11,15 @@ the plugin reads whatever is there:
                       alpha where it covers (its colour neutral: the impact tints it by what was hit)
 - `scorch_<n>_albedo/normal/orm/emission.png` (n 0..1): an explosive shell's crater: a deeper broken hole, cracks
                       running out of it, soot fanned round it, embers glowing in it (the emission, faded in play)
+- `blast_<n>_albedo/normal/orm.png` (n 0..2): pellets landing together in a soft wall: their holes run into one
+                      ragged hole, the paper torn back round it in flaps, the plaster broken out, cracks (the shot
+                      column at close range, a pattern's merged middle)
+- `smear_<n>_albedo/normal/orm.png` (n 0..1): a lead pellet flattened on concrete, stone or steel: a grey metallic
+                      splash over a shallow dent, chips round it (the ORM's blue its metal)
+- `wad_0_albedo/normal/orm.png`: a wad's strike a few metres out: a shallow dent, a scuffed ring, its petals' marks
+- `soot_0_albedo.png` the smoke a shot from under about 40 cm leaves on the wall: a black ring fanned out round the hole
+- `grains_0_albedo.png` the powder's grains a shot from under about 90 cm peppers round it (the stippling): burnt and
+                      unburnt specks, thick in the middle, thinning out (docs/research/shotgun_damage.md)
 
     python tools/weapon_fx.py [--out DIR]       make them
     python tools/weapon_fx.py check             WEAPONFX: every map there and well formed, the noise tiling, each
@@ -255,6 +264,185 @@ def scorch(seed, n=512):
     return rgba, nrm, orm, em, h
 
 
+BLASTS = 3
+SMEARS = 2
+
+
+def blast(seed, n=256):
+    """Pellets landing together in a soft wall (plaster, plasterboard and its paper or wallpaper): their holes run
+    into one ragged hole about two fifths of the decal across (the shot column at close range, or a pattern's merged
+    middle), the paper torn back round it in flaps, the plaster under it broken out to about three quarters, cracks
+    running from it. Returns (rgba, normal, orm, h)."""
+    rng = np.random.default_rng(seed + 300)
+    yy, xx = np.mgrid[0:n, 0:n]
+    u = (xx + 0.5) / n * 2 - 1
+    v = (yy + 0.5) / n * 2 - 1
+    r = np.sqrt(u * u + v * v)
+    a = np.arctan2(v, u)
+    nz = spectral(n, 1.9, seed * 13 + 1, lo=2.0, hi=40)
+    fine = spectral(n, 1.4, seed * 13 + 2, lo=12.0, hi=110)
+    # the hole: the pellets' own holes (a few), run together, ragged
+    hole = np.zeros((n, n))
+    for i in range(int(rng.integers(6, 10))):
+        rr = rng.uniform(0.0, 0.26) * np.sqrt(rng.uniform(0.2, 1.0))
+        th = rng.uniform(0, 2 * np.pi)
+        cx, cy = rr * np.cos(th), rr * np.sin(th)
+        rad = rng.uniform(0.085, 0.13)
+        d = np.sqrt((u - cx) ** 2 + (v - cy) ** 2) / rad
+        hole = np.maximum(hole, np.clip((1.0 - d) / 0.12 + 0.5 * nz * 0.3, 0.0, 1.0))
+    core = np.clip((0.2 * (1 + 0.25 * nz) - r) / 0.03, 0.0, 1.0)
+    hole = np.clip(np.maximum(hole, core), 0.0, 1.0)
+    jag = polar(spectral(256, 1.6, seed * 13 + 3, lo=3.0, hi=60), a, r, 4, 0.3)
+    lobes = sum(rng.uniform(0.04, 0.09) * np.cos(k * a + rng.uniform(0, 2 * np.pi)) for k in (2, 3, 5))
+    r_break = 0.72 * (1.0 + lobes + 0.08 * jag)
+    broke = np.clip((r_break - r) / 0.02, 0.0, 1.0)
+    t = np.clip(r / r_break, 0.0, 1.0)
+    # the paper: torn back round the hole in flaps (a ring past the hole, cut by angle into tongues)
+    flap_a = 0.5 + 0.5 * np.cos(a * rng.integers(5, 9) + 2.5 * polar(spectral(256, 2.0, seed * 13 + 4, lo=2.0, hi=20), a, r, 1, 0.1))
+    ring = np.clip(1.0 - np.abs(r - 0.36) / 0.09, 0.0, 1.0)
+    flaps = np.clip((flap_a * 1.4 - 0.55) * ring * 2.0, 0.0, 1.0) * (1.0 - hole)
+    # cracks out of the broken plaster
+    crack = np.zeros((n, n))
+    for i in range(int(rng.integers(4, 7))):
+        th = rng.uniform(0, 2 * np.pi)
+        x, y = 0.45 * np.cos(th), 0.45 * np.sin(th)
+        head = th
+        for s in range(4):
+            head += rng.normal(0.0, 0.3)
+            ln = rng.uniform(0.07, 0.13)
+            nx2, ny2 = x + ln * np.cos(head), y + ln * np.sin(head)
+            d, _ = seg_dist(u, v, x, y, nx2, ny2)
+            crack = np.maximum(crack, np.clip(1.0 - d / (0.0045 * (1 - s / 5) + 0.0015), 0.0, 1.0))
+            x, y = nx2, ny2
+    crack *= (1.0 - broke * 0.6)
+    # height: the paper's layer gone, the broken plaster falling in toward the hole, the hole deep, flaps standing
+    paper = 0.05
+    h = -paper * broke - 0.5 * (1.0 - t) ** 1.5 * broke - 1.3 * hole
+    h += 0.014 * fine * broke * (1.0 - hole) + 0.02 * nz * broke
+    h += 0.1 * flaps - 0.1 * crack
+    h = blur(h, 0.8)
+    # albedo: black down the hole, the broken plaster light and uneven, the torn paper's back pale, cracks dark
+    plaster = (0.84 + 0.02 * fine + 0.02 * nz) * (0.72 + 0.28 * t)
+    col = plaster * broke + 0.9 * (1.0 - broke)
+    col = col * (1.0 - 0.96 * hole) * (1.0 - 0.55 * crack)
+    col = np.where(flaps > 0.05, col * (1 - flaps) + 0.97 * flaps, col)
+    dust = np.clip(1.0 - r / (r_break * 1.4), 0.0, 1.0) ** 2 * np.clip(0.35 + 0.2 * nz, 0, 1) * (1.0 - broke)
+    alpha = np.clip(np.maximum(broke, crack * 0.9) + 0.3 * dust, 0.0, 1.0)
+    rgba = np.stack([col, col * 0.985, col * 0.96, alpha], -1)
+    nrm = normals(h, n / 14.0)
+    occ = cavity(h * n / 40.0, radii=(2.0, 7.0, 18.0)) * (1.0 - 0.85 * hole)
+    orm = np.stack([occ, np.clip(0.9 - 0.03 * fine, 0, 1), np.zeros_like(h)], -1)
+    return rgba, nrm, orm, h
+
+
+def soot(seed=0, n=256):
+    """The smoke a shot from under about 40 cm leaves on a wall: a soot ring fanned out round the hole, a few grains
+    caught in it (the rest of the powder is `grains`). Flat: only colour. Returns rgba."""
+    rng = np.random.default_rng(seed + 400)
+    yy, xx = np.mgrid[0:n, 0:n]
+    u = (xx + 0.5) / n * 2 - 1
+    v = (yy + 0.5) / n * 2 - 1
+    r = np.sqrt(u * u + v * v)
+    a = np.arctan2(v, u)
+    fan = polar(spectral(256, 2.0, seed * 7 + 11, lo=3.0, hi=30), a, r, 1, 0.06)
+    reach = 0.55 * (0.8 + 0.25 * np.tanh(fan))
+    sooty = np.clip(1.0 - r / reach, 0.0, 1.0) ** 1.4 * (0.88 + 0.12 * np.tanh(spectral(n, 1.8, seed * 7 + 12, lo=4.0, hi=50)))
+    specks = np.zeros((n, n))
+    for i in range(70):                                         # a few burnt grains caught in the smoke
+        rr = 0.6 * np.sqrt(rng.uniform(0, 1)) ** 0.8
+        th = rng.uniform(0, 2 * np.pi)
+        cx, cy = rr * np.cos(th), rr * np.sin(th)
+        rad = rng.uniform(0.004, 0.011)
+        specks = np.maximum(specks, np.clip(1.0 - np.sqrt((u - cx) ** 2 + (v - cy) ** 2) / rad, 0.0, 1.0) * (1.0 - 0.6 * rr))
+    alpha = np.clip(np.maximum(sooty * 0.92, specks), 0.0, 1.0)
+    col = 0.06 + 0.05 * (1.0 - sooty)
+    return np.stack([col * 1.0, col * 0.96, col * 0.92, alpha], -1)
+
+
+def grains(seed=0, n=256):
+    """The powder's grains a shot from under about 90 cm peppers round the hole (the stippling the forensic books
+    measure): burnt specks and a few paler unburnt ones, thick in the middle and thinning out to the edge, each a
+    little pit with a darker core. Flat: only colour. Returns rgba."""
+    rng = np.random.default_rng(seed + 500)
+    yy, xx = np.mgrid[0:n, 0:n]
+    u = (xx + 0.5) / n * 2 - 1
+    v = (yy + 0.5) / n * 2 - 1
+    alpha = np.zeros((n, n))
+    col = np.full((n, n), 0.08)
+    for i in range(900):
+        rr = 0.92 * rng.uniform(0, 1) ** 0.75                   # (thicker in the middle: more of them at small radii)
+        th = rng.uniform(0, 2 * np.pi)
+        cx, cy = rr * np.cos(th), rr * np.sin(th)
+        rad = rng.uniform(0.004, 0.011) * (1.15 - 0.4 * rr)
+        d = np.sqrt((u - cx) ** 2 + (v - cy) ** 2) / rad
+        a = np.clip(1.4 - d, 0.0, 1.0) * (1.0 - 0.55 * rr)
+        pale = rng.uniform() < 0.18                              # an unburnt grain: greyer, a flake of the powder itself
+        c = 0.30 if pale else 0.05
+        take = a > alpha
+        col = np.where(take, c + 0.06 * np.clip(d, 0, 1), col)
+        alpha = np.maximum(alpha, a)
+    return np.stack([col, col * 0.97, col * 0.94, np.clip(alpha, 0.0, 1.0)], -1)
+
+
+def wad(seed=0, n=128):
+    """A shotgun wad's strike a few metres out: a shallow round dent with a scuffed ring and its petals' four marks
+    round it, no hole. Returns (rgba, normal, orm, h)."""
+    rng = np.random.default_rng(seed + 500)
+    yy, xx = np.mgrid[0:n, 0:n]
+    u = (xx + 0.5) / n * 2 - 1
+    v = (yy + 0.5) / n * 2 - 1
+    r = np.sqrt(u * u + v * v)
+    a = np.arctan2(v, u)
+    fine = spectral(n, 1.5, seed * 5 + 21, lo=8.0, hi=60)
+    dish = np.clip(1.0 - r / 0.38, 0.0, 1.0)
+    ring = np.clip(1.0 - np.abs(r - 0.36) / 0.06, 0.0, 1.0)
+    rot = rng.uniform(0, np.pi / 2)
+    petals = np.zeros((n, n))
+    for k in range(4):
+        th = rot + k * np.pi / 2 + rng.normal(0, 0.12)
+        cx, cy = 0.62 * np.cos(th), 0.62 * np.sin(th)
+        d, _ = seg_dist(u, v, cx * 0.85, cy * 0.85, cx * 1.15, cy * 1.15)
+        petals = np.maximum(petals, np.clip(1.0 - d / 0.07, 0.0, 1.0))
+    h = -0.25 * dish ** 1.2 - 0.04 * petals + 0.02 * fine * dish
+    h = blur(h, 0.7)
+    scuff = np.clip(ring * 0.8 + petals * 0.7, 0.0, 1.0)
+    col = (0.82 - 0.24 * scuff + 0.05 * fine) * (0.92 + 0.08 * (1 - dish))
+    alpha = np.clip(np.maximum(np.clip(dish * 3.0, 0, 1) * 0.97, scuff * 0.9), 0.0, 1.0)
+    rgba = np.stack([col, col * 0.98, col * 0.95, alpha], -1)
+    nrm = normals(h, n / 10.0)
+    occ = cavity(h * n / 30.0)
+    orm = np.stack([occ, np.full_like(h, 0.85), np.zeros_like(h)], -1)
+    return rgba, nrm, orm, h
+
+
+def smear(seed, n=128):
+    """A lead pellet flattened on a hard surface (concrete, stone, steel): no hole, a grey metallic splash thrown out in
+    streaks over a shallow dent, its rim crushed, a few chips round it. Returns (rgba, normal, orm, h)."""
+    rng = np.random.default_rng(seed + 600)
+    yy, xx = np.mgrid[0:n, 0:n]
+    u = (xx + 0.5) / n * 2 - 1
+    v = (yy + 0.5) / n * 2 - 1
+    r = np.sqrt(u * u + v * v)
+    a = np.arctan2(v, u)
+    streak = polar(spectral(128, 1.8, seed * 9 + 31, lo=3.0, hi=40), a, r, 1, 0.07)
+    reach = 0.5 * (0.7 + 0.35 * np.tanh(streak))
+    lead = np.clip(1.0 - r / reach, 0.0, 1.0) ** 0.8
+    dent = np.clip(1.0 - r / 0.22, 0.0, 1.0)
+    chipn = spectral(n, 2.2, seed * 9 + 32, lo=3.0, hi=24)
+    band = np.clip(1.0 - np.abs(r - 0.34) / 0.12, 0.0, 1.0)
+    chips = np.clip((chipn * 0.5 + band - 1.25) / 0.1, 0.0, 1.0) * np.clip(band * 4, 0, 1)
+    h = -0.3 * dent ** 1.4 + 0.05 * lead * (1 - dent) - 0.05 * chips
+    h = blur(h, 0.6)
+    col = 0.42 + 0.06 * np.tanh(streak)
+    alpha = np.clip(np.maximum(np.clip(lead * 1.6, 0, 1), chips * 0.8), 0.0, 1.0)
+    rgba = np.stack([col * 0.98, col, col * 1.04, alpha], -1)
+    nrm = normals(h, n / 12.0)
+    occ = cavity(h * n / 30.0)
+    metal = np.clip(lead * 1.2 - chips, 0.0, 1.0) * 0.8
+    orm = np.stack([occ, np.clip(0.45 + 0.4 * (1 - lead), 0, 1), metal], -1)
+    return rgba, nrm, orm, h
+
+
 def make(out):
     out.mkdir(parents=True, exist_ok=True)
     save(out / "flash_noise.png", flash_noise(), "L")
@@ -270,7 +458,23 @@ def make(out):
         save(out / f"scorch_{i}_normal.png", nrm * 0.5 + 0.5, "RGB")
         save(out / f"scorch_{i}_orm.png", orm, "RGB")
         save(out / f"scorch_{i}_emission.png", em, "RGB")
-    print(f"  {2 + 3 * CRATERS + 4 * SCORCHES} maps into {out}")
+    for i in range(BLASTS):
+        rgba, nrm, orm, _ = blast(i)
+        save(out / f"blast_{i}_albedo.png", rgba, "RGBA")
+        save(out / f"blast_{i}_normal.png", nrm * 0.5 + 0.5, "RGB")
+        save(out / f"blast_{i}_orm.png", orm, "RGB")
+    for i in range(SMEARS):
+        rgba, nrm, orm, _ = smear(i)
+        save(out / f"smear_{i}_albedo.png", rgba, "RGBA")
+        save(out / f"smear_{i}_normal.png", nrm * 0.5 + 0.5, "RGB")
+        save(out / f"smear_{i}_orm.png", orm, "RGB")
+    rgba, nrm, orm, _ = wad(0)
+    save(out / "wad_0_albedo.png", rgba, "RGBA")
+    save(out / "wad_0_normal.png", nrm * 0.5 + 0.5, "RGB")
+    save(out / "wad_0_orm.png", orm, "RGB")
+    save(out / "soot_0_albedo.png", soot(0), "RGBA")
+    save(out / "grains_0_albedo.png", grains(0), "RGBA")
+    print(f"  {2 + 3 * CRATERS + 4 * SCORCHES + 3 * BLASTS + 3 * SMEARS + 5} maps into {out}")
 
 
 def check(out):
@@ -339,12 +543,32 @@ def check(out):
         em = img(f"scorch_{i}_emission.png", "RGB", 512)
         if em is not None and em[..., 0].max() < 0.5:
             errs.append(f"scorch_{i}: no embers in its emission")
+    for i in range(BLASTS):
+        bowl(f"blast_{i}", 256, 0.05, 0.5)
+    for i in range(SMEARS):
+        bowl(f"smear_{i}", 128, 0.02, 0.4)
+        om = img(f"smear_{i}_orm.png", "RGB", 128)
+        if om is not None and om[56:72, 56:72, 2].mean() < 0.3:
+            errs.append(f"smear_{i}: the lead isn't metallic in its middle ({om[56:72, 56:72, 2].mean():.2f})")
+    bowl("wad_0", 128, 0.01, 0.4)
+    st = img("soot_0_albedo.png", "RGBA", 256)
+    if st is not None and not (st[128, 128, 3] > 0.6 and st[128, 128, 0] < 0.2 and st[2, 2, 3] < 0.05):
+        errs.append("soot_0 isn't a dark ring fading out (its middle dark and covered, its corners clear)")
+    gr = img("grains_0_albedo.png", "RGBA", 256)
+    if gr is not None:
+        yy, xx = np.mgrid[0:256, 0:256]
+        rad = np.sqrt(((xx + 0.5) / 128 - 1) ** 2 + ((yy + 0.5) / 128 - 1) ** 2)
+        mid = (gr[..., 3] > 0.3)[rad < 0.3].mean()
+        edge = (gr[..., 3] > 0.3)[(rad > 0.6) & (rad < 0.9)].mean()
+        cover = (gr[..., 3] > 0.3).mean()
+        if not (mid > edge * 1.8 and 0.02 < cover < 0.35 and gr[2, 2, 3] < 0.05 and gr[..., 0][gr[..., 3] > 0.5].mean() < 0.3):
+            errs.append(f"grains_0 isn't dark specks thick in the middle thinning out (middle {mid:.3f}, edge {edge:.3f}, cover {cover:.3f})")
     for e in errs:
         print("ERROR " + e)
     if errs:
         print("WEAPONFX FAILED")
         return 1
-    print(f"WEAPONFX ok ({CRATERS} craters leaning in {min(leans):.2f}..{max(leans):.2f}, {SCORCHES} scorches, the noise tiling)")
+    print(f"WEAPONFX ok ({CRATERS} craters leaning in {min(leans):.2f}..{max(leans):.2f}, {SCORCHES} scorches, {BLASTS} torn holes, {SMEARS} lead smears, a wad's dent, the powder's soot and grains, the noise tiling)")
     return 0
 
 

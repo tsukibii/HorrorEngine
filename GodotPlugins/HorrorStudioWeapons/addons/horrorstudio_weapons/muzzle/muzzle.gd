@@ -5,7 +5,7 @@ extends Node3D
 ## A gun's muzzle (DECISIONS 2026-11-09, latest: "a generic muzzle system that can be used later for other guns"):
 ## its flash, the light the flash throws, sparks, the smoke thrown out with the shot and the smoke it trails after it,
 ## wherever the gun goes. Put it at the end of a barrel, its -Z along the barrel, and call `fire()` with the shell's
-## HSMuzzleFlash (or none: its own `flash`). HSShotgun and HSDoubleBarrel make theirs at their muzzles' sockets.
+## HSMuzzleFlash (or none: its own `flash`). The guns (HSGun: HSDoubleBarrel) make theirs at their muzzles' sockets.
 ##
 ## The flash is drawn the user's way: each wing a run of slightly elongated spheres that intersect, their fronts
 ## culled; a noise is mapped triplanar onto each sphere and blended by the view's normal dotted with the surface's
@@ -229,13 +229,14 @@ func _build() -> void:
 	trail.global_transform = Transform3D.IDENTITY
 
 
-## A quad for smoke particles: the plugin's puff, lit and added with its light capped (muzzle/puff.gdshader); an
-## impact's dust and an explosion's smoke use it too.
-static func puff_mesh(tex: Texture2D) -> QuadMesh:
+## A quad for smoke particles: the plugin's puff, lit with its light capped (muzzle/puff.gdshader), hiding `occlude` of
+## what's behind it as much as it covers (0: only added); an impact's dust (added: 0) and an explosion's smoke use it too.
+static func puff_mesh(tex: Texture2D, occlude := 0.7) -> QuadMesh:
 	var q := QuadMesh.new()
 	var m := ShaderMaterial.new()
 	m.shader = load(DIR + "muzzle/puff.gdshader")
 	m.set_shader_parameter("puff_tex", tex)
+	m.set_shader_parameter("occlude", occlude)
 	q.material = m
 	return q
 
@@ -295,9 +296,11 @@ func _shade(lk: HSMuzzleFlash) -> void:
 		tm.set_shader_parameter("smoke_color", lk.smoke_color)
 		tm.set_shader_parameter("glow", lk.smoke_glow)
 		tm.set_shader_parameter("density", clampf(lk.smoke_density, 0.0, 2.0))
+		tm.set_shader_parameter("light_cap", lk.smoke_light_cap)
 	var pm := puffs.mesh.surface_get_material(0) as ShaderMaterial if puffs.mesh != null else null
 	if pm != null:
 		pm.set_shader_parameter("glow", lk.smoke_glow)
+		pm.set_shader_parameter("light_cap", lk.smoke_light_cap)
 
 
 # the wings and the plume as spheres in the MultiMesh: returns how many

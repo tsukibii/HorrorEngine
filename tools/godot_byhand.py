@@ -5,7 +5,7 @@ Godot instead of through Director I can"; guides/godot_by_hand): what guides/god
     python tools/godot_byhand.py new ~/Games/MyGame [--name "My Game"]
         a new project: project.godot (the HorrorStudio Look, UI and Weapons plugins on, the balanced look's settings),
         addons/horrorstudio_look, addons/horrorstudio_ui (the HUD and the quest marker), addons/horrorstudio_weapons
-        (HSShotgun: a pump-action shotgun in first person, its shells and pickups),
+        (HSDoubleBarrel: a double-barrelled shotgun in first person, its shells, what a shot leaves, pickups),
         HumanShaders/ (the skin's and the eyes' textures), starter/ (the by-hand guides' scripts: the player and its
         flashlight, doors and locks, the story on screen, the music and room tones, scares, pickups, notes, a
         character who doesn't like the light), sfx/ (the studio's sound shelf, CC0), music/ (the four moods),

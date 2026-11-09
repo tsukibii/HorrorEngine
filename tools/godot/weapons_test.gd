@@ -1,13 +1,16 @@
-## WEAPONS's playthrough (tools/godot/weapons_check.py): the weapons plugin's shotgun under the starter's player's eye
-## in the hotel corridor, played headless (--fixed-fps 60). Its place in the view (low on the right, the barrel's line
-## on the view's middle), drawn as a view model (no shadow, z-clipped), the flashlight carried under its barrel; a shot
-## at a dummy (the pellets in their cone, a hole each, the dummy told, the noise heard, the ears ringing, the kick), the
-## pump racked by itself (back to its stop, the bolt's face gone while open, the hull out of the port and onto the
-## floor, the next shell in), a crate pushed, the tube fired dry to a click, the reload a shell at a time (each one
-## from under the gun into the port and on into the tube, the count, the pump racked), a reload stopped by a shot that
-## fires as soon as it can, never faster than the flash limit, the keys (left click, R, Q), the box of shells taken
-## with E, lowered and raised, and the gun itself picked up and drawn into view. Prints `WEAPONS <what> <how>` lines
-## and `WEAPONS result {errors}`, quits.
+## WEAPONS's playthrough (tools/godot/weapons_check.py): the weapons plugin's shotgun, the double barrel (HSDoubleBarrel,
+## DECISIONS 2026-11-09, latest: "I don't want the single barrel shotgun, only the double barrel one"), under the
+## starter's player's eye in the hotel corridor, played headless (--fixed-fps 60). Only its barrels in the view, drawn
+## as a view model (no shadow, z-clipped), the flashlight carried under them; a shot at a dummy (the pellets in the right
+## barrel's cone, every one a hole, the dummy told, the noise heard, the ears ringing, the kick), the right barrel then
+## the left then a click, aimed and under a 4:3 tape, a crate pushed, never three flashes in a second; the reload (up
+## into the view, broken open with the chambers in it, the hulls flicked out onto the floor, a shell popped into each
+## chamber, shut), one barrel's reload, a full gun looked into, one shell for two, a reload stopped by a shot; the keys
+## (left click, R, Q); something that reacts to being shot, a lamp shot out, the shells' row, running, a wall in front
+## and beside you; the muzzle (a star of wings of intersecting spheres, burnt; its trail); what a 12-gauge leaves on a
+## wall at an arm's length, across a room and down a corridor, and on concrete (docs/research/shotgun_damage.md); the
+## explosive shell in the right barrel and its blast; lowered and raised, the box of shells taken with E, and the gun
+## itself picked up and drawn into view. Prints `WEAPONS <what> <how>` lines and `WEAPONS result {errors}`, quits.
 extends SceneTree
 
 var errors: Array = []
@@ -31,6 +34,10 @@ func bad(e: String) -> void:
 func marks() -> int:
 	var im := get_first_node_in_group("hs_impacts")
 	return (im.get("marks") as Array).size() if im != null else 0
+
+
+func impacts() -> Node:
+	return get_first_node_in_group("hs_impacts")
 
 
 func frames(n: int) -> void:
@@ -103,6 +110,35 @@ func g(prop: String):
 	return gun.get(prop)
 
 
+func sock(nm: String) -> Node3D:
+	return (gun.get("_sock") as Dictionary).get(nm) as Node3D
+
+
+func scr(nm: String) -> Vector2:
+	return on_screen(eye.to_local(sock(nm).global_position))
+
+
+## both chambers loaded again (a script setting `loaded`: the double's chambers follow it once it isn't busy)
+func fill(n := 2) -> void:
+	await until(func() -> bool: return not g("busy"), 4.0)
+	gun.set("loaded", n)
+	await frames(3)
+
+
+## a shot's pattern: how wide its pellets landed (twice the farthest from their middle) and the widest pellet's angle
+## off the way the eye looked
+func pattern(hits: Array, from: Vector3, fwd: Vector3) -> Vector2:
+	var mid := Vector3.ZERO
+	for h in hits:
+		mid += (h["point"] as Vector3) / float(maxi(hits.size(), 1))
+	var across := 0.0
+	var widest := 0.0
+	for h in hits:
+		across = maxf(across, 2.0 * (h["point"] as Vector3).distance_to(mid))
+		widest = maxf(widest, rad_to_deg(((h["point"] as Vector3) - from).angle_to(fwd)))
+	return Vector2(across, widest)
+
+
 ## a step that never comes back (a script error stops a coroutine where it is): what's known so far, then out
 func _watchdog() -> void:
 	bad("the playthrough stopped before the end (a script error above?)")
@@ -111,7 +147,7 @@ func _watchdog() -> void:
 
 
 func _initialize() -> void:
-	create_timer(330.0).timeout.connect(_watchdog)
+	create_timer(400.0).timeout.connect(_watchdog)
 	cfg = JSON.parse_string(FileAccess.get_file_as_string("res://weapons.json"))
 	root.size = Vector2i(1600, 900)
 	var ms := load("res://main.tscn") as PackedScene
@@ -129,8 +165,8 @@ func _initialize() -> void:
 	var fl := float(cfg["floor"])
 	var fear := main.get_node("Fear")
 	var torch := player.get_node("Eye/Flashlight") as Node3D
-	if gun == null or g("_pump") == null or g("_bolt") == null or g("_trigger") == null:
-		bad("the gun or its parts (pump, bolt, trigger) not found: the glb's propgen_part extras")
+	if gun == null or not (gun is HSDoubleBarrel) or g("_barrels") == null or g("_lever") == null or g("_trigger") == null or g("_trigger2") == null:
+		bad("the gun isn't the double or its parts (barrels, lever, triggers) weren't found: the glb's propgen_part extras")
 		print("WEAPONS result " + JSON.stringify({"errors": errors}))
 		quit()
 		return
@@ -138,38 +174,45 @@ func _initialize() -> void:
 	listener.set_script(made("extends Node\nvar got: Array = []\nfunc _ready() -> void:\n\tadd_to_group(\"hs_listener\")\nfunc heard(at: Vector3, loud: float) -> void:\n\tgot.append([at, loud])\n"))
 	main.add_child(listener)
 	var fired_n := [0]
-	var racked_log: Array = []
 	var shell_log: Array = []
 	var empties := [0]
+	var opens := [0]
+	var shuts := [0]
 	var t_now := [0.0]
 	process_frame.connect(func() -> void: t_now[0] += 1.0 / 60.0)
 	gun.fired.connect(func(_h: Array) -> void: fired_n[0] += 1)
-	gun.racked.connect(func(spent: bool) -> void: racked_log.append(spent))
-	gun.shell_in.connect(func(n: int) -> void: shell_log.append([n, t_now[0]]))
+	gun.shell_in.connect(func(n: int) -> void: shell_log.append(n))
 	gun.empty.connect(func() -> void: empties[0] += 1)
+	gun.broke_open.connect(func() -> void: opens[0] += 1)
+	gun.closed.connect(func() -> void: shuts[0] += 1)
 
-	# 1. where it's held: low on the right, its barrel's line meeting the view's middle aim_at_m ahead
+	# 1. held low: only its barrels in the view (the muzzles toward its middle, the breech and the hinge under it, the
+	# butt behind the eye), their line meeting the view's middle aim_at_m ahead; drawn as a view model; the flashlight
+	# carried under the barrels with its beam on the view's middle, its tremor still showing
 	look(eye.global_position + Vector3(-1, 0, 0))
 	await frames(30)
-	var mz: Vector3 = gun.call("_at", "muzzle")
-	var ch: Vector3 = gun.call("_at", "chamber")
-	var c := eye.to_local(ch)
-	var m := eye.to_local(mz)
-	var smz := on_screen(m)
-	var sch := on_screen(c)
+	var mr := scr("muzzle_r")
+	var ml := scr("muzzle_l")
+	var br := scr("breech")
+	var bh := eye.to_local(sock("breech").global_position)
+	var hg := scr("hinge")
+	var butt := eye.to_local(sock("shoulder").global_position)
+	var c := eye.to_local(sock("chamber").global_position)
+	var m := eye.to_local(sock("muzzle").global_position)
 	var bore := (m - c).normalized()
 	var aim := float(g("aim_at_m"))
 	var meet := c + bore * ((-aim - c.z) / bore.z)
-	say("held", "the muzzle at (%.2f, %.2f) of the view, the chamber at (%.2f, %.2f), the bore's line %.1f cm off the middle %.1f m ahead" % [
-		smz.x, smz.y, sch.x, sch.y, Vector2(meet.x, meet.y).length() * 100.0, aim])
-	if smz.x < 0.5 or smz.x > 0.66 or smz.y < 0.48 or smz.y > 0.72:
-		bad("the muzzle isn't toward the view's middle (%.2f, %.2f)" % [smz.x, smz.y])
-	var bt := eye.to_local(gun.call("_at", "shoulder"))
-	var sbt := on_screen(bt)
-	if sch.x < 0.62 or sch.y < 0.7 or (bt.z < -0.05 and sbt.x < 1.0 and sbt.y < 1.0):
-		bad("the receiver isn't low on the right with the stock out of the view (the chamber at %.2f, %.2f; the butt %.2f, %.2f)" % [sch.x, sch.y, sbt.x, sbt.y])
+	say("held", "the muzzles at (%.2f, %.2f) and (%.2f, %.2f) of the view, the breech at (%.2f, %.2f), the hinge at (%.2f, %.2f), the butt %.2f m behind the eye; the barrels' line %.1f cm off the middle %.1f m ahead" % [
+		mr.x, mr.y, ml.x, ml.y, br.x, br.y, hg.x, hg.y, butt.z, Vector2(meet.x, meet.y).length() * 100.0, aim])
+	for mp in [mr, ml]:
+		if mp.x < 0.4 or mp.x > 0.75 or mp.y < 0.45 or mp.y > 0.85:
+			bad("a muzzle isn't in the view toward its middle (%.2f, %.2f)" % [mp.x, mp.y])
+	if not (br.y > 1.0 or bh.z > -0.03) or not (hg.y > 0.95):
+		bad("more than the barrels in the view: the breech at (%.2f, %.2f), the hinge at (%.2f, %.2f)" % [br.x, br.y, hg.x, hg.y])
+	if butt.z < -0.02:
+		bad("the butt isn't behind the eye (%.2f m)" % butt.z)
 	if Vector2(meet.x, meet.y).length() > 0.04:
-		bad("the barrel's line misses the view's middle by %.1f cm" % (Vector2(meet.x, meet.y).length() * 100.0))
+		bad("the barrels' line misses the view's middle by %.1f cm" % (Vector2(meet.x, meet.y).length() * 100.0))
 	var shadowy := 0
 	var unclipped := 0
 	var meshes := 0
@@ -185,13 +228,13 @@ func _initialize() -> void:
 	say("view model", "%d meshes, %d casting a shadow, %d surfaces not z-clipped" % [meshes, shadowy, unclipped])
 	if shadowy > 0 or unclipped > 0 or meshes < 4:
 		bad("the gun isn't a view model (%d meshes, %d shadows, %d not z-clipped)" % [meshes, shadowy, unclipped])
-	var ls := gun.get("_sock")["light"] as Node3D
+	var ls := sock("light")
 	var off := eye.to_local(torch.global_position).distance_to(eye.to_local(ls.global_position))
 	var mid_far := eye.to_global(Vector3(0, 0, -float(g("beam_at_m"))))
 	var ang := rad_to_deg((-torch.global_basis.z).angle_to(mid_far - torch.global_position))
-	say("flashlight", "carried %.1f cm from the barrel's light socket, its beam %.1f° off the view's middle %.0f m ahead" % [off * 100.0, ang, float(g("beam_at_m"))])
+	say("flashlight", "carried %.1f cm from the barrels' light socket, its beam %.1f° off the view's middle %.0f m ahead" % [off * 100.0, ang, float(g("beam_at_m"))])
 	if off > 0.01 or ang > 1.5:
-		bad("the flashlight isn't under the barrel with its beam on the view's middle (%.1f cm, %.1f°)" % [off * 100.0, ang])
+		bad("the flashlight isn't under the barrels with its beam on the view's middle (%.1f cm, %.1f°)" % [off * 100.0, ang])
 	fear.process_mode = Node.PROCESS_MODE_DISABLED  # (the Fear node sets the tremor from its level each frame: held still)
 	torch.set("tremor", 6.0)                       # (its shake: it must still show while the gun carries it)
 	var shook := 0.0
@@ -207,8 +250,11 @@ func _initialize() -> void:
 	if shook < 0.05:
 		bad("the flashlight's tremor doesn't show while the gun carries it")
 	var mode_ok := Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	if g("_hud_ctl") == null:
+		bad("no shells drawn low on the right (the HUD's Shells)")
 
-	# 2. a shot at a dummy that knows it's shot
+	# 2. a shot at a dummy that knows it's shot: the right barrel, its pellets in its own choke's cone, every one a
+	# hole (alone or in a torn one), the dummy told, heard, the ears ringing, the kick, the flash
 	var dummy := StaticBody3D.new()
 	dummy.set_script(made("extends StaticBody3D\nvar got: Array = []\nfunc shot(info: Dictionary) -> void:\n\tgot.append(info)\n"))
 	var dcs := CollisionShape3D.new()
@@ -228,32 +274,31 @@ func _initialize() -> void:
 	await frames(1)
 	var hits: Array = g("last_hits")
 	var on_dummy := hits.filter(func(h): return h["collider"] == dummy).size()
-	var spread := 0.0
-	for h in hits:
-		var d: Vector3 = (h["point"] as Vector3) - from0
-		spread = maxf(spread, rad_to_deg(d.angle_to(fwd0)))
+	var pat0 := pattern(hits, from0, fwd0)
 	var kick := rad_to_deg(float(player.get("pitch")) - p0)
-	var hud_ctl := gun.find_child("Shells", true, false) as Control
 	var heard: Array = listener.get("got")
-	say("shot", "%d pellets hit (%d on the dummy, told %d times), the widest %.1f° off the middle, %d holes, heard %s, the ears ringing %.1f s, the view kicked %.1f°, the flash %.1f" % [
-		hits.size(), on_dummy, (dummy.get("got") as Array).size(), spread, marks() - marks0,
-		str(heard.map(func(x): return x[1])), float(fear.get("_ring")), kick, gun.muzzle().light.light_energy])
-	if int(g("shots")) != 1 or g("chambered"):
-		bad("the shot didn't use the chambered shell (shots %d, chambered %s)" % [int(g("shots")), g("chambered")])
+	var shot0: Dictionary = impacts().get("last_shot") if impacts() != null else {}
+	var torn0: Array = shot0.get("torn", [])
+	var holes0 := int(shot0.get("alone", 0))
+	for t in torn0:
+		holes0 += int(t)
+	say("shot", "the right barrel: %d pellets hit (%d on the dummy, told %d times), the widest %.2f° off the middle (its choke %.1f°), %d marks (%s torn, %d alone), heard %s, the ears ringing %.1f s, the view kicked %.1f°, the flash %.1f; live %s" % [
+		hits.size(), on_dummy, (dummy.get("got") as Array).size(), pat0.y, float(g("chokes").x), marks() - marks0, str(torn0), int(shot0.get("alone", 0)),
+		str(heard.map(func(x): return x[1])), float(fear.get("_ring")), kick, gun.muzzle().light.light_energy, str(g("live"))])
+	if int(g("shots")) != 1 or g("live") != [false, true]:
+		bad("the shot didn't use the right barrel's shell (shots %d, live %s)" % [int(g("shots")), str(g("live"))])
 	if on_dummy < int(g("pellets")) - 1 or (dummy.get("got") as Array).size() != on_dummy:
 		bad("the pellets missed the dummy 2.5 m ahead or it wasn't told (%d of %d hit, told %d)" % [on_dummy, int(g("pellets")), (dummy.get("got") as Array).size()])
-	if spread > float(g("spread_deg")) + 0.6:
-		bad("a pellet left the cone (%.1f° > %.1f°)" % [spread, float(g("spread_deg"))])
-	if marks() - marks0 != hits.size():
-		bad("not a mark for each pellet (%d marks, %d hits)" % [marks() - marks0, hits.size()])
+	if pat0.y > float(g("chokes").x) + 0.05:
+		bad("a pellet left the right barrel's cone (%.2f° > %.2f°)" % [pat0.y, float(g("chokes").x)])
+	if int(shot0.get("pellets", -1)) != hits.size() or holes0 != hits.size():
+		bad("not every pellet made a hole of its own or one in a torn hole (%d of %d: %s)" % [holes0, hits.size(), str(shot0)])
 	if heard.size() != 1 or absf(float(heard[0][1]) - float(g("noise"))) > 0.01:
 		bad("the listeners didn't hear the shot as loud as it is (%s)" % str(heard))
 	if float(fear.get("_ring")) < 1.0:
 		bad("the ears aren't ringing after the shot (the Fear node's ring)")
 	if kick < float(g("recoil_deg")) - 0.5 or kick > float(g("recoil_deg")) + 0.1:
 		bad("the view wasn't kicked up by the recoil (%.2f°)" % kick)
-	if hud_ctl == null:
-		bad("no shells drawn low on the right (the HUD's Shells)")
 	if gun.muzzle().light.light_energy < 1.0 or not gun.muzzle().wings.visible:
 		bad("no muzzle flash at the shot")
 	gun.call("_process", 0.3)                       # (a hitch just after a shot: a 0.3 s frame)
@@ -261,59 +306,47 @@ func _initialize() -> void:
 	say("hitch", "a 0.3 s frame just after the shot: the kick's spring at %.2f" % kick_after)
 	if absf(kick_after) > 0.6:
 		bad("a long frame threw the kick's spring (%.2f)" % kick_after)
-
-	# 3. the pump racked by itself: back to its stop (the bolt's face gone), the hull out, forward, the next shell in
-	var pump := g("_pump") as Node3D
-	var pump0: Vector3 = g("_pump0")
-	var travel := (g("_travel") as Vector3).length()
-	var most := 0.0
-	var bolt_gone := false
-	var t_back := -1.0
-	var t0: float = t_now[0]
-	for i in 60:
-		await process_frame
-		var dd := pump.position.distance_to(pump0)
-		if dd > most:
-			most = dd
-		if dd > travel * 0.97 and t_back < 0.0:
-			t_back = t_now[0] - t0
-		if not (g("_bolt") as Node3D).visible:
-			bolt_gone = true
-	await until(func() -> bool: return not g("busy"), 1.0)
+	await secs(1.0)
 	var settled := rad_to_deg(float(player.get("pitch")) - p0)
 	var want_settle := float(g("recoil_deg")) * (1.0 - float(g("recover")))
 	say("recoil", "the view kicked %.1f° and settled back to %.1f° above where it was (%.1f wanted)" % [kick, settled, want_settle])
 	if absf(settled - want_settle) > 0.35:
 		bad("the view didn't settle back after the kick (%.2f°, want %.2f°)" % [settled, want_settle])
-	say("rack", "the pump %.1f of %.1f cm back after %.2f s, the bolt's face %s, %d hull out, %s; back home %.1f mm off, loaded %d, chambered %s" % [
-		most * 100.0, travel * 100.0, t_back, "gone while open" if bolt_gone else "NEVER GONE", int(g("ejected")), str(racked_log),
-		pump.position.distance_to(pump0) * 1000.0, int(g("loaded")), g("chambered")])
-	if most < travel * 0.97 or pump.position.distance_to(pump0) > 0.001:
-		bad("the pump didn't run back to its stop and home again (%.1f of %.1f cm)" % [most * 100.0, travel * 100.0])
-	if not bolt_gone:
-		bad("the bolt's face never left the port while the action was open")
-	if racked_log != [true] or int(g("ejected")) != 1 or int(g("loaded")) != 3 or not g("chambered"):
-		bad("the rack after the shot: racked %s, ejected %d, loaded %d, chambered %s (want [true], 1, 3, true)" % [str(racked_log), int(g("ejected")), int(g("loaded")), g("chambered")])
-	var hull_ok := await until(func() -> bool:
-		var hs: Array = g("_hulls")
-		return hs.size() == 1 and is_instance_valid(hs[0]) and (g("_falling") as Array).is_empty(), 4.0)
-	var hulls: Array = g("_hulls")
-	if not hull_ok or hulls.is_empty():
-		bad("the spent hull never came to rest on the floor (%s)" % (str((hulls[0] as Node3D).global_position) if hulls.size() > 0 else "no hull"))
-	else:
-		var hn := hulls[0] as Node3D
-		var hp := hn.global_position
-		var side := eye.global_basis.x.dot(hp - player.global_position)
-		var lying := rad_to_deg(asin(clampf(absf(hn.global_basis.y.normalized().y), 0.0, 1.0)))
-		var up := (hn.global_transform * Vector3(0, 0.033, 0)).y - fl
-		say("hull", "lying %.2f m from the player's feet, %.2f m to the right, its middle %.1f cm over the floor, its axis %.0f° off flat" % [
-			Vector2(hp.x - player.global_position.x, hp.z - player.global_position.z).length(), side, up * 100.0, lying])
-		if side < 0.05:
-			bad("the hull didn't fly out to the right (%.2f m)" % side)
-		if up < 0.006 or up > 0.02 or lying > 5.0:
-			bad("the hull isn't lying on the floor on its side (its middle %.1f cm up, its axis %.0f° off flat)" % [up * 100.0, lying])
 
-	# 3b. aimed (the right button): the barrel straight ahead under the eye, the lens narrower, the cone tighter
+	# 3. the right barrel, then the left (each its own trigger, the left through its tighter choke), then a click
+	await fill()
+	look(eye.global_position + Vector3(-5, -0.4, 0))
+	await frames(3)
+	var shots_a := int(g("shots"))
+	var fired_a: int = fired_n[0]
+	var empties_a: int = empties[0]
+	gun.pull()
+	await frames(2)
+	var after1: Array = (g("live") as Array).duplicate()
+	var t1: float = (g("_trigger") as Node3D).rotation.distance_to(g("_trig0"))
+	await until(func() -> bool: return not g("busy"), 1.0)
+	var fwd_l := -eye.global_basis.z
+	var from_l := eye.global_position
+	gun.pull()
+	await frames(2)
+	var pat_l := pattern(g("last_hits"), from_l, fwd_l)
+	var t2: float = (g("_trigger2") as Node3D).rotation.distance_to(g("_trig2_0"))
+	var after2: Array = (g("live") as Array).duplicate()
+	await until(func() -> bool: return not g("busy"), 1.0)
+	gun.pull()
+	await frames(3)
+	say("fire", "first the right %s (its trigger back %s), then the left %s (the rear trigger %s; its widest pellet %.2f°, its choke %.1f°), then %d click; %d shots, spent %s" % [
+		str(after1), t1 > 0.01, str(after2), t2 > 0.01, pat_l.y, float(g("chokes").y), empties[0] - empties_a, int(g("shots")) - shots_a, str(g("spent"))])
+	if after1 != [false, true] or after2 != [false, false] or empties[0] - empties_a != 1 or int(g("shots")) - shots_a != 2 or fired_n[0] - fired_a != 2:
+		bad("the barrels didn't fire right then left then click (%s, %s, %d clicks, %d shots)" % [str(after1), str(after2), empties[0] - empties_a, int(g("shots")) - shots_a])
+	if t1 < 0.01 or t2 < 0.01:
+		bad("the triggers didn't move (front %s, rear %s)" % [t1 > 0.01, t2 > 0.01])
+	if pat_l.y > float(g("chokes").y) + 0.05:
+		bad("a pellet left the left barrel's cone (%.2f° > %.2f°)" % [pat_l.y, float(g("chokes").y)])
+
+	# 3b. aimed (the right button): the barrels straight ahead under the eye, the lens narrower, the cone the barrel's
+	# own (a choke doesn't change when you aim)
+	await fill()
 	look(dummy.global_position + Vector3(0, 0.25, 0))
 	await frames(3)
 	var fov0 := eye.fov
@@ -328,20 +361,18 @@ func _initialize() -> void:
 	var afrom := eye.global_position
 	gun.pull()
 	await frames(1)
-	var aspread := 0.0
-	for h in (g("last_hits") as Array):
-		aspread = maxf(aspread, rad_to_deg(((h["point"] as Vector3) - afrom).angle_to(afwd)))
+	var apat := pattern(g("last_hits"), afrom, afwd)
 	await until(func() -> bool: return not g("busy"), 1.5)
 	gun.set_aim(false)
 	await secs(0.5)
-	say("aim", "aimed: the muzzle at (%.2f, %.2f) of the view, the bore %.1f° off straight ahead, the lens %.0f° (from %.0f), the widest pellet %.1f° off; let go: the lens %.0f°, at the hip %s" % [
-		asm.x, asm.y, abore, afov, fov0, aspread, eye.fov, float(g("_aim")) < 0.001])
+	say("aim", "aimed: the muzzles at (%.2f, %.2f) of the view, the bore %.1f° off straight ahead, the lens %.0f° (from %.0f), the widest pellet %.2f° off; let go: the lens %.0f°, at the hip %s" % [
+		asm.x, asm.y, abore, afov, fov0, apat.y, eye.fov, float(g("_aim")) < 0.001])
 	if absf(asm.x - 0.5) > 0.03 or asm.y < 0.5 or asm.y > 0.6 or abore > 1.0:
-		bad("aimed, the barrel isn't straight ahead under the view's middle (%.2f, %.2f; %.1f°)" % [asm.x, asm.y, abore])
+		bad("aimed, the barrels aren't straight ahead under the view's middle (%.2f, %.2f; %.1f°)" % [asm.x, asm.y, abore])
 	if absf(afov - float(g("aim_fov"))) > 0.5 or absf(eye.fov - fov0) > 0.01:
 		bad("the lens didn't narrow while aimed and come back (%.1f, then %.1f from %.1f)" % [afov, eye.fov, fov0])
-	if aspread > float(g("spread_deg")) * float(g("aim_spread")) + 0.25:
-		bad("aimed, the cone isn't tighter (%.1f°)" % aspread)
+	if apat.y > float(g("chokes").x) + 0.05:
+		bad("aimed, the pellets left the barrel's cone (%.2f°)" % apat.y)
 
 	# 3b2. someone hidden (not there yet, her collider still is) isn't shot: the pellets go through to what's behind
 	dummy.visible = false
@@ -370,7 +401,8 @@ func _initialize() -> void:
 	if absf(hip1 - hip0 * 0.75) > 0.01 or absf(hip2 - hip0) > 0.01:
 		bad("the gun isn't drawn into the tape's 4:3 picture and back (%.3f, %.3f, %.3f)" % [hip0, hip1, hip2])
 
-	# 4. a crate shoved by the shot
+	# 4. a crate shoved by the shot, carrying its holes with it
+	await fill()
 	var crate := main.get_node("Crate0") as RigidBody3D
 	var cp := crate.global_position
 	look(cp)
@@ -378,7 +410,7 @@ func _initialize() -> void:
 	gun.pull()
 	await secs(1.0)
 	var moved := crate.global_position.distance_to(cp)
-	var carried := crate.get_children().filter(func(c): return c is Decal).size()
+	var carried := crate.get_children().filter(func(cc): return cc is Decal).size()
 	say("crate", "moved %.2f m by the shot, %d holes in it carried with it" % [moved, carried])
 	if moved < 0.05:
 		bad("the crate didn't move when it was shot (%.3f m)" % moved)
@@ -386,93 +418,136 @@ func _initialize() -> void:
 		bad("the holes in the crate stayed where it was (none of its own)")
 	await until(func() -> bool: return not g("busy"), 1.0)
 
-	# 5. fired dry: the rest of the tube, then a click; never faster than the flash limit
+	# 5. as fast as it goes: both barrels, R, both again; never three flashes in any second (the flash limit)
+	await fill()
 	look(eye.global_position + Vector3(-5, -0.3, 0))
-	var t_first := -1.0
-	var first_n: int = fired_n[0]
-	for i in 240:
-		if not g("busy") and (int(g("loaded")) > 0 or g("chambered")):
-			gun.pull()
-			if t_first < 0.0:
-				t_first = t_now[0]
+	await frames(2)
+	var times: Array = []
+	var stamp := func(_h: Array) -> void: times.append(t_now[0])
+	gun.fired.connect(stamp)
+	for i in 900:
+		if not g("busy"):
+			if int(g("loaded")) > 0:
+				gun.pull()
+			elif times.size() < 4:
+				gun.reload()
+			else:
+				break
 		await frames(1)
-		if int(g("loaded")) == 0 and not g("chambered") and not g("busy"):
-			break
-	var rate := float(fired_n[0] - first_n - 1) / maxf(0.01, t_now[0] - t_first)
-	gun.pull()
-	await frames(5)
-	say("dry", "%d shots in all, %d hulls out, %.1f shots a second at most, then %d click" % [int(g("shots")), int(g("ejected")), rate, empties[0]])
-	if int(g("shots")) != 5 or int(g("ejected")) != 5 or empties[0] != 1:
-		bad("the tube didn't fire dry to a click (shots %d, hulls %d, clicks %d; want 5, 5, 1)" % [int(g("shots")), int(g("ejected")), empties[0]])
-	if rate > 3.0:
-		bad("the gun fires faster than the flash limit (%.1f a second)" % rate)
+	gun.fired.disconnect(stamp)
+	var most_in_s := 0
+	for ti in times:
+		most_in_s = maxi(most_in_s, times.filter(func(tj) -> bool: return float(tj) >= float(ti) and float(tj) < float(ti) + 1.0).size())
+	say("flash limit", "4 shots as fast as it goes, at %s s: at most %d in any second" % [str(times.map(func(x): return snappedf(float(x) - float(times[0]), 0.01))), most_in_s])
+	if times.size() != 4 or most_in_s > 2:
+		bad("the double fires faster than the flash limit allows (%d shots, %d in a second)" % [times.size(), most_in_s])
 
-	# 6. the reload: a shell at a time from under the gun into the port and on into the tube, then the pump racked
-	var port: Vector3 = gun.call("_sock_at", "port")
-	var tube := pump0.y - port.y
-	var paths: Array = [[]]
-	var pose_most := [0.0]
-	var watch := func() -> void:
-		pose_most[0] = maxf(pose_most[0], float(g("_pose")))
-		for n in (g("_gun") as Node3D).get_children():
-			if str(n.name).begins_with("shell_12ga") and not n.is_queued_for_deletion():
-				(paths[paths.size() - 1] as Array).append((n as Node3D).position)
-	process_frame.connect(watch)
-	gun.shell_in.connect(func(_n: int) -> void: paths.append([]))
-	racked_log.clear()
+	# 6. the reload: up into the view, broken open there (the chambers in the frame), the hulls flicked out and down on
+	# the floor, a shell popped into each chamber, shut, back down
+	look(eye.global_position + Vector3(-5, -0.4, 0))
+	await until(func() -> bool: return not g("busy"), 2.0)                # (both barrels fired just now)
 	var spare0 := int(g("spare"))
-	var r0: float = t_now[0]
-	gun.reload()
-	await until(func() -> bool: return not g("busy"), 6.0)
-	var took: float = t_now[0] - r0
-	process_frame.disconnect(watch)
-	var gaps: Array = []
-	for i in range(1, shell_log.size()):
-		gaps.append(snappedf(float(shell_log[i][1]) - float(shell_log[i - 1][1]), 0.01))
-	var bad_paths := 0
-	for i in shell_log.size():
-		var pth: Array = paths[i] if i < paths.size() else []
-		if pth.size() < 4:
-			bad_paths += 1
-			continue
-		var a: Vector3 = pth[0]
-		var b: Vector3 = pth[pth.size() - 1]
-		if a.y > port.y - 0.08 or b.x < port.x + 0.01 or absf(b.y - (port.y + tube)) > 0.012:
-			bad_paths += 1
-	say("reload", "%s shells in (%s s apart), spare %d to %d, the gun turned %.2f, %d path%s from under the gun into the tube, racked %s, %.2f s; loaded %d, chambered %s" % [
-		str(shell_log.map(func(x): return x[0])), str(gaps), spare0, int(g("spare")), pose_most[0], shell_log.size() - bad_paths,
-		"" if shell_log.size() - bad_paths == 1 else "s", str(racked_log), took, int(g("loaded")), g("chambered")])
-	if shell_log.map(func(x): return x[0]) != [1, 2, 3, 4] or int(g("spare")) != spare0 - 4:
-		bad("the reload didn't put four shells in one at a time (%s, spare %d)" % [str(shell_log.map(func(x): return x[0])), int(g("spare"))])
-	for gp in gaps:
-		if float(gp) < 0.3 or float(gp) > 0.8:
-			bad("a shell went in %.2f s after the last (0.3 to 0.8)" % float(gp))
-	if bad_paths > 0:
-		bad("%d shell%s didn't rise from under the gun into the port and on into the tube" % [bad_paths, "" if bad_paths == 1 else "s"])
-	if pose_most[0] < 0.95:
-		bad("the gun wasn't turned to bare its loading port (%.2f)" % pose_most[0])
-	if racked_log != [false] or int(g("loaded")) != 3 or not g("chambered") or int(g("ejected")) != 5:
-		bad("after the reload: racked %s, loaded %d, chambered %s, hulls %d (want [false], 3, true, 5)" % [str(racked_log), int(g("loaded")), g("chambered"), int(g("ejected"))])
-
-	# 7. a reload stopped by a shot: the shell going in finished, the pump racked, and it fires
-	gun.set("loaded", 0)
-	gun.set("chambered", false)
 	shell_log.clear()
-	racked_log.clear()
+	var opens0: int = opens[0]
+	var shuts0: int = shuts[0]
+	var flicked0 := int(g("flicked"))
+	var most_open := [0.0]
+	var chambers_in := [false]
+	var chambers_at := [Vector2.ZERO, Vector2.ZERO]
+	var lever_most := [0.0]
+	var ticks := [0]
+	var watch := func() -> void:
+		ticks[0] += 1
+		var o := float(g("opened"))
+		lever_most[0] = maxf(lever_most[0], float(g("_lever_k")))
+		if o > most_open[0]:
+			most_open[0] = o
+		if o > 0.97:
+			var a := scr("chamber_r")
+			var b := scr("chamber_l")
+			chambers_at[0] = a
+			chambers_at[1] = b
+			if a.x > 0.05 and a.x < 0.95 and a.y > 0.05 and a.y < 0.95 and b.x > 0.05 and b.x < 0.95 and b.y > 0.05 and b.y < 0.95:
+				chambers_in[0] = true
+	process_frame.connect(watch)
+	gun.reload()
+	await until(func() -> bool: return not g("busy"), 4.0)
+	var took := float(ticks[0]) / 60.0
+	process_frame.disconnect(watch)
+	var shut_ang := rad_to_deg((g("_barrels") as Node3D).transform.basis.get_rotation_quaternion().angle_to((g("_barrels0") as Transform3D).basis.get_rotation_quaternion()))
+	say("reload", "broken open %d time%s (%.2f of the way, the lever over %.2f), the chambers in the view at (%.2f, %.2f) and (%.2f, %.2f): %s; %d hulls flicked, %s shells popped in, spare %d to %d, shut %d, the barrels %.1f° from shut after; live %s" % [
+		opens[0] - opens0, "" if opens[0] - opens0 == 1 else "s", most_open[0], lever_most[0], chambers_at[0].x, chambers_at[0].y, chambers_at[1].x, chambers_at[1].y,
+		"in frame" if chambers_in[0] else "OUT OF FRAME", int(g("flicked")) - flicked0, str(shell_log), spare0, int(g("spare")), shuts[0] - shuts0, shut_ang, str(g("live"))])
+	if opens[0] - opens0 != 1 or most_open[0] < 0.99 or lever_most[0] < 0.99 or shuts[0] - shuts0 != 1 or shut_ang > 0.5:
+		bad("the gun didn't break open on its hinge and shut again (opens %d, %.2f, lever %.2f, shuts %d, %.1f°)" % [opens[0] - opens0, most_open[0], lever_most[0], shuts[0] - shuts0, shut_ang])
+	if not chambers_in[0]:
+		bad("broken open, the chambers aren't in the view (%s, %s)" % [str(chambers_at[0]), str(chambers_at[1])])
+	if int(g("flicked")) - flicked0 != 2 or shell_log != [1, 2] or g("live") != [true, true] or int(g("spare")) != spare0 - 2:
+		bad("the reload didn't throw two hulls out and pop two shells in (flicked %d, %s, live %s, spare %d)" % [int(g("flicked")) - flicked0, str(shell_log), str(g("live")), int(g("spare"))])
+	var fell := await until(func() -> bool: return (g("_falling") as Array).is_empty() and (g("_flying") as Array).is_empty(), 4.0)
+	var hl: Array = (g("_hulls") as Array).filter(func(h): return is_instance_valid(h))
+	var on_floor := hl.filter(func(h): return absf((h as Node3D).global_position.y - fl) < 0.06).size()
+	say("hulls", "%d of %d flicked hulls lying on the floor%s; the reload took %.2f s" % [on_floor, hl.size(), "" if fell else " (STILL FALLING)", took])
+	if hl.size() < 2 or on_floor < hl.size():
+		bad("the flicked hulls didn't all come down on the floor (%d of %d)" % [on_floor, hl.size()])
+	if took > 2.2:
+		bad("the reload's too slow (%.2f s)" % took)
+
+	# 6b. one barrel fired and reloaded: the live one left where it is, one popped in
+	await frames(10)
+	var left_shell = (g("_in_chamber") as Array)[1]
+	gun.pull()
+	await until(func() -> bool: return not g("busy"), 1.0)
+	shell_log.clear()
+	var fl0 := int(g("flicked"))
+	gun.reload()
+	await until(func() -> bool: return not g("busy"), 4.0)
+	var kept: bool = (g("_in_chamber") as Array)[1] == left_shell
+	say("one", "the right fired and reloaded: %d flicked, %d popped in, the left's live shell %s; live %s" % [int(g("flicked")) - fl0, shell_log.size(), "left where it was" if kept else "TOUCHED", str(g("live"))])
+	if int(g("flicked")) - fl0 != 1 or shell_log.size() != 1 or not kept or g("live") != [true, true]:
+		bad("one barrel's reload went wrong (flicked %d, popped %d, kept %s, live %s)" % [int(g("flicked")) - fl0, shell_log.size(), kept, str(g("live"))])
+
+	# 6c. full: broken open and shut, a look, nothing thrown out or put in
+	shell_log.clear()
+	fl0 = int(g("flicked"))
+	var opens1: int = opens[0]
+	gun.reload()
+	await until(func() -> bool: return not g("busy"), 4.0)
+	say("look", "a full gun broken open %d time and shut: %d flicked, %d popped in" % [opens[0] - opens1, int(g("flicked")) - fl0, shell_log.size()])
+	if opens[0] - opens1 != 1 or int(g("flicked")) != fl0 or not shell_log.is_empty():
+		bad("a full gun's look did more than open and shut")
+
+	# 6d. one shell for two empty chambers: the right one loaded, the left left empty
+	gun.pull()
+	await until(func() -> bool: return not g("busy"), 1.0)
+	gun.pull()
+	await until(func() -> bool: return not g("busy"), 1.0)
+	var spare_kept := int(g("spare"))
+	gun.set("spare", 1)
+	shell_log.clear()
+	gun.reload()
+	await until(func() -> bool: return not g("busy"), 4.0)
+	say("short", "one shell for two: live %s, spare %d" % [str(g("live")), int(g("spare"))])
+	if g("live") != [true, false] or int(g("spare")) != 0:
+		bad("one shell didn't go into the right chamber alone (%s, spare %d)" % [str(g("live")), int(g("spare"))])
+
+	# 7. a shot during the reload: the loading stopped after the shell going in, shut, then it fires
+	gun.pull()
+	await until(func() -> bool: return not g("busy"), 1.0)
+	gun.set("spare", spare_kept)
+	shell_log.clear()
 	var shots0 := int(g("shots"))
 	gun.reload()
-	await until(func() -> bool: return shell_log.size() >= 1, 2.0)
+	await until(func() -> bool: return shell_log.size() >= 1, 3.0)
 	gun.pull()
 	var fired_ok := await until(func() -> bool: return int(g("shots")) == shots0 + 1, 3.0)
 	await until(func() -> bool: return not g("busy"), 2.0)
-	say("stopped", "%d shell%s in, then racked %s and fired %s, reloading %s" % [shell_log.size(), "" if shell_log.size() == 1 else "s",
-		str(racked_log), "at once" if fired_ok else "NEVER", g("reloading")])
-	if shell_log.size() > 2 or not fired_ok or g("reloading") or racked_log.size() < 1 or racked_log[0] != false:
-		bad("a shot during a reload didn't stop it and fire (%d shells, racked %s, fired %s)" % [shell_log.size(), str(racked_log), fired_ok])
+	say("stopped", "%d shell in, then shut and fired %s, open %.2f, reloading %s" % [shell_log.size(), "at once" if fired_ok else "NEVER", float(g("opened")), g("reloading")])
+	if shell_log.size() != 1 or not fired_ok or float(g("opened")) > 0.01 or g("reloading"):
+		bad("a shot during the reload didn't stop it, shut it and fire (%d in, fired %s)" % [shell_log.size(), fired_ok])
 
 	# 8. the keys: R reloads, Q lowers and raises; a left click fires (with the mouse captured, as the starter's player has it)
-	gun.set("loaded", 2)
-	gun.set("chambered", true)
+	await fill(0)
 	shell_log.clear()
 	await press(KEY_R)
 	await until(func() -> bool: return shell_log.size() > 0, 2.0)
@@ -485,14 +560,14 @@ func _initialize() -> void:
 	var up: bool = g("raised") and float(g("_lower")) < 0.01 and gun.visible
 	var clicked := "not tried (no mouse to capture headless)"
 	if mode_ok:
-		var sh := int(g("shots"))
+		var sh0 := int(g("shots"))
 		await click()
 		await until(func() -> bool: return not g("busy"), 1.5)
-		clicked = "fired %d" % (int(g("shots")) - sh)
-		if int(g("shots")) != sh + 1:
+		clicked = "fired %d" % (int(g("shots")) - sh0)
+		if int(g("shots")) != sh0 + 1:
 			bad("a left click didn't fire")
 	say("keys", "R put %d in, Q lowered it %s and raised it %s; a click %s" % [shell_log.size(), down, up, clicked])
-	if shell_log.is_empty() or not down or not up:
+	if shell_log.size() != 2 or not down or not up:
 		bad("the keys don't work (R %d shells, Q down %s, up %s)" % [shell_log.size(), down, up])
 
 	# 8b. something that reacts to being shot (an HSShootable under it): gone a moment at the first hit, down at the second
@@ -519,8 +594,7 @@ func _initialize() -> void:
 	var g_down := [false]
 	sh.hit.connect(func(info: Dictionary) -> void: g_hits.append(info))
 	sh.down.connect(func() -> void: g_down[0] = true)
-	gun.set("loaded", 3)
-	gun.set("chambered", true)
+	await fill()
 	await frames(30)
 	look(ghost.global_position + Vector3(0, 1.1, 0))
 	await frames(3)
@@ -558,9 +632,7 @@ func _initialize() -> void:
 	lsh.set_script(load("res://addons/horrorstudio_weapons/shootable.gd"))
 	lsh.set("lights_out", true)
 	lamp.add_child(lsh)
-	gun.set("loaded", 2)
-	gun.set("chambered", true)
-	await until(func() -> bool: return not g("busy"), 1.0)
+	await fill()
 	look(lamp.global_position)
 	await frames(3)
 	var lit_before := bulb.visible
@@ -608,14 +680,13 @@ func _initialize() -> void:
 	if run_most < 0.9 or walk_k > 0.05:
 		bad("the gun isn't carried low while running and up while walking (%.2f, %.2f)" % [run_most, walk_k])
 
-	# 8e. against a wall: the muzzle (drawn in front of it) is past it, but the flash's light and smoke stay this side;
-	# a hull thrown into the wall at your right comes down this side of it
+	# 8e. against a wall: the muzzles (drawn in front of it) are past it, but the flash's light and smoke stay this
+	# side; reloaded beside a wall at your right, the hulls flicked out come down this side of it
 	var corr: Dictionary = cfg["corridor"]
 	var zn := float(corr["at"][2]) + float(corr["size"][2]) / 2.0          # the corridor's north wall
 	var zs := float(corr["at"][2]) - float(corr["size"][2]) / 2.0          # and its south
 	var spot := player.global_position
-	gun.set("loaded", 3)
-	gun.set("chambered", true)
+	await fill()
 	player.global_position = Vector3(spot.x, spot.y, zn - 0.45)
 	look(Vector3(spot.x, eye.global_position.y, zn + 2.0))
 	await frames(5)
@@ -625,36 +696,37 @@ func _initialize() -> void:
 	var fl_at: Vector3 = gun.muzzle().light.global_position
 	var sm_at: Vector3 = gun.muzzle().puffs.global_position
 	await until(func() -> bool: return not g("busy"), 1.5)
-	var hulls0 := (g("_hulls") as Array).size()
 	player.global_position = Vector3(spot.x, spot.y, zs + 0.38)        # the south wall at your right (looking west)
 	look(Vector3(spot.x - 3.0, eye.global_position.y, zs + 0.38))
 	await frames(5)
-	gun.pull()
+	gun.pull()                                                          # (the left barrel: both spent now)
 	await until(func() -> bool: return not g("busy"), 1.5)
-	await until(func() -> bool: return (g("_falling") as Array).is_empty(), 3.0)
-	var hl: Array = g("_hulls")
-	var last_hull := hl[hl.size() - 1] as Node3D if hl.size() > 0 else null
-	say("wall", "facing a wall 0.45 m off: the muzzle %.2f m past it, the flash's light %.2f m and its smoke %.2f m this side; a hull thrown at the wall at your right lying %.2f m inside it" % [
-		wall_mz.z - zn, zn - fl_at.z, zn - sm_at.z, (last_hull.global_position.z - zs) if last_hull != null else -9.0])
+	var flicked1 := int(g("flicked"))
+	gun.reload()
+	await until(func() -> bool: return not g("busy"), 4.0)
+	await until(func() -> bool: return (g("_falling") as Array).is_empty() and (g("_flying") as Array).is_empty(), 4.0)
+	var hl2: Array = (g("_hulls") as Array).filter(func(h): return is_instance_valid(h))
+	var new_hulls: Array = hl2.slice(maxi(0, hl2.size() - (int(g("flicked")) - flicked1)))
+	var inside := new_hulls.filter(func(h): return (h as Node3D).global_position.z > zs and (h as Node3D).global_position.z < zn).size()
+	say("wall", "facing a wall 0.45 m off: the muzzle %.2f m past it, the flash's light %.2f m and its smoke %.2f m this side; reloaded with a wall at your right, %d of %d hulls down this side of it (%s)" % [
+		wall_mz.z - zn, zn - fl_at.z, zn - sm_at.z, inside, new_hulls.size(), str(new_hulls.map(func(h): return snappedf((h as Node3D).global_position.z - zs, 0.01)))])
 	if wall_mz.z <= zn:
 		bad("the check's set-up: the muzzle isn't past the wall (%.2f)" % (wall_mz.z - zn))
 	if fl_at.z >= zn or sm_at.z >= zn:
 		bad("the flash's light or smoke went through the wall you stand against (%.2f, %.2f past it)" % [fl_at.z - zn, sm_at.z - zn])
-	if last_hull == null or last_hull.global_position.z <= zs or hl.size() <= hulls0:
-		bad("the hull thrown at the wall at your right came down on its far side (%s)" % (str(last_hull.global_position) if last_hull else "none"))
+	if new_hulls.size() != 2 or inside != 2:
+		bad("the hulls flicked out beside a wall didn't come down this side of it (%d of %d)" % [inside, new_hulls.size()])
 	player.global_position = spot
 
 	# 8f. the muzzle (DECISIONS 2026-11-09, latest): its flash a star of wings round the bore and a plume out of it, each
 	# a run of elongated spheres that intersect, their fronts culled, burnt by the facing through a colour burn; out
 	# in a frame or three; its smoke trailing after it and left where the muzzle was as the gun turns. Every pellet a
-	# mark whose three maps make pieces look missing, tinted by what it's made of, with that surface's dust and chips
+	# hole whose three maps make pieces look missing (alone or in a torn one), tinted by what it's made of, with that
+	# surface's dust and chips
 	look(Vector3(spot.x - 4.0, eye.global_position.y - 0.3, spot.z))
-	gun.set("loaded", 3)
-	gun.set("chambered", true)
-	await until(func() -> bool: return not g("busy"), 1.5)
+	await fill()
 	await frames(5)
 	var muz: Node3D = gun.muzzle()
-	var marks1 := marks()
 	gun.pull()
 	await frames(1)
 	var rep: Dictionary = muz.report()
@@ -673,9 +745,6 @@ func _initialize() -> void:
 			tips.append(xf.origin)
 		else:
 			tips[tips.size() - 1] = xf.origin
-		if along <= prev_along:
-			pass
-		elif i > 0:
 			var pxf: Transform3D = sph[i - 1]["transform"]
 			var reach := pxf.basis.z.length() + xf.basis.z.length()   # (their half-lengths along the run)
 			if pxf.origin.distance_to(xf.origin) >= reach:
@@ -704,14 +773,22 @@ func _initialize() -> void:
 	if light_at_shot < 1.0:
 		bad("the muzzle's light didn't flash (%.2f)" % light_at_shot)
 	var hits2: Array = g("last_hits")
-	var pellet_hits := hits2.filter(func(h): return not h.has("blast")).size()
-	var im := get_first_node_in_group("hs_impacts")
-	var made_marks: Array = (im.get("marks") as Array).slice(marks1)
-	var maps_ok := made_marks.all(func(d) -> bool: return d is Decal and (d as Decal).texture_albedo != null and (d as Decal).texture_normal != null and (d as Decal).texture_orm != null)
-	var lastimp: Dictionary = im.get("last")
-	var surf := str(lastimp.get("surface", ""))
+	var im := impacts()
+	var ls2: Dictionary = im.get("last_shot")
+	var made_marks: Array = ls2.get("marks", [])
+	var holes_n := int(ls2.get("alone", 0))
+	for t in (ls2.get("torn", []) as Array):
+		holes_n += int(t)
+	var maps_ok := made_marks.all(func(d) -> bool:
+		var mk := str((d as Decal).get_meta("hs_mark", ""))
+		return (d as Decal).texture_albedo != null and (mk == "soot" or mk == "grains" or ((d as Decal).texture_normal != null and (d as Decal).texture_orm != null)))
+	var surf := str(ls2.get("surface", ""))
 	var tint: Color = (im.get_script() as GDScript).get_script_constant_map()["SURFACES"].get(surf, {}).get("tint", Color.WHITE)
-	var tinted := made_marks.all(func(d) -> bool: return (d as Decal).modulate.is_equal_approx(tint) or not (d as Decal).modulate.is_equal_approx(Color.WHITE))
+	var tinted := made_marks.all(func(d) -> bool:
+		var mk := str((d as Decal).get_meta("hs_mark", ""))
+		var mc := (d as Decal).modulate
+		var want := tint if mk == "crater" or mk == "blast" else Color.WHITE
+		return Color(mc.r, mc.g, mc.b).is_equal_approx(Color(want.r, want.g, want.b)))
 	var dust_n := 0
 	var chip_n := 0
 	for e in im.get_children():
@@ -720,10 +797,10 @@ func _initialize() -> void:
 				dust_n += 1
 			else:
 				chip_n += 1
-	say("marks", "%d pellets, %d marks each with its albedo, normal and ORM %s, on %s tinted %s; %d bursts of dust and sparks, %d of chips flying" % [
-		pellet_hits, made_marks.size(), maps_ok, surf, tinted, dust_n, chip_n])
-	if made_marks.size() != pellet_hits or not maps_ok or not tinted or surf == "":
-		bad("not a mark with its three maps for each pellet, tinted by its surface (%d of %d, maps %s, %s)" % [made_marks.size(), pellet_hits, maps_ok, surf])
+	say("marks", "%d pellets, %d holes in %d marks (%s torn, %d alone), each with its maps %s, on %s tinted %s; %d bursts of dust and sparks, %d of chips flying" % [
+		hits2.size(), holes_n, made_marks.size(), str(ls2.get("torn", [])), int(ls2.get("alone", 0)), maps_ok, surf, tinted, dust_n, chip_n])
+	if holes_n != hits2.size() or made_marks.is_empty() or not maps_ok or not tinted or surf == "":
+		bad("not a hole for each pellet with its maps, tinted by its surface (%d of %d, maps %s, tinted %s, %s)" % [holes_n, hits2.size(), maps_ok, tinted, surf])
 	if dust_n < 1 or chip_n < 1:
 		bad("no dust or chips flying off where the pellets landed (%d, %d)" % [dust_n, chip_n])
 	await frames(6)
@@ -749,15 +826,87 @@ func _initialize() -> void:
 		bad("the trail never cleared (%d bits)" % (muz.trail_points() as Array).size())
 	await until(func() -> bool: return not g("busy"), 1.5)
 
-	# 8g. the shell kinds: the explosive loaded with T, the tube in order, a single slug, a bigger flash; its blast at
-	# the floor ahead pushing a crate and telling a dummy within its reach (not one past it), hitting a shootable, a
-	# scorch with its embers glowing, a ball of fire laid out as a burst, the view shaken, heard far; T back again
+	# 8g. what a 12-gauge leaves on a wall (docs/research/shotgun_damage.md), by the muzzle's distance from it (the
+	# pattern spreads from the muzzle; the three plaster shots apart on the panel): at an arm's length one hole about the bore's size with the smoke's soot and the
+	# powder's grains round it and no wad of its own; across a room a pattern a palm wide, a torn middle with holes round
+	# it, the wad's dent, no powder; down a corridor holes apart about a hand wide, the wad's dent; on concrete the lead
+	# smeared, no holes. The east end of the corridor, two panels across it facing west: plasterboard and concrete.
+	# Seeded, so the same each run (the sizes hold for any)
+	var px := float(corr["at"][0]) + float(corr["size"][0]) / 2.0 - 2.4         # the panels' faces, 2.4 m short of the east end
+	var plaster := StaticBody3D.new()
+	plaster.set_meta("hs_surface", "plaster")
+	var concrete := StaticBody3D.new()
+	concrete.set_meta("hs_surface", "concrete")
+	var pz := [float(corr["at"][2]) - 0.45, float(corr["at"][2]) + 0.45]
+	var k := 0
+	for pb in [plaster, concrete]:
+		var pcs := CollisionShape3D.new()
+		var pbox := BoxShape3D.new()
+		pbox.size = Vector3(0.1, 1.5, 0.86)
+		pcs.shape = pbox
+		(pb as StaticBody3D).add_child(pcs)
+		main.add_child(pb)
+		(pb as StaticBody3D).global_position = Vector3(px + 0.05, fl + 1.25, pz[k])
+		k += 1
+	await frames(3)
+	var ahead := -eye.to_local(gun.muzzle(0).global_position).z            # the right muzzle's way ahead of the eye
+	var cases := [["arm", 0.15, 0, 0.1, -0.24, 11], ["room", 2.5, 0, 0.0, 0.22, 23], ["corridor", 4.5, 0, -0.4, -0.05, 37], ["concrete", 2.5, 1, 0.0, 0.0, 41]]
+	var res := {}
+	for cs in cases:
+		var dm: float = cs[1]
+		var pzi: float = pz[int(cs[2])]
+		await fill()
+		player.global_position = Vector3(px - dm - ahead, fl, pzi)
+		player.velocity = Vector3.ZERO
+		await frames(2)
+		look(Vector3(px, eye.global_position.y + float(cs[3]), pzi + float(cs[4])))
+		await frames(3)
+		var from_c := eye.global_position
+		var fwd_c := -eye.global_basis.z
+		seed(int(cs[5]))                                                 # (the pellets are the shot's first randoms)
+		gun.pull()
+		await frames(2)
+		var hc: Array = (g("last_hits") as Array).filter(func(h): return h["collider"] == (plaster if int(cs[2]) == 0 else concrete))
+		var lsc: Dictionary = impacts().get("last_shot")
+		var kinds: Dictionary = {}
+		for d in (lsc.get("marks", []) as Array):
+			var mk := str((d as Decal).get_meta("hs_mark", ""))
+			kinds[mk] = int(kinds.get(mk, 0)) + 1
+		var pt := pattern(hc, from_c, fwd_c)
+		res[cs[0]] = {"hits": hc.size(), "across": pt.x, "torn": lsc.get("torn", []), "alone": int(lsc.get("alone", 0)), "soot": float(lsc.get("soot", 0.0)),
+			"grains": float(lsc.get("grains", 0.0)), "wad": bool(lsc.get("wad", false)), "muzzle": float(lsc.get("muzzle_m", -1.0)), "kinds": kinds}
+		say("damage", "%s: the muzzle %.2f m from %s, %d pellets landed %.1f cm across: torn %s, %d alone; soot %.2f, grains %.2f, the wad %s; marks %s" % [
+			cs[0], float(lsc.get("muzzle_m", -1.0)), lsc.get("surface", "?"), hc.size(), pt.x * 100.0, str(lsc.get("torn", [])), int(lsc.get("alone", 0)),
+			float(lsc.get("soot", 0.0)), float(lsc.get("grains", 0.0)), bool(lsc.get("wad", false)), str(kinds)])
+		await until(func() -> bool: return not g("busy"), 1.0)
+	var arm: Dictionary = res["arm"]
+	var room: Dictionary = res["room"]
+	var far: Dictionary = res["corridor"]
+	var hard: Dictionary = res["concrete"]
+	var arm_torn: Array = arm["torn"]
+	if int(arm["hits"]) < 8 or arm_torn.is_empty() or int(arm_torn[0]) < 7 or float(arm["soot"]) < 0.2 or float(arm["grains"]) < 0.5 or bool(arm["wad"]) or float(arm["across"]) > 0.015:
+		bad("at an arm's length it isn't one hole with soot and grains round it and no wad apart (%s)" % str(arm))
+	if float(room["across"]) < 0.035 or float(room["across"]) > 0.095 or float(room["soot"]) > 0.0 or float(room["grains"]) > 0.0 or not bool(room["wad"]) or (room["torn"] as Array).is_empty() or int(room["alone"]) < 1:
+		bad("across a room it isn't a pattern a palm wide, a torn middle with holes round it, the wad's dent and no powder (%s)" % str(room))
+	if float(far["across"]) < 0.07 or float(far["across"]) > 0.165 or int(far["alone"]) < 5 or not bool(far["wad"]) or float(far["grains"]) > 0.0:
+		bad("down the corridor it isn't holes apart about a hand wide with the wad's dent (%s)" % str(far))
+	var hk: Dictionary = hard["kinds"]
+	if int(hk.get("smear", 0)) < 1 or int(hk.get("crater", 0)) + int(hk.get("blast", 0)) > 0:
+		bad("on concrete the lead didn't smear (or it went in: %s)" % str(hk))
+	for pb in [plaster, concrete]:
+		pb.queue_free()
+	player.global_position = spot
+	await frames(2)
+
+	# 8h. the shell kinds: an explosive popped into the right barrel (the only one of its kind in the pocket, T picks
+	# it), the left left empty; fired, a single slug from the right barrel's own muzzle with its own bigger flash, and
+	# its blast at the floor ahead pushing a crate and telling a dummy within its reach (not one past it), hitting a
+	# shootable, a scorch with its embers glowing, a ball of fire laid out as a burst, the view shaken, heard far; T back
+	look(eye.global_position + Vector3(-5, -0.3, 0))
+	await fill(0)
 	var exk = load("res://addons/horrorstudio_weapons/shells/explosive.tres")
 	var spare_n := int(g("spare"))
-	gun.set("loaded", 0)
-	gun.set("chambered", false)
-	gun.set("tube", [])
-	gun.add_shells(3, exk)
+	gun.add_shells(1, exk)
 	var pocket_had := int((g("pocket") as Dictionary).get("explosive", 0))
 	await press(KEY_T)
 	var kind_now := str((g("load_kind") as Resource).get("id"))
@@ -765,14 +914,13 @@ func _initialize() -> void:
 	gun.reload()
 	await frames(2)
 	await until(func() -> bool: return not g("busy"), 5.0)
-	var tube_ids: Array = (g("tube") as Array).map(func(k): return str(k.get("id")))
-	var ch_id := str((g("chamber_kind") as Resource).get("id")) if g("chamber_kind") != null else "none"
-	say("kinds", "%d explosive shells into the pocket (%d), T: loading %s with %d of them (%d buckshot kept); reloaded: the chamber %s, the tube %s" % [
-		3, pocket_had, kind_now, spare_ex, int((g("pocket") as Dictionary).get("buckshot", -1)), ch_id, str(tube_ids)])
-	if pocket_had != 3 or kind_now != "explosive" or spare_ex != 3 or int((g("pocket") as Dictionary).get("buckshot", -1)) != spare_n:
-		bad("T didn't switch the pocket to the explosive shells (%d, %s, %d)" % [pocket_had, kind_now, spare_ex])
-	if ch_id != "explosive" or tube_ids != ["explosive", "explosive"]:
-		bad("the explosive shells didn't go into the tube in order and on into the chamber (%s, %s)" % [ch_id, str(tube_ids)])
+	var kinds_in: Array = (g("barrel_kind") as Array).map(func(kk): return str(kk.get("id")) if kk != null else "none")
+	say("kinds", "an explosive shell into the pocket (%d), T: loading %s with %d of them (%d buckshot kept); reloaded: live %s, the chambers' kinds %s" % [
+		pocket_had, kind_now, spare_ex, int((g("pocket") as Dictionary).get("buckshot", -1)), str(g("live")), str(kinds_in)])
+	if pocket_had != 1 or kind_now != "explosive" or spare_ex != 1 or int((g("pocket") as Dictionary).get("buckshot", -1)) != spare_n:
+		bad("T didn't switch the pocket to the explosive shell (%d, %s, %d)" % [pocket_had, kind_now, spare_ex])
+	if g("live") != [true, false] or kinds_in[0] != "explosive":
+		bad("the explosive shell didn't go into the right chamber alone (%s, %s)" % [str(g("live")), str(kinds_in)])
 	var target := Vector3(spot.x - 2.8, fl, spot.z)
 	var crate2 := RigidBody3D.new()
 	var ccs := CollisionShape3D.new()
@@ -814,13 +962,17 @@ func _initialize() -> void:
 	await frames(3)
 	look(target)
 	await frames(5)
+	var m0 = gun.muzzle(0)
+	var m1 = gun.muzzle(1)
+	var s0 := int(m0.get("shots"))
+	var s1 := int(m1.get("shots"))
 	var heard0 := (listener.get("got") as Array).size()
 	var crate_at := crate2.global_position
 	var blasts0 := int(im.get("blasts"))
 	var bl_shook := 0.0
 	gun.pull()
 	await frames(1)
-	var rex: Dictionary = muz.report()
+	var rex: Dictionary = m0.report()
 	var exhits: Array = g("last_hits")
 	var slug_hits := exhits.filter(func(h): return not h.has("blast")).size()
 	var blast_hits := exhits.filter(func(h): return h.has("blast"))
@@ -838,12 +990,13 @@ func _initialize() -> void:
 	var away := (crate_at - (target + Vector3(0, 0.08, 0))).normalized()
 	await frames(40)
 	var bl_settled := Vector2(eye.h_offset, eye.v_offset).length()
-	say("explosive", "the %s flash (%d sparks), %d slug, %d blast %s; a ball of fire of %d spheres (%s); a scorch with embers at %.1f; the crate pushed %.2f m (%.2f of it away from the blast); the dummy told %s, the one 3.4 m off %d times; the shootable hit %d; heard %s; the view shaken %.3f, back to %.3f" % [
-		rex["look"], int(rex["sparks"]), slug_hits, int(im.get("blasts")) - blasts0, str(blast_hits.map(func(h): return str((h["collider"] as Node).name))), int(fb_rep.get("spheres", 0)), fb_rep.get("look", "none"), embers,
-		pushed.length(), pushed.normalized().dot(away) if pushed.length() > 0.001 else 0.0, str(told.map(func(x): return [x.get("blast", false), snappedf(float(x.get("damage", 0.0)), 0.1)])), far_told.size(),
+	say("explosive", "the right muzzle flashed %d (%s, %d sparks), the left %d; %d slug, %d blast %s; a ball of fire of %d spheres (%s); a scorch with embers at %.1f; the crate pushed %.2f m (%.2f of it away from the blast); the dummy told %s, the one 3.4 m off %d times; the shootable hit %d; heard %s; the view shaken %.3f, back to %.3f" % [
+		int(m0.get("shots")) - s0, rex["look"], int(rex["sparks"]), int(m1.get("shots")) - s1, slug_hits, int(im.get("blasts")) - blasts0, str(blast_hits.map(func(h): return str((h["collider"] as Node).name))),
+		int(fb_rep.get("spheres", 0)), fb_rep.get("look", "none"), embers, pushed.length(), pushed.normalized().dot(away) if pushed.length() > 0.001 else 0.0,
+		str(told.map(func(x): return [x.get("blast", false), snappedf(float(x.get("damage", 0.0)), 0.1)])), far_told.size(),
 		int(shoot_me.get("count")), str(heard2.map(func(x): return x[1])), bl_shook, bl_settled])
-	if str(rex["look"]) != "Explosive" or int(rex["sparks"]) < 20 or slug_hits != 1:
-		bad("the explosive shell didn't fire a single slug with its own bigger flash (%s, %d slug hits)" % [str(rex), slug_hits])
+	if int(m0.get("shots")) - s0 != 1 or int(m1.get("shots")) - s1 != 0 or str(rex["look"]) != "Explosive" or int(rex["sparks"]) < 20 or slug_hits != 1:
+		bad("the explosive shell didn't fire a single slug from the right barrel's own muzzle with its own bigger flash (%s, %d slug hits)" % [str(rex), slug_hits])
 	if int(im.get("blasts")) - blasts0 != 1 or fb == null or int(fb_rep.get("spheres", 0)) < 20:
 		bad("no blast with its ball of fire where the slug landed (%d, %s)" % [int(im.get("blasts")) - blasts0, str(fb_rep)])
 	if embers <= 0.0:
@@ -857,7 +1010,7 @@ func _initialize() -> void:
 	if heard2.filter(func(x): return float(x[1]) >= 5.0).is_empty():
 		bad("the blast wasn't heard as loud as it is (%s)" % str(heard2))
 	if bl_shook < 0.002 or bl_settled > 0.0005:
-		bad("the view wasn't shaken by the blast and bl_settled after (%.3f, %.3f)" % [bl_shook, bl_settled])
+		bad("the view wasn't shaken by the blast and settled after (%.3f, %.3f)" % [bl_shook, bl_settled])
 	await press(KEY_T)
 	say("kinds back", "T: loading %s again, %d of them" % [str((g("load_kind") as Resource).get("id")), int(g("spare"))])
 	if str((g("load_kind") as Resource).get("id")) != "buckshot" or int(g("spare")) != spare_n:
@@ -868,6 +1021,7 @@ func _initialize() -> void:
 	player.global_position = spot
 
 	# 9. lowered: out of view, the flashlight back on the eye, no shot; raised again
+	await fill()
 	gun.set_raised(false)
 	await secs(0.5)
 	var rest: Transform3D = g("_light_rest")
@@ -906,7 +1060,7 @@ func _initialize() -> void:
 	await frames(2)
 	var pk := Node3D.new()
 	pk.set_script(load("res://addons/horrorstudio_weapons/pickup.gd"))
-	pk.set("kind", "shotgun")
+	pk.set("kind", "double")
 	pk.set("shells", 4)
 	pk.name = "ShotgunOnFloor"
 	main.add_child(pk)
@@ -922,7 +1076,7 @@ func _initialize() -> void:
 	await secs(0.6)
 	say("pickup", "not carried, the gun %s; E took %s: owned %s, drawn %s, spare %d to %d" % ["hidden" if hidden_before else "SHOWN", took_name if took_name != "" else "nothing",
 		g("owned"), gun.visible and float(g("_lower")) < 0.01, sp3, int(g("spare"))])
-	if not hidden_before or took_name == "" or not g("owned") or not gun.visible or float(g("_lower")) > 0.01 or int(g("spare")) != sp3 + 4:
+	if not hidden_before or took_name != "ShotgunOnFloor" or not g("owned") or not gun.visible or float(g("_lower")) > 0.01 or int(g("spare")) != sp3 + 4:
 		bad("the gun on the floor wasn't taken and drawn into view (hidden first %s, owned %s, lower %.2f, spare %d)" % [hidden_before, g("owned"), float(g("_lower")), int(g("spare"))])
 
 	print("WEAPONS result " + JSON.stringify({"errors": errors}))

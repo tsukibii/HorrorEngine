@@ -12,18 +12,22 @@ extends Node3D
 ## A blast (an impact with a `radius_m`): its fireball (an HSMuzzle laid out as a burst at the hit, facing out of the
 ## surface), what it reaches within the radius and in its line of sight pushed (RigidBody3D) and told (shot(info), its
 ## `damage` falling to nothing at the edge, `blast` true), the view shaken near it, listeners hearing it, the ears
-## ringing, its sound. `play` returns what a blast reached, as hits (HSShotgun adds them to its shot's).
+## ringing, its sound. `play` returns what a blast reached, as hits (the gun adds them to its shot's).
+##
+## A shot's pellets (`play_shot`) leave what a 12-gauge leaves indoors (docs/research/shotgun_damage.md): close up one
+## torn hole with the smoke's soot and the powder's grains round it, a few metres out a torn middle with pellet holes
+## round it and the wad's dent, farther each pellet its own hole; on concrete, stone or steel lead smears instead.
 
 const DIR := "res://addons/horrorstudio_weapons/"
 const MARK_MASK := 0x3FFFF                               # every layer but 19 (only in mirrors) and 20 (the gun in your hands)
 const SURFACES := {
 	"plaster": {"tint": Color(0.95, 0.93, 0.88), "dust": Color(0.9, 0.88, 0.83), "chip": Color(0.93, 0.91, 0.87), "sparks": 0.0, "size": 1.0},
-	"concrete": {"tint": Color(0.66, 0.65, 0.62), "dust": Color(0.7, 0.68, 0.64), "chip": Color(0.6, 0.59, 0.56), "sparks": 0.2, "size": 0.85},
-	"stone": {"tint": Color(0.6, 0.58, 0.55), "dust": Color(0.66, 0.64, 0.6), "chip": Color(0.55, 0.53, 0.5), "sparks": 0.3, "size": 0.8},
+	"concrete": {"tint": Color(0.66, 0.65, 0.62), "dust": Color(0.7, 0.68, 0.64), "chip": Color(0.6, 0.59, 0.56), "sparks": 0.2, "size": 0.85, "hard": true},
+	"stone": {"tint": Color(0.6, 0.58, 0.55), "dust": Color(0.66, 0.64, 0.6), "chip": Color(0.55, 0.53, 0.5), "sparks": 0.3, "size": 0.8, "hard": true},
 	"tile": {"tint": Color(0.94, 0.93, 0.9), "dust": Color(0.92, 0.92, 0.9), "chip": Color(0.97, 0.97, 0.95), "sparks": 0.1, "size": 1.1},
 	"wood": {"tint": Color(0.86, 0.7, 0.48), "dust": Color(0.64, 0.52, 0.38), "chip": Color(0.74, 0.58, 0.38), "sparks": 0.0, "size": 0.9, "splinters": true},
 	"door": {"tint": Color(0.86, 0.7, 0.48), "dust": Color(0.64, 0.52, 0.38), "chip": Color(0.74, 0.58, 0.38), "sparks": 0.0, "size": 0.9, "splinters": true},
-	"metal": {"tint": Color(0.42, 0.42, 0.44), "dust": Color(0.45, 0.45, 0.47), "chip": Color(0.62, 0.62, 0.64), "sparks": 1.0, "size": 0.45, "dust_k": 0.25, "chips_k": 0.3},
+	"metal": {"tint": Color(0.42, 0.42, 0.44), "dust": Color(0.45, 0.45, 0.47), "chip": Color(0.62, 0.62, 0.64), "sparks": 1.0, "size": 0.45, "dust_k": 0.25, "chips_k": 0.3, "hard": true},
 	"glass": {"tint": Color(0.8, 0.86, 0.88), "dust": Color(0.92, 0.96, 0.98), "chip": Color(0.85, 0.93, 0.96), "sparks": 0.0, "size": 0.8},
 	"plastic": {"tint": Color(0.92, 0.92, 0.92), "dust": Color(0.9, 0.9, 0.9), "chip": Color(0.92, 0.92, 0.92), "sparks": 0.0, "size": 0.9},
 	"carpet": {"tint": Color(0.36, 0.3, 0.28), "dust": Color(0.52, 0.46, 0.42), "chip": Color(0.42, 0.35, 0.32), "sparks": 0.0, "size": 0.6, "chips_k": 0.4},
@@ -32,8 +36,12 @@ const SURFACES := {
 	"water": {"tint": Color(1, 1, 1), "dust": Color(0.86, 0.9, 0.95), "chip": Color(0.8, 0.86, 0.92), "sparks": 0.0, "size": 0.0, "mark": false, "chips_k": 0.0},
 }
 
+const VARIANTS := {"crater": 4, "scorch": 2, "blast": 3, "smear": 2, "wad": 1, "soot": 1, "grains": 1}   # each mark's maps in fx/
+const HOLE := 0.4                                       # a torn hole's share of its decal's width (fx/blast_*)
+
 var marks: Array = []                                   ## the marks in the world, oldest first
-var last := {}                                          ## the last impact, a check's: {surface, mark, dust, chips, sparks, blast}
+var last := {}                                          ## the last impact, a check's: {surface, mark, dust, chips, sparks, blast, torn}
+var last_shot := {}                                     ## the last shot's marks, a check's: {pellets, torn (each torn hole's pellets), alone, soot, grains, wad, surface, muzzle_m, marks}
 var blasts := 0                                         ## blasts so far
 
 var _tex := {}
@@ -67,7 +75,7 @@ func play(imp: HSImpact, hit: Dictionary, debris := true) -> Array:
 	var kind := surface_of(hit)
 	var look := surface_look(kind, imp)
 	var d := _mark(imp, hit, look)
-	var info := {"surface": kind, "mark": d, "dust": 0, "chips": 0, "sparks": 0, "blast": []}
+	var info := {"surface": kind, "mark": d, "dust": 0, "chips": 0, "sparks": 0, "blast": [], "torn": 0}
 	if debris:
 		_debris(imp, hit, look, info)
 	if imp.radius_m > 0.0:
@@ -76,13 +84,76 @@ func play(imp: HSImpact, hit: Dictionary, debris := true) -> Array:
 	return info["blast"]
 
 
-## A shot's hits: a mark for each, debris for the first `debris_max`; what blasts reached, as hits.
+## A shot's hits: pellets landing within the impact's `merge_m` of each other run into one torn hole (as many as
+## `merge_min` or more), the rest each its own mark; debris for the first `debris_max`; the smoke's soot, the powder's
+## grains and the wad's dent by the muzzle's distance (each hit's `muzzle`); `last_shot` says what it left. Returns what
+## blasts reached, as hits.
 func play_shot(imp: HSImpact, hits: Array) -> Array:
 	if imp == null:
 		imp = default_impact()
 	var out: Array = []
-	for i in hits.size():
-		out.append_array(play(imp, hits[i], i < imp.debris_max))
+	var made: Array = []
+	var torn: Array = []
+	var alone := 0
+	var main: Array = []
+	var near := {}
+	if imp.radius_m > 0.0 or imp.merge_m <= 0.0:
+		for i in hits.size():
+			out.append_array(play(imp, hits[i], i < imp.debris_max))
+			made.append(last.get("mark"))
+		alone = hits.size()
+	else:
+		var n_debris := 0
+		for g in clusters(hits, imp.merge_m):
+			if (g as Array).size() > main.size():
+				main = g
+			if (g as Array).size() >= imp.merge_min:
+				_torn(imp, g, n_debris < imp.debris_max)
+				made.append(last.get("mark"))
+				torn.append((g as Array).size())
+				n_debris += 1
+			else:
+				for h in g:
+					out.append_array(play(imp, h, n_debris < imp.debris_max))
+					made.append(last.get("mark"))
+					alone += 1
+					n_debris += 1
+		if not main.is_empty():
+			near = _powder_and_wad(imp, main)
+			made.append_array(near.get("marks", []))
+	last_shot = {"pellets": hits.size(), "torn": torn, "alone": alone, "soot": float(near.get("soot", 0.0)),
+			"grains": float(near.get("grains", 0.0)), "wad": bool(near.get("wad", false)), "muzzle_m": float(near.get("dist", -1.0)),
+			"surface": surface_of(main[0]) if not main.is_empty() else str(last.get("surface", "")),
+			"marks": made.filter(func(d) -> bool: return d != null)}
+	return out
+
+
+## The shot's hits in groups, pellets on one thing within `merge_m` of another in one group (biggest first).
+static func clusters(hits: Array, merge_m: float) -> Array:
+	var n := hits.size()
+	var up: Array = range(n)
+	var find := func(i: int) -> int:
+		while up[i] != i:
+			up[i] = up[up[i]]
+			i = up[i]
+		return i
+	for i in n:
+		for j in range(i + 1, n):
+			if hits[i].get("collider") != hits[j].get("collider"):
+				continue
+			if (hits[i]["point"] as Vector3).distance_to(hits[j]["point"]) < merge_m:
+				var a: int = find.call(i)
+				var b: int = find.call(j)
+				if a != b:
+					up[a] = b
+	var by := {}
+	for i in n:
+		var r: int = find.call(i)
+		if not by.has(r):
+			by[r] = []
+		by[r].append(hits[i])
+	var out: Array = by.values()
+	out.sort_custom(func(x, y): return (x as Array).size() > (y as Array).size())
 	return out
 
 
@@ -123,24 +194,32 @@ func surface_look(kind: String, _imp: HSImpact = null) -> Dictionary:
 
 # ---- the mark ----------------------------------------------------------------------------------------------------
 
-func _mark(imp: HSImpact, hit: Dictionary, look: Dictionary) -> Decal:
-	if imp.mark == "none" or not bool(look.get("mark", true)) or float(look.get("size", 1.0)) <= 0.0:
+func _mark(imp: HSImpact, hit: Dictionary, look: Dictionary, kind := "", size := -1.0) -> Decal:
+	var mk := kind if kind != "" else imp.mark
+	if mk == "none" or not bool(look.get("mark", true)) or float(look.get("size", 1.0)) <= 0.0:
 		return null
-	var variants := 4 if imp.mark == "crater" else 2
-	var v := randi() % variants
-	var nm := "%s_%d" % [imp.mark, v]
+	var hard := bool(look.get("hard", false))
+	if hard and (mk == "crater" or mk == "blast"):
+		mk = "smear"                                     # (the lead doesn't go in: a smear and chips)
+	var nm := "%s_%d" % [mk, randi() % int(VARIANTS.get(mk, 1))]
+	var flat := mk == "soot" or mk == "grains"           # (colour only: the wall's own relief under it)
 	var d := Decal.new()
 	d.name = "Mark"
 	d.texture_albedo = _t(nm + "_albedo")
-	d.texture_normal = _t(nm + "_normal")
-	d.texture_orm = _t(nm + "_orm")
-	var scorch := imp.mark == "scorch"
-	if imp.embers_s > 0.0:
+	if not flat:
+		d.texture_normal = _t(nm + "_normal")
+		d.texture_orm = _t(nm + "_orm")
+	var scorch := mk == "scorch"
+	if imp.embers_s > 0.0 and scorch:
 		d.texture_emission = _t(nm + "_emission")
 		d.emission_energy = imp.embers_energy
-	var s := imp.mark_size_m * (1.0 if scorch else float(look.get("size", 1.0))) * randf_range(1.0 - imp.mark_jitter, 1.0 + imp.mark_jitter)
+	var s := size
+	if s <= 0.0:
+		s = imp.mark_size_m * (1.0 if scorch else float(look.get("size", 1.0))) * randf_range(1.0 - imp.mark_jitter, 1.0 + imp.mark_jitter)
+		if mk == "smear":
+			s *= 0.75
 	d.size = Vector3(s, clampf(s * 0.6, 0.05, 0.6), s)
-	d.modulate = Color.WHITE if scorch else (look.get("tint", Color.WHITE) as Color)
+	d.modulate = Color.WHITE if (scorch or flat or mk == "smear" or mk == "wad") else (look.get("tint", Color.WHITE) as Color)
 	d.normal_fade = 0.35                                 # (never wrapped round a corner onto the next face)
 	d.upper_fade = 0.15
 	d.lower_fade = 0.15
@@ -148,22 +227,102 @@ func _mark(imp: HSImpact, hit: Dictionary, look: Dictionary) -> Decal:
 	d.distance_fade_enabled = true
 	d.distance_fade_begin = 30.0
 	d.distance_fade_length = 10.0
+	if flat or mk == "wad":
+		d.sorting_offset = -0.01                         # (under the holes it's round)
 	var on = hit.get("collider")
 	var host: Node = on if on is Node3D and is_instance_valid(on) and not (on as Node).is_queued_for_deletion() else self
 	host.add_child(d)                                    # (a door swings with its holes, a crate carries them away)
 	var y := (hit.get("normal", Vector3.UP) as Vector3).normalized()
 	var x := y.cross(Vector3.UP if absf(y.y) < 0.9 else Vector3.RIGHT).normalized()
 	d.global_transform = Transform3D(Basis(x, y, x.cross(y)).rotated(y, randf() * TAU), (hit.get("point", Vector3.ZERO) as Vector3) + y * 0.004)
-	if imp.embers_s > 0.0:
+	if imp.embers_s > 0.0 and scorch:
 		var tw := d.create_tween()                       # the embers dying: a flicker, then out
 		tw.tween_property(d, "emission_energy", imp.embers_energy * 0.55, imp.embers_s * 0.25).set_trans(Tween.TRANS_SINE)
 		tw.tween_property(d, "emission_energy", 0.0, imp.embers_s * 0.75).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	d.set_meta("hs_mark", mk)
 	marks.append(d)
 	while marks.size() > maxi(imp.keep, 1):
 		var o = marks.pop_front()
 		if is_instance_valid(o):
 			o.queue_free()
 	return d
+
+
+# pellets that landed together: one torn hole the size of where they landed (fx/blast_*: its hole two fifths of it),
+# the dust and chips of all of them
+func _torn(imp: HSImpact, g: Array, debris: bool) -> void:
+	var mid := Vector3.ZERO
+	var nrm := Vector3.ZERO
+	for h in g:
+		mid += (h["point"] as Vector3) / float(g.size())
+		nrm += (h["normal"] as Vector3)
+	nrm = nrm.normalized() if nrm.length() > 0.01 else Vector3.UP
+	var reach := 0.0
+	for h in g:
+		reach = maxf(reach, (h["point"] as Vector3).distance_to(mid))
+	var hit := {"point": mid, "normal": nrm, "collider": g[0].get("collider")}
+	var kind := surface_of(hit)
+	var look := surface_look(kind, imp)
+	var hole := 2.0 * reach + 0.012                      # (each pellet's own hole round its point)
+	var s := hole / HOLE * float(look.get("size", 1.0)) * randf_range(0.95, 1.08)
+	if bool(look.get("hard", false)):
+		s = (2.0 * reach + 0.02) / 0.6
+	var d := _mark(imp, hit, look, "blast", s)
+	var info := {"surface": kind, "mark": d, "dust": 0, "chips": 0, "sparks": 0, "blast": [], "torn": g.size()}
+	if debris:
+		var more := imp.duplicate() as HSImpact          # (a torn hole throws more of the wall out)
+		more.dust = int(imp.dust * 2)
+		more.chips = int(imp.chips * 2)
+		more.debris_scale = imp.debris_scale * 1.3
+		_debris(more, hit, look, info)
+	last = info
+
+
+# what's left near the pattern's middle by how far the muzzle was (docs/research/shotgun_damage.md): the smoke's soot
+# from under `soot_m` (darker and smaller the nearer), the powder's grains from under `powder_m` (wider and fainter the
+# farther), the wad's own dent from `wad_m.x` (nearer, it went into the hole with the shot) to `wad_m.y`. Returns
+# {dist, soot, grains, wad, marks}: soot and grains how strong (1 at the muzzle)
+func _powder_and_wad(imp: HSImpact, g: Array) -> Dictionary:
+	var mid := Vector3.ZERO
+	var nrm := Vector3.ZERO
+	for h in g:
+		mid += (h["point"] as Vector3) / float(g.size())
+		nrm += (h["normal"] as Vector3)
+	nrm = nrm.normalized() if nrm.length() > 0.01 else Vector3.UP
+	var out := {"dist": -1.0, "soot": 0.0, "grains": 0.0, "wad": false, "marks": []}
+	var muz = g[0].get("muzzle", g[0].get("from"))
+	if not (muz is Vector3):
+		return out
+	var dist: float = (muz as Vector3).distance_to(mid)
+	out["dist"] = dist
+	var hit := {"point": mid, "normal": nrm, "collider": g[0].get("collider")}
+	var look := surface_look(surface_of(hit), imp)
+	if imp.soot_m > 0.0 and dist < imp.soot_m:
+		var k := clampf(dist / imp.soot_m, 0.0, 1.0)
+		var d := _mark(imp, hit, look, "soot", 0.07 + 0.22 * k)
+		if d != null:
+			d.modulate = Color(1, 1, 1, 1.0 - 0.5 * k)   # (fainter as it spreads)
+			out["marks"].append(d)
+		out["soot"] = 1.0 - k
+	if imp.powder_m > 0.0 and dist < imp.powder_m:
+		var k := clampf(dist / imp.powder_m, 0.0, 1.0)
+		var d := _mark(imp, hit, look, "grains", 0.08 + 0.34 * k)
+		if d != null:
+			d.modulate = Color(1, 1, 1, 1.0 - 0.6 * k)
+			out["marks"].append(d)
+		out["grains"] = 1.0 - k
+	if imp.wad_m.y > 0.0 and dist >= imp.wad_m.x and dist <= imp.wad_m.y:
+		var off := Vector3(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * (0.006 + 0.004 * dist)
+		off -= nrm * off.dot(nrm)                        # (it drifts off the shot's line the farther it flies)
+		hit["point"] = mid + off
+		var d := _mark(imp, hit, look, "wad", randf_range(0.04, 0.055))
+		if d != null:
+			out["marks"].append(d)
+		out["wad"] = true
+	if not last.is_empty():
+		last["powder"] = maxf(float(out["soot"]), float(out["grains"]))
+		last["wad"] = out["wad"]
+	return out
 
 
 func _t(nm: String) -> Texture2D:
@@ -183,7 +342,7 @@ func _debris(imp: HSImpact, hit: Dictionary, look: Dictionary, info: Dictionary)
 	var n_dust := int(round(imp.dust * float(look.get("dust_k", 1.0))))
 	if n_dust > 0:
 		if _puff == null:
-			_puff = HSMuzzle.puff_mesh(_t("puff"))
+			_puff = HSMuzzle.puff_mesh(_t("puff"), 0.0)     # (dust only adds its light: it never hides the wall)
 		var dc: Color = look.get("dust", Color(0.8, 0.78, 0.74))
 		var g := Gradient.new()
 		g.set_color(0, Color(dc, 0.0))

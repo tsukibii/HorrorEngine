@@ -1,5 +1,5 @@
 """The weapons plugin's sounds, made from nothing (numpy, then ffmpeg for the Ogg; DECISIONS 2026-11-09): a 12-gauge's
-blast, its pump racked back and run forward, a shell pushed into the loading port, the dry click on an empty chamber,
+blast, a shell pushed home, the dry click on an empty chamber,
 a spent hull dropping on the floor, the gun raised and lowered, a box of shells picked up, an explosive shell bursting
 where it lands. Each is mono (the Sound node places it in the room and
 the sound physics give it the room's reverb, so the blast carries no room of its own: a short tail only).
@@ -62,25 +62,6 @@ def blast(rng):
     tail = band(rng.standard_normal(len(t)), 40, 700) * decay(t, 0.32, 0.01, 0.01)
     x = 1.0 * crack / np.abs(crack).max() + 0.9 * body / np.abs(body).max() + 0.85 * thump + 0.22 * tail / np.abs(tail).max()
     return np.tanh(1.8 * x)
-
-
-def pump_back(rng):
-    t = t_(0.26)
-    x = modes(t, 0.002, [2300, 3650, 5150], [0.022, 0.016, 0.010], [0.55, 0.4, 0.3], rng) + tick(t, 0.002, 2000, 9000, 0.003, 0.5, rng)
-    slide = band(rng.standard_normal(len(t)), 1500, 6500) * np.clip(np.sin(np.pi * np.clip((t - 0.012) / 0.11, 0, 1)), 0, 1) * 0.16
-    x += slide / max(np.abs(slide).max(), 1e-9) * 0.16
-    x += modes(t, 0.128, [1350, 2580, 4120, 6150], [0.040, 0.030, 0.020, 0.012], [0.8, 0.6, 0.4, 0.25], rng)
-    x += tick(t, 0.128, 1800, 9000, 0.004, 0.7, rng) + tick(t, 0.128, 140, 600, 0.016, 0.6, rng)
-    return x
-
-
-def pump_forward(rng):
-    t = t_(0.24)
-    slide = band(rng.standard_normal(len(t)), 1300, 6000) * np.clip(np.sin(np.pi * np.clip(t / 0.095, 0, 1)), 0, 1)
-    x = slide / max(np.abs(slide).max(), 1e-9) * 0.15
-    x += modes(t, 0.098, [1180, 2240, 3480, 5600], [0.045, 0.034, 0.022, 0.013], [0.9, 0.65, 0.45, 0.25], rng)
-    x += tick(t, 0.098, 1500, 9000, 0.004, 0.8, rng) + tick(t, 0.098, 110, 520, 0.020, 0.75, rng)
-    return x
 
 
 def shell_insert(rng):
@@ -177,11 +158,13 @@ def shell_burst(rng):
     return np.tanh(2.0 * x)
 
 
-SOUNDS = {"shotgun_fire": (blast, -0.5), "shotgun_pump_back": (pump_back, -4.0), "shotgun_pump_forward": (pump_forward, -3.0),
-          "shotgun_shell_insert": (shell_insert, -6.0), "shotgun_dry": (dry_click, -8.0), "shell_drop": (shell_drop, -10.0),
-          "shotgun_handle": (handle, -10.0), "shells_box": (shells_box, -9.0),       # (new ones last: each one's seed is its place)
+SOUNDS = {"shotgun_fire": (blast, -0.5), "shotgun_shell_insert": (shell_insert, -6.0), "shotgun_dry": (dry_click, -8.0),
+          "shell_drop": (shell_drop, -10.0), "shotgun_handle": (handle, -10.0), "shells_box": (shells_box, -9.0),
           "double_open": (double_open, -5.0), "double_close": (double_close, -3.0), "double_flick": (double_flick, -8.0),
           "shell_burst": (shell_burst, -0.3)}
+# each sound's own seed (its place when the pump gun's two were still made: the files stay byte for byte the same)
+SEEDS = {"shotgun_fire": 0, "shotgun_shell_insert": 3, "shotgun_dry": 4, "shell_drop": 5, "shotgun_handle": 6,
+         "shells_box": 7, "double_open": 8, "double_close": 9, "double_flick": 10, "shell_burst": 11}
 
 
 def write(path, x, peak_db):
@@ -206,8 +189,8 @@ def write(path, x, peak_db):
 def main():
     out = Path(sys.argv[sys.argv.index("--out") + 1]) if "--out" in sys.argv else OUT
     out.mkdir(parents=True, exist_ok=True)
-    for i, (name, (fn, peak)) in enumerate(SOUNDS.items()):
-        x = fn(np.random.default_rng(1000 + i))
+    for name, (fn, peak) in SOUNDS.items():
+        x = fn(np.random.default_rng(1000 + SEEDS[name]))
         write(out / f"{name}.ogg", x, peak)
         print(f"  {name}.ogg {len(x) / SR:.2f} s")
     print(f"WEAPONSOUNDS ok ({len(SOUNDS)} into {out})")

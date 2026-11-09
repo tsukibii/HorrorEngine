@@ -1,9 +1,9 @@
 @icon("res://addons/horrorstudio_weapons/icons/shells.svg")
 class_name HSWeaponPickup
 extends Node3D
-## Something for the weapon, taken with E (the starter's player uses whatever has use()): `kind` shotgun (the gun itself,
-## lying on its side where you put this, `shells` coming with it into the pocket), double (the double barrel, for a
-## player with an HSDoubleBarrel) or shells (a box of them, for the gun you carry). `shell` the kind of shells
+## Something for the weapon, taken with E (the starter's player uses whatever has use()): `kind` double (the shotgun,
+## the double barrel itself, lying on its side where you put this, `shells` coming with it into the pocket; a scene's
+## old `shotgun` is the double too) or shells (a box of them, for the gun you carry). `shell` the kind of shells
 ## (HSShellType: the plugin's `shells/explosive.tres`, or one of your own; none, the gun's normal buckshot): its box is
 ## the kind's own when the plugin has one (`models/shells_box_5_<id>.glb`), or `box_model`. Taken, the player's gun (the
 ## group hs_weapon) is given the gun or the shells, a line is said (the Story's, `say`) and this is gone. `taken` to
@@ -12,7 +12,7 @@ signal taken
 
 const DIR := "res://addons/horrorstudio_weapons/"
 
-@export_enum("shotgun", "shells", "double") var kind := "shotgun"
+@export_enum("double", "shells") var kind := "double"
 @export var shells := 5
 @export var say := ""
 @export_range(0.0, 110.0) var lid_open := 0.0     ## a box of shells' lid, degrees open (0 shut): the shells inside show
@@ -22,8 +22,8 @@ const DIR := "res://addons/horrorstudio_weapons/"
 
 func _ready() -> void:
 	var box := Vector3(0.9, 0.08, 0.2)
-	if kind == "shotgun" or kind == "double":
-		var g := (load(DIR + "models/%s.glb" % ("shotgun_double" if kind == "double" else "shotgun_pump")) as PackedScene).instantiate() as Node3D
+	if kind != "shells":
+		var g := (load(DIR + "models/shotgun_double.glb") as PackedScene).instantiate() as Node3D
 		add_child(g)
 		g.rotation = Vector3(deg_to_rad(90.0), 0.0, 0.0)          # on its side
 		g.position = Vector3(0, 0.024, 0)
@@ -70,15 +70,14 @@ func _open_lid(b: Node3D, deg: float) -> void:
 
 func use(_by: Node = null) -> void:
 	var w: Node = null
-	for g in get_tree().get_nodes_in_group("hs_weapon"):    # (the gun of its kind; shells to the one you carry)
-		var dbl: bool = g.get_script() != null and (g.get_script() as Script).get_global_name() == &"HSDoubleBarrel"
-		if (kind == "double" and dbl) or (kind == "shotgun" and not dbl) or (kind == "shells" and (w == null or bool(g.get("owned")))):
+	for g in get_tree().get_nodes_in_group("hs_weapon"):    # (the gun; shells to the one you carry)
+		if kind != "shells" or w == null or bool(g.get("owned")):
 			w = g
 			if kind != "shells":
 				break
 	if w == null:
 		return
-	if kind == "shotgun" or kind == "double":
+	if kind != "shells":
 		w.give(shells, shell)
 	else:
 		w.add_shells(shells, shell)

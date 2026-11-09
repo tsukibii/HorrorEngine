@@ -1,10 +1,12 @@
-## The weapons plugin's pictures (tools/godot/weapons_check.py --pictures): the shotgun in the hotel's corridor at
-## night as the player sees it. idle, aim (held to the eye), fire (the flash's frame), rack (the pump back, the hull in
-## the air), reload (a shell going into the port), floor (the hulls on the carpet in the flashlight), tape (the gun in
-## the tape's 4:3 picture, camhybrid), box and box_open (the box of shells where it lies, shut and open); the muzzle
-## and what shots leave: trail (the smoke left behind as the gun swings, in the flashlight), marks (a wall's craters
-## close, the light raking across them), explosive (the explosive shell's flash), blast (its ball of fire down the
-## corridor), scorch (the scorch and its embers after, the smoke rising).
+## The weapons plugin's pictures (tools/godot/weapons_check.py --pictures): the double barrel in the hotel's corridor at
+## night as the player sees it. idle (only its barrels in the view), aim (held to the eye), fire (the right barrel's
+## flash), fire_left (the left's a quarter second later, through the first's smoke), open (broken open in the view, the
+## hulls just flicked out), pop (a shell on its way into its chamber), floor (the hulls on the carpet in the
+## flashlight), tape (the gun in the tape's 4:3 picture, camhybrid), trail (the smoke left behind as the gun swings);
+## what a 12-gauge leaves on a wall (docs/research/shotgun_damage.md), each close in a light raking across it:
+## damage_arm (from an arm's length), damage_room (across a room), damage_corridor (down a corridor), damage_concrete;
+## explosive (the explosive shell's flash), blast (its ball of fire down the corridor), scorch (the scorch and its
+## embers after, the smoke rising); box and box_open (the box of shells where it lies, shut and open).
 ##   godot --path PROJECT --rendering-driver vulkan --fixed-fps 30 -s weapons_shots.gd -- --out=DIR [--only=idle,fire]
 extends SceneTree
 
@@ -20,8 +22,12 @@ func frames(n: int) -> void:
 		await process_frame
 
 
+func wanted(name: String) -> bool:
+	return only.is_empty() or only.has(name)
+
+
 func shot(name: String, hold := 30) -> void:
-	if not only.is_empty() and not only.has(name):
+	if not wanted(name):
 		return
 	await frames(hold)
 	await RenderingServer.frame_post_draw
@@ -29,16 +35,29 @@ func shot(name: String, hold := 30) -> void:
 	print("SHOT %s" % name)
 
 
-func seconds(prop: String) -> float:
-	return float(gun.get(prop))
-
-
 func now(name: String) -> void:
-	if not only.is_empty() and not only.has(name):
+	if not wanted(name):
 		return
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(out_dir.path_join(name + ".png"))
 	print("SHOT %s" % name)
+
+
+func idle_gun(secs: float) -> void:
+	for i in int(secs * 30.0):
+		if not bool(gun.get("busy")):
+			return
+		await process_frame
+
+
+func look(p: Vector3) -> void:
+	var eye := player.get_node("Eye") as Camera3D
+	var d := p - player.global_position
+	player.rotation.y = atan2(-d.x, -d.z)
+	var e := p - eye.global_position
+	var pt := atan2(e.y, Vector2(e.x, e.z).length())
+	player.set("pitch", pt)
+	eye.rotation.x = pt
 
 
 func _initialize() -> void:
@@ -65,40 +84,45 @@ func _initialize() -> void:
 	await shot("aim", 25)
 	gun.set_aim(false)
 	await frames(20)
-	gun.pull()
+	gun.pull()                                                    # the right barrel
 	await frames(1)
 	await now("fire")
-	await frames(10)
-	await now("rack")                                             # the pump back, the hull just out of the port
-	await frames(60)
-	gun.set("loaded", 1)
-	gun.set("spare", 6)
+	await idle_gun(1.0)
+	gun.pull()                                                    # the left, a quarter second on: through the first's smoke
+	await frames(1)
+	await now("fire_left")
+	await frames(20)
 	gun.reload()
-	for i in 150:                                                 # the second shell on its way into the port
+	for i in 120:                                                 # broken open, the hulls just thrown
 		await process_frame
-		if int(gun.get("loaded")) == 2:
-			await frames(int(seconds("insert_gap") * 30.0 + seconds("insert_secs") * 15.0))
-			await now("reload")
+		if float(gun.get("opened")) > 0.99:
 			break
-	await frames(90)
+	await frames(2)
+	await now("open")
+	for i in 120:                                                 # the second shell on its way in
+		await process_frame
+		if int(gun.get("loaded")) >= 1:
+			break
+	await frames(int(float(gun.get("pop_secs")) * 30.0 * 0.5) + 2)
+	await now("pop")
+	await idle_gun(4.0)
+	await frames(10)
 	for i in 2:                                                   # two more hulls on the floor
 		gun.pull()
-		await frames(36)
+		await idle_gun(1.0)
+		await frames(6)
+	gun.reload()
+	await idle_gun(4.0)
 	await frames(60)
 	var eye := player.get_node("Eye") as Camera3D
 	var torch := player.get_node("Eye/Flashlight") as Node3D
 	torch.visible = true                                          # the flashlight on: the hulls in its beam
-	var hs: Array = gun.get("_hulls")
+	var hs: Array = (gun.get("_hulls") as Array).filter(func(h): return is_instance_valid(h))
 	var mid := Vector3.ZERO
 	for h in hs:
-		mid += (h as Node3D).global_position / float(hs.size())
+		mid += (h as Node3D).global_position / float(maxi(hs.size(), 1))
 	var yaw0 := player.rotation.y
-	var d := mid - player.global_position                         # looking at the hulls where they lie
-	player.rotation.y = atan2(-d.x, -d.z)
-	var e := mid - eye.global_position
-	var pt := atan2(e.y, Vector2(e.x, e.z).length())
-	player.set("pitch", pt)
-	eye.rotation.x = pt
+	look(mid)                                                     # looking at the hulls where they lie
 	var lamps := main.get_node("Hotel").find_children("*", "Light3D", true, false)
 	for l in lamps:
 		(l as Light3D).light_energy /= 0.13                       # (the lights up for this one: the hulls on the carpet)
@@ -118,19 +142,18 @@ func _initialize() -> void:
 	quit()
 
 
-# the muzzle and what shots leave: the trail behind the gun as it swings, a wall's craters close in a raking light, the
-# explosive shell's flash, its ball of fire, its scorch
+# the muzzle and what shots leave: the trail behind the gun as it swings, a wall shot from three distances and a
+# concrete one, the explosive shell's flash, its ball of fire, its scorch
 func muzzle_shots() -> void:
-	var names := ["trail", "marks", "explosive", "blast", "scorch"]
-	if not only.is_empty() and names.all(func(n): return not only.has(n)):
+	var names := ["trail", "damage_arm", "damage_room", "damage_corridor", "damage_concrete", "explosive", "blast", "scorch"]
+	if names.all(func(n): return not wanted(n)):
 		return
 	var eye := player.get_node("Eye") as Camera3D
 	var torch := player.get_node("Eye/Flashlight") as Node3D
 	var home := player.global_position
 	var yaw0 := player.rotation.y
-	torch.visible = true                                          # the flashlight under the barrel: its beam through the smoke
-	gun.set("loaded", 3)
-	gun.set("chambered", true)
+	torch.visible = true                                          # the flashlight under the barrels: its beam through the smoke
+	gun.set("loaded", 2)                                          # (the double's chambers follow `loaded`)
 	await frames(20)
 	gun.pull()
 	for i in 54:                                                  # the gun swung right after the shot: the smoke stays behind
@@ -139,69 +162,20 @@ func muzzle_shots() -> void:
 	await now("trail")
 	await frames(120)
 	player.rotation.y = yaw0
-	# a wall's craters close: two shots at the corridor's south wall from a metre, then up to it, the light raking
-	var cz := player.global_position.z
-	player.global_position = home + Vector3(-1.0, 0.0, 0.0)
-	var south := Vector3(player.global_position.x, eye.global_position.y - 0.25, cz - 3.0)
-	var d := south - player.global_position
-	player.rotation.y = atan2(-d.x, -d.z)
-	player.set("pitch", -0.12)
-	eye.rotation.x = -0.12
-	await frames(10)
-	for i in 2:
-		gun.set("chambered", true)
-		gun.pull()
-		await frames(40)
-	await frames(30)
-	var im := get_first_node_in_group("hs_impacts")
-	var ms: Array = (im.get("marks") as Array).slice(-14) if im != null else []
-	var mid := Vector3.ZERO
-	var nrm := Vector3.ZERO
-	for m in ms:
-		mid += (m as Node3D).global_position / float(ms.size())
-		nrm += (m as Node3D).global_basis.y / float(ms.size())
-	var cam := Camera3D.new()
-	main.add_child(cam)
-	cam.fov = 40.0
-	nrm = nrm.normalized() if nrm.length() > 0.1 else Vector3(0, 0, 1)
-	cam.global_position = mid + nrm * 0.55 + Vector3(0, 0.05, 0)
-	cam.look_at(mid, Vector3.UP)
-	var rake := SpotLight3D.new()                                 # a light across the wall: the craters' walls catch it
-	main.add_child(rake)
-	rake.global_position = mid + nrm * 0.35 + (nrm.cross(Vector3.UP).normalized()) * 0.7 + Vector3(0, 0.25, 0)
-	rake.look_at(mid, Vector3.UP)
-	rake.spot_angle = 30.0
-	rake.light_energy = 2.2
-	rake.spot_range = 3.0
-	rake.shadow_enabled = true
-	rake.light_color = Color(1.0, 0.95, 0.86)
-	gun.set("owned", false)                                       # (out of the picture, its flashlight off the wall)
 	torch.visible = false
-	cam.current = true
-	await shot("marks", 20)
-	cam.current = false
-	eye.current = true
-	gun.set("owned", true)
-	torch.visible = true
-	rake.queue_free()
-	cam.queue_free()
-	# the explosive shell: loaded with T's kind, fired at the floor down the corridor
+	await damage_shots()
+	# the explosive shell: two of them loaded with T's kind, the right barrel fired at the floor down the corridor
 	player.global_position = home
 	player.rotation.y = yaw0
 	var ex = load("res://addons/horrorstudio_weapons/shells/explosive.tres")
+	gun.set("loaded", 0)
+	await frames(3)
 	gun.add_shells(2, ex)
 	gun.set_load_kind(ex)
-	gun.set("loaded", 0)
-	gun.set("chambered", false)
-	gun.set("tube", [])
 	gun.reload()
-	for i in 400:
-		await process_frame
-		if not bool(gun.get("busy")):
-			break
+	await idle_gun(5.0)
 	player.set("pitch", -0.33)
 	eye.rotation.x = -0.33
-	torch.visible = false
 	await frames(30)
 	gun.pull()
 	await frames(1)
@@ -220,9 +194,114 @@ func muzzle_shots() -> void:
 	eye.rotation.x = 0.0
 
 
+# what a 12-gauge leaves on a wall: two panels across the corridor's east end facing west, painted plasterboard and bare
+# concrete, shot with the right barrel from an arm's length, across a room and down the corridor (the muzzle 0.15, 2.5
+# and 4.5 m off, apart on the panel, the pellets seeded as WEAPONS seeds them), then each close in a light raking across it
+func damage_shots() -> void:
+	var cases := [["damage_arm", 0.15, 0, 0.1, -0.24, 11], ["damage_room", 2.5, 0, 0.0, 0.22, 23], ["damage_corridor", 4.5, 0, -0.4, -0.05, 37], ["damage_concrete", 2.5, 1, 0.0, 0.0, 41]]
+	if cases.all(func(c): return not wanted(str(c[0]))):
+		return
+	var cfg: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://weapons.json"))
+	var corr: Dictionary = cfg["corridor"]
+	var fl := float(cfg["floor"])
+	var px := float(corr["at"][0]) + float(corr["size"][0]) / 2.0 - 2.4
+	var pz := [float(corr["at"][2]) - 0.45, float(corr["at"][2]) + 0.45]
+	var panels: Array = []
+	for k in 2:
+		var body := StaticBody3D.new()
+		body.set_meta("hs_surface", "plaster" if k == 0 else "concrete")
+		var cs := CollisionShape3D.new()
+		var bs := BoxShape3D.new()
+		bs.size = Vector3(0.1, 1.5, 0.86)
+		cs.shape = bs
+		body.add_child(cs)
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = bs.size
+		mi.mesh = bm
+		var mat := StandardMaterial3D.new()
+		if k == 0:
+			mat.albedo_color = Color(0.86, 0.84, 0.8)                 # painted plasterboard
+			mat.roughness = 0.88
+		else:
+			var nz := FastNoiseLite.new()                             # bare concrete: grey, its grain fine and uneven
+			nz.frequency = 0.3
+			nz.fractal_octaves = 4
+			var ramp := Gradient.new()
+			ramp.set_color(0, Color(0.5, 0.5, 0.48))
+			ramp.set_color(1, Color(0.74, 0.73, 0.7))
+			var nt := NoiseTexture2D.new()
+			nt.width = 512
+			nt.height = 512
+			nt.seamless = true
+			nt.noise = nz
+			nt.color_ramp = ramp
+			mat.albedo_texture = nt
+			mat.roughness = 0.95
+			mat.uv1_scale = Vector3(2, 2, 2)
+		mi.material_override = mat
+		body.add_child(mi)
+		main.add_child(body)
+		body.global_position = Vector3(px + 0.05, fl + 1.25, pz[k])
+		panels.append(body)
+	await frames(10)
+	var eye := player.get_node("Eye") as Camera3D
+	var ahead := -eye.to_local(gun.muzzle(0).global_position).z
+	var mids := {}
+	for c in cases:
+		gun.set("loaded", 2)
+		await frames(3)
+		var pzi: float = pz[int(c[2])]
+		player.global_position = Vector3(px - float(c[1]) - ahead, fl, pzi)
+		await frames(2)
+		look(Vector3(px, eye.global_position.y + float(c[3]), pzi + float(c[4])))
+		await frames(3)
+		seed(int(c[5]))                                           # (the pellets are the shot's first randoms)
+		gun.pull()
+		await frames(2)
+		var on: Array = (gun.get("last_hits") as Array).filter(func(h): return h["collider"] == panels[int(c[2])])
+		var m := Vector3.ZERO
+		for h in on:
+			m += (h["point"] as Vector3) / float(maxi(on.size(), 1))
+		mids[c[0]] = m
+		await frames(12)
+	gun.set("owned", false)                                       # (out of the pictures, its flashlight with it)
+	await frames(90)                                              # (the dust settled, the smoke gone from the panels)
+	for c in cases:
+		if not wanted(str(c[0])):
+			continue
+		var mid: Vector3 = mids[c[0]]
+		var nrm := Vector3(-1, 0, 0)
+		var cam := Camera3D.new()
+		main.add_child(cam)
+		cam.fov = 40.0
+		cam.global_position = mid + nrm * 0.5 + Vector3(0, 0.02, 0)
+		cam.look_at(mid, Vector3.UP)
+		var rake := SpotLight3D.new()                             # a light across the wall: the holes' walls catch it
+		main.add_child(rake)
+		var aside := 0.7 if mid.z < float(corr["at"][2]) else -0.7   # (from the corridor's middle: a wall would hide it)
+		rake.global_position = mid + nrm * 0.3 + Vector3(0, 0.25, aside)
+		rake.look_at(mid, Vector3.UP)
+		rake.spot_angle = 32.0
+		rake.light_energy = 2.2
+		rake.spot_range = 3.0
+		rake.shadow_enabled = true
+		rake.light_color = Color(1.0, 0.95, 0.86)
+		cam.current = true
+		await shot(str(c[0]), 20)
+		cam.current = false
+		rake.queue_free()
+		cam.queue_free()
+	eye.current = true
+	gun.set("owned", true)
+	for p in panels:
+		(p as Node).queue_free()
+	await frames(20)
+
+
 # the box of shells where it lies (the ammo family's shells_box_5), close under a held light: shut, then its lid open
 func box_shots() -> void:
-	if not only.is_empty() and not only.has("box") and not only.has("box_open"):
+	if not wanted("box") and not wanted("box_open"):
 		return
 	var pk := main.get_node_or_null("Shells") as Node3D
 	if pk == null:

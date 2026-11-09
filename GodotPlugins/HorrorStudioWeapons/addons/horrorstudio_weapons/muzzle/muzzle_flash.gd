@@ -71,3 +71,4 @@ enum Blend { SOLID, ADD }
 @export var smoke_color := Color(0.82, 0.8, 0.77)
 @export_range(0.0, 2.0) var smoke_density := 1.0
 @export_range(0.0, 1.0) var smoke_glow := 0.6                ## a light of its own, so it reads as grey wisps in a dim room as in the user's reference (0: lit by the room's lights only)
+@export_range(0.05, 2.0) var smoke_light_cap := 0.5          ## the most light any one lamp gives the smoke: the next shot's flash beside it lights the cloud a glow, not a white ball (a lamp a metre off is far under it)

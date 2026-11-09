@@ -1,20 +1,24 @@
 @tool
 @icon("res://addons/horrorstudio_weapons/icons/double.svg")
 class_name HSDoubleBarrel
-extends HSShotgun
-## A side-by-side 12-gauge that breaks open: the weapons plugin's v2 (the user's, DECISIONS 2026-11-09: "a v2 double
+extends HSGun
+## The weapons plugin's shotgun: the user's side-by-side 12-gauge that breaks open (DECISIONS 2026-11-09: "a v2 double
 ## barrel shotgun, where only the barrel is visible in frame, unless we reload then it splits in two within frame and
-## two shells pop in"). Put it under the player's camera as the pump gun is. Held low so that only its barrels are in
-## the view, their muzzles toward its middle. Left click fires a barrel (the right, the front trigger; then the left,
-## the rear one). R brings the gun up into the view and breaks it open on its hinge: the top lever over, the barrels
-## dropping, the gun in two; the spent hulls flicked out by the ejectors, a live shell left where it is, and a shell
-## popping into each empty chamber; then it's snapped shut and goes back down. A click during it stops the loading and
-## fires once it's shut. Everything else as the pump gun's (HSShotgun): aim, lower, run, the flashlight under the
-## barrels, the holes, the noise, the ears, the pickups; the shells low on the right as two marks and the pocket's count.
+## two shells pop in"; then their own model; then, latest, "I don't want the single barrel shotgun, only the double
+## barrel one"). Put it under the player's camera. Held low so that only its barrels are in the view, their muzzles
+## toward its middle. Left click fires a barrel (the right, the front trigger; then the left, the rear one), each from
+## its own muzzle and through its own choke (`chokes`: the right improved cylinder, the left modified, as a field gun's
+## are). R brings the gun up into the view and breaks it open on its hinge: the top lever over, the barrels dropping,
+## the gun in two; the spent hulls flicked out by the ejectors, a live shell left where it is, and a shell of the kind
+## T picked popping into each empty chamber; then it's snapped shut and goes back down. A click during it stops the
+## loading and fires once it's shut. Everything else is HSGun's: aim, lower, run, the flashlight under the barrels, the
+## muzzle's flash and smoke, what the shot leaves, the noise, the ears, the pickups; the shells low on the right as two
+## marks in their kinds' colours and the pocket's count.
 
 signal broke_open                                 ## the barrels dropped: the chambers bare
 signal closed                                     ## snapped shut
 
+@export var chokes := Vector2(0.9, 0.7)           ## each barrel's cone (half angle, degrees): the right improved cylinder, the left modified
 @export_group("Break")
 @export var open_deg := 38.0                      ## how far the barrels drop on the hinge
 @export var lever_deg := 30.0                     ## the top lever over to the right
@@ -41,7 +45,7 @@ var _in_chamber := [null, null]                   # the shell in each chamber (i
 
 
 func _init() -> void:
-	# held lower than the pump gun: only the barrels in the view, the action and the stock under it
+	# held low: only the barrels in the view, the action and the stock under it
 	hold = Vector3(0.10, -0.235, -0.31)
 	aim_at_m = 1.3
 	aim_hold = Vector3(0.0, -0.07, -0.19)
@@ -73,7 +77,7 @@ func _ready() -> void:
 	_count()
 
 
-# the glb's parts as the pump gun reads them, and the double's own: the barrels on their hinge (the sockets on them
+# the glb's parts as HSGun reads them, and the double's own: the barrels on their hinge (the sockets on them
 # carried with them: the muzzles, the chambers, the flashlight), the top lever, the rear trigger
 func _find_parts() -> void:
 	super._find_parts()
@@ -277,9 +281,30 @@ func _process(dt: float) -> void:
 	super._process(dt)
 	if Engine.is_editor_hint() or _barrels == null:
 		return
+	if not busy and loaded != int(live[0]) + int(live[1]):   # `loaded` set by a script or a check: the chambers follow it
+		_load_to(clampi(loaded, 0, 2))
 	_barrels.transform = Transform3D(Basis(_hinge_axis, deg_to_rad(open_deg * opened)) * _barrels0.basis, _barrels0.origin)
 	if _lever != null:
 		_lever.transform = Transform3D(Basis(_lever_axis, deg_to_rad(lever_deg * _lever_k)) * _lever0.basis, _lever0.origin)
+
+
+# the chambers made to hold `n` live shells of the normal kind at once, the right first (what a script setting `loaded`
+# means); a chamber left out is emptied, a hull in one that stays out kept
+func _load_to(n: int) -> void:
+	for b in 2:
+		if b < n and not live[b]:
+			live[b] = true
+			spent[b] = false
+			barrel_kind[b] = normal_kind()
+			_seat(b, false)
+		elif b >= n and live[b]:
+			live[b] = false
+			var old = _in_chamber[b]
+			if old != null and is_instance_valid(old):
+				old.queue_free()
+			_in_chamber[b] = null
+	_count()
+	_show_hud()
 
 
 # the shells, low on the right: the right and the left barrel's marks, the pocket's count
@@ -307,6 +332,11 @@ func _draw_hud() -> void:
 	for b in [0, 1]:                                 # (as they lie: the right barrel's mark the right one)
 		_mark(Rect2(x, top, w, h), bool(live[b]), _tint(full, barrel_kind[b]), empty_c, u)
 		x -= w + 4.0 * u
+
+
+# each barrel's own choke
+func _spread(barrel: int) -> float:
+	return chokes.x if barrel == 0 else chokes.y
 
 
 # a muzzle a barrel: the right's, the left's (the one between them on a model without)
