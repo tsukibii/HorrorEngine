@@ -49,6 +49,15 @@ gun"; DECISIONS 2026-11-09). Built:
   sounds, the editor's preview, `HSShootable` (shot: gone a while, shoved, a cry, a line, a target; `hit`, `down`), and
   the guide `guides/weapons/index.html` (its pictures WEAPONS's).
 
+- **The v2, a double barrel** (the user: "only the barrel is visible in frame, unless we reload then it splits in two
+  within frame and two shells pop in"; then their own model, `dbl_barrel.fbx`, "use it as a base and enhance it with
+  better pbr textures"; DECISIONS 2026-11-09, later): `HSDoubleBarrel` (`double.gd`) on `shotgun_double`, the prop
+  generator's kind `double` reading the user's model from `Content/Studio/Props/models/` (its real size, its barrels
+  made round, its parts and sockets measured on it, blued, case-hardened, checkered walnut: PROPGEN §30); only its
+  barrels in the view, the right barrel then the left, R breaks it open near the eye (a V with the chambers in the
+  middle of the view), the hulls flicked out past your face, a shell popping into each chamber, shut. WEAPONS's double
+  half and its pictures (double_*.jpg); PROPGEN's cases have it.
+
 **Next, if the user wants it**: the gun in tutorial v2 itself (found in a room, her an HSShootable that's gone a while when
 shot, the searcher coming at the noise), the export and the Director's projects copying the plugin in (nothing in the
 runtime uses it yet), aiming down the barrel on the right button, a melee shove, more weapons as recipes in the same

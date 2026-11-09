@@ -3,6 +3,24 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The double barrel: the user's model, worn (2026-11-09, later)
+
+- **A check timed by the wall clock passes nothing under `--fixed-fps`**: the double's reload measured 0.06 s, because a
+  headless run at a fixed 60 fps steps the game faster than real time. Time a run in the game's own frames (count them,
+  divide by 60), as the other checks wait (`frames`, `until`).
+- **Blender's Workbench engine wants EGL**: rendering an .fbx to look at it headless failed ("Couldn't open
+  libEGL.so.1"); Cycles on the CPU renders the same thing (12 to 48 samples for a look).
+- **An imported model's objects move with their parents**: the user's .fbx has the barrels, the lever and the triggers
+  under the stock's object; putting one object's mesh into place and clearing its transform moves the children with
+  it. Read every object's world matrix first, then transform every mesh, then clear the parents.
+- **The wear on a texture finer than the made props' looks like frost**: a smart unwrap gave the steel about twice the
+  pump gun's texels a millimetre, and the same scratches (0.35) came out as fine white lace all over the bluing; a
+  little (0.1) reads as use. The thin parts (a lever, a trigger) are all edge to the curvature, so their edges' wear
+  covers them: half of it there.
+- **Rings as thin dark lines read as plywood**: the stock's first walnut was evenly spaced dark lines on a light ground;
+  the furniture's own recipe (rings 5 mm apart that wander nine millimetres, fibres, a slow tone, the late wood a band)
+  reads as a board. Paint wood in the solid with `wood_color`'s numbers.
+
 ## The shotgun: things that took a second try (2026-11-09)
 
 - **A tiny rigid body sinks through a level's floor**: a spent hull (a cylinder 1 cm in radius) bounced once on the

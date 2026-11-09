@@ -1,29 +1,40 @@
 # HorrorStudio Weapons: a shotgun in first person for any Godot 4.7 game
 
 One add-on (`addons/horrorstudio_weapons/`, GDScript with its models and sounds, nothing to build): **HSShotgun**, a
-pump-action 12-gauge held in first person, and **HSWeaponPickup**, the gun or a box of shells lying in a room. Made for
-horror first: one heavy, slow gun, four in the tube and one in the chamber, every shell counted and loaded by hand, and
-no hands on it (the user's, DECISIONS 2026-11-09). A game made by hand gets it with `tools/godot_byhand.py`.
+pump-action 12-gauge held in first person, **HSDoubleBarrel**, the v2: a side-by-side that breaks open (the user's own
+model), and **HSWeaponPickup**, a gun or a box of shells lying in a room. Made for horror first: one heavy, slow gun,
+every shell counted and loaded by hand, and no hands on it (the user's, DECISIONS 2026-11-09). A game made by hand gets
+it with `tools/godot_byhand.py`.
 
 ![held](../../guides/weapons/img/idle.jpg) ![aimed](../../guides/weapons/img/aim.jpg)
 ![the shot](../../guides/weapons/img/fire.jpg) ![the pump racked, the hull out](../../guides/weapons/img/rack.jpg)
 ![a shell into the loading port](../../guides/weapons/img/reload.jpg) ![on tape: in its 4:3 picture](../../guides/weapons/img/tape.jpg)
+![the double barrel: only its barrels](../../guides/weapons/img/double_idle.jpg) ![broken open, the hulls flicked out](../../guides/weapons/img/double_open.jpg)
+![a shell into each chamber](../../guides/weapons/img/double_pop.jpg)
 
 The guide for the user, with these pictures: `guides/weapons/index.html`.
 
 | Piece | File | Use |
 |---|---|---|
 | **The shotgun** | `shotgun.gd` (`HSShotgun`, a Node3D) | put one under the player's camera. Held low on the right and pointing in, its muzzle just under the middle of the view (its barrel's line meets the middle `aim_at_m` 1.1 m ahead, as the user's reference); the carried flashlight's beam on the middle `beam_at_m` 12 m ahead; it sways behind the view as it turns, bobs as you walk, breathes, kicks, and never pokes through a wall; held to the eye on the right button. The shells low on the right as marks (the tube's four, the chamber's, filled where there's a shell) and the pocket's count, in the HorrorStudio UI's colours. `pull()`, `rack()`, `reload()`, `set_aim(on)`, `set_raised(up)`, `give(shells)`, `add_shells(n)`; `loaded`, `chambered`, `spare`, `capacity`, `aiming` |
-| **Pickups** | `pickup.gd` (`HSWeaponPickup`, a Node3D) | `kind` shotgun (the gun lying on its side, `shells` coming with it) or shells (a box of them); E takes it (the starter's player uses anything with `use()`), `say` a line through the Story, `taken` to wire a scare to |
+| **The double barrel** | `double.gd` (`HSDoubleBarrel`, an HSShotgun) | the v2 (the user's): a side-by-side 12-gauge, the user's own model. Put it under the camera as the pump gun. Held low: only its barrels in the view, their muzzles toward its middle. Left click fires the right barrel (the front trigger), then the left (the rear), then clicks. R: up near the eye and broken open there, a V in the middle of the view (the barrels dropping away to the left, the stock down to the right) with the chambers at its point; the fired hulls flicked up and out past your face, a live shell left where it is, a shell popping into each empty chamber; snapped shut and back down (1.6 s for two); a click during it fires once it's shut. `broke_open`, `closed`; `live`, `spent`, `opened`; `open_deg`, `lever_deg`, `pop_secs`, `pose_off`, `pose_rot` (the reload's pose); everything else as HSShotgun |
+| **Pickups** | `pickup.gd` (`HSWeaponPickup`, a Node3D) | `kind` shotgun (the gun lying on its side, `shells` coming with it), double (the double barrel) or shells (a box of them, into the gun you own); E takes it (the starter's player uses anything with `use()`), `say` a line through the Story, `taken` to wire a scare to |
 | **Something to shoot** | `shootable.gd` (`HSShootable`, a Node) | put one under what can be shot (a character, a doll, a lamp): a shot with a pellet on its parent is a hit, `hit(info)`, and after `hits` of them `down`. Each a switch: `gone_secs` (gone at once and back after that long, its collision with it: a ghost's way; down, gone for good), `push_m` (shoved back), `cry` (a sound), `say` (a line), `target` (its `fire()`: a scare, a cue), `lights_out` (a lamp shot out: every light under it dark when it's down, a few sparks: the dark is the price) |
-| **The models** | `models/` | the prop generator's `shotgun_pump` (its pump a part that slides, the bolt's face a part there only while the action is shut, the trigger on its hinge; sockets `muzzle`, `eject`, `port`, `chamber`, `pump`, `grip`, `trigger`, `shoulder`, `light`), `shell_12ga` and `shell_12ga_spent` (`tools/propgen.py make <name>`, docs/PROPGEN.md §30; `shotgun_pump_black` the synthetic stock to swap in) |
-| **The sounds** | `sounds/` | made in code (`tools/weapon_sounds.py`: numpy, then ffmpeg to Ogg): the blast with its tail, the pump back and forward, a shell clicking in, the dry click, a hull on the floor, the handling |
+| **The models** | `models/` | the prop generator's `shotgun_pump` (its pump a part that slides, the bolt's face a part there only while the action is shut, the trigger on its hinge; sockets `muzzle`, `eject`, `port`, `chamber`, `pump`, `grip`, `trigger`, `shoulder`, `light`), `shotgun_double` (the user's model, `Content/Studio/Props/models/dbl_barrel.fbx`, made round-barrelled and painted: blued, case-hardened, checkered walnut; its `barrels` with the fore-end on their hinge, `lever`, `trigger`, `trigger2`; sockets `muzzle`, `muzzle_r`, `muzzle_l`, `chamber`, `chamber_r`, `chamber_l`, `hinge`, `breech`, `trigger`, `light`...), `shell_12ga` and `shell_12ga_spent` (`tools/propgen.py make <name>`, docs/PROPGEN.md §30; `shotgun_pump_black` the synthetic stock to swap in) |
+| **The sounds** | `sounds/` | made in code (`tools/weapon_sounds.py`: numpy, then ffmpeg to Ogg): the blast with its tail, the pump back and forward, a shell clicking in, the dry click, a hull on the floor, the handling; the double's break open, snap shut and the ejectors' flick |
 
 ## Try it
 
 `python tools/godot/weapons_check.py --keep ~/Games/ShotgunRange` builds the check's project in a folder of your own
 (tutorial v2's hotel floor at night, the starter's player with the gun and its flashlight, a box of shells, two boxes to
 shoot): open it in Godot and press F5.
+
+## The double barrel
+
+`HSDoubleBarrel` in place of `HSShotgun` under the camera (Add Node: HSDoubleBarrel): the same exports (the hold, the
+flashlight's **light**, **owned**, **spare**...), two shells in it. Found, not carried: an HSWeaponPickup of kind double.
+R breaks it open whatever's in it (a full gun is looked into and shut again); the hulls fly out only from the barrels
+that were fired.
 
 ## By hand
 

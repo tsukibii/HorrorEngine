@@ -2,6 +2,31 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-09, later (the user: a v2 double barrel, from their own model)
+
+- **"Can you make a v2 double barrel shotgun, wher[e] only the barrel is visible in frame, unless we reload then it
+  splits in two within frame and two shells pop in."** Built as **HSDoubleBarrel** in the weapons plugin (`double.gd`,
+  an HSShotgun): held low so only its barrels are in the view, their muzzles toward its middle, the breech and the
+  action under the frame's bottom edge; left click fires the right barrel (the front trigger), then the left (the rear
+  one), then clicks; R brings it up near the eye and breaks it open there on its hinge (the top lever over, the barrels
+  dropping away to the left, the stock down to the right: a V in the middle of the view with the chambers at its point),
+  the ejectors flick the fired hulls up and out past your face, a live shell stays where it is, a shell pops into each
+  empty chamber from behind the breech, and it snaps shut and goes back down (1.6 s for two); a click during it stops
+  the loading and fires once it's shut. The pickup's `kind` double. Three sounds made in code (`double_open`,
+  `double_close`, `double_flick`: WEAPONSOUNDS). WEAPONS checks it (`weapons_double_test.gd`) and pictures it
+  (`weapons_double_shots.gd`).
+- **"Ive modelled a reference for you to use for the double barrel, use it as a base and enhance it with better pbr
+  textures similar so it matches our existing asthethic"** (with `dbl_barrel.fbx`, mid-build): the user's model took the
+  place of the one made in code. It lives in `Content/Studio/Props/models/dbl_barrel.fbx` and the `weapon` family's
+  kind `double` reads it (PROPGEN §30): at its real size (28" barrels, the gun 1.08 m), cut into the parts that move
+  (the barrels with the fore-end on the hinge pin found in its knuckle, the top lever, the two triggers), its sockets
+  measured on it (each bore's axis, the breech faces, the muzzles), **its barrels made round** (its eight-sided tubes
+  rebuilt with 32 sides at their own bore, wall, taper and length: in first person the barrels are what's in the view;
+  `round: 0` keeps the model's own), and painted by each texel's place to match the pump gun: blued steel polished
+  along the barrels with their bores dark, a matted rib and a brass bead, the action case-hardened and faded, walnut
+  (the pump's wood: rings, fibres, streaks, pores) checkered at the wrist and on the fore-end, an ebonite butt plate;
+  then worn and baked as every made prop is.
+
 ## 2026-11-09 (the user: a shotgun held in first person, on the branch `weapon-system`)
 
 - **"Make a new branch called weapon-system, create a shot gun asset and have its pov in godots horror engine similar

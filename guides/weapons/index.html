@@ -75,6 +75,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#hold">The shotgun under the camera</a></li>
     <li><a href="#play">Playing it</a></li>
     <li><a href="#reload">The reload</a></li>
+    <li><a href="#double">The double barrel</a></li>
     <li><a href="#found">Found in a room, and shot at</a></li>
     <li><a href="#code">In your own scripts</a></li>
     <li><a href="#numbers">The numbers</a></li>
@@ -89,8 +90,9 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   <h1>The HorrorStudio Weapons plugin</h1>
   <p>A pump-action shotgun held in first person, for a Godot game you build by hand: low on the right with its barrel
   on the middle of the view, fired with a click, racked by itself, reloaded a shell at a time through its loading port,
-  lowered and raised, found lying in a room. No hands on it. Made for horror: one heavy, slow gun, every shell counted.</p>
-  <div class="chips"><span class="chip">Godot 4.7</span><span class="chip">GDScript</span><span class="chip">HSShotgun</span>
+  lowered and raised, found lying in a room; and its v2, a double barrel from your own model that breaks open in front of
+  you. No hands on it. Made for horror: one heavy, slow gun, every shell counted.</p>
+  <div class="chips"><span class="chip">Godot 4.7</span><span class="chip">GDScript</span><span class="chip">HSShotgun</span><span class="chip">HSDoubleBarrel</span>
   <span class="chip">HSWeaponPickup</span><span class="chip">the prop generator's model</span><span class="chip">sounds made in code</span></div>
 </header>
 
@@ -180,12 +182,37 @@ the tube is full or your pocket is empty. If the chamber was empty, the pump is 
 </div>
 </section>
 
+<section id="double">
+<h2><span class="n">7</span>The double barrel</h2>
+<p>The v2: a side-by-side 12-gauge that breaks open, from your own model (<code>Content/Studio/Props/models/dbl_barrel.fbx</code>,
+made by the prop generator into <code>shotgun_double</code>: its barrels made round, blued, the action case-hardened, the
+walnut checkered). Add an <span class="node">HSDoubleBarrel</span> under the camera in place of the HSShotgun; everything in
+sections 4 and 5 is the same (the light, aiming, lowering, the shot).</p>
+<ul>
+  <li><b>Held</b>: low, so only its barrels are in the view, their muzzles toward its middle.</li>
+  <li><b>Left click</b>: the right barrel (the front trigger), then the left (the rear one), then a click. No pump: it's
+  ready as fast as you pull.</li>
+  <li><b>R</b>: up near your eye and broken open there: the top lever over, the barrels dropping away to the left, the
+  stock down to the right, the chambers in the middle of the view. The fired hulls are flicked up and out past your
+  face (a live shell stays where it is), a shell pops into each empty chamber, and it snaps shut and goes back down:
+  1.6 s for two. A click while it's open stops the loading and fires once it's shut.</li>
+  <li><b>Found</b>: an <span class="node">HSWeaponPickup</span> of kind <b>double</b>.</li>
+</ul>
+<figure><img src="img/double_idle.jpg" width="1600" height="900" alt="The double barrel held low: only its barrels in the view"><figcaption>Held: only the barrels in the view.</figcaption></figure>
+<div class="pair">
+<figure><img src="img/double_open.jpg" width="1600" height="900" alt="Broken open, the fired hulls flying out past the face"><figcaption>Broken open in front of you, the fired hulls flicked out.</figcaption></figure>
+<figure><img src="img/double_pop.jpg" width="1600" height="900" alt="A shell in each chamber of the broken-open gun"><figcaption>A shell popped into each chamber, then it snaps shut.</figcaption></figure>
+</div>
+</section>
+
 <section id="found">
-<h2><span class="n">7</span>Found in a room, and shot at</h2>
+<h2><span class="n">8</span>Found in a room, and shot at</h2>
 <p>Add a Node3D, give it <code>pickup.gd</code> (or add an <span class="node">HSWeaponPickup</span>), and set its <b>Kind</b>:</p>
 <div class="cols">
   <div class="card"><h4>shotgun</h4><p>The gun lying on its side. Taken with <kbd>E</kbd>, the player's HSShotgun (its Owned
   unticked) is carried from then on and drawn up into view; <b>Shells</b> come with it into the pocket.</p></div>
+  <div class="card"><h4>double</h4><p>The double barrel lying on its side, for a player with an HSDoubleBarrel: taken the
+  same way, <b>Shells</b> with it.</p></div>
   <div class="card"><h4>shells</h4><p>A box of shells: <b>Shells</b> of them into the pocket, with a rattle.</p></div>
 </div>
 <p><b>Say</b> is a line the Story shows when it's taken; the <code>taken</code> signal is there to wire a scare to.</p>
@@ -199,7 +226,7 @@ collision with it, then back: a ghost doesn't die), <b>push</b> it back, play a 
 </section>
 
 <section id="code">
-<h2><span class="n">8</span>In your own scripts</h2>
+<h2><span class="n">9</span>In your own scripts</h2>
 <pre>$Player/Eye/Shotgun.fired.connect(func(hits): print(hits.size(), " pellets hit"))
 $Player/Eye/Shotgun.shell_in.connect(func(n): print(n, " in the tube"))
 $Player/Eye/Shotgun.give(4)              # the gun, and four shells with it
@@ -217,7 +244,7 @@ func shot(info: Dictionary) -&gt; void:     # {point, normal, dir, from, pellet}
 </section>
 
 <section id="numbers">
-<h2><span class="n">9</span>The numbers</h2>
+<h2><span class="n">10</span>The numbers</h2>
 <ul>
   <li><b>The shot</b>: nine pellets in a cone of 2.6° (23 cm across at 5 m), 45 m reach; the view kicked 3.2° and settling
   back 60% of it; heard as loud as three runs.</li>
@@ -229,7 +256,7 @@ func shot(info: Dictionary) -&gt; void:     # {point, normal, dir, from, pellet}
 </section>
 
 <section id="rules">
-<h2><span class="n">10</span>Good to know</h2>
+<h2><span class="n">11</span>Good to know</h2>
 <ul>
   <li><b>Fewer flashes</b>: lower <b>Flash Energy</b> (1.5: a glow, not a flash) for players who need it.</li>
   <li><b>A click never fires while the mouse is free</b> (a menu open, or the click that takes the mouse back).</li>
