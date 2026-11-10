@@ -1,5 +1,5 @@
 """The weapons plugin's sounds, made from nothing (numpy, then ffmpeg for the Ogg; DECISIONS 2026-11-09): a 12-gauge's
-blast, a shell pushed home, the dry click on an empty chamber,
+blast, a shell pushed home, the dry click on an empty chamber, things breaking when they're shot and their pieces landing (HSBlowUp),
 a spent hull dropping on the floor, the gun raised and lowered, a box of shells picked up, an explosive shell bursting
 where it lands. Each is mono (the Sound node places it in the room and
 the sound physics give it the room's reverb, so the blast carries no room of its own: a short tail only).
@@ -158,6 +158,79 @@ def shell_burst(rng):
     return np.tanh(2.0 * x)
 
 
+# ---- things breaking (HSBlowUp: docs/research/breaking_props.md) ---------------------------------------------------
+# each in layers, as a game's glass is (impact, thump, pane, debris): the crack, the thing's body, its pieces ringing
+# as they part (each a few damped modes, the way a struck thing rings), then bits landing. A piece landing later is
+# its kind's debris_<kind>, played by the piece itself.
+
+BREAK = {
+    # crack band, body (lo, hi, tau), shard modes (lo, hi) and their decay, how many, landing ticks' band
+    "ceramic": dict(crack=(1500, 11000, 0.004), body=(300, 2600, 0.035), shard=(2600, 8200), stau=(0.012, 0.045), n=34, land=(2500, 9000)),
+    "glass": dict(crack=(2500, 14000, 0.003), body=(600, 4000, 0.02), shard=(3800, 12500), stau=(0.03, 0.11), n=46, land=(4000, 12000)),
+    "wood": dict(crack=(250, 5000, 0.012), body=(120, 900, 0.05), shard=(500, 2200), stau=(0.008, 0.02), n=18, land=(300, 2600)),
+    "metal": dict(crack=(500, 9000, 0.02), body=(160, 3200, 0.16), shard=(700, 5200), stau=(0.08, 0.35), n=12, land=(900, 6500)),
+    "cardboard": dict(crack=(700, 5000, 0.05), body=(70, 500, 0.04), shard=(400, 1600), stau=(0.006, 0.015), n=6, land=(200, 1800)),
+    "plastic": dict(crack=(800, 7000, 0.006), body=(200, 1800, 0.03), shard=(900, 3600), stau=(0.01, 0.03), n=16, land=(800, 5000)),
+    "stone": dict(crack=(200, 7000, 0.015), body=(60, 700, 0.07), shard=(900, 4200), stau=(0.006, 0.018), n=30, land=(600, 5500)),
+}
+
+
+def breaking(kind):
+    k = BREAK[kind]
+
+    def make(rng):
+        t = t_(1.6 if kind in ("metal", "glass") else 1.2)
+        lo, hi, tau = k["crack"]
+        crack = band(rng.standard_normal(len(t)), lo, hi) * decay(t, tau, 0.0, 0.0002)
+        blo, bhi, btau = k["body"]
+        body = band(rng.standard_normal(len(t)), blo, bhi) * decay(t, btau, 0.001, 0.0006)
+        x = crack / np.abs(crack).max() + 0.8 * body / np.abs(body).max()
+        if kind == "metal":                                              # a thin shell's crash: its modes beating
+            f0 = rng.uniform(380, 520)
+            fs = [f0 * r for r in (1.0, 1.47, 2.09, 2.56, 3.31, 4.2, 5.4)]
+            x += 0.9 * modes(t, 0.0, fs, [0.35, 0.28, 0.22, 0.18, 0.12, 0.09, 0.06], [1.0, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2], rng)
+        if kind == "cardboard":                                          # the card tearing: crackle under a rip
+            rip = band(rng.standard_normal(len(t)), 900, 5200) * decay(t, 0.09, 0.01, 0.005)
+            am = (rng.random(len(t)) < 0.08).astype(float)
+            am = np.convolve(am, np.ones(60) / 60, mode="same")
+            x += 1.2 * rip * am / max(np.abs(rip * am).max(), 1e-9)
+        slo, shi = k["shard"]
+        tlo, thi = k["stau"]
+        for i in range(k["n"]):                                          # the pieces ringing as they part
+            at = rng.exponential(0.018) + 0.002
+            f = np.exp(rng.uniform(np.log(slo), np.log(shi)))
+            a = rng.uniform(0.15, 0.55) * np.exp(-at / 0.08)
+            x += a * modes(t, at, [f, f * rng.uniform(1.45, 1.6), f * rng.uniform(2.2, 2.7)],
+                           [rng.uniform(tlo, thi), rng.uniform(tlo, thi) * 0.7, rng.uniform(tlo, thi) * 0.5], [1.0, 0.5, 0.25], rng)
+        llo, lhi = k["land"]
+        for i in range(k["n"] // 2 + 3):                                 # bits coming down after it
+            at = 0.18 + rng.exponential(0.25)
+            if at < len(t) / SR - 0.1:
+                x += rng.uniform(0.05, 0.25) * np.exp(-at / 0.6) * (tick(t, at, llo, lhi, 0.003, 1.0, rng)
+                     + 0.5 * modes(t, at, [np.exp(rng.uniform(np.log(llo), np.log(lhi)))], [0.01], [1.0], rng))
+        return np.tanh(1.4 * x)
+    make.__doc__ = f"A {kind} thing breaking: its crack, its body, its pieces ringing as they part, bits landing after."
+    return make
+
+
+def landing(kind):
+    k = BREAK[kind]
+
+    def make(rng):
+        t = t_(0.35 if kind in ("metal", "glass") else 0.22)
+        llo, lhi = k["land"]
+        tlo, thi = k["stau"]
+        f = np.sqrt(llo * lhi) * rng.uniform(0.8, 1.25)
+        x = tick(t, 0.002, llo, lhi * 1.4, 0.002, 1.0, rng)
+        x += modes(t, 0.002, [f, f * 1.52, f * 2.4], [thi * 0.8, thi * 0.5, thi * 0.3], [0.8, 0.45, 0.2], rng)
+        if kind in ("cardboard", "wood", "stone"):
+            thud = band(rng.standard_normal(len(t)), 90, 700) * decay(t, 0.02, 0.002)
+            x += 0.8 * thud / max(np.abs(thud).max(), 1e-9)
+        return x
+    make.__doc__ = f"A piece of a {kind} thing landing: a tick and its ring."
+    return make
+
+
 SOUNDS = {"shotgun_fire": (blast, -0.5), "shotgun_shell_insert": (shell_insert, -6.0), "shotgun_dry": (dry_click, -8.0),
           "shell_drop": (shell_drop, -10.0), "shotgun_handle": (handle, -10.0), "shells_box": (shells_box, -9.0),
           "double_open": (double_open, -5.0), "double_close": (double_close, -3.0), "double_flick": (double_flick, -8.0),
@@ -165,6 +238,11 @@ SOUNDS = {"shotgun_fire": (blast, -0.5), "shotgun_shell_insert": (shell_insert, 
 # each sound's own seed (its place when the pump gun's two were still made: the files stay byte for byte the same)
 SEEDS = {"shotgun_fire": 0, "shotgun_shell_insert": 3, "shotgun_dry": 4, "shell_drop": 5, "shotgun_handle": 6,
          "shells_box": 7, "double_open": 8, "double_close": 9, "double_flick": 10, "shell_burst": 11}
+for _i, _kind in enumerate(BREAK):
+    SOUNDS[f"break_{_kind}"] = (breaking(_kind), -1.5)
+    SOUNDS[f"debris_{_kind}"] = (landing(_kind), -9.0)
+    SEEDS[f"break_{_kind}"] = 20 + _i * 2
+    SEEDS[f"debris_{_kind}"] = 21 + _i * 2
 
 
 def write(path, x, peak_db):

@@ -2,6 +2,28 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-09, after the smoke (the user: things that blow up when they're shot)
+
+- **"Could you create a shader/script called blownUp or something that lets any object we attach be blow up by shotgun
+  shots, e.g. a kettle, a box, but it should look like the object itself got destroyed not just a generic animation."**
+  Researched first (docs/research/breaking_props.md). Built as **HSBlowUp** (`blowup/blow_up.gd` in the weapons plugin,
+  named as the plugin names things), a node put under any object:
+  - **The object itself**: its own meshes are cut into pieces when it loads, in a worker thread (HSFracture: recursive
+    plane slicing, each cut filled), so nothing is cut at the shot. Its own materials stay on every piece; the broken
+    faces are drawn by what it's made of (`blowup/inside.gdshader`, the "shader" half of the ask).
+  - **By material** (HSBreakKind, `blowup/kinds/`): ceramic and glass shatter, metal tears into a few crumpled sheets
+    and dents first, card tears and lets its contents and lid go whole, wood splinters along its grain, plastic
+    cracks, stone crumbles; guessed from the object when not given. A hollow kind (a kettle, a box) breaks as a thin
+    wall, never as a solid block.
+  - **The shot**: small pieces where it was hit, bigger ones away from it, thrown along the shot; the pellets' holes on
+    the pieces; dust, chips, splinters, glints, paper or sparks; a liquid splashed and pooling; its sound made in code.
+    The explosive's blast breaks it all to small pieces and scorches the broken faces. Weaker shots dent it and wear it
+    down.
+  - **After**: the pieces come to rest on the floor and stay (the mess left), kicked by your feet; `restore()` puts it
+    back; `preview` shows the pieces in the editor.
+  - The made kettle and mug (`electric_kettle`, `mug_stoneware`, the prop generator's customizable recipes) ship in the
+    plugin's `models/` beside the box of shells, to try it on.
+
 ## 2026-11-09, after the last (the user: the smoke trails look fake)
 
 - **"In the screenshot the smoke trails look a bit unrealistic and fake and show sharp lines, enhance it, research how

@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="HSBreakKind" format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_weapons/blowup/break_kind.gd" id="1_kind"]
+
+[resource]
+script = ExtResource("1_kind")
+id = "cardboard"
+title = "Cardboard"
+strength = 3.0
+pieces = 10
+coarse = 0.9
+grain = 0.0
+crumple_m = 0.008
+dent_m = 0.006
+dent_r_m = 0.03
+hollow = true
+speed = 1.6
+spin = 7.0
+bounce = 0.05
+friction = 0.85
+areal_kg = 0.6
+inside_color = Color(0.66, 0.53, 0.38, 1)
+inside_from_surface = 0.0
+inside_roughness = 0.95
+inside_metallic = 0.0
+fibres = 0.6
+speckle = 0.15
+see_through = false
+dust = 8
+dust_color = Color(0.7, 0.62, 0.5, 1)
+chips = 20
+chip_style = "paper"
+sparks = 0
+surface = "cardboard"

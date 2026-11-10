@@ -3,6 +3,27 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## Things that break when shot (HSBlowUp): what took a second try (2026-11-09)
+
+- **A sealed shell is not a solid**: the kettle is modelled as one closed surface, so filling every cut made its
+  pieces look like chunks of a solid black block. Whether a cut is filled is the material's (`hollow`: metal, card,
+  glass, plastic are thin walls), not the mesh's being closed.
+- **A thin piece can have no thin side by its normals**: a mug's wall has an outside and an inside, their normals
+  cancel, and its shards got no thickened collider and sank through the floor. Thicken along the points' own principal
+  axes (PCA), every axis.
+- **Even 5 cm sinks**: a rigid piece with a 5 to 7 cm collider landing at 4 m/s sank through the hotel's trimesh floor
+  (Jolt's slop, a floor with no thickness). Pieces under 4.5 cm fall by rays; rigid colliders are at least 6 cm.
+- **A ray that starts under a floor never meets it**: a crumpled piece's corners pushed below the floor put a little
+  piece's rays under it, and it fell for ever. Lift it onto what's under it first.
+- **A blast looks for a collider's shape nodes' middle**: a hull built round an object but left at its base sat on the
+  floor, and the floor hid the object from every blast. Centre the shape node on the thing.
+- **Headless at a fixed rate, frames race the clock**: "15 seconds" of frames passed in under a second of wall time, so
+  a worker thread's cut wasn't ready by then. Wait for a thread by `Time.get_ticks_msec()`.
+- **A low-priority WorkerThreadPool task waits behind the game's own**: the cut ran only when the shot waited for it.
+  A task that must be ready goes high-priority.
+- **Pieces settle, the engine doesn't say so**: light pieces resting a centimetre sunk jitter and never sleep. At rest
+  is "gone nowhere for half a second", then frozen and laid onto the floor by their real vertices.
+
 ## A muzzle's smoke trail that reads as smoke (2026-11-09, after the last)
 
 - **A camera-facing strip folds in a tight curl**: the trail's first rebuild kept one strip a strand and drifted its

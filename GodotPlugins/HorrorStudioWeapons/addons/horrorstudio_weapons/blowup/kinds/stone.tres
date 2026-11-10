@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="HSBreakKind" format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_weapons/blowup/break_kind.gd" id="1_kind"]
+
+[resource]
+script = ExtResource("1_kind")
+id = "stone"
+title = "Stone"
+strength = 6.0
+pieces = 16
+coarse = 0.5
+grain = 0.0
+crumple_m = 0.0
+dent_m = 0.0
+dent_r_m = 0.025
+hollow = false
+speed = 2.0
+spin = 8.0
+bounce = 0.15
+friction = 0.85
+areal_kg = 40.0
+inside_color = Color(0.62, 0.6, 0.57, 1)
+inside_from_surface = 0.0
+inside_roughness = 0.95
+inside_metallic = 0.0
+fibres = 0.0
+speckle = 0.6
+see_through = false
+dust = 18
+dust_color = Color(0, 0, 0, 0)
+chips = 22
+chip_style = "chip"
+sparks = 0
+surface = "stone"

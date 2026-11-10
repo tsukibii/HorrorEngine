@@ -17,6 +17,14 @@ powder's soot and grains round it, a torn middle with holes round it across a ro
 the wad's dent; lead smeared on concrete; the PBR maps making pieces look missing; dust and chips; the explosive's
 blast), played by **HSImpacts**. **HSGun** is what a gun is under all that (abstract): the next gun extends it.
 
+And **things that break when they're shot** (DECISIONS 2026-11-09, after the smoke: "lets any object we attach be blow up
+by shotgun shots, e.g. a kettle, a box, but it should look like the object itself got destroyed"): **HSBlowUp**, put
+under any object, cuts its own meshes into pieces in the background when it loads (**HSFracture**: recursive plane
+slicing, each cut filled) and, shot hard enough, swaps it for them: its own materials on every piece, the broken faces
+drawn as what it's made of inside, small pieces where it was hit and bigger ones away from it, thrown along the shot,
+the pellets' holes going with them, its dust, bits and sound; weaker shots dent it. What it's made of is an
+**HSBreakKind** (ceramic, glass, wood, metal, cardboard, plastic, stone), guessed when it isn't given.
+
 ![held: only its barrels](../../guides/weapons/img/idle.jpg) ![aimed](../../guides/weapons/img/aim.jpg)
 ![the right barrel](../../guides/weapons/img/fire.jpg) ![the left, through the first's smoke](../../guides/weapons/img/fire_left.jpg)
 ![broken open, the hulls flicked out](../../guides/weapons/img/open.jpg) ![a shell into each chamber](../../guides/weapons/img/pop.jpg)
@@ -25,6 +33,7 @@ blast), played by **HSImpacts**. **HSGun** is what a gun is under all that (abst
 ![down a corridor](../../guides/weapons/img/damage_corridor.jpg) ![on concrete](../../guides/weapons/img/damage_concrete.jpg)
 ![the explosive shell](../../guides/weapons/img/explosive.jpg) ![its blast](../../guides/weapons/img/blast.jpg)
 ![its scorch](../../guides/weapons/img/scorch.jpg) ![the flash's spheres, bare and burnt](../../guides/weapons/img/flash_parts.jpg)
+![a kettle, a mug and a box shot](../../guides/weapons/img/blowup_close.jpg) ![the kettle's cut](../../guides/weapons/img/blowup_cut.jpg)
 
 The guide for the user, with these pictures: `guides/weapons/index.html`.
 
@@ -39,8 +48,11 @@ The guide for the user, with these pictures: `guides/weapons/index.html`.
 | **The maps** | `fx/` | made in code (`tools/weapon_fx.py`, WEAPONFX): `flash_noise.png` (the fire's noise, tiling), `puff.png`, `crater_<0..3>_*` (a pellet's crater from one height field: the hole, the broken cone, chips of paint gone), `blast_<0..2>_*` (pellets landing together: one ragged hole, the paper torn back in flaps, the plaster broken out, cracks), `smear_<0..1>_*` (lead flattened on a hard wall: a grey metallic splash, a shallow dent, chips), `wad_0_*` (the wad's dent: a dish, a scuffed ring, its petals' marks), each `_albedo`, `_normal` (Godot's OpenGL convention, leaning into the hole) and `_orm`; `soot_0_albedo.png` (the smoke's starburst) and `grains_0_albedo.png` (the powder's specks); `scorch_<0..1>_*` with `_emission` (an explosion's: a jagged crater, cracks, soot fanned round it, embers). Paint over them in Krita: the plugin reads whatever is there |
 | **Pickups** | `pickup.gd` (`HSWeaponPickup`, a Node3D) | `kind` double (the gun lying on its side, `shells` coming with it; an older scene's `shotgun` is the double too) or shells (the prop generator's box of five, `shells_box_5`, two spilled beside it; `lid_open` shows it open, its lid swung on its own hinge; into the gun you own); `shell` the kind of shells (none: the normal; the explosive comes in its own box, `shells_box_5_explosive`; `box_model` any other); E takes it (the starter's player uses anything with `use()`), `say` a line through the Story, `taken` to wire a scare to |
 | **Something to shoot** | `shootable.gd` (`HSShootable`, a Node) | put one under what can be shot (a character, a doll, a lamp): a shot with a pellet on its parent is a hit, `hit(info)`, and after `hits` of them `down`. Each a switch: `gone_secs` (gone at once and back after that long, its collision with it: a ghost's way; down, gone for good), `push_m` (shoved back), `cry` (a sound), `say` (a line), `target` (its `fire()`), `lights_out` (every light under it dark when it's down) |
-| **The models** | `models/` | the prop generator's `shotgun_double` (the user's model, `Content/Studio/Props/models/dbl_barrel.fbx`, made round-barrelled and painted: blued, case-hardened, checkered walnut; its `barrels` with the fore-end on their hinge, `lever`, `trigger`, `trigger2`; sockets `muzzle`, `muzzle_r`, `muzzle_l`, `chamber`, `chamber_r`, `chamber_l`, `hinge`, `breech`, `grip`, `trigger`, `shoulder`, `light`), `shell_12ga` and `shell_12ga_spent` (their brand printed along the hull, their heads stamped), `shells_box_5` (the box of shells: its lid a part on its hinge), `shell_12ga_explosive`, `shell_12ga_explosive_spent` and `shells_box_5_explosive` (the explosive kind's: a black hull printed in orange, high brass) (`tools/propgen.py make <name>`, docs/PROPGEN.md §30, §31: the shells and the box are customizable, your logo on them in the prop generator's picture editor, guides/prop_customizer) |
-| **The sounds** | `sounds/` | made in code (`tools/weapon_sounds.py`: numpy, then ffmpeg to Ogg): the blast with its tail, a shell clicking in, the dry click, a hull on the floor, the handling; the break open, the snap shut and the ejectors' flick; an explosive shell bursting (`shell_burst`); a box of shells taken |
+| **Something that breaks** | `blowup/blow_up.gd` (`HSBlowUp`, a Node3D) | put one under any object (a made prop, a model, a MeshInstance3D): see *Things that break*. `kind` (an HSBreakKind; none: guessed, `HSBlowUp.guess_kind(node)`), `strength`, `pieces`, `whole`, `liquid`, `push`, `keep_s`, `kick`, `target`, `collider`, `preview` (its pieces drawn apart in the editor, nothing saved); `blow_up(at, dir, power, blast_at)`, `restore()`, `is_prepared()`, `report()`; `prepared`, `hit(info)`, `blown_up(pieces)`; `damage`, `is_broken`, `pieces_out`, `last` |
+| **What it's made of** | `blowup/break_kind.gd` (`HSBreakKind`, a Resource) | `blowup/kinds/`: `ceramic`, `glass`, `wood`, `metal`, `cardboard`, `plastic`, `stone`: `strength`, `pieces`, `coarse`, `grain`, `crumple_m`, `dent_m`, `dent_r_m`, `hollow`, `speed`, `spin`, `bounce`, `friction`, `areal_kg`, the inside (`inside_color`, `inside_from_surface`, `inside_roughness`, `inside_metallic`, `fibres`, `speckle`, `see_through`), the debris (`dust`, `dust_color`, `chips`, `chip_style`, `sparks`, `surface`), `sound`, `clink` |
+| **The cut** | `blowup/fracture.gd` (`HSFracture`, plain data) | a thing's surfaces cut into a tree of pieces in a worker thread: recursive plane slicing, each cut's outline chained into loops, its holes split off with Godot's polygon clipping and filled; single sheets (or a hollow kind) never filled, their backs drawn; the pieces split where they don't touch; parts made of materials the rest isn't (a box's shells) kept whole; crumpled; each piece's middle, axes, hull and which touch which. `blowup/inside.gdshader` (and `inside_glass.gdshader`) draws the broken faces in the thing's own space |
+| **The models** | `models/` | the prop generator's `shotgun_double` (the user's model, `Content/Studio/Props/models/dbl_barrel.fbx`, made round-barrelled and painted: blued, case-hardened, checkered walnut; its `barrels` with the fore-end on their hinge, `lever`, `trigger`, `trigger2`; sockets `muzzle`, `muzzle_r`, `muzzle_l`, `chamber`, `chamber_r`, `chamber_l`, `hinge`, `breech`, `grip`, `trigger`, `shoulder`, `light`), `shell_12ga` and `shell_12ga_spent` (their brand printed along the hull, their heads stamped), `shells_box_5` (the box of shells: its lid a part on its hinge), `shell_12ga_explosive`, `shell_12ga_explosive_spent` and `shells_box_5_explosive` (the explosive kind's: a black hull printed in orange, high brass), `electric_kettle` and `mug_stoneware` (two things to break: a brushed steel kettle, a stoneware mug of tea) (`tools/propgen.py make <name>`, docs/PROPGEN.md §30, §31: the shells and the box are customizable, your logo on them in the prop generator's picture editor, guides/prop_customizer) |
+| **The sounds** | `sounds/` | made in code (`tools/weapon_sounds.py`: numpy, then ffmpeg to Ogg): the blast with its tail, a shell clicking in, the dry click, a hull on the floor, the handling; the break open, the snap shut and the ejectors' flick; an explosive shell bursting (`shell_burst`); a box of shells taken; a thing breaking (`break_<kind>`: its crack, its body, its pieces ringing as they part, bits landing) and a piece landing (`debris_<kind>`) for each kind |
 
 ## Try it
 
@@ -135,7 +147,7 @@ A shot's pellets play their kind's **HSImpact** through **HSImpacts** (one in th
   (`fx/smear_*`); chips fly, and sparks off steel.
 - **Dust and chips** of the surface fly off (wood splinters, metal sparks, tile shards).
 - **What it's made of**: a collider's `hs_surface` metadata (plaster, concrete, stone, tile, wood, door, metal, glass,
-  plastic, carpet, cloth, tatami, water), else its `acoustic` (the sound physics' word), else the starter's Sound node's
+  plastic, carpet, cloth, tatami, water; and a breakable thing's: sheet_metal (holed, not smeared), ceramic, cardboard), else its `acoustic` (the sound physics' word), else the starter's Sound node's
   rooms (the interior export's floor, walls and ceiling), else plaster.
 - **A blast** (`impacts/explosive.tres`): a scorched crater a metre across with cracks running out of it and embers
   glowing in it for a few seconds (`fx/scorch_*`); a ball of fire (an HSMuzzle at the hit facing out of it, laid out as
@@ -143,6 +155,36 @@ A shot's pellets play their kind's **HSImpact** through **HSImpacts** (one in th
   its sight pushed (`power`) and told, its `damage` falling to nothing at the edge (an HSShootable counts it a hit);
   the view shaken near it, every listener hearing it (`noise` 6), the ears ringing, its sound.
 - **Not yet**: pellets through a thin wall into the next room, ricochets off concrete, the wad lying on the floor.
+
+## Things that break
+
+Put an **HSBlowUp** under an object (docs/research/breaking_props.md):
+
+- **When it loads** its meshes are read (its own space: where it stands and how it's turned) and cut in a worker thread
+  (**HSFracture**, half a second for a kettle of 11,000 triangles): the biggest piece cut through its middle by a plane
+  each time, finer than it ever breaks into, each cut's outline chained into loops on the plane and filled (holes split
+  off with Godot's polygon clipping, ear-clipped); a single sheet (an edge with one triangle), or every part of a
+  **hollow** kind (metal, card, glass, plastic: a kettle modelled as a closed shell is still a thin wall), never filled,
+  its back drawn by the inside instead; the pieces split where they don't touch; parts made only of materials the
+  biggest part isn't (a box's shells) kept whole; a crumpled kind's pieces crumpled. A thing with no collider gets one
+  (a hull round its meshes, `BlowUpBody`), and every collider under it its kind's `hs_surface`.
+- **Shot**: a shot's damage (its pellets on it, a blast that reaches it) past its `strength` breaks it; weaker shots
+  dent metal, card and plastic (each pellet pushes the mesh in) and wear it down (2.5 times its strength in all breaks
+  it). Broken, it's hidden and nothing under it is solid, and its pieces come out where its parts were in the same
+  frame: the cut's leaves gathered from the farthest from the hit in, each piece grown over the leaves it touches while
+  it stays as big as a piece should be there (`coarse`: small near the hit, bigger away from it; all small in a blast),
+  thrown along the shot and out of the hit (a blast throws them out of itself), spinning. Its own materials on every
+  piece (a world-laid triplanar made the thing's own); the broken faces the kind's inside (`inside.gdshader`: its
+  colour, grit, fibres along the grain, a blast's scorch). The pellets' holes go with the piece they were on.
+- **The pieces**: bigger ones (4.5 cm and more) rigid bodies whose colliders are at least 6 cm thick along each of their
+  own axes (thinner sinks through a level's floor), lifted clear of the floor they start in, never knocking each other
+  about nor the player, laid down onto the floor once they've gone nowhere for half a second (frozen); smaller ones fall
+  by rays as the gun's hulls do, lying down flat where they stop. A made prop's parts (a lid on its hinge, `whole`) fly
+  off whole; its liquid (`<name>_liquid`, the mug's tea) splashes and pools under it. The player walking into them kicks
+  them on. The gun's pellets and blasts still move them.
+- **Its look and sound**: dust in the inside's colour, chips, splinters, glints, paper or sparks by its kind; its
+  breaking sound and its pieces landing, made in code.
+
 
 ## The numbers
 

@@ -34,6 +34,10 @@ const SURFACES := {
 	"cloth": {"tint": Color(0.42, 0.38, 0.36), "dust": Color(0.6, 0.56, 0.52), "chip": Color(0.5, 0.45, 0.42), "sparks": 0.0, "size": 0.6, "chips_k": 0.4},
 	"tatami": {"tint": Color(0.72, 0.66, 0.46), "dust": Color(0.7, 0.66, 0.5), "chip": Color(0.76, 0.7, 0.5), "sparks": 0.0, "size": 0.7, "splinters": true},
 	"water": {"tint": Color(1, 1, 1), "dust": Color(0.86, 0.9, 0.95), "chip": Color(0.8, 0.86, 0.92), "sparks": 0.0, "size": 0.0, "mark": false, "chips_k": 0.0},
+	# a thing's (HSBlowUp's kinds): thin metal holed (a kettle, a can), glazed ware, card
+	"sheet_metal": {"tint": Color(0.36, 0.36, 0.38), "dust": Color(0.5, 0.5, 0.52), "chip": Color(0.7, 0.7, 0.72), "sparks": 0.6, "size": 0.4, "dust_k": 0.3, "chips_k": 0.3},
+	"ceramic": {"tint": Color(0.92, 0.9, 0.86), "dust": Color(0.92, 0.9, 0.86), "chip": Color(0.95, 0.94, 0.9), "sparks": 0.0, "size": 0.6},
+	"cardboard": {"tint": Color(0.45, 0.36, 0.26), "dust": Color(0.7, 0.62, 0.5), "chip": Color(0.66, 0.55, 0.4), "sparks": 0.0, "size": 0.55, "chips_k": 0.6},
 }
 
 const VARIANTS := {"crater": 4, "scorch": 2, "blast": 3, "smear": 2, "wad": 1, "soot": 1, "grains": 1}   # each mark's maps in fx/
