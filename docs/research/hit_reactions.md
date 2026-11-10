@@ -2,6 +2,7 @@
 
 The user (2026-11-10): "now instead of a breaking items system can you create a reactive system for characters/enemies
 to be shot, but dont do blood, instead create some form of demonic dark smoke and dark splatters like black blood".
+Not in HSBlowUp's place: "I want both systems" (DECISIONS 2026-11-10, later).
 
 This note is what the weapons plugin's HSHitReact (`react/`) stands on. The sources are tools' documentation, forums,
 fan analysis and press; **a quote is the search engine's extract of the page linked**. "(ours)" marks a choice made

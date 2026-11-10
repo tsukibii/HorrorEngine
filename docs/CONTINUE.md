@@ -25,7 +25,8 @@ not an order. Overwrite this file at the end of the next session.
 
 PR #18 merged into main; this branch is new from it (the user: "make a new branch called weapon-system, create a shot
 gun asset and have its pov in godots horror engine similar to the screenshot", then "I don't need a hand holding the
-gun"; DECISIONS 2026-11-09). Built:
+gun"; DECISIONS 2026-11-09). Its pull request into main is PR #19 (https://github.com/tsukibii/HorrorEngine/pull/19):
+TUTORIAL2, FIRSTGAME and GDPROPS weren't run on the branch. Built:
 
 - **The assets** by the prop standard: the prop generator's `weapon` family (PROPGEN §30): `shotgun_pump` (a riot
   gun's sizes, its pump sliding, the bolt's face shown only while the action's shut, the trigger on its hinge, sockets
@@ -122,7 +123,7 @@ gun"; DECISIONS 2026-11-09). Built:
 
 - **Someone who bleeds black ichor** (the user: "now instead of a breaking items system can you create a reactive
   system for characters/enemies to be shot, but dont do blood, instead create some form of demonic dark smoke and dark
-  splatters like black blood"; DECISIONS 2026-11-10; HSBlowUp kept beside it: ask if it should go). Researched
+  splatters like black blood"; DECISIONS 2026-11-10; HSBlowUp kept beside it: the user wants both). Researched
   (docs/research/hit_reactions.md), then **HSHitReact** (`react/`): hitboxes on her bones on layer 11 (`HSGun.SHOT_MASK`
   for the gun and a blast), the head twice and a limb 0.6; a flinch on springs after her animation (`HSFlinch`, a
   SkeletonModifier3D); a stagger counter holding her against whatever moves her and shoving her back; black glossy

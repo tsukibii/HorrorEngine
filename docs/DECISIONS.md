@@ -2,12 +2,18 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-10, later (the user: both systems)
+
+- **"Sorry no, i didnt literally mean instead of, I want both systems."** HSBlowUp (things that break when they're
+  shot) and HSHitReact (someone who bleeds black ichor) both stay in the weapons plugin, side by side: a shot breaks
+  what it hits and wounds whoever it hits. Nothing is removed, and the question below is answered.
+
 ## 2026-11-10 (the user: characters shot, no blood; then an oozy ichor for the tape)
 
 - **"Now instead of a breaking items system can you create a reactive system for characters/enemies to be shot, but
   dont do blood, instead create some form of demonic dark smoke and dark splatters like black blood."** Researched
-  first (docs/research/hit_reactions.md). Read as a new system beside HSBlowUp, not in its place (HSBlowUp is kept: say
-  if it should go). Built as **HSHitReact** (`react/hit_react.gd` in the weapons plugin), a node put under a character:
+  first (docs/research/hit_reactions.md). Read as a new system beside HSBlowUp, not in its place (both stay: the
+  user's answer above). Built as **HSHitReact** (`react/hit_react.gd` in the weapons plugin), a node put under a character:
   - **Where she's hit**: capsules on her bones (MHR's names, a mannequin's, Mixamo's) on collision layer 11, which the
     gun's pellets and a blast see (`HSGun.SHOT_MASK`) and the player never bumps into; a stand-in of meshes gets one
     capsule and its part by the height. The head takes twice the damage, an arm or a leg 0.6.
