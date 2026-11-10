@@ -152,4 +152,5 @@ static func wear(node: Node, glb_path: String, overrides: Dictionary = {}) -> Di
 				out[name if name != "" else String(mi.name)] = m
 	if not out.is_empty():
 		HSBlink.attach(node)                          # and the lids blink, when the export carries the blink (blink.gd)
+		HSJiggle.attach(node)                         # and its ears flop, when it carries chains to jiggle (jiggle.gd)
 	return out

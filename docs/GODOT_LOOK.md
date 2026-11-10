@@ -1146,6 +1146,45 @@ LOOKPLUGIN's steam stage is a mirror of its own with a checker on the wall behin
   top keeps it.
 - **Steamed all over with 308 written**: the words' box is more than three times sharper than the fog beside it.
 
+## 5n. Ears that flop: jiggle for an export's chains (`jiggle.gd`, `HSJiggle`; DECISIONS 2026-11-10, night)
+
+The user, on the Studio's animal ears: "create it in a way that when I export it to godot I could add a jiggle bone
+(doesn't exist yet) to the ears, so they flop when the character moves". Both halves are done.
+
+- **What the export carries** (docs/CHARACTER_STUDIO.md §2d, the Studio's `exportRig`): every animal ear has a chain
+  of bones of its own under the head, `jiggle_<name>_0`, `_1`... and `jiggle_<name>_tip` (no skin on the tip: it's
+  where the last bone ends), after MHR's 127 in the skeleton; `ear_L` and `ear_R` on one character, two to four bones
+  by the ear's kind. The ear, its inside and its tag are skinned along it; the chain's softness (0..1: a long or a
+  hanging ear more than a short pricked one) is in the ear's node's extras (`jiggle: {chain, bones, soft}`), and all
+  the chains in the scene's. The bones are unturned, at rest where the ear was made; a plain viewer, the desk and
+  Unreal show the ears still.
+- **`HSJiggle`** springs them with Godot's own `SpringBoneSimulator3D` (Godot 4.4 on), a child of the skeleton made
+  when the game runs, a setting a chain: its root bone the `_0`, its end bone the `_tip`; the stiffness from 4.0 (a
+  cat's ear) to 1.2 (a lop's), the drag from 0.5 to 0.3, by the chain's softness (the export's word, else the chain's
+  length over 13 cm); `gravity` 0.12 times the softness (an ear is made in the shape it hangs in: a little is enough);
+  `amount` scales how lively (0 holds them still, 2 very floppy; `set_amount` while the game runs); `reset()` after a
+  teleport. `HSJiggle.attach(node)` adds one when a skeleton under the node has such chains: `HSEye.wear` calls it, so
+  the game's cast and anything that wears a Studio export's eyes jiggles by itself, and `HSCharacterLook` has **Jiggle**
+  and **Jiggle amount**. Dropped by hand under any character it springs every chain of bones named with its `prefix`:
+  a tail or a strand of hair as well as an ear.
+- **JIGGLE** (`python tools/godot/jiggle_check.py`, headless at 60 frames a second, `demo/jiggle.gd`): on a skeleton
+  made in the demo (a long ear of four bones leaning out, a short upright one of two) one simulator with a setting a
+  chain, the long ear softer; the head jerked 40 cm sideways in a fifth of a second, both tips lag and the long ear's
+  several times further; left alone four seconds, both back where they rested to a hundredth of a millimetre; a
+  walk's bob (the head up and down 2.5 cm twice a second, swaying a centimetre) moves the long ear's tip between 2 and
+  60 mm against the head and the short one's less: a flop, not a flail; the head turned 60 degrees in a third of a
+  second, the long ear swings further behind than the short one; with gravity the long ear hangs lower; at amount 0
+  the same jerk moves nothing. Then on a Studio export with ears when the machine has one (`--person`, `--glb`): the
+  file's chains found on Godot's skeleton, each under `c_head`, the ears' meshes skinned to them and to nothing else,
+  the softness read from the extras, the same jerk, walk and turn moving every tip, and their settling back.
+- **Measured here** (2026-11-10): the made-up long ear's tip 179 mm from where it rests in the jerk (flung right
+  over: 2 m a second is a throw, not a walk) and the short one's 22 mm, 28 and 1 mm in the walk, 47 and 3 mm in the
+  turn. On the export GROWPAGE makes (a nine-year-old with tagged cow ears, each a chain of three bones, softness
+  0.69): 61 and 18 mm in the jerk (the ear that points the way the head is thrown lags the more), 13 to 14 mm walking,
+  16 to 20 mm in the turn, back to rest within a hundredth of a millimetre. Those are at the default `amount` 1: if
+  they read stiff in a game, `amount` 1.5 is the first thing to try (`HSCharacterLook`'s Jiggle amount). The picture:
+  `docs/godot_sheets/2026-11-10_ears_jiggle.jpg` (at rest, thrown sideways, after, turning, after, dropped, settled).
+
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 
 A street baked in Blender (`tools/street.py bake`, docs/STREET_TEXTURING.md) comes as plain glTF:

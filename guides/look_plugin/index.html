@@ -215,12 +215,17 @@ skin, eye, hair) puts the studio's skin, eyes and hair on it when the game runs:
   warm light from under it round the eyes, the nose, the mouth and the ears (<code>skin_depth</code>, <code>ear_glow</code>), and wet:
   <code>wetness</code>, <code>sweat</code> (beads), <code>drips</code>, <code>oil</code>;</li>
   <li><b>the eyes</b>: the refracting cornea, the wet layer, the tear line, an idle blink;</li>
-  <li><b>the hair</b>: the salon's bake worn MetaHuman's way (two highlights, light through it from behind).</li>
+  <li><b>the hair</b>: the salon's bake worn MetaHuman's way (two highlights, light through it from behind);</li>
+  <li><b>animal ears that flop</b>: the Character Studio's animal ears (Accessories) come with a chain of bones each, and
+  they swing as she moves and settle back (<code>jiggle</code> on, <code>jiggle_amount</code> 0 still to 2 very floppy).
+  It is <span class="node">HSJiggle</span>, which you can also put under any character yourself: it springs every chain of
+  bones named <code>jiggle_&lt;name&gt;_0</code>, <code>_1</code>… <code>jiggle_&lt;name&gt;_tip</code>, so a tail of your own works the same way.</li>
 </ul>
 <div class="pair">
   <figure><img src="img/skin.jpg" width="1280" height="720" alt="Skin spheres dry, sweating and oiled"><figcaption>The skin dry, sweating and oiled.</figcaption></figure>
   <figure><img src="img/hair.jpg" width="1280" height="720" alt="Card hair on the hair shader"><figcaption>Card hair on the hair shader.</figcaption></figure>
 </div>
+<figure><img src="img/ears.jpg" width="1280" height="560" alt="A child with a bull's horns and tagged cow ears, at rest and thrown sideways"><figcaption>A Studio export's cow ears at rest, and a moment after she's thrown sideways: the ears and the tag lag behind the head. The horns ride the head whole.</figcaption></figure>
 <p>It needs <code>HumanShaders/</code> at the project's root. In a shipped game, keep the character's <code>.glb</code> in the
 export (<code>*.glb</code> in the preset's non-resource filters): the look reads its records from it.</p>
 </section>

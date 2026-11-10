@@ -2,7 +2,8 @@
 ## own colour and maps kept; wet, sweating, dripping or oiled by the numbers; on a Studio export the skin's detail at its
 ## true size, its look picked from the export or named here: §5d; and its depth, warm light from under the skin round the
 ## eyes, the nose, the mouth and the ears: §5g, Ear Glow off when the hair covers the ears), a Character Studio export's eyes on the
-## Studio's refracting eye, and card hair, lashes and brows on the hair shader. Drop it under the character (an
+## Studio's refracting eye, card hair, lashes and brows on the hair shader, and an export's animal ears on springs
+## (HSJiggle: §5n). Drop it under the character (an
 ## imported glb, or any model whose meshes are named skin/body/head, eye, hair/lash/brow). Put on when the game runs.
 ## The cast the game places itself already wear it (the story's `skin` word wets them).
 @tool
@@ -28,6 +29,8 @@ extends Node
 @export_group("")
 @export var eyes := true
 @export var hair := true
+@export var jiggle := true                     ## an export's animal ears (any chain of bones named jiggle_<name>_0 ... _tip) flop as she moves (HSJiggle)
+@export_range(0.0, 2.0) var jiggle_amount: float = 1.0   ## how lively: 0 still, 2 very floppy
 @export_file("*.glb") var glb_path: String = ""  ## the export's glb (its skin and eye records); empty: the character's own file
 var materials: Array = []
 
@@ -59,6 +62,11 @@ func wear() -> void:
 		materials.append_array(HSEye.wear(t, path).values())
 	if hair:
 		materials.append_array(HSHair.wear(t, {}, path if path.ends_with(".glb") else ""))
+	var j := HSJiggle.of(t)                        # (HSEye.wear may have added one already)
+	if jiggle and j == null:
+		j = HSJiggle.attach(t, {"amount": jiggle_amount})
+	elif j != null:
+		j.set_amount(jiggle_amount if jiggle else 0.0)
 
 
 ## the skin's wetness now (0..1 each)
