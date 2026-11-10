@@ -25,6 +25,14 @@ drawn as what it's made of inside, small pieces where it was hit and bigger ones
 the pellets' holes going with them, its dust, bits and sound; weaker shots dent it. What it's made of is an
 **HSBreakKind** (ceramic, glass, wood, metal, cardboard, plastic, stone), guessed when it isn't given.
 
+And **someone who bleeds black ichor** (DECISIONS 2026-11-10: "a reactive system for characters/enemies to be shot,
+but dont do blood, instead create some form of demonic dark smoke and dark splatters like black blood"):
+**HSHitReact**, put under a character, gives her hitboxes on her bones on a layer of their own, a flinch on springs on
+top of her animation (**HSFlinch**), a stagger counter that holds her where she is and shoves her back, black ichor
+where she's hit (a wound riding her bone, drops, the spray behind her, glossy, embers in it) and black smoke out of each
+wound trailing after her; shot down, she chars over, crumbles into the smoke and is gone. Its look is an
+**HSWoundLook**.
+
 ![held: only its barrels](../../guides/weapons/img/idle.jpg) ![aimed](../../guides/weapons/img/aim.jpg)
 ![the right barrel](../../guides/weapons/img/fire.jpg) ![the left, through the first's smoke](../../guides/weapons/img/fire_left.jpg)
 ![broken open, the hulls flicked out](../../guides/weapons/img/open.jpg) ![a shell into each chamber](../../guides/weapons/img/pop.jpg)
@@ -34,6 +42,8 @@ the pellets' holes going with them, its dust, bits and sound; weaker shots dent 
 ![the explosive shell](../../guides/weapons/img/explosive.jpg) ![its blast](../../guides/weapons/img/blast.jpg)
 ![its scorch](../../guides/weapons/img/scorch.jpg) ![the flash's spheres, bare and burnt](../../guides/weapons/img/flash_parts.jpg)
 ![a kettle, a mug and a box shot](../../guides/weapons/img/blowup_close.jpg) ![the kettle's cut](../../guides/weapons/img/blowup_cut.jpg)
+![shot in the chest](../../guides/weapons/img/react_hit.jpg) ![smoking as she comes on](../../guides/weapons/img/react_smoke.jpg)
+![charring](../../guides/weapons/img/react_char.jpg) ![crumbling into the smoke](../../guides/weapons/img/react_crumble.jpg)
 
 The guide for the user, with these pictures: `guides/weapons/index.html`.
 
@@ -45,14 +55,17 @@ The guide for the user, with these pictures: `guides/weapons/index.html`.
 | **A flash's look** | `muzzle/muzzle_flash.gd` (`HSMuzzleFlash`, a Resource) | `muzzle/buckshot.tres`, `muzzle/explosive.tres`, `impacts/fireball.tres`: the wings (`layout` STAR round the bore or BURST, a ball; `wings`, `wing_angle_deg`, `wing_length_m`, `wing_spheres`, `wing_radius_m`, `taper`, `stretch`, `jitter`), the plume and the core, the fire (`blend` ADD or SOLID, `core_color`, `mid_color`, `edge_color`, `energy`, `noise_scale`, `burn`, `erode`, `tip_burn`, `swell`, `life_s`), the light (`light_scale`, `light_color`, `light_range_m`, `light_s`, `light_fog`), sparks, the smoke (`puffs`, `puff_size_m`, `puff_life_s`, `trail_s`, `trail_life_s`, `trail_width_m`, `trail_rise`, `trail_strands`, `trail_spread`, `trail_turbulence`, `trail_erode`, `smoke_color`, `smoke_density`, `smoke_glow`, `smoke_light_cap`) |
 | **A kind of shell** | `shells/shell_type.gd` (`HSShellType`, a Resource) | `shells/buckshot.tres` (the normal one) and `shells/explosive.tres` (one slug that bursts where it lands): `id`, `title`, `pellets` (0: the gun's), `spread_scale`, `reach_scale`, `push_scale`, `damage`, `recoil_scale`, `noise_scale`, `muzzle` (its HSMuzzleFlash), `impact` (its HSImpact), `model`, `spent_model`, `color` (its marks in the shells' row) |
 | **What a hit does** | `impacts/impact.gd` (`HSImpact`, a Resource), `impacts/impacts.gd` (`HSImpacts`, a Node3D) | `impacts/pellet.tres` and `impacts/explosive.tres`: the mark (`mark` crater or scorch: a Decal with an albedo, normal and ORM map from `fx/`, so pieces look missing; `mark_size_m`, `keep`, `embers_s`), the shot's pellets together (`merge_m` 1.6 cm and `merge_min` 3: one torn hole; `soot_m` 0.4 m and `powder_m` 0.9 m: the powder round it; `wad_m` 1.5 to 5 m: the wad's dent), the debris (`dust`, `chips`, `sparks`, times what the surface throws), the blast (`radius_m`, `power`, `damage`, `fireball`, `light_energy`, `shake`, `noise`, `ring_secs`, `sound`). HSImpacts (one in a scene, `HSImpacts.of(get_tree())`) plays them: `play(impact, hit)`, `play_shot(impact, hits)`, `clusters(hits, merge_m)`; a hit's surface from its `hs_surface` metadata, its `acoustic` one, the starter's Sound node's rooms, else plaster (`SURFACES`: each one's tint, dust, chips, sparks, and `hard` for concrete, stone and metal); `marks`, `last`, `last_shot` (the last shot's pellets, torn holes, ones alone, soot, grains, wad, surface, marks), `blasts` |
-| **The maps** | `fx/` | made in code (`tools/weapon_fx.py`, WEAPONFX): `flash_noise.png` (the fire's noise, tiling), `puff.png`, `crater_<0..3>_*` (a pellet's crater from one height field: the hole, the broken cone, chips of paint gone), `blast_<0..2>_*` (pellets landing together: one ragged hole, the paper torn back in flaps, the plaster broken out, cracks), `smear_<0..1>_*` (lead flattened on a hard wall: a grey metallic splash, a shallow dent, chips), `wad_0_*` (the wad's dent: a dish, a scuffed ring, its petals' marks), each `_albedo`, `_normal` (Godot's OpenGL convention, leaning into the hole) and `_orm`; `soot_0_albedo.png` (the smoke's starburst) and `grains_0_albedo.png` (the powder's specks); `scorch_<0..1>_*` with `_emission` (an explosion's: a jagged crater, cracks, soot fanned round it, embers). Paint over them in Krita: the plugin reads whatever is there |
+| **The maps** | `fx/` | made in code (`tools/weapon_fx.py`, WEAPONFX): `ichor_<kind>_<n>_*` (splat, drip, wound, drop: black ichor, glossy, a dark oxblood film where it's thin, embers in it, with `_emission`; a splat thrown one way, a drip running down, a wound, a drop),  `flash_noise.png` (the fire's noise, tiling), `puff.png`, `crater_<0..3>_*` (a pellet's crater from one height field: the hole, the broken cone, chips of paint gone), `blast_<0..2>_*` (pellets landing together: one ragged hole, the paper torn back in flaps, the plaster broken out, cracks), `smear_<0..1>_*` (lead flattened on a hard wall: a grey metallic splash, a shallow dent, chips), `wad_0_*` (the wad's dent: a dish, a scuffed ring, its petals' marks), each `_albedo`, `_normal` (Godot's OpenGL convention, leaning into the hole) and `_orm`; `soot_0_albedo.png` (the smoke's starburst) and `grains_0_albedo.png` (the powder's specks); `scorch_<0..1>_*` with `_emission` (an explosion's: a jagged crater, cracks, soot fanned round it, embers). Paint over them in Krita: the plugin reads whatever is there |
 | **Pickups** | `pickup.gd` (`HSWeaponPickup`, a Node3D) | `kind` double (the gun lying on its side, `shells` coming with it; an older scene's `shotgun` is the double too) or shells (the prop generator's box of five, `shells_box_5`, two spilled beside it; `lid_open` shows it open, its lid swung on its own hinge; into the gun you own); `shell` the kind of shells (none: the normal; the explosive comes in its own box, `shells_box_5_explosive`; `box_model` any other); E takes it (the starter's player uses anything with `use()`), `say` a line through the Story, `taken` to wire a scare to |
 | **Something to shoot** | `shootable.gd` (`HSShootable`, a Node) | put one under what can be shot (a character, a doll, a lamp): a shot with a pellet on its parent is a hit, `hit(info)`, and after `hits` of them `down`. Each a switch: `gone_secs` (gone at once and back after that long, its collision with it: a ghost's way; down, gone for good), `push_m` (shoved back), `cry` (a sound), `say` (a line), `target` (its `fire()`), `lights_out` (every light under it dark when it's down) |
 | **Something that breaks** | `blowup/blow_up.gd` (`HSBlowUp`, a Node3D) | put one under any object (a made prop, a model, a MeshInstance3D): see *Things that break*. `kind` (an HSBreakKind; none: guessed, `HSBlowUp.guess_kind(node)`), `strength`, `pieces`, `whole`, `liquid`, `push`, `keep_s`, `kick`, `target`, `collider`, `preview` (its pieces drawn apart in the editor, nothing saved); `blow_up(at, dir, power, blast_at)`, `restore()`, `is_prepared()`, `report()`; `prepared`, `hit(info)`, `blown_up(pieces)`; `damage`, `is_broken`, `pieces_out`, `last` |
 | **What it's made of** | `blowup/break_kind.gd` (`HSBreakKind`, a Resource) | `blowup/kinds/`: `ceramic`, `glass`, `wood`, `metal`, `cardboard`, `plastic`, `stone`: `strength`, `pieces`, `coarse`, `grain`, `crumple_m`, `dent_m`, `dent_r_m`, `hollow`, `speed`, `spin`, `bounce`, `friction`, `areal_kg`, the inside (`inside_color`, `inside_from_surface`, `inside_roughness`, `inside_metallic`, `fibres`, `speckle`, `see_through`), the debris (`dust`, `dust_color`, `chips`, `chip_style`, `sparks`, `surface`), `sound`, `clink` |
 | **The cut** | `blowup/fracture.gd` (`HSFracture`, plain data) | a thing's surfaces cut into a tree of pieces in a worker thread: recursive plane slicing, each cut's outline chained into loops, its holes split off with Godot's polygon clipping and filled; single sheets (or a hollow kind) never filled, their backs drawn; the pieces split where they don't touch; parts made of materials the rest isn't (a box's shells) kept whole; crumpled; each piece's middle, axes, hull and which touch which. `blowup/inside.gdshader` (and `inside_glass.gdshader`) draws the broken faces in the thing's own space |
+| **Someone who bleeds ichor** | `react/hit_react.gd` (`HSHitReact`, a Node3D) | put one under a character (the node that moves): see *Someone shot*. `health`, `head_x`, `limb_x`, `stagger`, `stagger_s`, `push_m`, `flinch`, `down_mode` (DISSOLVE, VANISH, RAGDOLL, NOTHING), `gone_secs`, `look` (an HSWoundLook; none: `react/looks/demon.tres`), `hitboxes`, `target`, `cry`; `shoot(point, dir, damage)`, `restore()`, `report()`; `hit(info)`, `staggered(secs)`, `down`; `damage`, `is_down`, `hit_count`, `wounds`, `marks`, `last`; `HITBOX_LAYER` (layer 11) |
+| **Her flinch** | `react/flinch.gd` (`HSFlinch`, a SkeletonModifier3D) | HSHitReact puts one under her skeleton: `kick(bone, axis, amp, w, delay, drop)` turns a bone about a world axis on a critically damped spring after her animation (at its peak at 1/w s), or lowers it (a knee giving); `busy()`, `peak_now()` |
+| **How she bleeds** | `react/wound_look.gd` (`HSWoundLook`, a Resource) | `react/looks/demon.tres`: the ichor (`ichor_color`, `embers`, `embers_s`, `wound_m`, `splat_m`, `splat_reach_m`, `drops`, `spray`, `pool_m`, `keep`, `evaporate_s`), the smoke (`wound_smoke`, `down_smoke`: HSMuzzleFlash looks, `react/ichor_smoke.tres` and `react/dissolve_smoke.tres`; `bleed_wounds`), her going (`char_color`, `char_edge`, `char_edge_energy`, `dissolve_s`), the sounds (`hit_sound`, `down_sound`). `react/char.gdshader` (the char spreading over her, an overlay) and `react/crumble.gdshader` (her surfaces eaten away, opaque, cut out), their noise in the world (`char_noise.gdshaderinc`) |
 | **The models** | `models/` | the prop generator's `shotgun_double` (the user's model, `Content/Studio/Props/models/dbl_barrel.fbx`, made round-barrelled and painted: blued, case-hardened, checkered walnut; its `barrels` with the fore-end on their hinge, `lever`, `trigger`, `trigger2`; sockets `muzzle`, `muzzle_r`, `muzzle_l`, `chamber`, `chamber_r`, `chamber_l`, `hinge`, `breech`, `grip`, `trigger`, `shoulder`, `light`), `shell_12ga` and `shell_12ga_spent` (their brand printed along the hull, their heads stamped), `shells_box_5` (the box of shells: its lid a part on its hinge), `shell_12ga_explosive`, `shell_12ga_explosive_spent` and `shells_box_5_explosive` (the explosive kind's: a black hull printed in orange, high brass), `electric_kettle` and `mug_stoneware` (two things to break: a brushed steel kettle, a stoneware mug of tea) (`tools/propgen.py make <name>`, docs/PROPGEN.md §30, §31: the shells and the box are customizable, your logo on them in the prop generator's picture editor, guides/prop_customizer) |
-| **The sounds** | `sounds/` | made in code (`tools/weapon_sounds.py`: numpy, then ffmpeg to Ogg): the blast with its tail, a shell clicking in, the dry click, a hull on the floor, the handling; the break open, the snap shut and the ejectors' flick; an explosive shell bursting (`shell_burst`); a box of shells taken; a thing breaking (`break_<kind>`: its crack, its body, its pieces ringing as they part, bits landing) and a piece landing (`debris_<kind>`) for each kind |
+| **The sounds** | `sounds/` | made in code (`tools/weapon_sounds.py`: numpy, then ffmpeg to Ogg): the blast with its tail, a shell clicking in, the dry click, a hull on the floor, the handling; the break open, the snap shut and the ejectors' flick; an explosive shell bursting (`shell_burst`); a box of shells taken; a thing breaking (`break_<kind>`: its crack, its body, its pieces ringing as they part, bits landing) and a piece landing (`debris_<kind>`) for each kind; someone hit (`ichor_hit`: a heavy wet thump, the squelch of thick liquid, bubbles, a hiss) and going (`ichor_down`: a breath drawn in, a wet collapse, a long hiss with embers popping over a falling rumble) |
 
 ## Try it
 
@@ -186,6 +199,35 @@ Put an **HSBlowUp** under an object (docs/research/breaking_props.md):
   breaking sound and its pieces landing, made in code.
 
 
+## Someone shot
+
+Put an **HSHitReact** under a character (docs/research/hit_reactions.md):
+
+- **Her hitboxes**: her skeleton found under her, its bones named by what they are (head, neck, spine, pelvis, each arm
+  and leg's pieces: MHR's names, a mannequin's, Mixamo's), a capsule along each on collision layer 11
+  (`HITBOX_LAYER`) riding its bone (a BoneAttachment3D); the gun's pellets and blasts look there (`HSGun.SHOT_MASK`), the
+  player never bumps into them. A stand-in with no skeleton gets one capsule round its meshes, and where it's hit is read
+  from the height. Her own colliders (a body's capsule) are hers too: a pellet that hits one finds the hitbox behind it.
+  Every collider of hers says `hs_surface` "ichor": no crater, no dust on her.
+- **A hit**: the pellets of one shot added up (the head's times `head_x` 2, an arm's or a leg's `limb_x` 0.6), a blast
+  taken once at its strongest; the bone hit kicked away from the shot on a spring after her animation (`HSFlinch`): the
+  spine bent back, the head whipped a beat later, an arm swung, a knee giving, a stand-in tilted whole and back upright.
+  The damage fills a counter: past `stagger` she's held where she is for `stagger_s` (whatever moves her: the starter's
+  chase, a searcher; its position put back every frame after it, `process_priority` 100) and shoved back `push_m`; it
+  empties when she staggers. Smaller hits nudge her.
+- **The ichor**: a wound on her riding her bone, drops flung out of it (most along the shot, a few back toward you),
+  heavy drops falling by rays and splashing where they land, the spray on the wall or the floor behind her within
+  `splat_reach_m` (a drip running down a wall, a splat thrown along the floor); black, glossy, its embers fading. The
+  last `keep` marks stay; they live beside her (a node of their own), so they stay when she's gone.
+- **The smoke**: a quarter second after the hit (once a shove has settled: smoke riding her bone drew a line through the
+  air as she was thrown back), black smoke out of the wound, an HSMuzzle playing `wound_smoke` riding the bone, rising
+  and trailing after her as she moves (the muzzle's own trail); `bleed_wounds` at most at once.
+- **Down** at `health`: what moves her stopped (anything under her with a `stop()`), `hs_down` and, once gone,
+  `hs_hidden` set for the starter's hunters; DISSOLVE (the char spreading over her own look, then her surfaces swapped
+  for the char's and crumbling away from burning holes, smoke pouring off her head, hands, knees and chest, `dissolve_s`
+  2.4), VANISH (gone at once in the smoke), RAGDOLL (her PhysicalBoneSimulator3D let go, else DISSOLVE) or NOTHING;
+  gone, nothing of her solid and a pool of ichor where she stood. `gone_secs` brings her back whole (`restore()`).
+
 ## The numbers
 
 - **The shot**: nine pellets of 00 buckshot, the right barrel's cone 0.9° (improved cylinder), the left's 0.7°
@@ -205,6 +247,9 @@ Put an **HSBlowUp** under an object (docs/research/breaking_props.md):
 - **The hulls**: flicked in view for 0.22 s, then into the room, falling, bouncing and rolling on their side by rays of
   their own from their middle and both ends (a body this small sinks through a level's thin floor in a physics engine's
   slop, and a point slips through a gap a hull can't); the last 16 kept.
+- **Someone shot**: `health` 12; staggered at 4 for 0.9 s (1.3 times from the head, 1.4 from a blast), shoved 0.35 m
+  by a close shot; the flinch peaking a tenth of a second after the hit (the spine about 7° a bone from a close shot,
+  the head about 25° from one in the head), gone in half a second; her smoke a quarter second after the hit.
 
 ## Notes
 

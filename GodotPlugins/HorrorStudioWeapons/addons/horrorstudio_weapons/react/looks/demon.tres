@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="HSWoundLook" format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_weapons/react/wound_look.gd" id="1_look"]
+[ext_resource type="Resource" path="res://addons/horrorstudio_weapons/react/ichor_smoke.tres" id="2_wound"]
+[ext_resource type="Resource" path="res://addons/horrorstudio_weapons/react/dissolve_smoke.tres" id="3_down"]
+
+[resource]
+script = ExtResource("1_look")
+title = "Demon"
+wound_smoke = ExtResource("2_wound")
+down_smoke = ExtResource("3_down")

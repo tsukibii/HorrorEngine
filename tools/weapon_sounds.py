@@ -1,7 +1,7 @@
 """The weapons plugin's sounds, made from nothing (numpy, then ffmpeg for the Ogg; DECISIONS 2026-11-09): a 12-gauge's
 blast, a shell pushed home, the dry click on an empty chamber, things breaking when they're shot and their pieces landing (HSBlowUp),
 a spent hull dropping on the floor, the gun raised and lowered, a box of shells picked up, an explosive shell bursting
-where it lands. Each is mono (the Sound node places it in the room and
+where it lands, and someone who bleeds black ichor being hit and going into smoke (HSHitReact). Each is mono (the Sound node places it in the room and
 the sound physics give it the room's reverb, so the blast carries no room of its own: a short tail only).
 
     python tools/weapon_sounds.py [--out DIR]     (default GodotPlugins/HorrorStudioWeapons/addons/horrorstudio_weapons/sounds)
@@ -36,7 +36,7 @@ def band(x, lo, hi, tilt=0.0):
 def decay(t, tau, at=0.0, attack=0.0005):
     """An envelope rising over `attack` from `at`, then falling with time constant `tau`."""
     s = t - at
-    e = np.where(s < 0, 0.0, np.where(s < attack, s / max(attack, 1e-6), np.exp(-(s - attack) / tau)))
+    e = np.where(s < 0, 0.0, np.where(s < attack, s / max(attack, 1e-6), np.exp(-np.maximum(s - attack, 0.0) / tau)))
     return e
 
 
@@ -231,6 +231,82 @@ def landing(kind):
     return make
 
 
+# ---- someone who bleeds ichor (HSHitReact: docs/research/hit_reactions.md) ------------------------------------------
+
+def bubble(t, at, f0, tau, rise, amp):
+    """A bubble popping in a thick liquid: a damped sine whose pitch rises as it rings (f0 (1 + rise s))."""
+    s = np.maximum(t - at, 0.0)
+    return amp * np.where(t >= at, np.sin(2 * np.pi * f0 * (s + 0.5 * rise * s * s)) * np.exp(-s / tau), 0.0)
+
+
+def squelch(n, t, at0, spread, lo, hi, fall, rng):
+    """Grains of noise through a formant that moves from grain to grain: thick liquid pushed about."""
+    x = np.zeros(len(t))
+    for i in range(n):
+        at = at0 + rng.exponential(spread)
+        L = int(rng.uniform(0.012, 0.045) * SR)
+        i0 = int(at * SR)
+        if i0 + L >= len(t):
+            continue
+        fc = np.exp(rng.uniform(np.log(lo), np.log(hi)))
+        g = band(rng.standard_normal(L), fc * 0.75, fc * 1.35) * np.hanning(L)
+        x[i0:i0 + L] += g / max(np.abs(g).max(), 1e-9) * rng.uniform(0.3, 1.0) * np.exp(-(at - at0) / fall)
+    return x
+
+
+def wobble(t, lo, hi, rng):
+    """A slow random swell between 0 and 1 (lo..hi Hz)."""
+    w = band(rng.standard_normal(len(t)), lo, hi)
+    return 0.5 + 0.5 * w / max(np.abs(w).max(), 1e-9)
+
+
+def ichor_hit(rng):
+    """Pellets going into her: a heavy wet thump, the squelch of thick black liquid, bubbles popping in it, then the hiss
+    of it smoking out of the wound."""
+    t = t_(1.1)
+    f = 140 * np.exp(-t / 0.03) + 52                                   # the thump, its pitch falling
+    thump = np.sin(2 * np.pi * np.cumsum(f) / SR) * decay(t, 0.05, 0, 0.001)
+    slap = band(rng.standard_normal(len(t)), 250, 3200) * decay(t, 0.012, 0, 0.0003)
+    sq = squelch(14, t, 0.004, 0.035, 350, 1700, 0.12, rng)
+    pops = np.zeros(len(t))
+    for i in range(10):
+        at = 0.03 + rng.exponential(0.12)
+        if at < 0.9:
+            pops += bubble(t, at, rng.uniform(350, 1100), rng.uniform(0.008, 0.02), rng.uniform(8, 30),
+                           rng.uniform(0.2, 0.6) * np.exp(-at / 0.4))
+    hiss = band(rng.standard_normal(len(t)), 2500, 11000) * decay(t, 0.45, 0.06, 0.08) * (0.6 + 0.4 * wobble(t, 3, 14, rng))
+    x = (1.0 * thump + 0.6 * slap / np.abs(slap).max() + 0.9 * sq + 0.6 * pops
+         + 0.32 * hiss / np.abs(hiss).max())
+    return np.tanh(1.6 * x)
+
+
+def ichor_down(rng):
+    """Her going into smoke: a breath drawn in, a wet collapse, then a long hiss of her burning away with embers popping in
+    it, over a rumble falling in pitch."""
+    t = t_(3.4)
+    lo = band(rng.standard_normal(len(t)), 300, 1500)
+    hi = band(rng.standard_normal(len(t)), 900, 4500)
+    k = np.clip(t / 0.35, 0.0, 1.0)                                    # the breath drawn in, brightening as it goes
+    suck = ((1 - k) * lo / np.abs(lo).max() + k * hi / np.abs(hi).max()) * np.where(t < 0.35, k * k, np.exp(-(t - 0.35) / 0.015))
+    col = np.zeros(len(t))
+    for at, f0 in ((0.36, 120.0), (0.5, 95.0), (0.63, 80.0)):         # the collapse
+        f = f0 * np.exp(-np.maximum(t - at, 0) / 0.05) + 40
+        col += np.where(t >= at, np.sin(2 * np.pi * np.cumsum(f) / SR), 0.0) * decay(t, 0.07, at, 0.002)
+    col += 0.8 * squelch(16, t, 0.36, 0.09, 280, 1400, 0.3, rng)
+    hiss = band(rng.standard_normal(len(t)), 1800, 10000) * decay(t, 0.95, 0.38, 0.3) * (0.55 + 0.45 * wobble(t, 0.8, 6, rng))
+    f = 72 * np.exp(-np.maximum(t - 0.35, 0) / 0.9) + 26                # the rumble, falling
+    rum = np.sin(2 * np.pi * np.cumsum(f) / SR) * decay(t, 1.2, 0.35, 0.2)
+    rum += 0.7 * band(rng.standard_normal(len(t)), 25, 180) * decay(t, 1.0, 0.35, 0.3) / 0.05
+    emb = np.zeros(len(t))
+    for i in range(60):                                                 # embers popping, thinning out
+        at = 0.5 + rng.exponential(0.8)
+        if at < 3.1:
+            emb += tick(t, at, 2000, 8000, rng.uniform(0.002, 0.006), rng.uniform(0.1, 0.5) * np.exp(-(at - 0.5) / 1.4), rng)
+    x = (0.5 * suck + 1.0 * col / max(np.abs(col).max(), 1e-9) + 0.7 * hiss / np.abs(hiss).max()
+         + 0.9 * rum / max(np.abs(rum).max(), 1e-9) + 0.35 * emb / max(np.abs(emb).max(), 1e-9))
+    return np.tanh(1.5 * x)
+
+
 SOUNDS = {"shotgun_fire": (blast, -0.5), "shotgun_shell_insert": (shell_insert, -6.0), "shotgun_dry": (dry_click, -8.0),
           "shell_drop": (shell_drop, -10.0), "shotgun_handle": (handle, -10.0), "shells_box": (shells_box, -9.0),
           "double_open": (double_open, -5.0), "double_close": (double_close, -3.0), "double_flick": (double_flick, -8.0),
@@ -243,6 +319,10 @@ for _i, _kind in enumerate(BREAK):
     SOUNDS[f"debris_{_kind}"] = (landing(_kind), -9.0)
     SEEDS[f"break_{_kind}"] = 20 + _i * 2
     SEEDS[f"debris_{_kind}"] = 21 + _i * 2
+SOUNDS["ichor_hit"] = (ichor_hit, -2.0)
+SOUNDS["ichor_down"] = (ichor_down, -1.5)
+SEEDS["ichor_hit"] = 40
+SEEDS["ichor_down"] = 41
 
 
 def write(path, x, peak_db):

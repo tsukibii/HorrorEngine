@@ -6,8 +6,10 @@
 ## what a 12-gauge leaves on a wall (docs/research/shotgun_damage.md), each close in a light raking across it:
 ## damage_arm (from an arm's length), damage_room (across a room), damage_corridor (down a corridor), damage_concrete;
 ## explosive (the explosive shell's flash), blast (its ball of fire down the corridor), scorch (the scorch and its
-## embers after, the smoke rising); box and box_open (the box of shells where it lies, shut and open); blowup_before,
-## blowup_burst, blowup_mug, blowup_after, blowup_close, blowup_cut (things that break when they're shot: HSBlowUp).
+## embers after, the smoke rising); box and box_open (the box of shells where it lies, shut and open); react_hit,
+## react_smoke, react_ichor, react_char, react_crumble, react_gone (someone who bleeds black ichor: HSHitReact on MHR's
+## body); blowup_before, blowup_burst, blowup_mug, blowup_after, blowup_close, blowup_cut (things that break when
+## they're shot: HSBlowUp).
 ##   godot --path PROJECT --rendering-driver vulkan --fixed-fps 30 -s weapons_shots.gd -- --out=DIR [--only=idle,fire]
 extends SceneTree
 
@@ -140,6 +142,7 @@ func _initialize() -> void:
 	vhs.call("preset", "off")
 	await muzzle_shots()
 	await box_shots()
+	await react_shots()
 	await blowup_shots()
 	quit()
 
@@ -449,3 +452,94 @@ func blowup_shots() -> void:
 	player.set("pitch", 0.0)
 	eye.rotation.x = 0.0
 	eye.current = true
+
+
+
+# someone who bleeds black ichor (HSHitReact, docs/research/hit_reactions.md): MHR's body down the corridor by its north
+# wall in the flashlight, shot from the hip (react_hit: the gun held low, so she's seen), her wound smoking as she comes
+# on (react_smoke), the spray on the wall behind her (react_ichor); the gun lowered and its smoke gone, shot down by a
+# script: charring (react_char), crumbling into the smoke (react_crumble), gone, a pool where she stood (react_gone).
+# Cleaned up after: the breaking pictures' floor stays clear
+func react_shots() -> void:
+	var names := ["react_hit", "react_smoke", "react_ichor", "react_char", "react_crumble", "react_gone"]
+	if names.all(func(n): return not wanted(n)):
+		return
+	var eye := player.get_node("Eye") as Camera3D
+	var torch := player.get_node("Eye/Flashlight") as Node3D
+	var home := player.global_position
+	var yaw0 := player.rotation.y
+	var cz := home.z - 0.15                                       # (the corridor's middle: the player starts 0.15 m off it)
+	var at := Vector3(home.x - 2.7, home.y, cz - 0.5)             # 0.45 m off the north wall
+	player.global_position = Vector3(home.x, home.y, cz + 0.45)   # (across from her: the spray goes on toward her wall)
+	var her := (load("res://bodies/MHR.fbx") as PackedScene).instantiate() as Node3D
+	her.name = "Her"
+	main.add_child(her)
+	her.global_position = at
+	var to_you := (player.global_position - at) * Vector3(1, 0, 1)
+	her.rotation.y = atan2(to_you.x, to_you.z)                    # (she faces +Z in her own frame: turned to you)
+	var sk := her.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
+	for side in [["l_uparm", -1.0], ["r_uparm", 1.0]]:            # (her arms down: the starter's arms_down.gd's way)
+		var bi := sk.find_bone(side[0])
+		var rest := sk.get_bone_global_rest(bi)
+		sk.set_bone_global_pose(bi, Transform3D(Basis(Vector3(0, 0, 1), deg_to_rad(52.0 * float(side[1]))) * rest.basis, rest.origin))
+	var src := GDScript.new()
+	src.source_code = "extends Node\nvar v := Vector3.ZERO\nvar stopped := false\nfunc _process(dt: float) -> void:\n\tif not stopped:\n\t\t(get_parent() as Node3D).global_position += v * dt\nfunc stop(_a = null, _b = null) -> void:\n\tstopped = true\n"
+	src.reload()
+	var walk := Node.new()
+	walk.set_script(src)
+	her.add_child(walk)
+	var hr := HSHitReact.new()
+	hr.health = 60.0
+	her.add_child(hr)
+	await frames(4)
+	torch.visible = true
+	gun.set("loaded", 2)
+	var spine: Array = hr.get("_roles")["spine"]
+	var chest := sk.global_transform * sk.get_bone_global_pose(spine[mini(2, spine.size() - 1)]).origin
+	look(chest + Vector3(0, 0.05, 0))
+	await frames(30)
+	gun.pull()                                                    # the right barrel into her chest, from the hip
+	await frames(4)
+	await now("react_hit")
+	await frames(20)
+	walk.set("v", to_you.normalized() * 0.45)                     # she comes on, smoking
+	await frames(50)
+	look(her.global_position + Vector3(0, 1.3, 0))
+	await now("react_smoke")
+	walk.set("v", Vector3.ZERO)
+	# the spray on the wall behind her: the biggest mark of hers, looked at from a step off
+	var big: Node3D = null
+	var big_s := 0.0
+	for m in (hr.get("marks") as Array):
+		if is_instance_valid(m):
+			var sz := float(m.get("size_m")) if m.get("size_m") != null else (m as Decal).size.x
+			if sz > big_s:
+				big_s = sz
+				big = m
+	if big != null:
+		look(big.global_position)
+	await shot("react_ichor", 25)
+	# the gun lowered and its smoke gone; she goes
+	gun.set_raised(false)
+	await frames(75)
+	look(her.global_position + Vector3(0, 1.1, 0))
+	await frames(5)
+	hr.shoot(her.global_position + Vector3(0, 1.3, 0), -to_you.normalized(), 60.0)
+	await frames(18)
+	await now("react_char")
+	await frames(30)
+	await now("react_crumble")
+	await frames(50)
+	look(her.global_position + Vector3(0, 0.5, 0))
+	await now("react_gone")
+	gun.set_raised(true)
+	torch.visible = false
+	var ich = hr.get("_root")
+	if ich != null and is_instance_valid(ich):
+		(ich as Node).queue_free()
+	her.queue_free()
+	player.global_position = home
+	player.rotation.y = yaw0
+	player.set("pitch", 0.0)
+	eye.rotation.x = 0.0
+	await frames(30)

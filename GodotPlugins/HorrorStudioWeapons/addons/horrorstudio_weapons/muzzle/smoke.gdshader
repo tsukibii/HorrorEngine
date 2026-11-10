@@ -21,6 +21,7 @@ uniform float rise = 0.05;                 // the noise rising through it (m/s)
 uniform float erode = 0.55;                // how much it frays as it ages
 uniform float soft_m = 0.08;               // faded out this near what's behind it (m)
 uniform float near_m = 0.14;               // and this near the lens (m)
+uniform vec4 ember : source_color = vec4(0.0);   // a glow in the youngest smoke (its alpha how strong): a demon's, near its wound
 
 varying vec3 wpos;
 
@@ -47,7 +48,7 @@ void fragment() {
 	d *= clamp((behind - here) / soft_m, 0.0, 1.0);
 	d *= smoothstep(near_m * 0.4, near_m, here);
 	ALBEDO = smoke_color.rgb;
-	EMISSION = smoke_color.rgb * glow;
+	EMISSION = smoke_color.rgb * glow + ember.rgb * ember.a * 4.0 * (1.0 - age) * (1.0 - age) * (1.0 - age);
 	PREMUL_ALPHA_FACTOR = d;
 	ALPHA = d * occlude;
 }

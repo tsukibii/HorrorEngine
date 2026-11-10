@@ -38,6 +38,8 @@ const SURFACES := {
 	"sheet_metal": {"tint": Color(0.36, 0.36, 0.38), "dust": Color(0.5, 0.5, 0.52), "chip": Color(0.7, 0.7, 0.72), "sparks": 0.6, "size": 0.4, "dust_k": 0.3, "chips_k": 0.3},
 	"ceramic": {"tint": Color(0.92, 0.9, 0.86), "dust": Color(0.92, 0.9, 0.86), "chip": Color(0.95, 0.94, 0.9), "sparks": 0.0, "size": 0.6},
 	"cardboard": {"tint": Color(0.45, 0.36, 0.26), "dust": Color(0.7, 0.62, 0.5), "chip": Color(0.66, 0.55, 0.4), "sparks": 0.0, "size": 0.55, "chips_k": 0.6},
+	# someone who bleeds her own way (HSHitReact: the ichor, its smoke): no crater, no dust, nothing of the wall's
+	"ichor": {"tint": Color(0.02, 0.016, 0.018), "dust": Color(0.03, 0.025, 0.03), "chip": Color(0.02, 0.016, 0.018), "sparks": 0.0, "size": 0.0, "mark": false, "dust_k": 0.0, "chips_k": 0.0},
 }
 
 const VARIANTS := {"crater": 4, "scorch": 2, "blast": 3, "smear": 2, "wad": 1, "soot": 1, "grains": 1}   # each mark's maps in fx/
@@ -478,7 +480,7 @@ func _blast(imp: HSImpact, hit: Dictionary) -> Array:
 		sh.radius = imp.radius_m
 		q.shape = sh
 		q.transform = Transform3D(Basis(), center)
-		q.collision_mask = 1
+		q.collision_mask = HSGun.SHOT_MASK                # (the world and her hitboxes: HSHitReact takes a blast once)
 		var seen := {}
 		var player := get_tree().get_first_node_in_group("hs_player")
 		for r in space.intersect_shape(q, 64):

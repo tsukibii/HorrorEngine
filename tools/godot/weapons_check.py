@@ -10,8 +10,9 @@ flash, the noise heard, the ears ringing, the kick), the right barrel then the l
 tape, never three flashes in a second, the reload (broken open in the view, the hulls flicked onto the floor, a shell
 popped into each chamber), one barrel's reload, a reload stopped by a shot, the keys, a shootable, a lamp shot out,
 the muzzle's flash and trail, what a 12-gauge leaves on a wall at three distances and on concrete, the explosive shell
-and its blast, things that break when they're shot (HSBlowUp: a kettle, a mug of tea and a box of shells), the box of
-shells taken, lowered and raised, the gun found and taken.
+and its blast, things that break when they're shot (HSBlowUp: a kettle, a mug of tea and a box of shells), someone who
+bleeds black ichor and goes into smoke (HSHitReact: MHR's body), the box of shells taken, lowered and raised, the gun
+found and taken.
 
     python tools/godot/weapons_check.py [--reuse] [--pictures [--only idle,fire]] [--keep DIR]
 
@@ -44,8 +45,18 @@ def run(cmd, **kw):
 if not G:
     sys.exit("WEAPONS FAILED: no godot (tools/godot_setup.sh on a cloud session)")
 reuse = "--reuse" in args and (proj / "hotel.json").is_file()
+MHR = ROOT / "Content/Studio/Bodies/MHR.fbx"          # (someone to shoot: Meta's MHR body, Apache-2.0, HSHitReact)
+
+
+def body_in():
+    (proj / "bodies").mkdir(parents=True, exist_ok=True)
+    if not (proj / "bodies/MHR.fbx").is_file() or (proj / "bodies/MHR.fbx").read_bytes() != MHR.read_bytes():
+        shutil.copy(MHR, proj / "bodies/MHR.fbx")
+
+
 if reuse:
     BH.install(proj, starter=True)
+    body_in()
     run([G, "--headless", "--path", str(proj), "--import"], timeout=1200)
     print(f"  reusing {proj}")
 else:
@@ -55,6 +66,7 @@ else:
     if BH.main(["new", str(proj), "--name", "Weapons"]):
         sys.exit("WEAPONS FAILED: godot_byhand.py new")
     (proj / "weapons.json").write_text("{}", encoding="utf-8")
+    body_in()
     dst = proj / "exports/interiors/hotel_floor"
     have = ROOT / "Saved/Godot/_tutorial_v2/exports/interiors/hotel_floor/hotel_floor.glb"
     if have.is_file():                                   # tutorial v2's export of the same set: the same file
@@ -66,7 +78,8 @@ else:
             sys.exit("WEAPONS FAILED: the hotel's export: " + (r.stdout + r.stderr)[-500:])
     for _ in range(3):
         run([G, "--headless", "--path", str(proj), "--import"], timeout=2400)
-        if list((proj / ".godot" / "imported").glob("hotel_floor.glb-*.scn")) and list((proj / ".godot" / "imported").glob("shotgun_double.glb-*.scn")):
+        if list((proj / ".godot" / "imported").glob("hotel_floor.glb-*.scn")) and list((proj / ".godot" / "imported").glob("shotgun_double.glb-*.scn")) \
+                and list((proj / ".godot" / "imported").glob("MHR.fbx-*.scn")):
             break
     shutil.copy(ROOT / "tools/godot/tutorial_v2_paths.gd", proj / "tutorial_v2_paths.gd")
     r = run([G, "--headless", "--path", str(proj), "-s", "tutorial_v2_paths.gd"], timeout=600)

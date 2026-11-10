@@ -2,6 +2,29 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-10 (the user: characters shot, no blood; then an oozy ichor for the tape)
+
+- **"Now instead of a breaking items system can you create a reactive system for characters/enemies to be shot, but
+  dont do blood, instead create some form of demonic dark smoke and dark splatters like black blood."** Researched
+  first (docs/research/hit_reactions.md). Read as a new system beside HSBlowUp, not in its place (HSBlowUp is kept: say
+  if it should go). Built as **HSHitReact** (`react/hit_react.gd` in the weapons plugin), a node put under a character:
+  - **Where she's hit**: capsules on her bones (MHR's names, a mannequin's, Mixamo's) on collision layer 11, which the
+    gun's pellets and a blast see (`HSGun.SHOT_MASK`) and the player never bumps into; a stand-in of meshes gets one
+    capsule and its part by the height. The head takes twice the damage, an arm or a leg 0.6.
+  - **Her reaction**: a flinch on springs on top of her animation (HSFlinch, a SkeletonModifier3D: the bone hit thrown
+    away from the shot, the spine back, the head a beat later, a knee giving); a stagger counter (most of a close shot)
+    holding her where she is against whatever moves her and shoving her back.
+  - **No blood**: black ichor, glossy so the flashlight catches it, embers in it: a wound on her riding her bone, drops,
+    the spray behind her, drips down a wall (`fx/ichor_*`, made in code); **dark smoke** out of every wound, rising and
+    trailing after her as she moves (the muzzle's smoke made black).
+  - **Down**: what moves her stopped; she chars over with burning edges, crumbles into the smoke and is gone, a pool of
+    ichor where she stood (or vanish, ragdoll, nothing); `restore()`. Its sounds made in code (`ichor_hit`,
+    `ichor_down`): **listen to them**.
+- **"Once your done can you look into adding some kind of shader for the black gothic blood that will fit our vhs
+  camhybrid look and look eery and oozy."** Next, its own step: the ichor's marks as a shader of their own (they're
+  still flat decals): creeping, dripping, glistening, alive, made to read through the camhybrid tape (its lifted black
+  and blurred colour: the ooze has to read by its shine and its movement).
+
 ## 2026-11-09, after the smoke (the user: things that blow up when they're shot)
 
 - **"Could you create a shader/script called blownUp or something that lets any object we attach be blow up by shotgun

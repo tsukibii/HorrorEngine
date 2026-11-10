@@ -81,6 +81,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#impacts">What a shot leaves</a></li>
     <li><a href="#found">Found in a room, and shot at</a></li>
     <li><a href="#break">Things that break</a></li>
+    <li><a href="#hitreact">Shooting her: ichor, not blood</a></li>
     <li><a href="#code">In your own scripts</a></li>
     <li><a href="#numbers">The numbers</a></li>
     <li><a href="#rules">Good to know</a></li>
@@ -97,7 +98,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   No hands on it. Its muzzle flashes your way, and what it does to a wall is a 12-gauge's, close up and down a corridor.
   Made for horror: one heavy gun, two shells in it, every shell counted.</p>
   <div class="chips"><span class="chip">Godot 4.7</span><span class="chip">GDScript</span><span class="chip">HSDoubleBarrel</span>
-  <span class="chip">HSWeaponPickup</span><span class="chip">HSMuzzle</span><span class="chip">HSImpacts</span><span class="chip">your model, painted by the prop generator</span><span class="chip">sounds made in code</span></div>
+  <span class="chip">HSWeaponPickup</span><span class="chip">HSMuzzle</span><span class="chip">HSImpacts</span><span class="chip">HSBlowUp</span><span class="chip">HSHitReact</span><span class="chip">your model, painted by the prop generator</span><span class="chip">sounds made in code</span></div>
 </header>
 
 <section id="what">
@@ -365,8 +366,57 @@ pieces are cleared (0: the mess stays). <b>Kick</b>: your feet push the pieces y
 <code>fire()</code> when it breaks (a scare, a cue). <b>Collider</b>: a hull round it when it has no collider of its own.</p>
 </section>
 
+<section id="hitreact">
+<h2><span class="n">12</span>Shooting her: ichor, not blood</h2>
+<p>Put an <span class="node">HSHitReact</span> under a character (a Character Studio export, an MHR body, any rigged
+figure, or a stand-in made of meshes) and she reacts to the shotgun as a demon would. <b>No blood</b>: black ichor,
+glossy so the flashlight catches it, embers in it; and <b>dark smoke</b> pouring out of every wound and trailing after
+her as she moves. Shot down, she chars over, crumbles into the smoke and is gone.</p>
+<div class="pair">
+<figure><img src="img/react_hit.jpg" width="1600" height="900" alt="MHR's body down the corridor in the flashlight, flinching back from a shot to the chest, black drops flying"><figcaption>The right barrel into her chest: her spine thrown back, her head after it, black drops flung out of the wound.</figcaption></figure>
+<figure><img src="img/react_smoke.jpg" width="1600" height="900" alt="Her coming on down the corridor, black smoke rising out of the wound and trailing after her"><figcaption>She comes on: black smoke rises out of the wound and trails after her as she walks.</figcaption></figure>
+</div>
+<div class="pair">
+<figure><img src="img/react_ichor.jpg" width="1600" height="900" alt="Black splatters and drops of ichor on the corridor floor at her feet and behind her"><figcaption>The ichor round her: the spray thrown behind her, the drops where they landed.</figcaption></figure>
+<figure><img src="img/react_char.jpg" width="1600" height="900" alt="Her body charring over in ragged black patches with glowing edges"><figcaption>Shot down: she chars over from her skin, its edge burning.</figcaption></figure>
+</div>
+<div class="pair">
+<figure><img src="img/react_crumble.jpg" width="1600" height="900" alt="Her charred body crumbling into black smoke, embers at the holes' edges"><figcaption>Charred all over, she crumbles into the smoke, every hole's rim burning.</figcaption></figure>
+<figure><img src="img/react_gone.jpg" width="1600" height="900" alt="Only smoke and embers where she stood, a pool of ichor on the floor"><figcaption>Gone: the smoke where she stood, a pool of ichor under it.</figcaption></figure>
+</div>
+<h3>Giving someone a reaction</h3>
+<ol class="steps">
+  <li>Select the character (the node that moves) and add a child node: <b>HSHitReact</b>.</li>
+  <li>That's all. It finds her skeleton by its bones' names (MHR's, a mannequin's, Mixamo's) and puts a hitbox on each
+  of her main bones, on a layer of their own (11) that the gun's pellets and blasts see and you never bump into. A
+  stand-in with no skeleton gets one capsule round it, and where it's hit is read from the height.</li>
+  <li>Set her <b>Health</b>: a buckshot pellet does 1, so 12 is about a shot and a half; a demon who takes four shots, 36.</li>
+</ol>
+<h3>What she does</h3>
+<div class="cols">
+  <div class="card"><h4>The flinch</h4><p>Each hit kicks the bone it hit away from the shot on a spring, on top of whatever she's playing: her spine bends back, her head whips back a beat later, an arm swings, a knee gives. A stand-in tilts and rights itself.</p></div>
+  <div class="card"><h4>Where she's hit</h4><p>The head takes twice the damage (<b>Head X</b>), an arm or a leg 0.6 of it (<b>Limb X</b>).</p></div>
+  <div class="card"><h4>The stagger</h4><p>The damage builds up: past <b>Stagger</b> (4, most of a close shot) she's held where she is for <b>Stagger S</b> (longer from the head or a blast) and shoved back, whatever is moving her (the starter's chase, a searcher). It empties each time she staggers.</p></div>
+  <div class="card"><h4>The ichor</h4><p>A wound on her that moves with her, drops flung out of it, the spray on the floor or the wall behind her (running down a wall), heavy drops splashing where they land. The last 60 marks stay.</p></div>
+  <div class="card"><h4>The smoke</h4><p>A quarter of a second after the hit, once she's been shoved, black smoke rises out of the wound and trails after her as she moves. Five wounds smoke at most.</p></div>
+  <div class="card"><h4>Down</h4><p>At her health she's <b>down</b>: what moves her is stopped, she chars over and crumbles into the smoke, a pool of ichor where she stood. Or <b>Vanish</b> (gone at once in the smoke), <b>Ragdoll</b> (if she has a PhysicalBoneSimulator3D) or <b>Nothing</b> (only the signal).</p></div>
+</div>
+<h3>Its look</h3>
+<p>An <span class="node">HSWoundLook</span> (the plugin's is <code>react/looks/demon.tres</code>): the ichor's colour, its
+embers and how long they glow, the wound's and the spray's sizes, how far the spray reaches, the drops, the pool, how
+many marks stay, the two smokes (<code>react/ichor_smoke.tres</code> out of a wound, <code>react/dissolve_smoke.tres</code>
+off her as she goes: muzzle looks made black, changed as you'd change a flash), the char's colours, how long she takes
+to go, and the sounds. Duplicate it to make another (a creature that bleeds green, one whose smoke is white).</p>
+<h3>Its settings</h3>
+<p><b>Health</b>, <b>Head X</b>, <b>Limb X</b>, <b>Stagger</b>, <b>Stagger S</b>, <b>Push M</b> (how far a close shot's
+stagger shoves her), <b>Flinch</b> (0: never), <b>Down Mode</b>, <b>Gone Secs</b> (0: she stays gone; else she's back
+whole after that long), <b>Look</b>, <b>Hitboxes</b> (off: her own colliders only), <b>Target</b> (its
+<code>fire()</code> when she's down: a scare, a cue), <b>Cry</b> (a sound of hers when she's hit; the wound's own plays
+anyway).</p>
+</section>
+
 <section id="code">
-<h2><span class="n">12</span>In your own scripts</h2>
+<h2><span class="n">13</span>In your own scripts</h2>
 <pre>$Player/Eye/Shotgun.fired.connect(func(hits): print(hits.size(), " pellets hit"))
 $Player/Eye/Shotgun.broke_open.connect(func(): print("the chambers are bare"))
 $Player/Eye/Shotgun.give(4)              # the gun, and four shells with it
@@ -388,7 +438,13 @@ $Rifle/Muzzle.fire(load("res://my_flash.tres"))
 $Kettle/BlowUp.blown_up.connect(func(pieces): print(pieces.size(), " pieces"))
 $Kettle/BlowUp.blow_up()                 # broken from a script (a cue, a scare): from its middle
 $Kettle/BlowUp.blow_up(at, way, 2.0)     # from a place, along a way, twice its strength
-$Kettle/BlowUp.restore()                 # back as it was (its pieces gone, its dents out)</pre>
+$Kettle/BlowUp.restore()                 # back as it was (its pieces gone, its dents out)
+
+# someone who bleeds ichor (an HSHitReact under her)
+$Her/HitReact.hit.connect(func(info): print(info["part"], " for ", info["damage"]))
+$Her/HitReact.down.connect(func(): print("she's gone"))
+$Her/HitReact.shoot(at, way, 6.0)        # hit by a script (a trap): where, which way, how hard
+$Her/HitReact.restore()                  # back whole (the ichor she left stays)</pre>
 <p>Signals: <code>fired(hits)</code>, <code>shell_in(loaded)</code>, <code>empty</code>, <code>broke_open</code>,
 <code>closed</code>, <code>raised_changed(up)</code>. State: <code>live</code> (each barrel's), <code>spent</code>,
 <code>barrel_kind</code>, <code>loaded</code> (set it and the chambers follow), <code>spare</code>, <code>capacity</code>,
@@ -401,12 +457,16 @@ for a hit of your own). On an <span class="node">HSShootable</span>: <code>hit(i
 <code>count</code>, <code>is_down</code>. On an <span class="node">HSBlowUp</span>: <code>prepared</code>, <code>hit(info)</code> (a shot
 that didn't break it), <code>blown_up(pieces)</code>; <code>is_prepared()</code>, <code>blow_up(at, dir, power, blast_at)</code>,
 <code>restore()</code>, <code>damage</code>, <code>is_broken</code>, <code>pieces_out</code>, <code>report()</code>;
-<code>HSBlowUp.guess_kind(node)</code>. A gun of your own extends <span class="node">HSGun</span> (<code>gun.gd</code>), as the
+<code>HSBlowUp.guess_kind(node)</code>. On an <span class="node">HSHitReact</span>: <code>hit(info)</code> (<code>{part,
+parts, bone, damage, health, point, dir, power, staggered, blast}</code>), <code>staggered(secs)</code>, <code>down</code>;
+<code>shoot(point, dir, damage)</code>, <code>restore()</code>, <code>damage</code>, <code>is_down</code>,
+<code>hit_count</code>, <code>wounds</code>, <code>marks</code>, <code>last</code>, <code>report()</code>;
+<code>HSHitReact.HITBOX_LAYER</code>. A gun of your own extends <span class="node">HSGun</span> (<code>gun.gd</code>), as the
 double does.</p>
 </section>
 
 <section id="numbers">
-<h2><span class="n">13</span>The numbers</h2>
+<h2><span class="n">14</span>The numbers</h2>
 <ul>
   <li><b>The shot</b>: nine pellets, the right barrel's cone 0.9° (improved cylinder), the left's 0.7° (modified), 45 m
   reach; the pattern about 6 cm across 2.5 m out, 11 cm at 4.5 m, 22 cm at 9 m; the view kicked 3.2° and settling back
@@ -419,17 +479,26 @@ double does.</p>
   third of the cone, a kick 1.2 times as hard, a blast of 2.2 m.</li>
   <li><b>What it leaves</b>: pellets within 1.6 cm torn into one hole; soot within 40 cm of the muzzle, powder grains
   within 90 cm; the wad's own dent from 1.5 to 5 m.</li>
+  <li><b>Someone shot</b>: 12 health; the head twice a pellet's damage, an arm or a leg 0.6; staggered at 4 (most of a
+  close shot) for 0.9 s (1.2 from the head, 1.3 from a blast) and shoved 0.35 m; the flinch at its strongest a tenth of
+  a second after the hit and gone in about half a second; the smoke out of the wound a quarter second after it; down,
+  charred in a second and crumbled into the smoke in two and a half.</li>
 </ul>
 <p>Every one of these is an export on the node or its resources: change it in the Inspector.</p>
 </section>
 
 <section id="rules">
-<h2><span class="n">14</span>Good to know</h2>
+<h2><span class="n">15</span>Good to know</h2>
 <ul>
   <li><b>Fewer flashes</b>: lower <b>Flash Energy</b> (1.5: a glow, not a flash) for players who need it.</li>
   <li><b>A click never fires while the mouse is free</b> (a menu open, or the click that takes the mouse back).</li>
   <li><b>Against a wall</b> the gun is still drawn whole, its muzzles past the wall: the flash lights your side and the
   smoke stays with you; the hulls flicked out beside a wall come down on your side.</li>
+  <li><b>Her hitboxes are on layer 11</b>: the gun's pellets and blasts look there too (<code>HSGun.SHOT_MASK</code>),
+  you and her own movement never touch it. A gun or a trap of your own that casts on layer 1 alone won't find them:
+  give it the mask.</li>
+  <li><b>Her ichor and smoke live beside her</b>, not under her, so they stay where they fell when she's gone;
+  <code>restore()</code> mends her, not the floor.</li>
   <li><b>The hulls fall and roll by rays of their own</b>, not as physics bodies: something that small would sink through
   a level's thin floor. Three rays each (its ends and its middle), so one never slips through the gap at a door's
   edge. The last 16 stay.</li>

@@ -17,6 +17,7 @@ uniform float occlude = 0.7;
 uniform float wisp_m = 0.05;               // the wisps' size (m)
 uniform float rise = 0.05;                 // the noise rising through it (m/s)
 uniform float erode = 0.45;                // how much a puff frays into wisps as it ages
+uniform vec4 ember : source_color = vec4(0.0);   // a glow in the youngest puffs (its alpha how strong)
 
 varying float v_age;                       // the particle's phase: 0 thrown out, 1 gone
 
@@ -35,7 +36,7 @@ void fragment() {
 	float n = smoke_wisps(wpos, v_age, wisp_m, rise, 0.0, TIME);
 	float wisp = clamp((n + 0.3 * t.a - 0.36 - erode * (0.05 + 0.35 * v_age)) / 0.4, 0.0, 1.0);
 	ALBEDO = COLOR.rgb * t.rgb;
-	EMISSION = COLOR.rgb * t.rgb * glow;
+	EMISSION = COLOR.rgb * t.rgb * glow + ember.rgb * ember.a * 4.0 * (1.0 - v_age) * (1.0 - v_age) * (1.0 - v_age);
 	float a = clamp(COLOR.a * t.a * wisp * density * 1.5, 0.0, 1.0);
 	PREMUL_ALPHA_FACTOR = a;
 	ALPHA = a * occlude;

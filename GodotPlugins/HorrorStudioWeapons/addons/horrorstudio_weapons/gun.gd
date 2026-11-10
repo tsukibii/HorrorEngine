@@ -29,6 +29,7 @@ signal raised_changed(up: bool)
 
 const DIR := "res://addons/horrorstudio_weapons/"
 const VIEW_LAYER := 1 << 19                       # layer 20 (the Look plugin's): your eye draws it, no mirror does, no mark lands on it
+const SHOT_MASK := 1 | (1 << 10)                 ## what a pellet meets: the world (layer 1) and characters' hitboxes (layer 11: HSHitReact's)
 
 @export var owned := true                         ## carried: a pickup gives it (HSWeaponPickup)
 @export var raised := true                        ## up in view (false: lowered out of it)
@@ -641,9 +642,10 @@ func _spread(_barrel: int) -> float:
 	return spread_deg
 
 
-# the first thing a ray from a to b meets on layer 1, past anyone hidden (someone not there yet still has her collider)
+# the first thing a ray from a to b meets on SHOT_MASK (the world, her hitboxes), past anyone hidden (someone not there
+# yet still has her collider)
 func _ray(space: PhysicsDirectSpaceState3D, a: Vector3, b: Vector3, ex: Array) -> Dictionary:
-	var q := PhysicsRayQueryParameters3D.create(a, b, 1)
+	var q := PhysicsRayQueryParameters3D.create(a, b, SHOT_MASK)
 	var skip := ex.duplicate()
 	for k in 5:
 		q.exclude = skip

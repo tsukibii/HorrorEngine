@@ -76,3 +76,5 @@ enum Blend { SOLID, ADD }
 @export_range(0.0, 2.0) var smoke_density := 1.0
 @export_range(0.0, 1.0) var smoke_glow := 0.6                ## a light of its own, so it reads as grey wisps in a dim room as in the user's reference (0: lit by the room's lights only)
 @export_range(0.05, 2.0) var smoke_light_cap := 0.5          ## the most light any one lamp gives the smoke: the next shot's flash beside it lights the cloud a glow, not a white ball (a lamp a metre off is far under it)
+@export_range(-1.0, 1.0) var smoke_occlude := -1.0           ## how much of what's behind it the smoke hides (below 0: the trail's 0.45 and the puffs' 0.7; 1: black smoke, a demon's)
+@export var smoke_ember := Color(0, 0, 0, 0)                ## a glow in the youngest smoke, fading as it ages (alpha: how strong; a demon's wound smoulders)

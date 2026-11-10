@@ -305,10 +305,14 @@ func _shade(lk: HSMuzzleFlash) -> void:
 		tm.set_shader_parameter("density", clampf(lk.smoke_density, 0.0, 2.0))
 		tm.set_shader_parameter("light_cap", lk.smoke_light_cap)
 		tm.set_shader_parameter("erode", lk.trail_erode)
+		tm.set_shader_parameter("occlude", lk.smoke_occlude if lk.smoke_occlude >= 0.0 else 0.45)
+		tm.set_shader_parameter("ember", lk.smoke_ember)
 	var pm := puffs.mesh.surface_get_material(0) as ShaderMaterial if puffs.mesh != null else null
 	if pm != null:
 		pm.set_shader_parameter("glow", lk.smoke_glow)
 		pm.set_shader_parameter("light_cap", lk.smoke_light_cap)
+		pm.set_shader_parameter("occlude", lk.smoke_occlude if lk.smoke_occlude >= 0.0 else 0.7)
+		pm.set_shader_parameter("ember", lk.smoke_ember)
 
 
 # the wings and the plume as spheres in the MultiMesh: returns how many

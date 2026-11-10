@@ -20,6 +20,13 @@ the plugin reads whatever is there:
 - `soot_0_albedo.png` the smoke a shot from under about 40 cm leaves on the wall: a black ring fanned out round the hole
 - `grains_0_albedo.png` the powder's grains a shot from under about 90 cm peppers round it (the stippling): burnt and
                       unburnt specks, thick in the middle, thinning out (docs/research/shotgun_damage.md)
+- `ichor_<kind>_<n>_albedo/normal/orm/emission.png`: a demon's black ichor instead of blood (HSHitReact,
+                      docs/research/hit_reactions.md): `splat` (n 0..2, thrown out along the texture's right: a blob,
+                      spikes and the drops flung past it), `drip` (n 0..1, on a wall: runs down the texture's bottom),
+                      `wound` (n 0..1, on the body: a ragged dark hole, a glossy rim, short runs) and `drop` (n 0..1, a
+                      drop landed, its crown of droplets; a pool scaled up). Black and glossy (the flashlight's highlight
+                      is what shows it), a dark oxblood in its thin film, raised like a liquid, a few ember flecks in
+                      the emission (faded in play)
 
     python tools/weapon_fx.py [--out DIR]       make them
     python tools/weapon_fx.py check             WEAPONFX: every map there and well formed, the noise tiling, each
@@ -443,6 +450,110 @@ def smear(seed, n=128):
     return rgba, nrm, orm, h
 
 
+ICHOR = {"splat": 3, "drip": 2, "wound": 2, "drop": 2}
+ICHOR_N = {"splat": 512, "drip": 512, "wound": 256, "drop": 256}
+
+
+def ichor(kind, seed, n=None):
+    """A demon's black ichor as a decal's maps (see the module doc): its cover from shapes (a ragged blob, spikes thrown
+    along +u ending in drops, flung droplets drawn out along their way, runs down a wall, a wound's hole), its thickness
+    a liquid's rounded domes, black where it's thick and dark oxblood in its thin film, glossy, ember flecks in it.
+    Returns (rgba, normal, orm, emission, cover)."""
+    n = n or ICHOR_N[kind]
+    rng = np.random.default_rng(seed * 97 + {"splat": 900, "drip": 950, "wound": 980, "drop": 990}[kind])
+    yy, xx = np.mgrid[0:n, 0:n]
+    u = (xx + 0.5) / n * 2 - 1
+    v = (yy + 0.5) / n * 2 - 1
+    px = 2.0 / n
+
+    def disc(cx, cy, r, ax=1.0, ang=0.0):
+        """a soft ellipse: `ax` its length over its width along `ang`"""
+        du, dv = u - cx, v - cy
+        ca, sa = np.cos(ang), np.sin(ang)
+        a = du * ca + dv * sa
+        b = -du * sa + dv * ca
+        d = np.sqrt((a / ax) ** 2 + b * b)
+        return np.clip((r - d) / (1.5 * px) + 0.5, 0.0, 1.0)
+
+    def capsule(ax_, ay_, bx_, by_, w0, w1):
+        """a run from a to b, its width w0 tapering to w1"""
+        d, t = seg_dist(u, v, ax_, ay_, bx_, by_)
+        w = w0 + (w1 - w0) * t
+        return np.clip((w - d) / (1.5 * px) + 0.5, 0.0, 1.0)
+
+    cov = np.zeros((n, n))
+    if kind in ("splat", "drip", "drop", "wound"):
+        cx, cy, r0 = {"splat": (-0.3, 0.0, 0.26), "drip": (0.0, -0.32, 0.3), "drop": (0.0, 0.0, 0.2), "wound": (0.0, 0.0, 0.34)}[kind]
+        r0 *= rng.uniform(0.85, 1.12)
+        a = np.arctan2(v - cy, u - cx)
+        r = np.hypot(u - cx, v - cy)
+        edge = polar(spectral(128, 1.6, seed * 7 + 401, lo=3.0, hi=30), a, r, 1, 0.04)
+        R = r0 * (1.0 + 0.2 * np.tanh(edge))
+        cov = np.maximum(cov, np.clip((R - r) / (2.0 * px) + 0.5, 0.0, 1.0))
+        # spikes out of the blob (thrown along +u for a splat; all round a drop's crown and a drip's)
+        spikes = {"splat": 14, "drip": 9, "drop": 11, "wound": 7}[kind]
+        for i in range(spikes):
+            if kind == "splat":
+                ang = rng.normal(0.0, 0.55)
+                L = rng.uniform(0.25, 0.7) * (1.2 - abs(ang) * 0.5)
+            else:
+                ang = rng.uniform(-np.pi, np.pi)
+                L = rng.uniform(0.12, 0.35) * (0.6 if kind == "wound" else 1.0)
+            sx, sy = cx + np.cos(ang) * r0 * 0.8, cy + np.sin(ang) * r0 * 0.8
+            ex, ey = sx + np.cos(ang) * L, sy + np.sin(ang) * L
+            w = rng.uniform(0.018, 0.045) * (1.3 if kind == "splat" else 1.0)
+            cov = np.maximum(cov, capsule(sx, sy, ex, ey, w, w * 0.35))
+            if rng.random() < 0.7:
+                cov = np.maximum(cov, disc(ex, ey, w * rng.uniform(0.8, 1.5)))
+        # droplets flung past it, drawn out along their way (a splat's mostly ahead)
+        drops = {"splat": 40, "drip": 18, "drop": 26, "wound": 10}[kind]
+        for i in range(drops):
+            ang = rng.normal(0.0, 0.6) if kind == "splat" else rng.uniform(-np.pi, np.pi)
+            dist = r0 * rng.uniform(1.25, 3.4 if kind == "splat" else 2.4)
+            dxp, dyp = cx + np.cos(ang) * dist, cy + np.sin(ang) * dist
+            if abs(dxp) > 0.95 or abs(dyp) > 0.95:
+                continue
+            size = rng.uniform(0.008, 0.03) * (r0 / dist) ** 0.5 * 2.0
+            cov = np.maximum(cov, disc(dxp, dyp, size, ax=rng.uniform(1.4, 2.6), ang=ang))
+        if kind == "drip":
+            # runs down from the blob's lower edge, a bulb at each end
+            for i in range(int(rng.integers(5, 9))):
+                x0 = cx + rng.uniform(-0.75, 0.75) * r0
+                y0 = cy + r0 * rng.uniform(0.3, 0.8)
+                y1 = min(0.93, y0 + rng.uniform(0.25, 0.95))
+                w = rng.uniform(0.012, 0.028)
+                wob = x0 + rng.normal(0, 0.01)
+                cov = np.maximum(cov, capsule(x0, y0, wob, y1, w, w * 0.8))
+                cov = np.maximum(cov, disc(wob, y1, w * 1.5))
+        if kind == "wound":
+            # its hole: the ragged middle, deeper and darker
+            hole = np.clip((r0 * 0.45 * (1.0 + 0.3 * np.tanh(edge)) - r) / (2.0 * px) + 0.5, 0.0, 1.0)
+        else:
+            hole = np.zeros_like(cov)
+    cov = np.clip(cov, 0.0, 1.0)
+    # its thickness: a liquid's rounded domes, thickest inside, a fine ripple
+    thick = blur(cov, 3.0)
+    ripple = spectral(n, 2.4, seed * 7 + 402, lo=6.0, hi=n / 6.0)
+    h = np.sqrt(np.clip(thick, 0.0, 1.0)) * (0.85 + 0.15 * np.tanh(ripple)) * cov
+    if kind == "wound":
+        h -= 0.6 * blur(hole, 2.0)
+    film = np.clip((thick - 0.15) / 0.6, 0.0, 1.0)                 # 0 at its thin edges, 1 where it's thick
+    black = np.array([0.012, 0.010, 0.012])
+    blood = np.array([0.075, 0.014, 0.016])                       # a dark oxblood in the thin film
+    col = black[None, None, :] * film[..., None] + blood[None, None, :] * (1.0 - film[..., None])
+    if kind == "wound":
+        col *= (1.0 - 0.7 * hole)[..., None]
+    rgba = np.concatenate([col, cov[..., None]], -1)
+    nrm = normals(h, n / 40.0)
+    occ = cavity(h * n / 40.0)
+    rough = np.clip(0.07 + 0.25 * (1.0 - film) + 0.04 * np.tanh(ripple), 0.04, 0.6)
+    orm = np.stack([occ, rough, np.zeros_like(rough)], -1)
+    flecks = spectral(n, 1.0, seed * 7 + 403, lo=n / 10.0)
+    ember = np.clip((flecks - 2.4) / 0.6, 0.0, 1.0) * film * cov
+    em = np.stack([ember * 1.0, ember * 0.24, ember * 0.05], -1)
+    return rgba, nrm, orm, em, cov
+
+
 def make(out):
     out.mkdir(parents=True, exist_ok=True)
     save(out / "flash_noise.png", flash_noise(), "L")
@@ -474,7 +585,14 @@ def make(out):
     save(out / "wad_0_orm.png", orm, "RGB")
     save(out / "soot_0_albedo.png", soot(0), "RGBA")
     save(out / "grains_0_albedo.png", grains(0), "RGBA")
-    print(f"  {2 + 3 * CRATERS + 4 * SCORCHES + 3 * BLASTS + 3 * SMEARS + 5} maps into {out}")
+    for kind, count in ICHOR.items():
+        for i in range(count):
+            rgba, nrm, orm, em, _ = ichor(kind, i)
+            save(out / f"ichor_{kind}_{i}_albedo.png", rgba, "RGBA")
+            save(out / f"ichor_{kind}_{i}_normal.png", nrm * 0.5 + 0.5, "RGB")
+            save(out / f"ichor_{kind}_{i}_orm.png", orm, "RGB")
+            save(out / f"ichor_{kind}_{i}_emission.png", em, "RGB")
+    print(f"  {2 + 3 * CRATERS + 4 * SCORCHES + 3 * BLASTS + 3 * SMEARS + 5 + 4 * sum(ICHOR.values())} maps into {out}")
 
 
 def check(out):
@@ -563,12 +681,46 @@ def check(out):
         cover = (gr[..., 3] > 0.3).mean()
         if not (mid > edge * 1.8 and 0.02 < cover < 0.35 and gr[2, 2, 3] < 0.05 and gr[..., 0][gr[..., 3] > 0.5].mean() < 0.3):
             errs.append(f"grains_0 isn't dark specks thick in the middle thinning out (middle {mid:.3f}, edge {edge:.3f}, cover {cover:.3f})")
+    # the ichor: black and glossy where it covers, raised (its normals out of it), thrown the way it's drawn, embers sparse
+    for kind, count in ICHOR.items():
+        nn = ICHOR_N[kind]
+        for i in range(count):
+            pre = f"ichor_{kind}_{i}"
+            al = img(f"{pre}_albedo.png", "RGBA", nn)
+            nm = img(f"{pre}_normal.png", "RGB", nn)
+            om = img(f"{pre}_orm.png", "RGB", nn)
+            em = img(f"{pre}_emission.png", "RGB", nn)
+            if al is None or nm is None or om is None or em is None:
+                continue
+            cov = al[..., 3]
+            on = cov > 0.6
+            frac = on.mean()
+            if not (0.04 < frac < 0.6):
+                errs.append(f"{pre}: covers {frac:.2f} of its square (a splatter, not a blot or nothing)")
+                continue
+            if al[..., :3][on].mean() > 0.08:
+                errs.append(f"{pre}: not black where it covers ({al[..., :3][on].mean():.3f})")
+            if om[..., 1][on].mean() > 0.3:
+                errs.append(f"{pre}: not glossy where it covers (roughness {om[..., 1][on].mean():.2f})")
+            if (nm[..., 2] * 2 - 1)[on].mean() < 0.75:
+                errs.append(f"{pre}: its normals don't face out of the surface")
+            lit = (em[..., 0] > 0.3).mean()
+            if not (0.0 < lit < 0.03):
+                errs.append(f"{pre}: its embers aren't a few flecks ({lit:.4f} of it)")
+            yy, xx = np.mgrid[0:nn, 0:nn]
+            if kind == "splat":
+                ahead = (on & (xx > nn * 0.45)).sum()                 # past the blob (its middle at a third across)
+                behind = (on & (xx < nn * 0.2)).sum()
+                if ahead < 2.0 * behind:
+                    errs.append(f"{pre}: not thrown toward its right ({ahead} covered ahead of the blob, {behind} behind it)")
+            if kind == "drip" and (on & (yy > nn * 0.7)).sum() < 40:
+                errs.append(f"{pre}: no runs down its bottom")
     for e in errs:
         print("ERROR " + e)
     if errs:
         print("WEAPONFX FAILED")
         return 1
-    print(f"WEAPONFX ok ({CRATERS} craters leaning in {min(leans):.2f}..{max(leans):.2f}, {SCORCHES} scorches, {BLASTS} torn holes, {SMEARS} lead smears, a wad's dent, the powder's soot and grains, the noise tiling)")
+    print(f"WEAPONFX ok ({CRATERS} craters leaning in {min(leans):.2f}..{max(leans):.2f}, {SCORCHES} scorches, {BLASTS} torn holes, {SMEARS} lead smears, a wad's dent, the powder's soot and grains, {sum(ICHOR.values())} ichor splatters, the noise tiling)")
     return 0
 
 

@@ -9,8 +9,9 @@
 ## (left click, R, Q); something that reacts to being shot, a lamp shot out, the shells' row, running, a wall in front
 ## and beside you; the muzzle (a star of wings of intersecting spheres, burnt; its trail); what a 12-gauge leaves on a
 ## wall at an arm's length, across a room and down a corridor, and on concrete (docs/research/shotgun_damage.md); the
-## explosive shell in the right barrel and its blast; lowered and raised, the box of shells taken with E, and the gun
-## itself picked up and drawn into view. Prints `WEAPONS <what> <how>` lines and `WEAPONS result {errors}`, quits.
+## explosive shell in the right barrel and its blast; things that break when they're shot (HSBlowUp); someone who bleeds
+## black ichor and goes into smoke (HSHitReact); lowered and raised, the box of shells taken with E, and the gun itself
+## picked up and drawn into view. Prints `WEAPONS <what> <how>` lines and `WEAPONS result {errors}`, quits.
 extends SceneTree
 
 var errors: Array = []
@@ -1274,6 +1275,269 @@ func _initialize() -> void:
 		var b_c := main.get_node_or_null(nm)
 		if b_c != null:
 			b_c.queue_free()
+	player.global_position = spot
+	player.velocity = Vector3.ZERO
+	await until(func() -> bool: return not g("busy"), 2.0)
+
+	# 8j. someone who bleeds black ichor (HSHitReact, docs/research/hit_reactions.md): MHR's body standing down the
+	# corridor with its arms down, a script walking her at you (as the chase does) and an HSHitReact under her. Hitboxes
+	# on her bones on a layer of their own the player never bumps into; the right barrel into her chest as she comes:
+	# her hitboxes hit, no crater on her, a torso hit, staggered, her spine flinching back, held where she is against her
+	# walk and shoved back, walking again after; a wound on her riding her bone, ichor round her, black smoke out of the
+	# wound a moment later; the left barrel into her head: twice a pellet's damage, her head snapped back; two pellets in
+	# her leg not staggering her, five more doing it; a blast reaching three of her hitboxes taken once; shot down: her
+	# walk stopped, charring, crumbling, gone into the smoke, hidden, nothing of her solid (a shot goes through where she
+	# stood), a pool of ichor where she stood, smoke pouring off her; put back
+	await fill()
+	player.global_position = spot
+	player.velocity = Vector3.ZERO
+	var r_at := Vector3(spot.x - 3.0, fl, spot.z)
+	var r_her := (load("res://bodies/MHR.fbx") as PackedScene).instantiate() as Node3D
+	r_her.name = "Her"
+	main.add_child(r_her)
+	r_her.global_position = r_at
+	r_her.rotation.y = PI / 2.0                                  # (she faces +Z in her own frame: turned to you, east)
+	var r_sk := r_her.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
+	for r_side in [["l_uparm", -1.0], ["r_uparm", 1.0]]:         # (her arms down: the starter's arms_down.gd's way)
+		var r_bi := r_sk.find_bone(r_side[0])
+		var r_rest := r_sk.get_bone_global_rest(r_bi)
+		r_sk.set_bone_global_pose(r_bi, Transform3D(Basis(Vector3(0, 0, 1), deg_to_rad(52.0 * float(r_side[1]))) * r_rest.basis, r_rest.origin))
+	var r_walk := Node.new()
+	r_walk.name = "Walk"
+	r_walk.set_script(made("extends Node\nvar v := Vector3.ZERO\nvar stopped := false\nfunc _process(dt: float) -> void:\n\tif not stopped:\n\t\t(get_parent() as Node3D).global_position += v * dt\nfunc stop(_a = null, _b = null) -> void:\n\tstopped = true\n"))
+	r_her.add_child(r_walk)
+	var hr := HSHitReact.new()
+	hr.health = 60.0
+	r_her.add_child(hr)
+	var r_ev: Array = []
+	hr.staggered.connect(func(_s: float) -> void: r_ev.append("staggered"))
+	hr.down.connect(func() -> void: r_ev.append("down"))
+	await frames(4)
+	var r_rep := hr.report()
+	var r_on_layer := 0
+	for b in hr._boxes:
+		if (b as CollisionObject3D).collision_layer == HSHitReact.HITBOX_LAYER:
+			r_on_layer += 1
+	var r_bumps := (player.collision_mask & HSHitReact.HITBOX_LAYER) != 0
+	say("hitreact set", "%d hitboxes on her bones, %d on layer 11; her parts %s; the player bumps into them %s" % [int(r_rep["boxes"]), r_on_layer,
+		str(r_rep["roles"]), r_bumps])
+	if int(r_rep["boxes"]) < 15 or r_on_layer != int(r_rep["boxes"]) or r_bumps or not (r_rep["roles"] as Array).has("head") or not (r_rep["roles"] as Array).has("upleg_l"):
+		bad("her hitboxes weren't made on her bones on layer 11 (%d boxes, %d on it; the player bumps them %s)" % [int(r_rep["boxes"]), r_on_layer, r_bumps])
+	var r_spine: Array = hr._roles["spine"]
+	var r_top: int = r_spine[r_spine.size() - 1]
+	var r_head: int = hr._roles["head"]
+	var r_peak := [0.0, 0.0]
+	hr._flinch.modification_processed.connect(func() -> void:
+		r_peak[0] = maxf(r_peak[0], r_sk.get_bone_pose_rotation(r_top).angle_to(r_sk.get_bone_rest(r_top).basis.get_rotation_quaternion()))
+		r_peak[1] = maxf(r_peak[1], r_sk.get_bone_pose_rotation(r_head).angle_to(r_sk.get_bone_rest(r_head).basis.get_rotation_quaternion())))
+	# the right barrel into her chest as she walks at you
+	var r_chest := r_sk.global_transform * r_sk.get_bone_global_pose(r_spine[mini(2, r_spine.size() - 1)]).origin
+	look(r_chest)
+	await frames(4)
+	var r_way := ((player.global_position - r_her.global_position) * Vector3(1, 0, 1)).normalized()
+	r_walk.set("v", r_way * 0.8)
+	await frames(6)
+	var r_marks0 := hr.marks.size()
+	var r_dist := player.global_position.distance_to(r_her.global_position)
+	gun.pull()
+	await frames(1)
+	var r_from := r_her.global_position
+	var r_hits: Array = g("last_hits")
+	var r_on := 0
+	for h in r_hits:
+		var r_hc = h.get("collider")
+		if r_hc is Node and is_instance_valid(r_hc) and r_her.is_ancestor_of(r_hc):
+			r_on += 1
+	var r_ls: Dictionary = impacts().get("last_shot")
+	var r_craters := (r_ls.get("marks", []) as Array).size()
+	var r_l1: Dictionary = hr.last.duplicate()
+	await secs(0.4)
+	var r_held := (r_her.global_position - r_from).dot(r_way)
+	var r_wounds := 0
+	for r_at2 in hr._attach.values():
+		for r_c in (r_at2 as Node).get_children():
+			if r_c is Decal:
+				r_wounds += 1
+	var r_smoke := hr._smoke.filter(func(e) -> bool: return e["kind"] == "wound").size()
+	var r_spray := hr.marks.size() - r_marks0
+	say("hitreact chest", "the right barrel from %.1f m as she came: %d of %d pellets on her, %d craters on her (the surface %s); a %s hit for %.1f, staggered %s; her spine back %.1f°; held against her walk: %.2f m along it; %d wounds on her, %d marks of ichor round her, %d wounds smoking" % [
+		r_dist, r_on, r_hits.size(), r_craters, str(r_ls.get("surface", "")), str(r_l1.get("part", "")), float(r_l1.get("damage", 0.0)),
+		r_l1.get("staggered", false), rad_to_deg(r_peak[0]), r_held, r_wounds, r_spray, r_smoke])
+	if r_on < maxi(r_hits.size() - 1, 6) or r_craters > 0 or str(r_l1.get("part", "")) != "torso" or not bool(r_l1.get("staggered", false)) \
+			or rad_to_deg(r_peak[0]) < 3.0 or r_held > 0.02 or r_wounds < 1 or r_spray < 1 or r_smoke < 1:
+		bad("the shot into her chest: %d of %d on her, %d craters, a %s hit, staggered %s, flinched %.1f°, held %.2f, %d wounds, %d marks, %d smoking" % [
+			r_on, r_hits.size(), r_craters, str(r_l1.get("part", "")), r_l1.get("staggered", false), rad_to_deg(r_peak[0]), r_held, r_wounds, r_spray, r_smoke])
+	await secs(0.9)
+	var r_walked := (r_her.global_position - r_from).dot(r_way)
+	var r_spray2 := hr.marks.size() - r_marks0
+	var r_floor := 0
+	for r_m in hr.marks.slice(r_marks0):
+		if is_instance_valid(r_m) and absf((r_m as Decal).global_position.y - fl) < 0.12:
+			r_floor += 1
+	say("hitreact walk", "the stagger over, her walk takes her on again: from %.2f to %.2f m along it; the drops landed: %d marks of ichor round her, %d on the floor" % [
+		r_held, r_walked, r_spray2, r_floor])
+	if r_walked < r_held + 0.2:
+		bad("after the stagger she didn't walk on (%.2f to %.2f)" % [r_held, r_walked])
+	if r_spray2 < 4 or r_floor < 2:
+		bad("the ichor didn't land round her (%d marks, %d on the floor)" % [r_spray2, r_floor])
+	r_walk.set("v", Vector3.ZERO)
+	# the left barrel into her head
+	await until(func() -> bool: return not g("busy"), 2.0)
+	var r_headp := r_sk.global_transform * r_sk.get_bone_global_pose(r_head).origin + Vector3(0, 0.07, 0)
+	look(r_headp)
+	await frames(4)
+	r_peak[1] = 0.0
+	gun.pull()
+	await frames(1)
+	var r_hh: Array = g("last_hits")
+	var r_in_head := 0
+	var r_else := 0
+	for h in r_hh:
+		var r_hc2 = h.get("collider")
+		if r_hc2 is Node and is_instance_valid(r_hc2) and r_her.is_ancestor_of(r_hc2):
+			if str((r_hc2 as Node).get_meta("hs_part", "")) == "head":
+				r_in_head += 1
+			else:
+				r_else += 1
+	var r_l2: Dictionary = hr.last.duplicate()
+	await secs(0.3)
+	var r_want := 2.0 * r_in_head + float(r_else) * 0.6
+	say("hitreact head", "the left barrel: %d pellets in her head (%d elsewhere on her), a %s hit for %.1f (twice a pellet each: %.1f to %.1f), her head snapped back %.1f°" % [
+		r_in_head, r_else, str(r_l2.get("part", "")), float(r_l2.get("damage", 0.0)), 2.0 * r_in_head, r_want + float(r_else) * 0.4, rad_to_deg(r_peak[1])])
+	if r_in_head < 4 or str(r_l2.get("part", "")) != "head" or float(r_l2.get("damage", 0.0)) < 2.0 * r_in_head - 0.01 or rad_to_deg(r_peak[1]) < 10.0:
+		bad("the shot into her head: %d pellets in it, a %s hit for %.1f, snapped %.1f°" % [r_in_head, str(r_l2.get("part", "")), float(r_l2.get("damage", 0.0)), rad_to_deg(r_peak[1])])
+	# her leg: two pellets don't stagger her, five more do (the counter builds over hits)
+	await secs(1.2)
+	var r_leg := (hr._boxes.filter(func(b) -> bool: return str(b.name).ends_with("l_lowleg")) as Array)
+	var r_ev_leg := ""
+	if not r_leg.is_empty():
+		var r_lb := r_leg[0] as Node3D
+		var r_pell := func(n: int) -> Array:
+			var out: Array = []
+			for i in n:
+				out.append({"point": r_lb.global_position + Vector3(0, 0.02 * i, 0), "normal": r_way, "collider": r_lb, "dir": -r_way, "damage": 1.0, "pellet": i})
+			return out
+		r_ev.clear()
+		gun.fired.emit(r_pell.call(2))
+		await frames(2)
+		var r_st1 := r_ev.count("staggered")
+		var r_dl := float(hr.last.get("damage", 0.0))
+		gun.fired.emit(r_pell.call(5))
+		await frames(2)
+		var r_st2 := r_ev.count("staggered")
+		r_ev_leg = "two pellets: %.1f, a %s hit, staggered %d; five more: staggered %d" % [r_dl, str(hr.last.get("part", "")), r_st1, r_st2]
+		if r_st1 != 0 or r_st2 != 1 or absf(r_dl - 1.2) > 0.01:
+			bad("her leg: %s" % r_ev_leg)
+	else:
+		bad("no hitbox on her left lower leg")
+	say("hitreact leg", r_ev_leg)
+	# a blast reaching three of her hitboxes: taken once, its strongest
+	var r_bl: Array = []
+	for i in 3:
+		r_bl.append({"point": (hr._boxes[i] as Node3D).global_position, "normal": r_way, "collider": hr._boxes[i], "dir": -r_way,
+			"damage": [3.0, 5.0, 4.0][i], "blast": true, "from": r_her.global_position + r_way * 1.5 + Vector3(0, 1.0, 0)})
+	var r_d0 := hr.damage
+	gun.fired.emit(r_bl)
+	await frames(2)
+	say("hitreact blast", "a blast reaching three of her hitboxes (3, 5 and 4 of harm): %.1f taken, a blast %s" % [hr.damage - r_d0, hr.last.get("blast", false)])
+	if absf(hr.damage - r_d0 - 5.0) > 0.01 or not bool(hr.last.get("blast", false)):
+		bad("the blast on three hitboxes took %.1f, not its strongest once (5)" % [hr.damage - r_d0])
+	# shot down as she walks at you
+	await secs(1.0)
+	r_walk.set("v", r_way * 0.8)
+	r_ev.clear()
+	await frames(3)
+	hr.shoot(r_her.global_position + Vector3(0, 1.3, 0), -r_way, 60.0)
+	await frames(2)
+	var r_was_down := hr.is_down
+	await secs(0.6)
+	var r_char := 0
+	for mi in r_her.find_children("*", "MeshInstance3D", true, false):
+		if (mi as MeshInstance3D).material_overlay != null or (mi as MeshInstance3D).material_override != null:
+			r_char += 1
+	var r_stopped := bool(r_walk.get("stopped"))
+	await until(func() -> bool: return not r_her.visible, 4.0)
+	await frames(2)
+	var r_solid := 0
+	for b in hr._boxes:
+		if (b as CollisionObject3D).collision_layer != 0:
+			r_solid += 1
+	var r_aim := r_her.global_position + Vector3(0, 1.2, 0) - r_way * 0.6
+	var r_thr := main.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(eye.global_position, r_aim, HSGun.SHOT_MASK))
+	var r_hit_her: bool = not r_thr.is_empty() and r_thr["collider"] is Node and r_her.is_ancestor_of(r_thr["collider"])
+	var r_pool := false
+	for r_pm in hr.marks:
+		if is_instance_valid(r_pm) and absf((r_pm as Decal).global_position.y - fl) < 0.12 and (r_pm as Decal).size.x > 0.5 \
+				and Vector2((r_pm as Decal).global_position.x - r_her.global_position.x, (r_pm as Decal).global_position.z - r_her.global_position.z).length() < 0.4:
+			r_pool = true
+	var r_going := hr._smoke.filter(func(e) -> bool: return e["kind"] == "going").size()
+	say("hitreact down", "shot down %s (%s): her walk stopped %s; charring on %d mesh%s; gone %s, hidden for what hunts %s; %d of her hitboxes solid, a shot through where she stood %s; a pool of ichor where she stood %s; %d sources of smoke pouring off her" % [
+		r_was_down, str(r_ev), r_stopped, r_char, "" if r_char == 1 else "es", not r_her.visible, r_her.get_meta("hs_hidden", false), r_solid,
+		"meets her" if r_hit_her else "goes through", r_pool, r_going])
+	if not r_was_down or not r_ev.has("down") or not r_stopped or r_char < 1 or r_her.visible or not bool(r_her.get_meta("hs_hidden", false)) \
+			or r_solid > 0 or r_hit_her or not r_pool or r_going < 3:
+		bad("shot down she didn't go as she should (down %s, stopped %s, charred %d, shown %s, %d solid, met %s, a pool %s, %d smoking)" % [
+			r_was_down, r_stopped, r_char, r_her.visible, r_solid, r_hit_her, r_pool, r_going])
+	hr.restore()
+	await frames(2)
+	var r_back := 0
+	for b in hr._boxes:
+		if (b as CollisionObject3D).collision_layer == HSHitReact.HITBOX_LAYER:
+			r_back += 1
+	var r_left := 0
+	for mi in r_her.find_children("*", "MeshInstance3D", true, false):
+		if (mi as MeshInstance3D).material_overlay != null or (mi as MeshInstance3D).material_override != null:
+			r_left += 1
+	say("hitreact restore", "put back: shown %s, %d of %d hitboxes solid, charred meshes %d, damage %.1f, down %s" % [r_her.visible, r_back, hr._boxes.size(), r_left, hr.damage, hr.is_down])
+	if not r_her.visible or r_back != hr._boxes.size() or r_left > 0 or hr.damage != 0.0 or hr.is_down:
+		bad("she wasn't put back whole")
+	if is_instance_valid(hr._root):
+		hr._root.queue_free()
+	r_her.queue_free()
+	# a stand-in (tutorial v2's figures: meshes, no skeleton, nothing solid): a capsule round it, the part by the height,
+	# tilted away from the shot and back upright
+	var r_st := Node3D.new()
+	r_st.name = "StandIn"
+	main.add_child(r_st)
+	r_st.global_position = r_at
+	for r_spec in [[Vector3(0, 0.75, 0), 0.22, 1.5], [Vector3(0, 1.62, 0), 0.12, 0.24]]:
+		var r_mi := MeshInstance3D.new()
+		var r_cm := CapsuleMesh.new()
+		r_cm.radius = r_spec[1]
+		r_cm.height = maxf(r_spec[2], r_spec[1] * 2.0)
+		r_mi.mesh = r_cm
+		r_st.add_child(r_mi)
+		r_mi.position = r_spec[0]
+	var hr2 := HSHitReact.new()
+	r_st.add_child(hr2)
+	await frames(3)
+	var r_sp := Vector3(r_at.x, fl + 1.65, r_at.z)
+	var r_q := main.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(eye.global_position, r_sp, HSGun.SHOT_MASK))
+	var r_tilt := 0.0
+	if not r_q.is_empty() and r_st.is_ancestor_of(r_q["collider"]):
+		var r_sh: Array = []
+		for i in 9:
+			r_sh.append({"point": (r_q["position"] as Vector3) + Vector3(0, 0.01 * (i - 4), 0), "normal": r_q["normal"], "collider": r_q["collider"],
+				"dir": (r_sp - eye.global_position).normalized(), "damage": 1.0, "pellet": i})
+		gun.fired.emit(r_sh)
+		for i in 20:
+			await frames(1)
+			for r_c2 in r_st.get_children():
+				if r_c2 is MeshInstance3D:
+					r_tilt = maxf(r_tilt, (r_c2 as Node3D).transform.basis.get_rotation_quaternion().get_angle())
+	await secs(1.0)
+	var r_upright := true
+	for r_c3 in r_st.get_children():
+		if r_c3 is MeshInstance3D and (r_c3 as Node3D).transform.basis.get_rotation_quaternion().get_angle() > 0.002:
+			r_upright = false
+	var r_rep2 := hr2.report()
+	say("hitreact stand-in", "a figure of meshes: %d hitbox round it, hit %s (a %s hit), tilted %.1f° away and upright again %s, %d wounds smoking" % [
+		int(r_rep2["boxes"]), not r_q.is_empty() and r_st.is_ancestor_of(r_q["collider"]), str(hr2.last.get("part", "")), rad_to_deg(r_tilt), r_upright, int(r_rep2["smoking"])])
+	if int(r_rep2["boxes"]) != 1 or hr2.hit_count < 1 or str(hr2.last.get("part", "")) != "head" or rad_to_deg(r_tilt) < 5.0 or not r_upright:
+		bad("the stand-in didn't react (%d boxes, %d hits, a %s hit, %.1f°, upright %s)" % [int(r_rep2["boxes"]), hr2.hit_count, str(hr2.last.get("part", "")), rad_to_deg(r_tilt), r_upright])
+	if is_instance_valid(hr2._root):
+		hr2._root.queue_free()
+	r_st.queue_free()
 	player.global_position = spot
 	player.velocity = Vector3.ZERO
 	await until(func() -> bool: return not g("busy"), 2.0)

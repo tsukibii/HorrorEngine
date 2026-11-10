@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="HSMuzzleFlash" format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_weapons/muzzle/muzzle_flash.gd" id="1_flash"]
+
+[resource]
+script = ExtResource("1_flash")
+title = "Dissolving into smoke"
+wings = 0
+plume_length_m = 0.0
+core_radius_m = 0.0
+light_scale = 0.0
+light_fog = 0.0
+spark_color = Color(1, 0.32, 0.08, 1)
+smoke_color = Color(0.03, 0.024, 0.028, 1)
+smoke_glow = 0.0
+smoke_light_cap = 0.5
+smoke_occlude = 0.95
+smoke_ember = Color(0.7, 0.08, 0.02, 0.03)
+sparks = 18
+spark_speed = Vector2(0.3, 1.1)
+spark_spread_deg = 90.0
+spark_life_s = 1.6
+spark_length_m = 0.01
+spark_gravity = -0.8
+puffs = 22
+puff_size_m = Vector2(0.1, 0.24)
+puff_grow = 3.0
+puff_speed = Vector2(0.08, 0.45)
+puff_life_s = 3.0
+trail_s = 2.6
+trail_life_s = 3.0
+trail_width_m = Vector2(0.04, 0.22)
+trail_rise = 0.2
+trail_strands = 4
+trail_spread = 0.12
+trail_turbulence = 0.4
+trail_erode = 0.5
+smoke_density = 1.7

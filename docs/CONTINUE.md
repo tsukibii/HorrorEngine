@@ -21,7 +21,7 @@ builder's floors, the street's steel stair, climbing in Godot and on the desk; 2
 `claude/friendly-newton-9o2xey`, from the user's `retro-enhance`: the retro pack in the prop generator). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-09, `weapon-system`): a shotgun held in first person
+## Where it stopped last (2026-11-09 and 10, `weapon-system`): a shotgun held in first person, things that break, someone shot
 
 PR #18 merged into main; this branch is new from it (the user: "make a new branch called weapon-system, create a shot
 gun asset and have its pov in godots horror engine similar to the screenshot", then "I don't need a hand holding the
@@ -120,7 +120,27 @@ gun"; DECISIONS 2026-11-09). Built:
   `blowup_*` pictures. Probes: `Saved/Godot/_weapons/blow_probe.gd`, `blow_shots_probe.gd`, `mug_probe.gd`,
   `blast_probe.gd`.
 
-**Next, if the user wants it**: their ear on the break sounds (made in code, never heard here) and their eye on how
+- **Someone who bleeds black ichor** (the user: "now instead of a breaking items system can you create a reactive
+  system for characters/enemies to be shot, but dont do blood, instead create some form of demonic dark smoke and dark
+  splatters like black blood"; DECISIONS 2026-11-10; HSBlowUp kept beside it: ask if it should go). Researched
+  (docs/research/hit_reactions.md), then **HSHitReact** (`react/`): hitboxes on her bones on layer 11 (`HSGun.SHOT_MASK`
+  for the gun and a blast), the head twice and a limb 0.6; a flinch on springs after her animation (`HSFlinch`, a
+  SkeletonModifier3D); a stagger counter holding her against whatever moves her and shoving her back; black glossy
+  ichor with embers (`fx/ichor_*`: a wound on her bone, drops, the spray behind her, drips down a wall) and black smoke
+  out of each wound trailing after her (the muzzle's smoke made black, after the shove: LESSONS); down, she chars,
+  crumbles into the smoke and is gone, a pool (or vanish, ragdoll, nothing); `ichor_hit` and `ichor_down` made in code.
+  WEAPONS §8j on MHR's body (`bodies/MHR.fbx`) and a stand-in; the guide's section 12, `react_*` pictures. Probes:
+  `Saved/Godot/_weapons/react_probe.gd`, `react_shots_probe.gd`. And HSBlowUp's pieces no longer fall through a
+  level's one-sided floor about one run in five (`_unsink`; `mug_fall_probe.gd`).
+
+**Being built next** (the user, while HSHitReact was being made: "once your done can you look into adding some kind of
+shader for the black gothic blood that will fit our vhs camhybrid look and look eery and oozy"): the ichor's marks as a
+shader of their own instead of flat decals. Godot 4.7's spatial shaders draw a box-projected mark lit where it lands
+(the depth and normal buffers read, `LIGHT_VERTEX` written: `Saved/Godot/_weapons/ooze_test/`), so the ooze can creep,
+drip, glisten and swell; the camhybrid tape lifts black to about 0.035 and blurs colour 1.65 px, so it must read by its
+shine and its movement.
+
+**Next, if the user wants it**: their ear on the ichor and break sounds (made in code, never heard here) and their eye on how
 things break in their own rooms (a kind's `coarse`, `speed`, `crumple_m`); metal tearing into petals, Voronoi cells,
 pieces breaking again, a broken thing kept broken in a save. Their eye on the flash and the damage in their own lighting (the flash's `energy`,
 the smoke's `smoke_glow`, `smoke_light_cap`, density and the trail's turbulence, strands and erosion, the impact's `merge_m`, `soot_m`, `powder_m`, `wad_m` are the

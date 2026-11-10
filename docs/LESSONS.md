@@ -3,6 +3,21 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## Someone shot (HSHitReact): what took a second try (2026-11-10)
+
+- **Smoke that rides a body draws a line when the body is thrown**: the wound's smoke (the muzzle's trail, which leaves a
+  point every centimetre the source moves) rode her bone, and a stagger shoved her 0.4 m in a fifth of a second: every
+  wound drew a straight stroke through the air, and with the ember glow on its young smoke the strokes read as red paint.
+  Start smoke that rides something after its shove has settled, and keep a glow in young smoke to a hint.
+- **A transparent mesh and a blended overlay on it draw in no fixed order**: fading her out (`transparency`) under the
+  char overlay showed her white skin over the char half the time. Don't fade a mesh under an overlay: once the overlay
+  covers it, swap its surfaces for an opaque, cut-out material and cut it away.
+- **A node's own timing runs on the game's clock**: the stagger held her by `Time.get_ticks_msec()`, and headless at a
+  fixed rate (frames racing the wall clock) it held her three times too long. Seconds in a node are its frames' delta
+  summed; the wall clock is only for waiting on a thread.
+- **Unnamed loops in a long test share its scope**: `for m in ...` clashed with a `var m` a thousand lines up in the same
+  function. Prefix a new section's names (`r_`), loop variables too.
+
 ## A level's floor has one side: HSBlowUp's pieces under it (2026-11-10)
 
 - **A level's floor is a one-sided mesh, and a fast piece can end up under it**: a mug's shard thrown down at the floor
