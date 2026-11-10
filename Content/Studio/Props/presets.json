@@ -1232,5 +1232,9 @@
  "laptop_shut": {"label": "the laptop shut", "from": "laptop", "lid": "shut", "seed": 2},
  "computer_mouse": {"label": "the user's mouse that goes with the laptop: its buttons, a rubber wheel, the sensor's red glow underneath",
    "family": "computer", "kind": "mouse", "model": "Content/Studio/Props/models/laptop_mouse.fbx", "length_mm": 115, "seed": 1, "tex": 640,
-   "plastic": "#1d1f23", "wear": {"dirt": 0.12, "dust": 0.06, "edges": 0.15, "grime": 0.1}}
+   "plastic": "#1d1f23", "wear": {"dirt": 0.12, "dust": 0.06, "edges": 0.15, "grime": 0.1}},
+ "battery_aa": {"label": "an AA battery standing on its minus end, its wrap printed (a made-up brand)", "family": "cell", "size": "aa", "seed": 1,
+   "art": {"brand": "OHMA", "colors": ["#16181d", "#e2a72a", "#f2f2ee"]}, "wear": {"edges": 0.15, "dirt": 0.1}},
+ "batteries_aa_2": {"label": "two AA batteries lying side by side: the flashlight's spares as the laptop's shop sells them", "from": "battery_aa",
+   "count": 2, "seed": 2}
 }

@@ -12,6 +12,9 @@ the fix.
   it was turned round, which put its wheel behind the hump. Its UVs put that end at the top of its product shot (the
   front), and its one narrow block standing up between the buttons (the wheel) said the same. Read where a model's own
   texture puts its front before turning it.
+- **A socket's name must not end in one of Godot's import hints**: the mouse's `socket_wheel` came into Godot as a
+  VehicleWheel3D (a node named `-wheel` or `_wheel` is one; so are `_col`, `_colonly`, `_occ`, `_rigid`, `_vehicle`,
+  `_navmesh`, `_noimp`). It's `socket_scroll` now; name sockets so their last word isn't a hint.
 - **A model's file can carry pictures that aren't ours**: the user's FBX packed a keyboard photo and a mouse maker's
   product shot. Keep a model in the repo with its images taken out (the meshes, names and transforms as they were) and
   paint its surfaces here.

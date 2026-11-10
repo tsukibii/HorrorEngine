@@ -19,7 +19,8 @@ The user's answers, newest first. They override the plan, the research and the d
     real sizes, every surface painted here: real keys with their legends (the ones you play with polished), a touchpad,
     grilles, ports, feet and vents, a webcam, the maker's crescent, a sticker and an asset tag on the lid (yours to swap),
     the screen a surface of its own for the game's picture, the lid a part on its hinge; the mouse made round, its wheel,
-    its grip, the sensor's red glow underneath.
+    its grip, the sensor's red glow underneath. **Batteries** for its shop to sell (the flashlight's spares): the `cell`
+    family (PROPGEN §33), customizable, `battery_aa` and the two-pack `batteries_aa_2`.
 
 ## 2026-11-10, later (the user: both systems)
 

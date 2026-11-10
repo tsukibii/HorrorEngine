@@ -1528,10 +1528,25 @@ here, as the retro pack's models are given what the made props have (§29), by w
   buttons (`_wheel_block`: of its top sixth's vertices the run along it that's narrow), painted there as rubber in a
   slot, ridged across. Two materials: `top` (its island seen from above: the buttons' split and their glossy rests, the
   wheel, the maker's crescent `top.logo`) and `body` (by place: a diamond grip on its sides, underneath two glide pads,
-  a label and the sensor's red glow).
+  a label and the sensor's red glow). Sockets `scroll` (the wheel: a node named `*_wheel` comes into Godot as a
+  VehicleWheel3D), `sensor`, `palm`.
 
 The quality bar (§29, `propgen.py quality made laptop computer_mouse`): the gaps are what the parts are, kept: the screen
 is black glass (its albedo, roughness and flat normal outside a bar of ordinary props), the plastic is black (its albedo's
 top under the bar), the deck's and the mouse's roughness vary on purpose (shiny keys, palms and pads on matt plastic).
 Recipes `laptop`, `laptop_shut`, `computer_mouse`; PROPGEN's cases have `laptop` and `computer_mouse` (`PROPGEN_ONLY` runs a
 few cases); THUMBS keeps all three. Into the devices plugin: `laptop.glb` and `computer_mouse.glb` in its `models/`.
+
+## 33. Batteries: dry cells, customizable (DECISIONS 2026-11-10, later still)
+
+The laptop's shop sells the flashlight its spares (the starter's `batteries`): the `cell` family (`families/cell.py`,
+`CUSTOM = True`) turns a dry cell from its real profile: the flat minus end (its crimped edge), the steel can under a
+printed wrap whose edges roll over the shoulders, the plus end's shoulder and nub. `size` aa (14.5 x 50.5 mm), aaa
+(10.5 x 44.5), c (26.2 x 50.0), d (34.2 x 61.5), or [diameter, length]; `count` cells lying side by side touching,
+their plus ends toward +y and their print up, as they come out of a pack. Its islands `wrap` (round it from the seam at
+the back, along it from the minus end), `minus` and `plus` (the ends, nickel satin); materials `wrap` (a printed film)
+and `steel`. The print (`art`: `brand` OHMA, made up; `colors` [body, band, ink]; `volts`): the body's colour, a band
+toward the plus end edged in the ink, the brand along the cell, the size big in the band's colour, the volts, a plus
+sign in the band, a lot number; own pictures `wrap.brand` (along it, `rot` 90), `wrap.size`, `wrap.band`. Few rings
+where it's flat or straight (760 triangles a cell). Recipes `battery_aa`, `batteries_aa_2` (two lying: the shop's);
+PROPGEN's cases have `batteries_aa_2`; THUMBS keeps both.

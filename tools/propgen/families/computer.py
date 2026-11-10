@@ -28,7 +28,7 @@ ride on the lid. The root's extras `propgen_computer`: the screen's size in mm a
 The mouse (`kind: "mouse"`): the model's mouse turned round so its buttons point away from you (+y, the laptop's way),
 `length_mm` long (its own proportions; `height_mm` stretches it), in two materials: `top` (its island seen from above:
 the buttons' split, the wheel in rubber with its ridges, the maker's crescent `top.logo`) and `body` (by place: the grip
-on its sides, underneath the feet, a label and the sensor's red glow). Sockets `wheel`, `sensor`, `palm`.
+on its sides, underneath the feet, a label and the sensor's red glow). Sockets `scroll` (the wheel), `sensor`, `palm`.
 
     {"family": "computer", "kind": "laptop", "model": "Content/Studio/Props/models/laptop_mouse.fbx", "width_mm": 330,
      "plastic": "#2c2e33", "keys": "#16171a", "legend": "#c6cad0", "bezel": "#101114", "brand": "VESPER", "lid": "open"}
@@ -749,7 +749,7 @@ def _mouse(spec, th):
     wx, wy = (wheel_c[0] - tx0) * 1000, (wheel_c[1] - ty0) * 1000          # the wheel in the island (mm)
     ww, wh = max(float(wheel_sz[0]) * 1000, 6.0), max(float(wheel_sz[1]) * 1000, 12.0)
     zt = float(hi[2])
-    th.sockets = {"wheel": ((float(wheel_c[0]), float(wheel_c[1]), zt), (0.0, 0.0, 1.0)),
+    th.sockets = {"scroll": ((float(wheel_c[0]), float(wheel_c[1]), zt), (0.0, 0.0, 1.0)),      # not "wheel": Godot reads a node named *_wheel as a VehicleWheel3D
                   "sensor": ((0.0, float(lo[1] + hi[1]) / 2 + 0.008, float(lo[2])), (0.0, 0.0, -1.0)),
                   "palm": ((0.0, ty0 + TH * 0.3 / 1000, zt), (0.0, 0.0, 1.0))}
     th.extras["computer"] = {"kind": "mouse", "model": os.path.basename(path)}
