@@ -1051,69 +1051,15 @@ func inv_slot(it: Dictionary, d: int) -> Control:
 	if d != 0:
 		box.modulate = Color(1, 1, 1, 0.55 if abs(d) == 1 else 0.3)
 	var sz := SLOT + (20 if d == 0 else 0)
-	var vc := TextureRect.new()                     # the viewport's texture shown here (a SubViewportContainer would set
-	vc.name = "Frame"                                # the update mode itself: every slot every frame)
-	vc.custom_minimum_size = Vector2(sz, sz)
-	vc.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	vc.stretch_mode = TextureRect.STRETCH_SCALE
-	box.add_child(vc)
-	var vp := SubViewport.new()
-	vp.name = "View"
-	vp.own_world_3d = true
-	vp.transparent_bg = true
-	vp.size = Vector2i(sz, sz)
-	vp.msaa_3d = Viewport.MSAA_4X
-	vp.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE if d == 0 else SubViewport.UPDATE_ONCE
-	vc.add_child(vp)
-	vc.texture = vp.get_texture()
-	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0, 0, 0, 0)
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.55, 0.62, 0.75)
-	env.ambient_light_energy = 0.7
-	var w := World3D.new()
-	w.environment = env
-	vp.world_3d = w
-	var key := DirectionalLight3D.new()
-	key.name = "Key"
-	key.light_color = Color(1.0, 0.93, 0.82)
-	key.light_energy = 1.5
-	key.rotation_degrees = Vector3(-42, 35, 0)
-	vp.add_child(key)
-	var rim := DirectionalLight3D.new()
-	rim.name = "Rim"
-	rim.light_color = Color(0.6, 0.7, 1.0)
-	rim.light_energy = 0.8
-	rim.rotation_degrees = Vector3(-15, -150, 0)
-	vp.add_child(rim)
-	var cam := Camera3D.new()
-	cam.name = "Camera"
-	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-	cam.size = 1.25
-	cam.near = 0.05
-	cam.far = 20.0
-	cam.position = Vector3(0, 0, 6).rotated(Vector3.RIGHT, deg_to_rad(-24)).rotated(Vector3.UP, deg_to_rad(32))
-	cam.look_at_from_position(cam.position, Vector3.ZERO, Vector3.UP)
-	vp.add_child(cam)
-	var turn := Node3D.new()
-	turn.name = "Turn"
-	vp.add_child(turn)
 	var model = inv_models.get(it["id"])
 	if model == null or not is_instance_valid(model):
 		model = it.get("model")
 		if model == null or not is_instance_valid(model):
 			model = inv_placeholder(it)
 		inv_models[it["id"]] = model
-	var fit := Node3D.new()
-	fit.name = "Fit"
-	turn.add_child(fit)
-	fit.add_child(model)
-	var b := bounds_of(model)
-	var big: float = max(b.size.x, max(b.size.y, b.size.z))
-	var k: float = (1.0 / big) if big > 1e-6 else 1.0
-	fit.scale = Vector3(k, k, k)
-	fit.position = -b.get_center() * k
+	var vc := HSModelSlot.make(model, Vector2i(sz, sz), d == 0)    # the slot's world, camera and the model fitted
+	box.add_child(vc)
+	var turn: Node3D = vc.get_meta("turn")
 	box.set_meta("model", model)
 	if d == 0:
 		inv_turn.append(turn)
@@ -1141,28 +1087,9 @@ static func inv_placeholder(it: Dictionary) -> Node3D:
 	return mi
 
 
-## the meshes' bounds under a node, in that node's space (the node need not be in the tree)
+## the meshes' bounds under a node, in that node's space (the node need not be in the tree): HSModelSlot's
 static func bounds_of(n: Node3D) -> AABB:
-	var box := AABB()
-	var first := true
-	var ms: Array = n.find_children("*", "MeshInstance3D", true, false)
-	if n is MeshInstance3D:
-		ms.append(n)
-	for m in ms:
-		if m.mesh == null:
-			continue
-		var xf := Transform3D.IDENTITY
-		var p: Node = m
-		while p != null and p != n:
-			if p is Node3D:
-				xf = p.transform * xf
-			p = p.get_parent()
-		var a: AABB = xf * m.get_aabb()
-		box = a if first else box.merge(a)
-		first = false
-	if first:
-		box = AABB(Vector3(-0.1, -0.1, -0.1), Vector3(0.2, 0.2, 0.2))
-	return box
+	return HSModelSlot.bounds_of(n)
 
 
 func _process(delta: float) -> void:

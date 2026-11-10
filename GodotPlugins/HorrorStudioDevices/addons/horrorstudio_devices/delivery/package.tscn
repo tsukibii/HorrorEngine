@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_devices/delivery/package.gd" id="1_wurq4"]
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_devices/models/parcel.glb" id="2_t1w0t"]
+
+[node name="Package" type="Node3D" unique_id=799914375]
+script = ExtResource("1_wurq4")
+counts = PackedInt32Array()
+
+[node name="Model" type="Node3D" parent="." unique_id=634909346 instance=ExtResource("2_t1w0t")]

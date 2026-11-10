@@ -18,7 +18,9 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            locked by an item or a fact (the scene builder's lock comes with the export)
   story.gd                 the Story node: the objective, the to-do list, lines, a note's card, the pocket, facts,
                            the ending; holds(): what `needs` says (task:x done, on:x on the list and not done yet,
-                           item:x, a fact, ! for not)
+                           item:x, a fact, ! for not); the pocket counts and knows each thing's name and model
+                           (give(id, name, model, count), count_of, take), shown as an HSHud's inventory row when the
+                           scene has one (Tab, the wheel); the player's cash (pay, earn: the laptop's shop)
   sound.gd                 the Sound node: the music by mood (music/), a room's tone, the hush before a scare; and
                            the sound physics (Woohill's): every sound it plays (play, step, shaped) traced through the
                            rooms, muffled through walls and doors, the room's reverb as rendered tails (sfx/_tails),
@@ -61,7 +63,8 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
   cold_area.gd             an Area3D where it's freezing: your breath shows (the Look plugin's HSBreath at your eye,
                            seen only where a light reaches it) and its window panes frost up from the bottom edge
                            while you watch; out again, the breath stops and the frost thaws
-  pickup.gd                a thing picked up with E into the Story's pocket (batteries: a spare set)
+  pickup.gd                a thing picked up with E into the Story's pocket with a copy of its model (batteries: a
+                           spare set); `cash`: money, the Story's cash goes up by it
   note.gd                  a thing read with E: its words on the Story's card
   light_shy.gd             under a character: she backs off, freezes, vanishes or comes when the flashlight holds her;
                            lit, flashed, flashed_twice to wire anything to

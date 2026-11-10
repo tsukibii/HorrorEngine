@@ -1485,3 +1485,99 @@ one with what differs. PROPGEN's cases have `shell_12ga`, `shells_box_5` and `sh
 their passes. Into the weapons plugin: `shell_12ga.glb`, `shell_12ga_spent.glb`, `shells_box_5.glb` and the three
 explosive ones copied into its `models/` (the explosive kind, `shells/explosive.tres`, wears its shell and hull; a
 pickup of that kind its box).
+
+## 32. Computers: the user's laptop and mouse (DECISIONS 2026-11-10, later still)
+
+The user, with their model (`PSX STYLE Low Poly LAPTOP & MOUSE.fbx`): "similar to what we did for the retro props
+analyze and enhance the laptop and mouse model". The `computer` family (`families/computer.py`, `CUSTOM = True`: §25)
+reads it from `Content/Studio/Props/models/laptop_mouse.fbx` (its objects `Cube` the base, `Cube.001` the lid open,
+`Cube.002` the mouse; a second copy laid out flat, `Cube.005` to `.007`, isn't used). As it came the model was 10 times
+too big, 172 triangles in all, its mouse scaled by -1 on every axis, and it wore two textures packed into the file: a
+120 x 85 photo of a keyboard and a 92 x 98 product shot of a gaming mouse, both off the web. Those aren't ours to ship:
+the file is kept with them taken out (the meshes, their names and transforms as they were) and every surface is painted
+here, as the retro pack's models are given what the made props have (§29), by what each part is.
+
+- **`laptop`** (`width_mm` 330: the model's base 330 x 218 x 18.7 mm): the base and the lid as modelled, their outer
+  edges rounded off 1.5 mm in two steps (`bevel_mm`; not round the screen or the recess it sits in, so its rectangle
+  stays exact), hard-surface normals (`weighted` 50); 492 triangles. Its faces sorted by what they are: the base's top
+  (every face looking up at its highest) the `deck`, the lid's biggest face looking forward the `screen`, its biggest
+  looking back the `lid`, the rest the `shell`. Each picture-bearing face alone in its material on an island of its true
+  size (§13), mapped flat: the deck from above (x across, y from the front edge to the hinge), the screen upright from
+  the front, the lid's back read from behind (upright when it's open, as a real laptop's maker's mark is: upside down to
+  you when it's shut). The shell gets smart UVs and is painted by each texel's place.
+  - The deck: a fifteen-unit, six-row key layout (`ROWS`: the function row low, the arrows stacked) of chiclet keys raised
+    over a darker well, their legends printed (`legend`), the keys a game is played with (`played`: W A S D, E, Q, R, F,
+    Space, Shift, Enter, `PLAYED`) polished shiny and their letters rubbed thin; speaker grilles each side, a touchpad sunk
+    in with its chamfer catching the light, the palms' shine and grime either side of it, three status lights at the
+    front left (the power one lit: an emission, so the game's glow), a sticker (`deck.sticker`).
+  - The lid's back: the maker's crescent and name (`brand`, VESPER: `lid.logo`, chrome-like), an old sticker
+    (`lid.sticker`, a smiley rubbed through at its edge) and an asset tag with its barcode (`lid.tag`).
+  - The screen: black glass (rough 0.05) with a little dust in its shine; alone in a 256 px texture of its own, so a game
+    puts its own picture there (the devices plugin's HSLaptop draws its terminal on it; its sockets frame it).
+  - The shell by place: the plastic's fine grain (`plastic`), the bezel's matt black (`bezel`) with a webcam (its lens, its
+    ring, its light), two USBs and a jack along the left, a USB and the power along the right, the hinge's channel
+    darker, and underneath four rubber feet, ten screws, vents toward the back and a label.
+  - The lid a part on its hinge (§26): about x (axis -x), `open` 125° (the model's), `shut` 0, built open; its line found
+    so the shut lid lies 0.6 mm over the deck, flush with the base's back (`lid: "shut"` builds it so: `laptop_shut`).
+    Sockets `screen` (the glass's middle, out of it), `screen_up` and `screen_right` (the middles of its top and right
+    edges: its size and which way is up), `webcam` (these four ride the lid), `keys`, `power`, `hinge`; the root's extras
+    `propgen_computer`: `screen_mm`, `screen_material`, `lid_open_deg`, `lid`.
+- **`mouse`** (`length_mm` 115: 69 x 115 x 28 mm): the model's mouse as modelled, its buttons already pointing away from you
+  (the model's own UVs put its front at the photo's top), made round: subdivided twice (`round`) with its base's outline
+  creased (a flat foot, a crisp edge), capped at `max_tris` 1600. Its wheel is the model's block standing up between the
+  buttons (`_wheel_block`: of its top sixth's vertices the run along it that's narrow), painted there as rubber in a
+  slot, ridged across. Two materials: `top` (its island seen from above: the buttons' split and their glossy rests, the
+  wheel, the maker's crescent `top.logo`) and `body` (by place: a diamond grip on its sides, underneath two glide pads,
+  a label and the sensor's red glow). Sockets `scroll` (the wheel: a node named `*_wheel` comes into Godot as a
+  VehicleWheel3D), `sensor`, `palm`.
+
+The quality bar (§29, `propgen.py quality made laptop computer_mouse`): the gaps are what the parts are, kept: the screen
+is black glass (its albedo, roughness and flat normal outside a bar of ordinary props), the plastic is black (its albedo's
+top under the bar), the deck's and the mouse's roughness vary on purpose (shiny keys, palms and pads on matt plastic).
+Recipes `laptop`, `laptop_shut`, `computer_mouse`; PROPGEN's cases have `laptop` and `computer_mouse` (`PROPGEN_ONLY` runs a
+few cases); THUMBS keeps all three. Into the devices plugin: `laptop.glb` and `computer_mouse.glb` in its `models/`.
+
+## 33. Batteries: dry cells, customizable (DECISIONS 2026-11-10, later still)
+
+The laptop's shop sells the flashlight its spares (the starter's `batteries`): the `cell` family (`families/cell.py`,
+`CUSTOM = True`) turns a dry cell from its real profile: the flat minus end (its crimped edge), the steel can under a
+printed wrap whose edges roll over the shoulders, the plus end's shoulder and nub. `size` aa (14.5 x 50.5 mm), aaa
+(10.5 x 44.5), c (26.2 x 50.0), d (34.2 x 61.5), or [diameter, length]; `count` cells lying side by side touching,
+their plus ends toward +y and their print up, as they come out of a pack. Its islands `wrap` (round it from the seam at
+the back, along it from the minus end), `minus` and `plus` (the ends, nickel satin); materials `wrap` (a printed film)
+and `steel`. The print (`art`: `brand` OHMA, made up; `colors` [body, band, ink]; `volts`): the body's colour, a band
+toward the plus end edged in the ink, the brand along the cell, the size big in the band's colour, the volts, a plus
+sign in the band, a lot number; own pictures `wrap.brand` (along it, `rot` 90), `wrap.size`, `wrap.band`. Few rings
+where it's flat or straight (760 triangles a cell). Recipes `battery_aa`, `batteries_aa_2` (two lying: the shop's);
+PROPGEN's cases have `batteries_aa_2`; THUMBS keeps both.
+
+## 34. Parcels: a shipping carton whose flaps open, customizable (DECISIONS 2026-11-10, last)
+
+The laptop's shop delivers what's bought in a box like the ones online shops send (the user's "an 'amazon' package box
+for the arrived goods, and unboxed (press e to unbox/add to inventory)"), our own: no one's smile or brand, the shop's
+name printed on it. The `parcel` family (`families/parcel.py`, `CUSTOM = True`) builds a regular slotted carton of
+single-wall corrugated board from its `size` [length, width, height] mm (x, y, z) and `board` (3.5 mm, a C flute): the
+walls round the bottom, the front and back a board higher than the sides so the long flaps lie over the short ones,
+every flap half the width long. Each panel is a board (`_board`): its outside upright on its island, its inside read
+from inside, its four edges either **cut** (the flute: the `edge` island, a wave of the medium between two liners over
+the hollows, mapped at each edge's real length) or **folds** (the face's own border a board wide). The four flaps are
+**parts that open** (§26): `flap_front`, `flap_back` (the long ones, meeting along the middle with a 2 mm gap),
+`flap_left`, `flap_right` (the short ones, under), each a hinge along its wall's top, built shut (`open` true: built
+open, an emptied box), their open angles a little apart by the seed; `propgen_parcel` (`order`: the long ones first)
+tells a runtime the order to swing them. **The tape** (`taped`, its own glossy `tape` material): a 48 mm strip along the
+seam and 62 mm down each short side, in pieces mapped by where each lies along the run (so its print flows over the
+edges), cut along the seam (each half on its flap: open, it's as if a knife had run along it). **The shipping label**
+(`shipping_label`, its own `label` material): on the back flap, sized to what's left of it beside the tape. The kraft
+(`art.kraft`, `art.inside`) is mottled, with fibres and the flutes' ribs through its liner as relief (vertical on the
+walls, from the hinge on the flaps), its edges and corners scuffed (`wear.edges`), its foot grimy (`wear.grime`), the
+bottom's seam and its tape painted. Its own pictures: `front.logo`, `back.logo` (the shop's mark: a crescent, a star,
+`art.store` in Archivo Black, `art.tagline` under it), `flap_front.words`, `left.arrows` (this way up), `left.dry` (keep
+dry), `right.stamp` (a box maker's certificate, made up), `tape.print` (the name repeated), `label.label` (the whole
+label: from the shop, to OCCUPANT, a route code, a barcode, a tracking number). Its inside (`propgen_inside`) is between
+its walls and under its flaps. 130 triangles. Recipes `parcel` (305 x 229 x 152, NIGHT-MART's: the devices plugin's
+delivery box, `models/parcel.glb`, made at 1024), `parcel_small` (229 x 152 x 102), `parcel_open`; PROPGEN's cases have
+`parcel`; THUMBS keeps all three. Held to the quality bar (`quality made parcel`, 15 gaps to 6): the board's roughness
+uneven with its mottling and a dark fibre here and there (darker inside), the tape's creases across it and its bubbles
+in its relief and its gloss, the label's paper grain and its ink a little glossier than the paper. What's left outside
+the bar is what it is: a white label printed with a barcode is brighter and busier than most props, packing tape is
+glossier, the inside's liner a light kraft.

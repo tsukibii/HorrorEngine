@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="HSShopItem" format=3]
+
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_devices/shop/models/candle_votive.glb" id="1_qxw1b"]
+[ext_resource type="Script" path="res://addons/horrorstudio_devices/shop/item.gd" id="2_sgaig"]
+
+[resource]
+script = ExtResource("2_sgaig")
+id = "candle"
+title = "Votive candle"
+about = "A short candle in a glass. It burns about an hour. The glass is already black."
+price = 2.0
+category = "SUPPLIES"
+model = ExtResource("1_qxw1b")

@@ -21,6 +21,62 @@ builder's floors, the street's steel stair, climbing in Godot and on the desk; 2
 `claude/friendly-newton-9o2xey`, from the user's `retro-enhance`: the retro pack in the prop generator). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## Where it stopped last (2026-11-10, `laptop`): a laptop to sit at, a green terminal, a shop that fills the pocket, parcels at the door
+
+The branch `laptop`, made from `weapon-system` (its pull request, PR #19, not merged yet: this one stacks on it). The
+user: "Make a new branch called laptop, similar to what we did for the retro props analyze and enhance the laptop and
+mouse model, then make it usable so when a player interacts with it the camera zooms in on the screen and a usable ui
+appears ... a order tab, a player can order items with cash they have ... using the existing inventory system where we
+display the actual model in the slot that's visible ... make it so its easy to add items ... a preset scene (godot
+prefab) object ... the typical green matrix style terminal look" (DECISIONS 2026-11-10, later still). Built:
+
+- **The model** (PROPGEN §32): their FBX analysed (a laptop open at 125° and a mouse, 10 times too big, 172 triangles, two
+  web photos packed in: taken out, `Content/Studio/Props/models/laptop_mouse.fbx`), the `computer` family's customizable
+  `laptop`, `laptop_shut`, `computer_mouse`: real size, edges bevelled, everything painted in code (keys and legends,
+  touchpad, grilles, ports, feet, vents, webcam, the lid's crescent, sticker and asset tag; the screen its own material),
+  the lid on its hinge; the mouse subdivided round, its wheel, grip and red sensor. **Batteries** for the shop: the `cell`
+  family (PROPGEN §33), `battery_aa`, `batteries_aa_2`.
+- **HorrorStudio Devices** (`GodotPlugins/HorrorStudioDevices`, README, CLAUDE.md; in every `godot_byhand.py` project):
+  the prefab `laptop/laptop.tscn` (HSLaptop): E, the zoom in, the green terminal (HSTerminal: VT323, the code's rain, the
+  boot, HOME, ORDER, LOG), clicks through the glass, Esc/E/LOG OFF back; the Order tab's cards each the thing's own model
+  (`HSModelSlot`, pulled out of the HUD's inventory row into the UI plugin so both use it) in the green; orders paid from
+  the Story's cash into the pocket with their models; `HSShopItem` files in a catalog's list or folder; six made props for
+  sale; sounds made in code (`tools/device_sounds.py`).
+- **The starter**: `story.gd`'s pocket counts and keeps each thing's name and model, shows as an HSHud's row (Tab, the
+  wheel), and holds the cash (`pay`, `earn`); `pickup.gd` gives its model and can be cash.
+- **LAPTOP** (`tools/godot/laptop_check.py`, `laptop_test.gd`, `laptop_scene.gd`, `laptop_shots.gd`) and the guide
+  `guides/laptop/` (eleven pictures Godot drew).
+
+Then the user's next four (DECISIONS 2026-11-10, last: "an option to choose a spawn location for the bought items,
+create an 'amazon' package box for the arrived goods, and unboxed (press e to unbox/add to inventory) / make it easy to
+decide what item are buyable / make the items unlockable by quests that are done (flags) / do a ? for non unlocked
+items, create a next page ... prev and next page ... [2]"), built:
+
+- **The parcel** (PROPGEN §34): the prop generator's customizable `parcel` family, a corrugated carton from its size,
+  its four flaps parts that open (the long ones over the short ones), its tape cut along the seam, a shipping label, the
+  shop's print (NIGHT-MART, made up; no one's smile): `parcel`, `parcel_small`, `parcel_open`; the plugin's
+  `models/parcel.glb`.
+- **Delivery**: the laptop's `deliver_to` (a Marker3D), `deliver_place`, `delivery_secs`, `when_unseen`, `knock`,
+  `package`; orders wait, then are left there in parcels (`delivery/package.tscn`, `HSPackage`) while the place isn't
+  seen; **E unboxes one** (the tape, the flaps, what's inside shown, then into the pocket with its models; Empty.),
+  `take_on_open` off for two presses; a parcel placed by hand with its `items`. Sounds: knock, thud, tape, flaps.
+- **What's for sale**: each thing's `for_sale`, a laptop's `sells`; **locked**: a thing's `needs` (the Story's words:
+  `task:<id>`, a fact, `item:`, `!`), a ? till then (`???`, its `locked_text`, not to be ordered; `show_locked` off: not
+  there), NEW once unlocked; `unlock(id)` from a script.
+- **Pages**: the Order tab six cards a page (`page_size`), a category a page, `< PREV`, `1 [2] 3`, `NEXT >`, the arrow
+  keys. LAPTOP now 18 steps; the guide's new sections (pages, locked, delivery) with nineteen pictures.
+- **Unboxing as a pickup** (the user, after: "items absorbed towards the player (think minecraft drop item collection)
+  ... and the box poofs disappears ... the illusion of bigger items like shotgun fitting inside"): E bursts the parcel in
+  a puff of card dust and bits, each thing pops out at its own size, hangs a moment, is pulled into the player shrinking
+  with a pop and pocketed as it arrives; the parcel freed; `keep_box` leaves it open and empty. LAPTOP 19 steps (a shotgun
+  out of a parcel by hand); the guide's unboxing pictures.
+
+**Next, if the user wants it**: their eye on it in their own rooms and on their tape (its brightness, the green, the rain,
+how close the view goes; the parcel's print and where it's left); a courier's steps and a doorbell for the delivery, a
+parcel that's wrong (something in it nobody ordered), more tabs (mail, a camera feed, files with the story's clues),
+typing into it (a search, a password), the export and the Director's projects copying the plugin in, more devices on
+the same terminal (a CRT, a phone), and their ear on its sounds.
+
 ## Where it stopped last (2026-11-09 and 10, `weapon-system`): a shotgun held in first person, things that break, someone shot
 
 PR #18 merged into main; this branch is new from it (the user: "make a new branch called weapon-system, create a shot

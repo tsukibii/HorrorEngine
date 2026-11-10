@@ -2,6 +2,76 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-10, after the last (the user: what's in a parcel flies to you and the box is gone)
+
+- **"Instead of showing the items inside it, when we press e to open it should be like items absorbed towards the
+  player (think minecraft drop item colelction) that get sucked intoward the player and the box poofs disappears, this
+  is so we can create the illusion of bigger items like shotgun fitting inside"**. So E on a parcel: the box jumps, its
+  flaps burst open and it's gone in a puff of card dust and bits; out of the puff each thing pops up at its own size
+  (a shotgun as big as it is), turns in the air a moment, then is pulled to the player, faster as it comes, shrinking
+  into them with a pop, into the pocket as it arrives. Nothing is shown inside the box any more. A parcel to leave
+  behind open and empty is a switch (`keep_box`), the things flying to the player all the same.
+
+## 2026-11-10, last (the user: the laptop's goods delivered in a box, things to unlock, pages)
+
+- **"Some things I want added . An option to chjoose a spawn location for the bought items, create an 'amazon' package
+  box for the arrived goods, and unboxed (press e to unbox/add to inventory) / make it easy to decide what item are
+  buyable / make the items unlockable by quests that are done (flags) / do a ? for non unlocked items, create a next
+  page for the buying item (rather than scrolling down), should have prev and next page, maybe a number system 1,2,3
+  where the current page has brackets [2]"**. So, on the branch `laptop`:
+  - **Delivery**: the laptop's `deliver_to` (a Marker3D or any Node3D: where what's bought arrives; none, and it goes
+    straight into the pocket as before), `delivery_secs` (how long it takes) and arriving only where the player isn't
+    looking; it comes as **a parcel**, a shipping carton like the ones online shops send, our own (no Amazon smile, no
+    brand of anyone's: the shop's own name printed on it), a new customizable prop generator recipe (the prop standard:
+    the `parcel` family, its four top flaps parts that open, its tape, its shipping label and its print its own
+    pictures); **E on it unboxes it**: the tape cut, the flaps open, what's inside shown a moment and put into the
+    pocket with its models (the HUD's row), the empty box left open.
+  - **What's for sale**: each thing's `for_sale` switch in its file (off: not in the shop at all), and a laptop's own
+    `sells` list (only these ids, when it has one).
+  - **Unlocked by what's been done**: a thing's `needs`, in the starter Story's words (`task:<id>` a quest's task done,
+    a fact set, `item:<name>`, `!` for not, several apart by commas); until it holds the thing is a **?** in the shop
+    (no model, `???`, not to be ordered, its `locked_text` said when it's picked), or left out (`show_locked` off);
+    newly unlocked, it's marked NEW.
+  - **Pages, not scrolling**: the Order tab a page at a time (`page_size`, six by default; a category never shares a
+    page, its name the page's heading), `< PREV` and `NEXT >` and the pages' numbers between them, the one shown in
+    brackets: `1 [2] 3`.
+
+## 2026-11-10, later still (the user: a laptop to order things on, in a green terminal)
+
+- **"Make a new branch called laptop, similar to what we did for the retro props analyze and enhance the laptop and
+  mosue model, then make it usable so when a player itneracts with it the camere a zooms in on the screen and a usable
+  ui appears, for now we want a basic generic ui inside the laptop that has a order tab, a player can order items with
+  cash they have, make it so its easy to add items to the system using the exisiing inventory system where we display
+  the actual model in the slot thats visible, make iut so its easy to add items to the system, keep it as part of the
+  horror engine as a preset scene(godot prefab) object. make the art style the typical green matrix style terminal
+  look"** (with their model, `PSX STYLE Low Poly LAPTOP & MOUSE.fbx`). The branch `laptop`, made from `weapon-system`
+  (its pull request not merged yet).
+  - **The model, analysed and enhanced** (PROPGEN §32): a laptop (its base, its lid open 125°, the screen sunk behind a
+    bezel) and a mouse, 10 times too big, 172 triangles, wearing two pictures off the web (a keyboard photo, a mouse
+    maker's product shot) that aren't ours to ship: kept in `Content/Studio/Props/models/laptop_mouse.fbx` with them taken
+    out, and made into the `computer` family's customizable recipes `laptop`, `laptop_shut` and `computer_mouse` at their
+    real sizes, every surface painted here: real keys with their legends (the ones you play with polished), a touchpad,
+    grilles, ports, feet and vents, a webcam, the maker's crescent, a sticker and an asset tag on the lid (yours to swap),
+    the screen a surface of its own for the game's picture, the lid a part on its hinge; the mouse made round, its wheel,
+    its grip, the sensor's red glow underneath. **Batteries** for its shop to sell (the flashlight's spares): the `cell`
+    family (PROPGEN §33), customizable, `battery_aa` and the two-pack `batteries_aa_2`.
+  - **Usable, as a prefab**: a new Godot plugin, **HorrorStudio Devices** (`GodotPlugins/HorrorStudioDevices`, in every
+    project `godot_byhand.py` makes), its prefab `laptop/laptop.tscn` (the laptop and its mouse, **HSLaptop**). E on it
+    (the starter's player): a shut lid opens, the player stops, the view goes in square to the screen (a camera of its
+    own, 40 degrees, the screen nine tenths of the view), the mouse is the terminal's pointer through the glass; Esc, E
+    or LOG OFF back. The terminal (HSTerminal) is **green phosphor on black** in a pixel font (VT323, OFL), square
+    frames, the code's rain behind it and alone on the screen when nobody's at it, its boot's lines the first time,
+    the glass's rows, glow and flicker; tabs HOME, ORDER and LOG (more by `add_tab`).
+  - **The Order tab**: the catalog's things as cards, **each its own model** in the green through the UI plugin's
+    `HSModelSlot` (the HUD's inventory row's own slot, pulled out so both use it), its price and stock; picked, large and
+    turning, how many, the total, ORDER. **The cash** is the starter's Story node's (`cash`, `pay`, `earn`; a pickup with
+    `cash` is money lying about); an order goes **into the existing pocket** with its model (`give(id, title, model,
+    count)`), which counts now and shows as an HSHud's inventory row (Tab, the wheel, up a moment when something comes in);
+    batteries become the flashlight's spares. Too dear or sold out, it says so.
+  - **Easy to add a thing**: one `HSShopItem` file (id, title, about, price, count, stock, category, model, model turn),
+    in a catalog's list or simply saved in the catalog's folder. The plugin's own catalog (NIGHT-MART) sells six made
+    props: AA batteries, a votive candle, painkillers, water, a soda, a burger. The guide: `guides/laptop/`.
+
 ## 2026-11-10, later (the user: both systems)
 
 - **"Sorry no, i didnt literally mean instead of, I want both systems."** HSBlowUp (things that break when they're

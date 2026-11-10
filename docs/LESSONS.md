@@ -3,6 +3,43 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The laptop in Godot (HSLaptop, HSTerminal): what took a second try (2026-11-10)
+
+- **`set_anchors_preset` keeps a control's size; `set_anchors_and_offsets_preset` fills**: in Godot 4 the first moves
+  the anchors and recomputes the offsets so the rect stays as it is. The terminal's root, its background and its
+  margins were set full-rect after they were made and stayed 0 by 0: the SubViewport's grey clear colour showed through
+  the screen and the status line sat under the header. Use `set_anchors_and_offsets_preset` for a control that must
+  fill its parent (and give a Control under a SubViewport its size).
+- **Headless Godot keeps no mouse mode and draws nothing**: `Input.mouse_mode` stays VISIBLE whatever's set, and a
+  VisibleOnScreenNotifier3D never says it's on screen. A check reads them only with a window; whether a thing can be
+  seen is decided by the camera's frustum (`is_position_in_frustum`), which is plain maths, and counted (`idle_draws`)
+  rather than read off a viewport's update mode between frames (a one-shot draw is back to DISABLED by the next frame).
+- **A script set on a node already in the tree never runs its `_ready`**: the $20 note got pickup.gd after `add_child`
+  and made no collider, so E passed through it. Set the script before the node goes in.
+- **`:=` needs a typed value**: `SOUNDS + nm` with `nm` from an untyped array, `term._label()` through a Node-typed
+  variable and `max()` all give a Variant, and Godot refused to parse the script. Type the variable (`var p: String`) or
+  use the typed function (`maxi`).
+- **A container's new children have no place until the next frame** (2026-11-10, last: the shop's pages): the check
+  refreshed the Order tab (a locked box of shells added) and clicked the shells' card at once, and the click picked the
+  batteries: the new cards' `get_global_rect()` was still at the grid's corner, because containers sort their children
+  when the frame is processed. Await a frame or two after rebuilding a container before reading where its children are.
+
+## The laptop and mouse (the `computer` family): what took a second try (2026-11-10)
+
+- **A material painted only by texel must mark what it painted as used**: the mouse's body came out black in every map
+  (its albedo's mean exactly 0). A material with no island leaves the canvas's `used` empty, and the bleed then treats
+  every texel as a gap to fill. A family's `texel_paint` sets `cv.used |= hit` first, as the double barrel's does.
+- **Which way a model faces is in its own UVs, not its shape**: the mouse's long gentle slope looked like its front and
+  it was turned round, which put its wheel behind the hump. Its UVs put that end at the top of its product shot (the
+  front), and its one narrow block standing up between the buttons (the wheel) said the same. Read where a model's own
+  texture puts its front before turning it.
+- **A socket's name must not end in one of Godot's import hints**: the mouse's `socket_wheel` came into Godot as a
+  VehicleWheel3D (a node named `-wheel` or `_wheel` is one; so are `_col`, `_colonly`, `_occ`, `_rigid`, `_vehicle`,
+  `_navmesh`, `_noimp`). It's `socket_scroll` now; name sockets so their last word isn't a hint.
+- **A model's file can carry pictures that aren't ours**: the user's FBX packed a keyboard photo and a mouse maker's
+  product shot. Keep a model in the repo with its images taken out (the meshes, names and transforms as they were) and
+  paint its surfaces here.
+
 ## The ichor alive (HSOoze): what took a second try (2026-11-10)
 
 - **The normal-roughness buffer is filled only for some materials**: a box with no material of its own read as no normal
