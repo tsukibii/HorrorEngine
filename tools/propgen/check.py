@@ -29,7 +29,9 @@ CASES = {"soda_can": (115, 6000), "soda_can_crushed": (125, 14000), "water_bottl
          "rock_boulder": (1300, 3000), "pebbles_river": (500, 2600),
          "retro_cooker": (290, 2000), "retro_door_a": (2100, 1200), "retro_spruce_g": (1800, 600),
          "shotgun_pump": (985, 16000), "shotgun_double": (1081, 4000), "shell_12ga": (70, 2600),
-         "shells_box_5": (116, 4000), "shells_box_25": (117, 9000)}
+         "shells_box_5": (116, 4000), "shells_box_25": (117, 9000), "laptop": (330, 2000), "computer_mouse": (115, 2600)}
+if os.environ.get("PROPGEN_ONLY"):                    # a few cases while one family is worked on: PROPGEN_ONLY=laptop,computer_mouse
+    CASES = {k: v for k, v in CASES.items() if k in os.environ["PROPGEN_ONLY"].split(",")}
 
 
 def _glb(path):

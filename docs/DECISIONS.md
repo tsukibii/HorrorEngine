@@ -2,6 +2,25 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-10, later still (the user: a laptop to order things on, in a green terminal)
+
+- **"Make a new branch called laptop, similar to what we did for the retro props analyze and enhance the laptop and
+  mosue model, then make it usable so when a player itneracts with it the camere a zooms in on the screen and a usable
+  ui appears, for now we want a basic generic ui inside the laptop that has a order tab, a player can order items with
+  cash they have, make it so its easy to add items to the system using the exisiing inventory system where we display
+  the actual model in the slot thats visible, make iut so its easy to add items to the system, keep it as part of the
+  horror engine as a preset scene(godot prefab) object. make the art style the typical green matrix style terminal
+  look"** (with their model, `PSX STYLE Low Poly LAPTOP & MOUSE.fbx`). The branch `laptop`, made from `weapon-system`
+  (its pull request not merged yet).
+  - **The model, analysed and enhanced** (PROPGEN §32): a laptop (its base, its lid open 125°, the screen sunk behind a
+    bezel) and a mouse, 10 times too big, 172 triangles, wearing two pictures off the web (a keyboard photo, a mouse
+    maker's product shot) that aren't ours to ship: kept in `Content/Studio/Props/models/laptop_mouse.fbx` with them taken
+    out, and made into the `computer` family's customizable recipes `laptop`, `laptop_shut` and `computer_mouse` at their
+    real sizes, every surface painted here: real keys with their legends (the ones you play with polished), a touchpad,
+    grilles, ports, feet and vents, a webcam, the maker's crescent, a sticker and an asset tag on the lid (yours to swap),
+    the screen a surface of its own for the game's picture, the lid a part on its hinge; the mouse made round, its wheel,
+    its grip, the sensor's red glow underneath.
+
 ## 2026-11-10, later (the user: both systems)
 
 - **"Sorry no, i didnt literally mean instead of, I want both systems."** HSBlowUp (things that break when they're

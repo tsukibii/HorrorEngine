@@ -1485,3 +1485,53 @@ one with what differs. PROPGEN's cases have `shell_12ga`, `shells_box_5` and `sh
 their passes. Into the weapons plugin: `shell_12ga.glb`, `shell_12ga_spent.glb`, `shells_box_5.glb` and the three
 explosive ones copied into its `models/` (the explosive kind, `shells/explosive.tres`, wears its shell and hull; a
 pickup of that kind its box).
+
+## 32. Computers: the user's laptop and mouse (DECISIONS 2026-11-10, later still)
+
+The user, with their model (`PSX STYLE Low Poly LAPTOP & MOUSE.fbx`): "similar to what we did for the retro props
+analyze and enhance the laptop and mouse model". The `computer` family (`families/computer.py`, `CUSTOM = True`: §25)
+reads it from `Content/Studio/Props/models/laptop_mouse.fbx` (its objects `Cube` the base, `Cube.001` the lid open,
+`Cube.002` the mouse; a second copy laid out flat, `Cube.005` to `.007`, isn't used). As it came the model was 10 times
+too big, 172 triangles in all, its mouse scaled by -1 on every axis, and it wore two textures packed into the file: a
+120 x 85 photo of a keyboard and a 92 x 98 product shot of a gaming mouse, both off the web. Those aren't ours to ship:
+the file is kept with them taken out (the meshes, their names and transforms as they were) and every surface is painted
+here, as the retro pack's models are given what the made props have (§29), by what each part is.
+
+- **`laptop`** (`width_mm` 330: the model's base 330 x 218 x 18.7 mm): the base and the lid as modelled, their outer
+  edges rounded off 1.5 mm in two steps (`bevel_mm`; not round the screen or the recess it sits in, so its rectangle
+  stays exact), hard-surface normals (`weighted` 50); 492 triangles. Its faces sorted by what they are: the base's top
+  (every face looking up at its highest) the `deck`, the lid's biggest face looking forward the `screen`, its biggest
+  looking back the `lid`, the rest the `shell`. Each picture-bearing face alone in its material on an island of its true
+  size (§13), mapped flat: the deck from above (x across, y from the front edge to the hinge), the screen upright from
+  the front, the lid's back read from behind (upright when it's open, as a real laptop's maker's mark is: upside down to
+  you when it's shut). The shell gets smart UVs and is painted by each texel's place.
+  - The deck: a fifteen-unit, six-row key layout (`ROWS`: the function row low, the arrows stacked) of chiclet keys raised
+    over a darker well, their legends printed (`legend`), the keys a game is played with (`played`: W A S D, E, Q, R, F,
+    Space, Shift, Enter, `PLAYED`) polished shiny and their letters rubbed thin; speaker grilles each side, a touchpad sunk
+    in with its chamfer catching the light, the palms' shine and grime either side of it, three status lights at the
+    front left (the power one lit: an emission, so the game's glow), a sticker (`deck.sticker`).
+  - The lid's back: the maker's crescent and name (`brand`, VESPER: `lid.logo`, chrome-like), an old sticker
+    (`lid.sticker`, a smiley rubbed through at its edge) and an asset tag with its barcode (`lid.tag`).
+  - The screen: black glass (rough 0.05) with a little dust in its shine; alone in a 256 px texture of its own, so a game
+    puts its own picture there (the devices plugin's HSLaptop draws its terminal on it; its sockets frame it).
+  - The shell by place: the plastic's fine grain (`plastic`), the bezel's matt black (`bezel`) with a webcam (its lens, its
+    ring, its light), two USBs and a jack along the left, a USB and the power along the right, the hinge's channel
+    darker, and underneath four rubber feet, ten screws, vents toward the back and a label.
+  - The lid a part on its hinge (§26): about x (axis -x), `open` 125° (the model's), `shut` 0, built open; its line found
+    so the shut lid lies 0.6 mm over the deck, flush with the base's back (`lid: "shut"` builds it so: `laptop_shut`).
+    Sockets `screen` (the glass's middle, out of it), `screen_up` and `screen_right` (the middles of its top and right
+    edges: its size and which way is up), `webcam` (these four ride the lid), `keys`, `power`, `hinge`; the root's extras
+    `propgen_computer`: `screen_mm`, `screen_material`, `lid_open_deg`, `lid`.
+- **`mouse`** (`length_mm` 115: 69 x 115 x 28 mm): the model's mouse as modelled, its buttons already pointing away from you
+  (the model's own UVs put its front at the photo's top), made round: subdivided twice (`round`) with its base's outline
+  creased (a flat foot, a crisp edge), capped at `max_tris` 1600. Its wheel is the model's block standing up between the
+  buttons (`_wheel_block`: of its top sixth's vertices the run along it that's narrow), painted there as rubber in a
+  slot, ridged across. Two materials: `top` (its island seen from above: the buttons' split and their glossy rests, the
+  wheel, the maker's crescent `top.logo`) and `body` (by place: a diamond grip on its sides, underneath two glide pads,
+  a label and the sensor's red glow).
+
+The quality bar (§29, `propgen.py quality made laptop computer_mouse`): the gaps are what the parts are, kept: the screen
+is black glass (its albedo, roughness and flat normal outside a bar of ordinary props), the plastic is black (its albedo's
+top under the bar), the deck's and the mouse's roughness vary on purpose (shiny keys, palms and pads on matt plastic).
+Recipes `laptop`, `laptop_shut`, `computer_mouse`; PROPGEN's cases have `laptop` and `computer_mouse` (`PROPGEN_ONLY` runs a
+few cases); THUMBS keeps all three. Into the devices plugin: `laptop.glb` and `computer_mouse.glb` in its `models/`.

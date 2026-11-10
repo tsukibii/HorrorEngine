@@ -3,6 +3,19 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The laptop and mouse (the `computer` family): what took a second try (2026-11-10)
+
+- **A material painted only by texel must mark what it painted as used**: the mouse's body came out black in every map
+  (its albedo's mean exactly 0). A material with no island leaves the canvas's `used` empty, and the bleed then treats
+  every texel as a gap to fill. A family's `texel_paint` sets `cv.used |= hit` first, as the double barrel's does.
+- **Which way a model faces is in its own UVs, not its shape**: the mouse's long gentle slope looked like its front and
+  it was turned round, which put its wheel behind the hump. Its UVs put that end at the top of its product shot (the
+  front), and its one narrow block standing up between the buttons (the wheel) said the same. Read where a model's own
+  texture puts its front before turning it.
+- **A model's file can carry pictures that aren't ours**: the user's FBX packed a keyboard photo and a mouse maker's
+  product shot. Keep a model in the repo with its images taken out (the meshes, names and transforms as they were) and
+  paint its surfaces here.
+
 ## The ichor alive (HSOoze): what took a second try (2026-11-10)
 
 - **The normal-roughness buffer is filled only for some materials**: a box with no material of its own read as no normal
