@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-10, after that (the user: tutorial v2 to use every system)
+
+- **"make a new branch called update-tutorialv2, that implements (gets the user to imeplmenet) every feature we've
+  created so far so we can see whats missing, the gameplay itself doesnt need to be long, just needs to use every
+  system to make sure verything works as expected (I will follow the tutorial and give feeedback in the pr)"**. So the
+  branch `update-tutorialv2` (from `main`, the laptop merged): guides/tutorial_v2 grows the beats that use what came
+  after it (the HUD and its markers, the pocket and cash, the laptop's shop and delivery, the shotgun, things that break,
+  her shot, made props' effects), short, in Room 304's night; TUTORIAL2 plays them; and the guide gets a table of every
+  system with where the tutorial uses it, or why it doesn't (what's missing). The user follows it and answers in the PR.
+
 ## 2026-11-10, after the last (the user: what's in a parcel flies to you and the box is gone)
 
 - **"Instead of showing the items inside it, when we press e to open it should be like items absorbed towards the

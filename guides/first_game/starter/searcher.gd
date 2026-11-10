@@ -109,7 +109,7 @@ func stop(_a = null, _b = null) -> void:
 	state = "gone"
 	_route = []
 	var her := _her()
-	if her != null:
+	if her != null and not bool(her.get_meta("hs_down", false)):   # (shot down, the weapons plugin's HSHitReact takes her away itself)
 		her.visible = false
 
 

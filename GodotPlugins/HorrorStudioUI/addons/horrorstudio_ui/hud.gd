@@ -117,6 +117,9 @@ var root: Control
 ## by hand (the default): it wears the project's UI settings (Project Settings > horrorstudio/ui), starts clear, has no pause
 ## menu, and hangs the quest marker over every active HSQuestMarker in the scene. The runtime sets this false before it is added.
 @export var standalone := true
+## by hand: the keys shown as chips at the foot, each "keys:what they do" ("W A S D:walk", "E:use", "Tab:pocket"), in
+## place of the studio runtime's (Click to play, E inventory, G put down...); a script adds one with hint_key()
+@export var keys: PackedStringArray = []
 var auto_markers := false                      # standalone: feed the guide from the scene's HSQuestMarkers (their sight from physics rays)
 var _los := {}                                 # marker id -> {clear, at}: its line of sight, looked at a few times a second
 var guide = null                               # the markers over what open tasks need (marker.gd: a todo's `guide`)
@@ -513,6 +516,12 @@ func _ready() -> void:
 		guide.mode = clampi(int(ProjectSettings.get_setting("horrorstudio/ui/quest_marker", 1)), 0, 2)
 		set_fade(0.0)
 		auto_markers = true
+		if not keys.is_empty():                          # your game's keys in place of the studio runtime's
+			hints.clear()
+			for k in keys:
+				if str(k).contains(":"):
+					hints[str(k)] = true
+			_draw_hints()
 
 
 func _label(text: String, size: int) -> Label:
@@ -1113,7 +1122,8 @@ func tick(dt: float = 0.0) -> void:
 		fade_then(who_el, 0.0, 0.3, _line_cleared)
 
 
-## the guide fed from the scene (by hand): every active HSQuestMarker, its name, and whether there's a clear line to it
+## the guide fed from the scene (by hand): every HSQuestMarker shown (active, its needs holding), its name, and whether
+## there's a clear line to it
 func _auto_guide(dt: float) -> void:
 	var cam := get_viewport().get_camera_3d()
 	var targets := {}
@@ -1121,7 +1131,7 @@ func _auto_guide(dt: float) -> void:
 	var names := {}
 	if cam != null and guide.mode > 0:
 		for n in get_tree().get_nodes_in_group("hs_quest_marker"):
-			if not (n.get("active") and (n as Node3D).is_visible_in_tree()):
+			if not ((n.shown() if n.has_method("shown") else n.get("active")) and (n as Node3D).is_visible_in_tree()):
 				continue
 			var id := str(n.get_path())
 			var top: Vector3 = n.top()

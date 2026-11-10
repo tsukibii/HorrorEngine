@@ -1,7 +1,9 @@
 ## The guide's pictures (tools/godot/tutorial_v2.py --pictures): guides/tutorial_v2's main.tscn drawn by Godot as the
 ## player sees it, the Story's words on screen where the guide shows them. Each shot a camera of its own at the eye's
 ## height, held a while (TAA and the iris settle), saved as <out>/<name>.png. `--only=a,b` makes only those (the rest of
-## the walk still set up as it goes).
+## the walk still set up as it goes). The UI plugin's HUD is shown only in the pictures of the parts that add it (every
+## system since, DECISIONS 2026-11-10, after that: the markers, the laptop, its shop, the parcels, the gun through the
+## player's own eye, the tea things in pieces, the candle, her shot down).
 ##   godot --path PROJECT --rendering-driver vulkan -s tutorial_v2_shots.gd -- --out=DIR [--only=glimpse,closer]
 extends SceneTree
 
@@ -33,6 +35,30 @@ func shot(name: String, from: Vector3, at: Vector3, hold := 40) -> void:
 
 func tubes() -> Array:
 	return main.get_node("Zones/Corridor").get_children().filter(func(n): return n is Light3D)
+
+
+## the frame as it is, held a while (the current camera's: the laptop's, the player's eye)
+func snap(name: String, hold := 40) -> void:
+	if not only.is_empty() and not only.has(name):
+		return
+	for i in hold:
+		await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png(out_dir.path_join(name + ".png"))
+	print("SHOT %s" % name)
+
+
+## the player's own eye at `from` looking at `at`, the current camera (what's under it seen: the gun)
+func eye_at(player: Node3D, from: Vector3, at: Vector3) -> Camera3D:
+	var e := player.get_node("Eye") as Camera3D
+	player.global_position = from - Vector3(0, e.position.y, 0)
+	var d := at - from
+	player.rotation = Vector3(0, atan2(-d.x, -d.z), 0)
+	var pt := atan2(d.y, Vector2(d.x, d.z).length())
+	player.set("pitch", pt)
+	e.rotation = Vector3(pt, 0, 0)
+	e.make_current()
+	return e
 
 
 func _initialize() -> void:
@@ -72,6 +98,8 @@ func _initialize() -> void:
 	var story := main.get_node("Story")
 	var hud_on := func(on: bool): story.visible = on
 	hud_on.call(false)
+	var hud := main.get_node("HUD") as CanvasLayer
+	hud.visible = false                                        # (the UI plugin's HUD only where the guide's added it)
 	await process_frame
 	await process_frame
 	var fl := float(cfg["floor"])
@@ -276,6 +304,129 @@ func _initialize() -> void:
 	await shot("jump", Vector3(ap.x - 1.15, eye, cz + 0.1), ap + Vector3(0, 1.4, 0), 30)
 	if vhs != null:
 		vhs.preset("off")
+	# ---- every system since: the HUD's markers, the laptop, its shop, the parcels, the gun, things that break and glow, her shot
+	again.visible = false
+	hud_on.call(true)
+	hud.visible = true
+	for l in tubes():
+		Lights.set_on(l, true)
+		Lights.set_level(l, 1.0)
+	main.get_node("Air").fog = 0.3
+	story.tick("up")
+	story.tick("find304")
+	story.add_line("out: Get out by the fire exit")
+	if linen != null:
+		linen.set("open", false)                               # (the hiding picture's open door shut again)
+	for i in 40:
+		await process_frame
+	# the quest markers: down the corridor, the fire exit's with its name (within 7 m), the to-do list's out
+	var fx := float(cfg["fire"][0])
+	await shot("markers", Vector3(fx - 5.6, eye, cz + 0.3), Vector3(fx, eye - 0.1, cz - 0.15), 60)
+	# the laptop on 304's desk, its screen raining; the $20 note; the kettle on the boil, the mug of tea
+	var lpos := v3(cfg["laptop"])
+	await shot("laptop", Vector3(lpos.x - 1.3, eye - 0.1, lpos.z + 0.6), lpos + Vector3(0.05, 0.02, -0.4), 50)
+	# the shop: at the laptop on its DEFENCE page, the knocks come: the shotgun and the shells, the explosive shells a ?
+	var lap := main.get_node("Things/Laptop")
+	story.flag("knocked_304")
+	story.add_line("gun: Something to defend yourself with (the laptop on the desk)")
+	story.earn(20.0)
+	lap.use(player)
+	for i in int((float(lap.zoom_secs) + 3.6) * 30.0):
+		await process_frame
+	lap.term.show_tab("ORDER")
+	var od: Node = lap.term.order
+	od.refresh()
+	od.show_page(od.page_of("explosive"), false)
+	for i in 3:
+		await process_frame
+	var ex_item: HSShopItem = null
+	for it in od.items:
+		if (it as HSShopItem).id == "explosive":
+			ex_item = it
+	od.select(ex_item, false)
+	await snap("shop", 50)
+	lap.leave()
+	for i in int((float(lap.zoom_secs) + 0.5) * 30.0):
+		await process_frame
+	player.process_mode = Node.PROCESS_MODE_DISABLED
+	cam.make_current()
+	# the parcels left at 304's door, a marker over each
+	var spot := main.get_node("Things/Doorstep") as Node3D
+	var sg_item: HSShopItem = load("res://shop/items/shotgun.tres")
+	var sh_item: HSShopItem = load("res://shop/items/shells.tres")
+	lap.call("_drop", spot, {"number": 1001, "items": [sg_item], "counts": [1]})
+	lap.call("_drop", spot, {"number": 1002, "items": [sh_item], "counts": [1]})
+	var sp0 := spot.global_position
+	await shot("parcels", Vector3(sp0.x - 1.9, eye, sp0.z - 0.95), sp0 + Vector3(0.1, 0.25, 0.25), 50)
+	# E on the gun's: the box gone in a puff, the double out of it at its own size, about to be pulled into you
+	var pk: HSPackage = null
+	for c in spot.get_children():
+		if c is HSPackage and (c as HSPackage).items.size() > 0 and ((c as HSPackage).items[0] as HSShopItem).id == "shotgun":
+			pk = c
+	var ufrom := Vector3(pk.global_position.x + 0.25, eye, pk.global_position.z - 1.15)
+	player.global_position = ufrom - Vector3(0, 1.6, 0)          # (what comes out is pulled to the player's eye)
+	pk.unbox()
+	await shot("unbox", ufrom, pk.global_position + Vector3(0, 0.45, 0), 13)
+	for i in 60:
+		await process_frame
+	# the double in your hands in 304, the tea things ahead; both barrels: the kettle and the mug in pieces, the tea spilled
+	var gun := player.get_node("Eye/Shotgun") as Node3D
+	gun.process_mode = Node.PROCESS_MODE_ALWAYS
+	gun.call("give", 5, null)
+	var kp := v3(cfg["kettle"])
+	var mp := v3(cfg["mug"])
+	var tfrom := Vector3(kp.x - 1.7, eye, kp.z + 0.3)
+	var pe := eye_at(player, tfrom, kp + Vector3(-0.1, 0.05, 0.12))
+	torch.reparent(pe, false)
+	torch.position = Vector3(0.18, -0.2, -0.1)
+	torch.visible = true
+	await snap("gun", 50)
+	eye_at(player, tfrom, kp + Vector3(0, 0.1, 0))
+	for i in 3:
+		await process_frame
+	gun.call("pull")
+	for i in 12:
+		await process_frame
+	eye_at(player, tfrom, mp + Vector3(0, 0.05, 0))
+	for i in 3:
+		await process_frame
+	gun.call("pull")
+	for i in 40:
+		await process_frame
+	eye_at(player, tfrom, kp + Vector3(-0.1, -0.05, 0.12))
+	await snap("blown", 45)
+	# a candle burning on the bath's floor (its flame and its light: HSPropFX), the bath's light low
+	torch.visible = false
+	cam.make_current()
+	var bath_l := main.get_node("Zones/Bath304/Light") as Light3D
+	var bath_was := bath_l.light_energy
+	bath_l.light_energy = 0.12
+	var cp := v3(cfg["candle"])
+	await shot("candle", Vector3(cp.x + 0.25, fl + 1.25, cp.z + 1.05), cp + Vector3(-0.05, 0.04, 0), 50)
+	bath_l.light_energy = bath_was
+	# her who hunts, coming at you down the dark corridor: both barrels, black ichor and smoke; then she's smoke
+	for l in tubes():
+		Lights.set_on(l, false)
+	main.get_node("Air").fog = 0.45
+	var post := v3(cfg["her"])
+	hunter.global_position = Vector3(post.x - 3.0, fl, cz)
+	hunter.global_rotation = Vector3(0.0, -PI / 2.0, 0.0)          # (her front, +Z, to the west: at you)
+	hunter.visible = true
+	gun.set("loaded", 2)
+	var hfrom := Vector3(post.x - 6.3, eye, cz + 0.1)
+	pe = eye_at(player, hfrom, hunter.global_position + Vector3(0, 1.25, 0))
+	torch.visible = true
+	for i in 20:
+		await process_frame
+	gun.call("pull")
+	await snap("her_shot", 12)
+	eye_at(player, hfrom, hunter.global_position + Vector3(0, 1.25, 0))
+	gun.call("pull")
+	await snap("her_smoke", 55)
+	torch.visible = false
+	torch.reparent(cam, false)
+	cam.make_current()
+	hud.visible = false
 	# the ending
 	again.visible = false
 	hud_on.call(true)

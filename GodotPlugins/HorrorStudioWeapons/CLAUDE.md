@@ -59,7 +59,9 @@ export and the Director's projects don't copy it yet (nothing in the runtime use
 - **Nobody bleeds red** (the user's): HSHitReact's ichor is black and glossy with embers, its smoke black; a new look is
   an HSWoundLook, never blood.
 - **Her hitboxes are on layer 11** (`HSHitReact.HITBOX_LAYER`): the gun's rays and a blast's query use `HSGun.SHOT_MASK`
-  (layers 1 and 11); everything else (the player, her movement, sight, the hulls) stays on layer 1.
+  (layers 1 and 11); everything else (the player, her movement, sight, the hulls) stays on layer 1. **Only while she's
+  seen** (`_sync_boxes` in `_physics_process`: hidden, their layers 0; down, `_gone` and `restore` keep them): tutorial
+  v2's hunter waits hidden at 308's door and stopped pellets there (DECISIONS 2026-11-10, after that).
 - **The ichor is alive where it can be**: HSOoze on Forward+, the plain `fx/ichor_*` decals elsewhere (the look's
   `ooze` off, the compatibility renderer). Its field is looked at once a pixel and each kind is a shader of its own (three
   looks a pixel in one shader of all four took the CPU renderer minutes to compile: LESSONS); its surface's normal
