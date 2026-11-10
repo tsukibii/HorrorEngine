@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-10, after the last (the user: what's in a parcel flies to you and the box is gone)
+
+- **"Instead of showing the items inside it, when we press e to open it should be like items absorbed towards the
+  player (think minecraft drop item colelction) that get sucked intoward the player and the box poofs disappears, this
+  is so we can create the illusion of bigger items like shotgun fitting inside"**. So E on a parcel: the box jumps, its
+  flaps burst open and it's gone in a puff of card dust and bits; out of the puff each thing pops up at its own size
+  (a shotgun as big as it is), turns in the air a moment, then is pulled to the player, faster as it comes, shrinking
+  into them with a pop, into the pocket as it arrives. Nothing is shown inside the box any more. A parcel to leave
+  behind open and empty is a switch (`keep_box`), the things flying to the player all the same.
+
 ## 2026-11-10, last (the user: the laptop's goods delivered in a box, things to unlock, pages)
 
 - **"Some things I want added . An option to chjoose a spawn location for the bought items, create an 'amazon' package

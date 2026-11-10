@@ -3,8 +3,9 @@ extends SceneTree
 ## 1600 x 900, the same steps as LAPTOP: the room with the screen raining, the boot, HOME, ORDER's first page with a
 ## thing picked and a box of shells still a ?, two batteries ordered (the HUD's row shows them), the ? picked, the shells
 ## unlocked (NEW), the second page with a burger too dear, the laptop seen close from the side, shut, the pocket
-## afterwards, ORDER on the camhybrid tape; then delivery: a soda sent to the front door, its parcel left there, opened
-## with E (the soda inside) and empty.
+## afterwards, ORDER on the camhybrid tape; then delivery: a soda sent to the front door, its parcel left there (a shotgun
+## put in it too), E: the box bursting in a puff, the soda and the shotgun out of it at their own sizes, pulled into the
+## player, the box gone and the pocket's row.
 ##   godot --path <project> --rendering-driver vulkan --fixed-fps 30 -s res://laptop_shots.gd -- --out=DIR [--only=room,home]
 
 const Scene := preload("res://laptop_scene.gd")
@@ -206,18 +207,28 @@ func _run() -> void:
 	await secs(0.6)
 	await shot("parcel_close")
 	eye.make_current()
-	pl.global_position = Vector3(0.78, 0.0, pkg.global_position.z)
+	var gun := HSShopItem.new()                                   # a shotgun in it too: three times the box's length
+	gun.id = "shotgun"
+	gun.title = "Double-barrel shotgun"
+	gun.model = load("res://addons/horrorstudio_weapons/models/shotgun_double.glb")
+	pkg.items.append(gun)
+	pkg.counts = PackedInt32Array([1, 1])
+	pl.global_position = Vector3(0.52, 0.0, pkg.global_position.z)
 	eye.look_at(pkg.global_position + Vector3(0, 0.08, 0), Vector3.UP)
 	await frames(3)
-	pl.call("use")                                                # E on it, then seen from over its front corner
-	cam2.global_position = pkg.global_position + Vector3(-0.5, 0.66, 0.3)
-	cam2.look_at(pkg.global_position + Vector3(0.0, 0.08, 0.0), Vector3.UP)
+	pl.call("use")                                                # E on it
+	eye.look_at(pkg.global_position + Vector3(0, 0.3, 0), Vector3.UP)   # then a little up: what comes out rises
+	await secs(HSPackage.BURST + 0.05)
+	await shot("unbox_burst")
+	cam2.global_position = pkg.global_position + Vector3(-0.4, 0.6, 1.25)
+	cam2.look_at(pkg.global_position + Vector3(-0.25, 0.38, 0.0), Vector3.UP)
 	cam2.make_current()
-	await secs(HSPackage.LEAD + pkg.open_secs * 0.5)
-	await shot("unbox_flaps")
-	await secs(pkg.open_secs * 0.5 + 0.2)
-	await shot("unbox")
-	await secs(1.3)
+	await secs(0.12)
+	await shot("unbox_side")
+	eye.make_current()
+	await secs(0.28)
+	await shot("unbox_pull")
+	await secs(1.6)
 	await shot("unboxed")
 	print("SHOTS done")
 	quit(0)

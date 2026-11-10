@@ -2,28 +2,36 @@
 class_name HSPackage
 extends Node3D
 ## A parcel (HorrorStudio Devices; the user, 2026-11-10: "create an 'amazon' package box for the arrived goods, and
-## unboxed (press e to unbox/add to inventory)"). The laptop's shop leaves one where its `deliver_to` says, with what was
-## ordered in it; or put one in a level by hand and give it `items` (a parcel waiting on the porch). E on it (the
-## starter's player calls use() on what it looks at): the tape is cut, its four flaps swing open in turn (the model's
-## parts: `propgen_part` hinges, in the order its `propgen_parcel` gives), what's inside is shown a moment and then goes
-## into the pocket with its own models (the Story's give: the HUD's row peeks); the box stays where it is, open and
-## empty. With `take_on_open` off, E opens it and E again takes what's inside.
-## The prefab is delivery/package.tscn: the prop generator's `parcel` (a customizable recipe: its print, its tape and its
-## label are its own pictures, PROPGEN §34). Its sounds: a knock and the box set down when it arrives, the tape, the
-## flaps.
+## unboxed (press e to unbox/add to inventory)", then "items absorbed towards the player (think minecraft drop item
+## collection) that get sucked in toward the player and the box poofs disappears, this is so we can create the illusion
+## of bigger items like shotgun fitting inside"). The laptop's shop leaves one where its `deliver_to` says with what was
+## ordered in it; or put one in a level by hand and give it `items` (a parcel waiting on the porch).
+## E on it (the starter's player calls use() on what it looks at): the tape torn, the box jumps, its four flaps burst
+## open (the model's parts: `propgen_part` hinges) and it's gone in a puff of card dust and bits. Out of the puff each
+## thing pops up at its own size (the box never has to hold it: a shotgun comes out of a shoebox), turns in the air a
+## moment, then is pulled to the player, faster as it comes, shrinking into them with a pop, and is in the pocket as it
+## arrives (the Story's give: its own model in the HUD's row). With `keep_box` the flaps open and the box stays, open and
+## empty, the things flying out of it all the same.
+## The prefab is delivery/package.tscn: the prop generator's `parcel` (a customizable recipe: its print, tape and label are
+## its own pictures, PROPGEN §34). Its sounds: a knock and the box set down when it arrives; the tape, the poof, a pop a
+## thing.
 
 signal arrived                                       ## set down where it was sent (its knock and its thud)
-signal opened                                        ## its tape cut and its flaps open
-signal unboxed(items: Array, counts: Array)          ## what was in it gone into the pocket
+signal opened                                        ## E: the tape torn and the box burst (or, `keep_box`, its flaps open)
+signal taken(item: HSShopItem, count: int)           ## a thing pulled into the player: `count` more of it in the pocket
+signal unboxed(items: Array, counts: Array)          ## all of it in the pocket (and the box, unless kept, gone)
 
 const SOUNDS := "res://addons/horrorstudio_devices/sounds/"
-const LEAD := 0.3                                    # the tape's cut before the flaps begin (s)
+const BURST := 0.2                                   # seconds from E to the puff (the squash, the stretch, the flaps flung)
+const HANG := 0.42                                   # a thing's seconds in the air before the player pulls it in
 
 @export var items: Array[HSShopItem] = []            ## what's in it: the laptop's delivery fills it, or set it by hand
 @export var counts: PackedInt32Array = []            ## how many of each, in the same order (1 where missing)
-@export var take_on_open := true                     ## E opens it and puts what's inside into the pocket; off: E opens it, E again takes them
-@export_range(0.2, 3.0) var open_secs := 0.9         ## the four flaps' swing, one after another
-@export var say_empty := "Empty."                    ## what the Story says when it's used again with nothing in it
+@export var keep_box := false                        ## off: E bursts the box and it's gone in a puff; on: its flaps open and it stays, empty
+@export_range(1, 8) var copies_max := 4              ## the most of one thing seen flying (ten pairs of batteries: four flying, the ten pocketed)
+@export_range(0.25, 4.0) var pull := 1.0             ## how hard the player pulls them in (their speed)
+@export_range(0.2, 3.0) var open_secs := 0.9         ## the flaps' swing when the box is kept
+@export var say_empty := "Empty."                    ## what the Story says when a kept box is used again
 @export_group("Sound")
 @export var sounds := true
 @export_range(-40.0, 6.0) var volume_db := -4.0
@@ -32,14 +40,16 @@ var order_number := 0                                ## the order it came for (t
 var is_open := false
 var is_empty := false
 var flaps: Array = []                                ## its flaps in the order they swing: {node, part}
-var inside := AABB()                                 ## where things go in it (its own space): the model's `propgen_inside`
+var inside := AABB()                                 ## where things were in it (its own space): the model's `propgen_inside`
 var box := AABB()                                    ## the box shut (its own space)
-var shown: Array = []                                ## the copies of what's inside, while they're seen
+var flying: Array = []                               ## what's in the air: {node, item, count, age, vel, spin, from_d, i}
+var puff: Array = []                                 ## the burst's particles (the dust, the bits)
 var _model: Node3D
-var _t := -1.0                                       # seconds since it began to open (-1: shut)
-var _taking := -1.0                                  # seconds since what's inside began to leave (-1: not yet)
-var _given := false
-var _sent_open := false
+var _body: StaticBody3D
+var _t := -1.0                                       # seconds since E (-1: shut)
+var _queue: Array = []                               # what's still to come out: {item, count, at, i}
+var _burst := false
+var _finished := false
 var _sfx := {}
 
 
@@ -119,22 +129,23 @@ func _set_flap(f: Dictionary, k: float) -> void:
 
 
 func _make_body() -> void:
-	if get_node_or_null("Body") != null:
+	_body = get_node_or_null("Body") as StaticBody3D
+	if _body != null:
 		return
-	var b := StaticBody3D.new()                       # so the player's E finds it, and it stands in the way
-	b.name = "Body"
+	_body = StaticBody3D.new()                        # so the player's E finds it, and it stands in the way
+	_body.name = "Body"
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
 	var bb := box if box.size != Vector3.ZERO else AABB(Vector3(-0.15, 0, -0.115), Vector3(0.3, 0.16, 0.23))
 	bs.size = bb.size
 	cs.shape = bs
 	cs.position = bb.get_center()
-	b.add_child(cs)
-	add_child(b)
+	_body.add_child(cs)
+	add_child(_body)
 
 
 func _make_sounds() -> void:
-	for nm in ["knock", "thud", "tape", "flaps"]:
+	for nm in ["knock", "thud", "tape", "poof", "pop", "flaps"]:
 		var p: String = SOUNDS + str(nm) + ".ogg"
 		if not ResourceLoader.exists(p):
 			continue
@@ -144,25 +155,28 @@ func _make_sounds() -> void:
 		a.volume_db = volume_db + (4.0 if nm == "knock" else 0.0)
 		a.unit_size = 4.0 if nm == "knock" else 1.5
 		a.max_distance = 30.0 if nm == "knock" else 12.0
+		a.max_polyphony = 4 if nm == "pop" else 1
 		add_child(a)
 		a.position = Vector3(0, box.end.y * 0.5, 0)
 		_sfx[nm] = a
 
 
-## one of its sounds (knock, thud, tape, flaps)
-func sound(nm: String, delay := 0.0) -> void:
+## one of its sounds (knock, thud, tape, poof, pop, flaps), `pitch` its playback rate
+func sound(nm: String, delay := 0.0, pitch := 1.0) -> void:
 	if not sounds or not _sfx.has(nm):
 		return
 	var a: AudioStreamPlayer3D = _sfx[nm]
 	if delay > 0.0:
 		get_tree().create_timer(delay, false).timeout.connect(func() -> void:
 			if is_instance_valid(a):
+				a.pitch_scale = pitch
 				a.play())
 	else:
+		a.pitch_scale = pitch
 		a.play()
 
 
-# ---- arriving, opening, taking ----------------------------------------------------------------------------------------------
+# ---- arriving, opening -------------------------------------------------------------------------------------------------------
 ## set down where it was sent: a knock (`knock`), then the box on the floor
 func arrive(knock := true) -> void:
 	if knock:
@@ -171,37 +185,40 @@ func arrive(knock := true) -> void:
 	arrived.emit()
 
 
-## E on it: shut, it opens (and what's inside goes into the pocket, `take_on_open`); open, what's still inside is taken;
-## empty, the Story says so
+## E on it: shut, it's opened and what's inside comes out to the player; a kept box used again with nothing in it: the
+## Story says so
 func use(_by: Node = null) -> void:
 	if not is_open:
 		unbox()
-	elif not is_empty and _taking < 0.0 and _t >= LEAD + open_secs:
-		take()
-	elif is_empty and say_empty != "":
+	elif is_empty and keep_box and say_empty != "":
 		var st := get_tree().get_first_node_in_group("hs_story")
 		if st != null and st.has_method("say"):
 			st.say(say_empty)
 
 
-## the tape cut, the flaps swung open in turn, what's inside seen
+## the tape torn; the box bursts in a puff (or opens, `keep_box`); what's inside comes out to the player
 func unbox() -> void:
 	if is_open:
 		return
 	is_open = true
 	_t = 0.0
 	sound("tape")
-	sound("flaps", LEAD)
-	_show_goods()
-	if shown.is_empty() and items.is_empty():
+	if keep_box:
+		sound("flaps", 0.05)
+	_queue.clear()
+	var k := 0
+	for i in items.size():                            # each thing seen as a few copies of its model, its count shared among them
+		var it: HSShopItem = items[i]
+		if it == null:
+			continue
+		var count := count_at(i)
+		var n := clampi(ceili(float(count) / float(maxi(it.count, 1))), 1, mini(copies_max, count))
+		for j in n:
+			var share := count / n + (1 if j < count % n else 0)
+			_queue.append({"item": it, "count": share, "at": (BURST if not keep_box else open_secs * 0.6) + 0.02 + 0.07 * k, "i": k})
+			k += 1
+	if _queue.is_empty():
 		is_empty = true
-
-
-## what's inside out of the box and into the pocket: each copy rises and is gone, then the Story gets them
-func take() -> void:
-	if is_empty or _taking >= 0.0:
-		return
-	_taking = 0.0
 
 
 ## how many of items[i] it holds
@@ -210,125 +227,244 @@ func count_at(i: int) -> int:
 
 
 func _process(dt: float) -> void:
-	if _t >= 0.0 and _t < LEAD + open_secs + 1.0:
-		_t += dt
-		var n := flaps.size()
-		for i in n:
-			# each flap's own stretch of the swing: the long ones first (they lie over the short ones), overlapping
-			var a := LEAD + open_secs * (0.0 if i < 2 else 0.42) + (0.06 * (i % 2))
+	if _t < 0.0 or _finished:
+		return
+	_t += dt
+	if keep_box:
+		for i in flaps.size():                         # the flaps in turn, the long ones first
+			var a := open_secs * (0.0 if i < 2 else 0.42) + 0.06 * (i % 2)
 			var k := clampf((_t - a) / (open_secs * 0.55), 0.0, 1.0)
 			_set_flap(flaps[i], 1.0 - pow(1.0 - k, 3.0))
-		if not _sent_open and _t >= LEAD + open_secs:
-			_sent_open = true
+		if _t >= open_secs * 0.6 and not _burst:
+			_burst = true
 			opened.emit()
-			if take_on_open and not is_empty:
-				take()
-	if _taking >= 0.0 and not _given:
-		_taking += dt
-		var m := shown.size()
-		for i in m:
-			var c: Node3D = shown[i]
-			if not is_instance_valid(c):
-				continue
-			var k := clampf((_taking - 0.25 - 0.07 * i) / 0.45, 0.0, 1.0)
-			var e := k * k * (3.0 - 2.0 * k)
-			c.position = c.get_meta("rest_pos") + Vector3(0, 0.24 * e, 0)
-			c.scale = c.get_meta("rest_scale") * maxf(1.0 - e, 0.02)
-		if _taking >= 0.25 + 0.07 * maxi(m - 1, 0) + 0.45:
-			_give()
+	else:
+		_bursting()
+	for q in _queue.duplicate():                      # out of the puff (or the open box), each in its turn
+		if _t >= float(q["at"]):
+			_queue.erase(q)
+			_launch(q)
+	for f in flying.duplicate():
+		_fly(f, dt)
+	if _queue.is_empty() and flying.is_empty() and _t > (BURST + 1.0 if not keep_box else open_secs + 0.2):
+		_finished = true
+		is_empty = true
+		unboxed.emit(items, Array(counts))
+		if not keep_box:
+			queue_free()
 
 
-func _give() -> void:
-	_given = true
-	for c in shown:
-		if is_instance_valid(c):
-			c.queue_free()
-	shown.clear()
-	var p := get_tree().get_first_node_in_group("hs_player")
-	for i in items.size():
-		if items[i] != null:
-			items[i].give_to(get_tree(), count_at(i), p)
-	is_empty = true
-	unboxed.emit(items, Array(counts))
-
-
-# ---- what's inside, shown ------------------------------------------------------------------------------------------------
-## copies of what's in it laid in its inside: a model an order (at most four of each), too tall laid down along its
-## length, rows across it and layers up it, all made smaller together when they don't fit
-func _show_goods() -> void:
-	var copies: Array = []
-	for i in items.size():
-		var it: HSShopItem = items[i]
-		if it == null or it.model == null:
-			continue
-		var n := clampi(ceili(float(count_at(i)) / float(maxi(it.count, 1))), 1, 4)
-		for j in n:
-			var c := HSModelSlot.of_scene(it.model)
-			if c != null:
-				copies.append(c)
-	if copies.is_empty():
+# the box's last moment: it squashes, stretches as its flaps are flung, and is gone in the puff
+func _bursting() -> void:
+	if _model == null:
 		return
-	var room := inside.grow(-0.004)
-	var sizes: Array = []
-	for c in copies:
-		var b := HSModelSlot.bounds_of(c, c)
-		if b.size.y > room.size.y * 0.92 and b.size.y > b.size.x:     # too tall: on its side along the box
-			c.rotate_z(PI * 0.5)
-			b = c.transform * HSModelSlot.bounds_of(c, c)
-		sizes.append(b)
-	var s := 1.0                                     # shrink all of them until the rows and layers fit
-	for attempt in 12:
-		if _lay(copies, sizes, room, s, false):
-			break
-		s *= 0.85
-	_lay(copies, sizes, room, s, true)
-	var all := AABB()                                # then the lot moved to the middle of its floor
-	for i in copies.size():
-		var c: Node3D = copies[i]
-		var b: AABB = sizes[i]
-		var a := AABB(c.position + b.position * s, b.size * s)
-		all = a if i == 0 else all.merge(a)
-	var shift := room.get_center() - all.get_center()
-	shift.y = 0.0
-	for c in copies:
-		c.position += shift
-		add_child(c)
-		c.set_meta("rest_pos", c.position)
-		c.set_meta("rest_scale", c.scale)
-		shown.append(c)
+	var t := _t
+	var sy := 1.0
+	var sxz := 1.0
+	if t < 0.08:
+		var k := t / 0.08
+		sy = lerpf(1.0, 0.9, k)
+		sxz = lerpf(1.0, 1.06, k)
+	elif t < BURST:
+		var k := (t - 0.08) / (BURST - 0.08)
+		sy = lerpf(0.9, 1.12, k)
+		sxz = lerpf(1.06, 0.96, k)
+	else:
+		var k := clampf((t - BURST) / 0.09, 0.0, 1.0)
+		sy = lerpf(1.12, 0.0, k)
+		sxz = lerpf(0.96, 0.0, k)
+	_model.scale = Vector3(sxz, sy, sxz)
+	var fk := clampf((t - 0.06) / 0.14, 0.0, 1.0)
+	for f in flaps:
+		_set_flap(f, 1.0 - pow(1.0 - fk, 3.0))
+	if t >= BURST and not _burst:
+		_burst = true
+		_poof()
+		opened.emit()
+	if t >= BURST + 0.09 and _model.visible:
+		_model.visible = false
 
 
-func _lay(copies: Array, sizes: Array, room: AABB, s: float, place: bool) -> bool:
-	var gap := 0.008
-	var x := room.position.x
-	var z := room.position.z
-	var y := room.position.y
-	var row_d := 0.0
-	var layer_h := 0.0
-	var fits := true
-	for i in copies.size():
-		var b: AABB = sizes[i]
-		var w := b.size.x * s
-		var d := b.size.z * s
-		var h := b.size.y * s
-		if x + w > room.end.x + 1e-4 and x > room.position.x:    # the next row
-			x = room.position.x
-			z += row_d + gap
-			row_d = 0.0
-		if z + d > room.end.z + 1e-4 and z > room.position.z:    # the next layer up
-			z = room.position.z
-			x = room.position.x
-			y += layer_h + gap
-			layer_h = 0.0
-			row_d = 0.0
-		if w > room.size.x + 1e-4 or d > room.size.z + 1e-4 or y + h > room.end.y + 0.02:
-			fits = false
-		if place:
-			var c: Node3D = copies[i]
-			c.scale = Vector3.ONE * s
-			# its box's corner to (x, y, z): the copy's origin moved by where its box starts
-			c.position = Vector3(x, y, z) - b.position * s
-		x += w + gap
-		row_d = maxf(row_d, d)
-		layer_h = maxf(layer_h, h)
-	return fits
+func _poof() -> void:
+	sound("poof")
+	if _body != null:                                 # nothing there to walk into or use any more
+		_body.collision_layer = 0
+		_body.collision_mask = 0
+	var c := box.get_center()
+	var dust := CPUParticles3D.new()                  # card dust, rising a little and spreading
+	dust.name = "Poof"
+	dust.one_shot = true
+	dust.explosiveness = 0.92
+	dust.amount = 22
+	dust.lifetime = 0.9
+	dust.local_coords = false
+	var q := QuadMesh.new()
+	q.size = Vector2(0.24, 0.24)
+	var m := StandardMaterial3D.new()
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	m.vertex_color_use_as_albedo = true
+	m.albedo_texture = _soft_dot()
+	m.roughness = 1.0
+	m.metallic_specular = 0.0
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	q.material = m
+	dust.mesh = q
+	dust.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	dust.emission_box_extents = box.size * 0.45
+	dust.direction = Vector3.UP
+	dust.spread = 180.0
+	dust.initial_velocity_min = 0.5
+	dust.initial_velocity_max = 1.4
+	dust.gravity = Vector3(0, 0.3, 0)
+	dust.damping_min = 2.5
+	dust.damping_max = 4.0
+	dust.angle_min = -180.0
+	dust.angle_max = 180.0
+	dust.angular_velocity_min = -90.0
+	dust.angular_velocity_max = 90.0
+	dust.scale_amount_min = 0.8
+	dust.scale_amount_max = 1.6
+	var sc := Curve.new()
+	sc.add_point(Vector2(0.0, 0.45))
+	sc.add_point(Vector2(0.3, 1.0))
+	sc.add_point(Vector2(1.0, 1.5))
+	dust.scale_amount_curve = sc
+	var g := Gradient.new()
+	g.set_color(0, Color(0.72, 0.6, 0.46, 0.6))
+	g.set_color(1, Color(0.55, 0.52, 0.48, 0.0))
+	dust.color_ramp = g
+	add_child(dust)
+	dust.position = c
+	var bits := CPUParticles3D.new()                  # torn bits of card flung out, gone before they'd land
+	bits.name = "Bits"
+	bits.one_shot = true
+	bits.explosiveness = 1.0
+	bits.amount = 10
+	bits.lifetime = 0.55
+	bits.local_coords = false
+	var bm := BoxMesh.new()
+	bm.size = Vector3(0.035, 0.003, 0.025)
+	var bmat := StandardMaterial3D.new()
+	bmat.albedo_color = Color(0.71, 0.53, 0.36)
+	bmat.roughness = 0.9
+	bm.material = bmat
+	bits.mesh = bm
+	bits.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	bits.emission_box_extents = box.size * 0.35
+	bits.direction = Vector3.UP
+	bits.spread = 70.0
+	bits.initial_velocity_min = 1.2
+	bits.initial_velocity_max = 2.6
+	bits.gravity = Vector3(0, -9.8, 0)
+	bits.particle_flag_rotate_y = true
+	bits.angle_min = -180.0
+	bits.angle_max = 180.0
+	bits.angular_velocity_min = -600.0
+	bits.angular_velocity_max = 600.0
+	var bc := Curve.new()
+	bc.add_point(Vector2(0.0, 1.0))
+	bc.add_point(Vector2(0.6, 1.0))
+	bc.add_point(Vector2(1.0, 0.0))
+	bits.scale_amount_curve = bc
+	add_child(bits)
+	bits.position = c
+	puff = [dust, bits]
+	dust.emitting = true
+	bits.emitting = true
+
+
+func _soft_dot() -> Texture2D:
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 1, 1, 1))
+	g.set_color(1, Color(1, 1, 1, 0))
+	g.add_point(0.45, Color(1, 1, 1, 0.55))
+	var t := GradientTexture2D.new()
+	t.gradient = g
+	t.fill = GradientTexture2D.FILL_RADIAL
+	t.fill_from = Vector2(0.5, 0.5)
+	t.fill_to = Vector2(1.0, 0.5)
+	t.width = 64
+	t.height = 64
+	return t
+
+
+# ---- what's inside, out to the player ---------------------------------------------------------------------------------------
+# a thing out of the puff (or the box): a copy of its own model at its own size, popping up and out, turning
+func _launch(q: Dictionary) -> void:
+	var it: HSShopItem = q["item"]
+	var node: Node3D = HSModelSlot.of_scene(it.model) if it.model != null else null
+	if node == null:                                  # nothing to see: straight into the pocket
+		_absorbed({"node": null, "item": it, "count": q["count"], "i": q["i"]})
+		return
+	node.name = "Out_" + it.id
+	node.top_level = true
+	add_child(node)
+	var mid := HSModelSlot.bounds_of(node, node).get_center()   # its middle in its own space: it turns and sizes about it
+	var from := global_transform * box.get_center()
+	if keep_box:
+		from = global_transform * Vector3(inside.get_center().x, inside.end.y, inside.get_center().z)
+	node.global_transform = Transform3D(Basis() * 0.3, from - mid * 0.3)
+	var i := int(q["i"])
+	var a := TAU * float(i) * 0.38 + randf_range(-0.4, 0.4)
+	var out := randf_range(0.55, 1.05)
+	var vel := Vector3(cos(a) * out, randf_range(2.4, 3.0), sin(a) * out)
+	flying.append({"node": node, "item": it, "count": q["count"], "age": 0.0, "vel": vel, "s": 0.3,
+			"spin": randf_range(2.2, 3.6) * (1.0 if i % 2 == 0 else -1.0), "mid": mid, "from_d": -1.0, "pulled": 0.0, "i": i})
+
+
+# where the player takes things in: a little under the eye and in front of it (their chest, their hands)
+func _target() -> Vector3:
+	var p := get_tree().get_first_node_in_group("hs_player") as Node3D
+	var eye: Node3D = p.get_node_or_null("Eye") as Node3D if p != null else null
+	if eye == null:
+		eye = get_viewport().get_camera_3d()
+	if eye == null:
+		return global_position + Vector3(0, 2.0, 0)
+	var b := eye.global_basis
+	return eye.global_position - b.y * 0.28 - b.z * 0.12
+
+
+func _fly(f: Dictionary, dt: float) -> void:
+	var node: Node3D = f["node"]
+	if not is_instance_valid(node):
+		flying.erase(f)
+		return
+	f["age"] = float(f["age"]) + dt
+	var age: float = f["age"]
+	var vel: Vector3 = f["vel"]
+	var mid: Vector3 = f["mid"]
+	var rot := node.global_basis.orthonormalized()
+	var s: float = f["s"]
+	var at := node.global_position + rot * (mid * s)  # its middle now
+	if age < HANG:                                    # out of the puff: up, out, turning, growing to its own size
+		vel += Vector3(0, -9.8, 0) * dt
+		var k := clampf(age / 0.18, 0.0, 1.0)
+		s = lerpf(0.3, 1.0, 1.0 - pow(1.0 - k, 3.0))
+	else:                                             # pulled to the player, faster as it comes, shrinking into them
+		var to := _target() - at
+		var d := to.length()
+		if float(f["from_d"]) < 0.0:
+			f["from_d"] = maxf(d, 0.3)
+		f["pulled"] = float(f["pulled"]) + dt
+		var speed := lerpf(1.5, 10.0, clampf(float(f["pulled"]) / 0.45, 0.0, 1.0)) * pull
+		vel = vel.lerp(to.normalized() * speed, clampf(dt * 9.0, 0.0, 1.0))
+		s = clampf(d / float(f["from_d"]), 0.06, 1.0)
+		if d < 0.2 or float(f["pulled"]) > 1.6:
+			node.queue_free()
+			flying.erase(f)
+			_absorbed(f)
+			return
+	f["vel"] = vel
+	f["s"] = s
+	rot = Basis(Vector3.UP, float(f["spin"]) * dt) * rot                 # turned and sized about its middle
+	var at1 := at + vel * dt
+	node.global_transform = Transform3D(rot * s, at1 - rot * (mid * s))
+
+
+# a thing taken in: into the pocket, with a pop a little higher each time
+func _absorbed(f: Dictionary) -> void:
+	var it: HSShopItem = f["item"]
+	sound("pop", 0.0, minf(1.0 + 0.07 * float(f["i"]), 1.6))
+	it.give_to(get_tree(), int(f["count"]), get_tree().get_first_node_in_group("hs_player"))
+	taken.emit(it, int(f["count"]))

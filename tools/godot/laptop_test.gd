@@ -8,8 +8,9 @@ extends SceneTree
 ## laptop's `sells`), a thing locked until a task's done (a ?, not to be ordered, hidden with show_locked off; the task
 ## ticked: NEW, ordered), Esc back to the room, the screen drawing only while near and seen, a $20 note picked up, a shut
 ## laptop opening before the view goes in, and delivery (DECISIONS 2026-11-10, last): two orders sent to the doorstep,
-## waiting while it's seen, two parcels side by side once it isn't; E on one: its tape and flaps, what's inside seen in it,
-## then in the pocket; E on the other with take_on_open off: opened, then taken. Ends "LAPTOP ok".
+## waiting while it's seen, two parcels side by side once it isn't; E on one: the box bursts in a puff and the soda pops out
+## of it, then is pulled into the player and into the pocket; the other kept (keep_box): its flaps open, the candle out of
+## it, the box left empty; a parcel placed by hand with a shotgun three times its size in it. Ends "LAPTOP ok".
 ##   godot --headless --fixed-fps 60 --path <project> -s res://laptop_test.gd
 
 const Scene := preload("res://laptop_scene.gd")
@@ -399,13 +400,15 @@ func _run() -> void:
 	var p1x: HSPackage = pk[1]
 	var apart := p0.global_position.distance_to(p1x.global_position)
 	if p0.items.size() != 1 or p0.items[0].id != "soda" or p1x.items[0].id != "candle" or p1x.order_number != p0.order_number + 1 \
-			or absf(apart - (p0.box.size.x + 0.05)) > 0.01 or absf(p0.global_position.y - spot.global_position.y) > 0.002 or p0._sfx.size() != 4:
+			or absf(apart - (p0.box.size.x + 0.05)) > 0.01 or absf(p0.global_position.y - spot.global_position.y) > 0.002 or p0._sfx.size() != 6:
 		return fail("the parcels: %s and %s, orders %d and %d, %.3f m apart, at %.3f m, %d sounds" % [p0.items, p1x.items, p0.order_number, p1x.order_number,
 				apart, p0.global_position.y, p0._sfx.size()])
 	ok("due while the doorstep was in view: it waited; looked away: two parcels left side by side on it (%.2f m apart, the soda's order #%d and the candle's), a knock and the box set down" % [apart, p0.order_number])
-	# ---- E on the first: the tape, the flaps, what's inside seen, then in the pocket
+	# ---- E on the first: the box bursts in a puff; the soda out of it at its own size, then pulled into the player
 	var unboxed: Array = []
+	var took: Array = []
 	p0.unboxed.connect(func(a: Array, b: Array) -> void: unboxed.append([a, b]))
+	p0.taken.connect(func(it_: HSShopItem, n_: int) -> void: took.append([it_.id, n_]))
 	pl.global_position = Vector3(0.7, 0.0, p0.global_position.z)
 	pl.rotation = Vector3.ZERO
 	eye.look_at(p0.global_position + Vector3(0, 0.12, 0), Vector3.UP)
@@ -414,38 +417,82 @@ func _run() -> void:
 	await frames(2)
 	if u != p0 or not p0.is_open:
 		return fail("E on the parcel: the player's E found %s, open %s" % [u, p0.is_open])
-	await secs(HSPackage.LEAD + p0.open_secs + 0.15)
+	await secs(HSPackage.BURST + 0.12)
 	var worst_flap := 0.0
 	for fp in p0.flaps:
 		var part: Dictionary = fp["part"]
 		var want := float(part["open"]) - float(part["built"])
 		var turned := rad_to_deg((fp["node"] as Node3D).basis.get_rotation_quaternion().get_angle())
 		worst_flap = maxf(worst_flap, absf(turned - want))
-	var seen_inside: bool = p0.shown.size() == 1 and p0.box.grow(0.005).has_point(HSModelSlot.bounds_of(p0.shown[0], p0).get_center())
-	if p0.flaps.size() != 4 or worst_flap > 1.0 or not seen_inside or st.call("count_of", "soda") != soda0:
-		return fail("opening: %d flaps, the worst %.1f degrees off open; the soda seen in it %s; in the pocket already %d" % [p0.flaps.size(), worst_flap, seen_inside,
-				st.call("count_of", "soda")])
-	await secs(1.0)
-	if st.call("count_of", "soda") != soda0 + 1 or not p0.is_empty or unboxed.size() != 1 or not p0.shown.is_empty() or hud.get("inv_models").get("soda") == null:
-		return fail("unboxed: the soda %d in the pocket, empty %s, said %d times, the HUD's row %s" % [st.call("count_of", "soda"), p0.is_empty, unboxed.size(),
-				hud.get("inv_models").get("soda")])
-	pl.call("use")
-	await frames(2)
-	if str((st.get("_line") as Label).text) != "Empty.":
-		return fail("E on it empty: the Story said %s" % (st.get("_line") as Label).text)
-	ok("E on it: the tape cut, its four flaps swung open in turn (the long ones first, within %.1f degrees), the soda seen inside, then into the pocket with its model (the HUD's row); E again: Empty." % worst_flap)
-	# ---- E on the other with take_on_open off: opened, then E takes what's in it
-	p1x.take_on_open = false
+	if p0.flaps.size() != 4 or worst_flap > 1.0 or p0._model.visible or p0._body.collision_layer != 0 or p0.puff.size() != 2 \
+			or not (p0.puff[0] as CPUParticles3D).emitting or p0.flying.size() != 1 or st.call("count_of", "soda") != soda0:
+		return fail("the burst: %d flaps, the worst %.1f degrees off open; the box seen %s, solid %d; the puff %d; flying %d; in the pocket already %d" % [p0.flaps.size(),
+				worst_flap, p0._model.visible, p0._body.collision_layer, p0.puff.size(), p0.flying.size(), st.call("count_of", "soda")])
+	var fl0: Dictionary = p0.flying[0]
+	var can: Node3D = fl0["node"]
+	var y0 := (p0.global_transform * p0.box.get_center()).y   # where it came out: the box's middle
+	await secs(0.25)                                   # in the air, out of the puff, at its own size
+	var risen := (can.global_transform * (fl0["mid"] as Vector3)).y - y0 if is_instance_valid(can) else -1.0
+	var grown := float(fl0["s"])
+	await secs(0.08)                                   # then pulled in
+	var d_a := (can.global_transform * (fl0["mid"] as Vector3)).distance_to(p0._target()) if is_instance_valid(can) else 0.0
+	await secs(0.12)
+	var d_b := (can.global_transform * (fl0["mid"] as Vector3)).distance_to(p0._target()) if is_instance_valid(can) else 0.0
+	var shrunk := float(fl0["s"])
+	if risen < 0.1 or grown < 0.95 or d_b >= d_a or shrunk >= grown:
+		return fail("the soda's flight: risen %.2f m out of the puff, its size %.2f, then %.2f m from the player and %.2f m later, its size %.2f" % [risen, grown, d_a, d_b, shrunk])
+	await secs(1.2)
+	if st.call("count_of", "soda") != soda0 + 1 or took != [["soda", 1]] or unboxed.size() != 1 or is_instance_valid(p0) or hud.get("inv_models").get("soda") == null:
+		return fail("taken: the soda %d in the pocket (was %d), taken %s, unboxed %d, the parcel still there %s, the HUD's row %s" % [st.call("count_of", "soda"), soda0,
+				took, unboxed.size(), is_instance_valid(p0), hud.get("inv_models").get("soda")])
+	ok("E on it: the tape torn, the box squashed and burst, its flaps flung open (within %.1f degrees) and gone in a puff of card dust and bits, nothing left to walk into; the soda up %.2f m out of the puff at its own size, then pulled to the player (%.2f m to %.2f m) shrinking into them: in the pocket with its model (the HUD's row), the parcel gone"
+			% [worst_flap, risen, d_a, d_b])
+	# ---- the other kept: its flaps open, the candle out of it to the player, the box left open and empty
+	p1x.keep_box = true
 	pl.global_position = Vector3(0.7, 0.0, p1x.global_position.z)
 	eye.look_at(p1x.global_position + Vector3(0, 0.12, 0), Vector3.UP)
 	await frames(3)
 	pl.call("use")
-	await secs(HSPackage.LEAD + p1x.open_secs + 0.8)
-	var kept: bool = p1x.is_open and not p1x.is_empty and p1x.shown.size() == 1 and st.call("count_of", "candle") == candle0
+	await secs(p1x.open_secs + 0.15)
+	var worst_kept := 0.0
+	for fp in p1x.flaps:
+		var part: Dictionary = fp["part"]
+		worst_kept = maxf(worst_kept, absf(rad_to_deg((fp["node"] as Node3D).basis.get_rotation_quaternion().get_angle()) - (float(part["open"]) - float(part["built"]))))
+	var out_of_it: bool = not p1x.flying.is_empty()
+	await secs(1.6)
+	if worst_kept > 1.0 or not out_of_it or not is_instance_valid(p1x) or not p1x._model.visible or not p1x.is_empty or st.call("count_of", "candle") != candle0 + 1:
+		return fail("keep_box: its flaps %.1f degrees off open, the candle out %s; then the box there %s and seen %s, empty %s, the candle %d (was %d)" % [worst_kept, out_of_it,
+				is_instance_valid(p1x), p1x._model.visible if is_instance_valid(p1x) else false, p1x.is_empty if is_instance_valid(p1x) else false,
+				st.call("count_of", "candle"), candle0])
 	pl.call("use")
-	await secs(1.0)
-	if not kept or not p1x.is_empty or st.call("count_of", "candle") != candle0 + 1:
-		return fail("take_on_open off: opened and kept %s; E again: empty %s, the candle %d (was %d)" % [kept, p1x.is_empty, st.call("count_of", "candle"), candle0])
-	ok("take_on_open off: E opened it and the candle stayed inside; E again took it into the pocket")
-	print("LAPTOP ok (%d steps: the prefab, E, the boot, clicks through the glass, pages, an order into the pocket and the HUD's row, too dear, sold out, a thing added by file, what's for sale and locked, Esc and E back, idle drawing, cash picked up, a shut lid, delivery and unboxing)" % notes.size())
+	await frames(2)
+	if str((st.get("_line") as Label).text) != "Empty.":
+		return fail("E on the kept box empty: the Story said %s" % (st.get("_line") as Label).text)
+	ok("keep_box: its flaps swung open in turn (within %.1f degrees), the candle out of it and pulled into the player, the box left open and empty; E again: Empty." % worst_kept)
+	# ---- a shotgun out of a 30 cm parcel (the user's: "the illusion of bigger items like shotgun fitting inside")
+	var gun := HSShopItem.new()
+	gun.id = "shotgun"
+	gun.title = "Double-barrel shotgun"
+	gun.model = load("res://addons/horrorstudio_weapons/models/shotgun_double.glb")
+	var pk2: HSPackage = (load("res://addons/horrorstudio_devices/delivery/package.tscn") as PackedScene).instantiate()
+	pk2.items.assign([gun])
+	(R["world"] as Node3D).add_child(pk2)
+	pk2.global_position = Vector3(0.0, 0.0, 1.2)
+	var box_x: float = pk2.box.size.x
+	pl.global_position = Vector3(0.0, 0.0, 0.42)
+	pl.rotation = Vector3.ZERO
+	eye.look_at(pk2.global_position + Vector3(0, 0.1, 0), Vector3.UP)
+	await frames(3)
+	var u2: Node = pl.call("use")
+	await secs(HSPackage.BURST + 0.45)
+	var long := 0.0
+	if not pk2.flying.is_empty():
+		var g0: Dictionary = pk2.flying[0]
+		long = HSModelSlot.bounds_of(g0["node"], g0["node"]).get_longest_axis_size() * float(g0["s"])
+	await secs(1.6)
+	if u2 != pk2 or long < box_x * 2.5 or st.call("count_of", "shotgun") != 1 or is_instance_valid(pk2):
+		return fail("a shotgun from a parcel: E found it %s; in the air %.2f m long out of a %.2f m box; in the pocket %d; the parcel still there %s" % [u2 == pk2, long, box_x,
+				st.call("count_of", "shotgun"), is_instance_valid(pk2)])
+	ok("a parcel placed by hand with a shotgun in it: out of the puff %.2f m long from a %.2f m box, pulled into the player, in the pocket" % [long, box_x])
+	print("LAPTOP ok (%d steps: the prefab, E, the boot, clicks through the glass, pages, an order into the pocket and the HUD's row, too dear, sold out, a thing added by file, what's for sale and locked, Esc and E back, idle drawing, cash picked up, a shut lid, delivery, the burst and the pull, a kept box, a shotgun from a parcel)" % notes.size())
 	quit(0)

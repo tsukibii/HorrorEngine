@@ -249,18 +249,27 @@ whatever its <b>Needs</b> say.</div>
 <figure><img src="img/parcel_door.jpg" width="1600" height="900" alt="The office's door behind the desk, a parcel left on the mat before it under the door's light"><figcaption>Left on the mat while you were at the screen.</figcaption></figure>
 <figure><img src="img/parcel_close.jpg" width="1600" height="900" alt="The parcel close: NIGHT-MART's crescent and name on its front, packing tape along the seam and down the side printed with the shop's name, a shipping label on top to OCCUPANT"><figcaption>The parcel: the shop's print, its tape, its label. All of it yours to change in the prop generator (<code>parcel</code>).</figcaption></figure>
 </div>
-<p><b><kbd>E</kbd> on it unboxes it</b>: the tape is cut, its four flaps swing open (the long ones first), what's inside
-is there a moment, then it goes into the pocket with its own models and the HUD's row comes up. The box stays, open and
-empty; <kbd>E</kbd> on it again: "Empty."</p>
+<p><b><kbd>E</kbd> on it unboxes it</b>, the way a game picks up what's dropped: the tape is torn, the box jumps, its
+flaps burst open and it's gone in a puff of card dust and torn bits. Out of the puff each thing pops up <b>at its own
+size</b>, turns in the air a moment, then is pulled into you, faster as it comes and shrinking as it nears, with a pop,
+and is in the pocket as it arrives (the HUD's row comes up with its model). Nothing is ever fitted into the box, so it
+can hold anything: here a soda and a shotgun three times its length.</p>
 <div class="pair">
-<figure><img src="img/unbox_flaps.jpg" width="1600" height="900" alt="The parcel from above as its flaps swing open"><figcaption>The flaps swinging open.</figcaption></figure>
-<figure><img src="img/unbox.jpg" width="1600" height="900" alt="The parcel open from above with the soda can lying inside"><figcaption>The soda inside, a moment before it's yours.</figcaption></figure>
+<figure><img src="img/unbox_burst.jpg" width="1600" height="900" alt="From the player's eye: the parcel gone in a puff of card dust, the soda and the shotgun coming out of it"><figcaption>E: the box bursts in a puff.</figcaption></figure>
+<figure><img src="img/unbox_side.jpg" width="1600" height="900" alt="From the side: the double-barrel shotgun at its full length and the soda can in the air over the puff where the box was"><figcaption>Out of it at their own sizes: a 1.08 m shotgun from a 0.31 m box.</figcaption></figure>
 </div>
-<figure><img src="img/unboxed.jpg" width="1600" height="900" alt="The parcel open and empty; the HUD's row at the bottom with the soda's model"><figcaption>Unboxed: the soda in the pocket, the box left empty.</figcaption></figure>
+<div class="pair">
+<figure><img src="img/unbox_pull.jpg" width="1600" height="900" alt="From the player's eye: the shotgun and the soda pulled toward the camera, shrinking"><figcaption>Pulled into you, shrinking as they come.</figcaption></figure>
+<figure><img src="img/unboxed.jpg" width="1600" height="900" alt="The parcel gone from the mat; the HUD's row at the bottom with the shotgun's model"><figcaption>Taken: both in the pocket, the box gone.</figcaption></figure>
+</div>
+<table class="keys">
+  <tr><td><b>Keep Box</b></td><td>off: the box bursts and is gone; on: its flaps open, the things fly out of it to you all the same, and it stays, open and empty (<kbd>E</kbd> on it again: "Empty.")</td></tr>
+  <tr><td><b>Pull</b></td><td>how hard you pull them in (1: about half a second from the top of their hop)</td></tr>
+  <tr><td><b>Copies Max</b></td><td>the most of one thing you see flying (ten pairs of batteries: four fly, all ten go in the pocket)</td></tr>
+</table>
 <div class="tip"><b>A parcel by hand</b>: drag <code>addons/horrorstudio_devices/delivery/package.tscn</code> into a level and give
-its <b>Items</b> (HSShopItems) and <b>Counts</b>: a parcel waiting on the porch when the night begins. <b>Take On Open</b>
-off: <kbd>E</kbd> opens it, <kbd>E</kbd> again takes what's inside. Your own box: the laptop's <b>Package</b>, any scene
-with <span class="node">HSPackage</span> on it.</div>
+its <b>Items</b> (HSShopItems) and <b>Counts</b>: a parcel waiting on the porch when the night begins, with anything in it.
+Your own box: the laptop's <b>Package</b>, any scene with <span class="node">HSPackage</span> on it.</div>
 </section>
 
 <section id="cash">
@@ -321,7 +330,8 @@ $Laptop.lid_open = false                   # shut (E opens it again)
 $Laptop.place_order(load("res://shop/lighter.tres"), 1)   # an order without the screen: {ok, number, total, where, eta}
 $Laptop.unlock("shells")                   # a locked thing opened up, whatever its Needs say
 $Laptop.delivered.connect(func(parcel): print("a parcel at the door"))
-$Parcel.unboxed.connect(func(items, counts): print("opened"))
+$Parcel.taken.connect(func(item, count): print(count, " ", item.title, " pulled in"))
+$Parcel.unboxed.connect(func(items, counts): print("all of it taken"))
 
 # a tab of your own beside HOME, ORDER and LOG (any Control)
 $Laptop.term.add_tab("MAIL", preload("res://mail_tab.tscn").instantiate())
@@ -347,10 +357,12 @@ $Story.give("key_304", "Room 304's key", model)        $Story.count_of("batterie
   <li><b>No red</b>: a refusal is said, with a low buzz; the terminal stays one green.</li>
   <li><b>A parcel is never seen arriving</b>: it waits while the place is in view (behind a wall it can come). Its
   flaps swing by the parts the prop generator gave its model, so a parcel of your own design opens the same.</li>
+  <li><b>Nothing is ever fitted into a parcel</b>: what's in it comes out of the puff at its own size and flies to
+  you, so it can hold anything, a shotgun or a door key.</li>
   <li><b>A locked thing never shows what it is</b>: no model, no name, no price, until its <b>Needs</b> hold.</li>
   <li><b>Its sounds are made in code</b> (<code>tools/device_sounds.py</code>): a blip, a tick, keys, the order's three notes,
-  the refusal's buzz, the boot, the lid, the coil's hum; a parcel's knock, its thud, the tape and the flaps. Turn them
-  off with <b>Sounds</b>.</li>
+  the refusal's buzz, the boot, the lid, the coil's hum; a parcel's knock, its thud, the tape, its poof and a pop for
+  each thing pulled in. Turn them off with <b>Sounds</b>.</li>
 </ul>
 </section>
 

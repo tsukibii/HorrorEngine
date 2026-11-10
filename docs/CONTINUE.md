@@ -65,6 +65,11 @@ items, create a next page ... prev and next page ... [2]"), built:
   there), NEW once unlocked; `unlock(id)` from a script.
 - **Pages**: the Order tab six cards a page (`page_size`), a category a page, `< PREV`, `1 [2] 3`, `NEXT >`, the arrow
   keys. LAPTOP now 18 steps; the guide's new sections (pages, locked, delivery) with nineteen pictures.
+- **Unboxing as a pickup** (the user, after: "items absorbed towards the player (think minecraft drop item collection)
+  ... and the box poofs disappears ... the illusion of bigger items like shotgun fitting inside"): E bursts the parcel in
+  a puff of card dust and bits, each thing pops out at its own size, hangs a moment, is pulled into the player shrinking
+  with a pop and pocketed as it arrives; the parcel freed; `keep_box` leaves it open and empty. LAPTOP 19 steps (a shotgun
+  out of a parcel by hand); the guide's unboxing pictures.
 
 **Next, if the user wants it**: their eye on it in their own rooms and on their tape (its brightness, the green, the rain,
 how close the view goes; the parcel's print and where it's left); a courier's steps and a doorbell for the delivery, a

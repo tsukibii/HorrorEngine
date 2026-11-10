@@ -6,7 +6,8 @@ still, the user's `laptop`: "when a player interacts with it the camera zooms in
 the actual model in the slot that's visible ... make it so its easy to add items ... a preset scene (godot prefab)
 object ... the typical green matrix style terminal look"; DECISIONS 2026-11-10, last: a place to deliver to and a
 parcel to unbox with E, what's for sale, things unlocked by quests and facts shown as a ? till then, pages not
-scrolling). `tools/godot_byhand.py` copies `addons/horrorstudio_devices/`
+scrolling; then: what's in a parcel flies to the player as in Minecraft and the box poofs away, so a shotgun can come out
+of a shoebox). `tools/godot_byhand.py` copies `addons/horrorstudio_devices/`
 into every project made by hand and enables it. Needs the UI plugin beside it (`HSModelSlot`, `HSHud`). The export and
 the Director's projects don't copy it yet.
 
@@ -24,9 +25,9 @@ the Director's projects don't copy it yet.
 | `terminal/phosphor.gdshader` | a slot's model in the green: its light lifted (`gain`, a curve) and mapped paper to ink to hot, its outline lit from the alpha's edge, the rows |
 | `shop/item.gd`, `shop/catalog.gd` | `HSShopItem` (id, title, about, price, count, stock, category, model, model_turn, max_per_order; For sale: `for_sale`, `needs` (the starter Story's `holds` words), `show_locked`, `locked_text`; `name_of()`, `give_to(tree, n, player)`: into the pocket by the Story's `give(id, title, model copy, n)`, an older Story's `give(id)` n times, batteries the flashlight's `add_spare`), `HSShopCatalog` (store, currency, items, folder; `all_items()`: the list then the folder's, each id once, grouped by category; `scan(dir)` through `ResourceLoader.list_directory`, so an export's remapped files are found) |
 | `shop/catalog.tres`, `shop/items/*.tres`, `shop/models/*.glb` | the plugin's own six (NIGHT-MART): batteries, candle, painkillers (stock 2), water, soda, burger (stock 3); their models the prop generator's at 512 px |
-| `delivery/package.gd`, `delivery/package.tscn` | `HSPackage` (a Node3D; the parcel prefab: `Model` the parcel glb): `items` (Array[HSShopItem]), `counts`, `take_on_open`, `open_secs`, `say_empty`, sounds; `_find` (the hinge parts by their `propgen_part` extras, in `propgen_parcel`'s `order`; `inside` from `propgen_inside` through the nodes' transforms; `box` the model shut), `_make_body` (a StaticBody3D box: E finds it), `arrive(knock)` (knock, then thud), `use()` (shut: `unbox()`; open with things: `take()`; empty: the Story's `say`), `unbox()` (the tape, the flaps from `LEAD` in turn, the long ones first, each over `open_secs` * 0.55 eased; `_show_goods`: a copy of each thing's model an order, at most four, too tall laid along x, rows and layers in `inside`, shrunk together to fit, moved to the middle of its floor), `take()` (the copies rise 0.24 m and shrink, then `_give`: each item's `give_to`, `is_empty`, `unboxed`). package.tscn written by Godot (`tools/godot/devices_assets.gd --only=package`) |
+| `delivery/package.gd`, `delivery/package.tscn` | `HSPackage` (a Node3D; the parcel prefab: `Model` the parcel glb): `items` (Array[HSShopItem]), `counts`, `keep_box`, `copies_max`, `pull`, `open_secs` (a kept box's flaps), `say_empty`, sounds; `_find` (the hinge parts by their `propgen_part` extras, in `propgen_parcel`'s `order`; `inside` from `propgen_inside` through the nodes' transforms; `box` the model shut), `_make_body` (a StaticBody3D box: E finds it), `arrive(knock)` (knock, then thud), `use()` (shut: `unbox()`; a kept box empty: the Story's `say`), `unbox()` (the tape; `_queue` the copies to come out: a copy of each thing's model an order, at most `copies_max`, its count shared among them), `_process`: **the burst** (`_bursting`: the Model squashed 0 to 0.08 s, stretched to `BURST` 0.2 s with its flaps flung open, then shrunk to nothing in 0.09 s and hidden; `_poof`: the body's layers 0, the `puff`, two CPUParticles3D: card dust (soft billboards from `_soft_dot`, a GradientTexture2D, rising a little, growing, fading) and card bits (flung, spinning, gone before they'd land), `opened`) or with `keep_box` the flaps in turn over `open_secs`; each queued copy `_launch`ed at its time (top level, its middle at the box's middle, 0.3 of its size, a velocity up and out round a fan, a spin), `_fly`: up under gravity growing to its own size for `HANG` 0.42 s, then pulled to `_target()` (a little under and in front of the player's Eye), faster as it comes (1.5 to 10 m/s over 0.45 s, times `pull`), shrunk with the distance left, turned and sized about its own middle; within 0.2 m (or after 1.6 s) `_absorbed`: the pop (a little higher each time), the item's `give_to` with its share, `taken`; all of it in and the puff done: `unboxed`, then gone (`queue_free`) unless kept. package.tscn written by Godot (`tools/godot/devices_assets.gd --only=package`) |
 | `models/` | `laptop.glb`, `computer_mouse.glb`, `parcel.glb` (the prop generator's `laptop`, `computer_mouse`, `parcel` at 1024: copy from `Saved/Props/<name>/` when they're made again) |
-| `sounds/` | `tools/device_sounds.py` writes them: blip, tick, key, order, error, boot, wake, sleep, hum (a loop); the parcel's knock, thud, tape, flaps |
+| `sounds/` | `tools/device_sounds.py` writes them: blip, tick, key, order, error, boot, wake, sleep, hum (a loop); the parcel's knock, thud, tape, poof, pop (a thing taken in), flaps (a kept box) |
 | `fonts/` | VT323-Regular.ttf and its OFL.txt |
 | `icons/` | laptop.svg, item.svg, catalog.svg, package.svg |
 
@@ -44,6 +45,8 @@ the Director's projects don't copy it yet.
 - **The picture is placed by the screen's own geometry and sockets**, never by numbers for this model.
 - **A parcel is never seen arriving** (`when_unseen`), and it's the prop generator's (a customizable recipe, PROPGEN
   §34: no one's brand on it); its flaps swing by its own parts' extras, never by numbers for this box.
+- **What's in a parcel is never fitted into it** (the user's "the illusion of bigger items like shotgun fitting inside"):
+  it comes out of the puff at its own size and is pulled into the player; nothing is shown inside the box.
 - **What's for sale and what's locked are the things' own files** (`for_sale`, `needs`) and a laptop's `sells`; a locked
   thing is a ? (never its model or its name) until its needs hold.
 
@@ -59,8 +62,11 @@ pocket, the flashlight's spares, the HSHud's row with the model, the order's num
 by a file in the catalog's folder; for_sale off, a laptop's sells, a thing needing a task a ? (not to be ordered, hidden
 with show_locked off), the task ticked: NEW and ordered; Esc back; drawn asleep near, not far; a $20 note picked up; a
 shut laptop opening before the view goes in; E leaving; delivery: two orders on their way, waiting while the doorstep's
-seen, two parcels side by side once it isn't, E on one (its flaps at their open angles, the soda inside, then in the
-pocket, Empty.), take_on_open off (opened, then taken). `--pictures` (`laptop_shots.gd`, xvfb, 1600 x 900): room, zoom,
-boot, home, order, ordered, locked, unlocked, declined, close, pocket, shut, order_tape, sent, parcel_door, parcel_close,
-unbox_flaps, unbox, unboxed into `guides/laptop/img/`. Also after a change: GDUI (HSModelSlot is the HUD's), FIRSTGAME
+seen, two parcels side by side once it isn't, E on one (the burst: its flaps flung open, the box gone, nothing solid, the
+puff; the soda up out of it at its own size, then pulled nearer the player and shrinking; in the pocket, `taken`,
+`unboxed`, the parcel freed), `keep_box` (its flaps open in turn, the candle out of it, the box left; Empty.), a parcel
+placed by hand with the weapons plugin's shotgun in it (1.08 m in the air out of a 0.31 m box, into the pocket).
+`--pictures` (`laptop_shots.gd`, xvfb, 1600 x 900): room, zoom, boot, home, order, ordered, locked, unlocked, declined,
+close, pocket, shut, order_tape, sent, parcel_door, parcel_close, unbox_burst, unbox_side, unbox_pull, unboxed into
+`guides/laptop/img/`. Also after a change: GDUI (HSModelSlot is the HUD's), FIRSTGAME
 and TUTORIAL2 (the starter's Story and pickup).

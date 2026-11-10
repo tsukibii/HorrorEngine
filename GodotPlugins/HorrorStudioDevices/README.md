@@ -39,10 +39,13 @@ Set the laptop's **Deliver To** (a Marker3D on the floor where the parcels go, i
 what's bought comes in a **parcel** instead of straight into the pocket: after **Delivery Secs**, while the player can't
 see that place (**When Unseen**), a parcel is left there with what was ordered in it, a **Knock** and the box set down;
 the terminal says "ON ITS WAY TO THE FRONT DOOR" (**Deliver Place**). Several orders, several parcels side by side.
-**E on a parcel** unboxes it: the tape cut, its four flaps swung open, what's inside seen a moment, then into the
-pocket with its models; the box stays, open and empty. The parcel is `delivery/package.tscn` (`HSPackage`; the
-laptop's **Package** for your own): put one in a level by hand with its **Items** and **Counts** (a parcel waiting on
-the porch), **Take On Open** off for E to open it and E again to take what's inside.
+**E on a parcel** unboxes it, Minecraft's way: the tape torn, the box jumps, its flaps burst open and it's gone in a
+puff of card dust; out of the puff each thing pops up at its own size, turns a moment, then is pulled into you,
+shrinking, with a pop, into the pocket as it arrives. Nothing is ever fitted into the box, so a shotgun can come out of
+a shoebox. The parcel is `delivery/package.tscn` (`HSPackage`; the laptop's **Package** for your own): put one in a
+level by hand with its **Items** and **Counts** (a parcel waiting on the porch); **Keep Box** on and its flaps open
+and it stays, empty, the things flying out of it all the same; **Pull** how fast they come, **Copies Max** how many
+of one thing you see flying.
 
 ## The look
 
@@ -59,7 +62,8 @@ $Laptop.unlock("shells")    # a thing opened up by your script
 $Laptop.use($Player)        # sit at it            $Laptop.leave()   # back
 $Laptop.term.add_tab("MAIL", my_control)            # a tab of your own
 $Laptop.term.say("1 NEW MESSAGE.")                  # the status line
-$Parcel.unboxed.connect(func(items, counts): print("opened"))
+$Parcel.taken.connect(func(item, count): print(count, " ", item.title, " in the pocket"))
+$Parcel.unboxed.connect(func(items, counts): print("all of it taken"))
 ```
 
 ## Made of

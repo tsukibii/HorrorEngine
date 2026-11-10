@@ -5,7 +5,8 @@ up), an error (a low double buzz), the boot (the fan spinning up under a rising 
 screen's high whine coming on), sleep (the whine falling away), and a hum (the coil's whine and the fan's air, a loop);
 and a parcel's (DECISIONS 2026-11-10, last): a knock at the door where it's left (three, on wood), the box set down (a
 dull thump, the card's slap, what's inside settling), the tape cut and torn off (a rasp of small tears) and the flaps
-swung open (soft whumps of card).
+swung open (soft whumps of card); then (the same day, after the last) the box bursting in a puff (a soft whump, the card
+crumpling) and a thing pulled into the player (a short bright pop, played a little higher each time).
 Each mono, quiet by design (the laptop plays them in the room through AudioStreamPlayer3D), each from its own seed.
 
     python tools/device_sounds.py [--out DIR]     (default GodotPlugins/HorrorStudioDevices/addons/horrorstudio_devices/sounds)
@@ -151,9 +152,30 @@ def flaps(rng):
     return x
 
 
+def poof(rng):
+    """A parcel bursting into a puff: a soft low whump of air, the card crumpling, a thump under it."""
+    t = t_(0.55)
+    x = band(rng.standard_normal(len(t)), 70, 900) * decay(t, 0.11, 0.0, 0.012)
+    x += 0.5 * np.sin(2 * np.pi * 62 * t) * decay(t, 0.07, 0.0, 0.004)
+    tears = (rng.random(len(t)) < 0.025) * rng.standard_normal(len(t))
+    x += band(tears, 900, 6000) * 2.0 * decay(t, 0.09, 0.005, 0.003)
+    return x
+
+
+def pop(rng):
+    """A thing pulled into the player: a short bright pluck gliding up, a tick at its start."""
+    t = t_(0.16)
+    f = 560 + 520 * np.clip(t / 0.05, 0, 1)
+    x = np.sin(2 * np.pi * np.cumsum(f) / SR) * decay(t, 0.045, 0.0, 0.002)
+    x += 0.35 * np.sin(4 * np.pi * np.cumsum(f) / SR) * decay(t, 0.025, 0.0, 0.002)
+    x += click(t, 0.0, 2500, 9000, 0.002, 0.3, rng)
+    return x
+
+
 SOUNDS = {"blip": (blip, -6.0), "tick": (tick, -14.0), "key": (key, -9.0), "order": (order, -5.0), "error": (error, -6.0),
           "boot": (boot, -6.0), "wake": (wake, -9.0), "sleep": (sleep, -12.0), "hum": (hum, -24.0),
-          "knock": (knock, -2.0), "thud": (thud, -5.0), "tape": (tape, -9.0), "flaps": (flaps, -10.0)}
+          "knock": (knock, -2.0), "thud": (thud, -5.0), "tape": (tape, -9.0), "flaps": (flaps, -10.0),
+          "poof": (poof, -6.0), "pop": (pop, -9.0)}
 SEEDS = {n: i for i, n in enumerate(SOUNDS)}
 
 
