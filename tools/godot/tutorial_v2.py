@@ -12,12 +12,20 @@ use of every aspect we've added so far"). The tutorial's project, made as its st
   like the light) and her again at the fire exit, the moments and the scares wired up, the fire door's ending; the air
   (DECISIONS 2026-11-08: an HSAtmosphere's haze and dust, the stairwell's own air, the flashlight's beam in it, the fog
   rolling in when the corridor goes dark), the stairwell window's shaft, leak and puddle, the leaves on 304's wall, her
-  wet look, the tape breaking up at the jump.
+  wet look, the tape breaking up at the jump;
+- every system since (DECISIONS 2026-11-10, after that: "implements every feature we've created so far"): the UI plugin's
+  HSHud and quest markers that come and go with the to-do list, a $20 note into the Story's cash, the devices plugin's
+  laptop on 304's desk (its own catalog: the plugin's six and three of the tutorial's files, a page each, the shotgun a ?
+  until the knocks, the explosive shells until the gun's come), a parcel at 304's door unboxed into the hands, the
+  weapons plugin's double barrel, a kettle (its LED and steam: HSPropFX) and a mug of tea (HSLiquidFill) that break
+  (HSBlowUp), the entry's bulb shot out (HSShootable), a candle burning in the bath (HSPropFX), and her, the one who
+  hunts, shot down into black smoke (HSHitReact).
 
 Then played headless (tools/godot/tutorial_v2_test.gd): up the stairwell's dog-leg, the corridor's lights dimming and
 coming back, 304 locked, the note, the key and the lights going out one by one, 304 opened, the flashlight running low,
 dying and its batteries going in, her backing off from the light and the corridor going dark when she's flashed twice,
-the hush before the jump scare, the fire door and the ending. `--pictures` draws the guide's pictures: Godot's under
+the hush before the jump scare; then the laptop, its pages, locks and orders, the parcel and the gun, the kettle, the
+mug and the bulb shot, her shot down; the fire door and the ending. `--pictures` draws the guide's pictures: Godot's under
 xvfb (tutorial_v2_shots.gd) and the scene builder's in a headless browser (tutorial_v2_builder.mjs). `--keep DIR` builds
 it in DIR instead of Saved/Godot/_tutorial_v2 (a project to open in Godot and play).
 
@@ -210,6 +218,20 @@ if not 1.0 <= math.hypot(hide_app[0] - hide_eye[0], hide_app[2] - hide_eye[2]) <
     sys.exit("TUTORIAL2 FAILED: the linen closet's close pass should stand 1 to 1.5 m from where you hide")
 
 
+# every system since (DECISIONS 2026-11-10, after that): the laptop and the tea things on 304's desk, the parcel's doorstep
+dtop, dx0, dz0 = desk304["top"], desk304["at"][0], desk304["at"][2]
+laptop_at = [dx0 - 0.02, dtop, dz0 + 0.3]                               # the desk's north half, its screen to the room (west)
+cash_at = [dx0 - 0.2, dtop + 0.002, dz0 - 0.07]                         # a $20 note beside it
+kettle_at = [dx0 + 0.04, dtop, dz0 - 0.42]                              # the south end: a kettle on the boil and a mug of tea
+mug_at = [dx0 - 0.16, dtop, dz0 - 0.3]
+d304m = B["door_door_304"]["mid"]
+doorstep = [d304m[0] - 0.65, floor_y, d304m[2] - 0.55]                  # the corridor beside 304's door: where parcels are left
+bath_r = R["r304_bath"]
+candle_at = [bath_r["at"][0] + 0.6, B["r304_bath_fx_floor"]["top"], bath_r["at"][2] - 0.55]   # on the bath's floor, past the blood
+e304 = R["r304_entry"]
+bulb_at = [e304["at"][0], e304["at"][1] + e304["size"][1] / 2 - 0.25, e304["at"][2]]   # the entry's bare bulb (its zone's middle, under the ceiling)
+
+
 def local_of(pos, turn_deg, p):
     """p (a world point) in the frame of a node at pos turned turn_deg about Y (tf's)"""
     a = math.radians(turn_deg)
@@ -245,7 +267,15 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
-       ("Script", "res://addons/horrorstudio_look/nodes/character_look.gd", "charlook")]
+       ("Script", "res://addons/horrorstudio_look/nodes/character_look.gd", "charlook"),
+       # every system since: the HUD and its markers, the laptop and its shop, the gun, things that break, made props' effects
+       ("Script", "res://addons/horrorstudio_ui/hud.gd", "hud"), ("Script", "res://addons/horrorstudio_ui/quest_marker.gd", "marker"),
+       ("PackedScene", "res://addons/horrorstudio_devices/laptop/laptop.tscn", "laptop"), ("Resource", "res://shop/hotel_shop.tres", "shop"),
+       ("Script", "res://addons/horrorstudio_weapons/double.gd", "shotgun"), ("Script", "res://addons/horrorstudio_weapons/shootable.gd", "shootable"),
+       ("Script", "res://addons/horrorstudio_weapons/blowup/blow_up.gd", "blowup"), ("Script", "res://addons/horrorstudio_weapons/react/hit_react.gd", "hitreact"),
+       ("PackedScene", "res://addons/horrorstudio_weapons/models/electric_kettle.glb", "kettle"), ("PackedScene", "res://addons/horrorstudio_weapons/models/mug_stoneware.glb", "mug"),
+       ("PackedScene", "res://addons/horrorstudio_devices/shop/models/candle_votive.glb", "candle"),
+       ("Script", "res://addons/horrorstudio_look/nodes/prop_fx.gd", "propfx"), ("Script", "res://addons/horrorstudio_look/nodes/liquid_fill.gd", "liquid")]
 SOUNDS = {"hum": "ambience/electric_hum_01.ogg", "hum3": "ambience/electric_hum_03.ogg", "room": "ambience/room_tone_02.ogg", "closet": "ambience/room_tone_05.ogg",
           "water": "ambience/water_running.ogg", "drone": "ambience/ambient_01.ogg", "cut": "house/power_hum_cut.ogg", "creak": "house/floorboard_creak.ogg",
           "sting": "stings/sting_short.ogg", "big": "stings/sting_big.ogg", "thunder": "ambience/thunder.ogg"}
@@ -278,7 +308,12 @@ subs = [("StandardMaterial3D", "paper", ["albedo_color = Color(0.93, 0.91, 0.84,
                                'tracks/0/path = NodePath(".:position")', "tracks/0/interp = 2", "tracks/0/loop_wrap = true",
                                'tracks/0/keys = {\n"times": PackedFloat32Array(0, 0.6),\n"transitions": PackedFloat32Array(1, 1),\n"update": 0,\n"values": [%s, %s]\n}' % (
                                    f3(ceil_feet), f3([ceil_feet[0], ceil_feet[1] - 0.3, ceil_feet[2]]))]),   # her body coming down off the ceiling toward you
-        ("AnimationLibrary", "moves", ['_data = {\n&"lean": SubResource("lean")\n}'])]   # (her stand-in is a figure: a gown, arms, a head, hair down over her face)
+        ("AnimationLibrary", "moves", ['_data = {\n&"lean": SubResource("lean")\n}']),
+        ("StandardMaterial3D", "glowglass", ["albedo_color = Color(1, 0.92, 0.78, 1)", "emission_enabled = true", "emission = Color(1, 0.86, 0.62, 1)", "emission_energy_multiplier = 2.5"]),
+        ("SphereMesh", "bulbglass", ["radius = 0.045", "height = 0.09", 'material = SubResource("glowglass")']),   # the entry's bare bulb: something to shoot out
+        ("SphereShape3D", "bulbshape", ["radius = 0.07"]),
+        ("StandardMaterial3D", "banknote", ["albedo_color = Color(0.42, 0.55, 0.38, 1)", "roughness = 0.85"]),
+        ("BoxMesh", "note20", ["size = Vector3(0.155, 0.004, 0.066)", 'material = SubResource("banknote")'])]   # (her stand-in is a figure: a gown, arms, a head, hair down over her face)
 lines = [f"[gd_scene load_steps={len(ext) + len(subs) + 1} format=3]", ""]
 lines += [f'[ext_resource type="{t}" path="{p}" id="{i}"]' for t, p, i in ext] + [""]
 for t, i, props in subs:
@@ -331,7 +366,11 @@ zone("Corridor", "corridor", [lambda: [nd(f"Tube{i + 1}", "Zones/Corridor", inst
 r304 = R["r304"]
 zone("Room304", "r304", [lambda: nd("Lamp", "Zones/Room304", "OmniLight3D", props=[f"transform = {tf([lamp[0] - r304['at'][0], lamp_y - r304['at'][1], lamp[2] - r304['at'][2]])}", "light_color = Color(1, 0.78, 0.55, 1)", "light_energy = 1.1", "omni_range = 7.0", "shadow_enabled = true"])])   # reaching every wall of 304 (a shadow on them, shadow_pass.gd)
 ent = R["r304_entry"]
-zone("Entry304", "r304_entry", [lambda: nd("Light", "Zones/Entry304", "OmniLight3D", props=[f"transform = {tf([0, ent['size'][1] / 2 - 0.25, 0])}", "light_color = Color(1, 0.9, 0.75, 1)", "light_energy = 0.5", "omni_range = 3.5"])])
+zone("Entry304", "r304_entry", [lambda: [nd("Bulb", "Zones/Entry304", "Node3D", props=[f"transform = {tf([0, ent['size'][1] / 2 - 0.25, 0])}"]),   # a bare bulb: shot, it's out
+                                         nd("Glass", "Zones/Entry304/Bulb", "MeshInstance3D", props=['mesh = SubResource("bulbglass")', "cast_shadow = 0"]),
+                                         nd("Body", "Zones/Entry304/Bulb", "StaticBody3D"), nd("Shape", "Zones/Entry304/Bulb/Body", "CollisionShape3D", props=['shape = SubResource("bulbshape")']),
+                                         nd("Light", "Zones/Entry304/Bulb", "OmniLight3D", props=["transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.08, 0)", "light_color = Color(1, 0.9, 0.75, 1)", "light_energy = 0.5", "omni_range = 3.5"]),
+                                         nd("Shootable", "Zones/Entry304/Bulb", "Node", script="shootable", props=["lights_out = true", 'say = "The bulb bursts. Dark."'])]])
 bath = R["r304_bath"]
 zone("Bath304", "r304_bath", [lambda: nd("Light", "Zones/Bath304", "OmniLight3D", props=[f"transform = {tf([0, bath['size'][1] / 2 - 0.2, 0])}", "light_color = Color(0.85, 0.92, 1, 1)", "light_energy = 0.9", "omni_range = 3.0", "shadow_enabled = true"])])
 vend = R["vending"]
@@ -387,6 +426,21 @@ nd("Hide", "Things", "Node3D", script="seat", props=[f"transform = {tf(hide_eye,
    "reach_at = Vector3(0, -0.3, 0)", 'say = "Crouched in the corner. Space holds your breath."'])   # the linen closet's far corner, facing its doorway
 nd("Approach", "Things/Hide", "Marker3D", props=[f"transform = {tf(local_of(hide_eye, hide_turn, hide_app))}"])   # where she stands to look: 1 to 1.5 m from you
 nd("Via", "Things/Hide", "Marker3D", props=[f"transform = {tf(local_of(hide_eye, hide_turn, hide_via))}"])        # the corridor in front of its doorway
+# the laptop on 304's desk (the devices plugin's prefab): the shop's own catalog, parcels left at 304's door
+nd("Laptop", "Things", inst="laptop", props=[f"transform = {tf(laptop_at, -90.0)}", 'catalog = ExtResource("shop")', 'user = "room 304"', 'clock = "03:13"',
+   'deliver_to = NodePath("../Doorstep")', 'deliver_place = "304\'s door"', "delivery_secs = 6.0"])
+nd("Doorstep", "Things", "Marker3D", props=[f"transform = {tf(doorstep, 180.0)}"])          # its -Z toward 304's door: where you'll come from
+nd("Cash", "Things", "Node3D", script="pickup", props=[f"transform = {tf(cash_at, 18.0)}", 'item = ""', "cash = 20.0", 'label = "$20.00"'])   # money for the shop
+nd("Note", "Things/Cash", "MeshInstance3D", props=['mesh = SubResource("note20")'])
+# the tea things: a kettle on the boil (its LED and steam) and a mug of tea (its tea level), both to be shot to pieces
+nd("Kettle", "Things", inst="kettle", props=[f"transform = {tf(kettle_at, 200.0)}"])
+nd("FX", "Things/Kettle", "Node3D", script="propfx", props=["steam = true"])
+nd("BlowUp", "Things/Kettle", "Node3D", script="blowup")
+nd("Mug", "Things", inst="mug", props=[f"transform = {tf(mug_at, 30.0)}"])
+nd("Tea", "Things/Mug/mug_stoneware_liquid", "Node", script="liquid")                     # (the mug's Editable Children: under its liquid)
+nd("BlowUp", "Things/Mug", "Node3D", script="blowup")
+nd("Candle", "Things", inst="candle", props=[f"transform = {tf(candle_at)}"])               # someone left a candle burning in the bath
+nd("FX", "Things/Candle", "Node3D", script="propfx")
 # her, and her again at the fire exit (the jump scare)
 
 
@@ -455,7 +509,8 @@ nd("BedCeiling", "Events", "Node3D", script="cue", props=['look = "any corner"',
 person("Ceiling", None, None, False, parent="Events/BedCeiling", xform=basis_tf(ceil_feet, [0.0, 0.0, 1.0], [-1.0, 0.0, 0.0], [0.0, -1.0, 0.0]))   # face down on the ceiling over the bed, her head over yours
 nd("Moves", "Events/BedCeiling/Ceiling", "AnimationPlayer", props=['libraries = {\n&"": SubResource("moves")\n}'])
 nd("DeskKnock", "Events", "Node3D", script="cue", props=['spot = NodePath("../../Dressing/TV")', 'look = "middle"', 'doing = "sitting"', "after_secs = 2.0", "scare = false",
-   'sound = "knock_three"', 'sound_at = NodePath("Door")', 'say = "Three knocks. Someone is at the door."', 'fact = "knocked_304"'], paths=["spot", "sound_at"])   # sitting at the desk, the TV's static in the middle of your view
+   'sound = "knock_three"', 'sound_at = NodePath("Door")', 'say = "Three knocks. Someone is at the door."', 'fact = "knocked_304"',
+   'add_tasks = PackedStringArray("gun: Something to defend yourself with (the laptop on the desk)")'], paths=["spot", "sound_at"])   # sitting at the desk, the TV's static in the middle of your view
 nd("Door", "Events/DeskKnock", "Marker3D", props=[f"transform = {tf([d304[0] + 0.4, floor_y + 1.3, d304[2] - 0.25])}"])   # outside 304's door, in the corridor
 nd("ColdSpot", "Events", "Area3D", script="cold", props=[f"transform = {tf([corr['at'][0] - corr['size'][0] / 2 + 0.5, corr['at'][1], corr['at'][2]])}",
    'panes = [NodePath("../../Weather/Pane")]'], paths=["panes"])   # the metre by the end window: freezing (your breath, the glass frosting)
@@ -467,14 +522,24 @@ nd("Searcher", "Events/Hunter", "Node", script="searcher", props=['replaces = No
 nd("Chase", "Events/Hunter", "Node", script="chase", props=['searcher = NodePath("../Searcher")', 'safe_rooms = PackedStringArray("stairs", "landing_2f")',
    'start_says = "Run."'], paths=["searcher"])   # seen in the open while she searches: she's after you; the stairwell's safe
 nd("Presence", "Events/Hunter", "Node", script="presence", props=['static_on = NodePath("../../../Things/Radio")'], paths=["static_on"])   # the radio and your flashlight as she comes
+nd("HitReact", "Events/Hunter", "Node3D", script="hitreact", props=['target = NodePath("../../ShotDown")'], paths=["target"])   # shot: black ichor and smoke; down, the hunt's over
+area("ShotDown", "Events", "event", None, props=['say = "Whatever she was, she\'s smoke now."', 'fact = "shot_her"', 'music = "uneasy"'])   # (fired by her HitReact)
 # the player, its flashlight on a battery that's seen better days
 nd("Player", ".", inst="player", props=[f"transform = {tf(start['at'], start['turn'])}"])
 nd("Flashlight", "Player/Eye", props=["battery = 90.0", "charge = 0.5", "low_at = 0.3", 'low_says = "The flashlight is dying."',
                                       'low_task = "batteries: Find batteries (the vending corner)"'])
+nd("Shotgun", "Player/Eye", "Node3D", script="shotgun", props=['light = NodePath("../Flashlight")', "owned = false", "spare = 0"], paths=["light"])   # the double, till a parcel brings it
 nd("Story", ".", "CanvasLayer", script="story", props=['objective_text = "Room 304, third floor. The lift is out."',
    'tasks = PackedStringArray("up: Go up to the third floor", "find304: Find room 304")', 'ending_title = "Checked out"',
    'ending_text = "The fire stairs took you down to the street. Nobody ever asked who was staying in 308."'])
 nd("Sound", ".", "Node", script="sound", props=['mood = "uneasy"'])
+nd("HUD", ".", "CanvasLayer", script="hud", props=['keys = PackedStringArray("W A S D:walk", "E:use", "F:flashlight", "Tab:pocket")'])   # the UI plugin's HUD
+nd("Markers", ".", "Node3D")                                              # quest markers, each while its task is open
+nd("Room304", "Markers", "Node3D", script="marker", props=[f"transform = {tf([d304m[0], floor_y, d304m[2] - 0.12])}", 'label = "Room 304"', "height = 2.1", 'needs = "on:find304"'])
+nd("FireExit", "Markers", "Node3D", script="marker", props=[f"transform = {tf([fire[0] - 0.3, floor_y, corr['at'][2]])}", 'label = "Fire exit"', "height = 2.1", 'needs = "on:out"'])
+nd("Marker", "Things/Key", "Node3D", script="marker", props=['label = "The master key"', "height = 0.05", 'needs = "on:key"'])
+nd("Marker", "Things/Batteries", "Node3D", script="marker", props=['label = "Batteries"', "height = 0.05", 'needs = "on:batteries"'])
+nd("Marker", "Things/Laptop", "Node3D", script="marker", props=['label = "The laptop"', "height = 0.3", 'needs = "on:gun"'])
 nd("Fear", ".", "Node", script="fear")                                    # your body: the heartbeat, breath, the world dulled, the beam shaking
 nd("BehindYou", ".", "Node", script="behind")                             # the steps behind you, from the batteries back to her
 nd("Dread", ".", "Node", script="dread", props=['safe_rooms = PackedStringArray("stairs", "landing_2f")'])   # the night's director: small moments between the story's
@@ -496,7 +561,37 @@ lines += ['[connection signal="picked" from="Things/Key" to="Events/LightsDie" m
           '[connection signal="scared" from="Events/LightsOut" to="Events/Feet308" method="arm"]',
           '[connection signal="scared" from="Events/LightsOut" to="Events/Hunter/Searcher" method="arm"]',
           '[connection signal="scared" from="Events/Jump" to="Events/Hunter/Searcher" method="stop"]',
-          f'[connection signal="opened" from="Hotel/{P["door_corridor_e_door"]}" to="Story" method="end"]', "", '[editable path="Hotel"]', '[editable path="Player"]', ""]
+          f'[connection signal="opened" from="Hotel/{P["door_corridor_e_door"]}" to="Story" method="end"]', "", '[editable path="Hotel"]', '[editable path="Player"]', '[editable path="Things/Mug"]', ""]
+# the shop's own things, as the guide has you make them (FileSystem: New Resource, HSShopItem; a catalog with a folder)
+SHOP = [   # (file, its fields, its resources): the shotgun a ? until the knocks, the explosive shells until the gun's come
+    ("shotgun", ['id = "shotgun"', 'title = "Double barrel"', 'about = "A double-barrel shotgun, second hand. Both barrels clean. No questions asked."', "price = 12.0",
+                 'category = "DEFENCE"', 'model = ExtResource("2")', "max_per_order = 1", 'needs = "knocked_304"',
+                 'locked_text = "NOT YET.\\nWAIT FOR THE KNOCK."', "gun = true", 'tick = "gun"'],
+     [("PackedScene", "res://addons/horrorstudio_weapons/models/shotgun_double.glb")]),
+    ("shells", ['id = "shells"', 'title = "Buckshot, box of 5"', 'about = "Five 00 buckshot shells in a card box."', "price = 4.0", 'category = "DEFENCE"',
+                'model = ExtResource("2")', "model_turn = Vector3(25, 0, 0)", 'needs = "knocked_304"', 'locked_text = "NOT YET."', "shells = 5"],
+     [("PackedScene", "res://addons/horrorstudio_weapons/models/shells_box_5.glb")]),
+    ("explosive", ['id = "explosive"', 'title = "Explosive shells, 2"', 'about = "Two shells that burst where they land. Not for indoors."', "price = 4.0",
+                   'category = "DEFENCE"', 'model = ExtResource("2")', "model_turn = Vector3(25, 0, 0)", 'needs = "task:gun"', 'locked_text = "GET THE GUN FIRST."',
+                   "shells = 2", 'shell = ExtResource("3")'],
+     [("PackedScene", "res://addons/horrorstudio_weapons/models/shells_box_5_explosive.glb"), ("Resource", "res://addons/horrorstudio_weapons/shells/explosive.tres")]),
+]
+(proj / "shop" / "items").mkdir(parents=True, exist_ok=True)
+for old_item in (proj / "shop" / "items").glob("*.tres"):
+    old_item.unlink()
+for name, fields, res in SHOP:
+    head = [f'[gd_resource type="Resource" script_class="HSShopItem" load_steps={len(res) + 2} format=3]', "",
+            '[ext_resource type="Script" path="res://addons/horrorstudio_devices/shop/item.gd" id="1"]']
+    head += [f'[ext_resource type="{t}" path="{rp}" id="{i + 2}"]' for i, (t, rp) in enumerate(res)]
+    (proj / "shop" / "items" / f"{name}.tres").write_text("\n".join(head + ["", "[resource]", 'script = ExtResource("1")'] + fields) + "\n", encoding="utf-8")
+own = ["batteries", "candle", "painkillers", "water", "soda", "burger"]       # the plugin's six, then the folder's
+cat = ['[gd_resource type="Resource" script_class="HSShopCatalog" load_steps=9 format=3]', "",
+       '[ext_resource type="Script" path="res://addons/horrorstudio_devices/shop/catalog.gd" id="1"]',
+       '[ext_resource type="Script" path="res://addons/horrorstudio_devices/shop/item.gd" id="2"]']
+cat += [f'[ext_resource type="Resource" path="res://addons/horrorstudio_devices/shop/items/{n}.tres" id="{i + 3}"]' for i, n in enumerate(own)]
+cat += ["", "[resource]", 'script = ExtResource("1")', 'store = "NIGHT-MART"',
+        "items = Array[ExtResource(\"2\")]([" + ", ".join(f'ExtResource("{i + 3}")' for i in range(len(own))) + "])", 'folder = "res://shop/items"']
+(proj / "shop" / "hotel_shop.tres").write_text("\n".join(cat) + "\n", encoding="utf-8")
 (proj / "main.tscn").write_text("\n".join(lines), encoding="utf-8")
 pg = (proj / "project.godot").read_text(encoding="utf-8")
 if "run/main_scene" not in pg:
@@ -504,6 +599,7 @@ if "run/main_scene" not in pg:
     (proj / "project.godot").write_text(pg, encoding="utf-8")
 (proj / "tutorial.json").write_text(json.dumps({"who": who, "start": start, "her": her_at, "again": again_at, "note": note_at, "key": key_at, "batteries": bat_at,
                                                 "door304": d304, "fire": fire, "jump": jump, "floor": floor_y, "radio": radio_at, "glimpse": glimpse_at,
+                                                "laptop": laptop_at, "cash": cash_at, "kettle": kettle_at, "mug": mug_at, "doorstep": doorstep, "candle": candle_at, "bulb": bulb_at,
                                                 "closer": {n: a for n, a in closer_marks}, "bed_eye": bed_eye, "chair_eye": chair_eye, "hide_eye": hide_eye, "hide_via": hide_via, "hide_app": hide_app, "ceiling_head": ceil_head, "mirror_her": mirror_her_at, "lamp304": [lamp[0], lamp_y, lamp[2]], "rooms": R, "lights": L, "paths": P, "boxes": B}, indent=1), encoding="utf-8")
 for f in ["tutorial_v2_test.gd", "tutorial_v2_shots.gd"]:
     shutil.copy(ROOT / "tools/godot" / f, proj / f)

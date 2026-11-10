@@ -13,7 +13,14 @@
 ## you turn round), a shadow that isn't yours (crossing 304's wall, the lamp behind you), feet under 308's door once the
 ## corridor's dark, her signs (the tubes by her and your flashlight dipping, the radio's static), her menace sending her
 ## away a while, being hunted once the corridor's dark (heard running, she comes for the linen closet's corner and stands
-## in its doorway, your breath held; your gasp brings her back and she pulls you out), and the night's director (its moments, never in the stairwell or under a card, its peak and relax). Prints `TUTORIAL <what> <how>` lines and `TUTORIAL result {errors}`, quits.
+## in its doorway, your breath held; your gasp brings her back and she pulls you out), and the night's director (its moments, never in the stairwell or under a card, its peak and relax).
+## Every system since (DECISIONS 2026-11-10, after that): the UI plugin's HUD and quest markers coming and going with the
+## to-do list; a $20 note into the Story's cash; the devices plugin's laptop on 304's desk (its own catalog a page a
+## category, the shotgun a ? until the knocks, the explosive shells until the gun's come), clicked through its glass,
+## parcels left at 304's door unseen with a marker each, E: the gun flying into the hands and drawn up, the shells into
+## its pocket; the weapons plugin: the kettle (its LED and steam) and the mug of tea (its level) shot to pieces, a reload,
+## the entry's bulb shot out, the explosive's kind picked with T, her who hunts shot down into black smoke (the hunt
+## stopped, her dissolving, the line). Prints `TUTORIAL <what> <how>` lines and `TUTORIAL result {errors}`, quits.
 extends SceneTree
 
 const Lights := preload("res://starter/lights.gd")
@@ -130,7 +137,7 @@ func _watchdog() -> void:
 
 
 func _initialize() -> void:
-	create_timer(720.0).timeout.connect(_watchdog)
+	create_timer(1000.0).timeout.connect(_watchdog)
 	cfg = JSON.parse_string(FileAccess.get_file_as_string("res://tutorial.json"))
 	var ms := load("res://main.tscn") as PackedScene
 	if ms == null:
@@ -177,6 +184,12 @@ func _initialize() -> void:
 		bad("the fire door's opened isn't wired to the Story's end")
 	if her.visible or again.visible:
 		bad("she's there before her scare (scare_area.gd hides who appears)")
+	var m304: Node = main.get_node("Markers/Room304")
+	var mkey: Node = main.get_node("Things/Key/Marker")
+	var marks0 := [m304.shown(), mkey.shown(), main.get_node("Markers/FireExit").shown()]
+	say("markers", "at the start: 304's %s (find304 open), the key's %s (no task yet), the fire exit's %s" % marks0)
+	if marks0 != [true, false, false]:
+		bad("the quest markers' needs (HSQuestMarker): 304's on:find304 shown, the key's on:key and the fire exit's on:out not yet: %s" % str(marks0))
 	# 1. the stairwell: standing on the second floor's landing, up the dog-leg
 	await frames(60)
 	var y0 := player.global_position.y
@@ -287,9 +300,12 @@ func _initialize() -> void:
 	var note := main.get_node("Things/Note") as Node3D
 	await use_at(Vector3(note.global_position.x, fl + 0.02, note.global_position.z - 0.85), note.global_position)
 	await frames(5)
-	say("note", "its card %s, the task 'key' %s" % ["up" if story.card_up() else "NOT up", "added" if story.has_task("key") else "NOT added"])
+	say("note", "its card %s, the task 'key' %s, its marker %s" % ["up" if story.card_up() else "NOT up", "added" if story.has_task("key") else "NOT added",
+		"shown" if mkey.shown() else "NOT SHOWN"])
 	if not story.card_up() or not story.has_task("key"):
 		bad("reading the note (note.gd): its card and its task")
+	if not mkey.shown():
+		bad("the key's quest marker (needs on:key) should show once the note's added the task")
 	await press(KEY_E)
 	if story.card_up():
 		bad("E didn't put the note's card away (player.gd)")
@@ -1151,6 +1167,8 @@ func _initialize() -> void:
 		bad("the jump's tape (scare_area.gd tape): %s then, %s after" % [tape_then, tape_after])
 	if look.materials.size() == 0:
 		bad("her look (HSCharacterLook) isn't worn")
+	# 9b. every system since: the HUD, the cash, the laptop and its parcels, the gun, things that break, her shot down
+	await every_system(fl, cz)
 	# 10. the fire door: the ending
 	var fc := fire.global_position + fire.global_basis.x * 0.42 + Vector3.UP * 1.0
 	await use_at(Vector3(fc.x - 0.9, fl + 0.02, fc.z), fc)
@@ -1165,3 +1183,278 @@ func _initialize() -> void:
 		bad("the dread director (dread.gd): %d moments, out of place %s, phases %s (build, peak and relax)" % [int(rep["moments"]), str(moment_bad), str(phases.keys())])
 	print("TUTORIAL result " + JSON.stringify({"errors": errors}))
 	quit()
+
+
+## the laptop's glass clicked where a control of its terminal is (laptop_test.gd's way: its point on the screen mapped
+## to the window through the laptop's camera)
+func glass_click(lap: Node, c: Control) -> void:
+	if c == null:
+		bad("a click through the laptop's glass on nothing")
+		return
+	var wp: Vector2 = lap.to_window(c.get_global_rect().get_center())
+	var mm := InputEventMouseMotion.new()
+	mm.position = wp
+	mm.global_position = wp
+	root.push_input(mm)
+	await frames(3)
+	for pressed in [true, false]:
+		var mb := InputEventMouseButton.new()
+		mb.button_index = MOUSE_BUTTON_LEFT
+		mb.pressed = pressed
+		mb.position = wp
+		mb.global_position = wp
+		root.push_input(mb)
+		await frames(3)
+
+
+## up to `t` seconds for `cond` to hold
+func until(cond: Callable, t: float) -> bool:
+	for i in int(ceil(t * 60.0)):
+		if cond.call():
+			return true
+		await frames(1)
+	return bool(cond.call())
+
+
+func shop_item(lap: Node, id: String) -> HSShopItem:
+	for it in lap.catalog.all_items():
+		if (it as HSShopItem).id == id:
+			return it
+	return null
+
+
+## the parcels left at the doorstep
+func parcels() -> Array:
+	return main.get_node("Things/Doorstep").get_children().filter(func(c: Node) -> bool: return c is HSPackage and not (c as HSPackage).is_open)
+
+
+## E on a parcel from a step or so away; what's in it pulled into you
+func unbox(pk: Node3D) -> void:
+	var at := pk.global_position
+	await use_at(Vector3(at.x, at.y + 0.02, at.z - 0.75), at + Vector3(0, 0.1, 0))
+	await secs(2.6)
+
+
+## at the laptop: E on it, the view in, the boot's lines (the first time), its catalogue, the page `id` is on
+func at_laptop(lap: Node3D, id: String) -> void:
+	var lp: Vector3 = lap.global_position
+	var fl: float = lp.y - 0.72
+	await use_at(Vector3(lp.x - 0.78, fl + 0.02, lp.z + 0.36), lp + Vector3(0, 0.12, 0))
+	await frames(2)
+	await secs(lap.zoom_secs + 3.2)
+	if lap.term.current != "ORDER":
+		await glass_click(lap, lap.term.find_child("Browse", true, false))
+	var od: Node = lap.term.order
+	var pg: int = od.page_of(id)
+	if od.page != pg:
+		await glass_click(lap, od._numbers.find_child("Page%d" % (pg + 1), false, false))
+	await frames(2)
+
+
+## Every system since (DECISIONS 2026-11-10, after that): the HUD and the markers left; the $20 note; the laptop's shop
+## (a page a category, the shotgun unlocked by the knocks, the explosive shells a ? till the gun's come, two orders
+## clicked through the glass); the parcels at 304's door (unseen, a marker each), E: the gun into the hands and drawn
+## up, the shells into its pocket, the task ticked and the explosive shells unlocked, ordered, T picking them; the
+## kettle (its LED, its steam) and the mug of tea (its level) shot to pieces; a reload; the entry's bulb shot out; her
+## who hunts shot down (the hunt stopped, her dissolving into black smoke, the line)
+func every_system(fl: float, cz: float) -> void:
+	var hud: Node = main.get_node("HUD")
+	var gun: Node3D = player.get_node("Eye/Shotgun")
+	var lap: Node3D = main.get_node("Things/Laptop")
+	# ---- the HUD and the markers left (the to-do list's: 304 found, the fire exit and the laptop open)
+	var mlap: Node = main.get_node("Things/Laptop/Marker")
+	var mfire: Node = main.get_node("Markers/FireExit")
+	var m304: Node = main.get_node("Markers/Room304")
+	await frames(8)
+	var gd: Node = hud.get("guide")
+	var live := func(m: Node) -> bool:
+		var id := str(m.get_path())
+		return gd != null and gd.marks.has(id) and bool(gd.marks[id].get("live", false))
+	say("hud and markers", "the HUD by hand %s (the scene's markers %s, %d keys: %s); 304's %s (found), the fire exit's %s (out open), the laptop's %s (gun open: the knocks); in the guide: the fire exit %s, the laptop %s, 304 %s; the gun %s" % [
+		hud.standalone, hud.auto_markers, hud.hints.size(), ", ".join(hud.hints.keys()), m304.shown(), mfire.shown(), mlap.shown(), live.call(mfire), live.call(mlap), live.call(m304),
+		"not yours yet (hidden)" if not gun.visible and not gun.get("owned") else "SHOWN"])
+	if not hud.standalone or not hud.auto_markers or hud.hints.size() != 4 or m304.shown() or not mfire.shown() or not mlap.shown() or not live.call(mfire) \
+			or not live.call(mlap) or live.call(m304) or gun.get("owned") or gun.visible:
+		bad("the HUD and its quest markers (HSHud keys, HSQuestMarker needs): %d keys; 304's %s, the fire exit's %s, the laptop's %s; live %s %s %s; the gun owned %s" % [
+			hud.hints.size(), m304.shown(), mfire.shown(), mlap.shown(), live.call(m304), live.call(mfire), live.call(mlap), gun.get("owned")])
+	# ---- the $20 note beside the laptop
+	var note: Node3D = main.get_node("Things/Cash")
+	var cash0: float = story.cash
+	var cn := note.global_position
+	await use_at(Vector3(cn.x - 0.35, fl + 0.02, cn.z + 1.05), cn)
+	await frames(3)
+	say("cash", "the $20 note picked up: the Story's cash $%.2f -> $%.2f, the note %s" % [cash0, story.cash, "gone" if not note.visible else "STILL THERE"])
+	if absf(story.cash - cash0 - 20.0) > 0.01 or note.visible:
+		bad("the $20 note (pickup.gd cash): the cash $%.2f -> $%.2f" % [cash0, story.cash])
+	# ---- the laptop: its own catalogue, the shotgun unlocked by the knocks, the explosive shells a ? till the gun's come
+	var sg := shop_item(lap, "shotgun")
+	var sh := shop_item(lap, "shells")
+	var ex := shop_item(lap, "explosive")
+	if sg == null or sh == null or ex == null:
+		bad("the shop's own things (res://shop/items: the catalog's folder) aren't in its catalog")
+		return
+	await at_laptop(lap, "shotgun")
+	var od: Node = lap.term.order
+	var heads: Array = od.pages.map(func(pg) -> String: return str(pg["category"]))
+	var at_it: bool = lap.using
+	var page_text: String = od._page_of.text
+	var sg_new: bool = lap.is_new(sg)
+	var states := [lap.unlocked(sg), lap.unlocked(sh), lap.unlocked(ex)]
+	await glass_click(lap, od.cards.get("shotgun"))
+	await glass_click(lap, od._buy)
+	await frames(3)
+	await glass_click(lap, od.cards.get("shells"))
+	await glass_click(lap, od._buy)
+	await frames(3)
+	await glass_click(lap, od.cards.get("explosive"))
+	await secs(0.6)
+	var ex_off: bool = od._buy.disabled
+	var said: String = od._about_text
+	var on_way: int = lap.deliveries.size()
+	var cash1: float = story.cash
+	say("the laptop", "E at it %s; its catalogue %d pages (%s), the shop's own on %s; the shotgun %s and NEW %s (the knocks), the shells %s, the explosive shells %s (the gun first: ORDER off %s, it says \"%s\"); two orders by clicks: %d on their way to %s, $%.2f left" % [
+		at_it, od.pages.size(), ", ".join(heads), page_text, "unlocked" if states[0] else "LOCKED", sg_new, "unlocked" if states[1] else "LOCKED", "a ?" if not states[2] else "UNLOCKED",
+		ex_off, said.replace("\n", " "), on_way, lap.place_name(), cash1])
+	if not at_it or od.pages.size() != 3 or heads != ["SUPPLIES", "FOOD & DRINK", "DEFENCE"] or not states[0] or not states[1] or states[2] or not sg_new \
+			or not ex_off or not said.contains("GET THE GUN FIRST") or on_way != 2 or absf(cash1 - 4.0) > 0.01:
+		bad("the laptop's shop (HSLaptop, the shop's own catalog): at it %s, %d pages %s, locks %s, NEW %s, the explosive's ORDER off %s \"%s\", %d orders, $%.2f left" % [
+			at_it, od.pages.size(), str(heads), str(states), sg_new, ex_off, said, on_way, cash1])
+	lap.leave()
+	await secs(lap.zoom_secs + 0.4)
+	# ---- the parcels: left at 304's door while it's out of sight, a marker over each; E: the gun into the hands
+	var arrived: bool = await until(func() -> bool: return parcels().size() >= 2, 14.0)
+	var pk: Array = parcels()
+	await frames(8)
+	var marked := pk.filter(func(p) -> bool: return (p as HSPackage).mark != null and live.call((p as HSPackage).mark)).size()
+	var gun_box: HSPackage = null
+	var shell_box: HSPackage = null
+	for p in pk:
+		if (p as HSPackage).items.size() > 0 and ((p as HSPackage).items[0] as HSShopItem).id == "shotgun":
+			gun_box = p
+		elif (p as HSPackage).items.size() > 0:
+			shell_box = p
+	if not arrived or gun_box == null or shell_box == null:
+		bad("the laptop's delivery: %d parcels at 304's door" % pk.size())
+		return
+	await unbox(gun_box)
+	await until(func() -> bool: return gun.get("raised") and not gun.get("busy"), 3.0)
+	var owned: bool = gun.get("owned")
+	var shown: bool = gun.visible
+	var ticked: bool = story.done("gun")
+	await unbox(shell_box)
+	var spare: int = gun.get("spare")
+	var in_pocket: bool = story.has("shotgun") or story.has("shells")
+	say("parcels and the gun", "%d left at 304's door while it was out of sight, %d with a marker in the guide; E on the gun's: the double yours %s, in view %s, raised %s; the task 'gun' ticked %s; E on the shells': %d in its pocket (the Story's pocket has them %s)" % [
+		pk.size(), marked, owned, shown, gun.get("raised"), ticked, spare, in_pocket])
+	if pk.size() != 2 or marked != 2 or not owned or not shown or not ticked or spare != 5 or in_pocket:
+		bad("the parcels and the gun (HSPackage, HSShopItem gun/shells/tick): %d parcels, %d marked; owned %s, shown %s, gun ticked %s; %d shells spare; in the Story's pocket %s" % [
+			pk.size(), marked, owned, shown, ticked, spare, in_pocket])
+	# ---- the explosive shells unlocked by the task, ordered, a third parcel; T picks them for R
+	await at_laptop(lap, "explosive")
+	od = lap.term.order
+	var ex_open: bool = lap.unlocked(ex)
+	var ex_new: bool = lap.is_new(ex)
+	await glass_click(lap, od.cards.get("explosive"))
+	await glass_click(lap, od._buy)
+	await frames(3)
+	lap.leave()
+	await secs(lap.zoom_secs + 0.4)
+	await until(func() -> bool: return parcels().size() >= 1, 14.0)
+	var third: Array = parcels()
+	if not third.is_empty():
+		await unbox(third[0])
+	var xk: Resource = load("res://addons/horrorstudio_weapons/shells/explosive.tres")
+	var ex_shells: int = gun.call("shells_of", xk)
+	await press(KEY_T)
+	var load_now: String = str(gun.get("load_kind").get("id")) if gun.get("load_kind") != null else "?"
+	await press(KEY_T)
+	var load_back: String = str(gun.get("load_kind").get("id")) if gun.get("load_kind") != null else "?"
+	say("explosive shells", "unlocked once the gun came %s, NEW %s; ordered ($%.2f left), its parcel %s, %d in the gun's pocket; T: R loads %s, T again: %s" % [
+		ex_open, ex_new, story.cash, "opened" if not third.is_empty() else "NEVER CAME", ex_shells, load_now, load_back])
+	if not ex_open or not ex_new or third.is_empty() or ex_shells != 2 or load_now != "explosive" or load_back == "explosive" or absf(story.cash) > 0.01:
+		bad("the explosive shells (needs task:gun, shell): unlocked %s, NEW %s, parcel %s, %d in it, T %s then %s, $%.2f left" % [ex_open, ex_new, not third.is_empty(), ex_shells, load_now, load_back, story.cash])
+	# ---- the tea things: the kettle on the boil (its LED and steam), the mug of tea (its level); shot to pieces
+	var kettle: Node3D = main.get_node("Things/Kettle")
+	var mug: Node3D = main.get_node("Things/Mug")
+	var kfx: Dictionary = main.get_node("Things/Kettle/FX").report()
+	var cfx: Dictionary = main.get_node("Things/Candle/FX").report()
+	var tea: Node = main.get_node("Things/Mug/mug_stoneware_liquid/Tea")
+	var tea_on: bool = tea.get("mat") != null
+	var kb: Node = kettle.get_node("BlowUp")
+	var mb: Node = mug.get_node("BlowUp")
+	var ready: bool = kb.is_prepared() and mb.is_prepared()
+	var kp := kettle.global_position
+	stand(Vector3(kp.x - 1.6, fl + 0.02, kp.z + 0.25), kp + Vector3(0, 0.1, 0))
+	await frames(4)
+	gun.call("pull")
+	await secs(0.6)
+	var mp := mug.global_position
+	look(mp + Vector3(0, 0.05, 0))
+	await frames(4)
+	gun.call("pull")
+	await secs(0.8)
+	say("the tea things", "the kettle's LED %d glowing and its steam %d sources, the candle's flame %d and its light %d, the tea's level %s; cut when they loaded %s; shot: the kettle %s, the mug %s" % [
+		int(kfx["glowing"]), int(kfx["puff_sources"]), int(cfx["flames"]), int(cfx["lights"]), "worn" if tea_on else "NOT WORN", ready,
+		"in pieces" if kb.is_broken else "WHOLE", "in pieces" if mb.is_broken else "WHOLE"])
+	if int(kfx["glowing"]) < 1 or int(kfx["puff_sources"]) < 1 or int(cfx["flames"]) < 1 or int(cfx["lights"]) < 1 or not tea_on or not ready or not kb.is_broken or not mb.is_broken:
+		bad("made props' effects (HSPropFX, HSLiquidFill) and things that break (HSBlowUp): %s %s, the tea %s, ready %s, broken %s %s" % [str(kfx), str(cfx), tea_on, ready, kb.is_broken, mb.is_broken])
+	# ---- a reload: R, both barrels from the pocket
+	await press(KEY_R)
+	await until(func() -> bool: return not gun.get("busy") and int(gun.get("loaded")) == 2, 5.0)
+	var loaded: int = gun.get("loaded")
+	var left: int = gun.get("spare")
+	# ---- the entry's bulb shot out
+	var bulb: Node3D = main.get_node("Zones/Entry304/Bulb")
+	var bl: OmniLight3D = bulb.get_node("Light")
+	var bp := bulb.global_position
+	stand(Vector3(bp.x + 0.2, fl + 0.02, bp.z + 0.75), bp)
+	await frames(4)
+	var lit0: float = bl.light_energy
+	gun.call("pull")
+	await secs(0.5)
+	var sht: Node = bulb.get_node("Shootable")
+	say("reload and the bulb", "R: %d loaded, %d left in the pocket; the entry's bulb shot: down %s, its light %.2f -> %.2f" % [loaded, left, sht.is_down, lit0, bl.light_energy if bl.visible else 0.0])
+	if loaded != 2 or left != 3 or not sht.is_down or (bl.visible and bl.light_energy > 0.01):
+		bad("the reload (%d loaded, %d left) and the bulb shot out (HSShootable lights_out: down %s, its light %.2f)" % [loaded, left, sht.is_down, bl.light_energy])
+	# ---- her who hunts, shot down: a chase from 308's door, both barrels; the hunt stopped, dissolving into smoke
+	await fill_gun(gun)
+	var hunter: Node3D = main.get_node("Events/Hunter")
+	var hr: Node = hunter.get_node("HitReact")
+	var chase: Node = hunter.get_node("Chase")
+	var post := v3(cfg["her"])
+	hunter.global_position = post
+	var me := Vector3(post.x - 6.0, fl + 0.02, cz)
+	stand(me, post + Vector3(0, 1.3, 0))
+	await frames(4)
+	var hidden_boxes := 0
+	for b in hr.get("_boxes"):
+		if (b as CollisionObject3D).collision_layer == 0:
+			hidden_boxes += 1
+	chase.start()
+	var near: bool = await until(func() -> bool: return hunter.global_position.distance_to(player.global_position) < 3.4, 6.0)
+	look(hunter.global_position + Vector3(0, 1.25, 0))
+	await frames(1)
+	gun.call("pull")
+	await secs(0.25)
+	look(hunter.global_position + Vector3(0, 1.25, 0))
+	await frames(1)
+	gun.call("pull")
+	await secs(0.3)
+	var down: bool = hr.is_down
+	var dissolving: bool = hunter.visible
+	var stopped: String = chase.state
+	await secs(6.0)
+	var gone: bool = not hunter.visible
+	var rep: Dictionary = hr.report()
+	say("her, shot down", "her hitboxes off while she was hidden %d of %d; she came at you %s; both barrels: down %s (%d hits), the chase %s, the hunt %s; dissolving where you could see %s, gone after %s; the fact %s, the line \"%s\"" % [
+		hidden_boxes, (hr.get("_boxes") as Array).size(), near, down, int(rep["hits"]), stopped, main.get_node("Events/Hunter/Searcher").state, dissolving, gone, story.is_set("shot_her"), story._line.text])
+	if hidden_boxes != (hr.get("_boxes") as Array).size() or hidden_boxes == 0 or not near or not down or stopped != "done" or not dissolving or not gone or not story.is_set("shot_her"):
+		bad("her shot down (HSHitReact on the starter's hunter): hidden boxes off %d/%d, near %s, down %s, the chase %s, dissolving %s, gone %s, the fact %s" % [
+			hidden_boxes, (hr.get("_boxes") as Array).size(), near, down, stopped, dissolving, gone, story.is_set("shot_her")])
+
+
+## both barrels loaded again (a script's: the double's chambers follow `loaded` once it isn't busy)
+func fill_gun(gun: Node) -> void:
+	await until(func() -> bool: return not gun.get("busy"), 4.0)
+	gun.set("loaded", 2)
+	await frames(3)
