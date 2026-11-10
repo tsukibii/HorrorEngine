@@ -6,7 +6,8 @@
 ## what a 12-gauge leaves on a wall (docs/research/shotgun_damage.md), each close in a light raking across it:
 ## damage_arm (from an arm's length), damage_room (across a room), damage_corridor (down a corridor), damage_concrete;
 ## explosive (the explosive shell's flash), blast (its ball of fire down the corridor), scorch (the scorch and its
-## embers after, the smoke rising); box and box_open (the box of shells where it lies, shut and open).
+## embers after, the smoke rising); box and box_open (the box of shells where it lies, shut and open); blowup_before,
+## blowup_burst, blowup_mug, blowup_after, blowup_close, blowup_cut (things that break when they're shot: HSBlowUp).
 ##   godot --path PROJECT --rendering-driver vulkan --fixed-fps 30 -s weapons_shots.gd -- --out=DIR [--only=idle,fire]
 extends SceneTree
 
@@ -139,6 +140,7 @@ func _initialize() -> void:
 	vhs.call("preset", "off")
 	await muzzle_shots()
 	await box_shots()
+	await blowup_shots()
 	quit()
 
 
@@ -325,3 +327,125 @@ func box_shots() -> void:
 	await shot("box", 40)
 	pk.call("_open_lid", pk.get_child(0), 100.0)
 	await shot("box_open", 20)
+
+
+# things that break when they're shot (HSBlowUp): a kettle, a mug of tea and a box of shells on the corridor's floor
+# in the flashlight; the kettle shot (its own pieces flying), the mug (shattering, its tea), the box; the mess after
+# from the eye and close under a held light; and the kettle's cut, its pieces laid apart as `preview` shows them
+func blowup_shots() -> void:
+	var names := ["blowup_before", "blowup_burst", "blowup_mug", "blowup_after", "blowup_close", "blowup_cut"]
+	if names.all(func(n): return not wanted(n)):
+		return
+	var eye := player.get_node("Eye") as Camera3D
+	var torch := player.get_node("Eye/Flashlight") as Node3D
+	var home := player.global_position
+	var yaw0 := player.rotation.y
+	var things := {}
+	var bus: Array = []
+	for spec in [["Kettle", "electric_kettle", Vector3(-1.2, 0, 0.1), 0.5], ["Mug", "mug_stoneware", Vector3(-1.05, 0, -0.26), -0.6],
+			["Box", "shells_box_5", Vector3(-0.98, 0, 0.42), 0.3]]:
+		var th := (load("res://addons/horrorstudio_weapons/models/%s.glb" % spec[1]) as PackedScene).instantiate() as Node3D
+		th.name = spec[0]
+		main.add_child(th)
+		th.global_position = home + (spec[2] as Vector3)
+		th.rotation.y = float(spec[3])
+		var b := HSBlowUp.new()
+		th.add_child(b)
+		things[spec[0]] = th
+		bus.append(b)
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 30000:
+		var all := true
+		for b in bus:
+			if not (b as HSBlowUp).is_prepared():
+				all = false
+		if all:
+			break
+		await process_frame
+	torch.visible = true
+	gun.set("loaded", 2)
+	gun.set_aim(true)                                             # (held to the eye: the lens narrower, on what you shoot)
+	var mid := home + Vector3(-1.1, 0.05, 0.08)
+	look(mid)
+	await frames(30)
+	await shot("blowup_before", 20)
+	look((things["Kettle"] as Node3D).global_position + Vector3(0, 0.11, 0))
+	await frames(12)
+	gun.pull()
+	await frames(4)
+	await now("blowup_burst")
+	await frames(50)
+	look((things["Mug"] as Node3D).global_position + Vector3(0, 0.05, 0))
+	await frames(12)
+	gun.pull()
+	await frames(3)
+	await now("blowup_mug")
+	await frames(40)
+	await idle_gun(3.0)
+	gun.set("loaded", 2)
+	await frames(6)
+	look((things["Box"] as Node3D).global_position + Vector3(0, 0.03, 0))
+	await frames(12)
+	gun.pull()
+	await frames(150)
+	look(mid + Vector3(-0.35, -0.05, 0.0))
+	await frames(15)
+	await shot("blowup_after", 15)
+	gun.set_aim(false)
+	# close, low over the mess, under a held light
+	var at := home + Vector3(-1.35, 0.0, 0.05)
+	var cam := Camera3D.new()
+	main.add_child(cam)
+	cam.fov = 50.0
+	cam.global_position = at + Vector3(0.55, 0.42, 0.2)
+	cam.look_at(at, Vector3.UP)
+	cam.current = true
+	var sp := SpotLight3D.new()
+	main.add_child(sp)
+	sp.global_position = at + Vector3(0.45, 0.85, -0.3)
+	sp.look_at(at, Vector3.UP)
+	sp.spot_angle = 34.0
+	sp.light_energy = 3.0
+	sp.spot_range = 4.0
+	sp.light_color = Color(1.0, 0.94, 0.84)
+	sp.shadow_enabled = true
+	torch.visible = false
+	await shot("blowup_close", 30)
+	# the kettle's cut: its pieces laid apart (a fresh one, by the east end), as the editor's preview draws them
+	var kt := (load("res://addons/horrorstudio_weapons/models/electric_kettle.glb") as PackedScene).instantiate() as Node3D
+	main.add_child(kt)
+	var cut_at := home + Vector3(2.4, 0.0, 0.0)
+	var lift := Vector3.ZERO
+	kt.global_position = cut_at
+	var kb := HSBlowUp.new()
+	kt.add_child(kb)
+	t0 = Time.get_ticks_msec()
+	while not kb.is_prepared() and Time.get_ticks_msec() - t0 < 30000:
+		await process_frame
+	var res: Dictionary = kb.get("_res")
+	var R: float = res["radius"]
+	var c0: Vector3 = res["center"]
+	kt.visible = false
+	lift = Vector3(0, R * 0.95, 0)                               # (above the floor, every piece)
+	for lf in (res["leaves"] as Array):
+		var mi := MeshInstance3D.new()
+		mi.mesh = lf["mesh"]
+		main.add_child(mi)
+		var out := (lf["center"] as Vector3) - c0
+		out = out.normalized() if out.length() > 0.001 else Vector3.UP
+		mi.global_transform = Transform3D(Basis(), cut_at + lift + out * R * 0.8)
+	cam.global_position = cut_at + lift + Vector3(-0.62, 0.3, 0.42)
+	cam.look_at(cut_at + lift + c0, Vector3.UP)
+	sp.global_position = cut_at + Vector3(-0.5, 1.1, 0.6)
+	sp.look_at(cut_at + lift + c0, Vector3.UP)
+	sp.light_energy = 4.5
+	var fill := OmniLight3D.new()
+	main.add_child(fill)
+	fill.global_position = cut_at + Vector3(0.6, 0.5, -0.5)
+	fill.light_energy = 0.6
+	fill.omni_range = 2.5
+	await shot("blowup_cut", 30)
+	player.rotation.y = yaw0
+	player.set("pitch", 0.0)
+	eye.rotation.x = 0.0
+	eye.current = true

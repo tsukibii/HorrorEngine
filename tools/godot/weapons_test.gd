@@ -1047,6 +1047,237 @@ func _initialize() -> void:
 	await until(func() -> bool: return not g("busy"), 2.0)
 	player.global_position = spot
 
+	# 8i. things that break when they're shot (HSBlowUp, docs/research/breaking_props.md): a kettle, a b_mug of tea and a
+	# b_box of shells on the corridor's floor, their b_kinds guessed, cut when they load; two pellets dent the kettle
+	# without breaking it; a close shot breaks each into its own pieces (its own materials and the inside's, smaller near
+	# the hit, flying away from the gun, the pellets' holes going with them), the thing gone and its collider with it;
+	# the b_box's shells and lid whole, the b_mug's tea a b_pool; at rest on the floor in a few seconds, none through it;
+	# a piece kicked walking into it; the explosive's blast breaking a second kettle all to small pieces; put back
+	player.global_position = spot
+	await fill()
+	var bspot := Vector3(spot.x - 2.2, fl, spot.z)
+	var bu := {}
+	for spec in [["Kettle", "electric_kettle", Vector3(0, 0, -0.3)], ["Mug", "mug_stoneware", Vector3(0.1, 0, 0.12)],
+			["Box", "shells_box_5", Vector3(0, 0, 0.45)], ["Kettle2", "electric_kettle", Vector3(5.2, 0, 0.1)]]:
+		var th := (load("res://addons/horrorstudio_weapons/models/%s.glb" % spec[1]) as PackedScene).instantiate() as Node3D
+		th.name = spec[0]
+		main.add_child(th)
+		th.global_position = bspot + (spec[2] as Vector3)
+		var b := HSBlowUp.new()
+		th.add_child(b)
+		bu[spec[0]] = b
+	var all_cut := false
+	var cut_t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - cut_t0 < 20000:              # (the wall's clock: headless at a fixed rate, frames race)
+		all_cut = true
+		for b in bu.values():
+			if not (b as HSBlowUp).is_prepared():
+				all_cut = false
+		if all_cut:
+			break
+		await frames(1)
+	var rk: Dictionary = (bu["Kettle"] as HSBlowUp).report()
+	var b_kinds := [str(rk["kind"]), str((bu["Mug"] as HSBlowUp).report()["kind"]), str((bu["Box"] as HSBlowUp).report()["kind"])]
+	say("blowup cut", "cut when they loaded: %s; kinds %s; the kettle %s, the mug %s leaves, the box %s whole" % [all_cut, str(b_kinds),
+		JSON.stringify(rk["cut"]), (bu["Mug"] as HSBlowUp).report()["leaves"], (bu["Box"] as HSBlowUp).report()["whole"]])
+	if not all_cut or b_kinds != ["metal", "ceramic", "cardboard"] or int(rk["leaves"]) < 8:
+		bad("the things weren't cut when they loaded or their kinds weren't guessed (%s, %s, %d leaves)" % [all_cut, str(b_kinds), int(rk["leaves"])])
+	var kettle: HSBlowUp = bu["Kettle"]
+	var khost := kettle.get_parent() as Node3D
+	var kmesh := khost.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
+	var kmesh0 := kmesh.mesh
+	var kbody := khost.get_node_or_null("BlowUpBody") as CollisionObject3D
+	var kmid := khost.global_position + Vector3(0, 0.1, 0)
+	# two pellets from afar: dented, not broken
+	var bspace := main.get_world_3d().direct_space_state
+	var b_kq := PhysicsRayQueryParameters3D.create(kmid + Vector3(2.0, 0.02, 0.0), kmid, 1)
+	var b_kh := bspace.intersect_ray(b_kq)
+	var b_weak: Array = []
+	if not b_kh.is_empty():
+		for i in 2:
+			b_weak.append({"point": (b_kh["position"] as Vector3) + Vector3(0, 0.025 * i, 0.012 * i), "normal": b_kh["normal"], "collider": b_kh["collider"],
+				"dir": Vector3(-1, 0, 0), "damage": 1.0, "pellet": i})
+	gun.fired.emit(b_weak)
+	await frames(2)
+	var dent_mm := 0.0
+	if kmesh.mesh != kmesh0 and not b_weak.is_empty():
+		var dp0: PackedVector3Array = kmesh0.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		var dp1: PackedVector3Array = kmesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		var dat_l := kmesh.global_transform.affine_inverse() * (b_weak[0]["point"] as Vector3)
+		for i in mini(dp0.size(), dp1.size()):
+			if dp0[i].distance_to(dat_l) < 0.03:
+				dent_mm = maxf(dent_mm, dp0[i].distance_to(dp1[i]) * 1000.0)
+	say("blowup dent", "two pellets from afar on the kettle (%s): broken %s, worn %.1f of %.1f, %d dents, pushed in %.1f mm" % [
+		b_kh.get("collider").name if not b_kh.is_empty() else "MISSED", kettle.is_broken, kettle.damage, float(rk["strength"]), int(kettle.report()["dents"]), dent_mm])
+	if b_kh.is_empty() or kettle.is_broken or kettle.damage < 1.9 or int(kettle.report()["dents"]) != 2 or dent_mm < 2.0:
+		bad("two pellets didn't dent the kettle without breaking it (%s, %.1f worn, %.1f mm)" % [kettle.is_broken, kettle.damage, dent_mm])
+	# a close shot: broken into its own pieces
+	player.global_position = Vector3(khost.global_position.x + 1.7, player.global_position.y, khost.global_position.z)
+	player.velocity = Vector3.ZERO
+	await frames(2)
+	look(kmid)
+	await frames(4)
+	var kmats: Array = []
+	for s in kmesh.mesh.get_surface_count():
+		kmats.append(kmesh.get_active_material(s))
+	var b_marks0 := marks()
+	gun.pull()
+	await frames(3)
+	var b_kl: Dictionary = kettle.last
+	var b_own := 0
+	var b_ins := 0
+	var b_vel := 0.0
+	var b_nr := 0
+	for p in kettle.pieces_out:
+		if not is_instance_valid(p):
+			continue
+		for mi in (p as Node).find_children("*", "MeshInstance3D", true, false):
+			var b_m := (mi as MeshInstance3D).mesh
+			for s in b_m.get_surface_count():
+				var mat := b_m.surface_get_material(s)
+				if kmats.has(mat):
+					b_own += 1
+				elif mat is ShaderMaterial and str((mat as ShaderMaterial).shader.resource_path).ends_with("inside.gdshader"):
+					b_ins += 1
+		if p is RigidBody3D:
+			b_vel += (p as RigidBody3D).linear_velocity.dot(-eye.global_basis.z)
+			b_nr += 1
+	b_vel /= maxf(float(b_nr), 1.0)
+	var b_sizes: Array = (b_kl.get("sizes", []) as Array).duplicate()
+	b_sizes.sort_custom(func(a, b_c): return a.y < b_c.y)
+	var b_half := b_sizes.size() / 2
+	var b_near := 0.0
+	var b_far := 0.0
+	for i in b_sizes.size():
+		if i < b_half:
+			b_near += b_sizes[i].x / maxf(b_half, 1)
+		else:
+			b_far += b_sizes[i].x / maxf(b_sizes.size() - b_half, 1)
+	var gone_hit := bspace.intersect_ray(PhysicsRayQueryParameters3D.create(eye.global_position, kmid + (kmid - eye.global_position).normalized() * 0.3, 1))
+	var through_body: bool = not gone_hit.is_empty() and gone_hit["collider"] == kbody
+	say("blowup kettle", "shot from 1.7 m: broken %s into %d pieces (%d rigid, %d little); %d surfaces its own materials, %d the inside; near the hit %.1f cm, away %.1f cm; flying %.1f m/s away from the gun; %d holes went with them (of %d made); gone %s, its collider %s" % [
+		kettle.is_broken, int(b_kl.get("pieces", 0)), int(b_kl.get("rigid", 0)), int(b_kl.get("little", 0)), b_own, b_ins, b_near * 100.0, b_far * 100.0, b_vel,
+		int(b_kl.get("marks_moved", 0)), marks() - b_marks0, not khost.visible, "STILL THERE" if through_body else "gone"])
+	if not kettle.is_broken or int(b_kl.get("pieces", 0)) < 4 or b_own < 4 or b_ins < 2 or b_near >= b_far or b_vel < 0.4 or int(b_kl.get("marks_moved", 0)) < 1 or khost.visible or through_body:
+		bad("the kettle didn't break into its own pieces as it should (%s, %d pieces, %d/%d surfaces, %.3f/%.3f, %.2f m/s, %d holes, shown %s, solid %s)" % [
+			kettle.is_broken, int(b_kl.get("pieces", 0)), b_own, b_ins, b_near, b_far, b_vel, int(b_kl.get("marks_moved", 0)), khost.visible, through_body])
+	# the b_mug and the b_box
+	await fill()
+	for nm in ["Mug", "Box"]:
+		var b: HSBlowUp = bu[nm]
+		var h := b.get_parent() as Node3D
+		player.global_position = Vector3(h.global_position.x + 1.6, player.global_position.y, h.global_position.z)
+		player.velocity = Vector3.ZERO
+		await frames(2)
+		look(h.global_position + Vector3(0, 0.05, 0))
+		await frames(4)
+		gun.pull()
+		await frames(3)
+		await fill()
+	var b_mug: HSBlowUp = bu["Mug"]
+	var b_box: HSBlowUp = bu["Box"]
+	var b_pool := main.get_node_or_null("Mug_pieces/Pool")
+	say("blowup mug and box", "the mug broken %s into %d pieces, its tea a pool %s; the box broken %s into %d pieces, %d of them whole (its shells, its lid)" % [
+		b_mug.is_broken, int(b_mug.last.get("pieces", 0)), b_pool != null, b_box.is_broken, int(b_box.last.get("pieces", 0)), int(b_box.last.get("whole", 0))])
+	if not b_mug.is_broken or int(b_mug.last.get("pieces", 0)) < 10 or b_pool == null:
+		bad("the b_mug didn't shatter with its tea spilled (%s, %d pieces, pool %s)" % [b_mug.is_broken, int(b_mug.last.get("pieces", 0)), b_pool != null])
+	if not b_box.is_broken or int(b_box.last.get("whole", 0)) < 2:
+		bad("the b_box didn't break with its shells and lid whole (%s, %d whole)" % [b_box.is_broken, int(b_box.last.get("whole", 0))])
+	# at rest on the floor, none through it
+	await secs(4.5)
+	var b_still := 0
+	var b_rigid := 0
+	var b_low := INF
+	for b in [kettle, b_mug, b_box]:
+		for p in (b as HSBlowUp).pieces_out:
+			if not is_instance_valid(p):
+				continue
+			if p is RigidBody3D:
+				b_rigid += 1
+				if (p as RigidBody3D).freeze:
+					b_still += 1
+			for mi in (p as Node).find_children("*", "MeshInstance3D", true, false):
+				var b_m := mi as MeshInstance3D
+				for s in b_m.mesh.get_surface_count():
+					for q in b_m.global_transform * (b_m.mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX] as PackedVector3Array):
+						b_low = minf(b_low, q.y)
+	var b_fell := 0
+	for b in [kettle, b_mug, b_box]:
+		b_fell += int((b as HSBlowUp).report().get("fell", 0))
+	say("blowup rest", "after 4.5 s: %d of %d rigid pieces at rest, the lowest point of any piece %.1f mm from the floor, %d fallen out of the world" % [b_still, b_rigid, (b_low - fl) * 1000.0, b_fell])
+	if b_still < b_rigid or b_low < fl - 0.004 or b_fell > 0:
+		bad("the pieces didn't come to rest on the floor (%d of %d, lowest %.1f mm)" % [b_still, b_rigid, (b_low - fl) * 1000.0])
+	# walked into: kicked
+	var b_kp: RigidBody3D = null
+	for p in kettle.pieces_out:
+		if is_instance_valid(p) and p is RigidBody3D and (p as RigidBody3D).freeze and (b_kp == null or (p as RigidBody3D).global_position.x > b_kp.global_position.x):
+			b_kp = p
+	var kick_moved := 0.0
+	if b_kp != null:
+		var b_kat := b_kp.global_position
+		player.global_position = Vector3(b_kat.x + 0.9, player.global_position.y, b_kat.z)
+		player.velocity = Vector3.ZERO
+		await frames(2)
+		look(Vector3(b_kat.x - 1.0, eye.global_position.y, b_kat.z))
+		await frames(2)
+		var b_wd := InputEventKey.new()
+		b_wd.physical_keycode = KEY_W
+		b_wd.keycode = KEY_W
+		b_wd.pressed = true
+		Input.parse_input_event(b_wd)
+		await secs(1.0)
+		var b_wu := b_wd.duplicate() as InputEventKey
+		b_wu.pressed = false
+		Input.parse_input_event(b_wu)
+		await secs(0.6)
+		kick_moved = b_kp.global_position.distance_to(b_kat) if is_instance_valid(b_kp) else 0.0
+	say("blowup kick", "walked into a piece of the kettle: it moved %.1f cm" % (kick_moved * 100.0))
+	if b_kp == null or kick_moved < 0.03:
+		bad("a piece walked into wasn't kicked (%.3f m)" % kick_moved)
+	# the explosive's blast: the second kettle all to small pieces, its broken faces scorched
+	player.global_position = spot
+	player.velocity = Vector3.ZERO
+	await fill(0)
+	gun.add_shells(1, exk)
+	await press(KEY_T)
+	gun.reload()
+	await frames(2)
+	await until(func() -> bool: return not g("busy"), 5.0)
+	var k2: HSBlowUp = bu["Kettle2"]
+	var k2h := k2.get_parent() as Node3D
+	player.global_position = Vector3(k2h.global_position.x - 3.0, player.global_position.y, k2h.global_position.z)   # (east of the mess)
+	await frames(2)
+	look(k2h.global_position + Vector3(0, 0.1, 0))
+	await frames(4)
+	gun.pull()
+	await frames(4)
+	var k2l: Dictionary = k2.last
+	var sc_v = (k2.get("_inside") as ShaderMaterial).get_shader_parameter("scorch") if k2.get("_inside") != null else null
+	var b_scorch := float(sc_v) if sc_v != null else 0.0
+	say("blowup blast", "the explosive at the second kettle: broken %s by its blast %s into %d pieces of %d leaves, its broken faces scorched %.2f" % [
+		k2.is_broken, k2l.get("blast", false), int(k2l.get("pieces", 0)), int(k2l.get("leaves", 0)), b_scorch])
+	if not k2.is_broken or not bool(k2l.get("blast", false)) or int(k2l.get("pieces", 0)) < int(k2l.get("leaves", 0)) * 0.6 or b_scorch <= 0.0:
+		bad("the blast didn't break the second kettle all to small pieces (%s, %s, %d of %d, %.2f)" % [k2.is_broken, k2l.get("blast", false), int(k2l.get("pieces", 0)), int(k2l.get("leaves", 0)), b_scorch])
+	await press(KEY_T)
+	# put back
+	kettle.restore()
+	await frames(3)
+	var back_ok: bool = khost.visible and kettle.pieces_out.is_empty() and not kettle.is_broken and kmesh.mesh == kmesh0 \
+		and kbody != null and kbody.collision_layer != 0
+	say("blowup restore", "the kettle put back: shown %s, solid %s, its pieces gone %s, its dents out %s" % [khost.visible,
+		kbody != null and kbody.collision_layer != 0, kettle.pieces_out.is_empty(), kmesh.mesh == kmesh0])
+	if not back_ok:
+		bad("the kettle wasn't put back as it was")
+	for b in bu.values():
+		(b as HSBlowUp).get_parent().queue_free()
+	for nm in ["Kettle_pieces", "Mug_pieces", "Box_pieces", "Kettle2_pieces"]:
+		var b_c := main.get_node_or_null(nm)
+		if b_c != null:
+			b_c.queue_free()
+	player.global_position = spot
+	player.velocity = Vector3.ZERO
+	await until(func() -> bool: return not g("busy"), 2.0)
+
 	# 9. lowered: out of view, the flashlight back on the eye, no shot; raised again
 	await fill()
 	gun.set_raised(false)

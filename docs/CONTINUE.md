@@ -107,7 +107,22 @@ gun"; DECISIONS 2026-11-09). Built:
   - A still barrel sends up a curling thread.
   The probe `Saved/Godot/_weapons/trail_probe.gd` (five moments, before and after); the guide's pictures made again.
 
-**Next, if the user wants it**: their eye on the flash and the damage in their own lighting (the flash's `energy`,
+- **Things that break when they're shot** (the user: "a shader/script called blownUp or something that lets any object
+  we attach be blow up by shotgun shots, e.g. a kettle, a box, but it should look like the object itself got destroyed
+  not just a generic animation"; DECISIONS 2026-11-09, after the smoke). Researched (docs/research/breaking_props.md),
+  then **HSBlowUp** (`blowup/`): the object's own meshes cut when it loads in a worker thread (HSFracture: recursive
+  plane slicing, the cuts filled, hollow kinds' walls never filled), its own materials on every piece and the inside's
+  shader on the broken faces, small pieces near the hit by region growing, thrown along the shot, the holes with them;
+  dents below its strength; the pieces rigid (4.5 cm and over, colliders at least 6 cm, laid onto the floor at rest) or
+  by rays; contents and lids whole, a liquid pooling; kinds as resources (`HSBreakKind`: ceramic, glass, wood, metal,
+  cardboard, plastic, stone, guessed); break and landing sounds made in code (`tools/weapon_sounds.py`); `preview` in
+  the editor. The made kettle and mug ship in `models/`. WEAPONS §8i holds it; the guide's section 11 and its six
+  `blowup_*` pictures. Probes: `Saved/Godot/_weapons/blow_probe.gd`, `blow_shots_probe.gd`, `mug_probe.gd`,
+  `blast_probe.gd`.
+
+**Next, if the user wants it**: their ear on the break sounds (made in code, never heard here) and their eye on how
+things break in their own rooms (a kind's `coarse`, `speed`, `crumple_m`); metal tearing into petals, Voronoi cells,
+pieces breaking again, a broken thing kept broken in a save. Their eye on the flash and the damage in their own lighting (the flash's `energy`,
 the smoke's `smoke_glow`, `smoke_light_cap`, density and the trail's turbulence, strands and erosion, the impact's `merge_m`, `soot_m`, `powder_m`, `wad_m` are the
 knobs), pellets through a thin wall into the next room and ricochets off concrete (docs/research/shotgun_damage.md §5),
 the gun in tutorial v2 itself (found in a room, her an HSShootable that's gone a while when shot, the searcher coming

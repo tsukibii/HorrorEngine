@@ -10,7 +10,8 @@ flash, the noise heard, the ears ringing, the kick), the right barrel then the l
 tape, never three flashes in a second, the reload (broken open in the view, the hulls flicked onto the floor, a shell
 popped into each chamber), one barrel's reload, a reload stopped by a shot, the keys, a shootable, a lamp shot out,
 the muzzle's flash and trail, what a 12-gauge leaves on a wall at three distances and on concrete, the explosive shell
-and its blast, the box of shells taken, lowered and raised, the gun found and taken.
+and its blast, things that break when they're shot (HSBlowUp: a kettle, a mug of tea and a box of shells), the box of
+shells taken, lowered and raised, the gun found and taken.
 
     python tools/godot/weapons_check.py [--reuse] [--pictures [--only idle,fire]] [--keep DIR]
 

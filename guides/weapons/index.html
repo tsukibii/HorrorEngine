@@ -80,6 +80,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#kinds">Kinds of shell</a></li>
     <li><a href="#impacts">What a shot leaves</a></li>
     <li><a href="#found">Found in a room, and shot at</a></li>
+    <li><a href="#break">Things that break</a></li>
     <li><a href="#code">In your own scripts</a></li>
     <li><a href="#numbers">The numbers</a></li>
     <li><a href="#rules">Good to know</a></li>
@@ -315,8 +316,57 @@ collision with it, then back: a ghost doesn't die), <b>push</b> it back, play a 
 <code>down</code> signals are there for anything else: your own scripts, an animation, the story moving on.</p>
 </section>
 
+<section id="break">
+<h2><span class="n">11</span>Things that break</h2>
+<p>Put an <span class="node">HSBlowUp</span> under a kettle, a mug, a box, a crate, any object, and a shotgun blast breaks
+it into <b>its own pieces</b>: its own mesh cut up, its own textures on every piece, the broken faces drawn as what it's
+made of inside, small pieces where it was hit and bigger ones away from it, thrown out along the shot. The pellets'
+holes go with the pieces they were on. A weaker shot dents metal, card and plastic and wears it down.</p>
+<div class="pair">
+<figure><img src="img/blowup_before.jpg" width="1600" height="900" alt="A kettle, a mug of tea and a box of shells on the corridor floor in the flashlight, the gun aimed at them"><figcaption>A kettle, a mug of tea and a box of shells on the corridor's floor, each with an HSBlowUp under it.</figcaption></figure>
+<figure><img src="img/blowup_burst.jpg" width="1600" height="900" alt="The kettle a moment after the shot: its pieces flying apart in the flash"><figcaption>The kettle a moment after the shot: its own steel tearing apart.</figcaption></figure>
+</div>
+<div class="pair">
+<figure><img src="img/blowup_mug.jpg" width="1600" height="900" alt="The mug shot with the left barrel: shards and tea in the smoke"><figcaption>The mug, with the left barrel: it shatters, its tea splashes.</figcaption></figure>
+<figure><img src="img/blowup_after.jpg" width="1600" height="900" alt="The mess on the floor after all three were shot"><figcaption>After: the mess stays where it fell, at rest on the floor.</figcaption></figure>
+</div>
+<figure><img src="img/blowup_close.jpg" width="1600" height="900" alt="Close: the kettle torn open and crumpled, the mug's white shards, the tea pooling on the runner"><figcaption>Close: the kettle torn open and crumpled (its brushed steel, its water window on a piece), the mug's shards with the tea stain inside, the tea pooling on the runner.</figcaption></figure>
+<h3>Making something breakable</h3>
+<ol class="steps">
+  <li>Put the object in your scene: a model you dropped in (a made prop works best), or a MeshInstance3D.</li>
+  <li>Select it and add a child node: <b>HSBlowUp</b>. That's all: it guesses what the object is made of and gives it a
+  collider if it has none, so the pellets find it.</li>
+  <li>Tick <b>Preview</b> to see, in the editor, the pieces it will break into, drawn apart round it (nothing is saved).</li>
+</ol>
+<figure><img src="img/blowup_cut.jpg" width="1600" height="900" alt="The kettle's pieces laid apart in the air, as the preview shows them"><figcaption>What <b>Preview</b> shows: the kettle cut into its pieces, laid apart. It's cut once when the game loads, in the background (under a second for a kettle), so nothing is cut when it's shot.</figcaption></figure>
+<h3>What it's made of</h3>
+<p>Its <b>Kind</b>. Leave it empty and it's guessed from the object's name, its materials' names and how they look
+(metallic, see-through), or its <code>hs_surface</code> metadata. The plugin's kinds are in <code>blowup/kinds/</code>:</p>
+<div class="cols">
+  <div class="card"><h4>Ceramic</h4><p>Mugs, plates, teapots, vases, tiles: two pellets shatter it into many sharp shards; the broken edges bisque white.</p></div>
+  <div class="card"><h4>Glass</h4><p>Bottles, jars, windows: one pellet. Many small clear shards, glints.</p></div>
+  <div class="card"><h4>Metal</h4><p>Kettles, pots, cans, buckets: tears into a few big crumpled sheets (small ones where it's hit), sparks. Dented first by weaker shots.</p></div>
+  <div class="card"><h4>Cardboard</h4><p>Boxes, cartons, books: torn into crumpled pieces, paper bits fluttering. What's in it (a box's shells) and its lid fly out whole.</p></div>
+  <div class="card"><h4>Wood</h4><p>Crates, chairs, stools, shelves: splinters along the grain (its longest side).</p></div>
+  <div class="card"><h4>Plastic</h4><p>Cracks into a few pieces, whitened where it breaks. Dented first.</p></div>
+  <div class="card"><h4>Stone</h4><p>Rocks, bricks, statues: a strong one; chunks and a lot of dust.</p></div>
+</div>
+<div class="card"><h4>A kind of your own</h4><p>Duplicate a kind (FileSystem, right-click, Duplicate), change it in the Inspector and drop it
+on the HSBlowUp's <b>Kind</b>. <b>Strength</b> is the damage one shot needs to break it (a buckshot pellet does 1, so
+5 means most of a close shot); shots that don't break it wear it down, and break it at two and a half times that in
+all. <b>Pieces</b>, <b>Coarse</b> (big: it breaks in two or three; small: it shatters), <b>Grain</b>, <b>Crumple</b>,
+<b>Dent</b>, <b>Hollow</b> (its inside is air: a kettle or a box), how fast and how much the pieces spin and bounce, the
+broken faces' colour and grit, the dust, chips, splinters, glints, paper or sparks, its sounds.</p></div>
+<h3>Its settings</h3>
+<p><b>Strength</b> and <b>Pieces</b> override its kind's. <b>Whole</b>: parts that fly off whole (a made prop's lid on
+its hinge and its contents always do). <b>Liquid</b>: what's in it, splashed and pooling under it (a made prop's own
+liquid, such as the mug's tea, is found by itself). <b>Push</b>: how hard the pieces fly. <b>Keep</b>: seconds before the
+pieces are cleared (0: the mess stays). <b>Kick</b>: your feet push the pieces you walk into. <b>Target</b>: its
+<code>fire()</code> when it breaks (a scare, a cue). <b>Collider</b>: a hull round it when it has no collider of its own.</p>
+</section>
+
 <section id="code">
-<h2><span class="n">11</span>In your own scripts</h2>
+<h2><span class="n">12</span>In your own scripts</h2>
 <pre>$Player/Eye/Shotgun.fired.connect(func(hits): print(hits.size(), " pellets hit"))
 $Player/Eye/Shotgun.broke_open.connect(func(): print("the chambers are bare"))
 $Player/Eye/Shotgun.give(4)              # the gun, and four shells with it
@@ -332,7 +382,13 @@ func shot(info: Dictionary) -&gt; void:     # {point, normal, dir, from, pellet,
     hp -= info.get("damage", 1.0)
 
 # another gun's muzzle: an HSMuzzle at the end of its barrel
-$Rifle/Muzzle.fire(load("res://my_flash.tres"))</pre>
+$Rifle/Muzzle.fire(load("res://my_flash.tres"))
+
+# a thing that breaks (an HSBlowUp under it)
+$Kettle/BlowUp.blown_up.connect(func(pieces): print(pieces.size(), " pieces"))
+$Kettle/BlowUp.blow_up()                 # broken from a script (a cue, a scare): from its middle
+$Kettle/BlowUp.blow_up(at, way, 2.0)     # from a place, along a way, twice its strength
+$Kettle/BlowUp.restore()                 # back as it was (its pieces gone, its dents out)</pre>
 <p>Signals: <code>fired(hits)</code>, <code>shell_in(loaded)</code>, <code>empty</code>, <code>broke_open</code>,
 <code>closed</code>, <code>raised_changed(up)</code>. State: <code>live</code> (each barrel's), <code>spent</code>,
 <code>barrel_kind</code>, <code>loaded</code> (set it and the chambers follow), <code>spare</code>, <code>capacity</code>,
@@ -342,12 +398,15 @@ $Rifle/Muzzle.fire(load("res://my_flash.tres"))</pre>
 <code>muzzle(barrel)</code>. Where shots land: <code>HSImpacts.of(get_tree())</code> (its <code>marks</code>, its
 <code>last_shot</code>: the pellets, the torn holes, the ones alone, the soot, the grains, the wad; <code>play(impact, hit)</code>
 for a hit of your own). On an <span class="node">HSShootable</span>: <code>hit(info)</code>, <code>down</code>,
-<code>count</code>, <code>is_down</code>. A gun of your own extends <span class="node">HSGun</span> (<code>gun.gd</code>), as the
+<code>count</code>, <code>is_down</code>. On an <span class="node">HSBlowUp</span>: <code>prepared</code>, <code>hit(info)</code> (a shot
+that didn't break it), <code>blown_up(pieces)</code>; <code>is_prepared()</code>, <code>blow_up(at, dir, power, blast_at)</code>,
+<code>restore()</code>, <code>damage</code>, <code>is_broken</code>, <code>pieces_out</code>, <code>report()</code>;
+<code>HSBlowUp.guess_kind(node)</code>. A gun of your own extends <span class="node">HSGun</span> (<code>gun.gd</code>), as the
 double does.</p>
 </section>
 
 <section id="numbers">
-<h2><span class="n">12</span>The numbers</h2>
+<h2><span class="n">13</span>The numbers</h2>
 <ul>
   <li><b>The shot</b>: nine pellets, the right barrel's cone 0.9° (improved cylinder), the left's 0.7° (modified), 45 m
   reach; the pattern about 6 cm across 2.5 m out, 11 cm at 4.5 m, 22 cm at 9 m; the view kicked 3.2° and settling back
@@ -365,7 +424,7 @@ double does.</p>
 </section>
 
 <section id="rules">
-<h2><span class="n">13</span>Good to know</h2>
+<h2><span class="n">14</span>Good to know</h2>
 <ul>
   <li><b>Fewer flashes</b>: lower <b>Flash Energy</b> (1.5: a glow, not a flash) for players who need it.</li>
   <li><b>A click never fires while the mouse is free</b> (a menu open, or the click that takes the mouse back).</li>
@@ -374,6 +433,14 @@ double does.</p>
   <li><b>The hulls fall and roll by rays of their own</b>, not as physics bodies: something that small would sink through
   a level's thin floor. Three rays each (its ends and its middle), so one never slips through the gap at a door's
   edge. The last 16 stay.</li>
+  <li><b>A breakable thing is cut when it loads</b>, in the background (a kettle of 11,000 triangles in under half a
+  second), so the shot itself only swaps it for its pieces. Shot before that, it waits for the cut (a hitch).</li>
+  <li><b>Its pieces are rigid bodies only when they're 4.5 cm or bigger</b>, with colliders at least 6 cm thick (a thin
+  piece would sink through a level's floor), laid down onto the floor once they come to rest; the smaller ones fall by
+  rays, as the hulls do. They never knock each other about, nor you; the gun's pellets and a blast still move them.</li>
+  <li><b>A sealed thing</b> (a kettle modelled as a closed shell) breaks as its kind says: a hollow kind (metal, card,
+  glass, plastic) as a thin wall, a filled one (ceramic, wood, stone) solid. A mug modelled with its wall's thickness
+  shows the wall in its broken edges.</li>
   <li><b>No crosshair of its own</b>: the HUD's dot (HorrorStudio UI) is the middle of the pattern.</li>
   <li><b>No hole lands on the gun</b>, and the gun never shows in a mirror: it's drawn on render layer 20 (the Look
   plugin's: what your eye draws and a mirror doesn't).</li>
