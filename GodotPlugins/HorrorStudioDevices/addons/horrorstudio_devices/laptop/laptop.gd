@@ -46,6 +46,7 @@ const PACKAGE := "res://addons/horrorstudio_devices/delivery/package.tscn"
 @export var when_unseen := true                     ## left only while the player can't see the place (no box appearing in view)
 @export var knock := true                           ## a knock where it's left, then the box set down
 @export var package: PackedScene                    ## the box it comes in (delivery/package.tscn when empty)
+@export var mark_parcels := true                    ## a quest marker over each parcel left till it's opened (the UI plugin's HSQuestMarker: an HSHud in the scene draws it)
 @export_group("The view")
 @export_range(0.2, 3.0) var zoom_secs := 0.8
 @export_range(15.0, 90.0) var zoom_fov := 40.0      ## the lens while you're at it: narrow, so the screen's flat
@@ -641,6 +642,7 @@ func _drop(spot: Node3D, d: Dictionary) -> void:
 	(pkg as HSPackage).items.assign(d["items"])
 	(pkg as HSPackage).counts = PackedInt32Array(d["counts"])
 	(pkg as HSPackage).order_number = int(d["number"])
+	(pkg as HSPackage).marker = mark_parcels
 	spot.add_child(pkg)
 	var b: AABB = (pkg as HSPackage).box
 	var w := b.size.x + 0.05

@@ -27,6 +27,13 @@ Turn**. Put it in a catalog's **Items**, or save it in the catalog's **Folder**:
 **What's for sale**: each thing's **For Sale** (off: not in the shop at all), and a laptop's own **Sells** (only these
 ids of its catalog, when it lists any).
 
+**A gun and its shells** (In the hands): **Gun** on and it goes to the weapons plugin's gun under the player
+(HSDoubleBarrel with its **Owned** off till then), not the pocket, and the gun is drawn up into view, as the plugin's own
+pickup gives it; **Shells** (each one ordered: a box of five is 5) go into that gun's own pocket, of the kind **Shell**
+(an HSShellType: `shells/explosive.tres`; empty, its normal kind). With no gun in the scene they're things for the pocket
+after all. **Tick**: a task of the starter Story's ticked when it comes (`gun`), as a pickup's Tick (and so a thing
+`needs = "task:gun"` opens).
+
 **Locked until something's happened**: a thing's **Needs**, in the starter Story's words: `task:find_gun` (that task
 done), a fact set (`cellar_open`, `Story.flag("cellar_open")`), `item:key_304` (carried), `!` in front for not, several
 apart by commas. Until they hold it's a **?** in the shop: no model, `???`, LOCKED, its **Locked Text** when picked
@@ -39,13 +46,14 @@ Set the laptop's **Deliver To** (a Marker3D on the floor where the parcels go, i
 what's bought comes in a **parcel** instead of straight into the pocket: after **Delivery Secs**, while the player can't
 see that place (**When Unseen**), a parcel is left there with what was ordered in it, a **Knock** and the box set down;
 the terminal says "ON ITS WAY TO THE FRONT DOOR" (**Deliver Place**). Several orders, several parcels side by side.
-**E on a parcel** unboxes it, Minecraft's way: the tape torn, the box jumps, its flaps burst open and it's gone in a
+**Mark Parcels** (on): a quest marker over each parcel left (the UI plugin's
+HSQuestMarker, an HSHud in the scene draws it) until it's opened. **E on a parcel** unboxes it, Minecraft's way: the tape torn, the box jumps, its flaps burst open and it's gone in a
 puff of card dust; out of the puff each thing pops up at its own size, turns a moment, then is pulled into you,
 shrinking, with a pop, into the pocket as it arrives. Nothing is ever fitted into the box, so a shotgun can come out of
 a shoebox. The parcel is `delivery/package.tscn` (`HSPackage`; the laptop's **Package** for your own): put one in a
 level by hand with its **Items** and **Counts** (a parcel waiting on the porch); **Keep Box** on and its flaps open
 and it stays, empty, the things flying out of it all the same; **Pull** how fast they come, **Copies Max** how many
-of one thing you see flying.
+of one thing you see flying; **Marker** a quest marker over it till it's opened (**Marker Label**).
 
 ## The look
 

@@ -213,7 +213,8 @@ Put an **HSHitReact** under a character (docs/research/hit_reactions.md):
   (`HITBOX_LAYER`) riding its bone (a BoneAttachment3D); the gun's pellets and blasts look there (`HSGun.SHOT_MASK`), the
   player never bumps into them. A stand-in with no skeleton gets one capsule round its meshes, and where it's hit is read
   from the height. Her own colliders (a body's capsule) are hers too: a pellet that hits one finds the hitbox behind it.
-  Every collider of hers says `hs_surface` "ichor": no crater, no dust on her.
+  Every collider of hers says `hs_surface` "ichor": no crater, no dust on her. While she's hidden (a figure not come yet,
+  a searcher waiting at her post) her hitboxes stop nothing: a pellet goes through where she'd stand.
 - **A hit**: the pellets of one shot added up (the head's times `head_x` 2, an arm's or a leg's `limb_x` 0.6), a blast
   taken once at its strongest; the bone hit kicked away from the shot on a spring after her animation (`HSFlinch`): the
   spine bent back, the head whipped a beat later, an arm swung, a knee giving, a stand-in tilted whole and back upright.
@@ -229,7 +230,8 @@ Put an **HSHitReact** under a character (docs/research/hit_reactions.md):
 - **The smoke**: a quarter second after the hit (once a shove has settled: smoke riding her bone drew a line through the
   air as she was thrown back), black smoke out of the wound, an HSMuzzle playing `wound_smoke` riding the bone, rising
   and trailing after her as she moves (the muzzle's own trail); `bleed_wounds` at most at once.
-- **Down** at `health`: what moves her stopped (anything under her with a `stop()`), `hs_down` and, once gone,
+- **Down** at `health`: what moves her stopped (anything under her with a `stop()`: the starter's chase.gd, and its
+  searcher.gd, which leaves her to dissolve), `hs_down` and, once gone,
   `hs_hidden` set for the starter's hunters; DISSOLVE (the char spreading over her own look, then her surfaces swapped
   for the char's and crumbling away from burning holes, smoke pouring off her head, hands, knees and chest, `dissolve_s`
   2.4), VANISH (gone at once in the smoke), RAGDOLL (her PhysicalBoneSimulator3D let go, else DISSOLVE) or NOTHING;

@@ -24,6 +24,7 @@ signal unboxed(items: Array, counts: Array)          ## all of it in the pocket 
 const SOUNDS := "res://addons/horrorstudio_devices/sounds/"
 const BURST := 0.2                                   # seconds from E to the puff (the squash, the stretch, the flaps flung)
 const HANG := 0.42                                   # a thing's seconds in the air before the player pulls it in
+const MARKER := "res://addons/horrorstudio_ui/quest_marker.gd"
 
 @export var items: Array[HSShopItem] = []            ## what's in it: the laptop's delivery fills it, or set it by hand
 @export var counts: PackedInt32Array = []            ## how many of each, in the same order (1 where missing)
@@ -32,6 +33,8 @@ const HANG := 0.42                                   # a thing's seconds in the 
 @export_range(0.25, 4.0) var pull := 1.0             ## how hard the player pulls them in (their speed)
 @export_range(0.2, 3.0) var open_secs := 0.9         ## the flaps' swing when the box is kept
 @export var say_empty := "Empty."                    ## what the Story says when a kept box is used again
+@export var marker := false                          ## a quest marker over it till it's opened (the UI plugin's HSQuestMarker: an HSHud in the scene draws it); the laptop's Mark Parcels puts one on each it leaves
+@export var marker_label := "Parcel"                 ## the marker's name, seen near
 @export_group("Sound")
 @export var sounds := true
 @export_range(-40.0, 6.0) var volume_db := -4.0
@@ -44,6 +47,7 @@ var inside := AABB()                                 ## where things were in it 
 var box := AABB()                                    ## the box shut (its own space)
 var flying: Array = []                               ## what's in the air: {node, item, count, age, vel, spin, from_d, i}
 var puff: Array = []                                 ## the burst's particles (the dust, the bits)
+var mark: Node3D = null                              ## its quest marker (`marker`) while it's shut
 var _model: Node3D
 var _body: StaticBody3D
 var _t := -1.0                                       # seconds since E (-1: shut)
@@ -60,6 +64,8 @@ func _ready() -> void:
 	add_to_group("hs_package")
 	_make_body()
 	_make_sounds()
+	if marker:
+		_make_marker()
 
 
 # ---- what it's made of ---------------------------------------------------------------------------------------------------
@@ -126,6 +132,18 @@ func _set_flap(f: Dictionary, k: float) -> void:
 	var axis := Vector3(float(ax[0]), float(ax[1]), float(ax[2])).normalized()
 	var ang := lerpf(float(part.get("shut", 0.0)), float(part.get("open", 100.0)), k) - float(part.get("built", 0.0))
 	(f["node"] as Node3D).basis = Basis(axis, deg_to_rad(ang))
+
+
+# the quest marker over it (the UI plugin's, when the project has it): its top a little over the box's
+func _make_marker() -> void:
+	if not ResourceLoader.exists(MARKER):
+		return
+	mark = Node3D.new()
+	mark.set_script(load(MARKER))
+	mark.name = "Marker"
+	mark.set("label", marker_label)
+	mark.set("height", maxf(box.end.y, 0.1) + 0.05)
+	add_child(mark)
 
 
 func _make_body() -> void:
@@ -202,6 +220,9 @@ func unbox() -> void:
 		return
 	is_open = true
 	_t = 0.0
+	if mark != null and is_instance_valid(mark):
+		mark.queue_free()                            # (what it pointed at is opened)
+	mark = null
 	sound("tape")
 	if keep_box:
 		sound("flaps", 0.05)
