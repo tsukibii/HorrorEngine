@@ -49,8 +49,8 @@ for f in ["laptop_scene.gd", "laptop_test.gd", "laptop_shots.gd"]:
 shutil.rmtree(proj / "lab_items", ignore_errors=True)
 # the office as the project's main scene, to play (`--keep DIR`, then F5): the same room the check and the pictures use
 (proj / "office.gd").write_text(
-    "extends Node3D\n## the LAPTOP check's office to play: a desk, the laptop prefab on it, a $20 note, the starter's player\n"
-    "const Scene := preload(\"res://laptop_scene.gd\")\n\n\nfunc _ready() -> void:\n\tScene.build(self)\n", encoding="utf-8")
+    "extends Node3D\n## the LAPTOP check's office to play: a desk, the laptop prefab on it, a $20 note, the starter's player, a door its parcels come to\n"
+    "const Scene := preload(\"res://laptop_scene.gd\")\n\n\nfunc _ready() -> void:\n\tScene.build(self, 20.0, true)\n", encoding="utf-8")
 (proj / "main.tscn").write_text('[gd_scene format=3]\n\n[ext_resource type="Script" path="res://office.gd" id="1"]\n\n'
                                 '[node name="Office" type="Node3D"]\nscript = ExtResource("1")\n', encoding="utf-8")
 pg = (proj / "project.godot").read_text(encoding="utf-8")

@@ -75,6 +75,8 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#sit">Sitting at it</a></li>
     <li><a href="#order">The Order tab</a></li>
     <li><a href="#items">Things to sell: adding one</a></li>
+    <li><a href="#locked">Locked until it's earned</a></li>
+    <li><a href="#delivery">Delivery: a parcel at the door</a></li>
     <li><a href="#cash">Cash and the pocket</a></li>
     <li><a href="#look">The green terminal's look</a></li>
     <li><a href="#model">The laptop and the mouse</a></li>
@@ -90,10 +92,11 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   <h1>The laptop</h1>
   <p>A laptop to sit at, for a Godot game you build by hand. Press <kbd>E</kbd> on it and the view goes in close to its
   screen: a green terminal you use with the mouse. Its <b>Order</b> tab sells things for the player's cash, each shown as
-  its own model, and what's bought goes into the pocket, where the HUD's inventory row shows it. Drag the prefab onto a
-  desk; add a thing to sell by saving one small file.</p>
+  its own model, a page at a time, and what's bought goes into the pocket, where the HUD's inventory row shows it, or
+  comes in a parcel left at the door, to open with <kbd>E</kbd>. Things can be locked until the player has done
+  something. Drag the prefab onto a desk; add a thing to sell by saving one small file.</p>
   <div class="chips"><span class="chip">Godot 4.7</span><span class="chip">GDScript</span><span class="chip">HSLaptop</span>
-  <span class="chip">HSTerminal</span><span class="chip">HSShopCatalog</span><span class="chip">HSShopItem</span><span class="chip">HSTerminalLook</span>
+  <span class="chip">HSTerminal</span><span class="chip">HSShopCatalog</span><span class="chip">HSShopItem</span><span class="chip">HSPackage</span><span class="chip">HSTerminalLook</span>
   <span class="chip">your laptop and mouse, painted by the prop generator</span></div>
 </header>
 
@@ -110,7 +113,8 @@ six to start with (AA batteries for the flashlight, a candle, painkillers, water
 <section id="try">
 <h2><span class="n">2</span>Try it first</h2>
 <p>The plugin's own check builds a project to play: a small office at night with the laptop on a desk, a $20 note beside
-it, the starter's player standing at the desk with $20 in the pocket. Keep it in a folder of your own and open it:</p>
+it, a door behind you where what you buy is left, the starter's player standing at the desk with $20 in the pocket.
+Keep it in a folder of your own and open it:</p>
 <pre>python tools/godot/laptop_check.py --keep ~/Games/LaptopLab
 godot ~/Games/LaptopLab/project.godot      # then F5</pre>
 <p>Click into the window to take the mouse, look at the laptop, press <kbd>E</kbd>. It plays itself through once
@@ -158,15 +162,19 @@ pointer (green, drawn on the screen); it clicks what it's over. The first time, 
 
 <section id="order">
 <h2><span class="n">5</span>The Order tab</h2>
-<p>Every thing for sale is a card under its heading: its own model (turning while the pointer's on it), its name, its
-price and, if the shop only has a few, how many are left. Click one and it's on the right, large and turning, its words
-typed out; <span class="ui">−</span> and <span class="ui">+</span> for how many, the total, <span class="ui">ORDER</span>.</p>
-<figure><img src="img/order.jpg" width="1600" height="900" alt="ORDER: cards under SUPPLIES and FOOD & DRINK, each its model in green; the batteries picked large on the right with two of them, the total $9.00 and ORDER"><figcaption>Two batteries picked; the pointer on the candle, which lights its card and turns it.</figcaption></figure>
+<p>The things for sale come <b>a page at a time</b>: six cards a page (the laptop's <b>Page Size</b>), three a row, each
+category on pages of its own with its name over them. Under the cards, <span class="ui">&lt; PREV</span>, the pages'
+numbers with the one you're on in brackets (<span class="ui">1 [2] 3</span>; a long catalogue shows the first, the last
+and the two each side), and <span class="ui">NEXT &gt;</span>; the arrow keys and Page Up and Down turn them too. Each
+card is its thing's own model (turning while the pointer's on it), its name, its price and, if the shop only has a few,
+how many are left. Click one and it's on the right, large and turning, its words typed out; <span class="ui">−</span> and
+<span class="ui">+</span> for how many, the total, <span class="ui">ORDER</span>.</p>
+<figure><img src="img/order.jpg" width="1600" height="900" alt="ORDER's first page, SUPPLIES: four cards (batteries, a candle, painkillers and a ? still locked) with PAGE 1 OF 2 and the pager [1] 2 under them; the batteries picked large on the right with two of them, the total $9.00 and ORDER"><figcaption>SUPPLIES, page 1 of 2: two batteries picked; the pointer on the candle, which lights its card and turns it; a box of shells still locked (a ?).</figcaption></figure>
 <p>Ordered, it's paid from the cash and goes straight into the pocket: the status line says the order's number, the
 HUD's inventory row comes up for a moment with the thing's own model in it.</p>
 <figure><img src="img/ordered.jpg" width="1600" height="900" alt="After ORDER: CASH $11.00, ORDER #1001 PLACED, and the HUD's row at the bottom with the batteries' model"><figcaption>ORDER #1001: $9.00 from $20.00, two pairs of batteries in the pocket (the starter's flashlight takes them as its spares), the row showing them.</figcaption></figure>
 <div class="pair">
-<figure><img src="img/declined.jpg" width="1600" height="900" alt="A burger at $5.50 with $2.00: DECLINED: NOT ENOUGH CASH: $3.50 SHORT"><figcaption>Too dear: declined, and it says by how much. Nothing taken.</figcaption></figure>
+<figure><img src="img/declined.jpg" width="1600" height="900" alt="FOOD &amp; DRINK, page 2: a burger at $5.50 with $2.00: DECLINED: NOT ENOUGH CASH: $3.50 SHORT"><figcaption>Page 2, FOOD &amp; DRINK (<span class="ui">1 [2]</span>): too dear, declined, and it says by how much. Nothing taken.</figcaption></figure>
 <figure><img src="img/order_tape.jpg" width="1600" height="900" alt="The Order tab through the camhybrid tape"><figcaption>On the camhybrid tape: it still reads.</figcaption></figure>
 </div>
 <p>A thing whose shop has only a few (its <b>Stock</b>) says how many are left; sold out, its card says so and
@@ -186,6 +194,8 @@ HUD's inventory row comes up for a moment with the thing's own model in it.</p>
   <tr><td><b>Category</b></td><td>the heading it's listed under</td></tr>
   <tr><td><b>Model</b></td><td>what it looks like: any scene (a made prop's <code>.glb</code> from <code>Saved/Props/</code>, your own mesh). Its card, the pocket's row and your hand all show it.</td></tr>
   <tr><td><b>Model Turn</b></td><td>degrees: how it sits in its slot (a flat thing stood up)</td></tr>
+  <tr><td><b>For Sale</b></td><td>off: not in the shop at all (kept for later, or for a script to turn on)</td></tr>
+  <tr><td><b>Needs</b>, <b>Show Locked</b>, <b>Locked Text</b></td><td>locked until something's happened: <a href="#locked">the next section</a></td></tr>
 </table>
 <p>Then either put it in a catalog's <b>Items</b> list (the laptop's <b>Catalog</b>; the plugin's own is
 <code>shop/catalog.tres</code>), or set the catalog's <b>Folder</b> and just save every item there: <b>a file in the folder is
@@ -194,23 +204,79 @@ for sale</b>, nothing to list. A laptop with no catalog sells the plugin's.</p>
 addons/horrorstudio_devices/shop/items/batteries.tres   candle.tres   painkillers.tres
                                          water.tres     soda.tres     burger.tres</pre>
 <div class="tip"><b>Your own catalog</b>: duplicate <code>shop/catalog.tres</code> into your game's folder, change its <b>Store</b>
-name and things, and give it to the laptop's <b>Catalog</b>. Two laptops can sell different things.</div>
+name and things, and give it to the laptop's <b>Catalog</b>. Two laptops can sell different things: or one catalog and
+each laptop's <b>Sells</b>, the ids it sells of it (empty: all of them).</div>
+</section>
+
+<section id="locked">
+<h2><span class="n">7</span>Locked until it's earned</h2>
+<p>A thing can wait for the story: its <b>Needs</b> says what must have happened first, in the starter Story's words,
+the same as an area's or a door's:</p>
+<table class="keys">
+  <tr><td><code>task:find_gun</code></td><td>that task on the to-do list done (<code>Story.tick("find_gun")</code>): a quest finished</td></tr>
+  <tr><td><code>cellar_open</code></td><td>a fact set (<code>Story.flag("cellar_open")</code>)</td></tr>
+  <tr><td><code>item:key_304</code></td><td>carried</td></tr>
+  <tr><td><code>!night_two</code></td><td>not (a thing for sale only until something happens)</td></tr>
+  <tr><td><code>task:find_gun, night_two</code></td><td>several, apart by commas: all of them</td></tr>
+</table>
+<p>Until they hold, the thing is <b>a ?</b> in the shop: no model, <code>???</code>, LOCKED, and picked it says its
+<b>Locked Text</b> (LOCKED. when it has none); it can't be ordered. With <b>Show Locked</b> off it isn't in the shop at
+all until then (a surprise). Once its needs hold, its card shows its model and says <b>NEW</b> until it's picked or the
+player logs off. The laptop looks again every time it wakes.</p>
+<div class="pair">
+<figure><img src="img/locked.jpg" width="1600" height="900" alt="A ? card picked: a large ? on the right, ???, NOT FOR YOU. NOT YET. FIND THE GUN FIRST., PRICE ???, LOCKED, the button LOCKED"><figcaption>Picked while locked: its ?, its words, no price, no ORDER.</figcaption></figure>
+<figure><img src="img/unlocked.jpg" width="1600" height="900" alt="The same card after the task's done: a box of shells turning in green, its price and NEW on its card"><figcaption>The gun found (the task ticked): the box of shells, NEW.</figcaption></figure>
+</div>
+<div class="tip"><b>A game without the starter's Story</b>: unlock from your own script with <code>$Laptop.unlock("shells")</code>,
+whatever its <b>Needs</b> say.</div>
+</section>
+
+<section id="delivery">
+<h2><span class="n">8</span>Delivery: a parcel at the door</h2>
+<p>Give the laptop a <b>Deliver To</b> and what's bought doesn't go straight into the pocket: it comes in a
+<b>parcel</b>, left there.</p>
+<ol class="steps">
+  <li>Put a <span class="node">Marker3D</span> on the floor where parcels should be left (a doormat, a porch), its
+  <b>-Z</b> (the blue arrow's back) toward the room: the parcel's front faces that way.</li>
+  <li>On the laptop, under <b>Delivery</b>: <b>Deliver To</b> that marker; <b>Deliver Place</b> what the terminal calls
+  it ("the front door"); <b>Delivery Secs</b> how long it takes.</li>
+  <li>Leave <b>When Unseen</b> on: the parcel is only left while the player can't see the place (no box appearing in
+  view); <b>Knock</b>: a knock there first, then the box set down.</li>
+</ol>
+<p>The order's status line says where it's going and when; several orders, several parcels, side by side.</p>
+<figure><img src="img/sent.jpg" width="1600" height="900" alt="After ORDER with a delivery place: ORDER #1003 PLACED. ON ITS WAY TO THE FRONT DOOR: ARRIVING NOW., and on the status line TO THE FRONT DOOR: NOW."><figcaption>A soda sent to the front door (<b>Delivery Secs</b> 0 here: it's there by the time you turn round).</figcaption></figure>
+<div class="pair">
+<figure><img src="img/parcel_door.jpg" width="1600" height="900" alt="The office's door behind the desk, a parcel left on the mat before it under the door's light"><figcaption>Left on the mat while you were at the screen.</figcaption></figure>
+<figure><img src="img/parcel_close.jpg" width="1600" height="900" alt="The parcel close: NIGHT-MART's crescent and name on its front, packing tape along the seam and down the side printed with the shop's name, a shipping label on top to OCCUPANT"><figcaption>The parcel: the shop's print, its tape, its label. All of it yours to change in the prop generator (<code>parcel</code>).</figcaption></figure>
+</div>
+<p><b><kbd>E</kbd> on it unboxes it</b>: the tape is cut, its four flaps swing open (the long ones first), what's inside
+is there a moment, then it goes into the pocket with its own models and the HUD's row comes up. The box stays, open and
+empty; <kbd>E</kbd> on it again: "Empty."</p>
+<div class="pair">
+<figure><img src="img/unbox_flaps.jpg" width="1600" height="900" alt="The parcel from above as its flaps swing open"><figcaption>The flaps swinging open.</figcaption></figure>
+<figure><img src="img/unbox.jpg" width="1600" height="900" alt="The parcel open from above with the soda can lying inside"><figcaption>The soda inside, a moment before it's yours.</figcaption></figure>
+</div>
+<figure><img src="img/unboxed.jpg" width="1600" height="900" alt="The parcel open and empty; the HUD's row at the bottom with the soda's model"><figcaption>Unboxed: the soda in the pocket, the box left empty.</figcaption></figure>
+<div class="tip"><b>A parcel by hand</b>: drag <code>addons/horrorstudio_devices/delivery/package.tscn</code> into a level and give
+its <b>Items</b> (HSShopItems) and <b>Counts</b>: a parcel waiting on the porch when the night begins. <b>Take On Open</b>
+off: <kbd>E</kbd> opens it, <kbd>E</kbd> again takes what's inside. Your own box: the laptop's <b>Package</b>, any scene
+with <span class="node">HSPackage</span> on it.</div>
 </section>
 
 <section id="cash">
-<h2><span class="n">7</span>Cash and the pocket</h2>
+<h2><span class="n">9</span>Cash and the pocket</h2>
 <p>The cash is the starter's <span class="node">Story</span> node's <b>Cash</b>: set what the player starts with there.
 A <code>pickup.gd</code> with <b>Cash</b> (and no item) is money lying about: <kbd>E</kbd> on it and the cash goes up.
 The pocket counts: <code>give("batteries", "AA batteries", model, 2)</code>, <code>count_of("batteries")</code>,
 <code>take("batteries")</code>.</p>
 <p>When the scene has an <span class="node">HSHud</span>, the pocket is its inventory row: the things themselves, scaled
 into their slots, the one in your hand in the middle. <kbd>Tab</kbd> shows it or hides it, the wheel turns it, and it
-comes up for a moment when something comes in (a pickup or an order).</p>
+comes up for a moment when something comes in (a pickup, an order or a parcel unboxed).</p>
 <figure><img src="img/pocket.jpg" width="1600" height="900" alt="Back in the room: the HUD's row at the bottom with the painkillers in the middle and the batteries beside them"><figcaption>After shopping, <kbd>Tab</kbd>: the painkillers in the hand, the batteries beside them, each its own model.</figcaption></figure>
 </section>
 
 <section id="look">
-<h2><span class="n">8</span>The green terminal's look</h2>
+<h2><span class="n">10</span>The green terminal's look</h2>
 <p>Green phosphor on black, one pixel font (VT323, OFL), frames of thin lines, the things' models in the same green, the
 code's rain behind it all. On the glass: the screen's rows (fading where they'd be finer than a pixel), a phosphor's glow
 round what's lit, a faint flicker. It's an <span class="node">HSTerminalLook</span> (the laptop's <b>Look</b>):</p>
@@ -228,7 +294,7 @@ filled in), <b>Clock</b> (a time it always shows, or the real one), <b>Brightnes
 </section>
 
 <section id="model">
-<h2><span class="n">9</span>The laptop and the mouse</h2>
+<h2><span class="n">11</span>The laptop and the mouse</h2>
 <p>Your model, <code>PSX STYLE Low Poly LAPTOP &amp; MOUSE</code>, analysed and enhanced as the retro pack's models were:
 brought to its real size (330 mm wide), its edges rounded off a little, every surface painted in code (its own two
 textures were photos off the web, and weren't ours to ship). Real keys with their legends, the ones a game is played
@@ -245,14 +311,17 @@ Made again, copy <code>Saved/Props/laptop/laptop.glb</code> over <code>addons/ho
 </section>
 
 <section id="code">
-<h2><span class="n">10</span>In your own scripts</h2>
+<h2><span class="n">12</span>In your own scripts</h2>
 <pre>$Laptop.opened.connect(func(): print("at the laptop"))
 $Laptop.closed.connect(func(): print("back in the room"))
 $Laptop.ordered.connect(func(item, count, total): print(count, " ", item.title, " for ", total))
 $Laptop.use($Player)                       # sit the player at it from a script
 $Laptop.leave()                            # and back
 $Laptop.lid_open = false                   # shut (E opens it again)
-$Laptop.place_order(load("res://shop/lighter.tres"), 1)   # an order without the screen: {ok, number, total}
+$Laptop.place_order(load("res://shop/lighter.tres"), 1)   # an order without the screen: {ok, number, total, where, eta}
+$Laptop.unlock("shells")                   # a locked thing opened up, whatever its Needs say
+$Laptop.delivered.connect(func(parcel): print("a parcel at the door"))
+$Parcel.unboxed.connect(func(items, counts): print("opened"))
 
 # a tab of your own beside HOME, ORDER and LOG (any Control)
 $Laptop.term.add_tab("MAIL", preload("res://mail_tab.tscn").instantiate())
@@ -265,7 +334,7 @@ $Story.give("key_304", "Room 304's key", model)        $Story.count_of("batterie
 </section>
 
 <section id="rules">
-<h2><span class="n">11</span>Good to know</h2>
+<h2><span class="n">13</span>Good to know</h2>
 <ul>
   <li><b>While you're at it nothing else hears the keys or the mouse</b>: the player stops (its walking, looking and
   <kbd>E</kbd>), a gun under the eye can't fire, and the Story's corner words step aside. The view's camera leaves the
@@ -276,8 +345,12 @@ $Story.give("key_304", "Room 304's key", model)        $Story.count_of("batterie
   vertices, so a remade laptop (another size, another model with a <code>*_screen</code> surface and the
   <code>screen</code> sockets) works the same.</li>
   <li><b>No red</b>: a refusal is said, with a low buzz; the terminal stays one green.</li>
+  <li><b>A parcel is never seen arriving</b>: it waits while the place is in view (behind a wall it can come). Its
+  flaps swing by the parts the prop generator gave its model, so a parcel of your own design opens the same.</li>
+  <li><b>A locked thing never shows what it is</b>: no model, no name, no price, until its <b>Needs</b> hold.</li>
   <li><b>Its sounds are made in code</b> (<code>tools/device_sounds.py</code>): a blip, a tick, keys, the order's three notes,
-  the refusal's buzz, the boot, the lid, the coil's hum. Turn them off with <b>Sounds</b>.</li>
+  the refusal's buzz, the boot, the lid, the coil's hum; a parcel's knock, its thud, the tape and the flaps. Turn them
+  off with <b>Sounds</b>.</li>
 </ul>
 </section>
 

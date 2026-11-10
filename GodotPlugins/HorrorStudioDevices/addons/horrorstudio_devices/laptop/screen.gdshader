@@ -1,7 +1,8 @@
 // The laptop's glass (HSLaptop puts it on its model's screen surface): the terminal's picture (its SubViewport) shown
 // as light, upright whatever its UVs were made as (uv_to_screen, fitted from the screen's own vertices), with a
 // phosphor's glow round what's lit, the screen's rows (faded out where they'd be finer than a pixel: no moire), a
-// faint flicker and a dimmer edge; dark glass that still shows the room when it's off (power 0).
+// faint flicker and a dimmer edge; dark glass that still shows the room when it's off (power 0), with an anti-glare
+// coat (`matte`, a laptop LCD's): a lamp behind you is a soft sheen on it, not a hard spot over the words.
 shader_type spatial;
 render_mode cull_back;
 
@@ -13,6 +14,7 @@ uniform float power : hint_range(0.0, 1.0) = 1.0;
 uniform float scanlines : hint_range(0.0, 1.0) = 0.22;
 uniform float glow : hint_range(0.0, 2.0) = 0.6;
 uniform float flicker : hint_range(0.0, 0.2) = 0.02;
+uniform float matte : hint_range(0.0, 1.0) = 0.42;      // the anti-glare coat's roughness (0.1: a glossy screen)
 
 vec3 sample_at(vec2 st) {
 	return texture(screen_tex, clamp(st, vec2(0.0), vec2(1.0))).rgb;
@@ -38,8 +40,8 @@ void fragment() {
 		col *= 1.0 + flicker * (sin(TIME * 61.0) * 0.6 + sin(TIME * 7.3) * 0.4);
 	}
 	ALBEDO = vec3(0.01, 0.012, 0.011);
-	ROUGHNESS = 0.1;
-	SPECULAR = 0.45;
+	ROUGHNESS = matte;
+	SPECULAR = mix(0.45, 0.3, smoothstep(0.1, 0.5, matte));
 	METALLIC = 0.0;
 	EMISSION = col * brightness * power;
 }

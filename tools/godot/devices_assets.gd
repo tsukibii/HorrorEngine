@@ -1,8 +1,10 @@
 extends SceneTree
 ## The devices plugin's own shop and its laptop prefab, written by Godot itself (its text exactly as Godot writes it):
-## shop/items/*.tres, shop/catalog.tres, laptop/laptop.tscn. In a project with the plugin (godot_byhand.py new):
-##   godot --headless --path <project> -s res://devices_assets.gd      (this file copied into it)
-## then copy those files back into GodotPlugins/HorrorStudioDevices/addons/horrorstudio_devices/.
+## shop/items/*.tres, shop/catalog.tres, laptop/laptop.tscn, delivery/package.tscn. In a project with the plugin
+## (godot_byhand.py new):
+##   godot --headless --path <project> -s res://devices_assets.gd [-- --only=shop,laptop,package]   (this file copied into it)
+## then copy those files back into GodotPlugins/HorrorStudioDevices/addons/horrorstudio_devices/. (Saving the shop again
+## gives its files new uids: `--only` the part that changed.)
 const D := "res://addons/horrorstudio_devices/"
 
 
@@ -11,6 +13,21 @@ func _initialize() -> void:
 
 
 func _go() -> void:
+	var only: PackedStringArray = ["shop", "laptop", "package"]
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--only="):
+			only = a.substr(7).split(",")
+	if "shop" in only:
+		_shop()
+	if "laptop" in only:
+		_laptop()
+	if "package" in only:
+		_package()
+	print("ASSETS made")
+	quit()
+
+
+func _shop() -> void:
 	var specs := [
 		["batteries", "AA batteries, pair", "Two AA cells for the flashlight. Fresh, or so the packet says.", 4.5, 1, -1, "SUPPLIES", "batteries_aa_2"],
 		["candle", "Votive candle", "A short candle in a glass. It burns about an hour. The glass is already black.", 2.0, 1, -1, "SUPPLIES", "candle_votive"],
@@ -40,6 +57,9 @@ func _go() -> void:
 	cat.currency = "$"
 	cat.items = items
 	ResourceSaver.save(cat, D + "shop/catalog.tres")
+
+
+func _laptop() -> void:
 	var root := Node3D.new()
 	root.name = "Laptop"
 	root.set_script(load(D + "laptop/laptop.gd"))
@@ -56,5 +76,16 @@ func _go() -> void:
 	var ps := PackedScene.new()
 	ps.pack(root)
 	ResourceSaver.save(ps, D + "laptop/laptop.tscn")
-	print("ASSETS made")
-	quit()
+
+
+func _package() -> void:
+	var pk := Node3D.new()                             # the parcel the shop's deliveries come in
+	pk.name = "Package"
+	pk.set_script(load(D + "delivery/package.gd"))
+	var box: Node3D = (load(D + "models/parcel.glb") as PackedScene).instantiate()
+	box.name = "Model"
+	pk.add_child(box)
+	box.owner = pk
+	var pp := PackedScene.new()
+	pp.pack(pk)
+	ResourceSaver.save(pp, D + "delivery/package.tscn")

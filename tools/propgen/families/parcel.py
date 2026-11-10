@@ -282,14 +282,19 @@ def make(spec, th):
     ribs_along = {"front": "x", "back": "x", "left": "x", "right": "x", "bottom": "x", "flap_front": "x", "flap_back": "x",
                   "flap_left": "y", "flap_right": "y"}
 
-    def board(f, col, ribs, k):
-        """Kraft: its colour mottled, its fibres, the flutes' ribs through the liner (relief, and a breath of shade)."""
+    def board(f, col, ribs, k, rough=0.86, specks=0.32):
+        """Kraft: its colour mottled, its fibres and a dark one here and there, the flutes' ribs through the liner
+        (relief, and a breath of shade), its roughness uneven with them."""
         X, Y = f.grid()
         n1 = N.fbm3(np.stack([X / 45.0, Y / 45.0, np.full_like(X, seed * 1.3 + k)], -1), seed + 3, 3)
         n2 = N.fbm3(np.stack([X / 1.4, Y / 1.4, np.full_like(X, seed * 0.9 + 5 + k)], -1), seed + 5, 2)
+        n3 = N.fbm3(np.stack([X / 0.6, Y / 2.2, np.full_like(X, seed * 0.7 + 11 + k)], -1), seed + 7, 2)
         rib = np.cos((X if ribs == "x" else Y) / PITCH * 2 * math.pi)
+        speck = np.clip((n3 - 0.5) * 5.0, 0, 1)
         c = rgb(col)[None, None] * (1 + 0.05 * n1[..., None] + 0.035 * n2[..., None]) * (1 - 0.014 * rib)[..., None]
+        c = c * (1 - specks * speck)[..., None]
         f.lay_island(np.ones_like(X, np.float32), color=np.clip(c, 0, 1).astype(np.float32),
+                     rough=np.clip(rough + 0.035 * n1 + 0.025 * n2, 0, 1).astype(np.float32),
                      height=(0.035 * rib + 0.008 * n2).astype(np.float32))
         return X, Y
 
@@ -303,13 +308,13 @@ def make(spec, th):
         for k, (nm, ribs) in enumerate(ribs_along.items()):
             f = fr[nm]
             X, Y = board(f, kraft, ribs, k)
-            board(fr["in_" + nm], inside, ribs, k + 20)
+            board(fr["in_" + nm], inside, ribs, k + 20, rough=0.84, specks=0.45)
             if nm in ("front", "back", "left", "right"):
                 foot_grime(f, X, Y, k)
             if nm == "bottom":                          # the bottom flaps' seam and its strip of tape (painted: it's seldom seen)
                 f.rect(-1, f.H / 2 - 0.4, f.W + 2, 0.8, color="#3d2c1e", rough=0.95)
                 if taped:
-                    f.rect(-1, f.H / 2 - TAPE / 2, f.W + 2, TAPE, color=art.get("tape", "#c79d62"), rough=0.3, alpha=0.9)
+                    f.rect(-1, f.H / 2 - TAPE / 2, f.W + 2, TAPE, color=art.get("tape", "#c79d62"), rough=0.42, alpha=0.9)
             _worn_edges(f, worn, seed + k)
         F = fr["front"]
         s = min(22.0, L * 0.072, H * 0.16)
@@ -352,8 +357,13 @@ def make(spec, th):
             Tf = fr["tape"]
             X, Y = Tf.grid()
             n = N.fbm3(np.stack([X / 40.0, Y / 2.5, np.full_like(X, 2.0)], -1), seed + 41, 2)
-            c = rgb(art.get("tape", "#c79d62"))[None, None] * (1 + 0.035 * n[..., None])
-            Tf.lay_island(np.ones_like(X, np.float32), color=np.clip(c, 0, 1).astype(np.float32), rough=0.24)
+            # the film laid by hand: creases across it, a bubble here and there, its gloss uneven with them
+            cr = (1.0 - np.abs(N.fbm3(np.stack([X / 3.0, Y / 26.0, np.full_like(X, 4.0)], -1), seed + 43, 3))) ** 10
+            bub = np.clip((N.fbm3(np.stack([X / 3.5, Y / 3.5, np.full_like(X, 6.0)], -1), seed + 45, 2) - 0.45) * 5.0, 0, 1)
+            c = rgb(art.get("tape", "#c79d62"))[None, None] * (1 + 0.035 * n[..., None] + 0.06 * (cr + bub)[..., None])
+            Tf.lay_island(np.ones_like(X, np.float32), color=np.clip(c, 0, 1).astype(np.float32),
+                          rough=np.clip(0.26 + 0.08 * cr + 0.03 * n - 0.05 * bub, 0.05, 1).astype(np.float32),
+                          height=(0.03 * cr + 0.045 * bub).astype(np.float32))
 
             def words():
                 one = f"{store}  //  ALWAYS OPEN  //  "
@@ -366,30 +376,34 @@ def make(spec, th):
             Tf.slot("print", (Tf.W / 2, Tf.H / 2, Tf.W, Tf.H), words, kind="pattern", about="the packing tape's print")
         if labelled:
             Lb = fr["label"]
-            Lb.fill(color="#f2f0ea", rough=0.74)
+            X, Y = Lb.grid()
+            g = N.fbm3(np.stack([X / 0.7, Y / 0.7, np.full_like(X, 8.0)], -1), seed + 47, 2)
+            g2 = N.fbm3(np.stack([X / 12.0, Y / 12.0, np.full_like(X, 9.0)], -1), seed + 49, 2)
+            Lb.lay_island(np.ones_like(X, np.float32), color=np.clip(rgb("#efece4")[None, None] * (1 + 0.02 * g[..., None] + 0.025 * g2[..., None]), 0, 1).astype(np.float32),
+                          rough=np.clip(0.74 + 0.05 * g + 0.04 * g2, 0, 1).astype(np.float32), height=(0.006 * g + 0.012 * g2).astype(np.float32))
 
             def lab():
                 k = Lb.H / 70.0
-                c = "#141414"
+                c = "#1a1a1a"
                 W_, H_ = Lb.W, Lb.H
-                Lb.text(f"FROM: {store} FULFILMENT / DOCK 9", (3 * k, H_ - 4.2 * k), 2.3 * k, font="mono", anchor="left", color=c)
-                Lb.rect(2 * k, H_ - 7.6 * k, W_ - 4 * k, 0.5 * k, color=c)
-                Lb.text("SHIP TO:", (3 * k, H_ - 11.5 * k), 2.5 * k, font="archivo", anchor="left", color=c)
-                Lb.text("OCCUPANT", (3 * k, H_ - 18.5 * k), 5.0 * k, font="archivo", anchor="left", color=c)
-                Lb.text("LEAVE AT THE DOOR. NO SIGNATURE.", (3 * k, H_ - 24.5 * k), 2.1 * k, font="mono", anchor="left", color=c)
-                Lb.rect(W_ - 25 * k, H_ - 31 * k, 22 * k, 21 * k, color=c)
+                Lb.text(f"FROM: {store} FULFILMENT / DOCK 9", (3 * k, H_ - 4.2 * k), 2.3 * k, font="mono", anchor="left", color=c, rough=0.62)
+                Lb.rect(2 * k, H_ - 7.6 * k, W_ - 4 * k, 0.5 * k, color=c, rough=0.62)
+                Lb.text("SHIP TO:", (3 * k, H_ - 11.5 * k), 2.5 * k, font="archivo", anchor="left", color=c, rough=0.62)
+                Lb.text("OCCUPANT", (3 * k, H_ - 18.5 * k), 5.0 * k, font="archivo", anchor="left", color=c, rough=0.62)
+                Lb.text("LEAVE AT THE DOOR. NO SIGNATURE.", (3 * k, H_ - 24.5 * k), 2.1 * k, font="mono", anchor="left", color=c, rough=0.62)
+                Lb.rect(W_ - 25 * k, H_ - 31 * k, 22 * k, 21 * k, color=c, rough=0.62)
                 Lb.text("N9", (W_ - 14 * k, H_ - 20.5 * k), 10.5 * k, font="archivo", color="#f2f0ea")
-                Lb.rect(2 * k, H_ - 34 * k, W_ - 4 * k, 0.5 * k, color=c)
-                Lb.text("NIGHT DELIVERY", (3 * k, H_ - 38.5 * k), 2.8 * k, font="archivo", anchor="left", color=c)
-                Lb.text("1 OF 1", (W_ - 3 * k, H_ - 38.5 * k), 2.8 * k, font="archivo", anchor="right", color=c)
+                Lb.rect(2 * k, H_ - 34 * k, W_ - 4 * k, 0.5 * k, color=c, rough=0.62)
+                Lb.text("NIGHT DELIVERY", (3 * k, H_ - 38.5 * k), 2.8 * k, font="archivo", anchor="left", color=c, rough=0.62)
+                Lb.text("1 OF 1", (W_ - 3 * k, H_ - 38.5 * k), 2.8 * k, font="archivo", anchor="right", color=c, rough=0.62)
                 rng = np.random.default_rng(seed + 77)
                 x, x1 = 6 * k, W_ - 6 * k
                 while x < x1:
                     bw = float(rng.choice([0.45, 0.45, 0.9, 1.35])) * k
                     if rng.random() < 0.56:
-                        Lb.rect(x, 9.5 * k, min(bw, x1 - x), 16 * k, color=c)
+                        Lb.rect(x, 9.5 * k, min(bw, x1 - x), 16 * k, color=c, rough=0.62)
                     x += bw + 0.45 * k
-                Lb.text("NM 4471 0922 3108", (W_ / 2, 5.2 * k), 2.6 * k, font="mono", color=c)
+                Lb.text("NM 4471 0922 3108", (W_ / 2, 5.2 * k), 2.6 * k, font="mono", color=c, rough=0.62)
             Lb.slot("label", (Lb.W / 2, Lb.H / 2, Lb.W, Lb.H), lab, kind="picture", about="the shipping label")
 
     th.paint = paint

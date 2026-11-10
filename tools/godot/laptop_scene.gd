@@ -2,7 +2,8 @@ extends RefCounted
 ## The room LAPTOP and its pictures use (tools/godot/laptop_check.py): a small office at night in a project made by
 ## tools/godot_byhand.py: a desk against the wall with the devices plugin's laptop prefab on it, a lamp, a $20 note
 ## beside it (the starter's pickup), the starter's player standing at the desk looking at the screen, the Story (its
-## cash) and an HSHud (the pocket's row).
+## cash) and an HSHud (the pocket's row); behind the player a door in the right-hand wall with a mat before it and the
+## `Doorstep` (a Marker3D, its -Z toward the room) where the laptop's parcels are left when `deliver` (or a check) says so.
 
 const PREFAB := "res://addons/horrorstudio_devices/laptop/laptop.tscn"
 const DESK_Y := 0.74
@@ -31,7 +32,7 @@ static func box(parent: Node3D, nm: String, at: Vector3, size: Vector3, col: Col
 	return n
 
 
-static func build(root: Node, cash := 20.0) -> Dictionary:
+static func build(root: Node, cash := 20.0, deliver := false) -> Dictionary:
 	var w := Node3D.new()
 	w.name = "World"
 	root.add_child(w)
@@ -53,6 +54,23 @@ static func build(root: Node, cash := 20.0) -> Dictionary:
 	box(w, "WallBack", Vector3(0, 1.4, -1.25), Vector3(6, 2.8, 0.1), Color(0.36, 0.36, 0.34), 0.9)
 	box(w, "WallLeft", Vector3(-1.6, 1.4, 0), Vector3(0.1, 2.8, 6), Color(0.34, 0.34, 0.32), 0.9)
 	box(w, "Ceiling", Vector3(0, 2.85, 0), Vector3(6, 0.1, 6), Color(0.3, 0.3, 0.3), 0.9)
+	box(w, "WallRight", Vector3(1.95, 1.4, 0), Vector3(0.1, 2.8, 6), Color(0.34, 0.34, 0.32), 0.9)
+	box(w, "Door", Vector3(1.88, 1.03, 1.15), Vector3(0.05, 2.06, 0.9), Color(0.2, 0.12, 0.07), 0.5)
+	box(w, "Handle", Vector3(1.84, 1.0, 0.78), Vector3(0.04, 0.03, 0.12), Color(0.6, 0.55, 0.45), 0.3, false)
+	box(w, "Mat", Vector3(1.45, 0.006, 1.15), Vector3(0.62, 0.012, 0.9), Color(0.17, 0.13, 0.1), 0.95, false)
+	var spot := Marker3D.new()                        # where the parcels are left: on the mat, their fronts to the room
+	spot.name = "Doorstep"
+	spot.position = Vector3(1.48, 0.012, 1.15)
+	spot.rotation_degrees.y = 90.0                    # its -Z toward -x: into the room
+	w.add_child(spot)
+	var hall := OmniLight3D.new()                     # the bulb over the door, on the mat
+	hall.name = "DoorLight"
+	hall.light_color = Color(1.0, 0.86, 0.68)
+	hall.light_energy = 1.5
+	hall.omni_range = 3.4
+	hall.shadow_enabled = true
+	hall.position = Vector3(1.3, 2.35, 1.15)
+	w.add_child(hall)
 	var wood := Color(0.28, 0.17, 0.1)
 	box(w, "Desk", Vector3(0, DESK_Y - 0.02, -0.88), Vector3(1.4, 0.04, 0.68), wood, 0.55)
 	for x in [-0.66, 0.66]:
@@ -105,4 +123,8 @@ static func build(root: Node, cash := 20.0) -> Dictionary:
 	root.add_child(hud)
 	hud.set("hints", {"W A S D:walk": true, "E:use": true, "Tab:pocket": true, "F:flashlight": true})   # a game by hand's keys
 	hud.call("_draw_hints")
-	return {"world": w, "laptop": lap, "player": pl, "eye": eye, "story": st, "hud": hud, "note": note, "lamp": lamp}
+	if deliver:
+		lap.set("deliver_to", lap.get_path_to(spot))
+		lap.set("deliver_place", "the front door")
+		lap.set("delivery_secs", 20.0)
+	return {"world": w, "laptop": lap, "player": pl, "eye": eye, "story": st, "hud": hud, "note": note, "lamp": lamp, "doorstep": spot}

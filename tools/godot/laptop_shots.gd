@@ -1,8 +1,10 @@
 extends SceneTree
 ## The laptop guide's pictures (tools/godot/laptop_check.py --pictures): the office from laptop_scene.gd under xvfb at
-## 1600 x 900, the same steps as LAPTOP: the room with the screen raining, the boot, HOME, ORDER with a thing picked,
-## two batteries ordered (the HUD's row shows them), a burger too dear, the laptop seen close from the side, shut, the
-## pocket afterwards, and ORDER on the camhybrid tape.
+## 1600 x 900, the same steps as LAPTOP: the room with the screen raining, the boot, HOME, ORDER's first page with a
+## thing picked and a box of shells still a ?, two batteries ordered (the HUD's row shows them), the ? picked, the shells
+## unlocked (NEW), the second page with a burger too dear, the laptop seen close from the side, shut, the pocket
+## afterwards, ORDER on the camhybrid tape; then delivery: a soda sent to the front door, its parcel left there, opened
+## with E (the soda inside) and empty.
 ##   godot --path <project> --rendering-driver vulkan --fixed-fps 30 -s res://laptop_shots.gd -- --out=DIR [--only=room,home]
 
 const Scene := preload("res://laptop_scene.gd")
@@ -70,6 +72,23 @@ func _run() -> void:
 	var lap: HSLaptop = R["laptop"]
 	var st: Node = R["story"]
 	var pl: Node3D = R["player"]
+	var eye: Camera3D = R["eye"]
+	# a box of shells the shop sells once the gun's been found (a task): a ? until then
+	var sh := HSShopItem.new()
+	sh.id = "shells"
+	sh.title = "Shotgun shells, 5"
+	sh.about = "Five 12-gauge shells in a card box. Someone has written a name on the lid."
+	sh.price = 7.5
+	sh.category = "SUPPLIES"
+	sh.needs = "task:find_gun"
+	sh.locked_text = "NOT FOR YOU. NOT YET.\nFIND THE GUN FIRST."
+	sh.model = load("res://addons/horrorstudio_weapons/models/shells_box_5.glb")
+	sh.model_turn = Vector3(25, 0, 0)
+	lap.catalog = lap.catalog.duplicate()
+	var its: Array[HSShopItem] = []
+	its.assign(lap.catalog.items)
+	its.append(sh)
+	lap.catalog.items = its
 	await secs(1.5)
 	await shot("room")
 	pl.call("use")
@@ -89,14 +108,26 @@ func _run() -> void:
 	await click(lap, centre(od._buy))
 	await secs(1.2)
 	await shot("ordered")
+	await click(lap, centre(od.cards["shells"]))
+	await secs(1.6)
+	await shot("locked")
+	st.call("add_task", "find_gun", "Find the gun")
+	st.call("tick", "find_gun")
+	od.refresh()                                                   # (the laptop does it each time it wakes)
+	await frames(3)
+	await click(lap, centre(od.cards["painkillers"]), true)
+	await secs(1.6)
+	await shot("unlocked")
 	st.set("cash", 2.0)
 	lap.term.set_cash(2.0)
+	await click(lap, centre(od._next))
 	await click(lap, centre(od.cards["burger"]))
 	await click(lap, centre(od._buy))
 	await secs(1.2)
 	await shot("declined")
 	st.set("cash", 40.0)
 	lap.term.set_cash(40.0)
+	await click(lap, centre(od._prev))
 	await click(lap, centre(od.cards["painkillers"]))
 	await click(lap, centre(od._buy))
 	lap.leave()
@@ -109,8 +140,7 @@ func _run() -> void:
 	cam.make_current()
 	await secs(1.0)
 	await shot("close")
-	(R["eye"] as Camera3D).make_current()
-	var hud: Node = R["hud"]
+	eye.make_current()
 	var ev := InputEventKey.new()
 	ev.physical_keycode = KEY_TAB
 	ev.pressed = true
@@ -122,19 +152,72 @@ func _run() -> void:
 	root.push_input(ev)
 	await secs(1.2)
 	await shot("pocket")
+	for pressed in [true, false]:                                # Tab again: the row down
+		ev = InputEventKey.new()
+		ev.physical_keycode = KEY_TAB
+		ev.pressed = pressed
+		root.push_input(ev)
+		await frames(2)
 	lap.lid_open = false
 	cam.make_current()
 	await secs(0.6)
 	await shot("shut")
-	(R["eye"] as Camera3D).make_current()
+	eye.make_current()
 	lap.lid_open = true
 	pl.call("use")
 	await secs(lap.zoom_secs + 0.6)
 	await click(lap, centre(lap.term.tab_buttons["ORDER"]))
+	await click(lap, centre(od._next))
 	await click(lap, centre(od.cards["soda"]))
 	var tape: Node = (load("res://addons/horrorstudio_look/presets/tape_camhybrid.tscn") as PackedScene).instantiate()
 	root.add_child(tape)
 	await secs(1.2)
 	await shot("order_tape")
+	tape.queue_free()
+	# ---- delivery: the soda sent to the front door, its parcel there, opened with E
+	lap.deliver_to = lap.get_path_to(R["doorstep"])
+	lap.deliver_place = "the front door"
+	lap.delivery_secs = 0.0
+	await click(lap, centre(od._buy))
+	await secs(1.4)
+	await shot("sent")
+	lap.leave()
+	await secs(lap.zoom_secs + 0.6)                              # (the door behind the desk: left while unseen)
+	var spot: Node3D = R["doorstep"]
+	var pkg: HSPackage = null
+	for c in spot.get_children():
+		if c is HSPackage:
+			pkg = c
+	if pkg == null:
+		printerr("SHOTS no parcel came")
+		quit(1)
+		return
+	pl.global_position = Vector3(0.3, 0.0, 1.75)
+	pl.rotation = Vector3.ZERO
+	eye.look_at(spot.global_position + Vector3(0.0, 0.42, -0.12), Vector3.UP)
+	await secs(1.0)
+	await shot("parcel_door")
+	var cam2 := Camera3D.new()                                   # the parcel close: its tape and its label
+	R["world"].add_child(cam2)
+	cam2.fov = 42.0
+	cam2.global_position = pkg.global_position + Vector3(-0.62, 0.52, 0.34)
+	cam2.look_at(pkg.global_position + Vector3(0.0, 0.1, 0.0), Vector3.UP)
+	cam2.make_current()
+	await secs(0.6)
+	await shot("parcel_close")
+	eye.make_current()
+	pl.global_position = Vector3(0.78, 0.0, pkg.global_position.z)
+	eye.look_at(pkg.global_position + Vector3(0, 0.08, 0), Vector3.UP)
+	await frames(3)
+	pl.call("use")                                                # E on it, then seen from over its front corner
+	cam2.global_position = pkg.global_position + Vector3(-0.5, 0.66, 0.3)
+	cam2.look_at(pkg.global_position + Vector3(0.0, 0.08, 0.0), Vector3.UP)
+	cam2.make_current()
+	await secs(HSPackage.LEAD + pkg.open_secs * 0.5)
+	await shot("unbox_flaps")
+	await secs(pkg.open_secs * 0.5 + 0.2)
+	await shot("unbox")
+	await secs(1.3)
+	await shot("unboxed")
 	print("SHOTS done")
 	quit(0)

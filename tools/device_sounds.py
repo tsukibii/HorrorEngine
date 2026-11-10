@@ -2,7 +2,10 @@
 the laptop's terminal. A blip (a button pressed: a short square-ish beep through a small speaker), a tick (the pointer
 over a thing), a key (a laptop key: a soft plastic click and its bottoming out), the order going through (three notes
 up), an error (a low double buzz), the boot (the fan spinning up under a rising beep), waking (the lid's hinge and the
-screen's high whine coming on), sleep (the whine falling away), and a hum (the coil's whine and the fan's air, a loop).
+screen's high whine coming on), sleep (the whine falling away), and a hum (the coil's whine and the fan's air, a loop);
+and a parcel's (DECISIONS 2026-11-10, last): a knock at the door where it's left (three, on wood), the box set down (a
+dull thump, the card's slap, what's inside settling), the tape cut and torn off (a rasp of small tears) and the flaps
+swung open (soft whumps of card).
 Each mono, quiet by design (the laptop plays them in the room through AudioStreamPlayer3D), each from its own seed.
 
     python tools/device_sounds.py [--out DIR]     (default GodotPlugins/HorrorStudioDevices/addons/horrorstudio_devices/sounds)
@@ -107,8 +110,50 @@ def hum(rng):
     return x
 
 
+def knock(rng):
+    """Three knocks on a wooden door: the knuckle's click, the panel's thump ringing low, a little uneven."""
+    t = t_(1.05)
+    x = np.zeros_like(t)
+    for i, (at, a) in enumerate(((0.0, 1.0), (0.215, 0.88), (0.44, 0.95))):
+        x += a * np.sin(2 * np.pi * (112 + 7 * i) * (t - at)) * decay(t, 0.055, at, 0.0015)
+        x += a * 0.45 * np.sin(2 * np.pi * (231 + 11 * i) * (t - at)) * decay(t, 0.03, at, 0.001)
+        x += a * click(t, at, 700, 3200, 0.007, 0.5, rng)
+    return band(x, 55, 5000)
+
+
+def thud(rng):
+    """A parcel set down: a dull low thump, the card's own slap, what's inside settling."""
+    t = t_(0.6)
+    x = band(rng.standard_normal(len(t)), 45, 360) * decay(t, 0.07, 0.0, 0.002)
+    x += 0.6 * np.sin(2 * np.pi * 74 * t) * decay(t, 0.09, 0.0, 0.002)
+    x += click(t, 0.004, 450, 2400, 0.03, 0.5, rng)
+    for at, a in ((0.05, 0.2), (0.085, 0.14), (0.13, 0.1)):
+        x += click(t, at, 1200, 5000, 0.006, a, rng)
+    return x
+
+
+def tape(rng):
+    """Packing tape cut along the seam and torn: a rasp of small tears in a band, rising and dying away."""
+    t = t_(0.6)
+    env = np.clip(t / 0.03, 0, 1) * np.clip((0.46 - t) / 0.14, 0, 1)
+    tears = (rng.random(len(t)) < 0.03) * rng.standard_normal(len(t))
+    x = band(tears, 1400, 9000) * 3.0 + band(rng.standard_normal(len(t)), 2500, 10000) * 0.3
+    return x * env * (0.7 + 0.3 * np.sin(2 * np.pi * 21 * t))
+
+
+def flaps(rng):
+    """Four card flaps swung open: soft whumps of card, each with the scrape of its fold."""
+    t = t_(0.8)
+    x = np.zeros_like(t)
+    for at, a in ((0.0, 1.0), (0.07, 0.75), (0.4, 0.6), (0.47, 0.5)):
+        x += a * band(rng.standard_normal(len(t)), 160, 1700) * decay(t, 0.05, at, 0.018)
+        x += a * click(t, at + 0.01, 900, 4000, 0.01, 0.3, rng)
+    return x
+
+
 SOUNDS = {"blip": (blip, -6.0), "tick": (tick, -14.0), "key": (key, -9.0), "order": (order, -5.0), "error": (error, -6.0),
-          "boot": (boot, -6.0), "wake": (wake, -9.0), "sleep": (sleep, -12.0), "hum": (hum, -24.0)}
+          "boot": (boot, -6.0), "wake": (wake, -9.0), "sleep": (sleep, -12.0), "hum": (hum, -24.0),
+          "knock": (knock, -2.0), "thud": (thud, -5.0), "tape": (tape, -9.0), "flaps": (flaps, -10.0)}
 SEEDS = {n: i for i, n in enumerate(SOUNDS)}
 
 

@@ -1575,5 +1575,9 @@ bottom's seam and its tape painted. Its own pictures: `front.logo`, `back.logo` 
 dry), `right.stamp` (a box maker's certificate, made up), `tape.print` (the name repeated), `label.label` (the whole
 label: from the shop, to OCCUPANT, a route code, a barcode, a tracking number). Its inside (`propgen_inside`) is between
 its walls and under its flaps. 130 triangles. Recipes `parcel` (305 x 229 x 152, NIGHT-MART's: the devices plugin's
-delivery box, `models/parcel.glb`), `parcel_small` (229 x 152 x 102), `parcel_open`; PROPGEN's cases have `parcel`;
-THUMBS keeps all three.
+delivery box, `models/parcel.glb`, made at 1024), `parcel_small` (229 x 152 x 102), `parcel_open`; PROPGEN's cases have
+`parcel`; THUMBS keeps all three. Held to the quality bar (`quality made parcel`, 15 gaps to 6): the board's roughness
+uneven with its mottling and a dark fibre here and there (darker inside), the tape's creases across it and its bubbles
+in its relief and its gloss, the label's paper grain and its ink a little glossier than the paper. What's left outside
+the bar is what it is: a white label printed with a barcode is brighter and busier than most props, packing tape is
+glossier, the inside's liner a light kraft.

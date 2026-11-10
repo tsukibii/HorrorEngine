@@ -2,10 +2,14 @@ extends SceneTree
 ## LAPTOP (tools/godot/laptop_check.py): the devices plugin's laptop prefab in a project made by godot_byhand.py, its
 ## office from laptop_scene.gd, played headless at 1280 x 720: its model's parts found, the picture on its glass
 ## upright, E from the starter's player taking the view in, the boot, a click through the glass on the catalogue,
-## every thing a card with its own model in the green, an order of two paid from the Story's cash and into the pocket
-## (the flashlight's spares, the HUD's row with the thing's model), too dear, sold out, a thing added by a file in the
-## catalog's folder, Esc back to the room, the screen drawing only while near and seen, a $20 note picked up, and a shut
-## laptop opening before the view goes in. Ends "LAPTOP ok".
+## its pages (a category a page, NEXT, the numbers, the arrow keys), every thing a card with its own model in the green,
+## an order of two paid from the Story's cash and into the pocket (the flashlight's spares, the HUD's row with the
+## thing's model), too dear, sold out, a thing added by a file in the catalog's folder, what's for sale (`for_sale`, a
+## laptop's `sells`), a thing locked until a task's done (a ?, not to be ordered, hidden with show_locked off; the task
+## ticked: NEW, ordered), Esc back to the room, the screen drawing only while near and seen, a $20 note picked up, a shut
+## laptop opening before the view goes in, and delivery (DECISIONS 2026-11-10, last): two orders sent to the doorstep,
+## waiting while it's seen, two parcels side by side once it isn't; E on one: its tape and flaps, what's inside seen in it,
+## then in the pocket; E on the other with take_on_open off: opened, then taken. Ends "LAPTOP ok".
 ##   godot --headless --fixed-fps 60 --path <project> -s res://laptop_test.gd
 
 const Scene := preload("res://laptop_scene.gd")
@@ -143,15 +147,46 @@ func _run() -> void:
 	if lap.term.current != "ORDER":
 		return fail("a click on OPEN THE CATALOGUE through the glass: the tab is %s" % lap.term.current)
 	var od: Node = lap.term.order
-	if od.cards.size() != 6:
-		return fail("%d cards for the catalog's 6 things" % od.cards.size())
-	for id in od.cards:
-		var slot: TextureRect = od.cards[id].get_meta("slot")
-		var vp := slot.get_meta("viewport") as SubViewport
-		var meshes := vp.find_children("*", "MeshInstance3D", true, false)
-		if meshes.is_empty() or slot.material == null:
-			return fail("%s's card: %d meshes in its slot, its green %s" % [id, meshes.size(), slot.material])
-	ok("a click through the glass opened ORDER: 6 cards, each its own model in its slot (the HUD's HSModelSlot) in the terminal's green")
+	if od.pages.size() != 2 or od.items.size() != 6 or od.cards.size() != 3 or od._heading.text != "== SUPPLIES ==":
+		return fail("the catalog's 6 things: %d pages, %d cards on the first under %s" % [od.pages.size(), od.cards.size(), od._heading.text])
+	for pg in 2:
+		if pg == 1:
+			await click(lap, centre(od._next))
+			if od.page != 1:
+				return fail("NEXT through the glass: page %d" % (od.page + 1))
+		for id in od.cards:
+			var slot: TextureRect = od.cards[id].get_meta("slot")
+			var vp := slot.get_meta("viewport") as SubViewport
+			var meshes := vp.find_children("*", "MeshInstance3D", true, false)
+			if meshes.is_empty() or slot.material == null:
+				return fail("%s's card: %d meshes in its slot, its green %s" % [id, meshes.size(), slot.material])
+	var pn1 := od._numbers.find_child("Page1", false, false) as Button
+	var pn2 := od._numbers.find_child("Page2", false, false) as Button
+	if pn1 == null or pn2 == null or pn2.text != "[2]" or pn1.text.strip_edges() != "1" or not od._next.disabled or od._prev.disabled \
+			or od._heading.text != "== FOOD & DRINK ==" or not od.cards.has("burger"):
+		return fail("page 2: its numbers %s %s, NEXT off %s, PREV off %s, its heading %s" % [pn1.text if pn1 else "-", pn2.text if pn2 else "-",
+				od._next.disabled, od._prev.disabled, od._heading.text])
+	await click(lap, centre(pn1))
+	if od.page != 0 or not od.cards.has("batteries") or not od._prev.disabled:
+		return fail("the number 1 clicked: page %d" % (od.page + 1))
+	await key(KEY_RIGHT)
+	var right_page: int = od.page
+	await key(KEY_LEFT)
+	if right_page != 1 or od.page != 0:
+		return fail("the arrow keys: right to page %d, left to page %d" % [right_page + 1, od.page + 1])
+	lap.page_size = 1
+	od.refresh()
+	var many: int = od.pages.size()
+	od.show_page(3)
+	var pn4 := od._numbers.find_child("Page4", false, false) as Button
+	var p4_text := pn4.text if pn4 != null else "-"
+	var nums: Array = od.page_numbers(12, 5)
+	lap.page_size = 6
+	od.refresh()
+	od.show_page(0)
+	if many != 6 or p4_text != "[4]" or nums != [0, -1, 3, 4, 5, 6, 7, -1, 11]:
+		return fail("a page a thing: %d pages, the fourth %s; twelve pages at the sixth: %s" % [many, p4_text, nums])
+	ok("ORDER a page at a time: SUPPLIES, then FOOD & DRINK, three cards each, each its own model in its slot (the HUD's HSModelSlot) in the terminal's green; NEXT, the numbers (1 [2]) and the arrow keys turn them through the glass; a page a thing: six pages, [4]; twelve at the sixth: 1 .. 4 5 [6] 7 8 .. 12")
 	# ---- two batteries ordered by clicks
 	await click(lap, centre(od.cards["batteries"]))
 	if od.picked == null or od.picked.id != "batteries":
@@ -179,6 +214,7 @@ func _run() -> void:
 	# ---- too dear
 	st.set("cash", 3.0)
 	lap.term.set_cash(3.0)
+	await click(lap, centre(od._next))                 # the burger's on FOOD & DRINK
 	await click(lap, centre(od.cards["burger"]))
 	await click(lap, centre(od._buy))
 	if not is_equal_approx(float(st.get("cash")), 3.0) or st.call("has", "burger") or not str(od._note.text).begins_with("DECLINED"):
@@ -187,6 +223,7 @@ func _run() -> void:
 	# ---- sold out
 	st.set("cash", 100.0)
 	lap.term.set_cash(100.0)
+	await click(lap, centre(od._numbers.find_child("Page1", false, false)))
 	await click(lap, centre(od.cards["painkillers"]))
 	await click(lap, centre(od._buy.get_parent().find_child("More", true, false)))
 	await click(lap, centre(od.cards["painkillers"]))     # picked again: how many back to 1
@@ -212,7 +249,63 @@ func _run() -> void:
 	od.refresh()
 	if not od.cards.has("lighter") or od.items.size() != 7:
 		return fail("a .tres in the catalog's folder: %d things, %s" % [od.items.size(), od.cards.keys()])
-	ok("a thing added by saving its HSShopItem in the catalog's folder: 7 cards")
+	ok("a thing added by saving its HSShopItem in the catalog's folder: 7 things, on SUPPLIES' page")
+	# ---- what's for sale, and a thing locked until a task's done
+	var sh := HSShopItem.new()
+	sh.id = "shells"
+	sh.title = "Shotgun shells, 5"
+	sh.price = 6.0
+	sh.category = "SUPPLIES"
+	sh.needs = "task:find_gun"
+	sh.locked_text = "FIND THE GUN FIRST."
+	sh.model = load("res://addons/horrorstudio_devices/shop/models/batteries_aa_2.glb")
+	var its: Array[HSShopItem] = []
+	its.assign(lap.catalog.items)
+	its.append(sh)
+	lap.catalog.items = its
+	od.refresh()
+	await frames(2)                                    # (the page's new cards laid out before one's clicked)
+	var sc: Control = od.cards.get("shells")
+	if sc == null or not sc.get_meta("locked") or (sc.get_meta("slot") as Node).name != "Mystery" or (sc.get_meta("price") as Label).text != "LOCKED":
+		return fail("a thing that needs task:find_gun: its card %s" % sc)
+	await click(lap, centre(sc))
+	if od._title.text != "???" or not od._buy.disabled or od._about_text != "FIND THE GUN FIRST." or od._slot.has_meta("viewport"):
+		return fail("its ? picked: %s, ORDER off %s, its words %s" % [od._title.text, od._buy.disabled, od._about_text])
+	var r_locked: Dictionary = lap.place_order(sh, 1)
+	if r_locked.get("ok", true) or str(r_locked.get("why")) != "LOCKED.":
+		return fail("a locked thing ordered: %s" % r_locked)
+	sh.show_locked = false
+	od.refresh()
+	var hidden_ok: bool = not od.cards.has("shells") and not od.items.has(sh)
+	sh.show_locked = true
+	st.call("add_task", "find_gun", "Find the gun")
+	st.call("tick", "find_gun")
+	od.refresh()
+	await frames(2)
+	sc = od.cards.get("shells")
+	var new_text := (sc.get_meta("price") as Label).text if sc != null else "-"
+	if not hidden_ok or sc == null or sc.get_meta("locked") or not (sc.get_meta("slot") as Node).has_meta("viewport") or not new_text.ends_with("NEW"):
+		return fail("hidden while locked %s; the task done: its card says %s" % [hidden_ok, new_text])
+	await click(lap, centre(sc))
+	await click(lap, centre(od._buy))
+	if st.call("count_of", "shells") != 1 or (sc.get_meta("price") as Label).text.ends_with("NEW"):
+		return fail("the shells unlocked and ordered: %d in the pocket, its card %s" % [st.call("count_of", "shells"), (sc.get_meta("price") as Label).text])
+	var candle: HSShopItem = null
+	for it2: HSShopItem in od.items:
+		if it2.id == "candle":
+			candle = it2
+	candle.for_sale = false
+	od.refresh()
+	var no_candle: bool = not od.items.has(candle)
+	candle.for_sale = true
+	lap.sells = PackedStringArray(["batteries", "soda"])
+	od.refresh()
+	var only_two: Array = od.items.map(func(i: HSShopItem) -> String: return i.id)
+	lap.sells = PackedStringArray()
+	od.refresh()
+	if not no_candle or only_two != ["batteries", "soda"] or od.items.size() != 8:
+		return fail("for sale: the candle gone %s; sells [batteries, soda]: %s; back to %d things" % [no_candle, only_two, od.items.size()])
+	ok("what's for sale: the candle's for_sale off and it's gone; a laptop's sells [batteries, soda] and only those; shells needing task:find_gun a ? (???, LOCKED, FIND THE GUN FIRST., not to be ordered), left out with show_locked off; the task ticked: its model, NEW, ordered into the pocket, NEW no more")
 	# ---- back to the room
 	await key(KEY_ESCAPE)
 	await secs(lap.zoom_secs + 0.3)
@@ -269,5 +362,90 @@ func _run() -> void:
 	if lap.using:
 		return fail("E at the screen didn't leave")
 	ok("E at the screen leaves it too")
-	print("LAPTOP ok (%d steps: the prefab, E, the boot, clicks through the glass, an order into the pocket and the HUD's row, too dear, sold out, a thing added by file, Esc and E back, idle drawing, cash picked up, a shut lid)" % notes.size())
+	# ---- delivery: two orders sent to the doorstep, left there once it isn't seen
+	var spot: Node3D = R["doorstep"]
+	lap.deliver_to = lap.get_path_to(spot)
+	lap.deliver_place = "the front door"
+	lap.delivery_secs = 2.0
+	pl.call("use")
+	await secs(lap.zoom_secs + 0.4)
+	await click(lap, centre(lap.term.tab_buttons["ORDER"]))
+	await click(lap, centre(od._next))
+	await click(lap, centre(od.cards["soda"]))
+	var soda0: int = st.call("count_of", "soda")
+	await click(lap, centre(od._buy))
+	if st.call("count_of", "soda") != soda0 or lap.deliveries.size() != 1 or not str(od._note.text).contains("ON ITS WAY TO THE FRONT DOOR: IN 2 SEC"):
+		return fail("a soda sent: in the pocket %d (was %d), on its way %d, said %s" % [st.call("count_of", "soda"), soda0, lap.deliveries.size(), od._note.text])
+	await click(lap, centre(od._prev))
+	await click(lap, centre(od.cards["candle"]))
+	var candle0: int = st.call("count_of", "candle")
+	await click(lap, centre(od._buy))
+	if lap.deliveries.size() != 2:
+		return fail("a candle sent too: %d on their way" % lap.deliveries.size())
+	ok("with deliver_to set: a soda and a candle ordered, nothing into the pocket yet: ON ITS WAY TO THE FRONT DOOR: IN 2 SEC")
+	await key(KEY_ESCAPE)
+	await secs(lap.zoom_secs + 0.3)
+	var got: Array = []
+	lap.delivered.connect(func(p: HSPackage) -> void: got.append(p))
+	eye.look_at(spot.global_position + Vector3(0, 0.15, 0), Vector3.UP)
+	await secs(2.6)
+	var waited: bool = lap.deliveries.size() == 2 and got.is_empty()
+	eye.rotation = Vector3(deg_to_rad(-42.0), 0, 0)    # back to the desk: the door behind
+	await frames(4)
+	var pk: Array = spot.get_children().filter(func(c: Node) -> bool: return c is HSPackage)
+	if not waited or pk.size() != 2 or got.size() != 2 or not lap.deliveries.is_empty():
+		return fail("due while the door's seen: waited %s; looked away: %d parcels on the doorstep, %d delivered, %d still coming" % [waited, pk.size(), got.size(), lap.deliveries.size()])
+	var p0: HSPackage = pk[0]
+	var p1x: HSPackage = pk[1]
+	var apart := p0.global_position.distance_to(p1x.global_position)
+	if p0.items.size() != 1 or p0.items[0].id != "soda" or p1x.items[0].id != "candle" or p1x.order_number != p0.order_number + 1 \
+			or absf(apart - (p0.box.size.x + 0.05)) > 0.01 or absf(p0.global_position.y - spot.global_position.y) > 0.002 or p0._sfx.size() != 4:
+		return fail("the parcels: %s and %s, orders %d and %d, %.3f m apart, at %.3f m, %d sounds" % [p0.items, p1x.items, p0.order_number, p1x.order_number,
+				apart, p0.global_position.y, p0._sfx.size()])
+	ok("due while the doorstep was in view: it waited; looked away: two parcels left side by side on it (%.2f m apart, the soda's order #%d and the candle's), a knock and the box set down" % [apart, p0.order_number])
+	# ---- E on the first: the tape, the flaps, what's inside seen, then in the pocket
+	var unboxed: Array = []
+	p0.unboxed.connect(func(a: Array, b: Array) -> void: unboxed.append([a, b]))
+	pl.global_position = Vector3(0.7, 0.0, p0.global_position.z)
+	pl.rotation = Vector3.ZERO
+	eye.look_at(p0.global_position + Vector3(0, 0.12, 0), Vector3.UP)
+	await frames(3)
+	var u: Node = pl.call("use")
+	await frames(2)
+	if u != p0 or not p0.is_open:
+		return fail("E on the parcel: the player's E found %s, open %s" % [u, p0.is_open])
+	await secs(HSPackage.LEAD + p0.open_secs + 0.15)
+	var worst_flap := 0.0
+	for fp in p0.flaps:
+		var part: Dictionary = fp["part"]
+		var want := float(part["open"]) - float(part["built"])
+		var turned := rad_to_deg((fp["node"] as Node3D).basis.get_rotation_quaternion().get_angle())
+		worst_flap = maxf(worst_flap, absf(turned - want))
+	var seen_inside: bool = p0.shown.size() == 1 and p0.box.grow(0.005).has_point(HSModelSlot.bounds_of(p0.shown[0], p0).get_center())
+	if p0.flaps.size() != 4 or worst_flap > 1.0 or not seen_inside or st.call("count_of", "soda") != soda0:
+		return fail("opening: %d flaps, the worst %.1f degrees off open; the soda seen in it %s; in the pocket already %d" % [p0.flaps.size(), worst_flap, seen_inside,
+				st.call("count_of", "soda")])
+	await secs(1.0)
+	if st.call("count_of", "soda") != soda0 + 1 or not p0.is_empty or unboxed.size() != 1 or not p0.shown.is_empty() or hud.get("inv_models").get("soda") == null:
+		return fail("unboxed: the soda %d in the pocket, empty %s, said %d times, the HUD's row %s" % [st.call("count_of", "soda"), p0.is_empty, unboxed.size(),
+				hud.get("inv_models").get("soda")])
+	pl.call("use")
+	await frames(2)
+	if str((st.get("_line") as Label).text) != "Empty.":
+		return fail("E on it empty: the Story said %s" % (st.get("_line") as Label).text)
+	ok("E on it: the tape cut, its four flaps swung open in turn (the long ones first, within %.1f degrees), the soda seen inside, then into the pocket with its model (the HUD's row); E again: Empty." % worst_flap)
+	# ---- E on the other with take_on_open off: opened, then E takes what's in it
+	p1x.take_on_open = false
+	pl.global_position = Vector3(0.7, 0.0, p1x.global_position.z)
+	eye.look_at(p1x.global_position + Vector3(0, 0.12, 0), Vector3.UP)
+	await frames(3)
+	pl.call("use")
+	await secs(HSPackage.LEAD + p1x.open_secs + 0.8)
+	var kept: bool = p1x.is_open and not p1x.is_empty and p1x.shown.size() == 1 and st.call("count_of", "candle") == candle0
+	pl.call("use")
+	await secs(1.0)
+	if not kept or not p1x.is_empty or st.call("count_of", "candle") != candle0 + 1:
+		return fail("take_on_open off: opened and kept %s; E again: empty %s, the candle %d (was %d)" % [kept, p1x.is_empty, st.call("count_of", "candle"), candle0])
+	ok("take_on_open off: E opened it and the candle stayed inside; E again took it into the pocket")
+	print("LAPTOP ok (%d steps: the prefab, E, the boot, clicks through the glass, pages, an order into the pocket and the HUD's row, too dear, sold out, a thing added by file, what's for sale and locked, Esc and E back, idle drawing, cash picked up, a shut lid, delivery and unboxing)" % notes.size())
 	quit(0)

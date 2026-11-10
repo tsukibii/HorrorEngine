@@ -9,17 +9,26 @@ extends Node3D
 ## HSShopItems, each with its own model) for the player's cash; what's ordered goes into the pocket (the starter's Story
 ## node: `cash`, `give`) and shows in the HUD's inventory row as its own model. Esc, E or LOG OFF and the view comes
 ## back. While nobody's at it its screen rains code, drawn only when you're near and it's in view.
+## What it sells: the catalog's things whose `for_sale` is on (only `sells` when it lists ids); a thing whose `needs`
+## don't hold yet is a ? (the starter Story's words: a task done, a fact set; or `unlock(id)`), shown NEW once it opens
+## up. Delivery (DECISIONS 2026-11-10, last): with `deliver_to` set, what's bought comes in a parcel (HSPackage,
+## delivery/package.tscn) left on that spot after `delivery_secs`, while the player isn't looking, a knock and the box set
+## down; E on it unboxes it into the pocket.
 ## The prefab is laptop/laptop.tscn (the user's laptop and mouse, made by the prop generator): drag it onto a desk.
 
 signal opened                                       ## the view went in to its screen
 signal closed                                       ## back to the room
-signal ordered(item: HSShopItem, count: int, total: float)   ## an order paid and in the pocket: count things for total
+signal ordered(item: HSShopItem, count: int, total: float)   ## an order paid (into the pocket, or on its way): count things for total
+signal delivered(package: HSPackage)                ## a parcel left on `deliver_to`
 
 const SCREEN := preload("res://addons/horrorstudio_devices/laptop/screen.gdshader")
 const CATALOG := "res://addons/horrorstudio_devices/shop/catalog.tres"
 const SOUNDS := "res://addons/horrorstudio_devices/sounds/"
+const PACKAGE := "res://addons/horrorstudio_devices/delivery/package.tscn"
 
 @export var catalog: HSShopCatalog                  ## what it sells (the plugin's own, shop/catalog.tres, when empty)
+@export var sells: PackedStringArray = []           ## only these ids of the catalog's (empty: all its things for sale)
+@export_range(1, 12) var page_size := 6             ## things a page of the Order tab shows (three a row)
 @export var cash := 40.0                            ## the player's cash when the scene has no Story node (story.gd keeps `cash`)
 @export var user := "guest"                         ## who it greets
 @export var system_name := "VESPER//OS"
@@ -30,6 +39,13 @@ const SOUNDS := "res://addons/horrorstudio_devices/sounds/"
 		lid_open = v
 		if is_inside_tree():
 			_set_lid(1.0 if v else 0.0)
+@export_group("Delivery")
+@export var deliver_to: NodePath                    ## where what's bought is left in a parcel (a Marker3D, any Node3D: the box's bottom on it, facing its -Z); none: straight into the pocket
+@export var deliver_place := ""                     ## what the terminal calls that place ("THE FRONT DOOR"); THE DOOR when empty
+@export_range(0.0, 3600.0, 0.5, "suffix:s") var delivery_secs := 0.0   ## how long it takes to come
+@export var when_unseen := true                     ## left only while the player can't see the place (no box appearing in view)
+@export var knock := true                           ## a knock where it's left, then the box set down
+@export var package: PackedScene                    ## the box it comes in (delivery/package.tscn when empty)
 @export_group("The view")
 @export_range(0.2, 3.0) var zoom_secs := 0.8
 @export_range(15.0, 90.0) var zoom_fov := 40.0      ## the lens while you're at it: narrow, so the screen's flat
@@ -49,7 +65,10 @@ var term: HSTerminal                                ## its screen's terminal
 var screen: SubViewport                             ## its screen's picture
 var sold := {}                                      ## id -> how many this laptop has sold
 var orders := 0                                     ## orders placed on it
-var last_order := {}                                ## {number, id, count, total}
+var last_order := {}                                ## {number, id, count, total, where}
+var deliveries: Array = []                          ## on their way: {number, items, counts, due}
+var unlocked_ids := {}                              ## ids unlock() opened up, whatever their needs say
+var seen := {}                                      ## ids whose unlocked card has been seen (no longer NEW)
 var idle_draws := 0                                 ## times its screen was drawn while nobody was at it (a check's)
 var _model: Node3D
 var _lid: Node3D
@@ -71,6 +90,7 @@ var _story_seen := true
 var _idle_acc := 0.0
 var _sfx := {}
 var _hum: AudioStreamPlayer3D
+var _clock := 0.0                                   # seconds it's been running (deliveries come by it)
 
 
 func _ready() -> void:
@@ -311,6 +331,8 @@ func leave() -> void:
 		return
 	_zoom_dir = -1
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	for id in term.order.shown_ids:                    # what was on the pages it showed isn't new any more
+		seen[id] = true
 	term.sleep()
 	sound("sleep")
 
@@ -356,6 +378,9 @@ func view_transform() -> Transform3D:
 func _process(dt: float) -> void:
 	if Engine.is_editor_hint():
 		return
+	_clock += dt
+	if not deliveries.is_empty():
+		_deliver_due()
 	if _lid_to >= 0.0:
 		_set_lid(move_toward(_lid_k, _lid_to, dt / 0.6))
 		if is_equal_approx(_lid_k, _lid_to):
@@ -451,8 +476,39 @@ func to_window(screen_pos: Vector2) -> Vector2:
 
 
 # ---- the shop: what the terminal asks ------------------------------------------------------------------------------------
+## what its shop shows: the catalog's things for sale (only `sells`, when it lists any), in its order; a locked one only
+## when it's to show as a ?
 func items() -> Array:
-	return catalog.all_items() if catalog != null else []
+	var out: Array = []
+	if catalog == null:
+		return out
+	for it: HSShopItem in catalog.all_items():
+		if not it.for_sale or (not sells.is_empty() and not sells.has(it.id)):
+			continue
+		if not it.show_locked and not unlocked(it):
+			continue
+		out.append(it)
+	return out
+
+
+## whether it can be ordered yet: no `needs`, or the Story holds them (a task done, a fact set...), or unlock() said so
+func unlocked(it: HSShopItem) -> bool:
+	if it.needs.strip_edges() == "" or unlocked_ids.has(it.id):
+		return true
+	var st := _story()
+	return st != null and st.has_method("holds") and bool(st.holds(it.needs))
+
+
+## a thing opened up by a script, whatever its needs say (a game without the starter's Story, or a reward)
+func unlock(id: String) -> void:
+	unlocked_ids[id] = true
+	if term != null:
+		term.order.refresh()
+
+
+## unlocked by its needs and not seen since: its card says NEW
+func is_new(it: HSShopItem) -> bool:
+	return it.needs.strip_edges() != "" and unlocked(it) and not seen.has(it.id)
 
 
 func store_name() -> String:
@@ -484,6 +540,9 @@ func cash_now() -> float:
 ## {ok: false, why}
 func place_order(it: HSShopItem, n: int) -> Dictionary:
 	n = clampi(n, 1, it.max_per_order)
+	if not unlocked(it):
+		sound("error")
+		return {"ok": false, "why": "LOCKED."}
 	var left := left_of(it)
 	if left == 0:
 		sound("error")
@@ -498,14 +557,31 @@ func place_order(it: HSShopItem, n: int) -> Dictionary:
 	sold[it.id] = int(sold.get(it.id, 0)) + n
 	orders += 1
 	var count := it.count * n
-	_give(it, count)
+	var number := 1000 + orders
+	var where := "pocket"
+	if get_node_or_null(deliver_to) is Node3D:         # it comes in a parcel, later
+		deliveries.append({"number": number, "items": [it], "counts": [count], "due": _clock + delivery_secs})
+		where = place_name()
+	else:
+		it.give_to(get_tree(), count, _player)
 	sound("order")
 	term.set_cash(cash_now())
-	var number := 1000 + orders
-	term.log("ORDER #%04d  %dx %s  %s%.2f" % [number, n, it.name_of().to_upper(), currency(), total])
-	last_order = {"number": number, "id": it.id, "count": count, "total": total}
+	term.log("ORDER #%04d  %dx %s  %s%.2f%s" % [number, n, it.name_of().to_upper(), currency(), total, "" if where == "pocket" else "  TO " + where])
+	last_order = {"number": number, "id": it.id, "count": count, "total": total, "where": where}
 	ordered.emit(it, count, total)
-	return {"ok": true, "number": number, "total": total, "count": count}
+	return {"ok": true, "number": number, "total": total, "count": count, "where": where, "eta": delivery_secs if where != "pocket" else 0.0}
+
+
+## what the terminal calls the place parcels are left
+func place_name() -> String:
+	return deliver_place.to_upper() if deliver_place != "" else "THE DOOR"
+
+
+## how long until it comes, as the terminal says it ("NOW", "2 MIN", "40 SEC")
+func eta_text(secs: float) -> String:
+	if secs < 1.0:
+		return "NOW"
+	return "%d MIN" % ceili(secs / 60.0) if secs >= 90.0 else "%d SEC" % ceili(secs)
 
 
 func _pay(total: float) -> bool:
@@ -518,20 +594,63 @@ func _pay(total: float) -> bool:
 	return true
 
 
-func _give(it: HSShopItem, count: int) -> void:
-	var st := _story()
-	if st != null and st.has_method("give"):
-		if st.get_method_argument_count("give") >= 4:
-			st.give(it.id, it.name_of(), HSModelSlot.of_scene(it.model) if it.model != null else null, count)
-		else:
-			for i in count:
-				st.give(it.id)                         # an older Story: one argument
-	if it.id == "batteries":                          # the starter's flashlight takes its spares itself
-		var p: Node = _player if _player != null else get_tree().get_first_node_in_group("hs_player")
-		var fl = p.get_node_or_null("Eye/Flashlight") if p != null else null
-		if fl != null and fl.has_method("add_spare"):
-			for i in count:
-				fl.add_spare()
+# ---- delivery ---------------------------------------------------------------------------------------------------------------
+# the parcels whose time has come, left on the spot while the player can't see it
+func _deliver_due() -> void:
+	var spot := get_node_or_null(deliver_to) as Node3D
+	if spot == null:                                  # the spot's gone: straight into the pocket
+		for d in deliveries:
+			for i in d["items"].size():
+				(d["items"][i] as HSShopItem).give_to(get_tree(), int(d["counts"][i]), _player)
+		deliveries.clear()
+		return
+	for d in deliveries.duplicate():
+		if _clock < float(d["due"]):
+			continue
+		if when_unseen and _seen(spot):
+			return
+		deliveries.erase(d)
+		_drop(spot, d)
+
+
+## whether the player can see the spot now: in the view and nothing solid between
+func _seen(spot: Node3D) -> bool:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return false
+	var at := spot.global_position + spot.global_basis.y * 0.12
+	if not cam.is_position_in_frustum(at):
+		return false
+	var q := PhysicsRayQueryParameters3D.create(cam.global_position, at)
+	var p := get_tree().get_first_node_in_group("hs_player")
+	if p is CollisionObject3D:
+		q.exclude = [(p as CollisionObject3D).get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	return hit.is_empty() or (hit["position"] as Vector3).distance_to(at) < 0.4
+
+
+func _drop(spot: Node3D, d: Dictionary) -> void:
+	var scene: PackedScene = package if package != null else (load(PACKAGE) as PackedScene)
+	if scene == null:
+		return
+	var pkg := scene.instantiate() as Node3D
+	if not pkg is HSPackage:
+		pkg.queue_free()
+		return
+	var k := spot.get_children().filter(func(c: Node) -> bool: return c is HSPackage).size()
+	(pkg as HSPackage).items.assign(d["items"])
+	(pkg as HSPackage).counts = PackedInt32Array(d["counts"])
+	(pkg as HSPackage).order_number = int(d["number"])
+	spot.add_child(pkg)
+	var b: AABB = (pkg as HSPackage).box
+	var w := b.size.x + 0.05
+	var row := [0.0, 1.0, -1.0]
+	var x := float(row[k % 3]) * w                    # side by side along the spot's X, then a layer on top
+	var y := float(k / 3) * (b.size.y + 0.002)
+	pkg.position = Vector3(x, y, 0.0)
+	pkg.rotation.y = PI + deg_to_rad(randf_range(-7.0, 7.0))   # its front (+Z) to the spot's -Z
+	(pkg as HSPackage).arrive(knock)
+	delivered.emit(pkg)
 
 
 func _story() -> Node:

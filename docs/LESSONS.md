@@ -19,6 +19,10 @@ the fix.
 - **`:=` needs a typed value**: `SOUNDS + nm` with `nm` from an untyped array, `term._label()` through a Node-typed
   variable and `max()` all give a Variant, and Godot refused to parse the script. Type the variable (`var p: String`) or
   use the typed function (`maxi`).
+- **A container's new children have no place until the next frame** (2026-11-10, last: the shop's pages): the check
+  refreshed the Order tab (a locked box of shells added) and clicked the shells' card at once, and the click picked the
+  batteries: the new cards' `get_global_rect()` was still at the grid's corner, because containers sort their children
+  when the frame is processed. Await a frame or two after rebuilding a container before reading where its children are.
 
 ## The laptop and mouse (the `computer` family): what took a second try (2026-11-10)
 
