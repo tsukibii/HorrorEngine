@@ -2,6 +2,49 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-10, night (the user: younger characters, Cutify, monster mode, more horns and animal ears)
+
+- **"Currently we are restricted to making older characters in the studio creator, I want you to add compatibility to
+  do the following. A toggle for monster mode (where we can modify and exaggerate features - especially facial
+  features for creating creatures) / making younger npcs 8-18 age, I think the main issue is the height selector only
+  allows us to create 18+ characters, I may decide to have a game which is about a family being haunted by a
+  poltergeist so need the ability to make younger npcs, I dont need very young just 8+, maybe allow the face to be more
+  'cuter' softer, so maybe a seperate toggleable 'cutify', but we should still be able to import image to face /
+  enhance the horns and add different type, add cow ears an animal ears to the props, maybe create it in a way that
+  when I export it to godot i could add a jiggle bone (doesnt exist yet) to the ears e.g so they flop when the
+  character moves."** In the Character Studio (docs/CHARACTER_STUDIO.md §2d):
+  - **Ages 8 to 17** (Body, Age; 18 is the adult the Studio always made, and every character saved before is one). The
+    height slider's floor was a symptom: a child isn't a small adult. The age sets the body's proportions from the
+    growth charts (the head's share of the height: a sixth and a half at eight where MHR's adult is an eighth; legs that
+    run ahead of the torso toward twelve; a narrow, straight build; a girl's and a boy's builds the same at eight and
+    parting through puberty) and a short, soft face, and moving it sets the height to the age's average (the height
+    slider goes down to 1.1 m and stays yours). **The head is the unit**: nothing of an age moves a point of the head
+    against another; the body under it is what's scaled. So a face fitted to a picture, the expressions, the eyes, the
+    teeth, the lashes and the hair work on a child as they did, and **image to face still works** (the age goes on after
+    the fit, like the sculpt); **Young face** turns the age's own face down when a child's picture already gives it.
+  - **Cutify**: a switch of its own with an amount (Body, under the age), at any age: bigger eyes (the iris with them),
+    a shorter, rounder face, fuller cheeks, a smaller nose, mouth and chin. Also after a picture's fit.
+  - **Monster mode**: a switch over the sculpt. On, every sculpt slider and circle goes three times as far, the height
+    runs from 0.4 to 3.5 m, the **Creature** controls show (pointed ears, slanted eyes, a snout, a long skull, a hunch)
+    beside new ones a person can use too (Proportions: head size, neck, torso, leg and arm length, hands, feet,
+    fingers; the face's length, a round face, the eyes' size, spacing and depth, the ears' size and how far they stand
+    out; bust, seat), and seven creatures to start from (goblin, ghoul, ogre, grey alien, demon, hag, imp: sliders
+    yours to move on). Fangs and pointed teeth (Face, Mouth). Off, everything comes back into a person's range (asked first).
+  - **Horns**, thirteen kinds where there were two (a devil's, budding stubs, an oni's, a unicorn's, a bull's, a cow's,
+    a goat's, a gazelle's ringed lyre, a kudu's corkscrew, a ram's spiral, a demon's great horns, a dragon's, antlers
+    with tines): their growth rings real ridges, their colour from base to tip and their grain drawn in code, their
+    length, thickness, spread, curl and lean sliders. **Animal ears**, thirteen kinds where there were three (bunny, lop
+    bunny, cat, fox, wolf, bear, mouse, **cow** (with its tag), goat, sheep, deer, a dog's floppy ones, a pig's), on a
+    headband or growing from the head, each with Flop.
+  - **Ready for a jiggle bone, and the jiggle bone**: read as "make the export ready, the jiggle doesn't exist yet".
+    Export for Godot gives every ear a chain of bones of its own under the head (`jiggle_<name>_0` ... `_tip`), the ear
+    skinned along it; a plain viewer shows them still. And the look plugin now has the jiggle: **HSJiggle**
+    (docs/GODOT_LOOK.md §5n), Godot's own SpringBoneSimulator3D on every chain named so; HSCharacterLook and the game's
+    cast put it on by themselves. Horns ride the head whole.
+  - **Open for you**: the look of a child's face and of each creature on your card (the numbers are tables in
+    `tools/character/grow.js`); how floppy the ears should be in Godot (HSJiggle's `amount`); hair made on an adult head
+    wants baking again after an age is set (the head's size changes with it).
+
 ## 2026-11-10, after the last (the user: what's in a parcel flies to you and the box is gone)
 
 - **"Instead of showing the items inside it, when we press e to open it should be like items absorbed towards the

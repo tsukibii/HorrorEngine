@@ -13,6 +13,8 @@
 //   S.handles: [{ id, label, controls, at: [vertex, its twin or -1] }]   the circles on the body, and what each drags
 
 export const GROUPS = ["Forehead", "Face", "Body"];
+// (grow.js adds "Proportions" and "Creature": lengths and sizes of the body's parts, on MHR's rig; a few of the fields
+// here are Creature's too: only monster mode shows them)
 
 const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };   // 0 at a, 1 at b
 const bump = (d, r) => d >= r ? 0 : (1 - (d / r) ** 2) ** 2;                // 1 at the middle, 0 at r, smooth
@@ -38,6 +40,7 @@ export function buildSculpt({ P, T, lm, lid = null }) {
   for (let i = 0; i < N; i++) if (Math.abs(P[i * 3 + 1] - yb) < 0.006 && Math.abs(P[i * 3]) < 0.1) { zlo = Math.min(zlo, P[i * 3 + 2]); zhi = Math.max(zhi, P[i * 3 + 2]); }
   const zc = (zlo + zhi) / 2;
   const brow = pair(105, 334), glabella = L(9), temple = pair(21, 251), cheekbone = pair(116, 345), cheek = pair(50, 280);
+  const round = pair(192, 416);                                             // the lower cheek, beside the mouth's corner
   const jaw = pair(172, 397), chin = L(152), chinFront = mid(L(175), L(152)), tip = L(1), bridge = L(6), ala = pair(98, 327);
   const corner = pair(61, 291), lips = mid(L(0), L(17)), lowerLip = L(17);
   // the upper lid's fold: the upper lid's own line (the opening's, inner corner to outer; MediaPipe's ring, 2 mm below
@@ -116,7 +119,34 @@ export function buildSculpt({ P, T, lm, lid = null }) {
   const noseV = y => sm(yN + 0.002, yN - 0.006, y) * sm(yS - 0.004, yS + 0.001, y);   // its bulk: from the root to the subnasale
   const noseVX = y => sm(yN, yN - 0.015, y) * sm(yS - 0.012, yS + 0.001, y);          // its width: little at the root, all of it from the bridge's middle to the alae, easing out down the upper lip
 
-  // each control: f(p, nrm) for a point on the left (x >= 0), its offset at 1; mirrored for the right
+  // the eye's middle (between its corners, on the lid line), the ear (MHR's auricle: 6 cm tall from the lobe at the
+  // nose's base to its top at the eye's height, standing a centimetre off the head's side, which is further out the
+  // higher it is: the ear is what's outside that side), the face's front (the ears and the back of the jaw stay)
+  const eyeC = mid(lidIn, lidOut), yFace = pair(145, 374)[1] - 0.004;
+  const EAR0 = 1.566, EAR1 = 1.630, earRoot = [0.072, 1.598, 0.028], earTop = [0.084, 1.626, 0.020];
+  // how much a point is ear, EARW (both sides): 1 where it stands well clear of the head's side, 0 on the skull, and
+  // between them (the ear's root: the bowl in front, the fold behind) a harmonic blend over the mesh itself, each point
+  // the mean of its neighbours. The ear is a thin sheet with a front and a back: a weight by how far out a point is
+  // moved its two faces apart and through each other; by the mesh, both faces are ear alike and ease out at the root
+  const EARW = new Float32Array(N);
+  { const inBox = i => Math.abs(P[i * 3]) > 0.06 && P[i * 3 + 1] > EAR0 - 0.015 && P[i * 3 + 1] < EAR1 + 0.015 && P[i * 3 + 2] > -0.03 && P[i * 3 + 2] < 0.07;
+    const free = [], slot = new Int32Array(N).fill(-1);
+    for (let i = 0; i < N; i++) { if (!inBox(i)) continue;
+      const e = Math.abs(P[i * 3]) - (0.073 + 0.12 * (P[i * 3 + 1] - 1.6)), y = P[i * 3 + 1], z = P[i * 3 + 2];
+      if (e > 0.0045 && y > EAR0 - 0.004 && y < EAR1 + 0.004 && z > -0.012 && z < 0.05) EARW[i] = 1;
+      else if (e >= 0.0003) { slot[i] = free.length; free.push(i); } }
+    const nb = free.map(() => new Set());
+    for (let t = 0; t < T.length; t += 3) for (let k = 0; k < 3; k++) { const a = T[t + k], q = slot[a]; if (q >= 0) { nb[q].add(T[t + (k + 1) % 3]); nb[q].add(T[t + (k + 2) % 3]); } }
+    const NB = nb.map(s => [...s]);
+    for (let it = 0; it < 400; it++) for (let q = 0; q < free.length; q++) { let m = 0; for (const j of NB[q]) m += EARW[j]; EARW[free[q]] = NB[q].length ? m / NB[q].length : 0; }   // (in place: Gauss-Seidel, settled long before 400)
+  }
+  // a field about one eye reaches across the nose's bridge; each side's is worked out for its own eye alone, so what
+  // it does sideways must be nothing at the middle (or the two halves pull the bridge apart: a pinch down the nose)
+  const midOff = p => sm(0.002, 0.014, p[0]);
+  const earOff = p => Math.max(0, p[0] - (0.073 + 0.12 * (p[1] - 1.6)));   // how far a point stands off the head's side (m)
+  const faceFront = z => sm(0.035, 0.085, z);
+
+  // each control: f(p, nrm, i) for a point on the left (x >= 0; a right one mirrored onto it, i its own index), its offset at 1; mirrored for the right
   const C = [
     ["forehead_height", "Forehead height", "Forehead", "Taller or shorter above the brows (the skull's top with it; hair covers it).",
       p => head(p) && p[1] > yb - 0.01 ? [0, 0.22 * (p[1] - yb) * sm(yb - 0.006, yb + 0.03, p[1]), 0] : null],
@@ -147,6 +177,10 @@ export function buildSculpt({ P, T, lm, lid = null }) {
       p => { const w = bump(dist(p, cheekbone), 0.028); return w ? [0.008 * w, 0, 0.004 * w] : null; }],
     ["cheeks", "Cheeks", "Face", "Fuller or hollower cheeks.",
       (p, m) => { const w = bump(dist(p, [cheek[0], cheek[1] - 0.004, cheek[2]]), 0.026); return w ? m.map(v => 0.007 * w * v) : null; }],
+    // a round face: the cheek's lower half and the jaw's side fuller as one broad, soft swell (the Cheeks control is the
+    // apple of the cheek alone: turned up far it puffs; this is what a child's and a soft face have), or leaner
+    ["face_round", "Round face", "Face", "The lower cheeks and the jaw's sides fuller together, a soft round face (a child's), or leaner.",
+      (p, m) => { const w = bump(dist(p, round), 0.048) * sm(0.006, 0.018, dist(p, corner)); return w ? m.map(v => 0.005 * w * v) : null; }],   // (clear of the mouth's corner: the lips' seal there is slivers, turned by any push along their normals)
     ["jaw_width", "Jaw width", "Face", "A wider, squarer jaw or a narrower one.",
       p => { const w = bump(dist(p, jaw), 0.04); return w ? [0.009 * w, 0, 0] : null; }],
     ["chin_length", "Chin length", "Face", "The chin longer (down) or shorter.",
@@ -176,6 +210,41 @@ export function buildSculpt({ P, T, lm, lid = null }) {
       p => { const w = bump(dist(p, corner), 0.018); return w ? [0.005 * w, 0, 0] : null; }],
     ["lips", "Lips", "Face", "Fuller or thinner lips.",
       (p, m) => { const w = bump(Math.hypot(p[0] / 0.028, (p[1] - lips[1]) / 0.012, (p[2] - lips[2]) / 0.02), 1); return w ? m.map(v => 0.0035 * w * v) : null; }],
+    // the face from the eyes down as one: its length toward the eyes' line (the nose, the mouth, the jaw and the chin
+    // together: a child's face is short under its eyes, a long face is a horse's or a ghoul's), whole across the front,
+    // easing out toward the ears (they stay) and, under the chin, down the neck
+    ["face_height", "Face length", "Face", "The face from the eyes down (nose, mouth, jaw and chin together) longer or shorter: −1 a tenth shorter, a child's. The eyes and the ears stay.",
+      p => { if (p[1] > yFace || p[1] < chin[1] - 0.05 || p[2] < 0.03) return null;
+        const s = p[1] >= chin[1] ? yFace - p[1] : (yFace - chin[1]) * sm(chin[1] - 0.05, chin[1], p[1]), w = 0.1 * s * faceFront(p[2]);
+        return w > 1e-7 ? [0, -w, 0] : null; }],
+    // the eyes: the skin round each (its lids, the socket's rim) bigger or smaller about the eye's own middle; the eyeball
+    // and the opening follow the skin (the grafted eyes grow with it). The move's slope stays well inside 1 at any
+    // slider, so the lids never fold
+    ["eye_size", "Eye size", "Face", "Bigger or smaller eyes: the lids and the socket round each eye about its middle (the eyeball follows).",
+      p => { const w = bump(dist(p, eyeC), 0.036) * midOff(p); return w ? [0.15 * w * (p[0] - eyeC[0]), 0.15 * w * (p[1] - eyeC[1]), 0.15 * w * (p[2] - eyeC[2])] : null; }],
+    ["eye_spacing", "Eye spacing", "Face", "The eyes further apart or closer together.",
+      p => { const w = bump(dist(p, eyeC), 0.04) * sm(0.004, 0.012, p[0]); return w ? [0.004 * w, 0, 0] : null; }],
+    ["eye_depth", "Deep-set eyes", "Face", "The eyes back under the brow (deep-set, sunken) or forward.",
+      p => { const w = bump(dist(p, eyeC), 0.032); return w ? [0, 0, -0.004 * w] : null; }],
+    // the ears' moves grow with how far a point stands off the head (earOff): nothing at the ear's root all round (in
+    // front, behind, at its top and its lobe), all of it at the rim, and the sheet's two faces, a few millimetres
+    // apart, moving almost alike
+    ["ears_size", "Ear size", "Face", "Bigger or smaller ears.",
+      (p, m, i) => { const w = EARW[i]; if (!w) return null; const e = earOff(p), o = w * sm(0.001, 0.011, e); return [0.25 * w * e, 0.25 * o * (p[1] - earRoot[1]), 0.25 * o * (p[2] - earRoot[2])]; }],
+    ["ears_out", "Ears out", "Face", "Ears that stand out from the head, or lie flat against it.",
+      (p, m, i) => { const w = EARW[i]; if (!w) return null; const e = earOff(p); return [0.45 * w * e, 0, 0.15 * w * e]; }],   // (−1: nearly half the way to the head, the ear's bowl kept)
+    // ---- Creature (monster mode): what no person has
+    ["eye_tilt", "Eye slant", "Creature", "The eyes' outer corners up (a cat's, a demon's) or down.",
+      p => { const w = bump(dist(p, eyeC), 0.034) * midOff(p); return w ? [-0.14 * w * (p[1] - eyeC[1]), 0.14 * w * (p[0] - eyeC[0]), 0] : null; }],
+    // pointed ears: the ear's top drawn up, back and out to a point, more the higher on the ear, its width gathered in
+    // toward the tip (a quarter a slider: at 3 it still hasn't crossed itself)
+    ["ears_point", "Pointed ears", "Creature", "The ears' tops drawn up and back to a point (an elf's, a goblin's); with Ear size, long ones.",
+      (p, m, i) => { const w = EARW[i]; if (!w) return null; const t = sm(1.588, EAR1, p[1]), k = w * sm(0.001, 0.011, earOff(p)) * t * t;
+        return k > 1e-6 ? [0.005 * k, 0.02 * k, -0.011 * k - 0.25 * k * (p[2] - earTop[2])] : null; }],
+    ["snout", "Snout", "Creature", "The nose and the mouth forward together, a muzzle.",
+      p => { const w = bump(Math.hypot(p[0] / 0.05, (p[1] - (subn[1] - 0.006)) / 0.05, (p[2] - subn[2]) / 0.07), 1); return w ? [0, 0, 0.014 * w] : null; }],
+    ["skull_back", "Long skull", "Creature", "The back of the head drawn out behind (an alien's long skull).",
+      p => { if (!head(p) || p[2] > zc) return null; const w = sm(1.555, 1.61, p[1]) * sm(zc, zc - 0.04, p[2]); return w ? [0, 0.06 * (zc - p[2]) * w, -0.3 * (zc - p[2]) * w] : null; }],
     ["neck", "Neck", "Body", "A thicker or a slimmer neck.",
       p => { if (p[1] < 1.44 || p[1] > 1.6) return null; const c = along(NECK, p[1]); if (!c) return null; const r = Math.hypot(p[0], p[2] - c[1]);
         const w = bump(Math.abs(p[1] - 1.5), 0.05) * sm(0.075, 0.06, r); return w ? [0.18 * p[0] * w, 0, 0.18 * (p[2] - c[1]) * w] : null; }],   // under the jaw
@@ -183,6 +252,9 @@ export function buildSculpt({ P, T, lm, lid = null }) {
       p => { const w = armW(p[0], p[1]); return w ? [0.03 * w, 0, 0] : null; }],
     ["chest", "Chest", "Body", "A deeper or a flatter chest.",
       p => { const w = bump(Math.abs(p[1] - 1.28), 0.09) * bump(p[0], 0.17) * sm(0.02, 0.09, p[2]) * (1 - armW(p[0], p[1])); return w ? [0, 0, 0.012 * w] : null; }],
+    ["bust", "Bust", "Body", "A fuller bust or a flatter chest (a child's: −1).",
+      (p, m) => { if (p[2] < 0.03 || p[1] < 1.18 || p[1] > 1.39) return null;
+        const w = bump(Math.hypot((p[0] - 0.072) / 0.078, (p[1] - 1.285) / 0.09), 1) * sm(0.1, 0.6, m[2]) * (1 - armW(p[0], p[1])); return w > 1e-6 ? [0.2 * 0.016 * w * sm(0, 0.02, p[0]), -0.15 * 0.016 * w, 0.016 * w] : null; }],
     ["waist", "Waist", "Body", "A wider or a slimmer waist.",
       p => { const w = bump(Math.abs(p[1] - 1.12), 0.1) * (1 - sm(0.205, 0.235, p[0])); return w ? [0.12 * p[0] * w, 0, 0.08 * (p[2] - 0.03) * w] : null; }],
     ["belly", "Belly", "Body", "A flat stomach (all the way: back to a straight line from the pubic bone to the ribs) or a rounder belly.",
@@ -191,6 +263,9 @@ export function buildSculpt({ P, T, lm, lid = null }) {
         return w > 1e-6 ? [0, 0, w] : null; }],
     ["hips", "Hips", "Body", "Wider or narrower hips.",
       p => { const w = bump(Math.abs(p[1] - 0.95), 0.1) * sm(0.3, 0.25, p[0]); return w ? [0.12 * p[0] * w, 0, 0.06 * p[2] * w] : null; }],
+    ["seat", "Seat", "Body", "A rounder or a flatter seat.",
+      (p, m) => { if (p[2] > 0 || p[1] < 0.76 || p[1] > 1.0) return null;
+        const w = bump(Math.hypot((p[0] - 0.085) / 0.1, (p[1] - 0.885) / 0.11), 1) * sm(-0.1, -0.6, m[2]); return w > 1e-6 ? [0, 0, -0.014 * w] : null; }],
     ["upper_arms", "Upper arms", "Body", "Thicker or thinner upper arms.",
       p => { const a = armW(p[0], p[1]); if (a < 0.5 || p[1] < 1.0) return null; const c = along(ARM, p[0]); if (!c) return null;
         const w = bump(Math.abs(p[0] - 0.31), 0.12) * a; return w ? [0, 0.3 * (p[1] - c[0]) * w, 0.3 * (p[2] - c[1]) * w] : null; }],
@@ -208,7 +283,7 @@ export function buildSculpt({ P, T, lm, lid = null }) {
     const idx = [], d = [];
     for (let i = 0; i < N; i++) {
       const s = P[i * 3] < 0 ? -1 : 1, p = [s * P[i * 3], P[i * 3 + 1], P[i * 3 + 2]], m = [s * n[i * 3], n[i * 3 + 1], n[i * 3 + 2]];
-      const o = f(p, m); if (!o || !(Math.abs(o[0]) + Math.abs(o[1]) + Math.abs(o[2]) > 1e-7)) continue;
+      const o = f(p, m, i); if (!o || !(Math.abs(o[0]) + Math.abs(o[1]) + Math.abs(o[2]) > 1e-7)) continue;
       idx.push(i); d.push(s * o[0], o[1], o[2]);
     }
     return { id, label, group, help, idx: Uint32Array.from(idx), d: Float32Array.from(d) };
@@ -235,9 +310,15 @@ export function buildSculpt({ P, T, lm, lid = null }) {
     ["nostril", "Nose width", ["nose_width"], ala, true],
     ["mouth", "Mouth corner", ["mouth_width"], corner, true],
     ["lips", "Lips", ["lips"], L(0), false],
+    ["face", "Face length", ["face_height"], [0.03, chin[1] + 0.012, chin[2] - 0.016], true],
+    ["eye", "Eye size", ["eye_size"], [eyeC[0], yFace - 0.006, eyeC[2] - 0.004], true],
+    ["ear", "Ear", ["ears_size", "ears_out"], [0.087, 1.6, 0.012], true],
+    ["ear_top", "Pointed ear", ["ears_point"], earTop, true],
+    ["snout", "Snout", ["snout"], [0, subn[1] - 0.004, subn[2]], false],
     ["neck", "Neck", ["neck"], "out", true],
     ["shoulder", "Shoulder", ["shoulders"], extreme(p => p[0] > 0.17 && p[0] < 0.22 && p[1] < 1.5, p => p[1]), true],
     ["chest", "Chest", ["chest"], extreme(p => Math.abs(p[0] - 0.08) < 0.01 && Math.abs(p[1] - 1.28) < 0.01, p => p[2]), true],
+    ["bust", "Bust", ["bust"], extreme(p => Math.abs(p[0] - 0.075) < 0.008 && Math.abs(p[1] - 1.24) < 0.008, p => p[2]), true],
     ["waist", "Waist", ["waist"], extreme(p => Math.abs(p[1] - 1.12) < 0.006 && p[0] < 0.2, p => p[0]), true],
     ["belly", "Belly", ["belly"], extreme(p => Math.abs(p[0]) < 0.008 && p[1] > 1.0 && p[1] < 1.12, p => p[2]), false],
     ["hips", "Hips", ["hips"], extreme(p => Math.abs(p[1] - 0.95) < 0.006 && p[0] < 0.25, p => p[0]), true],

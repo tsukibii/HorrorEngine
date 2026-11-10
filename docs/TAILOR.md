@@ -405,9 +405,11 @@ lifted by them yet).
   [--uv | --debug] [--drape ['{"t-shirt": {"slack": 0.3}}']] [--edit '{"t-shirt": {"fit": 0}}'] [--out x.png]` renders a
   contact sheet (Playwright), hung by gravity with `--drape` (and a design's drape settings over its own), with a
   garment's own edits as the Studio keeps them; `node tools/character/tailor/check.mjs` is
-  TAILOR, on seven bodies: MHR's average, its feminine and masculine presets, and the slim and full ones in
+  TAILOR, on nine bodies: MHR's average, its feminine and masculine presets, the slim and full ones in
   `tailor/bodies.json` (fitted with `mhr.py`'s `fit_measures`: a waist and hips 15 to 20% in, or a waist 15% out with
-  a rounder belly, wider hips and thicker thighs). Where a gap in the body is narrower than the cloth's clearance
+  a rounder belly, wider hips and thicker thighs), and two children (an eight-year-old at 1.28 m and a twelve-year-old
+  at 1.52 m, made as the Studio makes an age: `tailor/node.mjs` `grownBody`, CHARACTER_STUDIO §2d; every design cuts on
+  them, with an adult's ease in centimetres). Where a gap in the body is narrower than the cloth's clearance
   (between full thighs), the cloth settles in the middle of it, outside both sides.
 - **Export clothes OBJ** carries the fabric coordinates (`vt`, metres) and the normals (`vn`).
 

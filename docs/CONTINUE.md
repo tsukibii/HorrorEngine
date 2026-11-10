@@ -18,8 +18,66 @@ bedding, curtains, tables and chairs, the props' kept pictures, real wood in the
 `sakura-rabbit-research`: the Sakura Rabbit research note, then the three notes on dread, the CRT, and the props and
 systems that open, hold, move and are read; 2026-11-05, night, on `gameplay-enhancements`: the kit's stairs, the scene
 builder's floors, the street's steel stair, climbing in Godot and on the desk; 2026-11-08 on
-`claude/friendly-newton-9o2xey`, from the user's `retro-enhance`: the retro pack in the prop generator). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
+`claude/friendly-newton-9o2xey`, from the user's `retro-enhance`: the retro pack in the prop generator; 2026-11-09 and
+10 the weapons and the laptop, merged; 2026-11-10, night, on `claude/nifty-tesla-dc904q`: children, Cutify, monster
+mode, horns and animal ears in the Character Studio). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
+
+## Where it stopped last (2026-11-10, night, `claude/nifty-tesla-dc904q`): children, Cutify, monster mode, horns and ears that flop
+
+The user: "we are restricted to making older characters in the studio creator ... a toggle for monster mode ... making
+younger npcs 8-18 age ... maybe a separate toggleable 'cutify', but we should still be able to import image to face ...
+enhance the horns and add different type, add cow ears and animal ears ... when I export it to godot I could add a
+jiggle bone (doesn't exist yet) to the ears so they flop" (DECISIONS 2026-11-10, night). Built, all in the Character
+Studio and the look plugin (docs/CHARACTER_STUDIO.md §2d, docs/GODOT_LOOK.md §5n):
+
+- **`tools/character/grow.js`**: proportions (parts of the body sized against the rest on MHR's rig, before the
+  height's scale), the ages' table, Cutify, the creatures. **The head is the unit**: an age scales the body under the
+  head, so nothing made on the head needed changing and a picture still fits the face on a child.
+- **Body tab**: Age (8 to 17, or the adult; sets the height to the age's average; Young face), Cutify (a switch and an
+  amount), Monster mode (the sliders and circles to ±3, the height 0.4 to 3.5 m, the Creature controls, seven creatures
+  as chips), new sliders (Proportions; Face length, Round face, Eye size, spacing and depth, Ear size, Ears out; Bust,
+  Seat). Face, Mouth: Fangs, Pointed teeth.
+- **Accessories**: `horns.js`: thirteen horns, thirteen animal ears (a cow's with its tag), on a headband or from the
+  head, Flop.
+- **The export**: each ear a chain of bones under the head (`jiggle_ear_L_0` ... `_tip`), horns whole on the head.
+  **HSJiggle** in the look plugin springs them (Godot's SpringBoneSimulator3D); HSCharacterLook and the game's cast put
+  it on by themselves.
+- **Checks**: GROW (in check_all), GROWPAGE (the page, a scratch character `_growtest`), JIGGLE (Godot, headless);
+  TAILOR and POSE now run on two children as well (every design cuts on an eight-year-old).
+
+**Run here** (the cloud, on the CPU): CHECKS, GROW, POSE, TAILOR (104 designs on nine bodies), FACEMORPHS, GROWPAGE,
+JIGGLE, LOOKPLUGIN `--nodes` and GDPLAY ok; GDTESTROOM ok from the start to station 11 and from 12 (`--from n_bath`) to
+the end, with the desk's bake made first (`node tools/godot/bake.mjs --game TestRoom001`), station 13 failing as it
+does on any fresh container (the suitcase's and closets' made props need Blender). **Not run, for the card**
+(docs/RUN_LOCALLY.md): STUDIO, SALON, GROOM, PEOPLE (`PERSON=_growtest`: a child with ears and horns on the desk),
+EXPRESSIONS.
+
+**Found on the way, not fixed (older than this work; for the user to decide)**: a Studio export's face in Godot.
+`tools/face_morphs.mjs` leaves any mesh alone that already has morph targets ("baked already"), and since the blink
+(GODOT_LOOK §5f) every export's skin, lashes and brows carry the blink's own targets: so the 72 face shapes are not
+baked onto a current export at all ("nothing to bake"; `_growtest`'s Godot copy has the blink's 18 and no others), and
+the story's `expr` moves nothing on it but the lids. Three things would make it work, together (one alone looks worse
+than none): the bake adding the 70 shapes a mesh lacks beside its blink's; `face.gd` driving every mesh that carries
+them, not the first (the brows' and lashes' cards are meshes of their own); and an expression's own `eyesClosed`
+handed to HSBlink's `hold` as `bakeplay.gd` does, not set beside it. The desk plays expressions on an export by its
+MHR points and is right. EXPORTS would have said so (it wants 72 blend shapes on a Studio export) on a machine with one.
+
+**The pictures**: `docs/studio_sheets/2026-11-10_ages_cutify.jpg`, `2026-11-10_creatures.jpg`, `2026-11-10_horns_ears.jpg`;
+in Godot `docs/godot_sheets/2026-11-10_ears_jiggle.jpg`.
+
+**For the user's eye, on the card** (nothing here was judged on a real GPU: the pictures were drawn on the CPU):
+- an eight-, a twelve- and a fifteen-year-old of each base: the head's size, the build, the face (`CHILD_BODY`,
+  `CHILD_FACE` and the table in grow.js are the numbers to change);
+- Cutify at 0.6 and 1 on an adult and on a child (`CUTE`);
+- each creature chip (`MONSTERS`), and the sliders at 3: where a field breaks before its limit, `REACH` takes a number;
+- the horns' and ears' sizes and places on a real character with hair (they're made on the bare scalp);
+- the ears in Godot: HSJiggle's `amount` and `gravity` (how floppy), on a character that walks.
+
+**Next, if the user wants it**: hair refitted to a head an age has resized (today: bake it again); the outfits'
+pictures on a child; children's sizes in the wardrobe (clothes cut for a child keep an adult's ease in centimetres);
+younger than eight; tails and wings on the same chains (HSJiggle springs any `jiggle_` chain); the creatures' skin (the
+procedural skin's greens and greys as looks); the desk's stand-in bodies by age.
 
 ## Where it stopped last (2026-11-10, `laptop`): a laptop to sit at, a green terminal, a shop that fills the pocket, parcels at the door
 

@@ -338,7 +338,9 @@ Measured (DIRECTOR): Mari rests in `pout_and_glance_loop` on her MHR face shapes
 **A Character Studio character's face**: the Studio exports her neutral, but every corner of her skin carries the MHR
 points it rides (`_MHRP`, `_MHRW`: how the desk's face.js moves it), so `tools/face_morphs.mjs` bakes MHR's 72 face
 shapes into **the copy a project wears** (`game/people/<name>.glb`, made by `install`, and by the desk game's Godot
-export): each shape's move on every corner it touches, scaled by her height over MHR's, as sparse morph targets named
+export): each shape's move on every corner it touches, scaled by her head's scale as the export says it (`studioScale`
+on its skin's node, 2026-11-10: a child's or a creature's head isn't sized by its height; an older file: her height
+over MHR's), as sparse morph targets named
 by Meta's names; a lash card turns whole about its eye as its root moves (as face.js turns it). Godot makes them blend
 shapes; face.gd plays on them. What the desk adds that isn't a morph (the lids kept off the eyeballs, the eyes turned
 by the gaze) isn't in Godot yet. FACEMORPHS (`--check`, in CHECKS): a made-up export of MHR's own face, its 72 morphs

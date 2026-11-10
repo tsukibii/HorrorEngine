@@ -35,6 +35,7 @@ One line, for the user to give Claude on their machine, for example:
    |---|---|---|
    | STUDIO | `GPU=1 node tools/character/studiotest.js` | Studio |
    | SALON | `GPU=1 node tools/character/salontest.js` | Studio |
+   | GROWPAGE | `GPU=1 node tools/character/growpagetest.mjs` | Studio (ages, Cutify, monster mode, horns and ears on a scratch character, `_growtest`; it runs JIGGLE on its export when Godot is there) |
    | UEEYE | `GPU=1 node tools/character/ueeye.mjs` | none |
    | PLAY | `GPU=1 node tools/director/playtest.js` | desk |
    | TESTROOM | `GPU=1 node tools/director/testroom.mjs` | desk |
@@ -69,6 +70,7 @@ pixel measure went wrong, LESSONS 2026-10-29); a check prints the renderer it go
 |---|---|---|
 | LOOKPLUGIN | `python3 tools/godot/plugin_check.py` | the pictures in `Saved/Story/_look/godot_plugin/`: the wet floor, the blood, the lit rain and its splashes, the mirror, the skin spheres |
 | GDPEOPLE | `python3 tools/godot/people_check.py` | `Saved/Story/_look/godot_people/`: a Studio export's skin and eye |
+| JIGGLE | `python3 tools/godot/jiggle_check.py --person NAME` | headless: an export's animal ears sprung by HSJiggle (the numbers it prints: how far the tips lag in a jerk, a walk and a turn); then the character in a game, for how floppy they read |
 | GDSTUDIO | `python3 tools/godot/studio_compare.py --person NAME` | `Saved/Story/_look/godot_studio/compare.jpg`: the Studio's own render beside Godot's (the Studio's server on 8793 running) |
 | GDTESTROOM | `python3 tools/godot_export.py --game TestRoom001 --testroom` | headless: the stations; then the game itself |
 | the game | `godot-mono --path Saved/Godot/TestRoom001` | the yard in the rain (the splashes, the wet floor, the lit streaks), the bath's mirror and wet floor, Aoi sweating in the kitchen, the pause menu's Graphics rows (Reflections Low: the mirror off) |

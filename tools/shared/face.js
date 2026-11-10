@@ -185,8 +185,11 @@ export function faceOf(root, F = null) {
     let lo = Infinity, hi = -Infinity; for (let c = 0; c < P.count; c++) { lo = Math.min(lo, P.getY(c)); hi = Math.max(hi, P.getY(c)); }
     out.push({ mesh: o, F, cs: Uint32Array.from(cs), sl: Int32Array.from(sl), ws: Float32Array.from(ws), base: Float32Array.from(P.array), tall: hi - lo, eyes });
   });
-  const tall = Math.max(0, ...out.filter(t => t.F && !t.cards).map(t => t.tall));   // the body's height (the skin's): MHR's moves scaled by it, brows and lashes too
-  for (const t of out) if (t.F) t.scale = tall / t.F.tall;
+  const tall = Math.max(0, ...out.filter(t => t.F && !t.cards).map(t => t.tall));   // the body's height (the skin's)
+  // MHR's moves times the head's scale, brows and lashes too: the export's own word for it (studioScale on its skin: a
+  // child's or a creature's head isn't sized by its height), else the body's height over MHR's (an export from before)
+  let known = 0; root.traverse(o => { const k = +(o.userData && o.userData.studioScale); if (k > 0) known = k; });
+  for (const t of out) if (t.F) t.scale = known || tall / t.F.tall;
   const skin = out.find(t => t.F && !t.cards && t.tall === tall);
   if (skin) skin.fit = eyeFits(root, skin);
   return out;

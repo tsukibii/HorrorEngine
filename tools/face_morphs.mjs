@@ -1,7 +1,8 @@
 // MHR's 72 face shapes as morph targets on a Character Studio export (DECISIONS 2026-11-01: faces in Godot; docs/
 // GODOT_DIRECTOR.md §6c), for the copy a Godot project wears (game/people/<name>.glb): the export's own map onto MHR's
 // points (each corner's _MHRP, _MHRW: what the desk's face.js moves it by) gives each shape's move on every corner it
-// touches, scaled by the body's height over MHR's, written as a sparse morph target named by Meta's name; Godot makes
+// touches, scaled by the head's scale as the export says it (`studioScale` on its skin's node: a child's or a creature's
+// head isn't sized by its height; an older export: the body's height over MHR's), written as a sparse morph target named by Meta's name; Godot makes
 // them blend shapes and the runtime's face.gd plays the story's `expr` on them. A lash card (_MHRR its root, _MHRE its
 // eye's middle) turns whole about its eye as its root moves, at the shape's full weight (face.js turns it the same
 // way). What the desk does besides (the lids kept off the eyeballs, the eyes turned by the gaze) isn't a morph and
@@ -110,13 +111,15 @@ export function bake(json, bin, F = mhrFace()) {
     if (!prims.some(Boolean)) continue;
     parts.push({ mi, mesh, prims });
   }
-  // the body's height (the tallest skin's, as face.js finds it): MHR's moves scaled by it, brows and lashes too
+  // the body's height (the tallest skin's, as face.js finds it): MHR's moves scaled by it, brows and lashes too, when the file doesn't say
   let tall = 0;
   for (const { prims } of parts) for (const q of prims) if (q && !q.R) {
     let lo = Infinity, hi = -Infinity; for (let i = 1; i < q.X.length; i += 3) { lo = Math.min(lo, q.X[i]); hi = Math.max(hi, q.X[i]); }
     tall = Math.max(tall, hi - lo);
   }
-  const scale = tall > 0 ? tall / F.tall : 1;
+  // (the export's own word for the head's scale, studioScale on its skin's node: a child's or a creature's head isn't sized by its height)
+  const known = (json.nodes || []).map(n => +(n.extras && n.extras.studioScale)).find(k => k > 0);
+  const scale = known || (tall > 0 ? tall / F.tall : 1);
   let corners = 0, targets = 0;
   const move = (e, s) => [F.D[(e * F.k + s) * 3] * scale, F.D[(e * F.k + s) * 3 + 1] * scale, F.D[(e * F.k + s) * 3 + 2] * scale];
   for (const { mesh, prims } of parts) {
@@ -181,7 +184,7 @@ export function bakeFile(input, output = input) {
 }
 
 // ---- the check: a made-up export of MHR's own face, and a lash card ----------------------------------------------
-function madeUp(F, file) {
+function madeUp(F, file, studioScale = 0) {             // studioScale: the head's scale as an export says it (its skin's node)
   const n = F.P.length / 3, I = new Uint32Array(n * 3), W = new Float32Array(n * 3);
   for (let p = 0; p < n; p++) { I[p * 3] = I[p * 3 + 1] = I[p * 3 + 2] = p; W[p * 3] = 1; }
   // a lash card of four corners on a point of the upper lid's (one eyesClosed moves most), its eye 1.2 cm behind it
@@ -201,7 +204,7 @@ function madeUp(F, file) {
   const cmin = [0, 1, 2].map(c => Math.min(...[0, 1, 2, 3].map(v => cardX[v * 3 + c]))), cmax = [0, 1, 2].map(c => Math.max(...[0, 1, 2, 3].map(v => cardX[v * 3 + c])));
   json.meshes.push({ name: "lashes", primitives: [{ attributes: { POSITION: acc(views[4], 5126, 4, "VEC3", { min: cmin, max: cmax }), _MHRP: acc(views[5], 5125, 4, "VEC3"), _MHRW: acc(views[6], 5126, 4, "VEC3"),
     _MHRR: acc(views[7], 5126, 4, "VEC3"), _MHRE: acc(views[8], 5126, 4, "VEC3") }, indices: acc(views[9], 5125, 6, "SCALAR") }] });
-  json.nodes.push({ name: "body", mesh: 0 }, { name: "lashes", mesh: 1 });
+  json.nodes.push({ name: "body", mesh: 0, ...(studioScale ? { extras: { studioScale } } : {}) }, { name: "lashes", mesh: 1 });
   writeGlb(file, json, Buffer.concat(blobs));
   return { root, eye, blink, cardX };
 }
@@ -232,6 +235,13 @@ function check() {
   }
   const rootMove = Math.hypot(...[0, 1, 2].map(c => F.D[(m.blink * F.k + F.slot[m.root]) * 3 + c]));
   ok(`a lash card on the blink turned whole about its eye (its corners ${(off * 1000).toFixed(4)} mm off their distance, swung ${(swing * 1000).toFixed(1)} mm; its root ${(rootMove * 1000).toFixed(1)} mm)`, off < 1e-5 && swing > 0.5 * rootMove && rootMove > 0.001);
+  // a child's or a creature's export: its head isn't sized by its height, and the file says the head's scale itself
+  const file2 = path.join(tmp, "said.glb"); madeUp(F, file2, 0.9);
+  const r2 = bakeFile(file2), g2 = readGlb(file2), jaw = Math.max(0, F.names.indexOf("jawOpen")), d2 = readAcc(g2.json, g2.bin, g2.json.meshes[0].primitives[0].targets[jaw].POSITION);
+  let off2 = 0, most2 = 0;
+  for (let p = 0; p < F.P.length / 3; p++) { const s = F.slot[p]; if (s < 0) continue; const o = (jaw * F.k + s) * 3;
+    for (let c = 0; c < 3; c++) { off2 = Math.max(off2, Math.abs(d2[p * 3 + c] - 0.9 * F.D[o + c])); most2 = Math.max(most2, Math.abs(F.D[o + c])); } }
+  ok(`a file that says its head's scale (studioScale 0.9 on a body as tall as MHR's): the moves times it, not times the height's (${F.names[jaw]}: ${(off2 * 1000).toFixed(4)} mm off, the largest move ${(most2 * 1000).toFixed(1)} mm; scale ${r2.scale.toFixed(3)})`, Math.abs(r2.scale - 0.9) < 1e-9 && off2 < 1e-6 && most2 > 0.003);
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log(bad.length ? `FACEMORPHS FAIL (${bad.length})` : "FACEMORPHS ok");
   return bad.length ? 1 : 0;

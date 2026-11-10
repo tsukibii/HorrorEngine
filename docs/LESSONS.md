@@ -3,6 +3,57 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## Ages, creatures, horns and ears in the Character Studio: what took a second try (2026-11-10, night)
+
+- **A child isn't a small adult, and the fix isn't on the head**: the first thought was to scale the head up against the
+  body. Everything made on the head is sized by the body's scale (the eyeball's 12 mm, the lashes, the teeth, the
+  face's fit, the expressions' offsets), so a head scaled apart would have needed every one of them told. Scaling the
+  body under the head instead, and letting the height's scale come out of the whole, leaves the head and all on it
+  untouched: when one part must change against another, move the one nothing else is measured in.
+- **A thin sheet needs a weight that's the same on both its faces**: the ears' first weight was how far a point stands
+  off the head's side. The ear is a sheet with a front and a back a few millimetres apart, so the two faces got
+  different weights and moved through each other (154 triangles turned over at a slider of 1). The weight is now a
+  harmonic blend over the mesh itself (1 on what stands clear, 0 on the skull, each point between the mean of its
+  neighbours): both faces are ear alike. And a move that's the same size all over the ear tears at its root, where the
+  weight falls to 0 in a few millimetres: the ears' moves grow with the stand-off, so there's nothing to tear.
+- **Count turned-over triangles per sign**: the ears' counts at ±3 looked hopeless until they were split by sign: all
+  the folding was on the negative side (an ear pressed into the head, a pointed tip pulled down). A field that's fine
+  one way and folds the other gets a limit on the bad side (`REACH`), not a redesign.
+- **A push along the normals turns slivers**: the round face's field flipped twenty triangles at a slider of 1, all
+  under a third of a square millimetre, at the mouth's corners: the membrane that seals MHR's lips. Fields along the
+  normal keep clear of it.
+- **Stacked bumps read as rolls**: an ogre made of the sculpt's chest, waist, belly and hips at 3 was a column of
+  tyres, and a ghoul's waist at -1.6 a wasp's. Big and thin bodies come from MHR's own identity shapes (one body,
+  from real ones); the sculpt's bumps are for what's left.
+- **A helper's missing field is NaN, and NaN draws nothing**: `hornLines` took `rise` out of the head's frame, which
+  didn't have it; the bases were NaN, the meshes had their vertices and counted as made, and nothing showed. The page
+  check counts NaN in every horn and ear now. Destructure only what the caller's object says it has.
+- **A picture taken while a character is still opening shows another character**: the first row of a contact sheet
+  came out as the adult, because the script changed the age while `open()` was still between its awaits and its later
+  steps put the saved state back. Wait for the view's own word that it's composed (the HUD's line) before driving it.
+- **A Godot check must not be able to hang**: HSJiggle's script had a type error; the SceneTree script then never got
+  to its `quit()` and the check sat for ten minutes saying nothing. The demo stops itself after a count of frames and
+  the check runs it with a timeout and prints what Godot said.
+- **Gravity does nothing to a chain that stands straight up**: the spring's gravity pulls along the bone and has no
+  lever; the check's long ear leans out now. (And `for sk in array` gives a Variant: `sk.get_node_or_null()` can't be
+  given to `:=`.)
+- **A new freedom breaks every reader that derived one thing from another**: while every body was an adult's, the
+  head's size could be read off the body's height, and two readers did (the desk's `face.js` and the Godot face bake
+  sized MHR's 72 face shapes by the height over MHR's). An age makes the head 0.93 of an adult's on a body 0.77 as
+  tall, and nothing failed: the expressions would only have been a fifth too weak. Found by reading who uses the
+  export's scale, not by a check. The file says the head's scale itself now (`studioScale`). When something that used
+  to follow something else is set free, search for whoever computed the one from the other.
+- **Measure the claim, not a neighbour of it**: "Young face leaves the body as it was" was checked by the eyes' height
+  staying within a tenth of a millimetre, and failed by 0.18 mm on a body that hadn't moved at all: the eye itself is
+  smaller without the age's face, and its middle goes with it. The check now compares the points under the neck (none
+  moves) and lets the eyes be. When a check fails by a hair on something right, it was measuring the part that's
+  allowed to change.
+- **One drawing job at a time means the Godot checks too**: a sixty-six-picture run of the Studio stopped at its
+  twenty-fourth on a click that waited thirty seconds for a button to hold still, because GDPLAY and GDTESTROOM had
+  been started beside it and the page's thread got no turn. A script that pictures a software-drawn page sets its
+  default timeout long (five minutes), names its pictures so a run can be picked up where it stopped, and nothing else
+  that eats a core runs with it.
+
 ## The laptop in Godot (HSLaptop, HSTerminal): what took a second try (2026-11-10)
 
 - **`set_anchors_preset` keeps a control's size; `set_anchors_and_offsets_preset` fills**: in Godot 4 the first moves

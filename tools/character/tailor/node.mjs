@@ -3,6 +3,8 @@ import { readFileSync, writeFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import * as SC from "../sculpt.js";
+import * as GW from "../grow.js";
+import * as PO from "../pose.js";
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 export function loadMhr(path = join(ROOT, "Content", "Studio", "Bodies", "MHR_lod1.bin")) {
@@ -38,6 +40,41 @@ export function mhrBody(m, weights = [], height = 1.7, sculpt = null) {
   }
   return { P, T: m.T };
 }
+
+/** a body as the Character Studio makes a child or a creature (grow.js, DECISIONS 2026-11-10, night): `age` 8 to 17
+    (or none: the adult) on a base (-1 feminine .. 1 masculine), `sculpt` on top ({control: value}), scaled to `height`
+    (an age's average when not given), feet on the floor. Returns { P, T, scale, F: each point's own scale (the joints'),
+    weights, age: grow.js's ageOf } */
+export function grownBody(m, { age = 18, base = 0, height = null, sculpt = {}, monster = false } = {}) {
+  const G = grow(m), A = GW.ageOf(age, base, G.grow), pre = presetsFile().presets, f = pre.feminine || [], ms = pre.masculine || [], t = base * A.sexed, hk = Math.abs(base) * (0.4 + 0.6 * A.sexed);
+  const weights = Array.from({ length: m.k }, (_, i) => i < 20 ? (f[i] || 0) * (1 - t) / 2 + (ms[i] || 0) * (1 + t) / 2 : hk * ((base < 0 ? f : ms)[i] || 0));
+  const carried = id => ((presetsFile().sculpt?.feminine || {})[id] || 0) * (1 - base) / 2 + ((presetsFile().sculpt?.masculine || {})[id] || 0) * (1 + base) / 2;
+  const [lin, lim] = monster ? [3, 3.4] : [1.75, 2.3];
+  const value = id => { const v = (sculpt[id] || 0) + carried(id) + (A.sculpt[id] || 0); if (!v) return 0; const R = GW.REACH[id]; let o = GW.soften(v, lin, lim); if (R) o = Math.min(R[1], Math.max(R[0], o)); return o; };
+  const X = new Float32Array(m.P), F = new Float32Array(m.n).fill(1);
+  for (let k = 0; k < m.k; k++) { const w = weights[k]; if (!w) continue; const o = k * m.n * 3; for (let i = 0; i < X.length; i++) X[i] += w * m.shapes[o + i]; }
+  GW.applyProps(G.grow, value, X, m.P, F);
+  let lo = 1e9, hi = -1e9; for (let i = 1; i < X.length; i += 3) { lo = Math.min(lo, X[i]); hi = Math.max(hi, X[i]); }
+  const h = height ?? A.height ?? 1.7, k = h / (hi - lo), P = new Float32Array(X.length);
+  for (let i = 0; i < X.length; i += 3) { P[i] = X[i] * k; P[i + 1] = (X[i + 1] - lo) * k; P[i + 2] = X[i + 2] * k; }
+  for (const c of G.sculpt.controls) { const v = value(c.id); if (!v) continue; for (let q = 0; q < c.idx.length; q++) { const i = c.idx[q] * 3, s = v * k * F[c.idx[q]]; P[i] += s * c.d[q * 3]; P[i + 1] += s * c.d[q * 3 + 1]; P[i + 2] += s * c.d[q * 3 + 2]; } }
+  let a = 1e9, b = -1e9; for (let i = 1; i < P.length; i += 3) { a = Math.min(a, P[i]); b = Math.max(b, P[i]); }   // exactly as tall as its height says, after everything (index.html exactHeight)
+  const e = h / (b - a); for (let i = 0; i < P.length; i += 3) { P[i] *= e; P[i + 1] = (P[i + 1] - a) * e; P[i + 2] *= e; }
+  return { P, T: m.T, scale: k * e, F, weights, age: A, height: h };
+}
+// the whole sculpt and the proportions on MHR's base, once: the face's fields by MediaPipe's points on it (the Studio's
+// server's, kept in Bodies/MHR_landmarks.json), the proportions on MHR's rig
+let GROWN = null;
+function grow(m) {
+  if (GROWN) return GROWN;
+  const LM = JSON.parse(readFileSync(join(ROOT, "Content", "Studio", "Bodies", "MHR_landmarks.json"), "utf8"));
+  const lm = i => { const t = LM.tri[i] * 3, b = LM.bary[i], o = [0, 0, 0]; for (let k = 0; k < 3; k++) { const v = m.T[t + k] * 3; for (let a = 0; a < 3; a++) o[a] += b[k] * m.P[v + a]; } return o; };
+  const rb = readFileSync(join(ROOT, "Content", "Studio", "Bodies", "MHR_lod1_rig.bin")), rig = PO.readRig(rb.buffer.slice(rb.byteOffset, rb.byteOffset + rb.byteLength));
+  return (GROWN = { sculpt: SC.buildSculpt({ P: m.P, T: m.T, lm }), grow: GW.buildGrow({ P: m.P, rig, chin: lm(152), eyes: (lm(145)[1] + lm(374)[1]) / 2 - 0.004 }), rig, lm: LM });
+}
+export const growRig = m => grow(m).rig;
+/** MediaPipe's point i on a body's points (MHR's landmarks: a triangle and a place in it) */
+export function landmark(m, P, i) { const LM = grow(m).lm, t = LM.tri[i] * 3, b = LM.bary[i], o = [0, 0, 0]; for (let k = 0; k < 3; k++) { const v = m.T[t + k] * 3; for (let a = 0; a < 3; a++) o[a] += b[k] * P[v + a]; } return o; }
 
 export function objText(parts, header = "") {
   const out = header ? [`# ${header}`] : []; let base = 0;
