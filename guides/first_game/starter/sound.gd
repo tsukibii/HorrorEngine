@@ -385,6 +385,12 @@ func _tracer():
 	return _ac
 
 
+## What a ray's hit is made of, a word of the sound physics' (plaster, wood, concrete, tile, carpet, metal...): the
+## weapons' impacts read it to break a wall the way its material breaks.
+func surface_of(hit: Dictionary) -> String:
+	return _surface(hit)
+
+
 # what a hit is made of: a node's own `acoustic` metadata (it or a parent), a door, the room's floor, walls or ceiling
 # by which way the hit faces (an interior's colliders are named by their room)
 func _surface(hit: Dictionary) -> String:

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="HSShellType" format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_weapons/shells/shell_type.gd" id="1_shell"]
+[ext_resource type="Resource" path="res://addons/horrorstudio_weapons/muzzle/explosive.tres" id="2_muzzle"]
+[ext_resource type="Resource" path="res://addons/horrorstudio_weapons/impacts/explosive.tres" id="3_impact"]
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_weapons/models/shell_12ga_explosive.glb" id="4_model"]
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_weapons/models/shell_12ga_explosive_spent.glb" id="5_spent"]
+
+[resource]
+script = ExtResource("1_shell")
+id = "explosive"
+title = "Explosive"
+pellets = 1
+spread_scale = 0.3
+reach_scale = 1.0
+push_scale = 1.5
+damage = 3.0
+recoil_scale = 1.2
+noise_scale = 1.0
+muzzle = ExtResource("2_muzzle")
+impact = ExtResource("3_impact")
+model = ExtResource("4_model")
+spent_model = ExtResource("5_spent")
+color = Color(0.95, 0.42, 0.22, 1)

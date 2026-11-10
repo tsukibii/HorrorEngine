@@ -3,8 +3,9 @@
 Godot instead of through Director I can"; guides/godot_by_hand): what guides/godot_by_hand's setup does, in one go.
 
     python tools/godot_byhand.py new ~/Games/MyGame [--name "My Game"]
-        a new project: project.godot (the HorrorStudio Look and UI plugins on, the balanced look's settings),
-        addons/horrorstudio_look, addons/horrorstudio_ui (the HUD and the quest marker),
+        a new project: project.godot (the HorrorStudio Look, UI and Weapons plugins on, the balanced look's settings),
+        addons/horrorstudio_look, addons/horrorstudio_ui (the HUD and the quest marker), addons/horrorstudio_weapons
+        (HSDoubleBarrel: a double-barrelled shotgun in first person, its shells, what a shot leaves, pickups),
         HumanShaders/ (the skin's and the eyes' textures), starter/ (the by-hand guides' scripts: the player and its
         flashlight, doors and locks, the story on screen, the music and room tones, scares, pickups, notes, a
         character who doesn't like the light), sfx/ (the studio's sound shelf, CC0), music/ (the four moods),
@@ -29,6 +30,7 @@ from storykit import exports as EX  # noqa: E402
 
 LOOK = ROOT / "GodotPlugins" / "HorrorStudioLook" / "addons" / "horrorstudio_look"
 UI = ROOT / "GodotPlugins" / "HorrorStudioUI" / "addons" / "horrorstudio_ui"
+WEAPONS = ROOT / "GodotPlugins" / "HorrorStudioWeapons" / "addons" / "horrorstudio_weapons"
 HUMAN = ROOT / "GodotPlugins" / "HumanShaders"
 STARTER = ROOT / "guides" / "first_game" / "starter"
 SFX = ROOT / "Content" / "Studio" / "SFX"                       # the sound shelf (docs/SFX.md, CC0)
@@ -40,7 +42,7 @@ def project_godot(name):
     """project.godot: the name, the look plugin on, the balanced look's settings (what enabling it in the editor writes)"""
     lines = ["; Engine configuration file. Made by tools/godot_byhand.py (guides/godot_by_hand); yours to change.", "",
              "config_version=5", "", "[application]", f'config/name="{name}"', "",
-             "[editor_plugins]", 'enabled=PackedStringArray("res://addons/horrorstudio_look/plugin.cfg", "res://addons/horrorstudio_ui/plugin.cfg")', ""]
+             "[editor_plugins]", 'enabled=PackedStringArray("res://addons/horrorstudio_look/plugin.cfg", "res://addons/horrorstudio_ui/plugin.cfg", "res://addons/horrorstudio_weapons/plugin.cfg")', ""]
     by = {}
     for k, v in GD.PROJECT_LOOK.items():
         sec, key = k.split("/", 1)
@@ -57,9 +59,11 @@ def install(proj, starter=True):
     shutil.copytree(LOOK, proj / "addons" / "horrorstudio_look", ignore=shutil.ignore_patterns("*.import", "demo"))
     shutil.rmtree(proj / "addons" / "horrorstudio_ui", ignore_errors=True)
     shutil.copytree(UI, proj / "addons" / "horrorstudio_ui", ignore=shutil.ignore_patterns("*.import", "demo"))
+    shutil.rmtree(proj / "addons" / "horrorstudio_weapons", ignore_errors=True)
+    shutil.copytree(WEAPONS, proj / "addons" / "horrorstudio_weapons", ignore=shutil.ignore_patterns("*.import", "demo"))
     shutil.rmtree(proj / "HumanShaders", ignore_errors=True)
     shutil.copytree(HUMAN, proj / "HumanShaders", ignore=shutil.ignore_patterns("*.import"))
-    did = ["addons/horrorstudio_look", "addons/horrorstudio_ui", "HumanShaders"]
+    did = ["addons/horrorstudio_look", "addons/horrorstudio_ui", "addons/horrorstudio_weapons", "HumanShaders"]
     if starter or not (proj / "starter").exists():
         shutil.copytree(STARTER, proj / "starter", dirs_exist_ok=True)
         did.append("starter")

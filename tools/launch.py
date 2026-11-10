@@ -244,6 +244,7 @@ TOOLS = [
     ("Props", "Prop generator: the made props in Godot 4.7 (GDPROPS: materials read back, pictured)", "tools/propgen.py godot", {}),
     ("Checks", "Prop generator check (PROPGEN: a recipe of every family made small and measured; Blender)", "tools/propgen.py check", {}),
     ("Checks", "Prop generator page test (PROPPAGE: headless browser on port 8792, a scratch recipe book; Blender makes four)", "node tools/propgen/pagetest.mjs", {}),
+    ("Checks", "Prop customizer guide's pictures (GUIDEPROPS: the prop page driven headless on port 8794, a scratch recipe book; the box of shells and a shell made first; Blender makes one)", "node tools/propgen/guide_shots.mjs", {}),
 
     ("Library", "What the story needs from the CC0 library", "tools/cc0.py needs --game {game}", {}),
     ("Library", "Fetch what the story needs", "tools/cc0.py fetch --game {game}", {}),

@@ -3,6 +3,227 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The ichor alive (HSOoze): what took a second try (2026-11-10)
+
+- **The normal-roughness buffer is filled only for some materials**: a box with no material of its own read as no normal
+  at all (0.5, 0.5, 0.5) where MHR's material had one, and the ooze threw her wound away as "facing away". Take a
+  projected surface's normal from the depth buffer (each way the neighbour nearer in depth, so it never reaches across
+  an edge); under Vulkan `cross(dFdx, dFdy)` points away from the eye (its screen y runs down): flip it.
+- **A flat black film shows a flashlight beside the eye nowhere**: the light reflects only off parts leaning about 25°
+  toward it, and a meniscus a few millimetres wide is under a pixel at 3 m. Give every blob a dome across all of it and
+  let it mirror the room in its rounded edges (the screen copy by Fresnel): then it reads as liquid against a lit wall.
+  In a dark corridor that's not enough: at roughness 0.2 a black liquid's flat middle gives the flashlight back a third
+  of the wall's light, a dull stencil. Wet black reads by sharp glints: roughness 0.08 and ripples a little under a
+  millimetre deep, so small glints catch the light and crawl as its surface moves (rough chrome on the same field lit
+  like Godot's own chrome square: the lighting was never the fault).
+- **A big field looked at three times a pixel compiles for minutes on the CPU renderer**: four shapes' loops inlined
+  three times (the slope by differences) never got a frame out under lavapipe. Look once a pixel, take the slope from
+  the neighbouring pixels (`dFdxFine`, before any discard), and make each kind a shader of its own.
+- **Awaiting frames inside a SceneTree script's `_initialize` hung a probe**: with the look's WorldEnvironment in it,
+  the debug probe never drew a frame (twice, ten minutes); the same work in a deferred function ran in 14 s. Start the
+  frames' work with `call_deferred`.
+- **A projected mark is a mesh too**: her wound oozes (MeshInstance3Ds under her) were charred and crumbled with her
+  body, and a stand-in's "tilt" read a wound's own turn. Leave the plugin's own marks out of anything that walks her
+  meshes.
+
+## Someone shot (HSHitReact): what took a second try (2026-11-10)
+
+- **Smoke that rides a body draws a line when the body is thrown**: the wound's smoke (the muzzle's trail, which leaves a
+  point every centimetre the source moves) rode her bone, and a stagger shoved her 0.4 m in a fifth of a second: every
+  wound drew a straight stroke through the air, and with the ember glow on its young smoke the strokes read as red paint.
+  Start smoke that rides something after its shove has settled, and keep a glow in young smoke to a hint.
+- **A transparent mesh and a blended overlay on it draw in no fixed order**: fading her out (`transparency`) under the
+  char overlay showed her white skin over the char half the time. Don't fade a mesh under an overlay: once the overlay
+  covers it, swap its surfaces for an opaque, cut-out material and cut it away.
+- **A node's own timing runs on the game's clock**: the stagger held her by `Time.get_ticks_msec()`, and headless at a
+  fixed rate (frames racing the wall clock) it held her three times too long. Seconds in a node are its frames' delta
+  summed; the wall clock is only for waiting on a thread.
+- **Unnamed loops in a long test share its scope**: `for m in ...` clashed with a `var m` a thousand lines up in the same
+  function. Prefix a new section's names (`r_`), loop variables too.
+
+## A level's floor has one side: HSBlowUp's pieces under it (2026-11-10)
+
+- **A level's floor is a one-sided mesh, and a fast piece can end up under it**: a mug's shard thrown down at the floor
+  by a shot from above sank 5 cm in two steps, continuous collision on and a 6 cm collider, and with its middle under
+  the surface nothing pushed it out: it fell out of the world, about one run in five. A piece starting on a floor keeps
+  none of its fall into it (the floor takes it at once), and a piece whose middle slips under a floor it fell onto is
+  put back on top (`_unsink`: a ray from 15 cm above its middle).
+
+## Things that break when shot (HSBlowUp): what took a second try (2026-11-09)
+
+- **A sealed shell is not a solid**: the kettle is modelled as one closed surface, so filling every cut made its
+  pieces look like chunks of a solid black block. Whether a cut is filled is the material's (`hollow`: metal, card,
+  glass, plastic are thin walls), not the mesh's being closed.
+- **A thin piece can have no thin side by its normals**: a mug's wall has an outside and an inside, their normals
+  cancel, and its shards got no thickened collider and sank through the floor. Thicken along the points' own principal
+  axes (PCA), every axis.
+- **Even 5 cm sinks**: a rigid piece with a 5 to 7 cm collider landing at 4 m/s sank through the hotel's trimesh floor
+  (Jolt's slop, a floor with no thickness). Pieces under 4.5 cm fall by rays; rigid colliders are at least 6 cm.
+- **A ray that starts under a floor never meets it**: a crumpled piece's corners pushed below the floor put a little
+  piece's rays under it, and it fell for ever. Lift it onto what's under it first.
+- **A blast looks for a collider's shape nodes' middle**: a hull built round an object but left at its base sat on the
+  floor, and the floor hid the object from every blast. Centre the shape node on the thing.
+- **Headless at a fixed rate, frames race the clock**: "15 seconds" of frames passed in under a second of wall time, so
+  a worker thread's cut wasn't ready by then. Wait for a thread by `Time.get_ticks_msec()`.
+- **A low-priority WorkerThreadPool task waits behind the game's own**: the cut ran only when the shot waited for it.
+  A task that must be ready goes high-priority.
+- **Pieces settle, the engine doesn't say so**: light pieces resting a centimetre sunk jitter and never sleep. At rest
+  is "gone nowhere for half a second", then frozen and laid onto the floor by their real vertices.
+
+## A muzzle's smoke trail that reads as smoke (2026-11-09, after the last)
+
+- **A camera-facing strip folds in a tight curl**: the trail's first rebuild kept one strip a strand and drifted its
+  points in curl noise. It curled, but where it turned sharply it folded over itself into bright creased facets, worst
+  at a still barrel where the points bunch. Soft sprites close along the smoothed curve, each stretched along it and
+  turned to the eye, can't fold. Use a strip for a gentle line, sprites for anything that curls.
+- **Overlapping sprites must agree on their noise, and erode the noise, not themselves**: eroding each sprite's own
+  body by the noise left every sprite's core standing, so the strands came out beaded like rope. A random noise seed
+  per sprite averaged several noises where they overlapped into flat cotton. One noise read in the world, the same for
+  every sprite on a spot, eroded by itself, with each sprite's body only its soft footprint, reads as one wisp
+  (`smoke_noise.gdshaderinc`, shared with the puffs, which looked like sand beside it for the same reason).
+- **Fractal value noise sits near its middle**: four octaves averaged leave little contrast, so an erosion threshold
+  either kept everything or nothing. Stretch its contrast (about twice round 0.5) before eroding it.
+- **`INSTANCE_CUSTOM` is the vertex function's only**: the puff shader failed to compile reading the particle's phase
+  in `fragment()`. Pass it through a varying.
+- **`| head` on a running Godot kills it**: a probe's output piped to `head -10` closed the pipe after ten lines (the
+  ALSA warnings), Godot died on its next print, and only three of five pictures came out. Write the output to a file
+  and grep that.
+
+## The double barrel alone and what a 12-gauge leaves on a wall (2026-11-09, last)
+
+- **A check that passes on the dice hides a bug**: the merged test's first green run had both flicked hulls this side
+  of the wall at the player's right; the next, with other random flicks, had one 21 cm inside room 301. A hull lying
+  on the floor rolled with no check at all (the rolling branch moved it by its speed, nothing more), and while
+  falling it was a single point, which slipped through the 2 to 3 cm the exported door leaf's collider stops short of
+  its jamb. A hull moves by three rays now (its base's end, its middle, its mouth's end: `HULL_POINTS`, `_hull_hit`),
+  rolling or falling, and the hand-off from the gun's frame checks all three. When a check's subject is random, probe
+  it over many seeds (`hull_probe.gd` in the scratch project: six seeds at three places) before trusting a pass.
+- **A pattern spread from the eye is a pattern from a metre behind the muzzle**: the double's muzzles are 0.98 m ahead
+  of the eye, so pellets fanned from the camera landed 40% wider than a real gun's at room range (10 cm across at 2.5 m
+  from the muzzle; the sources say 5 to 8). The cone's apex is the muzzle's point on the view's line now: the shot
+  still goes where you look, the pattern's size is the muzzle's distance's, and a wall nearer than the muzzle takes the
+  whole charge where the line meets it. Simulate a spread's law (numpy, thousands of shots) before setting a check's
+  bounds: they hold for any seed, and the seeded run shows the typical case.
+- **Added smoke sums to white, and premultiplied smoke only helps if what it converges to is under white**: the left
+  barrel's flash, a quarter second after the right's, was a white ball. Ten puffs from the first shot, each lit by the
+  second flash a few centimetres away, added up past white. Drawn premultiplied (`blend_premul_alpha`,
+  `PREMUL_ALPHA_FACTOR` the cover, `ALPHA` the cover times `occlude`), a stack converges to its own lit colour instead
+  of summing. That alone changed little, because each puff was lit to about 1.7 before blending, so it converged to
+  white too. With the near light capped at 0.5 (`smoke_light_cap`) the cloud converges to a glow and the second star
+  reads through it. Look at a value's ceiling as well as how it adds up.
+- **A script's `loaded` has to reach the double's chambers**: the double read `loaded` once in `_ready` (into `live`),
+  so the checks' `gun.set("loaded", 2)` did nothing, where the pump's tube healed to it. The double's chambers follow
+  `loaded` whenever it isn't busy (`_load_to`); a member a script is told it can set is honoured at any time.
+
+## The muzzle flash, the shell kinds and what a shot leaves (2026-11-09, latest)
+
+- **Smoke a few centimetres from a light glows as a ball the size of the room**: the first flashes were a white blob
+  filling the view. With the smoke off the flash's wings were a neat star; with the light off too; both on, the blob.
+  The puffs sat 2 to 5 cm from the flash's OmniLight3D, and a point light's falloff makes that a thousand times a lamp
+  across the room: even a puff faded almost to nothing glowed, and the bloom spread it. Delaying the puffs until the
+  light was out fixed one shot, not the next, which lit the first shot's smoke still hanging there. The fix is in the
+  smoke's own shading: `smoke_light.gdshaderinc` caps the light any one source gives it (`light_cap`), so a light
+  beside it lights it as a bright lamp would and no more. Every layer is spoken for (the zones 2 to 10, the mirrors 11
+  to 20), so a light-cull layer for smoke wasn't free. The old flash had the same ball in its picture: the flash's
+  light lit the corridor's haze at full strength; it lights the haze a tenth now (`light_fog`).
+- **The burn's order matters**: the user's "blend a noise texture by the facing, the blend a burn" is burn(noise,
+  facing) = 1 - (1 - noise) / facing, the noise as the base. The first try had it the other way round (the facing
+  burnt by the noise): a flat white middle and holes wherever the noise dipped. The right way, the middle shows the
+  noise (white-yellow where it's bright, orange where it isn't) and the rim burns away along it. Read a blend mode's
+  base and blend layers off the words before writing it.
+- **A plugin's textures come in without mipmaps**: the install copies no `.import` files, so a project imports the
+  flash's noise with mipmaps off, and minified on a sphere 40 pixels wide it aliased into grit. `HSMuzzle.tex()`
+  builds the mipmaps itself when a texture has none (from the imported image, so it works in an exported game).
+- **A headless renderer keeps no MultiMesh**: the check read the flash's spheres back with get_instance_transform and
+  got nothing (the dummy renderer stores no instances), so every sphere looked like a run of its own at the origin.
+  The muzzle keeps its layout on the script's side (`sphere_list()`); anything a check reads back is kept so.
+- **A ribbon of points tears when neighbours drift apart**: the smoke trail's points each had a random drift, so two
+  points a few millimetres apart drifted centimetres apart and the strip zig-zagged into slivers and twisted. The drift
+  is now a function of when each point was left (neighbours drift alike), points are left by distance or time (not
+  every frame), the tangent spans two points each way, and the side is never flipped between neighbours.
+- **A JSON round trip reformats a hand-kept file**: adding three recipes by json.load and json.dump rewrote all 8000
+  lines of presets.json in another layout. Insert into a hand-formatted file as text and check `git diff --stat`.
+- **A local can hide a member**: `var tube := ...` (the tube's height, a float) in `_insert_one` hid the new `tube`
+  array (the shells' kinds) and the whole script failed to parse. Name a new member after a grep for the word.
+
+## Cartridges and the customizer's guide (2026-11-09, later still)
+
+- **The wear's edges and dirt need a mesh dense enough for its curvature**: a card box made of flat panels (a vertex at
+  each corner, nothing between) came out speckled all over, white and black: the curvature is reckoned per vertex and
+  spread over each face from its corners, so every face read as an edge and a crease, and the noise did the rest. A
+  flat-panelled thing turns them off (a material's own `wear`: `edges` 0, `dirt` 0) and paints its worn edges by each
+  texel's distance from its face's edges (ammo.py `_worn_edges`).
+- **A part's `built` is the state its mesh is in, not a wish**: the two open boxes rendered shut, because the lid was
+  built shut and only said `built=105`. A part made open is built turned (about its pivot, its axis, by `built`); the
+  set-down turns it back to `shut` to measure the box.
+- **A drop on one of a prop's own pictures takes its place**: the guide's price sticker, dropped at a spot inside the
+  lid's gauge disc's box, replaced the disc instead of being placed. Drop clear of the dashed boxes (or hold Alt).
+- **The weapons check's project carries a copy of the plugin**: a picture taken there after editing `pickup.gd` showed
+  the old pickup. `weapons_check.py --reuse` installs the plugin again first; a hand-run script there needs the copy
+  refreshed.
+- **A slot turned a quarter wants its picture turned too**: the shell's print runs along its hull (`rot` 90), so the
+  size it wants is the box's turned (192 x 64, not 64 x 192) and its template is drawn upright (sizes.py, picedit.js
+  `quarters`): painted over and dropped back, it goes in as it was.
+
+## The double barrel: the user's model, worn (2026-11-09, later)
+
+- **A check timed by the wall clock passes nothing under `--fixed-fps`**: the double's reload measured 0.06 s, because a
+  headless run at a fixed 60 fps steps the game faster than real time. Time a run in the game's own frames (count them,
+  divide by 60), as the other checks wait (`frames`, `until`).
+- **Blender's Workbench engine wants EGL**: rendering an .fbx to look at it headless failed ("Couldn't open
+  libEGL.so.1"); Cycles on the CPU renders the same thing (12 to 48 samples for a look).
+- **An imported model's objects move with their parents**: the user's .fbx has the barrels, the lever and the triggers
+  under the stock's object; putting one object's mesh into place and clearing its transform moves the children with
+  it. Read every object's world matrix first, then transform every mesh, then clear the parents.
+- **The wear on a texture finer than the made props' looks like frost**: a smart unwrap gave the steel about twice the
+  pump gun's texels a millimetre, and the same scratches (0.35) came out as fine white lace all over the bluing; a
+  little (0.1) reads as use. The thin parts (a lever, a trigger) are all edge to the curvature, so their edges' wear
+  covers them: half of it there.
+- **Rings as thin dark lines read as plywood**: the stock's first walnut was evenly spaced dark lines on a light ground;
+  the furniture's own recipe (rings 5 mm apart that wander nine millimetres, fibres, a slow tone, the late wood a band)
+  reads as a board. Paint wood in the solid with `wood_color`'s numbers.
+
+## The shotgun: things that took a second try (2026-11-09)
+
+- **A tiny rigid body sinks through a level's floor**: a spent hull (a cylinder 1 cm in radius) bounced once on the
+  hotel's floor and then sank through it and fell for ever. The floor is a trimesh with no thickness, and the physics
+  engine lets bodies sink 2 cm into what they rest on (Jolt's penetration slop): a body thinner than that passes the
+  surface's middle and the contact turns round. Small debris falls by rays of its own (the weapon's `_falling`); a
+  RigidBody3D only for things thicker than about 5 cm.
+- **A node property written as `node_paths` in a .tscn needs a Node-typed export**: the shotgun's `light` was an
+  `@export var light: NodePath` and the check's scene wrote it the way Godot writes a node reference
+  (`node_paths=PackedStringArray("light")`): it came through empty and the flashlight was never carried. Export the
+  node's type (`@export var light: Light3D`): the Inspector gets a node picker too.
+- **A made prop's `propgen_part` extras arrive in Godot as JSON text**, not a Dictionary: parse it (`JSON.parse_string`)
+  before reading `name`, `axis`, `open` (the shotgun's pump, bolt and trigger were never found until then; the runtime's
+  `parts.gd` already did).
+- **Smoke drawn with alpha blending darkens a dim room**: the muzzle's smoke was a dark cloud over the corridor at night
+  (lit by the room's low light, it was darker than the wall behind it). Smoke scatters light: draw it additive and lit,
+  so it shows where light reaches it and never darkens what's behind it. Found by rendering the same frame with one
+  thing off at a time (the smoke, the fog, the flash's shadow, its light).
+- **A Godot script's `--out` path is read from the project's folder**: `godot --path P -s s.gd -- --out=shots` saved
+  nowhere useful; pass an absolute path.
+- **presets.json is appended to as text, never rewritten by `json.dumps`**: dumping it whole re-indented 7,000 lines.
+- **Hiding a character is `visible = false` (and `hs_hidden`), never PROCESS_MODE_DISABLED**: HSShootable's "gone"
+  first disabled her, which froze every script under her (a chase under way never ended, its music for good) and left a
+  CSG collider solid; the starter's hunters already stand down when she isn't visible or carries `hs_hidden`. Gone now
+  hides her, takes her colliders' layers (and CSG's use_collision) away and marks her; back, puts them as they were.
+  And what's hidden isn't shot: a pellet goes through a body that isn't visible (her collider is there before she is).
+- **A light put out for good is marked so**: the Look plugin's light zones and the starter's lights turn a light on by
+  its `hs_lit` meta, so a lamp shot out (visible false only) lit again when its room came back into view. `hs_lit`
+  false, its energy 0.
+- **A spring stepped by the frame's dt flies apart on a hitch**: the gun's kick and sway springs (stiffness 120 and 160)
+  blew up past about 0.09 s; a 0.3 s frame after the first shot would have thrown the gun round. Stepped in 12 ms
+  substeps now; the check gives it a 0.3 s frame.
+- **A script that moves a node another script shakes keeps the shake**: carrying the flashlight, the gun set its
+  rotation outright every frame and the Fear node's tremor never showed; it keeps flashlight.gd's offset from `_rot0`
+  now, and leaves the light alone when it isn't carrying it. (The check holds the Fear node still: it sets the tremor
+  from its level every frame.)
+- **ffmpeg's Ogg muxer gives every file a random stream serial**: the weapon's sounds made again from the same seeds came
+  out as seven changed files. `-fflags +bitexact -flags:a +bitexact` makes a run's bytes the same as the last's.
+- **The tape's `camhybrid` preset pillarboxes the frame**: a view model at the bottom right is cut off; picture a view
+  model with the tape off.
+
 ## The retro pack: pictures read inside Blender, and a mask read upside down (2026-11-08)
 
 - **An image read inside Blender is tagged Non-Color before its pixels are touched**: Blender hands back an 8-bit

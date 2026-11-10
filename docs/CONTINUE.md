@@ -21,6 +21,141 @@ builder's floors, the street's steel stair, climbing in Godot and on the desk; 2
 `claude/friendly-newton-9o2xey`, from the user's `retro-enhance`: the retro pack in the prop generator). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## Where it stopped last (2026-11-09 and 10, `weapon-system`): a shotgun held in first person, things that break, someone shot
+
+PR #18 merged into main; this branch is new from it (the user: "make a new branch called weapon-system, create a shot
+gun asset and have its pov in godots horror engine similar to the screenshot", then "I don't need a hand holding the
+gun"; DECISIONS 2026-11-09). Its pull request into main is PR #19 (https://github.com/tsukibii/HorrorEngine/pull/19):
+TUTORIAL2, FIRSTGAME and GDPROPS weren't run on the branch. Built:
+
+- **The assets** by the prop standard: the prop generator's `weapon` family (PROPGEN §30): `shotgun_pump` (a riot
+  gun's sizes, its pump sliding, the bolt's face shown only while the action's shut, the trigger on its hinge, sockets
+  for the muzzle, ejection port, loading port, chamber, flashlight...), `shotgun_pump_black` (synthetic),
+  `shell_12ga` and `shell_12ga_spent`; PROPGEN's cases have the gun and a shell. The sounds in code:
+  `tools/weapon_sounds.py`.
+- **HorrorStudio Weapons**, a Godot plugin (`GodotPlugins/HorrorStudioWeapons/`, README, CLAUDE.md, `img/`): `HSShotgun`
+  under the player's camera, no hands; held low on the right, the barrel's line on the view's middle; fire, the pump
+  racked by itself (hulls falling and rolling by rays), the reload a shell at a time from under the gun into the loading
+  port, a click during it fires as soon as it can, Q lowers it, the flashlight carried under the barrel; `HSWeaponPickup`
+  the gun or a box of shells. `godot_byhand.py` copies and enables it in every project made by hand.
+- **WEAPONS** (`tools/godot/weapons_check.py`): built into tutorial v2's hotel corridor and played headless; `--pictures`.
+- **Held as in the reference**: set side by side with the user's screenshot, the muzzle just under the middle of the
+  view and the gun dropping steeply to the bottom edge (`hold` 0.14, -0.165, -0.34; `aim_at_m` 1.1), the carried
+  flashlight's beam on the middle of the view (`beam_at_m` 12).
+- **Reviewed** by an independent read of the scripts; its ten real findings fixed and held by WEAPONS (LESSONS
+  2026-11-09: hiding with `visible` and `hs_hidden`, never disabling; `hs_lit` for a light out for good; springs in
+  substeps; a shake kept when another script moves the node).
+- **Refined** (the user's "refine it through diff perspectives"): the kick settling back, the gun rocking with the
+  pump, carried low while running, aiming on the right button, the tape's 4:3, the shells as marks, holes staying on doors and crates, pickup
+  sounds, the editor's preview, `HSShootable` (shot: gone a while, shoved, a cry, a line, a target; `hit`, `down`), and
+  the guide `guides/weapons/index.html` (its pictures WEAPONS's).
+
+- **The v2, a double barrel** (the user: "only the barrel is visible in frame, unless we reload then it splits in two
+  within frame and two shells pop in"; then their own model, `dbl_barrel.fbx`, "use it as a base and enhance it with
+  better pbr textures"; DECISIONS 2026-11-09, later): `HSDoubleBarrel` (`double.gd`) on `shotgun_double`, the prop
+  generator's kind `double` reading the user's model from `Content/Studio/Props/models/` (its real size, its barrels
+  made round, its parts and sockets measured on it, blued, case-hardened, checkered walnut: PROPGEN §30); only its
+  barrels in the view, the right barrel then the left, R breaks it open near the eye (a V with the chambers in the
+  middle of the view), the hulls flicked out past your face, a shell popping into each chamber, shut. WEAPONS's double
+  half and its pictures (double_*.jpg); PROPGEN's cases have it.
+
+- **Cartridges you can customize, and a guide** (the user: "a cartlidge prop for the shells that I can customize similar
+  to cans and books", "a guide on how to use the prop customizer"; DECISIONS 2026-11-09, later still): the `ammo`
+  family (PROPGEN §31, customizable): the shell (moved from the weapon family) printed along its hull and stamped, and a
+  printed card box of shells (five lying, twenty-five standing, its lid a part that opens); `shell_12ga`,
+  `shell_12ga_spent`, `shells_box_5` (the weapons plugin's box of shells now, `lid_open`), `shells_box_5_open`,
+  `shells_box_25`. The guide `guides/prop_customizer/` (GUIDEPROPS makes its pictures from the real page). A quarter-turned
+  slot's wanted size and template turned upright (sizes.py, picedit.js).
+
+- **The muzzle flash, a muzzle system, two kinds of shell and what a shot leaves** (the user, with two pictures: "a
+  muzzle flare for the shotgun (the closest one that leaves a trail of smoke behind)", "a generic muzzle system that
+  can be used later for other guns" with their technique (each wing a series of slightly elongated intersecting spheres,
+  fronts culled, a noise triplanar on each blended by the view's normal dotted with the surface's, the blend a burn),
+  shell kinds easy to add ("a normal shell and explosive shell"), and "a response... a pbr mask to make it like pieces
+  are missing"; DECISIONS 2026-11-09, latest). In the weapons plugin: `HSMuzzle` + `HSMuzzleFlash` (`muzzle/`: the wings
+  as one MultiMesh of spheres laid out each shot, the burn in `flash.gdshaderinc`, added or solid, the light with its
+  haze kept low, sparks, puffs, **the smoke trail** left behind as the gun moves, smoke's light capped and a faint glow
+  of its own), `HSShellType` (`shells/`: buckshot and explosive; the tube, chamber, barrels and pocket keep kinds; T),
+  `HSImpact` + `HSImpacts` (`impacts/`: a crater decal with albedo, normal and ORM from one height field, tinted by the
+  surface, dust and chips; the explosive's blast: fireball, scorch with embers, push, damage, shake, noise), the maps
+  by `tools/weapon_fx.py` (WEAPONFX, in check_all), the burst's sound; the explosive shell, its hull and box as
+  customizable recipes (`shell_12ga_explosive`, `_spent`, `shells_box_5_explosive`). WEAPONS checks it all (§8f, §8g,
+  the double's §7b) and pictures it (`trail`, `explosive`, `blast`, `scorch`, `flash_parts`); the guide's
+  sections 8 to 10. The lab used to tune the look was a throwaway script in the check's project; `muzzle_shots.gd`
+  keeps its useful part (the flash taken apart).
+
+- **The double barrel alone, how it looks with the muzzle, what a wall shows** (the user: "I don't want the single
+  barrel shotgun, only the double barrel one, inspect how it looks with the muzzle and what kind of wall damage it should
+  have"; DECISIONS 2026-11-09, last). The pump gun is gone from the plugin (its class, model, icon and two sounds; its
+  recipes stay as props). `HSGun` (`gun.gd`, abstract) is what both shared; `HSDoubleBarrel` extends it; `shotgun.gd` is
+  the double under the old path. Inspected in the corridor: the second barrel's flash was a white ball in the first's
+  smoke; the puffs are premultiplied now and capped at `smoke_light_cap`, and it reads. The damage
+  (docs/research/shotgun_damage.md): each barrel's own choke, the pattern spread from the muzzle, pellets within 1.6 cm
+  torn into one hole (`fx/blast_*`), the powder's soot and grains close up (`fx/soot_0`, `fx/grains_0`), the wad's
+  dent from 1.5 m (`fx/wad_0`), lead smears on hard walls (`fx/smear_*`); `HSImpacts.last_shot`. A hull could fall or
+  roll through a wall (the door's collider stops short of its jamb): three rays now (LESSONS). One WEAPONS test for the
+  double (`weapons_double_test.gd` folded in, §8g the damage) and one set of pictures (`fire_left`, `open`, `pop`,
+  `damage_*`).
+
+- **The smoke trail made to read as smoke** (the user, with four of the guide's pictures: "the smoke trails look a bit
+  unrealistic and fake and show sharp lines, enhance it, research how to do realistic smoke if required first in godot";
+  DECISIONS 2026-11-09, after the last). Researched (docs/research/muzzle_smoke.md), then rebuilt:
+  - The trail drifts in curl noise ramping in with age.
+  - It's soft sprites along a smoothed curve, in strands that part (a strip folded in the curls).
+  - The trail and the puffs read one warped noise in the world, eroded as they age, so they agree (beads, rope and
+    grit before).
+  - Soft particles against walls and the lens.
+  - A still barrel sends up a curling thread.
+  The probe `Saved/Godot/_weapons/trail_probe.gd` (five moments, before and after); the guide's pictures made again.
+
+- **Things that break when they're shot** (the user: "a shader/script called blownUp or something that lets any object
+  we attach be blow up by shotgun shots, e.g. a kettle, a box, but it should look like the object itself got destroyed
+  not just a generic animation"; DECISIONS 2026-11-09, after the smoke). Researched (docs/research/breaking_props.md),
+  then **HSBlowUp** (`blowup/`): the object's own meshes cut when it loads in a worker thread (HSFracture: recursive
+  plane slicing, the cuts filled, hollow kinds' walls never filled), its own materials on every piece and the inside's
+  shader on the broken faces, small pieces near the hit by region growing, thrown along the shot, the holes with them;
+  dents below its strength; the pieces rigid (4.5 cm and over, colliders at least 6 cm, laid onto the floor at rest) or
+  by rays; contents and lids whole, a liquid pooling; kinds as resources (`HSBreakKind`: ceramic, glass, wood, metal,
+  cardboard, plastic, stone, guessed); break and landing sounds made in code (`tools/weapon_sounds.py`); `preview` in
+  the editor. The made kettle and mug ship in `models/`. WEAPONS §8i holds it; the guide's section 11 and its six
+  `blowup_*` pictures. Probes: `Saved/Godot/_weapons/blow_probe.gd`, `blow_shots_probe.gd`, `mug_probe.gd`,
+  `blast_probe.gd`.
+
+- **Someone who bleeds black ichor** (the user: "now instead of a breaking items system can you create a reactive
+  system for characters/enemies to be shot, but dont do blood, instead create some form of demonic dark smoke and dark
+  splatters like black blood"; DECISIONS 2026-11-10; HSBlowUp kept beside it: the user wants both). Researched
+  (docs/research/hit_reactions.md), then **HSHitReact** (`react/`): hitboxes on her bones on layer 11 (`HSGun.SHOT_MASK`
+  for the gun and a blast), the head twice and a limb 0.6; a flinch on springs after her animation (`HSFlinch`, a
+  SkeletonModifier3D); a stagger counter holding her against whatever moves her and shoving her back; black glossy
+  ichor with embers (`fx/ichor_*`: a wound on her bone, drops, the spray behind her, drips down a wall) and black smoke
+  out of each wound trailing after her (the muzzle's smoke made black, after the shove: LESSONS); down, she chars,
+  crumbles into the smoke and is gone, a pool (or vanish, ragdoll, nothing); `ichor_hit` and `ichor_down` made in code.
+  WEAPONS §8j on MHR's body (`bodies/MHR.fbx`) and a stand-in; the guide's section 12, `react_*` pictures. Probes:
+  `Saved/Godot/_weapons/react_probe.gd`, `react_shots_probe.gd`. And HSBlowUp's pieces no longer fall through a
+  level's one-sided floor about one run in five (`_unsink`; `mug_fall_probe.gd`).
+
+- **The ichor alive** (the user, while HSHitReact was being made: "once your done can you look into adding some kind of
+  shader for the black gothic blood that will fit our vhs camhybrid look and look eery and oozy"). Looked into
+  (docs/research/ooze.md), then **HSOoze** (`react/ooze.gd`, `ooze_<kind>.gdshader` over `ooze.gdshaderinc` and
+  `ooze_frag.gdshaderinc`): a box projected onto what it covers, the surface from the depth buffer and lit there
+  (`LIGHT_VERTEX`); the shape a field in the shader (a spray spreading and creeping, drips running down a wall and
+  stopping, a pool's tendrils, a wound oozing, a drop); black glossy domes with an oil's sheen and the room in their rims,
+  oxblood where thin, a slow beat, embers; HSHitReact's marks (`_mark`: decals off Forward+ or with the look's `ooze`
+  off). Tuned in a lab of its own, `Saved/Godot/_ooze_lab/` (`ooze_probe.gd`, `dbg_probe.gd`, `step_probe.gd`; its
+  scripts and the work before it in the session's scratchpad). WEAPONS §8j checks it; the guide's ichor-alive part and
+  four `ooze_*` pictures.
+
+**Next, if the user wants it**: their eye on the ooze in their own rooms and on their own tape (its sheen, gloss, beat,
+drips and tendrils are the look's), the ooze smeared when walked through and dripping off a ceiling; their ear on the
+ichor and break sounds (made in code, never heard here) and their eye on how things break in their own rooms (a kind's `coarse`, `speed`, `crumple_m`); metal tearing into petals, Voronoi cells,
+pieces breaking again, a broken thing kept broken in a save. Their eye on the flash and the damage in their own lighting (the flash's `energy`,
+the smoke's `smoke_glow`, `smoke_light_cap`, density and the trail's turbulence, strands and erosion, the impact's `merge_m`, `soot_m`, `powder_m`, `wad_m` are the
+knobs), pellets through a thin wall into the next room and ricochets off concrete (docs/research/shotgun_damage.md §5),
+the gun in tutorial v2 itself (found in a room, her an HSShootable that's gone a while when shot, the searcher coming
+at the noise), the export and the Director's projects copying the plugin in (nothing in the runtime uses it yet), a
+melee shove, more shell kinds (slugs, dragon's breath, rock salt for ghosts) as duplicated resources, more weapons
+extending HSGun (a revolver, a hunting rifle) with HSMuzzles at their muzzles.
+
 ## Where it stopped last (2026-11-08, `claude/optimistic-tesla-q01qg6`): the air built and in tutorial v2
 
 **Merged** (2026-11-08, the user: "make a pr for this, then merge in" `ui-v3` and `claude/friendly-newton-9o2xey`):

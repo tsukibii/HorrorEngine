@@ -2,6 +2,220 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-10, later (the user: both systems)
+
+- **"Sorry no, i didnt literally mean instead of, I want both systems."** HSBlowUp (things that break when they're
+  shot) and HSHitReact (someone who bleeds black ichor) both stay in the weapons plugin, side by side: a shot breaks
+  what it hits and wounds whoever it hits. Nothing is removed, and the question below is answered.
+
+## 2026-11-10 (the user: characters shot, no blood; then an oozy ichor for the tape)
+
+- **"Now instead of a breaking items system can you create a reactive system for characters/enemies to be shot, but
+  dont do blood, instead create some form of demonic dark smoke and dark splatters like black blood."** Researched
+  first (docs/research/hit_reactions.md). Read as a new system beside HSBlowUp, not in its place (both stay: the
+  user's answer above). Built as **HSHitReact** (`react/hit_react.gd` in the weapons plugin), a node put under a character:
+  - **Where she's hit**: capsules on her bones (MHR's names, a mannequin's, Mixamo's) on collision layer 11, which the
+    gun's pellets and a blast see (`HSGun.SHOT_MASK`) and the player never bumps into; a stand-in of meshes gets one
+    capsule and its part by the height. The head takes twice the damage, an arm or a leg 0.6.
+  - **Her reaction**: a flinch on springs on top of her animation (HSFlinch, a SkeletonModifier3D: the bone hit thrown
+    away from the shot, the spine back, the head a beat later, a knee giving); a stagger counter (most of a close shot)
+    holding her where she is against whatever moves her and shoving her back.
+  - **No blood**: black ichor, glossy so the flashlight catches it, embers in it: a wound on her riding her bone, drops,
+    the spray behind her, drips down a wall (`fx/ichor_*`, made in code); **dark smoke** out of every wound, rising and
+    trailing after her as she moves (the muzzle's smoke made black).
+  - **Down**: what moves her stopped; she chars over with burning edges, crumbles into the smoke and is gone, a pool of
+    ichor where she stood (or vanish, ragdoll, nothing); `restore()`. Its sounds made in code (`ichor_hit`,
+    `ichor_down`): **listen to them**.
+- **"Once your done can you look into adding some kind of shader for the black gothic blood that will fit our vhs
+  camhybrid look and look eery and oozy."** Looked into (docs/research/ooze.md), then built as **HSOoze**
+  (`react/ooze.gd` and its shaders in the weapons plugin): every mark of hers is black liquid with a shader of its own,
+  projected onto what it lands on and lit there. It spreads as it lands and creeps on, drips run down a wall slowing to
+  a stop with bulging heads, a pool's tendrils creep out as it ages, a wound oozes down her; thick it's black glossy
+  domes with an oil's sheen and the room seen in their rounded edges, thin a deep oxblood; it crawls, beats slowly and
+  smoulders. On the camhybrid tape it reads by its shine and its movement. It can be placed by hand (a wall that
+  weeps); off Forward+, and with the look's `ooze` off, the flat decals stay. **Look at it in your own rooms**: its
+  sheen, gloss, beat and drips are the look's to change.
+
+## 2026-11-09, after the smoke (the user: things that blow up when they're shot)
+
+- **"Could you create a shader/script called blownUp or something that lets any object we attach be blow up by shotgun
+  shots, e.g. a kettle, a box, but it should look like the object itself got destroyed not just a generic animation."**
+  Researched first (docs/research/breaking_props.md). Built as **HSBlowUp** (`blowup/blow_up.gd` in the weapons plugin,
+  named as the plugin names things), a node put under any object:
+  - **The object itself**: its own meshes are cut into pieces when it loads, in a worker thread (HSFracture: recursive
+    plane slicing, each cut filled), so nothing is cut at the shot. Its own materials stay on every piece; the broken
+    faces are drawn by what it's made of (`blowup/inside.gdshader`, the "shader" half of the ask).
+  - **By material** (HSBreakKind, `blowup/kinds/`): ceramic and glass shatter, metal tears into a few crumpled sheets
+    and dents first, card tears and lets its contents and lid go whole, wood splinters along its grain, plastic
+    cracks, stone crumbles; guessed from the object when not given. A hollow kind (a kettle, a box) breaks as a thin
+    wall, never as a solid block.
+  - **The shot**: small pieces where it was hit, bigger ones away from it, thrown along the shot; the pellets' holes on
+    the pieces; dust, chips, splinters, glints, paper or sparks; a liquid splashed and pooling; its sound made in code.
+    The explosive's blast breaks it all to small pieces and scorches the broken faces. Weaker shots dent it and wear it
+    down.
+  - **After**: the pieces come to rest on the floor and stay (the mess left), kicked by your feet; `restore()` puts it
+    back; `preview` shows the pieces in the editor.
+  - The made kettle and mug (`electric_kettle`, `mug_stoneware`, the prop generator's customizable recipes) ship in the
+    plugin's `models/` beside the box of shells, to try it on.
+
+## 2026-11-09, after the last (the user: the smoke trails look fake)
+
+- **"In the screenshot the smoke trails look a bit unrealistic and fake and show sharp lines, enhance it, research how
+  to do realistic smoke if required first in godot"** (with four of the weapons guide's pictures: broken open, a shell
+  popping in, the tape, the trail: the trail a flat band, two straight strips meeting in a sharp V, a cut-off end).
+  Researched first (docs/research/muzzle_smoke.md). The trail rebuilt to that recipe:
+  - **Motion:** it drifts in a curl-noise field that ramps in as it ages, so it curls, spreads and rises without
+    piling up.
+  - **Shape:** it's smoothed through its points (no sharp corners), split into strands that part as they age, and its
+    ends taper.
+  - **The shader:** world-space noise instead of noise stretched along the ribbon (the streaks), a soft profile across
+    each strand, subtractive erosion that frays it as it ages, faded where it meets a wall or the gun (soft particles)
+    and near the lens, drawn premultiplied.
+
+## 2026-11-09, last (the user: the double barrel alone, how it looks with the muzzle, what a wall should show)
+
+- **"Note I don't want the single barrel shotgun, only the double barrel one, inspect how it looks with the muzzle and
+  what kind of wall damage it should have."** The pump-action shotgun is gone from the weapons plugin: its class, model,
+  icon and its two sounds (the pump back and forward); **HSDoubleBarrel is the shotgun**. What both guns shared is
+  **HSGun** (`gun.gd`, abstract: carried, raised, aimed, lowered, run with; the kinds of shell, the shot, the muzzles,
+  the hulls in the room, the HUD); the double fills in its fire, its reload and its marks. `shotgun.gd` stays only as
+  the double under its old path, so a scene made before still loads. The pickup's `kind` is `double` (or `shells`; an
+  old `shotgun` gives the double). The pump's prop recipes (`shotgun_pump`, `shotgun_pump_black`) stay in the prop
+  generator as props. The double's chambers now follow a script's `loaded`, as the pump's tube did.
+- **How it looks with the muzzle**, inspected in the corridor at night:
+  - The right barrel's flash reads as the user's star.
+  - The left barrel's, a quarter second later, was a white ball: the first shot's smoke, still in front of the muzzle,
+    lit by the second flash and its puffs summed to white.
+  - Fixed: the smoke now hides a little of what's behind it as it covers (premultiplied: a thick cloud glows its lit
+    colour instead of summing), and a flash beside it lights it no brighter than `smoke_light_cap` (0.5). The second
+    star now reads through the first's smoke. The dust at an impact still only adds light.
+  - The hulls flicked out over the shoulder could fall through a wall beside you (LESSONS); they move by three rays
+    now.
+- **What kind of wall damage it should have** (docs/research/shotgun_damage.md, from pattern tests and forensic
+  references):
+  - Each barrel has its own choke: the right improved cylinder (0.9°), the left modified (0.7°).
+  - The pattern spreads from the muzzle: about 6 cm across 2.5 m out, 11 cm at 4.5 m, 22 cm at 9 m.
+  - Pellets landing within 1.6 cm of each other tear one hole (`fx/blast_*`: the paper torn back in flaps, the plaster
+    broken out, cracks): at an arm's length the whole charge is one hole; across a room, a torn middle with holes round
+    it; down a corridor, each pellet its own crater.
+  - The smoke's soot within 40 cm of the muzzle (`fx/soot_0`), the powder's grains within 90 cm (`fx/grains_0`).
+  - The wad's own dent from 1.5 to 5 m (`fx/wad_0`).
+  - On concrete, stone and steel the lead smears (`fx/smear_*`) instead of going in.
+  - Not built: pellets through a thin wall into the next room, ricochets, the wad lying on the floor.
+
+## 2026-11-09, latest (the user: a muzzle flash, a muzzle system, two kinds of shell, and what a shot leaves)
+
+- **"Can you create a muzzle flare for the shotgun (the closest one that leaves a trail of smoke behind), as well as a
+  generic muzzle system that can be used later for other guns but also integrate this technique into it: 'How I made
+  it: Each "wing" of the muzzle flash is a series of slightly elongated intersecting spheres with their front culled.
+  In the shader I used the dot product of the view normal with the surface normal to blend a noise texture that is
+  triplanar mapped onto the sphere. The blend function is a burn'"** (with two pictures: guns firing in a Godot view,
+  the nearest leaving grey smoke behind it; a flash as a star of noisy petals, white-yellow in their middles, orange
+  and red where they burn out). Built in the weapons plugin as **HSMuzzle** (`muzzle/muzzle.gd`, any gun's muzzle:
+  its -Z along the barrel, `fire(look)`) playing an **HSMuzzleFlash** (`muzzle/muzzle_flash.gd`, a resource: the wings
+  round the bore (a STAR, or a BURST for a ball of fire), each a run of elongated spheres that intersect, a plume out
+  of the bore, a core; their colours, energy, the noise, the burn, the erosion; the light; sparks; the smoke thrown out
+  and **the trail**: smoke left behind wherever the muzzle goes, a ribbon through where it's been, rising and spreading).
+  The user's way exactly: the spheres one MultiMesh laid out again every shot, **fronts culled**, the noise
+  (`fx/flash_noise.png`) **mapped triplanar** on each sphere, **burnt by the facing** (the view's normal dotted with the
+  surface's) through **a colour burn**, 1 - (1 - noise) / facing (`muzzle/flash.gdshaderinc`): the noise itself where a
+  sphere faces the eye, eaten away toward its rim, then a ramp from red to orange to white-yellow; drawn added (a
+  glow, the default) or solid (`blend`). The smoke's light capped (`smoke_light.gdshaderinc`: lit by the flash from a
+  few centimetres it glowed as a ball the size of the room; LESSONS).
+- **"In the future I will want to have different types of particle effects depending on the type of shell the player
+  uses, so make sure it's easily expandable/modifiable, for now can you create two types of systems, a normal shell
+  and explosive shell."** **HSShellType** (`shells/shell_type.gd`): a kind of shell as a resource, its pellets and
+  their spread, push and damage, its recoil and noise, **its muzzle flash, its impact, its shell models**; the plugin's
+  two, `shells/buckshot.tres` (the normal one) and `shells/explosive.tres` (one slug that bursts where it lands, a
+  bigger, fiercer flash with more sparks). A new kind is a duplicated resource. The guns keep every shell's kind: the
+  tube's in order, the chamber's, each of the double's barrels'; the pocket by kind (`spare` the kind loaded next's,
+  the others in `pocket`); **T** picks the kind R loads; the shells' marks in their kinds' colours. The explosive
+  shell, its fired hull and a box of five as customizable recipes (the prop standard: `shell_12ga_explosive`,
+  `shell_12ga_explosive_spent`, `shells_box_5_explosive`, PROPGEN §31); the pickup's `shell` takes a kind and its box.
+- **"Can you also create a response (so if we shoot a wall we should visually see the effect and maybe a pbr mask to
+  make it like pieces are missing from whatever was shot)."** **HSImpact** (`impacts/impact.gd`, what a hit does) played
+  by **HSImpacts** (`impacts/impacts.gd`, one in a scene): every pellet a **crater**, a Decal with three maps made from
+  one height field (`tools/weapon_fx.py`, WEAPONFX: the albedo the material under the surface where pieces are gone and
+  black down the hole, the normal map leaning into it so the light finds its walls, the ORM's occlusion darkening its
+  depths), tinted by what was hit (its `hs_surface`, the sound physics' `acoustic`, the starter's rooms: plaster,
+  concrete, wood, tile, metal, carpet...), the surface's dust and chips flying (wood splinters, metal sparks and only a
+  dent); the explosive shell's **blast**: a scorched crater with cracks and embers glowing in it, a ball of fire (an
+  HSMuzzle laid out as a burst), what's in its reach and its sight pushed and told (`shot(info)`, `blast`, `damage`
+  falling to its edge; an HSShootable counts it), the view shaken, heard far, the ears ringing, its sound
+  (`shell_burst`, WEAPONSOUNDS).
+
+## 2026-11-09, later still (the user: a customizable cartridge prop, and a guide to the customizer)
+
+- **"can you make a cartlidge [cartridge] prop for the shells that I can customize similar to cans and books. Can you
+  also make a guide on how to use to prop customizer"**. Read as the shells' own box (a cartridge box, what the shells
+  come in) and the shells themselves, both customizable as cans and books are: a new customizable family, **`ammo`**
+  (PROPGEN §31): the 12-gauge shell moved in from the weapon family, its hull now printed along its length (brand,
+  load, a mark) and its head stamped round the primer, each one of its own pictures (`hull.brand`, `hull.load`,
+  `hull.mark`, `base.stamp`); and **a printed card box of shells** (`kind: "box"`: five lying side by side, or
+  twenty-five standing heads up, any count; its lid hinged with a tuck flap, a part that opens; the shells inside),
+  its lid, front, back, ends, bottom and flap printed with its own pictures (`lid.brand`, `lid.gauge`, `lid.load`,
+  `lid.specs`, `lid.count`, `lid.art`, `front.brand`...). Recipes `shell_12ga`, `shell_12ga_spent`, `shells_box_5`,
+  `shells_box_5_open`, `shells_box_25`; every brand made up (HARROW). The weapons plugin's box of shells
+  (`HSWeaponPickup`, kind shells) is now `shells_box_5`, two shells spilled beside it, `lid_open` to show it open.
+- **The guide**: `guides/prop_customizer/` (in `guides/index.html`): the prop generator's page from opening it to
+  making and keeping a prop, its pictures the real page driven in a headless browser (`tools/propgen/guide_shots.mjs`,
+  GUIDEPROPS) on the box of shells and a shell, with two example pictures to try it with (`examples/`).
+
+## 2026-11-09, later (the user: a v2 double barrel, from their own model)
+
+- **"Can you make a v2 double barrel shotgun, wher[e] only the barrel is visible in frame, unless we reload then it
+  splits in two within frame and two shells pop in."** Built as **HSDoubleBarrel** in the weapons plugin (`double.gd`,
+  an HSShotgun): held low so only its barrels are in the view, their muzzles toward its middle, the breech and the
+  action under the frame's bottom edge; left click fires the right barrel (the front trigger), then the left (the rear
+  one), then clicks; R brings it up near the eye and breaks it open there on its hinge (the top lever over, the barrels
+  dropping away to the left, the stock down to the right: a V in the middle of the view with the chambers at its point),
+  the ejectors flick the fired hulls up and out past your face, a live shell stays where it is, a shell pops into each
+  empty chamber from behind the breech, and it snaps shut and goes back down (1.6 s for two); a click during it stops
+  the loading and fires once it's shut. The pickup's `kind` double. Three sounds made in code (`double_open`,
+  `double_close`, `double_flick`: WEAPONSOUNDS). WEAPONS checks it (`weapons_double_test.gd`) and pictures it
+  (`weapons_double_shots.gd`).
+- **"Ive modelled a reference for you to use for the double barrel, use it as a base and enhance it with better pbr
+  textures similar so it matches our existing asthethic"** (with `dbl_barrel.fbx`, mid-build): the user's model took the
+  place of the one made in code. It lives in `Content/Studio/Props/models/dbl_barrel.fbx` and the `weapon` family's
+  kind `double` reads it (PROPGEN §30): at its real size (28" barrels, the gun 1.08 m), cut into the parts that move
+  (the barrels with the fore-end on the hinge pin found in its knuckle, the top lever, the two triggers), its sockets
+  measured on it (each bore's axis, the breech faces, the muzzles), **its barrels made round** (its eight-sided tubes
+  rebuilt with 32 sides at their own bore, wall, taper and length: in first person the barrels are what's in the view;
+  `round: 0` keeps the model's own), and painted by each texel's place to match the pump gun: blued steel polished
+  along the barrels with their bores dark, a matted rib and a brass bead, the action case-hardened and faded, walnut
+  (the pump's wood: rings, fibres, streaks, pores) checkered at the wrist and on the fore-end, an ebonite butt plate;
+  then worn and baked as every made prop is.
+
+## 2026-11-09 (the user: a shotgun held in first person, on the branch `weapon-system`)
+
+- **"Make a new branch called weapon-system, create a shot gun asset and have its pov in godots horror engine similar
+  to the screenshot, it should be equitable [equippable], can shoot, and reloads like a shotgun with shells entering
+  it, spend 3 hours on it, if you think you're done early analyse and refine it through diff perspectives."** The
+  screenshot: a dim, cold hotel corridor at night, a dark pump gun coming in from the lower right with its barrel
+  toward the middle of the view, soft as on tape. Built as **HorrorStudio Weapons**, a Godot plugin of its own
+  (`GodotPlugins/HorrorStudioWeapons/`, README and CLAUDE.md as the others; every project made by hand gets it):
+  `HSShotgun` under the player's camera (held low on the right, the barrel's line on the view's middle 4 m ahead,
+  swaying, bobbing, kicking, never through a wall), left click fires nine pellets (holes, dust, things pushed, a
+  `shot(info)` on what's hit, the flash and smoke, the noise every listener hears, the ears ringing), the pump racked by
+  itself (the hull out of the ejection port and onto the floor), R reloads a shell at a time through the loading port, Q
+  lowers and raises it, and `HSWeaponPickup` the gun or a box of shells taken with E. The assets by the prop standard
+  (HORROR_TODO): the prop generator's `weapon` family (PROPGEN §30: `shotgun_pump` with its pump, bolt face and trigger
+  as parts and its sockets, `shotgun_pump_black`, `shell_12ga`, `shell_12ga_spent`); the sounds made in code
+  (`tools/weapon_sounds.py`). The check WEAPONS (`tools/godot/weapons_check.py`).
+- **"Just to add I don't need a hand holding the gun"** (mid-build): the gloved hands made in code (a hand on the pump,
+  one on the wrist) were taken out; the gun is held by no one, as in the reference, and in the reload each shell rises by
+  itself from under the gun, its nose into the loading port, and is pushed on into the tube.
+- **Refined from other sides** (the user's "analyse and refine it through diff perspectives"): the feel (the view's
+  kick settling back by itself, a little aside; the gun rocking back with the pump, carried low while running), aiming on the right button (the
+  barrel straight ahead under the eye with the stock out of view, the lens 58°, the cone tighter), the tape's 4:3 picture
+  (the gun and its shells drawn in), the shells as marks in the UI plugin's colours, four spare shells to start with
+  (every one counts), holes that stay on what they hit (a door, a crate), a sound for each pickup, the gun shown in the
+  editor where it'll be held, **HSShootable** (something to shoot: gone a while like a ghost, shoved, a cry, a line, a
+  target fired; `hit`, `down`), the sound levels measured (the shot 13 to 25 dB over the action), and a guide
+  (`guides/weapons/`). Measured against the screenshot side by side, the hold was brought in to match it: the muzzle
+  just under the middle of the view and the gun dropping steeply to the bottom edge (`hold` 0.14, -0.165, -0.34;
+  `aim_at_m` 1.1), the carried flashlight's beam kept on the middle of the view (`beam_at_m`).
+
 ## 2026-11-08 (the user: a better quest marker, and the rest of the UI, on the branch `ui-v3`)
 
 - **"Make an enhanced ui quest marker (something that tells the player where to go/who to speak to), so even if it's in

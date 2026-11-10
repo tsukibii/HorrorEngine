@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="HSImpact" format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_weapons/impacts/impact.gd" id="1_impact"]
+
+[resource]
+script = ExtResource("1_impact")
+title = "Pellet"
+mark = "crater"
+mark_size_m = 0.05
+mark_jitter = 0.25
+keep = 180
+embers_s = 0.0
+dust = 5
+chips = 4
+sparks = 2
+debris_speed = 1.4
+debris_scale = 1.0
+debris_max = 6
+radius_m = 0.0

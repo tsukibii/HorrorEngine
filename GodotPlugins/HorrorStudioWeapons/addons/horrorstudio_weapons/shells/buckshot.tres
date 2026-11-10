@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="HSShellType" format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_weapons/shells/shell_type.gd" id="1_shell"]
+[ext_resource type="Resource" path="res://addons/horrorstudio_weapons/muzzle/buckshot.tres" id="2_muzzle"]
+[ext_resource type="Resource" path="res://addons/horrorstudio_weapons/impacts/pellet.tres" id="3_impact"]
+
+[resource]
+script = ExtResource("1_shell")
+id = "buckshot"
+title = "Buckshot"
+pellets = 0
+spread_scale = 1.0
+reach_scale = 1.0
+push_scale = 1.0
+damage = 1.0
+recoil_scale = 1.0
+noise_scale = 1.0
+muzzle = ExtResource("2_muzzle")
+impact = ExtResource("3_impact")
+color = Color(0.93, 0.89, 0.82, 1)

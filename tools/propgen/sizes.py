@@ -30,6 +30,8 @@ def rows(meta):
             continue
         isl = meta["islands"][sl["island"]]
         w, h = sl["box"][2], sl["box"][3]
+        if int(round(float(sl.get("rot", 0)) / 90.0)) % 2:
+            w, h = h, w                      # a slot turned a quarter (a shell's or an energy can's print along it): your picture upright
         if sl.get("relief"):
             notes = ["pressed in or raised, no colour: where it's opaque, or dark on white"]
         elif sl["kind"] == "pattern":

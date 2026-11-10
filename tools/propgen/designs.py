@@ -1377,6 +1377,162 @@ def manga_cover(f, d, rng):
     f.text(str(d.get("volume", 3)), (W - 9.5, 11.5), 6.5, font="anton", color="#111111", **BOOK_INK)
 
 
+# ---- shotgun shells and their box (DECISIONS 2026-11-09: "a cartridge prop for the shells that I can customize") ------
+
+def _shell_mark(f, cx, cy, r, ink, letter, **pk):
+    """A maker's mark on a hull: a ring with a letter in it, turned to read along the hull."""
+    f.ring(cx, cy, r, r * 0.16, color=ink, **pk)
+    f.text(letter, (cx, cy), r * 0.95, font="serif_bold", rot=90, color=ink, **pk)
+
+
+def shell_print(f, d, rng):
+    """A shotgun shell's hull: its plastic (`hull`), and printed along it on the side that faces you, reading from the
+    brass toward the crimp, the brand, the load beside it and a mark near the brass (`ink`; `length` the hull's outside
+    in mm, the rest of a fired one's island its inside). Every brand here is made up."""
+    hull = d.get("hull", "#a3241f")
+    ink = d.get("ink", "#f1eadb")
+    pk = dict(rough=0.38, metal=0.0)
+    f.fill(color=hull, rough=0.42, metal=0.0)
+    L = min(float(d.get("length", f.H)), f.H)
+    cx = f.W / 2
+    y = L * 0.56
+    brand = d.get("brand", "HARROW")
+    lb = dict(font=d.get("font", "anton"), rot=90, fit=L * 0.6)
+    f.slot("brand", on(f, text_box(brand, (cx - 1.9, y), 3.4, **lb)), lambda: f.text(brand, (cx - 1.9, y), 3.4, color=ink, **lb, **pk),
+           rot=90, about="the brand printed along the hull, read from the brass", **pk)
+    load = d.get("load", "12 GA  2-3/4 IN  00 BUCK")
+    ll = dict(font="bebas", tracking=0.06, rot=90, fit=L * 0.72)
+    f.slot("load", on(f, text_box(load, (cx + 2.6, y), 1.7, **ll)), lambda: f.text(load, (cx + 2.6, y), 1.7, color=ink, **ll, **pk),
+           kind="text", rot=90, about="the gauge, the length and the load printed beside the brand", **pk)
+    mark = d.get("mark", "H")
+    if mark:
+        my = min(L * 0.13, L - 3.0)
+        f.slot("mark", on(f, (cx, my, 4.4, 4.4)), lambda: _shell_mark(f, cx, my, 1.9, ink, str(mark)[:1], **pk),
+               rot=90, about="the maker's mark near the brass", **pk)
+
+
+def _shell_side(f, x0, y0, length, d_mm, hull, brass, line, **pk):
+    """A shell drawn lying (a box's picture): the hull with a shine along it, the brass head with its rim, the crimp's
+    folded end; from (x0, y0), its middle line, `length` long."""
+    hb = length * 0.25
+    r = d_mm / 2
+    f.rect(x0 + hb - 0.4, y0 - r, length - hb - r * 0.4, d_mm, r=r * 0.25, color=hull, **pk)
+    f.rect(x0 + hb, y0 + r * 0.25, length - hb - r * 0.8, r * 0.22, r=r * 0.1, color="#ffffff", alpha=0.28, **pk)
+    for k in range(3):                                           # the crimp's folds at its end
+        yy = y0 + (k - 1) * r * 0.55
+        f.line([(x0 + length - r * 0.55, yy), (x0 + length - r * 0.05, y0 + (k - 1) * r * 0.2)], d_mm * 0.05, color=line, alpha=0.7, **pk)
+    f.rect(x0, y0 - r * 1.08, hb, d_mm * 1.08, r=r * 0.12, color=brass, **pk)
+    f.rect(x0 + hb * 0.12, y0 + r * 0.3, hb * 0.8, r * 0.25, color="#fff3c4", alpha=0.45, **pk)
+    f.rect(x0, y0 - r * 1.18, hb * 0.14, d_mm * 1.18, r=r * 0.05, color=brass, **pk)
+    f.line([(x0 + hb * 0.14, y0 - r), (x0 + hb * 0.14, y0 + r)], d_mm * 0.035, color=line, alpha=0.5, **pk)
+
+
+def shell_box(f, d, rng):
+    """A box of shotgun shells, each face by `part`: card in the ground colour; on the lid the gauge in a dark disc, the
+    brand, the load and its numbers, a shell drawn lying and how many; on the front the brand and the load; on the back
+    a warning, a barcode and the brand; the gauge on the ends; the lot on the bottom; where to tuck it on the flap.
+    Fields: brand, gauge, length, load, pellets, speed, count, colors [ground, band, ink], gold, hull, picture (shell,
+    target, none). Every brand here is made up."""
+    cols = list(d.get("colors") or [])
+    ground, band, ink = (cols + ["#6e1712", "#171412", "#efe6d2"][len(cols):])[:3]
+    gold = d.get("gold", "#c9a14a")
+    part = d.get("part", "lid")
+    pk = dict(rough=0.6, metal=0.0)
+    paper_base(f, ground, fibres=0.5, seed=int(rng.integers(1000)))
+    brand = d.get("brand", "HARROW")
+    gauge = str(d.get("gauge", "12"))
+    length = d.get("length", "2-3/4 IN")
+    load = d.get("load", "00 BUCK")
+    pellets = d.get("pellets", "9 PELLETS")
+    speed = d.get("speed", "1325 FPS")
+    count = d.get("count", "5 SHELLS")
+    W, H = f.W, f.H
+    m = min(W, H) * 0.06
+    if part == "lid":
+        f.line([(m * 0.6, m * 0.6), (W - m * 0.6, m * 0.6), (W - m * 0.6, H - m * 0.6), (m * 0.6, H - m * 0.6)], 0.5, closed=True,
+               color=gold, **pk)
+        rg = min(H * 0.34, W * 0.2)
+        cxg, cyg = m + rg + 1.0, H * 0.5
+
+        def disc():
+            f.ellipse(cxg, cyg, rg, color=band, **pk)
+            f.ring(cxg, cyg, rg * 0.9, 0.6, color=gold, **pk)
+            f.text(gauge, (cxg, cyg + rg * 0.12), rg * 0.78, font="anton", color=ink, **pk)
+            f.text("GAUGE", (cxg, cyg - rg * 0.55), rg * 0.17, font="bebas", tracking=0.25, color=gold, **pk)
+        f.slot("gauge", (cxg, cyg, 2 * rg + 0.6, 2 * rg + 0.6), disc, kind="logo", about="the gauge in a dark disc", **pk)
+        x0 = cxg + rg + m
+        wr = W - m - x0
+        xc = x0 + wr / 2
+        f.slot("brand", text_box(brand, (xc, H * 0.8), H * 0.15, font="anton", tracking=0.04, fit=wr),
+               lambda: f.text(brand, (xc, H * 0.8), H * 0.15, font="anton", tracking=0.04, fit=wr, color=ink,
+                              shadow=("#000000", 0.4, -0.4, 0.6, 0.35), **pk),
+               about="the brand across the lid", **pk)
+        f.slot("load", text_box(load, (xc, H * 0.585), H * 0.12, font="bebas", tracking=0.06, fit=wr),
+               lambda: f.text(load, (xc, H * 0.585), H * 0.12, font="bebas", tracking=0.06, fit=wr, color=gold, **pk),
+               kind="text", about="the load under the brand", **pk)
+        specs = f"{length}  ·  {pellets}  ·  {speed}"
+        f.slot("specs", text_box(specs, (xc, H * 0.435), H * 0.045, font="archivo", tracking=0.05, fit=wr),
+               lambda: f.text(specs, (xc, H * 0.435), H * 0.045, font="archivo", tracking=0.05, fit=wr, color=ink, **pk),
+               kind="text", about="the length, the pellets and the speed", **pk)
+        pic = d.get("picture", "shell")
+        if pic != "none":
+            ls = min(wr * 0.78, W * 0.42)
+            ds = ls * 0.25
+            px0, py0 = xc - ls / 2, H * 0.245
+
+            def art():
+                if pic == "target":
+                    for k, rr in enumerate((1.0, 0.72, 0.44, 0.16)):
+                        f.ellipse(xc, py0, ds * rr, color=gold if k % 2 == 0 else band, **pk)
+                else:
+                    _shell_side(f, px0, py0, ls, ds, d.get("hull", "#a3241f"), gold, band, **pk)
+            f.slot("art", (xc, py0, (ls if pic != "target" else 2 * ds) + 1.0, ds * 1.3 + 1.0), art, kind="picture",
+                   about="the shell drawn lying on the lid", **pk)
+        f.slot("count", text_box(count, (W - m - 1.0, m + H * 0.055), H * 0.06, font="bebas", tracking=0.12, anchor="right"),
+               lambda: f.text(count, (W - m - 1.0, m + H * 0.055), H * 0.06, font="bebas", tracking=0.12, anchor="right",
+                              color=gold, **pk),
+               kind="text", about="how many are in it", **pk)
+    elif part == "front":
+        f.rect(0, 0, W, H * 0.22, color=band, **pk)
+        hb = min(H * 0.36, W * 0.1)
+        f.slot("brand", text_box(brand, (W * 0.22, H * 0.6), hb, font="anton", fit=W * 0.36),
+               lambda: f.text(brand, (W * 0.22, H * 0.6), hb, font="anton", fit=W * 0.36, color=ink, **pk),
+               about="the brand on the front", **pk)
+        line = f"{gauge} GA  ·  {length}  ·  {load}"
+        f.slot("load", text_box(line, (W * 0.715, H * 0.6), hb * 0.55, font="bebas", tracking=0.08, fit=W * 0.5),
+               lambda: f.text(line, (W * 0.715, H * 0.6), hb * 0.55, font="bebas", tracking=0.08, fit=W * 0.5, color=gold, **pk),
+               kind="text", about="the gauge, the length and the load", **pk)
+        f.text(count, (W / 2, H * 0.11), H * 0.1, font="bebas", tracking=0.3, color=ink, **pk)
+    elif part == "back":
+        f.slot("brand", text_box(brand, (W * 0.14, H * 0.5), H * 0.2, font="anton", fit=W * 0.22),
+               lambda: f.text(brand, (W * 0.14, H * 0.5), H * 0.2, font="anton", fit=W * 0.22, color=ink, **pk),
+               about="the brand on the back", **pk)
+        warn = d.get("warning", "WARNING: KEEP OUT OF THE REACH OF CHILDREN.\nFOR USE ONLY IN SHOTGUNS IN GOOD ORDER\n"
+                                "CHAMBERED FOR " + gauge + " GAUGE " + length + " SHELLS.\nNEVER MIX GAUGES. WEAR EYE AND EAR PROTECTION.")
+        wx = W * 0.53
+        f.slot("warning", text_box(warn, (wx, H * 0.52), H * 0.07, font="archivo", line=1.5, fit=W * 0.5),
+               lambda: f.text(warn, (wx, H * 0.52), H * 0.07, font="archivo", line=1.5, fit=W * 0.5, color=ink, **pk),
+               kind="text", about="the warning printed on the back", **pk)
+        _barcode(f, W * 0.82, H * 0.3, W * 0.12, H * 0.4, rng, color=band)
+    elif part in ("left", "right"):
+        f.rect(0, H * 0.78, W, H * 0.22, color=band, **pk)
+        g = f"{gauge} GA"
+        f.slot("gauge", text_box(g, (W / 2, H * 0.45), H * 0.42, font="anton", fit=W * 0.8),
+               lambda: f.text(g, (W / 2, H * 0.45), H * 0.42, font="anton", fit=W * 0.8, color=ink, **pk),
+               about="the gauge on the end", **pk)
+        f.text(load, (W / 2, H * 0.89), H * 0.12, font="bebas", tracking=0.15, color=gold, fit=W * 0.8, **pk)
+    elif part == "bottom":
+        lot = d.get("lot", "LOT  4B 1176   " + brand + " CARTRIDGE CO.")
+        f.slot("lot", text_box(lot, (W / 2, H * 0.2), min(H, W) * 0.045, font="mono", fit=W * 0.8),
+               lambda: f.text(lot, (W / 2, H * 0.2), min(H, W) * 0.045, font="mono", fit=W * 0.8, color=band, **pk),
+               kind="text", about="the lot number stamped on the bottom", **pk)
+    elif part == "flap":
+        words = d.get("tuck", "TUCK IN TO CLOSE")
+        f.slot("words", text_box(words, (W / 2, H * 0.5), H * 0.2, font="bebas", tracking=0.3, fit=W * 0.7),
+               lambda: f.text(words, (W / 2, H * 0.5), H * 0.2, font="bebas", tracking=0.3, fit=W * 0.7, color=ink, **pk),
+               kind="text", about="the words on the tuck flap", **pk)
+
+
 DESIGNS = {"soda": soda, "energy": energy, "beer": beer, "coffee_can": coffee_can, "water": water, "coffee_cup": coffee_cup,
            "sleeve": sleeve, "iced": iced, "newspaper": newspaper, "newsprint": newsprint, "napkin": napkin, "fries": fries,
            "receipt": receipt, "note": note, "paper": paper, "card_plain": card_plain, "burger_box": burger_box, "kraft": kraft,
@@ -1384,7 +1540,8 @@ DESIGNS = {"soda": soda, "energy": energy, "beer": beer, "coffee_can": coffee_ca
            "jar_label": jar_label, "rx_label": rx_label, "plain": plain, "ofuda": ofuda, "ema": ema, "brocade": brocade,
            "book_cover": book_cover, "book_spine": book_spine, "book_back": book_back, "book_pages": book_pages, "book_plain": book_plain,
            "page_text": page_text, "diary_page": diary_page, "textbook_cover": textbook_cover, "notebook_cover": notebook_cover,
-           "notebook_back": notebook_back, "diary_cover": diary_cover, "manga_cover": manga_cover}
+           "notebook_back": notebook_back, "diary_cover": diary_cover, "manga_cover": manga_cover,
+           "shell_print": shell_print, "shell_box": shell_box}
 
 
 def draw(f, art, seed, default="plain"):

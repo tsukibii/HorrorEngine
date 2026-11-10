@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="HSBreakKind" format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_weapons/blowup/break_kind.gd" id="1_kind"]
+
+[resource]
+script = ExtResource("1_kind")
+id = "wood"
+title = "Wood"
+strength = 4.0
+pieces = 12
+coarse = 0.7
+grain = 0.85
+crumple_m = 0.0
+dent_m = 0.0
+dent_r_m = 0.025
+hollow = false
+speed = 2.2
+spin = 10.0
+bounce = 0.25
+friction = 0.75
+areal_kg = 9.0
+inside_color = Color(0.8, 0.64, 0.43, 1)
+inside_from_surface = 0.0
+inside_roughness = 0.8
+inside_metallic = 0.0
+fibres = 0.8
+speckle = 0.1
+see_through = false
+dust = 12
+dust_color = Color(0, 0, 0, 0)
+chips = 16
+chip_style = "splinter"
+sparks = 0
+surface = "wood"

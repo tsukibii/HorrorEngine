@@ -6,6 +6,236 @@ millimetre there: sharp in a close-up, and on a texture twice the size. Bigger i
 soft. A smudge or a decal wants its own width in mm at the same density (the page shows each one's). A key with `*`
 swaps every picture it matches (`pictures.*.logo`: every one named logo).
 
+## ammo
+
+### shell_12ga: a 12-gauge shell, red hull, high brass, its brand printed along it and its head stamped
+
+4 pictures of its own.
+
+| what | kind | about | on the prop (mm) | wants (px) | notes |
+|---|---|---|---|---|---|
+| `pictures.base.stamp` | stamp | the headstamp pressed into the brass round the primer | 11 × 16 | 160 × 224 | pressed in or raised, no colour: where it's opaque, or dark on white |
+| `pictures.hull.brand` | logo | the brand printed along the hull, read from the brass | 13 × 4 | 192 × 64 | PNG, transparent round it |
+| `pictures.hull.load` | text | the gauge, the length and the load printed beside the brand | 21 × 3 | 304 × 64 | PNG, transparent round it |
+| `pictures.hull.mark` | logo | the maker's mark near the brass | 4 × 4 | 64 × 64 | PNG, transparent round it |
+| part `head` | brass |  | 71 × 17 | 1008 × 240 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
+| part `base` | brass |  | 23 × 23 | 320 × 320 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `hull` | hull |  | 65 × 50 | 928 × 720 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
+| part `crimp` | hull |  | 19 × 19 | 272 × 272 | the whole part (a decal with `fit`), PNG or JPEG |
+
+### shell_12ga_explosive: an explosive 12-gauge shell (a slug that bursts where it lands): a black hull printed in orange, high brass, its head stamped HE
+
+4 pictures of its own.
+
+| what | kind | about | on the prop (mm) | wants (px) | notes |
+|---|---|---|---|---|---|
+| `pictures.base.stamp` | stamp | the headstamp pressed into the brass round the primer | 12 × 16 | 176 × 224 | pressed in or raised, no colour: where it's opaque, or dark on white |
+| `pictures.hull.brand` | logo | the brand printed along the hull, read from the brass | 13 × 4 | 208 × 80 | PNG, transparent round it |
+| `pictures.hull.load` | text | the gauge, the length and the load printed beside the brand | 22 × 3 | 336 × 64 | PNG, transparent round it |
+| `pictures.hull.mark` | logo | the maker's mark near the brass | 4 × 4 | 80 × 80 | PNG, transparent round it |
+| part `head` | brass |  | 71 × 21 | 1008 × 304 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
+| part `base` | brass |  | 23 × 23 | 320 × 320 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `hull` | hull |  | 65 × 46 | 992 × 704 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
+| part `crimp` | hull |  | 19 × 19 | 288 × 288 | the whole part (a decal with `fit`), PNG or JPEG |
+
+### shell_12ga_explosive_spent: a fired explosive 12-gauge shell, its crimp opened
+
+4 pictures of its own.
+
+| what | kind | about | on the prop (mm) | wants (px) | notes |
+|---|---|---|---|---|---|
+| `pictures.base.stamp` | stamp | the headstamp pressed into the brass round the primer | 12 × 16 | 176 × 224 | pressed in or raised, no colour: where it's opaque, or dark on white |
+| `pictures.hull.brand` | logo | the brand printed along the hull, read from the brass | 13 × 4 | 128 × 64 | PNG, transparent round it |
+| `pictures.hull.load` | text | the gauge, the length and the load printed beside the brand | 22 × 3 | 208 × 64 | PNG, transparent round it |
+| `pictures.hull.mark` | logo | the maker's mark near the brass | 4 × 4 | 64 × 64 | PNG, transparent round it |
+| part `head` | brass |  | 71 × 21 | 1008 × 304 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
+| part `base` | brass |  | 23 × 23 | 320 × 320 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `hull` | hull |  | 65 × 105 | 624 × 1008 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
+
+### shell_12ga_spent: a fired 12-gauge shell, its crimp opened
+
+4 pictures of its own.
+
+| what | kind | about | on the prop (mm) | wants (px) | notes |
+|---|---|---|---|---|---|
+| `pictures.base.stamp` | stamp | the headstamp pressed into the brass round the primer | 11 × 16 | 160 × 224 | pressed in or raised, no colour: where it's opaque, or dark on white |
+| `pictures.hull.brand` | logo | the brand printed along the hull, read from the brass | 13 × 4 | 128 × 64 | PNG, transparent round it |
+| `pictures.hull.load` | text | the gauge, the length and the load printed beside the brand | 21 × 3 | 192 × 64 | PNG, transparent round it |
+| `pictures.hull.mark` | logo | the maker's mark near the brass | 4 × 4 | 64 × 64 | PNG, transparent round it |
+| part `head` | brass |  | 71 × 17 | 1008 × 240 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
+| part `base` | brass |  | 23 × 23 | 320 × 320 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `hull` | hull |  | 65 × 109 | 608 × 1008 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
+
+### shells_box_25: a card box of twenty-five 12-gauge shells standing heads up, its lid open, birdshot in green
+
+18 pictures of its own.
+
+| what | kind | about | on the prop (mm) | wants (px) | notes |
+|---|---|---|---|---|---|
+| `pictures.lid.gauge` | logo | the gauge in a dark disc | 48 × 48 | 352 × 352 | PNG, transparent round it |
+| `pictures.lid.brand` | logo | the brand across the lid | 50 × 19 | 368 × 144 | PNG, transparent round it |
+| `pictures.lid.load` | text | the load under the brand | 50 × 15 | 368 × 112 | PNG, transparent round it |
+| `pictures.lid.specs` | text | the length, the pellets and the speed | 50 × 5 | 368 × 64 | PNG, transparent round it |
+| `pictures.lid.art` | picture | the shell drawn lying on the lid | 20 × 13 | 160 × 112 | PNG or JPEG |
+| `pictures.lid.count` | text | how many are in it | 38 × 8 | 288 × 64 | PNG, transparent round it |
+| `pictures.front.brand` | logo | the brand on the front | 43 × 13 | 320 × 96 | PNG, transparent round it |
+| `pictures.front.load` | text | the gauge, the length and the load | 60 × 8 | 448 × 64 | PNG, transparent round it |
+| `pictures.back.brand` | logo | the brand on the back | 27 × 14 | 208 × 112 | PNG, transparent round it |
+| `pictures.back.warning` | text | the warning printed on the back | 60 × 22 | 448 × 176 | PNG, transparent round it |
+| `pictures.left.gauge` | logo | the gauge on the end | 67 × 30 | 496 × 224 | PNG, transparent round it |
+| `pictures.right.gauge` | logo | the gauge on the end | 67 × 30 | 496 × 224 | PNG, transparent round it |
+| `pictures.bottom.lot` | text | the lot number stamped on the bottom | 94 × 6 | 688 × 64 | PNG, transparent round it |
+| `pictures.flap.words` | text | the words on the tuck flap | 36 × 4 | 272 × 64 | PNG, transparent round it |
+| `pictures.base.stamp` | stamp | the headstamp pressed into the brass round the primer | 11 × 16 | 160 × 224 | pressed in or raised, no colour: where it's opaque, or dark on white |
+| `pictures.hull.brand` | logo | the brand printed along the hull, read from the brass | 10 × 4 | 176 × 80 | PNG, transparent round it |
+| `pictures.hull.load` | text | the gauge, the length and the load printed beside the brand | 12 × 3 | 192 × 64 | PNG, transparent round it |
+| `pictures.hull.mark` | logo | the maker's mark near the brass | 4 × 4 | 80 × 80 | PNG, transparent round it |
+| part `lid` | card |  | 119 × 119 | 864 × 864 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_lid` | inside |  | 119 × 119 | 416 × 416 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `front` | card |  | 119 × 68 | 864 × 496 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_front` | inside |  | 119 × 68 | 416 × 240 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `back` | card |  | 119 × 68 | 864 × 496 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_back` | inside |  | 119 × 68 | 416 × 240 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `left` | card |  | 117 × 68 | 848 × 496 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_left` | inside |  | 117 × 68 | 416 × 240 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `right` | card |  | 117 × 68 | 848 × 496 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_right` | inside |  | 117 × 68 | 416 × 240 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `bottom` | card |  | 117 × 117 | 848 × 848 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_bottom` | inside |  | 117 × 117 | 416 × 416 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `flap` | card |  | 116 × 16 | 848 × 128 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_flap` | inside |  | 116 × 16 | 400 × 64 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `head` | brass |  | 71 × 13 | 1008 × 192 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
+| part `base` | brass |  | 23 × 23 | 320 × 320 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `hull` | hull |  | 65 × 16 | 1008 × 256 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
+
+### shells_box_5: a card box of five 12-gauge shells lying side by side, its lid shut (the weapons plugin's box of shells)
+
+18 pictures of its own.
+
+| what | kind | about | on the prop (mm) | wants (px) | notes |
+|---|---|---|---|---|---|
+| `pictures.lid.gauge` | logo | the gauge in a dark disc | 47 × 47 | 448 × 448 | PNG, transparent round it |
+| `pictures.lid.brand` | logo | the brand across the lid | 40 × 11 | 384 × 112 | PNG, transparent round it |
+| `pictures.lid.load` | text | the load under the brand | 33 × 9 | 304 × 96 | PNG, transparent round it |
+| `pictures.lid.specs` | text | the length, the pellets and the speed | 59 × 4 | 560 × 64 | PNG, transparent round it |
+| `pictures.lid.art` | picture | the shell drawn lying on the lid | 47 × 16 | 448 × 160 | PNG or JPEG |
+| `pictures.lid.count` | text | how many are in it | 20 × 5 | 192 × 64 | PNG, transparent round it |
+| `pictures.front.brand` | logo | the brand on the front | 32 × 10 | 304 × 96 | PNG, transparent round it |
+| `pictures.front.load` | text | the gauge, the length and the load | 60 × 6 | 560 × 64 | PNG, transparent round it |
+| `pictures.back.brand` | logo | the brand on the back | 18 × 6 | 176 × 64 | PNG, transparent round it |
+| `pictures.back.warning` | text | the warning printed on the back | 60 × 16 | 560 × 160 | PNG, transparent round it |
+| `pictures.left.gauge` | logo | the gauge on the end | 24 × 11 | 240 × 112 | PNG, transparent round it |
+| `pictures.right.gauge` | logo | the gauge on the end | 24 × 11 | 240 × 112 | PNG, transparent round it |
+| `pictures.bottom.lot` | text | the lot number stamped on the bottom | 94 × 4 | 880 × 64 | PNG, transparent round it |
+| `pictures.flap.words` | text | the words on the tuck flap | 36 × 4 | 336 × 64 | PNG, transparent round it |
+| `pictures.base.stamp` | stamp | the headstamp pressed into the brass round the primer | 11 × 16 | 160 × 224 | pressed in or raised, no colour: where it's opaque, or dark on white |
+| `pictures.hull.brand` | logo | the brand printed along the hull, read from the brass | 13 × 4 | 192 × 64 | PNG, transparent round it |
+| `pictures.hull.load` | text | the gauge, the length and the load printed beside the brand | 21 × 3 | 304 × 64 | PNG, transparent round it |
+| `pictures.hull.mark` | logo | the maker's mark near the brass | 4 × 4 | 64 × 64 | PNG, transparent round it |
+| part `lid` | card |  | 119 × 69 | 1104 × 640 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_lid` | inside |  | 119 × 69 | 528 × 304 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `front` | card |  | 119 × 24 | 1104 × 224 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_front` | inside |  | 119 × 24 | 528 × 112 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `back` | card |  | 119 × 24 | 1104 × 224 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_back` | inside |  | 119 × 24 | 528 × 112 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `left` | card |  | 67 × 24 | 624 × 224 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_left` | inside |  | 67 × 24 | 304 × 112 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `right` | card |  | 67 × 24 | 624 × 224 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_right` | inside |  | 67 × 24 | 304 × 112 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `bottom` | card |  | 117 × 67 | 1088 × 624 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_bottom` | inside |  | 117 × 67 | 512 × 304 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `flap` | card |  | 116 × 16 | 1088 × 160 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_flap` | inside |  | 116 × 16 | 512 × 80 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `head` | brass |  | 71 × 17 | 1008 × 240 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
+| part `base` | brass |  | 23 × 23 | 320 × 320 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `hull` | hull |  | 65 × 50 | 928 × 720 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
+| part `crimp` | hull |  | 19 × 19 | 272 × 272 | the whole part (a decal with `fit`), PNG or JPEG |
+
+### shells_box_5_explosive: a card box of five explosive 12-gauge shells, black and orange, its lid shut (the weapons plugin's explosive shells)
+
+18 pictures of its own.
+
+| what | kind | about | on the prop (mm) | wants (px) | notes |
+|---|---|---|---|---|---|
+| `pictures.lid.gauge` | logo | the gauge in a dark disc | 47 × 47 | 448 × 448 | PNG, transparent round it |
+| `pictures.lid.brand` | logo | the brand across the lid | 40 × 11 | 384 × 112 | PNG, transparent round it |
+| `pictures.lid.load` | text | the load under the brand | 58 × 9 | 544 × 96 | PNG, transparent round it |
+| `pictures.lid.specs` | text | the length, the pellets and the speed | 59 × 4 | 560 × 64 | PNG, transparent round it |
+| `pictures.lid.art` | picture | the shell drawn lying on the lid | 47 × 16 | 448 × 160 | PNG or JPEG |
+| `pictures.lid.count` | text | how many are in it | 20 × 5 | 192 × 64 | PNG, transparent round it |
+| `pictures.front.brand` | logo | the brand on the front | 32 × 10 | 304 × 96 | PNG, transparent round it |
+| `pictures.front.load` | text | the gauge, the length and the load | 60 × 6 | 560 × 64 | PNG, transparent round it |
+| `pictures.back.brand` | logo | the brand on the back | 18 × 6 | 176 × 64 | PNG, transparent round it |
+| `pictures.back.warning` | text | the warning printed on the back | 60 × 16 | 560 × 160 | PNG, transparent round it |
+| `pictures.left.gauge` | logo | the gauge on the end | 24 × 11 | 240 × 112 | PNG, transparent round it |
+| `pictures.right.gauge` | logo | the gauge on the end | 24 × 11 | 240 × 112 | PNG, transparent round it |
+| `pictures.bottom.lot` | text | the lot number stamped on the bottom | 94 × 4 | 880 × 64 | PNG, transparent round it |
+| `pictures.flap.words` | text | the words on the tuck flap | 36 × 4 | 336 × 64 | PNG, transparent round it |
+| `pictures.base.stamp` | stamp | the headstamp pressed into the brass round the primer | 12 × 16 | 176 × 224 | pressed in or raised, no colour: where it's opaque, or dark on white |
+| `pictures.hull.brand` | logo | the brand printed along the hull, read from the brass | 13 × 4 | 208 × 80 | PNG, transparent round it |
+| `pictures.hull.load` | text | the gauge, the length and the load printed beside the brand | 22 × 3 | 336 × 64 | PNG, transparent round it |
+| `pictures.hull.mark` | logo | the maker's mark near the brass | 4 × 4 | 80 × 80 | PNG, transparent round it |
+| part `lid` | card |  | 119 × 69 | 1104 × 640 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_lid` | inside |  | 119 × 69 | 528 × 304 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `front` | card |  | 119 × 24 | 1104 × 224 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_front` | inside |  | 119 × 24 | 528 × 112 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `back` | card |  | 119 × 24 | 1104 × 224 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_back` | inside |  | 119 × 24 | 528 × 112 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `left` | card |  | 67 × 24 | 624 × 224 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_left` | inside |  | 67 × 24 | 304 × 112 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `right` | card |  | 67 × 24 | 624 × 224 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_right` | inside |  | 67 × 24 | 304 × 112 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `bottom` | card |  | 117 × 67 | 1088 × 624 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_bottom` | inside |  | 117 × 67 | 512 × 304 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `flap` | card |  | 116 × 16 | 1088 × 160 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_flap` | inside |  | 116 × 16 | 512 × 80 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `head` | brass |  | 71 × 21 | 1008 × 304 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
+| part `base` | brass |  | 23 × 23 | 320 × 320 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `hull` | hull |  | 65 × 46 | 992 × 704 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
+| part `crimp` | hull |  | 19 × 19 | 288 × 288 | the whole part (a decal with `fit`), PNG or JPEG |
+### shells_box_5_open: the box of five open, its shells showing
+
+18 pictures of its own.
+
+| what | kind | about | on the prop (mm) | wants (px) | notes |
+|---|---|---|---|---|---|
+| `pictures.lid.gauge` | logo | the gauge in a dark disc | 47 × 47 | 448 × 448 | PNG, transparent round it |
+| `pictures.lid.brand` | logo | the brand across the lid | 40 × 11 | 384 × 112 | PNG, transparent round it |
+| `pictures.lid.load` | text | the load under the brand | 33 × 9 | 304 × 96 | PNG, transparent round it |
+| `pictures.lid.specs` | text | the length, the pellets and the speed | 59 × 4 | 560 × 64 | PNG, transparent round it |
+| `pictures.lid.art` | picture | the shell drawn lying on the lid | 47 × 16 | 448 × 160 | PNG or JPEG |
+| `pictures.lid.count` | text | how many are in it | 20 × 5 | 192 × 64 | PNG, transparent round it |
+| `pictures.front.brand` | logo | the brand on the front | 32 × 10 | 304 × 96 | PNG, transparent round it |
+| `pictures.front.load` | text | the gauge, the length and the load | 60 × 6 | 560 × 64 | PNG, transparent round it |
+| `pictures.back.brand` | logo | the brand on the back | 18 × 6 | 176 × 64 | PNG, transparent round it |
+| `pictures.back.warning` | text | the warning printed on the back | 60 × 16 | 560 × 160 | PNG, transparent round it |
+| `pictures.left.gauge` | logo | the gauge on the end | 24 × 11 | 240 × 112 | PNG, transparent round it |
+| `pictures.right.gauge` | logo | the gauge on the end | 24 × 11 | 240 × 112 | PNG, transparent round it |
+| `pictures.bottom.lot` | text | the lot number stamped on the bottom | 94 × 4 | 880 × 64 | PNG, transparent round it |
+| `pictures.flap.words` | text | the words on the tuck flap | 36 × 4 | 336 × 64 | PNG, transparent round it |
+| `pictures.base.stamp` | stamp | the headstamp pressed into the brass round the primer | 11 × 16 | 160 × 224 | pressed in or raised, no colour: where it's opaque, or dark on white |
+| `pictures.hull.brand` | logo | the brand printed along the hull, read from the brass | 13 × 4 | 192 × 64 | PNG, transparent round it |
+| `pictures.hull.load` | text | the gauge, the length and the load printed beside the brand | 21 × 3 | 304 × 64 | PNG, transparent round it |
+| `pictures.hull.mark` | logo | the maker's mark near the brass | 4 × 4 | 64 × 64 | PNG, transparent round it |
+| part `lid` | card |  | 119 × 69 | 1104 × 640 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_lid` | inside |  | 119 × 69 | 528 × 304 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `front` | card |  | 119 × 24 | 1104 × 224 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_front` | inside |  | 119 × 24 | 528 × 112 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `back` | card |  | 119 × 24 | 1104 × 224 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_back` | inside |  | 119 × 24 | 528 × 112 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `left` | card |  | 67 × 24 | 624 × 224 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_left` | inside |  | 67 × 24 | 304 × 112 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `right` | card |  | 67 × 24 | 624 × 224 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_right` | inside |  | 67 × 24 | 304 × 112 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `bottom` | card |  | 117 × 67 | 1088 × 624 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_bottom` | inside |  | 117 × 67 | 512 × 304 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `flap` | card |  | 116 × 16 | 1088 × 160 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `in_flap` | inside |  | 116 × 16 | 512 × 80 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `head` | brass |  | 71 × 17 | 1008 × 240 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
+| part `base` | brass |  | 23 × 23 | 320 × 320 | the whole part (a decal with `fit`), PNG or JPEG |
+| part `hull` | hull |  | 65 × 50 | 928 × 720 | the whole part (a decal with `fit`), PNG or JPEG, goes round: seamless left to right |
+| part `crimp` | hull |  | 19 × 19 | 272 × 272 | the whole part (a decal with `fit`), PNG or JPEG |
+
 ## appliance
 
 ### electric_kettle: an electric jug kettle in brushed steel: its base and cord, the D handle and switch, the water window

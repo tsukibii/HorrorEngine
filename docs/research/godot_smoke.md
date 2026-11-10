@@ -37,6 +37,9 @@ sheet) with 6-way lighting for the kettle's jet and the hob's pot, the fine lid 
 velocity) rather than balls, turbulence per puff, and the same shader back on the desk's three.js stage (its puffs are
 the reference for Unreal, which has none yet).
 
+A gun's muzzle trail (the weapons plugin) has a note of its own: docs/research/muzzle_smoke.md (curl noise, sprites
+along a smoothed curve, one noise in the world for the trail and the puffs).
+
 ## Sources
 
 - Godot Smoke VFX by GameIdea Studio: https://gameidea-studio.itch.io/godot-smoke-vfx

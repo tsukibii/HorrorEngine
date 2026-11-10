@@ -1132,7 +1132,8 @@ time a logo matters is an appliance where we want to fake it having one, like th
 
 - **Customizable families** say so in their module (`CUSTOM = True`, read without importing them by
   `recipes.custom_families()`): can, bottle, cup, box, sheet (paper: receipts, notes, a newspaper, ofuda), book, pills,
-  appliance (a rice cooker's or a kettle's fake brand), charm (ema, omamori) and ware (mugs, jars). The gallery marks
+  appliance (a rice cooker's or a kettle's fake brand), charm (ema, omamori), ware (mugs, jars) and ammo (the shotgun
+  shells and their box, §31). The gallery marks
   them ✎ and filters them (*✎ customizable* in the families' bar); plants, trees, furniture, bedding, curtains and the
   rest are left as they are.
 - **Their picture previews your pictures** (`page/preview.js`): in the picture editor (§17) the right column's **On the
@@ -1389,3 +1390,98 @@ etc), then create a ne w genre/tab in our prop tool called retro" (the folder ho
   tilted about 37 degrees everywhere (the trees' bark and leaves among them) and the pack's 16-bit textures at half their
   lightness. Images read inside Blender are tagged Non-Color first now (docs/LESSONS.md, 2026-11-08).
 
+## 30. Weapons: a pump shotgun, the user's double barrel and their shells, for the first-person weapon system (DECISIONS 2026-11-09)
+
+The user (2026-11-09): "create a shot gun asset and have its pov in godots horror engine similar to the screenshot";
+the prop standard (HORROR_TODO) makes it a recipe. The `weapon` family (`families/weapon.py`), three kinds:
+
+- **`shotgun`**: a pump-action 12-gauge at a riot gun's sizes: a receiver 200 mm long with its ejection port (right)
+  and loading port (underneath) as dark plates, an 18.5" barrel (`barrel_mm` 470) with its bore and a brass bead, the
+  magazine tube under it for four (its knurled cap and the band to the barrel), the pump (a grooved fore-end on its
+  90 mm track with the action bars into the receiver), the trigger in its guard, a stock narrowed at the wrist and a
+  stippled rubber pad. **Parts** (§26): `pump` slides back its stroke, `bolt` (the bolt's face) is shown only while the
+  action is shut, `trigger` on its hinge. **Sockets**: `muzzle`, `eject`, `port`, `chamber`, `pump`, `grip`, `trigger`,
+  `shoulder`, `light` (where a flashlight goes under the barrel). Steel by `finish` (`FN.metal`: satin; its `age`),
+  the furniture `wood` (flat-sawn, `FU.paint_wood`) or `synthetic` (black, a fine stipple); `extras.weapon` carries its
+  numbers (gauge, capacity, travel, barrel). About 15,000 triangles, 985 mm long, its texture 2048.
+- **`double`** (the user's v2, DECISIONS 2026-11-09, later): **the user's own side-by-side**, modelled in Blender:
+  `model`, an .fbx in `Content/Studio/Props/models/` (`dbl_barrel.fbx`: its objects `double_barrel` the stock and
+  action, `double_barrel_gun` the barrels and fore-end, `double_barrel_separator` the top lever,
+  `double_barrel_Right_Trigger` and `_Left_Trigger`, and `shotgun_shutter` (the fore-end's tip) and `shotgun_trigger`
+  from an older gun; `pieces` names them otherwise), brought in at its real size by the barrels' length end to end
+  (`barrel_mm` 711), its muzzles turned to +x (`muzzle` "-x": where they point in the file). Each object's loose parts
+  are sorted into three materials by where they are: the stock (the part reaching furthest back) and the fore-end (a
+  long part under the barrels, and `wood_objects`) `wood`, the action's wide parts (its body, the fences, the pins
+  through it) `action`, the rest `steel`. **Round barrels** (`round` 32): the model's eight-sided tubes measured (each
+  bore's axis, and the bore's and the tube's radius at both ends: they taper, 24 mm to 18 mm across the bore) and
+  rebuilt as round tubes of that many sides (`round: 0` keeps the model's own). **Parts**: `barrels` (the fore-end with
+  them) on the hinge pin, the action's foremost pin under the bores, opening 38°; `lever` turning 30° to the right
+  about its boss; `trigger` (the front, the right barrel's) and `trigger2` (the rear) on their tops. **Sockets** measured
+  on it: `muzzle`, `muzzle_r`, `muzzle_l`, `chamber`, `chamber_r` and `chamber_l` (each bore's axis at the breech face:
+  where a shell's head sits), `hinge`, `breech`, `grip`, `trigger`, `shoulder`, `light`. Smart UVs a material, each
+  one's texels a millimetre measured for the relief and the wear's scale. Painted by each texel's place (`texel_paint`):
+  the steel blued and polished along the gun, the bores (their faces turned to the axis) dark and kept so through the
+  wear (`after_wear`), the crowns worn bright, the breech faces machined, the rib matted, the bead brass; the action
+  case-hardened and faded (straw, blue and purple mottling over grey); walnut as the furniture's wood in the solid (5 mm
+  rings round a pith along the gun, wandering, fibres, pores, a slow tone, walnut's dark streaks), diamond checkering
+  in ovals at the wrist and on the fore-end, an ebonite butt plate; the wear halved on the small steel parts (the
+  lever, the tang, the guard, the triggers: thin, all edge). About 2,200 triangles, 1.08 m long, its textures 2048 (the
+  action 1024).
+- **`shell`** (the `ammo` family's since 2026-11-09, §31: `kind: "shell"` here still makes one): a 2 3/4" 12-gauge (70 mm): the brass head (`brass_mm` 16: its rim, the extractor groove, the primer), the
+  plastic hull (`hull`, a colour) with its moulding streaks, the six-point star crimp; `spent` opens the crimp into a
+  mouth, dark inside, the brass scorched. Sockets `front`, `back`. About 1,800 triangles, its texture 512.
+
+Recipes: `shotgun_pump` (blued steel, dark walnut), `shotgun_pump_black` (the synthetic stock and fore-end),
+`shotgun_double` (the user's model: blued, case-hardened, checkered walnut), `shell_12ga` (red), `shell_12ga_spent`. Made, the double and
+the shells go into the weapons plugin (`GodotPlugins/HorrorStudioWeapons/addons/horrorstudio_weapons/models/`), which reads the
+parts and sockets by name: a remade gun holds itself. The pump guns stay props: the plugin carries the double alone (DECISIONS
+2026-11-09, last: "I don't want the single barrel shotgun, only the double barrel one").
+
+
+
+## 31. Cartridges: the shells and their box, customizable (DECISIONS 2026-11-09, later still)
+
+The user: "can you make a cartlidge [cartridge] prop for the shells that I can customize similar to cans and books".
+The `ammo` family (`families/ammo.py`, `CUSTOM = True`: §25) has the shotgun shells and the box they come in, every
+printed or stamped thing on them one of their own pictures (§15), seen on the prop's own picture as you lay yours
+(§25). The guide for the user: `guides/prop_customizer/`.
+
+- **`shell`**: the 12-gauge shell of §30, here now, its parts at their true sizes (the islands as long as the profile
+  they're turned from: the hull's print sits where it's drawn). Its hull is the design `shell_print` (`art`: `brand`,
+  `load`, `ink`, `mark`, `font`): the plastic in `hull`, and printed along its length on the side that faces you
+  (the print's middle faces -y, as a lathe's does), read from the brass toward the crimp, the brand, the load beside
+  it and a maker's mark near the brass. Its brass head is stamped round the primer (`stamp`: [the top's words, the
+  bottom's], pressed in). Own pictures: `hull.brand`, `hull.load`, `hull.mark` (turned a quarter, `rot` 90: your
+  picture runs along the hull, and the size it wants and its template are upright: `sizes.py`, the page's
+  `quarters`), `base.stamp` (a stamp: only its shape, pressed in). A fired one's hull island runs on down its inside,
+  dark beyond the lip; its print only on the outside (`_outside_mm`).
+- **`box`**: a printed card box: `count` shells, `arrange` `lie` (side by side in rows of five, the print up, the brass
+  toward the front, in layers: five make 116 x 69 x 25 mm) or `stand` (heads up in rows of five, only their tops built:
+  twenty-five make 117 x 117 x 70 mm); card `thick` 0.8 mm. Its walls are panels (`_panel`: an outside on its island,
+  an inside on the `inside` material's, the cut edges a line of the outside's foot), its lid a panel with a tuck flap
+  hinged along the back's top: a part that opens (§26), `open` the degrees it's made open (the lid built turned up,
+  the part's `built`), 110 its open in play. The shells inside are the shell's own mesh (14 sides, coarse) on the
+  shell's islands (`brass`, `hull`: `bake: false`, so the copies sharing them don't scramble an occlusion bake), as
+  the recipe's `shells` say (a shell recipe's keys: hull, brass_mm, art, stamp). Its print is the design `shell_box`
+  on each outside by `part` (`art`: `brand`, `gauge`, `length`, `load`, `pellets`, `speed`, `count`, `colors` [ground,
+  band, ink], `gold`, `hull`, `picture` shell | target | none, `warning`, `lot`, `tuck`): on the lid the gauge in a
+  dark disc, the brand, the load and its numbers, a shell drawn lying (or a target) and how many; on the front the
+  brand and the load; on the back the brand, a warning and a barcode; the gauge on the ends; the lot on the bottom;
+  "tuck in to close" on the flap. The inside plain card (`inside`). Own pictures: `lid.brand`, `lid.gauge`, `lid.load`,
+  `lid.specs`, `lid.count`, `lid.art`, `front.brand`, `front.load`, `back.brand`, `back.warning`, `left.gauge`,
+  `right.gauge`, `bottom.lot`, `flap.words`, and the shells' (`hull.*`, `base.stamp`). `inside`: the box's inside, a
+  container's; sockets `lid`, `front`; `extras.ammo` its count and arrangement.
+- **Worn card**: the wear's own edges and dirt read the mesh's curvature, which a flat panel with vertices only at its
+  corners spreads over the whole face (LESSONS 2026-11-09): the card's `edges` and `dirt` are off (the materials' own
+  `wear`) and its edges are painted by each texel's distance from its face's edges (`_worn_edges`: a ragged band
+  through the print to the board, the corners most), from the recipe's `wear.edges`.
+
+Recipes: `shell_12ga` (red, high brass), `shell_12ga_spent`, `shells_box_5` (five lying, shut: the weapons plugin's box
+of shells), `shells_box_5_open` (open 105°), `shells_box_25` (twenty-five standing in a green box of birdshot, open);
+**the explosive kind's** (DECISIONS 2026-11-09, latest: the weapons plugin's second shell kind) `shell_12ga_explosive` (a
+black hull printed in orange, high brass, its head stamped `12 GA HE`), `shell_12ga_explosive_spent` and
+`shells_box_5_explosive` (a black and orange box of five, "HE BURST SLUG", its warning its own), each `from` its normal
+one with what differs. PROPGEN's cases have `shell_12ga`, `shells_box_5` and `shells_box_25`; THUMBS keeps all eight with
+their passes. Into the weapons plugin: `shell_12ga.glb`, `shell_12ga_spent.glb`, `shells_box_5.glb` and the three
+explosive ones copied into its `models/` (the explosive kind, `shells/explosive.tres`, wears its shell and hull; a
+pickup of that kind its box).

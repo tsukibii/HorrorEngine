@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The prop customizer</title>
+<!-- How to put your own pictures on the prop generator's customizable props (docs/PROPGEN.md §13, §15, §17, §25;
+     DECISIONS 2026-11-09). Nothing loads from outside: the pictures in img/ are the real page, driven and pictured by
+     node tools/propgen/guide_shots.mjs (GUIDEPROPS); examples/ has the two pictures it uses, to try it with. -->
+<style>
+:root{--bg:#121214;--panel:#1b1b1f;--panel2:#232329;--line:#33333b;--text:#e6e3dc;--dim:#9a978f;--accent:#e2b84f;--warn:#e0a030;--cue:#9fd39a}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{display:grid;grid-template-columns:250px minmax(0,1fr);max-width:1240px;margin:0 auto}
+nav.toc{position:sticky;top:0;height:100vh;overflow:auto;padding:28px 18px 28px 22px;border-right:1px solid var(--line);font-size:13.5px}
+nav.toc .brand{font-weight:700;letter-spacing:.06em;color:var(--accent);font-size:12px;text-transform:uppercase;margin-bottom:14px}
+nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:s}
+nav.toc li{counter-increment:s}
+nav.toc li a{display:flex;gap:8px;padding:4px 8px;border-radius:6px;color:var(--text)}
+nav.toc li a::before{content:counter(s);color:var(--dim);min-width:18px;text-align:right;font-variant-numeric:tabular-nums}
+nav.toc li a:hover,nav.toc li a.on{background:var(--panel2);text-decoration:none}
+nav.toc li a.on{color:var(--accent)}
+nav.toc .back{display:block;margin-top:18px;color:var(--dim);font-size:12.5px}
+main{padding:34px 44px 90px;min-width:0}
+header.hero{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:10px}
+header.hero h1{font-size:34px;line-height:1.15;margin:0 0 10px;letter-spacing:-.01em}
+header.hero p{color:var(--dim);font-size:16.5px;margin:0;max-width:740px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--dim);background:var(--panel)}
+section{padding-top:30px;max-width:920px}
+h2{font-size:24px;margin:16px 0 6px;display:flex;align-items:baseline;gap:12px}
+h2 .n{color:var(--accent);font-size:15px;font-variant-numeric:tabular-nums;font-weight:600}
+h3{font-size:16.5px;margin:22px 0 4px}
+p{margin:8px 0}
+ul,ol.steps{padding-left:22px;margin:8px 0}
+li{margin:3px 0}
+kbd{font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:2px 6px;color:var(--text);white-space:nowrap}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow:auto;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ui{font-weight:600;color:#f2e6cc}
+.node{font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfe3f2}
+figure{margin:16px 0 20px;max-width:100%}
+figure img{display:block;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.45);background:var(--panel)}
+figcaption{color:var(--dim);font-size:13px;margin-top:7px}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;margin:14px 0}
+.pair figure{margin:0}
+.tip{border-left:3px solid var(--accent);background:linear-gradient(90deg,rgba(226,184,79,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.tip b{color:var(--accent)}
+.note{border-left:3px solid var(--cue);background:linear-gradient(90deg,rgba(159,211,154,.08),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet{border-left:3px solid var(--warn);background:linear-gradient(90deg,rgba(224,160,48,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet b{color:var(--warn)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:12px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h4{margin:0 0 4px;font-size:14px}
+.card p{margin:0;color:var(--dim);font-size:13.5px}
+table.keys{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+table.keys td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.keys td:first-child{white-space:nowrap;width:1%}
+.tree{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;overflow:auto}
+.tree i{color:var(--dim);font-style:normal}
+footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:var(--dim);font-size:13px}
+@media (max-width:900px){.wrap{display:block}nav.toc{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 16px}nav.toc ol{columns:2;column-gap:14px}main{padding:22px 16px 60px}header.hero h1{font-size:27px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc">
+  <div class="brand">The prop customizer</div>
+  <ol>
+    <li><a href="#what">What it is</a></li>
+    <li><a href="#open">Opening the page</a></li>
+    <li><a href="#find">Finding a prop to customize</a></li>
+    <li><a href="#words">Its words and colours first</a></li>
+    <li><a href="#editor">The picture editor</a></li>
+    <li><a href="#yours">Your pictures</a></li>
+    <li><a href="#swap">Swapping one of its own pictures</a></li>
+    <li><a href="#place">Putting a picture anywhere</a></li>
+    <li><a href="#whole">A whole part, or the whole texture</a></li>
+    <li><a href="#smudges">Smudges and repeats</a></li>
+    <li><a href="#preview">Seeing it before it's made</a></li>
+    <li><a href="#make">Making it and keeping it</a></li>
+    <li><a href="#shells">The shells and their box</a></li>
+    <li><a href="#game">Into the game</a></li>
+    <li><a href="#recipe">In the recipe, by hand</a></li>
+    <li><a href="#keys">Keys</a></li>
+    <li><a href="#tips">Good to know</a></li>
+  </ol>
+  <a class="back" href="../weapons/index.html">The Weapons plugin →</a>
+  <a class="back" href="../index.html">← All guides</a>
+</nav>
+<main>
+<header class="hero">
+  <h1>The prop customizer</h1>
+  <p>Your own pictures on the studio's props: a brand on a can, a cover on a book, a logo on a box of shells, a price
+  sticker slapped on its lid. Dragged onto the prop's texture in the prop generator's page, seen on the prop's own
+  picture before anything is made, then made into a model for Godot with the wear and the shading over them.</p>
+  <div class="chips"><span class="chip">the prop generator's page</span><span class="chip">Texture &amp; pictures</span>
+  <span class="chip">✎ customizable props</span><span class="chip">PNG, JPEG, Krita .ora</span><span class="chip">no Blender to preview</span></div>
+</header>
+
+<section id="what">
+<h2><span class="n">1</span>What it is</h2>
+<p>Every prop the studio makes is a <b>recipe</b> (in <code>Content/Studio/Props/presets.json</code>) that the prop
+generator turns into a model in Blender. Some props are <b>customizable</b> (marked <b>✎</b>): what's printed on them
+is made of <b>their own pictures</b>, each in a box you can swap for yours. They are the cans, bottles, cups, boxes,
+paper (receipts, notes, newspapers, talismans), books, pill bottles, appliances' fake brands, charms (ema, omamori),
+mugs and jars, and now <b>the shotgun shells and their box</b>.</p>
+<p>Any prop takes your pictures as stickers, stamps and stains (decals and smudges). A customizable one also
+<b>shows them on its own picture before it's made</b>: the page lays your pictures on the prop's rendered picture, lit
+as Blender will light them, in the browser, as you drag.</p>
+<div class="note">Everything you do here is written into the recipe as plain words (<code>pictures</code>,
+<code>decals</code>, <code>sheets</code>, <code>smudges</code>), and the pictures you drop in are kept in
+<code>Content/Studio/Props/images/</code>. Make bakes it all into the prop's textures, under its wear.</div>
+</section>
+
+<section id="open">
+<h2><span class="n">2</span>Opening the page</h2>
+<p>From the project's folder:</p>
+<pre>python tools/propgen/serve.py
+# then open http://127.0.0.1:8799</pre>
+<p>Or start it from the dashboard (<code>python dashboard.py</code>, the <b>Prop generator</b> tile) or the launcher
+(<code>./studio</code>). The page needs no Blender to look at props and preview your pictures; <b>Make</b> runs Blender
+(the project's own, set up by <code>tools/retarget.py setup</code>, or one on your PATH).</p>
+</section>
+
+<section id="find">
+<h2><span class="n">3</span>Finding a prop to customize</h2>
+<p>Every card is a recipe, its picture the last time it was made here, or the one kept in the project (marked
+<i>kept</i>). Click <span class="ui">✎ customizable</span> in the bar at the top to see only the customizable ones;
+type in the search box to find one by its name, its family or its words (<code>shells</code>, <code>can</code>,
+<code>book</code>).</p>
+<figure><img src="img/customizable.jpg" width="1600" height="1000" alt="The gallery showing only the customizable props"><figcaption>The ✎ customizable filter on: cans, bottles, cups, paper, boxes, books and the rest, every card marked ✎.</figcaption></figure>
+<p>A badge on a card says more: <i>not made yet</i> (only its recipe), <i>made with changes</i> (made with settings
+its recipe doesn't have), <i>older picture</i> (its recipe changed since its picture was kept). Click a card to open
+it on the right.</p>
+</section>
+
+<section id="words">
+<h2><span class="n">4</span>Its words and colours first</h2>
+<p>Much of what's printed is words and colours you can change without any picture: the <span class="ui">Settings</span>
+tab is the recipe as a form. On the box of shells that's its <b>brand</b>, <b>gauge</b>, <b>length</b>, <b>load</b>,
+<b>pellets</b>, <b>speed</b>, the box's <b>colors</b> (its ground, its dark band, its ink), the <b>gold</b>, the
+<b>picture</b> on its lid (a shell, a target or none), how many shells and whether they lie or stand, and how far
+its lid is open. Change one and Make: the generator draws it again in its own fonts.</p>
+<figure><img src="img/settings.jpg" width="1600" height="1000" alt="The box of shells opened into its form"><figcaption>Searched for "shells", the box of five opened: the family's notes at the top (▸ opens them), then every setting of its recipe.</figcaption></figure>
+<div class="tip"><b>Tip:</b> <span class="ui">+ a setting here</span> adds one the recipe doesn't have yet; × takes one out.
+The <span class="ui">Recipe JSON</span> tab is the same recipe as text.</div>
+</section>
+
+<section id="editor">
+<h2><span class="n">5</span>The picture editor</h2>
+<p>Open the <span class="ui">Texture &amp; pictures</span> tab. It takes the whole page, in three columns:</p>
+<div class="cols">
+  <div class="card"><h4>Left: layers and pictures</h4><p>The texture's <b>parts</b> (each face or piece of the prop), each
+  with <b>its own pictures</b> under it; <b>Your pictures</b> (+ Add); the <b>Smudges</b>. A click picks one, a
+  double-click zooms to it.</p></div>
+  <div class="card"><h4>Middle: the texture</h4><p>The prop's texture, flat: the parts at their real sizes, the
+  <b>cuts</b> (where the model is cut apart, in yellow), each part's name and size, and its own pictures as
+  <b>dashed boxes</b> (green once they're yours, red turned off). Drag pictures onto it.</p></div>
+  <div class="card"><h4>Right: settings and the prop</h4><p>The picked thing's settings (with nothing picked: how to use
+  it, a PBR set for the texture, its templates), and under them <b>On the prop</b>: <i>Its picture</i> and
+  <i>3D</i>.</p></div>
+</div>
+<figure><img src="img/editor.jpg" width="1600" height="1000" alt="The picture editor on the box of shells' card texture"><figcaption>The box of shells' printed card: its lid, bottom, back, front, both ends and the tuck flap, their own pictures listed on the left and boxed on the canvas; its picture on the right.</figcaption></figure>
+<ul>
+  <li><b>The bar over the canvas</b>: a button for each texture the prop has (the box has <span class="ui">card</span>,
+  <span class="ui">inside</span>, <span class="ui">brass</span> and <span class="ui">hull</span>: the printed card, its
+  plain inside, and the shells' brass and plastic); <span class="ui">Design</span> (the generator's paint with your
+  pictures over it, live) or <span class="ui">As made</span> (the made texture, wear and shading in); <span class="ui">Cuts</span>
+  and <span class="ui">Names</span>; the zoom, <span class="ui">Fit</span>, undo and redo.</li>
+  <li><b>Moving round</b>: the wheel zooms where the pointer is; drag the empty background (or hold Space, or drag with the
+  middle or right button) to pan; <kbd>Shift</kbd>+<kbd>1</kbd> fits it all; a double-click zooms to what's under it.
+  The line under the canvas says which part the pointer is over and where, in millimetres.</li>
+</ul>
+</section>
+
+<section id="yours">
+<h2><span class="n">6</span>Your pictures</h2>
+<p>Bring pictures in with <span class="ui">+ Add</span> under <i>Your pictures</i>, or drag files straight from your
+desktop onto the canvas (they're added on the way). PNG, JPEG, or a Krita <code>.ora</code>. They're kept in
+<code>Content/Studio/Props/images/</code>, so every recipe can use them.</p>
+<ul>
+  <li><b>A logo, a sticker, a stamp</b>: a PNG with a <b>transparent ground</b>. Dropped on a part it's placed where it
+  lands; its transparency cuts it out.</li>
+  <li><b>A label, a cover, a picture to fill a part</b>: an opaque picture. Dropped on a part it fills it (stretched to it
+  when it's the part's shape within a tenth, else covering it, the rest cut off).</li>
+  <li><b>The size it wants</b>: every part and picture says it (<i>wants 384 × 112 px</i>): twice the texture's pixels
+  there, so it's sharp close up and on a texture twice the size. Bigger is fine; smaller goes soft.</li>
+</ul>
+<div class="tip"><b>Try it</b> with the two pictures beside this guide, in <code>guides/prop_customizer/examples/</code>:
+<code>raven_logo.png</code> (a brand, transparent round it) and <code>price_sticker.png</code> (a shop's price sticker).</div>
+</section>
+
+<section id="swap">
+<h2><span class="n">7</span>Swapping one of its own pictures</h2>
+<p>Drag your picture onto one of the <b>dashed boxes</b>: it takes that picture's place. While you drag, the box you're
+over lights up and a label says what the drop will do. On the box of shells, the lid's brand is <code>lid.brand</code>;
+dropped there, your logo replaces <i>HARROW</i>, kept to its own shape inside the box.</p>
+<figure><img src="img/swap.jpg" width="1600" height="1000" alt="A logo dropped onto the lid's own brand"><figcaption>The raven logo dropped on the lid's brand: its layer says <i>raven_logo.png</i>, its settings are on the right, and the box's own picture (bottom right) shows it already, before anything is made.</figcaption></figure>
+<p>Its settings, on the right:</p>
+<ul>
+  <li><b>What's there</b>: your picture, the generator's own drawing, or nothing (turned off).</li>
+  <li><b>Every <i>brand</i> at once</b>: the same picture in every own picture of that name (the lid's, the front's,
+  the back's brand; or every shell's in a box).</li>
+  <li><b>Fit</b>: inside its box with its shape kept (the default), covering its box, stretched to it, or repeated over
+  it (a pattern). <b>Scale</b>, <b>Move across</b> and <b>up</b> (mm), <b>Turn</b> (quarter turns), <b>Mirrored</b>,
+  <b>Tint</b> (a one-colour logo recoloured), <b>Roughness</b>.</li>
+  <li><span class="ui">Its template</span>: the generator's own drawing there, at the size it wants, to paint over.</li>
+</ul>
+<p><kbd>Delete</kbd> on a swapped one gives it back its own drawing. Holding <kbd>Alt</kbd> as you drop puts the picture on
+the part instead of in the box.</p>
+</section>
+
+<section id="place">
+<h2><span class="n">8</span>Putting a picture anywhere</h2>
+<p>Drop a picture with a transparent ground on a part, away from its boxes: it's <b>placed</b> where it lands, half
+the part's size, and picked. Its <b>handles</b> work as in Figma:</p>
+<ul>
+  <li>drag it to <b>move</b> it (it snaps to the part's middle lines: a magenta guide); onto another part of the same
+  texture, it goes there;</li>
+  <li>a <b>corner</b> sizes it with its shape kept (<kbd>Shift</kbd>: freely; <kbd>Alt</kbd>: about its middle), a
+  <b>side</b> stretches it;</li>
+  <li>the <b>round handle</b> above it turns it (<kbd>Shift</kbd>: 15° steps);</li>
+  <li>the arrows nudge it 1 mm (<kbd>Shift</kbd>: 10).</li>
+</ul>
+<figure><img src="img/place.jpg" width="1600" height="1000" alt="A price sticker placed on the lid, its handles showing"><figcaption>The price sticker placed in the lid's corner and sized down by its corner handle; its settings on the right (where, how big, its turn, opacity, roughness, how raised); the box's picture shows it on the lid.</figcaption></figure>
+<p>Its settings say which part it's on, its <b>Fit</b> (where you put it; filling the part, stretched or its shape
+kept; inside the part; across its width; up its height), its place and size in mm, its turn, opacity, roughness,
+metal and how <b>raised</b> it stands. Under <i>more</i>, it can be a <b>flourish</b>: repeated along the part, or one in
+each corner, mirrored to face it.</p>
+</section>
+
+<section id="whole">
+<h2><span class="n">9</span>A whole part, or the whole texture</h2>
+<ul>
+  <li><b>A whole part</b>: drop an opaque picture on it, or pick the part (on the left) and use <span class="ui">Fill it
+  with</span>. The part's settings say its size, its shape and the picture it wants; <span class="ui">Its template</span>
+  is the part as it's painted now with its cuts, to paint over. A part that goes round the prop (a can's label, a
+  shell's hull) wants a picture whose left and right edges meet.</li>
+  <li><b>The whole texture at once</b> (a <i>sheet</i>): with nothing picked, <span class="ui">Template (.ora)</span>
+  downloads the whole layout for Krita: the paint on <i>Base</i>, the cuts, boxes and names on <i>Guide</i> (locked),
+  and an empty <i>Paint</i> layer for you. Paint on it, save, and drop the <code>.ora</code> back onto the canvas: your
+  Paint layer lies over the whole texture, each part getting its own piece. <span class="ui">Template (.png)</span> is
+  the same flattened, for any other painter. A picture the texture's shape, or one dropped off the parts, or with
+  <kbd>Shift</kbd>, goes over the whole texture too.</li>
+</ul>
+<div class="note">A sheet keeps each part's piece even if the recipe's sizes change later; a part that wasn't in the
+layout takes none (the editor says which, and <i>Lay it in the layout as it is now</i> takes the layout again).</div>
+</section>
+
+<section id="smudges">
+<h2><span class="n">10</span>Smudges and repeats</h2>
+<p>Under <i>Smudges</i> on the left are nine stains drawn by code: a coffee ring, a fingerprint, grease, a drip, soot,
+a water mark, blood, dust and rust. Drag one onto a part: it lands there. Its settings: <b>multiply</b> (darkens, as
+coffee, soot, grease or blood do) or <b>mix</b> (lays its colour, as dust or water marks), its strength, tint,
+roughness (grease shiny, dust matt), how raised, and a <b>count</b> to scatter that many at random. Your own pictures
+work as smudges too (a PNG transparent round it, or a picture dark on white).</p>
+</section>
+
+<section id="preview">
+<h2><span class="n">11</span>Seeing it before it's made</h2>
+<p>Under the settings, <b>On the prop</b> has two views:</p>
+<ul>
+  <li><span class="ui">Its picture</span> (a customizable prop opens on it): the prop's own rendered picture with what
+  you've laid since it was made, lit and toned as Make will light it. Where an own picture was swapped, its ground
+  shows under yours, so a new logo hides the old one. It costs a few milliseconds a change: no Blender.</li>
+  <li><span class="ui">3D</span>: the made model wearing the canvas as you edit; drag to turn it, the wheel to come
+  closer; a click on it picks the part there.</li>
+</ul>
+<p>A picture moved or taken out since the last make still shows where it was in <i>Its picture</i>, and an own picture
+given back its drawing shows empty, until it's made again: the note under the picture says so. A prop that isn't made
+on your machine opens from what the project keeps of it (<i>kept · not made here</i>): its picture and its parts
+work, but there are no cuts and no 3D until it's made.</p>
+</section>
+
+<section id="make">
+<h2><span class="n">12</span>Making it and keeping it</h2>
+<p>The bar under the editor:</p>
+<ul>
+  <li><b>Make as</b>: the name it's made under. Leave its own name to make it again, or type a new one to make a
+  variant (the recipe isn't changed by a make).</li>
+  <li><b>Texture</b>: the texture's size (the recipe's, or 512, 1024, 2048). <b>Variations</b>: several made at once,
+  each another roll of the dice (<code>_v1</code>, <code>_v2</code>…). <b>Seed</b> and 🎲. <b>all formats</b>: FBX, OBJ
+  and .blend beside the glb.</li>
+  <li><span class="ui">Make</span> runs Blender in the background, its log underneath; the card's picture changes when
+  it's done.</li>
+</ul>
+<figure><img src="img/made.jpg" width="1600" height="1000" alt="The box made under a new name, its log under the editor"><figcaption>Made as <code>shells_box_raven</code> (38 s): the log under the editor, and the made box in 3D wearing the logo and the sticker.</figcaption></figure>
+<ul>
+  <li><span class="ui">Save</span> (<kbd>Ctrl</kbd>+<kbd>S</kbd>) writes the settings into the recipe you opened;
+  <span class="ui">Save as new</span> keeps them as a new recipe under <i>Make as</i>'s name, written as
+  <code>from</code> the recipe it started from and only what differs. Every save keeps a copy of
+  <code>presets.json</code> first (<code>Saved/Props/_history/</code>, the last 50).</li>
+  <li><span class="ui">To the library</span> puts the made prop where a story places it (<code>asset props/&lt;name&gt;</code>).
+  <span class="ui">Delete</span> takes a recipe out.</li>
+</ul>
+<figure><img src="img/saved.jpg" width="1600" height="1000" alt="The new recipe's card and its JSON"><figcaption>Saved as new: its card in the gallery, and its recipe ending with <code>pictures</code> (the logo in <code>lid.brand</code>) and <code>decals</code> (the sticker on the lid). (Here the pictures are in a scratch folder; yours are in <code>Content/Studio/Props/images/</code>.)</figcaption></figure>
+</section>
+
+<section id="shells">
+<h2><span class="n">13</span>The shells and their box</h2>
+<p>The <code>ammo</code> family: a 12-gauge shell and a printed card box of them, everything printed or stamped on
+them its own pictures.</p>
+<div class="cols">
+  <div class="card"><h4>shell_12ga, shell_12ga_spent</h4><p>A shell, live or fired. Its hull printed along its length on
+  the side that faces you: <code>hull.brand</code>, <code>hull.load</code>, <code>hull.mark</code>; its brass head stamped
+  round the primer: <code>base.stamp</code>. Settings: <b>hull</b> (its colour), <b>brass_mm</b>, <b>art</b> (brand, load,
+  ink, mark), <b>stamp</b> (the head's words).</p></div>
+  <div class="card"><h4>shells_box_5, shells_box_5_open</h4><p>A box of five lying side by side, its lid shut or open, the
+  shells inside (the weapons plugin's box of shells). Its own pictures: <code>lid.brand</code>, <code>lid.gauge</code>,
+  <code>lid.load</code>, <code>lid.specs</code>, <code>lid.count</code>, <code>lid.art</code>, <code>front.brand</code>,
+  <code>front.load</code>, <code>back.brand</code>, <code>back.warning</code>, <code>left.gauge</code>,
+  <code>right.gauge</code>, <code>bottom.lot</code>, <code>flap.words</code>, and the shells' own.</p></div>
+  <div class="card"><h4>shells_box_25</h4><p>Twenty-five standing heads up in a green box of birdshot, its lid open.
+  Any count: <b>count</b> and <b>arrange</b> (<code>lie</code> or <code>stand</code>); <b>open</b> the degrees its lid
+  is made open (in Godot the lid is a part on its hinge that opens).</p></div>
+</div>
+<p>A shell's print runs along its hull, so its own pictures are turned a quarter: a logo dropped on
+<code>hull.brand</code> runs along the hull, read from the brass. In a box, the shells inside wear the same pictures
+(<span class="ui">hull</span> and <span class="ui">brass</span> in the bar): one logo on <code>hull.brand</code> is on
+every shell.</p>
+<figure><img src="img/shell.jpg" width="1600" height="1000" alt="A logo on the shell's hull"><figcaption>The shell's hull texture: the logo dropped on its own brand runs along the hull; its own picture shows it.</figcaption></figure>
+</section>
+
+<section id="game">
+<h2><span class="n">14</span>Into the game</h2>
+<p>A make writes <code>Saved/Props/&lt;name&gt;/&lt;name&gt;.glb</code> (with its textures inside) and
+<code>&lt;name&gt;.tscn</code>, the prop ready to drop into a Godot project. For a story, <span class="ui">To the library</span>.
+For the <b>Weapons plugin's</b> box of shells and the shells it loads, make <code>shells_box_5</code> and
+<code>shell_12ga</code> (keep their names) and copy the glbs over the plugin's:</p>
+<pre>python tools/propgen.py make shells_box_5 shell_12ga shell_12ga_spent
+cp Saved/Props/shells_box_5/shells_box_5.glb Saved/Props/shell_12ga/shell_12ga.glb \
+   Saved/Props/shell_12ga_spent/shell_12ga_spent.glb GodotPlugins/HorrorStudioWeapons/addons/horrorstudio_weapons/models/
+python tools/godot_byhand.py install ~/Games/MyGame      # the plugins again in your project</pre>
+<div class="pair">
+<figure><img src="../weapons/img/box.jpg" width="1600" height="900" alt="The box of shells lying in the corridor"><figcaption>The Weapons plugin's box of shells where it lies (an <span class="node">HSWeaponPickup</span> of kind shells).</figcaption></figure>
+<figure><img src="../weapons/img/box_open.jpg" width="1600" height="900" alt="The box of shells with its lid open"><figcaption>Its <b>Lid Open</b> set: the lid swung on its hinge, the five shells showing.</figcaption></figure>
+</div>
+</section>
+
+<section id="recipe">
+<h2><span class="n">15</span>In the recipe, by hand</h2>
+<p>Everything above is plain words in the recipe, so you can write it yourself (or check what the page wrote):</p>
+<pre>"shells_box_raven": {"from": "shells_box_5",
+  "pictures": {"lid.brand": "Content/Studio/Props/images/raven_logo.png",
+               "*.brand": {"image": "Content/Studio/Props/images/raven_logo.png", "tint": "#e8c466"},
+               "lid.art": false},
+  "decals": [{"image": "Content/Studio/Props/images/price_sticker.png", "island": "lid",
+              "x": 97.5, "y": 55.4, "w": 26.6, "rot": -8}],
+  "smudges": [{"image": "smudge/grease", "island": "lid", "x": 30, "y": 20, "w": 18, "strength": 0.6}],
+  "sheets": [{"image": "Content/Studio/Props/images/my_layout.png", "mat": "card"}]}</pre>
+<ul>
+  <li><code>pictures</code>: an own picture by its id (<code>&lt;part&gt;.&lt;name&gt;</code>), a <code>*</code> for every one
+  that matches, <code>false</code> for nothing there; a picture's settings: <code>fit</code>, <code>scale</code>,
+  <code>dx</code>, <code>dy</code>, <code>rot</code>, <code>flip</code>, <code>tint</code>, <code>rough</code>.</li>
+  <li><code>decals</code>: a picture on a part (<code>island</code>) at <code>x</code>, <code>y</code> (mm, its middle),
+  <code>w</code>/<code>h</code>, <code>rot</code>, or <code>fit</code> (<code>stretch</code>, <code>cover</code>,
+  <code>contain</code>, <code>width</code>, <code>height</code>); <code>repeat</code> or <code>corners</code> for a flourish.</li>
+  <li><code>smudges</code>, <code>sheets</code>: as in sections 9 and 10.</li>
+</ul>
+<p>Every prop's own pictures, with the size each wants, are listed in <code>docs/PROPGEN_PICTURES.md</code>
+(<code>python tools/propgen.py pictures</code> writes it again).</p>
+</section>
+
+<section id="keys">
+<h2><span class="n">16</span>Keys</h2>
+<table class="keys">
+<tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> (or <kbd>Ctrl</kbd>+<kbd>Y</kbd>)</td><td>undo / redo</td></tr>
+<tr><td><kbd>Delete</kbd></td><td>take the picked picture out (an own picture: back to its own drawing)</td></tr>
+<tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>duplicate it</td></tr>
+<tr><td><kbd>Ctrl</kbd>+<kbd>]</kbd> / <kbd>Ctrl</kbd>+<kbd>[</kbd></td><td>draw it over / under the next one</td></tr>
+<tr><td>arrows (<kbd>Shift</kbd>: ×10)</td><td>nudge it 1 mm</td></tr>
+<tr><td><kbd>Escape</kbd></td><td>let go of it</td></tr>
+<tr><td>wheel, <kbd>+</kbd> / <kbd>-</kbd></td><td>zoom</td></tr>
+<tr><td>drag the background, <kbd>Space</kbd>, middle or right drag</td><td>pan</td></tr>
+<tr><td><kbd>Shift</kbd>+<kbd>1</kbd> / <kbd>Shift</kbd>+<kbd>2</kbd></td><td>fit it all / zoom to the picked one</td></tr>
+<tr><td><kbd>Alt</kbd> while dropping</td><td>on the part, not in an own picture's box</td></tr>
+<tr><td><kbd>Shift</kbd> while dropping</td><td>over the whole texture (a sheet)</td></tr>
+<tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>save the recipe</td></tr>
+</table>
+</section>
+
+<section id="tips">
+<h2><span class="n">17</span>Good to know</h2>
+<ul>
+  <li><b>The wear goes over your pictures</b>: the folds, dents, scratches, grime and the baked shading are laid on
+  top when it's made, so a logo on a crushed can bends and scuffs with it.</li>
+  <li><b>Transparency matters</b>: a logo on a white square is placed as a white square. Cut it out (a PNG with alpha).</li>
+  <li><b>Round parts have a seam</b> at the back: a picture over a can's label or a shell's hull wants its left and right
+  edges to meet, or the back shows a line. A picture in the middle of the front needs nothing.</li>
+  <li><b>A name taken</b>: a picture dropped in under a name another picture has gets <code>_2</code>, <code>_3</code>…
+  (the same picture again is kept once).</li>
+  <li><b>Undo is the page's</b>; <b>Save</b> is what changes the recipe. Leaving with unsaved changes asks first.</li>
+  <li>Every brand the generator draws is made up (HARROW, KAZE…): swap in yours freely.</li>
+</ul>
+</section>
+
+<footer>The prop customizer: the prop generator's page (<code>tools/propgen/serve.py</code>, docs/PROPGEN.md §13, §15,
+§17, §25). The pictures are the real page, driven in a headless browser on a scratch copy of the recipes
+(<code>node tools/propgen/guide_shots.mjs</code>, GUIDEPROPS); the two in the Weapons plugin's section are its own check's.</footer>
+</main>
+</div>
+<script>
+// the contents follow the reading: the section on screen is lit
+const links = [...document.querySelectorAll("nav.toc ol a")], secs = links.map(a => document.querySelector(a.getAttribute("href")));
+const lit = () => { let at = 0; secs.forEach((s, i) => { if (s && s.getBoundingClientRect().top < 140) at = i; }); links.forEach((a, i) => a.classList.toggle("on", i === at)); };
+addEventListener("scroll", lit, { passive: true }); lit();
+</script>
+</body>
+</html>

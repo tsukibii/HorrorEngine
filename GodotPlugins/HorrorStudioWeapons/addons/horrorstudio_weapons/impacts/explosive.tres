@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="HSImpact" format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_weapons/impacts/impact.gd" id="1_impact"]
+[ext_resource type="Resource" path="res://addons/horrorstudio_weapons/impacts/fireball.tres" id="2_fireball"]
+
+[resource]
+script = ExtResource("1_impact")
+title = "Explosive"
+mark = "scorch"
+mark_size_m = 1.3
+mark_jitter = 0.12
+keep = 24
+embers_s = 5.0
+embers_energy = 3.0
+dust = 22
+chips = 26
+sparks = 2
+debris_speed = 3.5
+debris_scale = 2.5
+debris_max = 1
+radius_m = 2.2
+power = 4.5
+damage = 6.0
+fireball = ExtResource("2_fireball")
+light_energy = 9.0
+shake = 1.6
+shake_m = 9.0
+noise = 6.0
+ring_secs = 3.5
