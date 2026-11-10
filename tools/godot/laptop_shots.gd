@@ -79,8 +79,6 @@ func _run() -> void:
 	await shot("boot")
 	await secs(2.5)
 	await shot("home")
-	if only.is_empty() or only.has("screen"):
-		lap.screen.get_texture().get_image().save_png(out.path_join("screen.png"))   # the terminal's own picture
 	var od: Node = lap.term.order
 	await click(lap, centre(lap.term.find_child("Browse", true, false)))
 	await click(lap, centre(od.cards["batteries"]))
