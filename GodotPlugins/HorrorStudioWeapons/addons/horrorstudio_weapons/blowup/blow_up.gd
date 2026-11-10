@@ -73,6 +73,7 @@ var _clink_t := 0.0
 var _broke_s := 0.0
 var _chip_meshes := {}
 var _fell := 0
+var _unsunk := 0                                     # pieces put back on top of a floor they'd gone under (a check's)
 var _puff: Mesh
 
 
@@ -122,7 +123,7 @@ func is_prepared() -> bool:
 func report() -> Dictionary:
 	return {"kind": _k.id if _k != null else "", "strength": _strength(), "prepared": _done, "damage": damage,
 		"broken": is_broken, "leaves": (_res.get("leaves", []) as Array).size(), "whole": (_res.get("whole", []) as Array).size(),
-		"cut": _res.get("report", {}), "dents": _dents.size(), "fell": _fell}
+		"cut": _res.get("report", {}), "dents": _dents.size(), "fell": _fell, "unsunk": _unsunk}
 
 
 # ---- what it's made of ------------------------------------------------------------------------------------------
@@ -831,6 +832,13 @@ func _piece(lfs: Array, F: Transform3D, at: Vector3, dir: Vector3, power: float,
 		var near := clampf(1.25 - rr.length() / maxf(R * 2.0, 0.05), 0.3, 1.2)
 		v = (dir * 0.8 + out * 0.45 + Vector3.UP * 0.15).normalized() * sp * near * randf_range(0.75, 1.25)
 	v += base_v
+	if rb != null and v.y < -0.4:
+		# on a floor already (a thing on the floor shot from above): the floor takes its fall at once, as it would; a
+		# level's floor is one-sided, and a piece driven into it a few centimetres a step is under it before it can stop
+		var low := _lowest(rb, lfs, c)
+		var fq := PhysicsRayQueryParameters3D.create(Vector3(cw.x, low + 0.02, cw.z), Vector3(cw.x, low - 0.12, cw.z), 1)
+		if not get_world_3d().direct_space_state.intersect_ray(fq).is_empty():
+			v.y = -0.4
 	var spin := Vector3(randfn(0.0, 1.0), randfn(0.0, 1.0), randfn(0.0, 1.0)).normalized() * _k.spin * randf_range(0.3, 1.0)
 	if r > 0.06:
 		spin *= 0.6
@@ -857,11 +865,17 @@ func _piece(lfs: Array, F: Transform3D, at: Vector3, dir: Vector3, power: float,
 
 
 # a piece whose collider (thicker than it) starts in the floor it stood on: lifted clear of it, or it jitters there
-func _lift_clear(rb: RigidBody3D, lfs: Array, c: Vector3) -> void:
+# the lowest point of a piece's collider in the world
+func _lowest(rb: RigidBody3D, lfs: Array, c: Vector3) -> float:
 	var low := INF
 	for lf in lfs:
 		for p in (lf["shape"] as ConvexPolygonShape3D).points:
 			low = minf(low, (rb.global_transform * ((p as Vector3) - c)).y)
+	return low
+
+
+func _lift_clear(rb: RigidBody3D, lfs: Array, c: Vector3) -> void:
+	var low := _lowest(rb, lfs, c)
 	if low == INF:
 		return
 	var at := rb.global_position
@@ -1024,6 +1038,7 @@ func _physics_process(dt: float) -> void:
 			continue
 		e["cool"] = maxf(float(e["cool"]) - dt, 0.0)
 		if not bool(e["frozen"]):
+			_unsink(e, rb, space)
 			e["age"] = float(e["age"]) + dt
 			var v := rb.linear_velocity.length()
 			var slow := v < 0.08 and rb.angular_velocity.length() < 0.8
@@ -1042,6 +1057,34 @@ func _physics_process(dt: float) -> void:
 			_kick(e, pl, pv)
 	for b in _bits:
 		_bit_step(b, dt, space, pl, pv)
+
+
+# a piece whose middle has gone under a floor it fell onto (a level's floor is a one-sided mesh: driven into it hard, the
+# physics let it in and nothing pushes it back out, and it falls out of the world): back on top, its fall taken off
+func _unsink(e: Dictionary, rb: RigidBody3D, space: PhysicsDirectSpaceState3D) -> void:
+	var c := rb.global_position
+	var q := PhysicsRayQueryParameters3D.create(c + Vector3.UP * 0.15, c, 1)
+	var ex: Array = []
+	for o in _rigid:
+		if is_instance_valid(o["body"]):
+			ex.append((o["body"] as RigidBody3D).get_rid())
+	var pl := get_tree().get_first_node_in_group("hs_player")
+	if pl is CollisionObject3D:
+		ex.append((pl as CollisionObject3D).get_rid())
+	q.exclude = ex
+	var h := space.intersect_ray(q)
+	if h.is_empty() or (h["normal"] as Vector3).y < 0.7:
+		return
+	var low := INF
+	for p in e["pts"]:                                   # (its own points: a cut piece's and a whole part's alike)
+		low = minf(low, (rb.global_transform * (p as Vector3)).y)
+	if low == INF:
+		return
+	rb.global_position.y += (h["position"] as Vector3).y - low + 0.002
+	var lv := rb.linear_velocity
+	rb.linear_velocity = Vector3(lv.x * 0.6, absf(lv.y) * 0.2, lv.z * 0.6)
+	e["unsunk"] = int(e.get("unsunk", 0)) + 1
+	_unsunk += 1
 
 
 # come to rest: held there (a static body), laid down onto what it's on (its collider is thicker than it)

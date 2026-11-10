@@ -3,6 +3,14 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## A level's floor has one side: HSBlowUp's pieces under it (2026-11-10)
+
+- **A level's floor is a one-sided mesh, and a fast piece can end up under it**: a mug's shard thrown down at the floor
+  by a shot from above sank 5 cm in two steps, continuous collision on and a 6 cm collider, and with its middle under
+  the surface nothing pushed it out: it fell out of the world, about one run in five. A piece starting on a floor keeps
+  none of its fall into it (the floor takes it at once), and a piece whose middle slips under a floor it fell onto is
+  put back on top (`_unsink`: a ray from 15 cm above its middle).
+
 ## Things that break when shot (HSBlowUp): what took a second try (2026-11-09)
 
 - **A sealed shell is not a solid**: the kettle is modelled as one closed surface, so filling every cut made its
