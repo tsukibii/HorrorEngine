@@ -89,6 +89,17 @@ const span = X => { let lo = Infinity, hi = -Infinity; for (let i = 1; i < X.len
   say(tall < 0.0005, `each age's body exactly its height with its feet on the floor (${(tall * 1000).toFixed(2)} mm off at most)`);
   say(worst < 0.015, `ages 8 to 17: the head's share of the height within ${(worst * 100).toFixed(1)}% of the growth chart's (${rows.filter((_, k) => k % 3 === 0).join("; ")})`);
   say(rise, "and each age's average height taller than the last");
+  // a head never shrinks as it grows up: at each base the skull (the body's scale: the head is the unit) no smaller than
+  // the year before and never bigger than the adult's at that base's adult height
+  {
+    let bad = [], rowsK = [];
+    for (const base of [-1, 0, 1]) {
+      const adult = grownBody(M, { age: 18, base }).scale; let prev = 0, ks = [];
+      for (let age = 8; age <= 18; age++) { const k = grownBody(M, { age, base }).scale / adult; if (k < prev - 2e-3 || k > 1 + 2e-3) bad.push(`${base}:${age} ${k.toFixed(4)}`); prev = k; ks.push(k); }
+      rowsK.push(`${base < 0 ? "feminine" : base > 0 ? "masculine" : "between"} ${(ks[0] * 100).toFixed(0)}% at 8, ${(ks[4] * 100).toFixed(0)}% at 12, ${(ks[6] * 100).toFixed(0)}% at 14`);
+    }
+    say(!bad.length, `a skull never shrinks growing up, nor outgrows the adult's: ${rowsK.join("; ")}${bad.length ? " (BAD " + bad.join(", ") + ")" : ""}`);
+  }
   // the build: with the sculpt's fields an eight-year-old's shoulders and hips narrower for the body than the adult's
   const a8 = GW.ageOf(8, 0, G), F = new Float32Array(N * 3);
   for (const c of S.controls) { const v = a8.sculpt[c.id]; if (!v) continue; for (let q = 0; q < c.idx.length; q++) { const i = c.idx[q] * 3; F[i] += v * c.d[q * 3]; F[i + 1] += v * c.d[q * 3 + 1]; F[i + 2] += v * c.d[q * 3 + 2]; } }

@@ -214,7 +214,12 @@ bigger or smaller against the rest, on MHR's own rig (a point belongs to an arm,
   the age sets the height to its average (girls' to boys' by the base); the height slider (now from 1.1 m) is still
   free. At eight on a 1.28 m body the head is 18.8 cm from chin to crown, its skull 93% of the adult's at 1.70 m (a real
   child's head is about 93% round at eight) over a face a tenth shorter: the body is sized to the head with its short
-  face counted, whether the age's own or a child's picture shortens it.
+  face counted, whether the age's own or a child's picture shortens it. And a head never shrinks growing up: the chart's
+  one column of head shares is nearer a boy's timing, and a girl is at her adult height two years sooner, so the share
+  is held to what gives the adult's skull at that age's height (unheld, a fourteen-year-old girl's skull came out 4%
+  bigger than at eighteen). The skull against the adult's of the same base: feminine 97% at eight and full from twelve,
+  halfway 94% and 98% at twelve, masculine 90%, 93% at twelve and 98% at fourteen (GROW holds it). A girl's earlier
+  timing in the build itself (`young`, `leggy`, `sexed` are one column for both) is not modelled.
 - **The age's face** (`CHILD_FACE`, times `young`): the face a tenth shorter from the eyes down (`face_height`: the
   nose, mouth, jaw and chin together toward the eyes' line; the eyes and ears stay), a narrower jaw, a smaller, shorter,
   flatter nose with a low bridge, a softer brow, a round lower face (`face_round`), bigger eyes (`eye_size`), a rounder

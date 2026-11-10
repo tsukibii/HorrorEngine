@@ -195,7 +195,11 @@ export function ageOf(age, base, G, face = 1) {
   // tenth of the face a slider, Chin length a centimetre), so the head measured as the chart measures it, chin to
   // crown, is that much shorter than MHR's own, whether the age's face or a child's picture shortens it; the body under
   // the chin is sized to that head (its legs' own change counted): a bigger skull over a small face, as a child's is
-  const r = M.r0 * head / TABLE[AGE_ADULT][0], short = -young * (CHILD_FACE.face_height * 0.1 * M.face + CHILD_FACE.chin_length * 0.01), h = M.head - short;
+  // A head never shrinks as it grows up: the chart's one column of head shares is nearer a boy's timing, and a girl
+  // is at her adult height two years sooner, so at fourteen its share of her height made her skull 4% bigger than at
+  // eighteen. The share is held to what gives the adult's skull at this age's height (the short face counted)
+  const short = -young * (CHILD_FACE.face_height * 0.1 * M.face + CHILD_FACE.chin_length * 0.01), h = M.head - short;
+  const r = Math.min(M.r0 * head / TABLE[AGE_ADULT][0], M.r0 * statureOf(AGE_ADULT, base) / statureOf(age, base) * h / M.head);
   const beta = h * (1 - r) / r / (M.body * (1 + 0.1 * leggy * M.legY / M.body));
   s.head_size = Math.log(beta) / Math.log(0.8);
   return { sculpt: s, young, sexed, age, height: statureOf(age, base) };

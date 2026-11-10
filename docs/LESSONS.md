@@ -52,6 +52,12 @@ the fix.
   (14 mm a slider at the back of the top): 1.6 mm under the hair at its default and 4 mm at its most, found by marks
   baked on the scalp, not by eye. The short face under the eyes already gives the high forehead; the lift is gone, and
   Cutify leaves the crown where it was.
+- **A table by age needs its results checked across the ages, not at one**: the head's share of the height came from
+  one column for girls and boys, checked at eight against the chart and by eye on a sheet. A girl reaches her adult
+  height two years before a boy, so the same share on her nearly adult height gave her a skull 4% bigger at fourteen
+  than at eighteen: a head that shrank as she grew up. Seen only when a hairstyle's scale was printed at four ages.
+  The share is capped at the adult's skull, and GROW walks every age at each base: never smaller than the year before,
+  never bigger than the adult's. A curve is checked for its shape (monotonic, bounded), not only for its points.
 - **A check too slow to run here goes stale without anyone knowing**: STUDIO stopped at its brows and lashes step,
   and EXPRESSIONS at its face row, both on things from before this work: the brows moved to a tab of their own on
   2026-10-31 and one step still looked for their switches in Face; the desk's body rows share the face rows' class
