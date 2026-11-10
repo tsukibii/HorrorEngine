@@ -2,6 +2,30 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-10, last (the user: the laptop's goods delivered in a box, things to unlock, pages)
+
+- **"Some things I want added . An option to chjoose a spawn location for the bought items, create an 'amazon' package
+  box for the arrived goods, and unboxed (press e to unbox/add to inventory) / make it easy to decide what item are
+  buyable / make the items unlockable by quests that are done (flags) / do a ? for non unlocked items, create a next
+  page for the buying item (rather than scrolling down), should have prev and next page, maybe a number system 1,2,3
+  where the current page has brackets [2]"**. So, on the branch `laptop`:
+  - **Delivery**: the laptop's `deliver_to` (a Marker3D or any Node3D: where what's bought arrives; none, and it goes
+    straight into the pocket as before), `delivery_secs` (how long it takes) and arriving only where the player isn't
+    looking; it comes as **a parcel**, a shipping carton like the ones online shops send, our own (no Amazon smile, no
+    brand of anyone's: the shop's own name printed on it), a new customizable prop generator recipe (the prop standard:
+    the `parcel` family, its four top flaps parts that open, its tape, its shipping label and its print its own
+    pictures); **E on it unboxes it**: the tape cut, the flaps open, what's inside shown a moment and put into the
+    pocket with its models (the HUD's row), the empty box left open.
+  - **What's for sale**: each thing's `for_sale` switch in its file (off: not in the shop at all), and a laptop's own
+    `sells` list (only these ids, when it has one).
+  - **Unlocked by what's been done**: a thing's `needs`, in the starter Story's words (`task:<id>` a quest's task done,
+    a fact set, `item:<name>`, `!` for not, several apart by commas); until it holds the thing is a **?** in the shop
+    (no model, `???`, not to be ordered, its `locked_text` said when it's picked), or left out (`show_locked` off);
+    newly unlocked, it's marked NEW.
+  - **Pages, not scrolling**: the Order tab a page at a time (`page_size`, six by default; a category never shares a
+    page, its name the page's heading), `< PREV` and `NEXT >` and the pages' numbers between them, the one shown in
+    brackets: `1 [2] 3`.
+
 ## 2026-11-10, later still (the user: a laptop to order things on, in a green terminal)
 
 - **"Make a new branch called laptop, similar to what we did for the retro props analyze and enhance the laptop and

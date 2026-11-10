@@ -1550,3 +1550,30 @@ toward the plus end edged in the ink, the brand along the cell, the size big in 
 sign in the band, a lot number; own pictures `wrap.brand` (along it, `rot` 90), `wrap.size`, `wrap.band`. Few rings
 where it's flat or straight (760 triangles a cell). Recipes `battery_aa`, `batteries_aa_2` (two lying: the shop's);
 PROPGEN's cases have `batteries_aa_2`; THUMBS keeps both.
+
+## 34. Parcels: a shipping carton whose flaps open, customizable (DECISIONS 2026-11-10, last)
+
+The laptop's shop delivers what's bought in a box like the ones online shops send (the user's "an 'amazon' package box
+for the arrived goods, and unboxed (press e to unbox/add to inventory)"), our own: no one's smile or brand, the shop's
+name printed on it. The `parcel` family (`families/parcel.py`, `CUSTOM = True`) builds a regular slotted carton of
+single-wall corrugated board from its `size` [length, width, height] mm (x, y, z) and `board` (3.5 mm, a C flute): the
+walls round the bottom, the front and back a board higher than the sides so the long flaps lie over the short ones,
+every flap half the width long. Each panel is a board (`_board`): its outside upright on its island, its inside read
+from inside, its four edges either **cut** (the flute: the `edge` island, a wave of the medium between two liners over
+the hollows, mapped at each edge's real length) or **folds** (the face's own border a board wide). The four flaps are
+**parts that open** (§26): `flap_front`, `flap_back` (the long ones, meeting along the middle with a 2 mm gap),
+`flap_left`, `flap_right` (the short ones, under), each a hinge along its wall's top, built shut (`open` true: built
+open, an emptied box), their open angles a little apart by the seed; `propgen_parcel` (`order`: the long ones first)
+tells a runtime the order to swing them. **The tape** (`taped`, its own glossy `tape` material): a 48 mm strip along the
+seam and 62 mm down each short side, in pieces mapped by where each lies along the run (so its print flows over the
+edges), cut along the seam (each half on its flap: open, it's as if a knife had run along it). **The shipping label**
+(`shipping_label`, its own `label` material): on the back flap, sized to what's left of it beside the tape. The kraft
+(`art.kraft`, `art.inside`) is mottled, with fibres and the flutes' ribs through its liner as relief (vertical on the
+walls, from the hinge on the flaps), its edges and corners scuffed (`wear.edges`), its foot grimy (`wear.grime`), the
+bottom's seam and its tape painted. Its own pictures: `front.logo`, `back.logo` (the shop's mark: a crescent, a star,
+`art.store` in Archivo Black, `art.tagline` under it), `flap_front.words`, `left.arrows` (this way up), `left.dry` (keep
+dry), `right.stamp` (a box maker's certificate, made up), `tape.print` (the name repeated), `label.label` (the whole
+label: from the shop, to OCCUPANT, a route code, a barcode, a tracking number). Its inside (`propgen_inside`) is between
+its walls and under its flaps. 130 triangles. Recipes `parcel` (305 x 229 x 152, NIGHT-MART's: the devices plugin's
+delivery box, `models/parcel.glb`), `parcel_small` (229 x 152 x 102), `parcel_open`; PROPGEN's cases have `parcel`;
+THUMBS keeps all three.

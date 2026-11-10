@@ -1236,5 +1236,10 @@
  "battery_aa": {"label": "an AA battery standing on its minus end, its wrap printed (a made-up brand)", "family": "cell", "size": "aa", "seed": 1,
    "art": {"brand": "OHMA", "colors": ["#16181d", "#e2a72a", "#f2f2ee"]}, "wear": {"edges": 0.15, "dirt": 0.1}},
  "batteries_aa_2": {"label": "two AA batteries lying side by side: the flashlight's spares as the laptop's shop sells them", "from": "battery_aa",
-   "count": 2, "seed": 2}
+   "count": 2, "seed": 2},
+ "parcel": {"label": "a shipping carton taped shut, its label on top, NIGHT-MART's print (made up): how the laptop's shop delivers, its four flaps parts that open",
+   "family": "parcel", "size": [305, 229, 152], "seed": 4,
+   "art": {"store": "NIGHT-MART", "tagline": "ORDERS TAKEN AT ANY HOUR"}},
+ "parcel_small": {"label": "a small shipping carton taped shut", "from": "parcel", "size": [229, 152, 102], "seed": 7},
+ "parcel_open": {"label": "a shipping carton opened, its flaps up and its tape cut along the seam, empty", "from": "parcel", "open": true, "seed": 5}
 }
