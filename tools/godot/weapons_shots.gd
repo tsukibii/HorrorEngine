@@ -8,7 +8,8 @@
 ## explosive (the explosive shell's flash), blast (its ball of fire down the corridor), scorch (the scorch and its
 ## embers after, the smoke rising); box and box_open (the box of shells where it lies, shut and open); react_hit,
 ## react_smoke, react_ichor, react_char, react_crumble, react_gone (someone who bleeds black ichor: HSHitReact on MHR's
-## body); blowup_before, blowup_burst, blowup_mug, blowup_after, blowup_close, blowup_cut (things that break when
+## body); ooze_wound, ooze_wall, ooze_tape, ooze_pool (the ichor alive, HSOoze: her wound, the spray on the wall with
+## its drips run, the same on camhybrid tape, the pool where she stood); blowup_before, blowup_burst, blowup_mug, blowup_after, blowup_close, blowup_cut (things that break when
 ## they're shot: HSBlowUp).
 ##   godot --path PROJECT --rendering-driver vulkan --fixed-fps 30 -s weapons_shots.gd -- --out=DIR [--only=idle,fire]
 extends SceneTree
@@ -461,7 +462,8 @@ func blowup_shots() -> void:
 # script: charring (react_char), crumbling into the smoke (react_crumble), gone, a pool where she stood (react_gone).
 # Cleaned up after: the breaking pictures' floor stays clear
 func react_shots() -> void:
-	var names := ["react_hit", "react_smoke", "react_ichor", "react_char", "react_crumble", "react_gone"]
+	var names := ["react_hit", "react_smoke", "react_ichor", "react_char", "react_crumble", "react_gone", "ooze_wound", "ooze_wall",
+		"ooze_tape", "ooze_pool"]
 	if names.all(func(n): return not wanted(n)):
 		return
 	var eye := player.get_node("Eye") as Camera3D
@@ -507,6 +509,22 @@ func react_shots() -> void:
 	look(her.global_position + Vector3(0, 1.3, 0))
 	await now("react_smoke")
 	walk.set("v", Vector3.ZERO)
+	# the gun lowered for the close looks (held, its barrels point where you look), the flashlight back on the eye
+	gun.set_raised(false)
+	await frames(15)
+	# her wound close, oozing down her (the ooze: HSOoze)
+	var wound: Node3D = null
+	for a in (hr.get("_attach") as Dictionary).values():
+		for c in (a as Node).get_children():
+			if c is HSOoze and (c as HSOoze).kind == HSOoze.Kind.WOUND:
+				wound = c
+	if wound != null:
+		var back := player.global_position
+		var fw := ((player.global_position - her.global_position) * Vector3(1, 0, 1)).normalized()
+		player.global_position = Vector3(her.global_position.x, back.y, her.global_position.z) + fw * 0.95
+		look(wound.global_position)
+		await shot("ooze_wound", 12)
+		player.global_position = back
 	# the spray on the wall behind her: the biggest mark of hers, looked at from a step off
 	var big: Node3D = null
 	var big_s := 0.0
@@ -519,9 +537,25 @@ func react_shots() -> void:
 	if big != null:
 		look(big.global_position)
 	await shot("react_ichor", 25)
-	# the gun lowered and its smoke gone; she goes
-	gun.set_raised(false)
-	await frames(75)
+	# the spray close, its drips run (8 s on), then under the camhybrid tape
+	if big != null:
+		for m in (hr.get("marks") as Array):
+			if is_instance_valid(m) and m is HSOoze:
+				(m as HSOoze).set_process(false)
+				(m as HSOoze).age = 8.0
+		var back2 := player.global_position
+		var front := big.global_position + big.global_basis.y * 1.0
+		player.global_position = Vector3(front.x, back2.y, front.z)
+		look(big.global_position + Vector3(0, 0.12, 0))             # (the beam, a little under the view's middle, on it)
+		await shot("ooze_wall", 14)
+		var vhs = main.get_node("Tape").get("vhs")
+		if vhs != null:
+			vhs.call("preset", "camhybrid")
+			await shot("ooze_tape", 20)
+			vhs.call("preset", "off")
+		player.global_position = back2
+	# the gun's smoke gone; she goes
+	await frames(60)
 	look(her.global_position + Vector3(0, 1.1, 0))
 	await frames(5)
 	hr.shoot(her.global_position + Vector3(0, 1.3, 0), -to_you.normalized(), 60.0)
@@ -532,6 +566,17 @@ func react_shots() -> void:
 	await frames(50)
 	look(her.global_position + Vector3(0, 0.5, 0))
 	await now("react_gone")
+	# the pool where she stood, long settled
+	for m in (hr.get("marks") as Array):
+		if is_instance_valid(m) and m is HSOoze and (m as HSOoze).kind == HSOoze.Kind.POOL:
+			(m as HSOoze).set_process(false)
+			(m as HSOoze).age = 30.0
+			var back3 := player.global_position
+			var fw2 := ((back3 - (m as Node3D).global_position) * Vector3(1, 0, 1)).normalized()
+			player.global_position = Vector3((m as Node3D).global_position.x, back3.y, (m as Node3D).global_position.z) + fw2 * 1.1
+			look((m as Node3D).global_position)
+			await shot("ooze_pool", 20)
+			player.global_position = back3
 	gun.set_raised(true)
 	torch.visible = false
 	var ich = hr.get("_root")

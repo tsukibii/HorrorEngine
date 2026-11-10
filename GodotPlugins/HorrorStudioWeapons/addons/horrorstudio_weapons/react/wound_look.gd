@@ -19,6 +19,16 @@ extends Resource
 @export var pool_m := 0.9                               ## the pool left where she went (0: none)
 @export_range(1, 400) var keep := 60                    ## the ichor marks that stay (the oldest go)
 @export var evaporate_s := 0.0                          ## the marks fade after this (0: they stay)
+@export_group("Ooze")
+@export var ooze := true                                ## the ichor as a living liquid (HSOoze: it spreads, drips, glistens, beats); off, or on a renderer other than Forward+: flat decals from fx/ichor_*
+@export var ooze_film := Color(0.12, 0.014, 0.022)      ## where it's thin (its edges, the tendrils, a drip's trail): a deep oxblood
+@export_range(0.0, 1.0) var ooze_sheen := 0.65          ## the oil's sheen in its highlight (violet, green, gold); 0: a plain black gloss
+@export_range(0.0, 1.0) var ooze_gloss := 0.92          ## 1: a mirror (glints that crawl over it as its surface moves)
+@export_range(0.0, 3.0) var ooze_mirror := 1.0          ## the room seen in it (the lit wall at its rims)
+@export_range(0.0, 1.0) var ooze_pulse := 0.5           ## a slow double beat swelling it (0: still)
+@export_range(0.0, 2.0) var ooze_crawl := 1.0           ## its surface moving
+@export_range(0.0, 2.0) var ooze_reach := 1.0           ## a pool's tendrils reaching out
+@export_range(0.0, 2.0) var ooze_drip := 1.0            ## how far drips run down a wall
 @export_group("Smoke")
 @export var wound_smoke: HSMuzzleFlash                  ## smoke out of each wound, trailing after her (none: react/ichor_smoke.tres)
 @export var down_smoke: HSMuzzleFlash                   ## smoke pouring off her as she goes (none: react/dissolve_smoke.tres)

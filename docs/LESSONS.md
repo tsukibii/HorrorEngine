@@ -3,6 +3,29 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The ichor alive (HSOoze): what took a second try (2026-11-10)
+
+- **The normal-roughness buffer is filled only for some materials**: a box with no material of its own read as no normal
+  at all (0.5, 0.5, 0.5) where MHR's material had one, and the ooze threw her wound away as "facing away". Take a
+  projected surface's normal from the depth buffer (each way the neighbour nearer in depth, so it never reaches across
+  an edge); under Vulkan `cross(dFdx, dFdy)` points away from the eye (its screen y runs down): flip it.
+- **A flat black film shows a flashlight beside the eye nowhere**: the light reflects only off parts leaning about 25°
+  toward it, and a meniscus a few millimetres wide is under a pixel at 3 m. Give every blob a dome across all of it and
+  let it mirror the room in its rounded edges (the screen copy by Fresnel): then it reads as liquid against a lit wall.
+  In a dark corridor that's not enough: at roughness 0.2 a black liquid's flat middle gives the flashlight back a third
+  of the wall's light, a dull stencil. Wet black reads by sharp glints: roughness 0.08 and ripples a little under a
+  millimetre deep, so small glints catch the light and crawl as its surface moves (rough chrome on the same field lit
+  like Godot's own chrome square: the lighting was never the fault).
+- **A big field looked at three times a pixel compiles for minutes on the CPU renderer**: four shapes' loops inlined
+  three times (the slope by differences) never got a frame out under lavapipe. Look once a pixel, take the slope from
+  the neighbouring pixels (`dFdxFine`, before any discard), and make each kind a shader of its own.
+- **Awaiting frames inside a SceneTree script's `_initialize` hung a probe**: with the look's WorldEnvironment in it,
+  the debug probe never drew a frame (twice, ten minutes); the same work in a deferred function ran in 14 s. Start the
+  frames' work with `call_deferred`.
+- **A projected mark is a mesh too**: her wound oozes (MeshInstance3Ds under her) were charred and crumbled with her
+  body, and a stand-in's "tilt" read a wound's own turn. Leave the plugin's own marks out of anything that walks her
+  meshes.
+
 ## Someone shot (HSHitReact): what took a second try (2026-11-10)
 
 - **Smoke that rides a body draws a line when the body is thrown**: the wound's smoke (the muzzle's trail, which leaves a

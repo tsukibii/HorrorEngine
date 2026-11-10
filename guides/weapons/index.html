@@ -401,12 +401,35 @@ her as she moves. Shot down, she chars over, crumbles into the smoke and is gone
   <div class="card"><h4>The smoke</h4><p>A quarter of a second after the hit, once she's been shoved, black smoke rises out of the wound and trails after her as she moves. Five wounds smoke at most.</p></div>
   <div class="card"><h4>Down</h4><p>At her health she's <b>down</b>: what moves her is stopped, she chars over and crumbles into the smoke, a pool of ichor where she stood. Or <b>Vanish</b> (gone at once in the smoke), <b>Ragdoll</b> (if she has a PhysicalBoneSimulator3D) or <b>Nothing</b> (only the signal).</p></div>
 </div>
+<h3>The ichor alive</h3>
+<p>Every mark she leaves is an <span class="node">HSOoze</span>: not a flat stain but black liquid with a shader of its
+own, projected onto whatever it lands on and lit there. It <b>spreads</b> as it lands and creeps on; on a wall its
+<b>drips run down</b>, their heads bulging, slowing to a stop (none on the floor; on her they run down her body whichever
+way she stands); a pool <b>reaches out</b> in thin tendrils as it ages. It's thick and black, every blob a low glossy
+dome with an <b>oil's sheen</b> in its highlight and the room seen in its rounded edges, a deep oxblood where it's
+thin; it's never quite still (its surface crawls, a slow double beat swells it, embers die in it). Made for the
+<b>camhybrid tape</b>: the tape lifts black and blurs colour, so the ooze reads by its shine and its movement.</p>
+<div class="pair">
+<figure><img src="img/ooze_wound.jpg" width="1600" height="900" alt="Her wound close: black ichor oozing down her in the flashlight, smoke rising off it"><figcaption>Her wound, close: it oozes down her, smoking.</figcaption></figure>
+<figure><img src="img/ooze_wall.jpg" width="1600" height="900" alt="The spray on the wall close, its drips run down and bulging, glossy in the flashlight"><figcaption>The spray on the wall a few seconds on: its drips have run and stopped, the flashlight caught on its domes.</figcaption></figure>
+</div>
+<div class="pair">
+<figure><img src="img/ooze_tape.jpg" width="1600" height="900" alt="The same spray on camhybrid tape: softer, its black lifted, its shine still reading"><figcaption>The same on the camhybrid tape: its black lifted, its colour blurred, its shine and shape still there.</figcaption></figure>
+<figure><img src="img/ooze_pool.jpg" width="1600" height="900" alt="The pool where she stood, long settled, thin black tendrils reaching out of it"><figcaption>The pool where she stood, long settled: its tendrils have crept out across the carpet.</figcaption></figure>
+</div>
+<p>Put one anywhere by hand, for a room that's wrong before anyone's shot: <b>Add Child Node: HSOoze</b>, turn its blue
+arrow (+Y) out of the wall or floor, pick its <b>Kind</b> (Spray, Pool, Wound, Drop), its <b>Size M</b> and <b>Seed</b>;
+<b>Preview</b> plays it in the editor; <b>Age</b> 60 shows it long settled (a wall that weeps, a pool in a doorway).
+It needs the Forward+ renderer; on another, and with its look's <b>Ooze</b> off, HSHitReact leaves plain black decals
+instead.</p>
 <h3>Its look</h3>
 <p>An <span class="node">HSWoundLook</span> (the plugin's is <code>react/looks/demon.tres</code>): the ichor's colour, its
 embers and how long they glow, the wound's and the spray's sizes, how far the spray reaches, the drops, the pool, how
 many marks stay, the two smokes (<code>react/ichor_smoke.tres</code> out of a wound, <code>react/dissolve_smoke.tres</code>
 off her as she goes: muzzle looks made black, changed as you'd change a flash), the char's colours, how long she takes
-to go, and the sounds. Duplicate it to make another (a creature that bleeds green, one whose smoke is white).</p>
+to go, the sounds, and the ooze's (<b>Ooze</b> on or off, its thin colour, the sheen, the gloss, the room seen in it,
+the beat, the crawl, the tendrils' reach, how far drips run). Duplicate it to make another (a creature that bleeds
+green, one whose smoke is white).</p>
 <h3>Its settings</h3>
 <p><b>Health</b>, <b>Head X</b>, <b>Limb X</b>, <b>Stagger</b>, <b>Stagger S</b>, <b>Push M</b> (how far a close shot's
 stagger shoves her), <b>Flinch</b> (0: never), <b>Down Mode</b>, <b>Gone Secs</b> (0: she stays gone; else she's back
@@ -444,7 +467,14 @@ $Kettle/BlowUp.restore()                 # back as it was (its pieces gone, its 
 $Her/HitReact.hit.connect(func(info): print(info["part"], " for ", info["damage"]))
 $Her/HitReact.down.connect(func(): print("she's gone"))
 $Her/HitReact.shoot(at, way, 6.0)        # hit by a script (a trap): where, which way, how hard
-$Her/HitReact.restore()                  # back whole (the ichor she left stays)</pre>
+$Her/HitReact.restore()                  # back whole (the ichor she left stays)
+
+# ichor by hand (an HSOoze: its +Y out of the surface)
+var o := HSOoze.new()
+o.kind = HSOoze.Kind.POOL
+o.size_m = 0.8
+o.age = 60.0                             # long settled
+$Hallway.add_child(o)</pre>
 <p>Signals: <code>fired(hits)</code>, <code>shell_in(loaded)</code>, <code>empty</code>, <code>broke_open</code>,
 <code>closed</code>, <code>raised_changed(up)</code>. State: <code>live</code> (each barrel's), <code>spent</code>,
 <code>barrel_kind</code>, <code>loaded</code> (set it and the chambers follow), <code>spare</code>, <code>capacity</code>,
@@ -461,7 +491,9 @@ that didn't break it), <code>blown_up(pieces)</code>; <code>is_prepared()</code>
 parts, bone, damage, health, point, dir, power, staggered, blast}</code>), <code>staggered(secs)</code>, <code>down</code>;
 <code>shoot(point, dir, damage)</code>, <code>restore()</code>, <code>damage</code>, <code>is_down</code>,
 <code>hit_count</code>, <code>wounds</code>, <code>marks</code>, <code>last</code>, <code>report()</code>;
-<code>HSHitReact.HITBOX_LAYER</code>. A gun of your own extends <span class="node">HSGun</span> (<code>gun.gd</code>), as the
+<code>HSHitReact.HITBOX_LAYER</code>. On an <span class="node">HSOoze</span>: <code>kind</code>, <code>size_m</code>,
+<code>seed</code>, <code>depth_m</code>, <code>embers</code>, <code>embers_s</code>, <code>settle_s</code>, <code>look</code>,
+<code>age</code>, <code>preview</code>, <code>now()</code>; <code>HSOoze.make_material(look, kind)</code>. A gun of your own extends <span class="node">HSGun</span> (<code>gun.gd</code>), as the
 double does.</p>
 </section>
 
@@ -483,6 +515,8 @@ double does.</p>
   close shot) for 0.9 s (1.2 from the head, 1.3 from a blast) and shoved 0.35 m; the flinch at its strongest a tenth of
   a second after the hit and gone in about half a second; the smoke out of the wound a quarter second after it; down,
   charred in a second and crumbled into the smoke in two and a half.</li>
+  <li><b>The ichor alive</b>: a spray's drips run up to 0.7 of its size, slowing over 2 to 7 seconds; a pool spreads in
+  a few seconds and its tendrils reach out over half a minute; the beat every 1.3 seconds; its embers die in about four.</li>
 </ul>
 <p>Every one of these is an export on the node or its resources: change it in the Inspector.</p>
 </section>

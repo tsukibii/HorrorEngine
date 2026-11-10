@@ -1354,10 +1354,13 @@ func _initialize() -> void:
 	await secs(0.4)
 	var r_held := (r_her.global_position - r_from).dot(r_way)
 	var r_wounds := 0
+	var r_wound_ooze := 0
 	for r_at2 in hr._attach.values():
 		for r_c in (r_at2 as Node).get_children():
-			if r_c is Decal:
+			if r_c is Decal or r_c is HSOoze:
 				r_wounds += 1
+			if r_c is HSOoze and (r_c as HSOoze).kind == HSOoze.Kind.WOUND:
+				r_wound_ooze += 1
 	var r_smoke := hr._smoke.filter(func(e) -> bool: return e["kind"] == "wound").size()
 	var r_spray := hr.marks.size() - r_marks0
 	say("hitreact chest", "the right barrel from %.1f m as she came: %d of %d pellets on her, %d craters on her (the surface %s); a %s hit for %.1f, staggered %s; her spine back %.1f°; held against her walk: %.2f m along it; %d wounds on her, %d marks of ichor round her, %d wounds smoking" % [
@@ -1371,15 +1374,40 @@ func _initialize() -> void:
 	var r_walked := (r_her.global_position - r_from).dot(r_way)
 	var r_spray2 := hr.marks.size() - r_marks0
 	var r_floor := 0
+	var r_oozes := 0
+	var r_kinds := {}
+	var r_mats := {}
+	var r_aged := INF
 	for r_m in hr.marks.slice(r_marks0):
-		if is_instance_valid(r_m) and absf((r_m as Decal).global_position.y - fl) < 0.12:
+		if not is_instance_valid(r_m):
+			continue
+		if absf((r_m as Node3D).global_position.y - fl) < 0.12:
 			r_floor += 1
+		if r_m is HSOoze:
+			r_oozes += 1
+			var r_k := int((r_m as HSOoze).kind)
+			r_kinds[r_k] = int(r_kinds.get(r_k, 0)) + 1
+			if not r_mats.has(r_k):
+				r_mats[r_k] = {}
+			r_mats[r_k][(r_m as HSOoze).material_override] = true
+			r_aged = minf(r_aged, (r_m as HSOoze).now())
+	var r_shared := true
+	for r_k in r_mats:
+		if (r_mats[r_k] as Dictionary).size() != 1:
+			r_shared = false
 	say("hitreact walk", "the stagger over, her walk takes her on again: from %.2f to %.2f m along it; the drops landed: %d marks of ichor round her, %d on the floor" % [
 		r_held, r_walked, r_spray2, r_floor])
 	if r_walked < r_held + 0.2:
 		bad("after the stagger she didn't walk on (%.2f to %.2f)" % [r_held, r_walked])
 	if r_spray2 < 4 or r_floor < 2:
 		bad("the ichor didn't land round her (%d marks, %d on the floor)" % [r_spray2, r_floor])
+	# the ichor alive (HSOoze, the user's "black gothic blood that will fit our vhs camhybrid look and look eery and
+	# oozy"): every mark an ooze on Forward+, sprays and drops, one material a kind for all of them, aging as they lie;
+	# her wound a wound's ooze on her bone
+	say("hitreact ooze", "%d of %d marks round her alive (kinds %s: 0 spray, 3 drop), one material a kind %s, the youngest %.2f s old; %d wound oozing on her" % [
+		r_oozes, r_spray2, JSON.stringify(r_kinds), r_shared, r_aged, r_wound_ooze])
+	if r_oozes != r_spray2 or not r_kinds.has(HSOoze.Kind.SPRAY) or not r_kinds.has(HSOoze.Kind.DROP) or not r_shared or r_aged < 0.25 or r_wound_ooze < 1:
+		bad("the ichor isn't alive as it should be (%d of %d oozes, kinds %s, shared %s, aged %.2f, %d wound oozing)" % [r_oozes, r_spray2, JSON.stringify(r_kinds), r_shared, r_aged, r_wound_ooze])
 	r_walk.set("v", Vector3.ZERO)
 	# the left barrel into her head
 	await until(func() -> bool: return not g("busy"), 2.0)
@@ -1453,7 +1481,7 @@ func _initialize() -> void:
 	await secs(0.6)
 	var r_char := 0
 	for mi in r_her.find_children("*", "MeshInstance3D", true, false):
-		if (mi as MeshInstance3D).material_overlay != null or (mi as MeshInstance3D).material_override != null:
+		if not (mi is HSOoze) and ((mi as MeshInstance3D).material_overlay != null or (mi as MeshInstance3D).material_override != null):
 			r_char += 1
 	var r_stopped := bool(r_walk.get("stopped"))
 	await until(func() -> bool: return not r_her.visible, 4.0)
@@ -1467,14 +1495,18 @@ func _initialize() -> void:
 	var r_hit_her: bool = not r_thr.is_empty() and r_thr["collider"] is Node and r_her.is_ancestor_of(r_thr["collider"])
 	var r_pool := false
 	for r_pm in hr.marks:
-		if is_instance_valid(r_pm) and absf((r_pm as Decal).global_position.y - fl) < 0.12 and (r_pm as Decal).size.x > 0.5 \
-				and Vector2((r_pm as Decal).global_position.x - r_her.global_position.x, (r_pm as Decal).global_position.z - r_her.global_position.z).length() < 0.4:
+		if not is_instance_valid(r_pm):
+			continue
+		var r_ps := float(r_pm.get("size_m")) if r_pm is HSOoze else (r_pm as Decal).size.x
+		var r_pp := (r_pm as Node3D).global_position
+		if absf(r_pp.y - fl) < 0.12 and r_ps > 0.5 and Vector2(r_pp.x - r_her.global_position.x, r_pp.z - r_her.global_position.z).length() < 0.4 \
+				and (not (r_pm is HSOoze) or (r_pm as HSOoze).kind == HSOoze.Kind.POOL):
 			r_pool = true
 	var r_going := hr._smoke.filter(func(e) -> bool: return e["kind"] == "going").size()
 	say("hitreact down", "shot down %s (%s): her walk stopped %s; charring on %d mesh%s; gone %s, hidden for what hunts %s; %d of her hitboxes solid, a shot through where she stood %s; a pool of ichor where she stood %s; %d sources of smoke pouring off her" % [
 		r_was_down, str(r_ev), r_stopped, r_char, "" if r_char == 1 else "es", not r_her.visible, r_her.get_meta("hs_hidden", false), r_solid,
 		"meets her" if r_hit_her else "goes through", r_pool, r_going])
-	if not r_was_down or not r_ev.has("down") or not r_stopped or r_char < 1 or r_her.visible or not bool(r_her.get_meta("hs_hidden", false)) \
+	if not r_was_down or not r_ev.has("down") or not r_stopped or r_char != 1 or r_her.visible or not bool(r_her.get_meta("hs_hidden", false)) \
 			or r_solid > 0 or r_hit_her or not r_pool or r_going < 3:
 		bad("shot down she didn't go as she should (down %s, stopped %s, charred %d, shown %s, %d solid, met %s, a pool %s, %d smoking)" % [
 			r_was_down, r_stopped, r_char, r_her.visible, r_solid, r_hit_her, r_pool, r_going])
@@ -1486,7 +1518,7 @@ func _initialize() -> void:
 			r_back += 1
 	var r_left := 0
 	for mi in r_her.find_children("*", "MeshInstance3D", true, false):
-		if (mi as MeshInstance3D).material_overlay != null or (mi as MeshInstance3D).material_override != null:
+		if not (mi is HSOoze) and ((mi as MeshInstance3D).material_overlay != null or (mi as MeshInstance3D).material_override != null):
 			r_left += 1
 	say("hitreact restore", "put back: shown %s, %d of %d hitboxes solid, charred meshes %d, damage %.1f, down %s" % [r_her.visible, r_back, hr._boxes.size(), r_left, hr.damage, hr.is_down])
 	if not r_her.visible or r_back != hr._boxes.size() or r_left > 0 or hr.damage != 0.0 or hr.is_down:
@@ -1494,6 +1526,39 @@ func _initialize() -> void:
 	if is_instance_valid(hr._root):
 		hr._root.queue_free()
 	r_her.queue_free()
+	# the ooze off (a look's `ooze`, or a renderer without the depth buffer): flat decals of the same ichor
+	var r_plain := Node3D.new()
+	r_plain.name = "Plain"
+	main.add_child(r_plain)
+	r_plain.global_position = r_at
+	var r_pmesh := MeshInstance3D.new()
+	var r_pcm := CapsuleMesh.new()
+	r_pcm.radius = 0.22
+	r_pcm.height = 1.7
+	r_pmesh.mesh = r_pcm
+	r_plain.add_child(r_pmesh)
+	r_pmesh.position = Vector3(0, 0.85, 0)
+	var hr3 := HSHitReact.new()
+	var r_lk := (load("res://addons/horrorstudio_weapons/react/looks/demon.tres") as HSWoundLook).duplicate() as HSWoundLook
+	r_lk.ooze = false
+	hr3.look = r_lk
+	r_plain.add_child(hr3)
+	await frames(3)
+	hr3.shoot(r_at + Vector3(0, 1.2, 0) + r_way * 0.2, -r_way, 6.0)
+	await secs(1.2)
+	var r_dec := 0
+	var r_alive := 0
+	for r_m2 in hr3.marks:
+		if r_m2 is Decal:
+			r_dec += 1
+		elif r_m2 is HSOoze:
+			r_alive += 1
+	say("hitreact plain", "its look's ooze off: %d decals, %d oozes" % [r_dec, r_alive])
+	if r_dec < 1 or r_alive > 0:
+		bad("with its ooze off the ichor wasn't plain decals (%d decals, %d oozes)" % [r_dec, r_alive])
+	if is_instance_valid(hr3._root):
+		hr3._root.queue_free()
+	r_plain.queue_free()
 	# a stand-in (tutorial v2's figures: meshes, no skeleton, nothing solid): a capsule round it, the part by the height,
 	# tilted away from the shot and back upright
 	var r_st := Node3D.new()
@@ -1523,12 +1588,12 @@ func _initialize() -> void:
 		for i in 20:
 			await frames(1)
 			for r_c2 in r_st.get_children():
-				if r_c2 is MeshInstance3D:
+				if r_c2 is MeshInstance3D and not (r_c2 is HSOoze):   # (her body's, not her wounds')
 					r_tilt = maxf(r_tilt, (r_c2 as Node3D).transform.basis.get_rotation_quaternion().get_angle())
 	await secs(1.0)
 	var r_upright := true
 	for r_c3 in r_st.get_children():
-		if r_c3 is MeshInstance3D and (r_c3 as Node3D).transform.basis.get_rotation_quaternion().get_angle() > 0.002:
+		if r_c3 is MeshInstance3D and not (r_c3 is HSOoze) and (r_c3 as Node3D).transform.basis.get_rotation_quaternion().get_angle() > 0.002:
 			r_upright = false
 	var r_rep2 := hr2.report()
 	say("hitreact stand-in", "a figure of meshes: %d hitbox round it, hit %s (a %s hit), tilted %.1f° away and upright again %s, %d wounds smoking" % [

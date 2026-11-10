@@ -133,15 +133,20 @@ gun"; DECISIONS 2026-11-09). Built:
   `Saved/Godot/_weapons/react_probe.gd`, `react_shots_probe.gd`. And HSBlowUp's pieces no longer fall through a
   level's one-sided floor about one run in five (`_unsink`; `mug_fall_probe.gd`).
 
-**Being built next** (the user, while HSHitReact was being made: "once your done can you look into adding some kind of
-shader for the black gothic blood that will fit our vhs camhybrid look and look eery and oozy"): the ichor's marks as a
-shader of their own instead of flat decals. Godot 4.7's spatial shaders draw a box-projected mark lit where it lands
-(the depth and normal buffers read, `LIGHT_VERTEX` written: `Saved/Godot/_weapons/ooze_test/`), so the ooze can creep,
-drip, glisten and swell; the camhybrid tape lifts black to about 0.035 and blurs colour 1.65 px, so it must read by its
-shine and its movement.
+- **The ichor alive** (the user, while HSHitReact was being made: "once your done can you look into adding some kind of
+  shader for the black gothic blood that will fit our vhs camhybrid look and look eery and oozy"). Looked into
+  (docs/research/ooze.md), then **HSOoze** (`react/ooze.gd`, `ooze_<kind>.gdshader` over `ooze.gdshaderinc` and
+  `ooze_frag.gdshaderinc`): a box projected onto what it covers, the surface from the depth buffer and lit there
+  (`LIGHT_VERTEX`); the shape a field in the shader (a spray spreading and creeping, drips running down a wall and
+  stopping, a pool's tendrils, a wound oozing, a drop); black glossy domes with an oil's sheen and the room in their rims,
+  oxblood where thin, a slow beat, embers; HSHitReact's marks (`_mark`: decals off Forward+ or with the look's `ooze`
+  off). Tuned in a lab of its own, `Saved/Godot/_ooze_lab/` (`ooze_probe.gd`, `dbg_probe.gd`, `step_probe.gd`; its
+  scripts and the work before it in the session's scratchpad). WEAPONS §8j checks it; the guide's ichor-alive part and
+  four `ooze_*` pictures.
 
-**Next, if the user wants it**: their ear on the ichor and break sounds (made in code, never heard here) and their eye on how
-things break in their own rooms (a kind's `coarse`, `speed`, `crumple_m`); metal tearing into petals, Voronoi cells,
+**Next, if the user wants it**: their eye on the ooze in their own rooms and on their own tape (its sheen, gloss, beat,
+drips and tendrils are the look's), the ooze smeared when walked through and dripping off a ceiling; their ear on the
+ichor and break sounds (made in code, never heard here) and their eye on how things break in their own rooms (a kind's `coarse`, `speed`, `crumple_m`); metal tearing into petals, Voronoi cells,
 pieces breaking again, a broken thing kept broken in a save. Their eye on the flash and the damage in their own lighting (the flash's `energy`,
 the smoke's `smoke_glow`, `smoke_light_cap`, density and the trail's turbulence, strands and erosion, the impact's `merge_m`, `soot_m`, `powder_m`, `wad_m` are the
 knobs), pellets through a thin wall into the next room and ricochets off concrete (docs/research/shotgun_damage.md §5),

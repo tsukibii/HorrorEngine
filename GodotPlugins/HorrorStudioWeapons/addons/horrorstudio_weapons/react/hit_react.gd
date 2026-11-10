@@ -14,10 +14,13 @@ extends Node3D
 ##   away from the shot, the spine bent, the head whipped back a beat later, an arm swung, a knee giving; a stand-in
 ##   tilts. Each hit's damage fills a stagger counter: past `stagger` she's held where she is for `stagger_s` (whatever
 ##   moves her: the starter's chase, a searcher) and shoved back `push_m`; it empties when it fires.
-## - **No blood**: black ichor, glossy so the flashlight catches it, embers in it (`fx/ichor_*`): a wound on her riding
-##   her bone, droplets flung out, the spray on the wall or the floor behind her (running down a wall), heavy drops
-##   splashing where they land; and dark smoke pouring from each wound and trailing after her (the muzzle's smoke and
-##   trail, made black: `react/ichor_smoke.tres`). Its look is an HSWoundLook (`react/looks/demon.tres`).
+## - **No blood**: black ichor, glossy so the flashlight catches it, embers in it: a wound on her riding her bone,
+##   droplets flung out, the spray on the wall or the floor behind her (running down a wall), heavy drops splashing
+##   where they land, a pool where she went; each mark alive (HSOoze, `react/ooze.gd`: it spreads, drips, creeps out in
+##   tendrils, glistens with an oil's sheen, beats slowly; the user's "black gothic blood that will fit our vhs camhybrid
+##   look and look eery and oozy"), or plain decals off Forward+ (`fx/ichor_*`); and dark smoke pouring from each wound
+##   and trailing after her (the muzzle's smoke and trail, made black: `react/ichor_smoke.tres`). Its look is an
+##   HSWoundLook (`react/looks/demon.tres`).
 ## - **Down** at `health`: DISSOLVE (she chars over from her skin, its edge burning, smoke pouring off her, and she's
 ##   gone into it, a pool of ichor where she stood), VANISH (gone at once in a burst), RAGDOLL (her PhysicalBoneSimulator3D
 ##   let go, if she has one; else she dissolves) or NOTHING (only the signal). What hunts with her is stopped
@@ -53,7 +56,7 @@ var damage := 0.0                                 ## taken so far
 var is_down := false
 var hit_count := 0                                ## shots that hit her
 var wounds := 0                                   ## wounds she's been given
-var marks: Array = []                             ## the ichor she's left on the world (Decals), oldest first
+var marks: Array = []                             ## the ichor she's left on the world (HSOozes, else Decals), oldest first
 var last := {}                                    ## the last hit, a check's (as `hit` gives it)
 
 var _lk: HSWoundLook
@@ -79,6 +82,7 @@ var _solid: Array = []
 var _root: Node3D                                 # the ichor and smoke she leaves (outside her: they stay when she's gone)
 var _drop_mesh: Mesh
 var _char: ShaderMaterial
+var _ooze_mats := {}                              # a material a kind of ooze, shared by all she leaves (its look's colours)
 var _crumble: ShaderMaterial
 var _gone_at := -1.0
 var _pending_smoke := 0                           # wound smoke waiting for the shove to settle
@@ -322,7 +326,7 @@ func _box_round(her: Node3D) -> void:
 	var first := true
 	for mi in her.find_children("*", "MeshInstance3D", true, false):
 		var m := mi as MeshInstance3D
-		if m.mesh == null:
+		if m.mesh == null or m is HSOoze:
 			continue
 		var b := m.global_transform * m.mesh.get_aabb()
 		bb = b if first else bb.merge(b)
@@ -645,7 +649,7 @@ func _physics_process(dt: float) -> void:
 		var hit := space.intersect_ray(q)
 		d["age"] = float(d["age"]) + dt
 		if not hit.is_empty():
-			_decal("drop", randf_range(0.05, 0.12) * float(d["k"]), hit["position"], hit["normal"], v, _root)
+			_mark("drop", randf_range(0.05, 0.12) * float(d["k"]), hit["position"], hit["normal"], v, _root)
 			(n as Node).queue_free()
 			_drops.erase(d)
 		elif float(d["age"]) > 2.5 or to.y < -60.0:
@@ -683,9 +687,7 @@ func _wound(w: Dictionary, power: float, spray_behind: bool) -> void:
 	wounds += 1
 	var host := _attach_for(bone)
 	var size := randf_range(_lk.wound_m.x, _lk.wound_m.y) * clampf(sqrt(power), 0.8, 1.4)
-	var mk := _decal("wound", size, at, nrm, Vector3.UP, host, false)
-	if mk != null:
-		mk.size.y = 0.09                             # (on her skin, never the wall behind her)
+	_mark("wound", size, at, nrm, Vector3.UP, host, false)
 	# smoke out of the wound, riding her (outside her: it stays when she goes); a moment after the hit, once the shove
 	# has settled (the smoke rides her bone: shoved with her, it drew a line through the air)
 	if _lk.bleed_wounds > 0 and _bleeding() < _lk.bleed_wounds:
@@ -740,13 +742,64 @@ func _spray(at: Vector3, dir: Vector3, power: float) -> void:
 	var n: Vector3 = hit["normal"]
 	var far := clampf(at.distance_to(p) / _lk.splat_reach_m, 0.0, 1.0)
 	var size := lerpf(_lk.splat_m.x, _lk.splat_m.y, clampf((power - 0.5) / 2.5, 0.0, 1.0)) * (0.75 + 0.5 * far)
-	_decal("drip" if absf(n.y) < 0.55 else "splat", size, p, n, dir, _root)
+	_mark("drip" if absf(n.y) < 0.55 else "splat", size, p, n, dir, _root)
 
 
-# a mark of ichor: the decal's maps from fx/, black and glossy, its embers fading; on the world (`root`) or on her
-func _decal(kind: String, size: float, at: Vector3, nrm: Vector3, along: Vector3, host: Node, world := true) -> Decal:
+# a mark of ichor, on the world (`root`) or on her: an HSOoze, the ichor alive (it spreads, drips, glistens, beats), or
+# where it can't be (`look.ooze` off, a renderer without the depth buffer it reads) a decal
+func _mark(kind: String, size: float, at: Vector3, nrm: Vector3, along: Vector3, host: Node, world := true) -> Node3D:
 	if host == null or not is_instance_valid(host):
 		return null
+	var mk: Node3D = _ooze(kind, size, at, nrm, along, host) if _ooze_ok() else _decal(kind, size, at, nrm, along, host)
+	if mk != null and world:
+		marks.append(mk)
+		while marks.size() > _lk.keep:
+			var o = marks.pop_front()
+			if is_instance_valid(o):
+				(o as Node).queue_free()
+		if _lk.evaporate_s > 0.0:
+			var tv := mk.create_tween()
+			tv.tween_interval(_lk.evaporate_s)
+			if mk is Decal:
+				tv.tween_property(mk, "modulate:a", 0.0, 3.0)
+			else:
+				tv.tween_property(mk, "transparency", 1.0, 3.0)
+			tv.tween_callback(mk.queue_free)
+	return mk
+
+
+func _ooze_ok() -> bool:
+	var m := RenderingServer.get_current_rendering_method()
+	return _lk.ooze and m != "mobile" and m != "gl_compatibility"
+
+
+# the ichor alive (HSOoze): a spray or a drip (by the wall's own slope: its drips run down it), a drop, a wound, a pool
+func _ooze(kind: String, size: float, at: Vector3, nrm: Vector3, along: Vector3, host: Node) -> HSOoze:
+	var o := HSOoze.new()
+	o.name = "Ichor"
+	o.kind = {"splat": HSOoze.Kind.SPRAY, "drip": HSOoze.Kind.SPRAY, "wound": HSOoze.Kind.WOUND, "drop": HSOoze.Kind.DROP,
+		"pool": HSOoze.Kind.POOL}[kind]
+	if not _ooze_mats.has(o.kind):
+		_ooze_mats[o.kind] = HSOoze.make_material(_lk, o.kind)
+	o.size_m = size
+	o.depth_m = 0.14 if kind == "wound" else 0.16           # (on her skin: her hitbox is a capsule, her skin a few cm off it)
+	o.embers = clampf(_lk.embers / 2.5, 0.0, 2.0)
+	o.embers_s = _lk.embers_s
+	o.material_override = _ooze_mats[o.kind]
+	host.add_child(o)
+	var y := nrm.normalized()
+	var x := along - y * along.dot(y)                        # (a spray thrown along the shot)
+	x = x.normalized() if x.length() > 1e-3 else y.cross(Vector3.UP if absf(y.y) < 0.9 else Vector3.RIGHT).normalized()
+	if kind == "drop" or kind == "pool":
+		x = Basis(y, randf() * TAU) * x
+	o.global_transform = Transform3D(Basis(x, y, x.cross(y)), at + y * 0.002)
+	return o
+
+
+# a mark of ichor as a decal: the maps from fx/, black and glossy, its embers fading
+func _decal(kind: String, size: float, at: Vector3, nrm: Vector3, along: Vector3, host: Node) -> Decal:
+	if kind == "pool":
+		kind = "drop"
 	var count := {"splat": 3, "drip": 2, "wound": 2, "drop": 2}[kind] as int
 	var nm := "ichor_%s_%d" % [kind, randi() % count]
 	var d := Decal.new()
@@ -757,7 +810,7 @@ func _decal(kind: String, size: float, at: Vector3, nrm: Vector3, along: Vector3
 	d.texture_emission = HSMuzzle.tex("fx/%s_emission.png" % nm)
 	d.emission_energy = _lk.embers
 	d.modulate = _lk.ichor_color
-	d.size = Vector3(size, clampf(size * 0.5, 0.06, 0.4), size)
+	d.size = Vector3(size, 0.09 if kind == "wound" else clampf(size * 0.5, 0.06, 0.4), size)
 	d.normal_fade = 0.3
 	d.upper_fade = 0.2
 	d.lower_fade = 0.2
@@ -781,17 +834,6 @@ func _decal(kind: String, size: float, at: Vector3, nrm: Vector3, along: Vector3
 	if _lk.embers > 0.0 and _lk.embers_s > 0.0:
 		var tw := d.create_tween()
 		tw.tween_property(d, "emission_energy", 0.0, _lk.embers_s).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	if world:
-		marks.append(d)
-		while marks.size() > _lk.keep:
-			var o = marks.pop_front()
-			if is_instance_valid(o):
-				(o as Node).queue_free()
-		if _lk.evaporate_s > 0.0:
-			var tv := d.create_tween()
-			tv.tween_interval(_lk.evaporate_s)
-			tv.tween_property(d, "modulate:a", 0.0, 3.0)
-			tv.tween_callback(d.queue_free)
 	return d
 
 
@@ -855,7 +897,7 @@ func _dissolve() -> void:
 	var her := _her()
 	var meshes: Array = []
 	for mi in her.find_children("*", "GeometryInstance3D", true, false):
-		if mi is MeshInstance3D and (mi as MeshInstance3D).is_visible_in_tree():
+		if mi is MeshInstance3D and not (mi is HSOoze) and (mi as MeshInstance3D).is_visible_in_tree():   # (her wounds stay ichor)
 			meshes.append(mi)
 	var sd := Vector3(randf() * 30.0, randf() * 30.0, randf() * 30.0)
 	_char = _char_mat("char.gdshader", sd)
@@ -960,7 +1002,7 @@ func _gone() -> void:
 		q.exclude = _rids()
 		var hit := space.intersect_ray(q)
 		if not hit.is_empty():
-			_decal("drop", _lk.pool_m, hit["position"], hit["normal"], Vector3.FORWARD, _root)
+			_mark("pool", _lk.pool_m, hit["position"], hit["normal"], Vector3.FORWARD, _root)
 
 
 ## Back as she was before she was shot: shown, solid, whole (her char, her fade and her wounds gone), her health full.
@@ -976,14 +1018,14 @@ func restore() -> void:
 			(e[0] as CollisionObject3D).collision_layer = int(e[1])
 	_solid.clear()
 	for mi in her.find_children("*", "GeometryInstance3D", true, false):
-		if mi is MeshInstance3D:
+		if mi is MeshInstance3D and not (mi is HSOoze):
 			(mi as MeshInstance3D).material_overlay = null
 			if (mi as MeshInstance3D).material_override == _crumble and _crumble != null:
 				(mi as MeshInstance3D).material_override = null
 	for at in _attach.values():
 		if is_instance_valid(at):
 			for c in (at as Node).get_children():
-				if c is Decal:
+				if c is Decal or c is HSOoze:
 					c.queue_free()
 	damage = 0.0
 	_acc = 0.0

@@ -21,9 +21,14 @@ The user's answers, newest first. They override the plan, the research and the d
     ichor where she stood (or vanish, ragdoll, nothing); `restore()`. Its sounds made in code (`ichor_hit`,
     `ichor_down`): **listen to them**.
 - **"Once your done can you look into adding some kind of shader for the black gothic blood that will fit our vhs
-  camhybrid look and look eery and oozy."** Next, its own step: the ichor's marks as a shader of their own (they're
-  still flat decals): creeping, dripping, glistening, alive, made to read through the camhybrid tape (its lifted black
-  and blurred colour: the ooze has to read by its shine and its movement).
+  camhybrid look and look eery and oozy."** Looked into (docs/research/ooze.md), then built as **HSOoze**
+  (`react/ooze.gd` and its shaders in the weapons plugin): every mark of hers is black liquid with a shader of its own,
+  projected onto what it lands on and lit there. It spreads as it lands and creeps on, drips run down a wall slowing to
+  a stop with bulging heads, a pool's tendrils creep out as it ages, a wound oozes down her; thick it's black glossy
+  domes with an oil's sheen and the room seen in their rounded edges, thin a deep oxblood; it crawls, beats slowly and
+  smoulders. On the camhybrid tape it reads by its shine and its movement. It can be placed by hand (a wall that
+  weeps); off Forward+, and with the look's `ooze` off, the flat decals stay. **Look at it in your own rooms**: its
+  sheen, gloss, beat and drips are the look's to change.
 
 ## 2026-11-09, after the smoke (the user: things that blow up when they're shot)
 

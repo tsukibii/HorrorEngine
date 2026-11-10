@@ -80,4 +80,4 @@ here.
 - A stand-in of two capsules: one hitbox round it, a head hit by the height, tilted 32° away and upright again.
 
 Not done: her own animation's hit clips (a stagger played from a library when she has one), limbs lost, the ichor as a
-shader of its own that creeps and drips (being built next, DECISIONS 2026-11-10), a ragdoll set up for her.
+shader of its own that creeps and drips (built since as HSOoze: docs/research/ooze.md), a ragdoll set up for her.

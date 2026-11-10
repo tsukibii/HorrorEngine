@@ -31,7 +31,10 @@ but dont do blood, instead create some form of demonic dark smoke and dark splat
 top of her animation (**HSFlinch**), a stagger counter that holds her where she is and shoves her back, black ichor
 where she's hit (a wound riding her bone, drops, the spray behind her, glossy, embers in it) and black smoke out of each
 wound trailing after her; shot down, she chars over, crumbles into the smoke and is gone. Its look is an
-**HSWoundLook**.
+**HSWoundLook**. Her ichor is **alive** (the user, the same day: "a shader for the black gothic blood that will fit our
+vhs camhybrid look and look eery and oozy"): each mark an **HSOoze**, a box projected onto whatever it lands on with a
+shader of its own, so it spreads, drips down a wall, sends tendrils out of a pool, glistens with an oil's sheen, beats
+slowly and smoulders, and reads on the camhybrid tape by its shine and its movement.
 
 ![held: only its barrels](../../guides/weapons/img/idle.jpg) ![aimed](../../guides/weapons/img/aim.jpg)
 ![the right barrel](../../guides/weapons/img/fire.jpg) ![the left, through the first's smoke](../../guides/weapons/img/fire_left.jpg)
@@ -44,6 +47,7 @@ wound trailing after her; shot down, she chars over, crumbles into the smoke and
 ![a kettle, a mug and a box shot](../../guides/weapons/img/blowup_close.jpg) ![the kettle's cut](../../guides/weapons/img/blowup_cut.jpg)
 ![shot in the chest](../../guides/weapons/img/react_hit.jpg) ![smoking as she comes on](../../guides/weapons/img/react_smoke.jpg)
 ![charring](../../guides/weapons/img/react_char.jpg) ![crumbling into the smoke](../../guides/weapons/img/react_crumble.jpg)
+![the ichor on a wall, its drips run](../../guides/weapons/img/ooze_wall.jpg) ![on camhybrid tape](../../guides/weapons/img/ooze_tape.jpg)
 
 The guide for the user, with these pictures: `guides/weapons/index.html`.
 
@@ -63,7 +67,8 @@ The guide for the user, with these pictures: `guides/weapons/index.html`.
 | **The cut** | `blowup/fracture.gd` (`HSFracture`, plain data) | a thing's surfaces cut into a tree of pieces in a worker thread: recursive plane slicing, each cut's outline chained into loops, its holes split off with Godot's polygon clipping and filled; single sheets (or a hollow kind) never filled, their backs drawn; the pieces split where they don't touch; parts made of materials the rest isn't (a box's shells) kept whole; crumpled; each piece's middle, axes, hull and which touch which. `blowup/inside.gdshader` (and `inside_glass.gdshader`) draws the broken faces in the thing's own space |
 | **Someone who bleeds ichor** | `react/hit_react.gd` (`HSHitReact`, a Node3D) | put one under a character (the node that moves): see *Someone shot*. `health`, `head_x`, `limb_x`, `stagger`, `stagger_s`, `push_m`, `flinch`, `down_mode` (DISSOLVE, VANISH, RAGDOLL, NOTHING), `gone_secs`, `look` (an HSWoundLook; none: `react/looks/demon.tres`), `hitboxes`, `target`, `cry`; `shoot(point, dir, damage)`, `restore()`, `report()`; `hit(info)`, `staggered(secs)`, `down`; `damage`, `is_down`, `hit_count`, `wounds`, `marks`, `last`; `HITBOX_LAYER` (layer 11) |
 | **Her flinch** | `react/flinch.gd` (`HSFlinch`, a SkeletonModifier3D) | HSHitReact puts one under her skeleton: `kick(bone, axis, amp, w, delay, drop)` turns a bone about a world axis on a critically damped spring after her animation (at its peak at 1/w s), or lowers it (a knee giving); `busy()`, `peak_now()` |
-| **How she bleeds** | `react/wound_look.gd` (`HSWoundLook`, a Resource) | `react/looks/demon.tres`: the ichor (`ichor_color`, `embers`, `embers_s`, `wound_m`, `splat_m`, `splat_reach_m`, `drops`, `spray`, `pool_m`, `keep`, `evaporate_s`), the smoke (`wound_smoke`, `down_smoke`: HSMuzzleFlash looks, `react/ichor_smoke.tres` and `react/dissolve_smoke.tres`; `bleed_wounds`), her going (`char_color`, `char_edge`, `char_edge_energy`, `dissolve_s`), the sounds (`hit_sound`, `down_sound`). `react/char.gdshader` (the char spreading over her, an overlay) and `react/crumble.gdshader` (her surfaces eaten away, opaque, cut out), their noise in the world (`char_noise.gdshaderinc`) |
+| **How she bleeds** | `react/wound_look.gd` (`HSWoundLook`, a Resource) | `react/looks/demon.tres`: the ichor (`ichor_color`, `embers`, `embers_s`, `wound_m`, `splat_m`, `splat_reach_m`, `drops`, `spray`, `pool_m`, `keep`, `evaporate_s`), the smoke (`wound_smoke`, `down_smoke`: HSMuzzleFlash looks, `react/ichor_smoke.tres` and `react/dissolve_smoke.tres`; `bleed_wounds`), her going (`char_color`, `char_edge`, `char_edge_energy`, `dissolve_s`), the sounds (`hit_sound`, `down_sound`), the ooze (`ooze`: off, or on a renderer other than Forward+, flat decals; `ooze_film`, `ooze_sheen`, `ooze_gloss`, `ooze_mirror`, `ooze_pulse`, `ooze_crawl`, `ooze_reach`, `ooze_drip`). `react/char.gdshader` (the char spreading over her, an overlay) and `react/crumble.gdshader` (her surfaces eaten away, opaque, cut out), their noise in the world (`char_noise.gdshaderinc`) |
+| **The ichor alive** | `react/ooze.gd` (`HSOoze`, a MeshInstance3D) | see *The ichor alive*. `kind` (SPRAY, POOL, WOUND, DROP), `size_m`, `seed`, `depth_m`, `embers`, `embers_s`, `settle_s`, `look` (an HSWoundLook's ooze colours), `age` (where it starts: a pool long settled, 60), `preview` (it lands again and again in the editor); `now()`; `HSOoze.make_material(look, kind)`. Its shaders `react/ooze_spray`, `_pool`, `_wound`, `_drop` `.gdshader` over `react/ooze.gdshaderinc` and `react/ooze_frag.gdshaderinc` |
 | **The models** | `models/` | the prop generator's `shotgun_double` (the user's model, `Content/Studio/Props/models/dbl_barrel.fbx`, made round-barrelled and painted: blued, case-hardened, checkered walnut; its `barrels` with the fore-end on their hinge, `lever`, `trigger`, `trigger2`; sockets `muzzle`, `muzzle_r`, `muzzle_l`, `chamber`, `chamber_r`, `chamber_l`, `hinge`, `breech`, `grip`, `trigger`, `shoulder`, `light`), `shell_12ga` and `shell_12ga_spent` (their brand printed along the hull, their heads stamped), `shells_box_5` (the box of shells: its lid a part on its hinge), `shell_12ga_explosive`, `shell_12ga_explosive_spent` and `shells_box_5_explosive` (the explosive kind's: a black hull printed in orange, high brass), `electric_kettle` and `mug_stoneware` (two things to break: a brushed steel kettle, a stoneware mug of tea) (`tools/propgen.py make <name>`, docs/PROPGEN.md §30, §31: the shells and the box are customizable, your logo on them in the prop generator's picture editor, guides/prop_customizer) |
 | **The sounds** | `sounds/` | made in code (`tools/weapon_sounds.py`: numpy, then ffmpeg to Ogg): the blast with its tail, a shell clicking in, the dry click, a hull on the floor, the handling; the break open, the snap shut and the ejectors' flick; an explosive shell bursting (`shell_burst`); a box of shells taken; a thing breaking (`break_<kind>`: its crack, its body, its pieces ringing as they part, bits landing) and a piece landing (`debris_<kind>`) for each kind; someone hit (`ichor_hit`: a heavy wet thump, the squelch of thick liquid, bubbles, a hiss) and going (`ichor_down`: a breath drawn in, a wet collapse, a long hiss with embers popping over a falling rumble) |
 
@@ -217,8 +222,10 @@ Put an **HSHitReact** under a character (docs/research/hit_reactions.md):
   empties when she staggers. Smaller hits nudge her.
 - **The ichor**: a wound on her riding her bone, drops flung out of it (most along the shot, a few back toward you),
   heavy drops falling by rays and splashing where they land, the spray on the wall or the floor behind her within
-  `splat_reach_m` (a drip running down a wall, a splat thrown along the floor); black, glossy, its embers fading. The
-  last `keep` marks stay; they live beside her (a node of their own), so they stay when she's gone.
+  `splat_reach_m` (its drips running down a wall, none on the floor), a pool where she went; each an HSOoze (see
+  *The ichor alive*), one material a kind for all she leaves; with the look's `ooze` off, or on a renderer other than
+  Forward+, flat decals of the same (`fx/ichor_*`). The last `keep` marks stay; they live beside her (a node of their
+  own), so they stay when she's gone.
 - **The smoke**: a quarter second after the hit (once a shove has settled: smoke riding her bone drew a line through the
   air as she was thrown back), black smoke out of the wound, an HSMuzzle playing `wound_smoke` riding the bone, rising
   and trailing after her as she moves (the muzzle's own trail); `bleed_wounds` at most at once.
@@ -227,6 +234,31 @@ Put an **HSHitReact** under a character (docs/research/hit_reactions.md):
   for the char's and crumbling away from burning holes, smoke pouring off her head, hands, knees and chest, `dissolve_s`
   2.4), VANISH (gone at once in the smoke), RAGDOLL (her PhysicalBoneSimulator3D let go, else DISSOLVE) or NOTHING;
   gone, nothing of her solid and a pool of ichor where she stood. `gone_secs` brings her back whole (`restore()`).
+
+## The ichor alive
+
+An **HSOoze** is a box projected onto whatever it covers, as a Decal is, but drawn by a shader of its own
+(docs/research/ooze.md), so the ichor moves:
+
+- **Its shape is made in the shader**: a spray (a core of lobes, spines thrown out longer along the throw, droplets
+  drawn out into tadpoles, their tails back where they came from) spreading as it lands and creeping on; on a wall,
+  drips running down out of it, slowing to a stop, each trail wavering and beading behind a bulging head (the world's
+  down in its own plane: none on a floor, and on her they run down her whichever way she stands); a pool spreading,
+  thin tendrils reaching out of it as it ages; a wound oozing; a drop's splash. `age` drives it (HSOoze counts it until
+  `settle_s`); its surface still moves after.
+- **Lit where it lies**: the surface found from the depth buffer, its normal from its neighbours there,
+  `LIGHT_VERTEX` set to it, so the flashlight and the lamps light it as they light the wall.
+- **Black and thick**: every blob a low dome with a meniscus, so some part of it catches any light; thick, a black
+  mirror whose highlight carries an oil's sheen (violet, green, gold, drifting); the room seen in its rounded edges;
+  thin (its edges, the tendrils), a deep oxblood.
+- **Never still**: its surface crawls, a slow double beat swells it (the highlights pulse), embers die in it.
+- **On the camhybrid tape** it reads by its shine and its movement (the tape lifts black and keeps a fifth of colour's
+  detail): nothing in it finer than a few millimetres.
+- **By hand**: add an HSOoze anywhere (Add Child Node), turn its +Y out of the surface and its +X the way a spray was
+  thrown, pick its `kind`, `size_m` and `seed`; `preview` plays it in the editor; `age` 60 shows it long settled (a
+  wall that weeps, a pool in a doorway).
+
+It needs Forward+ (it reads the depth buffer); HSHitReact falls back to plain decals elsewhere.
 
 ## The numbers
 
@@ -247,6 +279,9 @@ Put an **HSHitReact** under a character (docs/research/hit_reactions.md):
 - **The hulls**: flicked in view for 0.22 s, then into the room, falling, bouncing and rolling on their side by rays of
   their own from their middle and both ends (a body this small sinks through a level's thin floor in a physics engine's
   slop, and a point slips through a gap a hull can't); the last 16 kept.
+- **The ichor alive**: a spray's spines reach about half its size, its drips 0.7 of it, slowing over 2 to 7 s; a pool
+  spreads to its size in a few seconds, its tendrils reaching a third of it more over half a minute; the double beat
+  every 1.3 s; embers dying over `embers_s` 4 s; it stops counting at `settle_s` 40 s.
 - **Someone shot**: `health` 12; staggered at 4 for 0.9 s (1.3 times from the head, 1.4 from a blast), shoved 0.35 m
   by a close shot; the flinch peaking a tenth of a second after the hit (the spine about 7° a bone from a close shot,
   the head about 25° from one in the head), gone in half a second; her smoke a quarter second after the hit.
