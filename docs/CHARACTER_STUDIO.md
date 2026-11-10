@@ -289,7 +289,10 @@ bigger or smaller against the rest, on MHR's own rig (a point belongs to an arm,
   another head". It is only placed again, not made again: hair that lay on the shoulders or was kept off the body was
   shaped on the body it had, and a skull reshaped under it (Forehead height lifts the crown 14 mm a slider, a creature's
   Long skull the back of the head 34 mm) isn't followed (Hair, then Bake). GROWPAGE: four marks baked on an adult's
-  scalp are still on their points at eight and opened again at ten.
+  scalp are still on their points at eight and opened again at ten. And with real hair, end to end: the salon's eight
+  presets all build on a nine-year-old's head (96 to 99% of the scalp covered, nothing inside the head, as SALON asks of
+  an adult's), one let fall and baked onto her is worn in the Studio, and it rides her head at eight, at fourteen and
+  grown (`docs/studio_sheets/2026-11-10_child_hair.jpg`).
 - **Not yet**: the salon shows the body it was given; clothes are cut again on the smaller body by themselves, but
   the outfits' pictures are an adult's; the growth table's numbers and each creature are first passes to look at on
   the card; younger than eight (the head's share and the limbs change faster there) isn't offered.

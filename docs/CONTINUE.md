@@ -67,7 +67,8 @@ them, not the first (the brows' and lashes' cards are meshes of their own); and 
 handed to HSBlink's `hold` as `bakeplay.gd` does, not set beside it. The desk plays expressions on an export by its
 MHR points and is right. EXPORTS would have said so (it wants 72 blend shapes on a Studio export) on a machine with one.
 
-**The pictures**: `docs/studio_sheets/2026-11-10_ages_cutify.jpg`, `2026-11-10_creatures.jpg`, `2026-11-10_horns_ears.jpg`;
+**The pictures**: `docs/studio_sheets/2026-11-10_ages_cutify.jpg`, `2026-11-10_creatures.jpg`, `2026-11-10_horns_ears.jpg`,
+`2026-11-10_child_hair.jpg` (a salon preset baked on a nine-year-old, riding her head at eight, fourteen and grown);
 in Godot `docs/godot_sheets/2026-11-10_ears_jiggle.jpg`.
 
 **For the user's eye, on the card** (nothing here was judged on a real GPU: the pictures were drawn on the CPU):
