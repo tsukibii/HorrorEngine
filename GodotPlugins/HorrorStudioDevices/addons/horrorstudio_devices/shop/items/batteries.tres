@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="HSShopItem" format=3]
+
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_devices/shop/models/batteries_aa_2.glb" id="1_4ouq0"]
+[ext_resource type="Script" path="res://addons/horrorstudio_devices/shop/item.gd" id="2_rnnuk"]
+
+[resource]
+script = ExtResource("2_rnnuk")
+id = "batteries"
+title = "AA batteries, pair"
+about = "Two AA cells for the flashlight. Fresh, or so the packet says."
+price = 4.5
+category = "SUPPLIES"
+model = ExtResource("1_4ouq0")

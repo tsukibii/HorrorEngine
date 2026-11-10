@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="HSShopItem" format=3]
+
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_devices/shop/models/pill_bottle.glb" id="1_8cfgr"]
+[ext_resource type="Script" path="res://addons/horrorstudio_devices/shop/item.gd" id="2_wmuv8"]
+
+[resource]
+script = ExtResource("2_wmuv8")
+id = "painkillers"
+title = "Painkillers"
+about = "A bottle of tablets with somebody else's name on the label."
+price = 6.0
+stock = 2
+category = "SUPPLIES"
+model = ExtResource("1_8cfgr")

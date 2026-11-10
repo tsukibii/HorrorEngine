@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="HSShopItem" format=3]
+
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_devices/shop/models/soda_can.glb" id="1_6ftag"]
+[ext_resource type="Script" path="res://addons/horrorstudio_devices/shop/item.gd" id="2_efgvp"]
+
+[resource]
+script = ExtResource("2_efgvp")
+id = "soda"
+title = "Kaze orange soda"
+about = "An orange soda. Warm."
+price = 1.5
+category = "FOOD & DRINK"
+model = ExtResource("1_6ftag")

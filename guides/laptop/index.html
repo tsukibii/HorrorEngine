@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HorrorStudio Devices: the laptop</title>
+<!-- The HorrorStudio Devices plugin's laptop for a Godot project (GodotPlugins/HorrorStudioDevices; DECISIONS 2026-11-10,
+     later still). Nothing loads from outside: the pictures in img/ are the plugin's own check's (LAPTOP), drawn by
+     Godot: python tools/godot/laptop_check.py --pictures. -->
+<style>
+:root{--bg:#121214;--panel:#1b1b1f;--panel2:#232329;--line:#33333b;--text:#e6e3dc;--dim:#9a978f;--accent:#5fe08a;--warn:#e0a030;--cue:#9fd39a}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{display:grid;grid-template-columns:250px minmax(0,1fr);max-width:1240px;margin:0 auto}
+nav.toc{position:sticky;top:0;height:100vh;overflow:auto;padding:28px 18px 28px 22px;border-right:1px solid var(--line);font-size:13.5px}
+nav.toc .brand{font-weight:700;letter-spacing:.06em;color:var(--accent);font-size:12px;text-transform:uppercase;margin-bottom:14px}
+nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:s}
+nav.toc li{counter-increment:s}
+nav.toc li a{display:flex;gap:8px;padding:4px 8px;border-radius:6px;color:var(--text)}
+nav.toc li a::before{content:counter(s);color:var(--dim);min-width:18px;text-align:right;font-variant-numeric:tabular-nums}
+nav.toc li a:hover,nav.toc li a.on{background:var(--panel2);text-decoration:none}
+nav.toc li a.on{color:var(--accent)}
+nav.toc .back{display:block;margin-top:18px;color:var(--dim);font-size:12.5px}
+main{padding:34px 44px 90px;min-width:0}
+header.hero{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:10px}
+header.hero h1{font-size:34px;line-height:1.15;margin:0 0 10px;letter-spacing:-.01em}
+header.hero p{color:var(--dim);font-size:16.5px;margin:0;max-width:740px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--dim);background:var(--panel)}
+section{padding-top:30px;max-width:920px}
+h2{font-size:24px;margin:16px 0 6px;display:flex;align-items:baseline;gap:12px}
+h2 .n{color:var(--accent);font-size:15px;font-variant-numeric:tabular-nums;font-weight:600}
+h3{font-size:16.5px;margin:22px 0 4px}
+p{margin:8px 0}
+ul,ol.steps{padding-left:22px;margin:8px 0}
+li{margin:3px 0}
+kbd{font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:2px 6px;color:var(--text);white-space:nowrap}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow:auto;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ui{font-weight:600;color:#f2e6cc}
+.node{font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfe3f2}
+figure{margin:16px 0 20px;max-width:100%}
+figure img{display:block;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.45);background:var(--panel)}
+figcaption{color:var(--dim);font-size:13px;margin-top:7px}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;margin:14px 0}
+.pair figure{margin:0}
+.tip{border-left:3px solid var(--accent);background:linear-gradient(90deg,rgba(95,224,138,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.tip b{color:var(--accent)}
+.note{border-left:3px solid var(--cue);background:linear-gradient(90deg,rgba(159,211,154,.08),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet{border-left:3px solid var(--warn);background:linear-gradient(90deg,rgba(224,160,48,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet b{color:var(--warn)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:12px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h4{margin:0 0 4px;font-size:14px}
+.card p{margin:0;color:var(--dim);font-size:13.5px}
+table.keys{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+table.keys td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.keys td:first-child{white-space:nowrap;width:1%}
+.tree{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;overflow:auto}
+.tree i{color:var(--dim);font-style:normal}
+footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:var(--dim);font-size:13px}
+@media (max-width:900px){.wrap{display:block}nav.toc{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 16px}nav.toc ol{columns:2;column-gap:14px}main{padding:22px 16px 60px}header.hero h1{font-size:27px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc">
+  <div class="brand">HorrorStudio Devices</div>
+  <ol>
+    <li><a href="#what">What it is</a></li>
+    <li><a href="#try">Try it first</a></li>
+    <li><a href="#install">Putting it in a project</a></li>
+    <li><a href="#sit">Sitting at it</a></li>
+    <li><a href="#order">The Order tab</a></li>
+    <li><a href="#items">Things to sell: adding one</a></li>
+    <li><a href="#cash">Cash and the pocket</a></li>
+    <li><a href="#look">The green terminal's look</a></li>
+    <li><a href="#model">The laptop and the mouse</a></li>
+    <li><a href="#code">In your own scripts</a></li>
+    <li><a href="#rules">Good to know</a></li>
+  </ol>
+  <a class="back" href="../godot_by_hand/index.html">← Godot by hand</a>
+  <a class="back" href="../weapons/index.html">The Weapons plugin →</a>
+  <a class="back" href="../index.html">← All guides</a>
+</nav>
+<main>
+<header class="hero">
+  <h1>The laptop</h1>
+  <p>A laptop to sit at, for a Godot game you build by hand. Press <kbd>E</kbd> on it and the view goes in close to its
+  screen: a green terminal you use with the mouse. Its <b>Order</b> tab sells things for the player's cash, each shown as
+  its own model, and what's bought goes into the pocket, where the HUD's inventory row shows it. Drag the prefab onto a
+  desk; add a thing to sell by saving one small file.</p>
+  <div class="chips"><span class="chip">Godot 4.7</span><span class="chip">GDScript</span><span class="chip">HSLaptop</span>
+  <span class="chip">HSTerminal</span><span class="chip">HSShopCatalog</span><span class="chip">HSShopItem</span><span class="chip">HSTerminalLook</span>
+  <span class="chip">your laptop and mouse, painted by the prop generator</span></div>
+</header>
+
+<section id="what">
+<h2><span class="n">1</span>What it is</h2>
+<p>One add-on, <code>addons/horrorstudio_devices/</code>, and one prefab, <code>laptop/laptop.tscn</code>: your PSX-style
+laptop and its mouse (made into real-size props by the prop generator) with <span class="node">HSLaptop</span> on them.
+It finds its own lid, its screen and where the screen is (the model's sockets), puts a terminal on the glass, and
+does the rest. What it sells is an <span class="node">HSShopCatalog</span> of <span class="node">HSShopItem</span>s:
+six to start with (AA batteries for the flashlight, a candle, painkillers, water, a soda, a burger).</p>
+<figure><img src="img/room.jpg" width="1600" height="900" alt="An office at night: a desk under a lamp, the laptop on it with green code raining down its screen, its mouse, a twenty-dollar note"><figcaption>Nobody at it: its screen rains code, drawn only while you're near and it's in view.</figcaption></figure>
+</section>
+
+<section id="try">
+<h2><span class="n">2</span>Try it first</h2>
+<p>The plugin's own check builds a project to play: a small office at night with the laptop on a desk, a $20 note beside
+it, the starter's player standing at the desk with $20 in the pocket. Keep it in a folder of your own and open it:</p>
+<pre>python tools/godot/laptop_check.py --keep ~/Games/LaptopLab
+godot ~/Games/LaptopLab/project.godot      # then F5</pre>
+<p>Click into the window to take the mouse, look at the laptop, press <kbd>E</kbd>. It plays itself through once
+headless first (the check) and says <code>LAPTOP ok</code>.</p>
+</section>
+
+<section id="install">
+<h2><span class="n">3</span>Putting it in a project</h2>
+<p>A project made by <code>tools/godot_byhand.py</code> has it already, enabled, beside the Look, UI and Weapons plugins
+and the starter kit:</p>
+<pre>python tools/godot_byhand.py new ~/Games/MyGame
+python tools/godot_byhand.py install ~/Games/MyGame      # a project you have: the plugins again, the starter left alone</pre>
+<p>In <span class="ui">Project › Project Settings › Plugins</span> it's <b>HorrorStudio Devices</b>. It needs the UI plugin
+beside it (the slots that show things' models are the HUD's own).</p>
+<ol class="steps">
+  <li>Drag <code>addons/horrorstudio_devices/laptop/laptop.tscn</code> into your level, onto a desk (its feet on the
+  desk's top; it faces +Z, the way you'd sit at it).</li>
+  <li>Your player is the starter's (<code>res://starter/player.tscn</code>): its <kbd>E</kbd> uses what it looks at,
+  and the laptop makes its own collider so <kbd>E</kbd> finds it.</li>
+  <li>For cash and a pocket the scene needs the starter's <span class="node">Story</span> node (story.gd: set its
+  <b>Cash</b>), and for the pocket's row an <span class="node">HSHud</span> (the UI plugin's).</li>
+</ol>
+<div class="note">The starter's <code>story.gd</code> and <code>pickup.gd</code> grew for this (a pocket that counts, names and shows its
+things; cash). <code>godot_byhand.py install</code> leaves your <code>starter/</code> alone: copy those two files from
+<code>guides/first_game/starter/</code> into an older project's <code>starter/</code>. The laptop still sells without them, from its own
+<b>Cash</b>.</div>
+</section>
+
+<section id="sit">
+<h2><span class="n">4</span>Sitting at it</h2>
+<p><kbd>E</kbd> on it and the player stops; the view leaves the eye and goes in square to the screen in under a second,
+the lens narrowing to 40° so the screen is flat and fills nine tenths of the view. The mouse is the terminal's own
+pointer (green, drawn on the screen); it clicks what it's over. The first time, the machine boots: its lines typed out.</p>
+<div class="pair">
+<figure><img src="img/zoom.jpg" width="1600" height="900" alt="Halfway in: the laptop close on the desk, its screen starting to boot"><figcaption>On the way in.</figcaption></figure>
+<figure><img src="img/boot.jpg" width="1600" height="900" alt="The screen close: boot lines in green with the code raining faintly behind"><figcaption>The boot, the first time.</figcaption></figure>
+</div>
+<figure><img src="img/home.jpg" width="1600" height="900" alt="HOME: the system's name, its tabs HOME ORDER LOG, the cash and the clock; a welcome, the cash on account, OPEN THE CATALOGUE; a status line and LOG OFF at its foot"><figcaption>HOME: the tabs along the top with the cash and the clock, the status line typed at the foot, LOG OFF beside it.</figcaption></figure>
+<table class="keys">
+  <tr><td><kbd>E</kbd> on it</td><td>sit at it (a shut laptop opens first)</td></tr>
+  <tr><td><kbd>Mouse</kbd></td><td>the terminal's pointer; <kbd>Left click</kbd> presses what it's over; the wheel scrolls</td></tr>
+  <tr><td><kbd>Esc</kbd>, <kbd>E</kbd>, <span class="ui">LOG OFF</span></td><td>back to the room (the view back to your eye, the screen asleep again)</td></tr>
+</table>
+</section>
+
+<section id="order">
+<h2><span class="n">5</span>The Order tab</h2>
+<p>Every thing for sale is a card under its heading: its own model (turning while the pointer's on it), its name, its
+price and, if the shop only has a few, how many are left. Click one and it's on the right, large and turning, its words
+typed out; <span class="ui">−</span> and <span class="ui">+</span> for how many, the total, <span class="ui">ORDER</span>.</p>
+<figure><img src="img/order.jpg" width="1600" height="900" alt="ORDER: cards under SUPPLIES and FOOD & DRINK, each its model in green; the batteries picked large on the right with two of them, the total $9.00 and ORDER"><figcaption>Two batteries picked; the pointer on the candle, which lights its card and turns it.</figcaption></figure>
+<p>Ordered, it's paid from the cash and goes straight into the pocket: the status line says the order's number, the
+HUD's inventory row comes up for a moment with the thing's own model in it.</p>
+<figure><img src="img/ordered.jpg" width="1600" height="900" alt="After ORDER: CASH $11.00, ORDER #1001 PLACED, and the HUD's row at the bottom with the batteries' model"><figcaption>ORDER #1001: $9.00 from $20.00, two pairs of batteries in the pocket (the starter's flashlight takes them as its spares), the row showing them.</figcaption></figure>
+<div class="pair">
+<figure><img src="img/declined.jpg" width="1600" height="900" alt="A burger at $5.50 with $2.00: DECLINED: NOT ENOUGH CASH: $3.50 SHORT"><figcaption>Too dear: declined, and it says by how much. Nothing taken.</figcaption></figure>
+<figure><img src="img/order_tape.jpg" width="1600" height="900" alt="The Order tab through the camhybrid tape"><figcaption>On the camhybrid tape: it still reads.</figcaption></figure>
+</div>
+<p>A thing whose shop has only a few (its <b>Stock</b>) says how many are left; sold out, its card says so and
+<span class="ui">ORDER</span> can't be pressed. Each laptop counts what it has sold.</p>
+</section>
+
+<section id="items">
+<h2><span class="n">6</span>Things to sell: adding one</h2>
+<p>A thing is one <span class="node">HSShopItem</span> file. In the FileSystem dock right-click a folder, <span class="ui">Create New › Resource…</span>,
+<b>HSShopItem</b>, and fill it in:</p>
+<table class="keys">
+  <tr><td><b>Id</b></td><td>its name in the pocket: what a door, a script or <code>Story.has("…")</code> asks for (<code>batteries</code> is the starter flashlight's spares)</td></tr>
+  <tr><td><b>Title</b></td><td>its name on the screen and in the pocket's row</td></tr>
+  <tr><td><b>About</b></td><td>a line or two, typed out under it</td></tr>
+  <tr><td><b>Price</b>, <b>Count</b></td><td>what it costs; how many one order puts in the pocket</td></tr>
+  <tr><td><b>Stock</b></td><td>how many the shop has (−1: no end)</td></tr>
+  <tr><td><b>Category</b></td><td>the heading it's listed under</td></tr>
+  <tr><td><b>Model</b></td><td>what it looks like: any scene (a made prop's <code>.glb</code> from <code>Saved/Props/</code>, your own mesh). Its card, the pocket's row and your hand all show it.</td></tr>
+  <tr><td><b>Model Turn</b></td><td>degrees: how it sits in its slot (a flat thing stood up)</td></tr>
+</table>
+<p>Then either put it in a catalog's <b>Items</b> list (the laptop's <b>Catalog</b>; the plugin's own is
+<code>shop/catalog.tres</code>), or set the catalog's <b>Folder</b> and just save every item there: <b>a file in the folder is
+for sale</b>, nothing to list. A laptop with no catalog sells the plugin's.</p>
+<pre># the plugin's own six, to copy from
+addons/horrorstudio_devices/shop/items/batteries.tres   candle.tres   painkillers.tres
+                                         water.tres     soda.tres     burger.tres</pre>
+<div class="tip"><b>Your own catalog</b>: duplicate <code>shop/catalog.tres</code> into your game's folder, change its <b>Store</b>
+name and things, and give it to the laptop's <b>Catalog</b>. Two laptops can sell different things.</div>
+</section>
+
+<section id="cash">
+<h2><span class="n">7</span>Cash and the pocket</h2>
+<p>The cash is the starter's <span class="node">Story</span> node's <b>Cash</b>: set what the player starts with there.
+A <code>pickup.gd</code> with <b>Cash</b> (and no item) is money lying about: <kbd>E</kbd> on it and the cash goes up.
+The pocket counts: <code>give("batteries", "AA batteries", model, 2)</code>, <code>count_of("batteries")</code>,
+<code>take("batteries")</code>.</p>
+<p>When the scene has an <span class="node">HSHud</span>, the pocket is its inventory row: the things themselves, scaled
+into their slots, the one in your hand in the middle. <kbd>Tab</kbd> shows it or hides it, the wheel turns it, and it
+comes up for a moment when something comes in (a pickup or an order).</p>
+<figure><img src="img/pocket.jpg" width="1600" height="900" alt="Back in the room: the HUD's row at the bottom with the painkillers in the middle and the batteries beside them"><figcaption>After shopping, <kbd>Tab</kbd>: the painkillers in the hand, the batteries beside them, each its own model.</figcaption></figure>
+</section>
+
+<section id="look">
+<h2><span class="n">8</span>The green terminal's look</h2>
+<p>Green phosphor on black, one pixel font (VT323, OFL), frames of thin lines, the things' models in the same green, the
+code's rain behind it all. On the glass: the screen's rows (fading where they'd be finer than a pixel), a phosphor's glow
+round what's lit, a faint flicker. It's an <span class="node">HSTerminalLook</span> (the laptop's <b>Look</b>):</p>
+<table class="keys">
+  <tr><td><b>Ink</b>, <b>Dim</b>, <b>Faint</b>, <b>Paper</b>, <b>Hot</b></td><td>its greens and its black (an amber or a white terminal: change them)</td></tr>
+  <tr><td><b>Font</b>, <b>Text Px</b></td><td>a pixel font of your own; its size</td></tr>
+  <tr><td><b>Rain</b>, <b>Rain Idle</b>, <b>Glyphs</b></td><td>the rain behind the windows, the rain alone when nobody's at it, what it's made of</td></tr>
+  <tr><td><b>Scanlines</b>, <b>Glow</b>, <b>Flicker</b></td><td>the glass</td></tr>
+  <tr><td><b>Boot</b></td><td>the boot's lines the first time it wakes</td></tr>
+  <tr><td><b>Models In Ink</b></td><td>off: the things' models in their own colours</td></tr>
+</table>
+<p>The laptop's own: <b>System Name</b>, <b>User</b>, <b>Home Text</b> (<code>{user}</code>, <code>{store}</code>, <code>{cash}</code>
+filled in), <b>Clock</b> (a time it always shows, or the real one), <b>Brightness</b>, <b>Zoom Fov</b>, <b>Fill</b>,
+<b>System Pointer</b>, <b>Sounds</b>.</p>
+</section>
+
+<section id="model">
+<h2><span class="n">9</span>The laptop and the mouse</h2>
+<p>Your model, <code>PSX STYLE Low Poly LAPTOP &amp; MOUSE</code>, analysed and enhanced as the retro pack's models were:
+brought to its real size (330 mm wide), its edges rounded off a little, every surface painted in code (its own two
+textures were photos off the web, and weren't ours to ship). Real keys with their legends, the ones a game is played
+with polished; a touchpad; speaker grilles; ports; feet and vents underneath; a webcam; the screen a surface of its own.
+The mouse made round, its wheel, its grip and the sensor's red glow underneath. Recipes <code>laptop</code>,
+<code>laptop_shut</code> and <code>computer_mouse</code> (the prop generator's <code>computer</code> family, PROPGEN §32).</p>
+<div class="pair">
+<figure><img src="img/close.jpg" width="1600" height="900" alt="The laptop close from the side: the code raining on its screen, the keys and touchpad, the mouse"><figcaption>Close, from the side.</figcaption></figure>
+<figure><img src="img/shut.jpg" width="1600" height="900" alt="The laptop shut on the desk: its lid's crescent and name, an old sticker, an asset tag"><figcaption>Shut (<b>Lid Open</b> off): the lid's crescent, an old sticker, an asset tag.</figcaption></figure>
+</div>
+<p>They're customizable props: in the prop generator's page, <span class="ui">✎</span> on the laptop puts your own pictures on
+<code>lid.logo</code>, <code>lid.sticker</code>, <code>lid.tag</code> and <code>deck.sticker</code> (the prop customizer guide shows how).
+Made again, copy <code>Saved/Props/laptop/laptop.glb</code> over <code>addons/horrorstudio_devices/models/laptop.glb</code>.</p>
+</section>
+
+<section id="code">
+<h2><span class="n">10</span>In your own scripts</h2>
+<pre>$Laptop.opened.connect(func(): print("at the laptop"))
+$Laptop.closed.connect(func(): print("back in the room"))
+$Laptop.ordered.connect(func(item, count, total): print(count, " ", item.title, " for ", total))
+$Laptop.use($Player)                       # sit the player at it from a script
+$Laptop.leave()                            # and back
+$Laptop.lid_open = false                   # shut (E opens it again)
+$Laptop.place_order(load("res://shop/lighter.tres"), 1)   # an order without the screen: {ok, number, total}
+
+# a tab of your own beside HOME, ORDER and LOG (any Control)
+$Laptop.term.add_tab("MAIL", preload("res://mail_tab.tscn").instantiate())
+$Laptop.term.say("1 NEW MESSAGE.")        # the status line
+$Laptop.term.log("A login from somewhere else.")
+
+# the pocket and the cash (the starter's Story node)
+$Story.earn(20.0)            $Story.pay(4.5)            $Story.cash
+$Story.give("key_304", "Room 304's key", model)        $Story.count_of("batteries")</pre>
+</section>
+
+<section id="rules">
+<h2><span class="n">11</span>Good to know</h2>
+<ul>
+  <li><b>While you're at it nothing else hears the keys or the mouse</b>: the player stops (its walking, looking and
+  <kbd>E</kbd>), a gun under the eye can't fire, and the Story's corner words step aside. The view's camera leaves the
+  view models' render layer out.</li>
+  <li><b>The screen is drawn only while it can be seen</b>: always while you're at it; asleep, a dozen times a second
+  while you're within <b>Wake M</b> (7 m) and it's in view; otherwise not at all.</li>
+  <li><b>Its picture fits any screen</b>: it's made the screen's own shape, and it's put on the glass by the screen's own
+  vertices, so a remade laptop (another size, another model with a <code>*_screen</code> surface and the
+  <code>screen</code> sockets) works the same.</li>
+  <li><b>No red</b>: a refusal is said, with a low buzz; the terminal stays one green.</li>
+  <li><b>Its sounds are made in code</b> (<code>tools/device_sounds.py</code>): a blip, a tick, keys, the order's three notes,
+  the refusal's buzz, the boot, the lid, the coil's hum. Turn them off with <b>Sounds</b>.</li>
+</ul>
+</section>
+
+<footer>HorrorStudio Devices, a Godot 4.7 plugin of the studio's (<code>GodotPlugins/HorrorStudioDevices</code>). The pictures
+are its own check's (<code>python tools/godot/laptop_check.py --pictures</code>, LAPTOP), drawn by Godot in its office at night.</footer>
+</main>
+</div>
+<script>
+// the contents follow the reading: the section on screen is lit
+const links = [...document.querySelectorAll("nav.toc ol a")], secs = links.map(a => document.querySelector(a.getAttribute("href")));
+const lit = () => { let at = 0; secs.forEach((s, i) => { if (s && s.getBoundingClientRect().top < 140) at = i; }); links.forEach((a, i) => a.classList.toggle("on", i === at)); };
+addEventListener("scroll", lit, { passive: true }); lit();
+</script>
+</body>
+</html>

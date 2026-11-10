@@ -12,6 +12,7 @@ beside it (`HSLook`, in menu.gd).
 | File | What |
 |---|---|
 | `hud.gd` | `HSHud`, the CanvasLayer: the corners (OBJECTIVE and TO DO resting at 74% and up to full for a few seconds on a change; rows kept between changes so a tick eases: the line drawn across, the row dimmed), the reticle (`Reticle`: a dot that opens into a ring, red and crossed when locked, an arc for a held use), the prompt, the footer (the line in a serif over a scrim, `who`, a choice on one line), the log's toasts, the timer, the stance's vignette, the chips of the keys, the inventory row (each slot a small SubViewport world; the band behind it a halo, the line under the hand's), a chapter card (a rule with the marker's diamond), cards (`panel`: only words, a halo, a veil), the fade. `standalone` (true by hand: project settings, no menu, `auto_markers`), `fade()` an ease kept on a node. Every ease is a tween on the node: `fade(n, a, secs)` returns null when it's there already |
+| `model_slot.gd` | `HSModelSlot` (static, RefCounted): a thing's own model in a slot, `make(model, px, live, turn_deg, zoom)` (a SubViewport with its own World3D: the cool fill, warm key and rim, the orthographic camera three-quarters from above, the model fitted; returns the TextureRect, its metas `viewport`, `turn`, `model`), `redraw`, `bounds_of(n, space)`, `copy_of(node)` (its meshes only), `of_scene(scene)`. The inventory row's slots (`inv_slot`) are made with it, and the devices plugin's shop (HSLaptop's Order tab): one look for a thing wherever it's shown (DECISIONS 2026-11-10, later still) |
 | `marker.gd` | the guide marker's drawing and its numbers: `base_alpha(d)` (the nearer the clearer, a log scale: A_NEAR .9 inside 3 m, A_FAR .2 at 36 m, gone at 72), HIDDEN .55 out of sight, TAKEN .62 when the cursor is on it; `update(targets, cam, dt, ctx)` with ctx {seen, names, aimed}; `marks[id]` {k, d, seen, on, ptr, label, gem, above, top...}; the pointer on an ellipse, after a moment out of view; `mode` 0 off, 1 subtle, 2 clear |
 | `quest_marker.gd` | `HSQuestMarker`: a Node3D in the group `hs_quest_marker` (`active`, `label`, `height`, `sight_mask`); the HSHud (`auto_markers`) feeds the guide from them |
 | `theme.gd` | the four themes' colours, `box`, `make` (the glass themes' PanelContainer is a ghost: no fill, no border, no shadow), `serif` (a `SystemFont`) and `tracked` (letter-spaced) |
@@ -27,7 +28,7 @@ beside it (`HSLook`, in menu.gd).
 driven from the runtime (the marker's strength by distance, by walls, its name, the pointer, the setting; the to-do's
 rows, the corners' rest and fresh, the hint chips, the reticle, a card that is only words, the lines and the scrim, the
 timer, the hidden vignette), then the by-hand half: a project from `godot_byhand.py new` with an HSHud and two
-HSQuestMarkers. After a change also GDPLAY, GDTESTROOM (from `n_chores`: stations 6 and 13 need local Studio files),
+HSQuestMarkers. After a change also LAPTOP (the shop's slots are HSModelSlot's), GDPLAY, GDTESTROOM (from `n_chores`: stations 6 and 13 need local Studio files),
 GDEXPORT, DIRECTOR and FIRSTGAME.
 
 ## Rules (the user's, from the decisions that shaped it)

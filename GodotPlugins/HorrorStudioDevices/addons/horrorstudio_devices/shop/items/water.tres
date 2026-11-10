@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="HSShopItem" format=3]
+
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_devices/shop/models/water_bottle.glb" id="1_2hejf"]
+[ext_resource type="Script" path="res://addons/horrorstudio_devices/shop/item.gd" id="2_pei22"]
+
+[resource]
+script = ExtResource("2_pei22")
+id = "water"
+title = "Mineral water"
+about = "Natural mineral water. Sealed, as far as you can tell."
+price = 1.2
+category = "FOOD & DRINK"
+model = ExtResource("1_2hejf")

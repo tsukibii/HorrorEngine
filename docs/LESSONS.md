@@ -3,6 +3,23 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The laptop in Godot (HSLaptop, HSTerminal): what took a second try (2026-11-10)
+
+- **`set_anchors_preset` keeps a control's size; `set_anchors_and_offsets_preset` fills**: in Godot 4 the first moves
+  the anchors and recomputes the offsets so the rect stays as it is. The terminal's root, its background and its
+  margins were set full-rect after they were made and stayed 0 by 0: the SubViewport's grey clear colour showed through
+  the screen and the status line sat under the header. Use `set_anchors_and_offsets_preset` for a control that must
+  fill its parent (and give a Control under a SubViewport its size).
+- **Headless Godot keeps no mouse mode and draws nothing**: `Input.mouse_mode` stays VISIBLE whatever's set, and a
+  VisibleOnScreenNotifier3D never says it's on screen. A check reads them only with a window; whether a thing can be
+  seen is decided by the camera's frustum (`is_position_in_frustum`), which is plain maths, and counted (`idle_draws`)
+  rather than read off a viewport's update mode between frames (a one-shot draw is back to DISABLED by the next frame).
+- **A script set on a node already in the tree never runs its `_ready`**: the $20 note got pickup.gd after `add_child`
+  and made no collider, so E passed through it. Set the script before the node goes in.
+- **`:=` needs a typed value**: `SOUNDS + nm` with `nm` from an untyped array, `term._label()` through a Node-typed
+  variable and `max()` all give a Variant, and Godot refused to parse the script. Type the variable (`var p: String`) or
+  use the typed function (`maxi`).
+
 ## The laptop and mouse (the `computer` family): what took a second try (2026-11-10)
 
 - **A material painted only by texel must mark what it painted as used**: the mouse's body came out black in every map

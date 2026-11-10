@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="HSShopCatalog" format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_devices/shop/item.gd" id="1_dk25i"]
+[ext_resource type="Resource" path="res://addons/horrorstudio_devices/shop/items/batteries.tres" id="2_0bluq"]
+[ext_resource type="Resource" path="res://addons/horrorstudio_devices/shop/items/candle.tres" id="3_mynhc"]
+[ext_resource type="Resource" path="res://addons/horrorstudio_devices/shop/items/painkillers.tres" id="4_cr2ib"]
+[ext_resource type="Resource" path="res://addons/horrorstudio_devices/shop/items/water.tres" id="5_yc8dc"]
+[ext_resource type="Resource" path="res://addons/horrorstudio_devices/shop/items/soda.tres" id="6_1ilq7"]
+[ext_resource type="Resource" path="res://addons/horrorstudio_devices/shop/items/burger.tres" id="7_as2fl"]
+[ext_resource type="Script" path="res://addons/horrorstudio_devices/shop/catalog.gd" id="8_2tvhp"]
+
+[resource]
+script = ExtResource("8_2tvhp")
+items = Array[ExtResource("1_dk25i")]([ExtResource("2_0bluq"), ExtResource("3_mynhc"), ExtResource("4_cr2ib"), ExtResource("5_yc8dc"), ExtResource("6_1ilq7"), ExtResource("7_as2fl")])

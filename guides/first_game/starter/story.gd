@@ -7,6 +7,11 @@
 ##   say("Locked.")                  card("A note", "...")                        end()  (or end_with(title, words))
 ##   give("key_304"), has("key_304"), flag("met_her"), is_set("met_her"), holds("task:key") (what areas' `needs` say),
 ##   holds("on:out") (that task on the list and not done yet: you're on it)
+## The pocket counts (give("batteries", "Batteries", model, 2), count_of, take), knows each thing's name and its model,
+## and when the scene has an HSHud (the UI plugin's) it's that HUD's inventory row: the things themselves in their
+## slots, the one in the hand in the middle; Tab shows it or hides it, the wheel turns it, and it shows a moment when
+## something comes in. The player's `cash` too: pay(4.5) (false when there isn't enough), earn(20) (the devices
+## plugin's laptop sells for it; a pickup with `cash` gives it).
 extends CanvasLayer
 
 signal task_added(id: String)
@@ -14,14 +19,20 @@ signal task_done(id: String)
 signal got(item: String)
 signal flagged(fact: String)
 signal ended(title: String)
+signal pocket_changed                                 ## something came into the pocket or went out of it
+signal cash_changed(cash: float)
 
 @export var objective_text := ""                      ## the objective when the game starts
 @export var tasks: PackedStringArray = []             ## the to-do list when it starts, each "id: what it says"
 @export var ending_title := "The end"                 ## what end() shows
 @export_multiline var ending_text := ""
 @export var accent := Color(0.88, 0.64, 0.37)         ## the list's ticks and the cards' titles
+@export var cash := 0.0                               ## the player's money: what the laptop's shop takes
+@export var pocket_row := true                        ## the pocket shown as an HSHud's inventory row (when the scene has one)
 
-var items := {}
+var items := {}                                       # what's carried: its name -> how many
+var names := {}                                       # what each is called on screen
+var models := {}                                      # what each looks like in its slot (a copy of the thing)
 var flags := {}
 var over := false
 var _tasks: Array = []                                # {id, text, done}
@@ -35,6 +46,10 @@ var _card_text: Label
 var _end: ColorRect
 var _end_title: Label
 var _end_text: Label
+var _at := 0                                          # the pocket's thing in the hand
+var _shown := false                                   # the row up (Tab)
+var _peek := 0.0                                      # the row up for a moment: something came in
+var _hud: Node = null
 
 
 func _ready() -> void:
@@ -109,17 +124,105 @@ func close_card() -> void:
 	_card.visible = false
 
 
-func give(item: String) -> void:
-	items[item] = true
+## into the pocket: `label` what it's called (its name when not given), `model` what it looks like in its slot (a copy of
+## the thing: the pocket keeps it), `count` how many
+func give(item: String, label := "", model: Node3D = null, count := 1) -> void:
+	items[item] = int(items.get(item, 0)) + max(count, 1)
+	if label != "":
+		names[item] = label
+	if model != null:
+		if models.has(item) and is_instance_valid(models[item]) and models[item] != model:
+			model.queue_free()                         # one model a thing: the first one's kept
+		else:
+			models[item] = model
+	_at = _order().find(item)
+	_peek = 2.5
+	_draw_pocket()
 	got.emit(item)
+	pocket_changed.emit()
 
 
 func has(item: String) -> bool:
-	return items.has(item)
+	return int(items.get(item, 0)) > 0
 
 
-func take(item: String) -> void:
-	items.erase(item)
+func count_of(item: String) -> int:
+	return int(items.get(item, 0))
+
+
+## out of the pocket (`count` of them; all of it at 0)
+func take(item: String, count := 1) -> void:
+	var n: int = int(items.get(item, 0)) - maxi(count, 1)
+	if n > 0:
+		items[item] = n
+	else:
+		items.erase(item)
+		names.erase(item)
+		var m = models.get(item)
+		models.erase(item)
+		if m != null and is_instance_valid(m) and not m.is_inside_tree() and _find_hud() == null:
+			m.free()                                   # (the HUD's row frees the ones it held)
+	_draw_pocket()
+	pocket_changed.emit()
+
+
+## pay out of the cash: false (and nothing taken) when there isn't enough
+func pay(amount: float) -> bool:
+	if amount > cash + 0.0001:
+		return false
+	cash = snappedf(cash - amount, 0.01)
+	cash_changed.emit(cash)
+	return true
+
+
+func earn(amount: float) -> void:
+	cash = snappedf(cash + amount, 0.01)
+	cash_changed.emit(cash)
+
+
+## the pocket's things in the order they came in
+func _order() -> Array:
+	return items.keys()
+
+
+## the pocket as the HUD's inventory row (an HSHud anywhere in the scene), the one in the hand in the middle
+func _draw_pocket() -> void:
+	var h := _find_hud()
+	if h == null or not pocket_row or not h.has_method("inventory"):
+		return
+	var keys := _order()
+	_at = clampi(_at, 0, max(keys.size() - 1, 0))
+	var list: Array = []
+	for id in keys:
+		var n := int(items[id])
+		var nm := str(names.get(id, str(id).replace("_", " ")))
+		list.append({"id": id, "name": nm + (("  x%d" % n) if n > 1 else ""), "model": models.get(id)})
+	h.inventory(list, _at, _shown or _peek > 0.0, false)
+
+
+func _find_hud() -> Node:
+	if _hud != null and is_instance_valid(_hud):
+		return _hud
+	_hud = null
+	for n in get_tree().root.find_children("*", "CanvasLayer", true, false):
+		var sc: Script = n.get_script()
+		if sc != null and sc.get_global_name() == &"HSHud":
+			_hud = n
+			break
+	return _hud
+
+
+func _unhandled_input(e: InputEvent) -> void:
+	if items.is_empty() or _find_hud() == null or not pocket_row:
+		return
+	if e is InputEventKey and e.pressed and not e.echo and e.physical_keycode == KEY_TAB:
+		_shown = not _shown
+		_draw_pocket()
+	elif e is InputEventMouseButton and e.pressed and (_shown or _peek > 0.0) and items.size() > 1 \
+			and e.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		_at = posmod(_at + (1 if e.button_index == MOUSE_BUTTON_WHEEL_DOWN else -1), items.size())
+		_peek = max(_peek, 1.5)
+		_draw_pocket()
 
 
 func flag(fact: String) -> void:
@@ -177,6 +280,10 @@ func end_with(title: String, text: String = "") -> void:
 
 # ---- on screen ---------------------------------------------------------------------------------------------------
 func _process(dt: float) -> void:
+	if _peek > 0.0:
+		_peek -= dt
+		if _peek <= 0.0:
+			_draw_pocket()                             # the row down again (unless Tab put it up)
 	if _line_left > 0.0:
 		_line_left -= dt
 		if _line_left <= 0.0:

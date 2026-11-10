@@ -21,6 +21,22 @@ The user's answers, newest first. They override the plan, the research and the d
     the screen a surface of its own for the game's picture, the lid a part on its hinge; the mouse made round, its wheel,
     its grip, the sensor's red glow underneath. **Batteries** for its shop to sell (the flashlight's spares): the `cell`
     family (PROPGEN §33), customizable, `battery_aa` and the two-pack `batteries_aa_2`.
+  - **Usable, as a prefab**: a new Godot plugin, **HorrorStudio Devices** (`GodotPlugins/HorrorStudioDevices`, in every
+    project `godot_byhand.py` makes), its prefab `laptop/laptop.tscn` (the laptop and its mouse, **HSLaptop**). E on it
+    (the starter's player): a shut lid opens, the player stops, the view goes in square to the screen (a camera of its
+    own, 40 degrees, the screen nine tenths of the view), the mouse is the terminal's pointer through the glass; Esc, E
+    or LOG OFF back. The terminal (HSTerminal) is **green phosphor on black** in a pixel font (VT323, OFL), square
+    frames, the code's rain behind it and alone on the screen when nobody's at it, its boot's lines the first time,
+    the glass's rows, glow and flicker; tabs HOME, ORDER and LOG (more by `add_tab`).
+  - **The Order tab**: the catalog's things as cards, **each its own model** in the green through the UI plugin's
+    `HSModelSlot` (the HUD's inventory row's own slot, pulled out so both use it), its price and stock; picked, large and
+    turning, how many, the total, ORDER. **The cash** is the starter's Story node's (`cash`, `pay`, `earn`; a pickup with
+    `cash` is money lying about); an order goes **into the existing pocket** with its model (`give(id, title, model,
+    count)`), which counts now and shows as an HSHud's inventory row (Tab, the wheel, up a moment when something comes in);
+    batteries become the flashlight's spares. Too dear or sold out, it says so.
+  - **Easy to add a thing**: one `HSShopItem` file (id, title, about, price, count, stock, category, model, model turn),
+    in a catalog's list or simply saved in the catalog's folder. The plugin's own catalog (NIGHT-MART) sells six made
+    props: AA batteries, a votive candle, painkillers, water, a soda, a burger. The guide: `guides/laptop/`.
 
 ## 2026-11-10, later (the user: both systems)
 

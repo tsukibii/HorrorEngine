@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="HSShopItem" format=3]
+
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_devices/shop/models/burger_box.glb" id="1_k31bt"]
+[ext_resource type="Script" path="res://addons/horrorstudio_devices/shop/item.gd" id="2_nbh3v"]
+
+[resource]
+script = ExtResource("2_nbh3v")
+id = "burger"
+title = "Big Bite burger"
+about = "Delivered hot. Nobody remembers ordering the second one."
+price = 5.5
+stock = 3
+category = "FOOD & DRINK"
+model = ExtResource("1_k31bt")
