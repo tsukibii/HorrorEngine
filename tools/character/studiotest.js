@@ -595,7 +595,7 @@ const png = rgb => {
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("brows and lashes (the hair shader): off at first; the lashes on the lids' edges lie over the lid's rim to its front edge (no bare skin between the eye and the lashes) and turn with the lid as the eyes shut, still on their rim, pointing at the viewer; the lash line a dense fringe; the brows ride a brow raise", async () => {
-    await page.click('#tabs button[data-tab="face"]');
+    await page.click('#tabs button[data-tab="brows"]');   // (their own tab since 2026-10-31: this step still looked in Face, where the switches aren't shown)
     if (await page.evaluate(() => window.__body.st.lash.on || window.__body.st.brow.on)) throw new Error("brows and lashes should start off");
     await page.click("#browRows label.tog >> nth=0"); await page.click("#browRows label.tog >> nth=1");   // lashes and brows on
     await page.waitForFunction(() => window.__body.st.lash.on && window.__body.st.brow.on && window.__body.browlash && window.__body.browlash.lashes && window.__body.browlash.brows, null, { timeout: 15000 });

@@ -52,6 +52,12 @@ the fix.
   (14 mm a slider at the back of the top): 1.6 mm under the hair at its default and 4 mm at its most, found by marks
   baked on the scalp, not by eye. The short face under the eyes already gives the high forehead; the lift is gone, and
   Cutify leaves the crown where it was.
+- **A check too slow to run here goes stale without anyone knowing**: STUDIO stopped at its brows and lashes step,
+  and EXPRESSIONS at its face row, both on things from before this work: the brows moved to a tab of their own on
+  2026-10-31 and one step still looked for their switches in Face; the desk's body rows share the face rows' class
+  and a selector written for one row found two. Neither had been run to its end since. When a part of a page moves or
+  gets a sibling, search every check for its old place and its class (`grep -n "browRows\|ftrack" tools/**/*test*`),
+  and say in CONTINUE which slow checks were not run, so the next run's first failure isn't taken for its own.
 - **One drawing job at a time means the Godot checks too**: a sixty-six-picture run of the Studio stopped at its
   twenty-fourth on a click that waited thirty seconds for a button to hold still, because GDPLAY and GDTESTROOM had
   been started beside it and the page's thread got no turn. A script that pictures a software-drawn page sets its
