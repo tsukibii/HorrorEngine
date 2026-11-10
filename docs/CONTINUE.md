@@ -43,6 +43,10 @@ Studio and the look plugin (docs/CHARACTER_STUDIO.md §2d, docs/GODOT_LOOK.md §
 - **The export**: each ear a chain of bones under the head (`jiggle_ear_L_0` ... `_tip`), horns whole on the head.
   **HSJiggle** in the look plugin springs them (Godot's SpringBoneSimulator3D); HSCharacterLook and the game's cast put
   it on by themselves.
+- **Hair rides the head**: a bake made on an adult follows the head to a child's (the character records the head its
+  hair was baked on, `hairHead`; `placeHair` in index.html); a bake on no head we know is left and the view says so.
+- **The head's scale in the export** (`studioScale` on the skin's node): the 72 face shapes sized by the head, not by
+  the body's height (the desk's `face.js`, the Godot bake `face_morphs.mjs`; older files as before).
 - **Checks**: GROW (in check_all), GROWPAGE (the page, a scratch character `_growtest`), JIGGLE (Godot, headless);
   TAILOR and POSE now run on two children as well (every design cuts on an eight-year-old).
 
@@ -74,10 +78,12 @@ in Godot `docs/godot_sheets/2026-11-10_ears_jiggle.jpg`.
 - the horns' and ears' sizes and places on a real character with hair (they're made on the bare scalp);
 - the ears in Godot: HSJiggle's `amount` and `gravity` (how floppy), on a character that walks.
 
-**Next, if the user wants it**: hair refitted to a head an age has resized (today: bake it again); the outfits'
-pictures on a child; children's sizes in the wardrobe (clothes cut for a child keep an adult's ease in centimetres);
-younger than eight; tails and wings on the same chains (HSJiggle springs any `jiggle_` chain); the creatures' skin (the
-procedural skin's greens and greys as looks); the desk's stand-in bodies by age.
+**Next, if the user wants it**: hair made again by itself when the body under it changes (today the bake rides the
+head: what lay on the shoulders needs Hair, Bake); the outfits' pictures on a child; children's sizes in the wardrobe
+(clothes cut for a child keep an adult's ease in centimetres); younger than eight; tails and wings on the same chains
+(HSJiggle springs any `jiggle_` chain); the creatures' skin (the procedural skin's greens and greys as looks); the
+desk's stand-in bodies by age; the salon's own frame on a child's short face (it sizes the hair by the face's height,
+chin to crown, which an age shortens by a twentieth: presets may want a little more volume there).
 
 ## Where it stopped last (2026-11-10, `laptop`): a laptop to sit at, a green terminal, a shop that fills the pocket, parcels at the door
 

@@ -42,8 +42,11 @@ The user's answers, newest first. They override the plan, the research and the d
     (docs/GODOT_LOOK.md §5n), Godot's own SpringBoneSimulator3D on every chain named so; HSCharacterLook and the game's
     cast put it on by themselves. Horns ride the head whole.
   - **Open for you**: the look of a child's face and of each creature on your card (the numbers are tables in
-    `tools/character/grow.js`); how floppy the ears should be in Godot (HSJiggle's `amount`); hair made on an adult head
-    wants baking again after an age is set (the head's size changes with it).
+    `tools/character/grow.js`); how floppy the ears should be in Godot (HSJiggle's `amount`).
+  - **Hair on a head that changes** (ours, so a character with hair can be given an age): the salon's bake now rides
+    the head, placed again by how the head has moved and been sized since it was baked (the character records the head
+    its hair was made on). It isn't made again: hair that lay on the shoulders was shaped on the body it had, and
+    Hair, Bake does that.
 
 ## 2026-11-10, after the last (the user: what's in a parcel flies to you and the box is gone)
 

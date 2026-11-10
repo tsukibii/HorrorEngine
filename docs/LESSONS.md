@@ -48,11 +48,20 @@ the fix.
   smaller without the age's face, and its middle goes with it. The check now compares the points under the neck (none
   moves) and lets the eyes be. When a check fails by a hair on something right, it was measuring the part that's
   allowed to change.
+- **A face's switch shouldn't lift the skull**: Cutify carried a little Forehead height, which raises the whole crown
+  (14 mm a slider at the back of the top): 1.6 mm under the hair at its default and 4 mm at its most, found by marks
+  baked on the scalp, not by eye. The short face under the eyes already gives the high forehead; the lift is gone, and
+  Cutify leaves the crown where it was.
 - **One drawing job at a time means the Godot checks too**: a sixty-six-picture run of the Studio stopped at its
   twenty-fourth on a click that waited thirty seconds for a button to hold still, because GDPLAY and GDTESTROOM had
   been started beside it and the page's thread got no turn. A script that pictures a software-drawn page sets its
   default timeout long (five minutes), names its pictures so a run can be picked up where it stopped, and nothing else
   that eats a core runs with it.
+- **Hair is placed by a frame that the chin is in**: the salon's head frame is sized by the face from chin to crown,
+  and an age's short face moves the chin. Measuring how a head has moved since a bake from that frame would have shrunk
+  the hair by a twentieth onto a skull that hadn't changed. The move is measured on the body before its face's fit and
+  sculpt go on, where the head is carried and sized whole; and since that frame was never written down for older bakes,
+  a bake takes the head the character opens with when it still sits on it, rather than guessing what it was.
 
 ## The laptop in Godot (HSLaptop, HSTerminal): what took a second try (2026-11-10)
 

@@ -192,6 +192,7 @@ import * as THREE from "three";
 import * as BL from "./browlash.js";
 import { hairUniforms, applyLook, lightHair, hairMaterial, atlasTexture, albedoTexture, strandsTexture, STUDIO_HAIR } from "./hairshader.js";
 import * as HV from "./hairvolume.js";
+import * as SR from "./salonref.js";
 import * as GR from "./groom.js";
 import * as EG from "./eyegraft.js";
 import { albedo as hairAlbedo } from "./hairtex.js";
@@ -1187,6 +1188,15 @@ function paired() {
   for (const [p, fs] of PAIRS) for (const f of fs) W[f] = Math.min(W[f], Math.max(0, 1.1 - W[p]));
   return W;
 }
+// the head's frame (the salon's: the origin between the ears, its axes, its size against MHR's face; salonref.js) on the
+// body before its face's fit and its sculpt, where compose has put it. grow.js carries and sizes the head whole and the
+// height scales it, so how this frame has changed since a hairstyle was baked is how the head has moved and been sized
+// since: what the bake rides (placeHair, below with the salon's bake)
+let HEADBASE = null;
+function headBase(X, lo, k, floor) {
+  const P = {}; for (const i of Object.values(SR.DEFAULT_ANCHORS)) { P[i * 3] = X[i * 3] * k; P[i * 3 + 1] = (X[i * 3 + 1] - lo) * k - floor; P[i * 3 + 2] = X[i * 3 + 2] * k; }
+  return SR.headFrame(P);
+}
 function compose() {                                   // POS: RAW in its proportions + the face, scaled to the height, feet on the floor; then the eyes, the expressions
   let lo = Infinity, hi = -Infinity;
   agedNow();
@@ -1197,12 +1207,14 @@ function compose() {                                   // POS: RAW in its propor
   for (let i = 0; i < X.length; i += 3) { POS[i] = X[i] * SCALE; POS[i + 1] = (X[i + 1] - lo) * SCALE; POS[i + 2] = X[i + 2] * SCALE; }
   const fitted = fitOffsets();                         // the face's fit and the sculpt
   if (fitted) { if (GROWN) for (let i = 0; i < N * 3; i++) POS[i] += SCALE * PARTK[(i / 3) | 0] * FIT[i]; else for (let i = 0; i < N * 3; i++) POS[i] += SCALE * FIT[i]; }
+  let floor = 0;
   if (exactHeight()) {                                 // a child, a creature, a cutified face: exactly as tall as the height says, soles on the floor
     let a = Infinity, b = -Infinity; for (let i = 1; i < POS.length; i += 3) { a = Math.min(a, POS[i]); b = Math.max(b, POS[i]); }
     const s = st.height / (b - a);
     for (let i = 0; i < POS.length; i += 3) { POS[i] *= s; POS[i + 1] = (POS[i + 1] - a) * s; POS[i + 2] *= s; }
-    SCALE *= s; HEADOFF.multiplyScalar(s);
+    SCALE *= s; HEADOFF.multiplyScalar(s); floor = a * s;
   }
+  HEADBASE = headBase(X, lo, SCALE, floor); placeHair();   // the salon's bake where the head is now
   placeEyes();                                         // from the neutral face
   placeTeeth(); mouthRest();
   const W = paired(), EC = [ENAMES.indexOf("eyesClosed_L"), ENAMES.indexOf("eyesClosed_R")];
@@ -2793,7 +2805,35 @@ function lightBrowLash() {                             // the hair shader's ligh
 }
 // the salon's bake: salon.glb in the head's space, placed by the head frame the salon used (salon_bake.json); rides the
 // body (rig) like everything it wears
-var SALONH = null;
+// The bake rides the head. That frame is the head as it was at the bake: a height, an age or a proportion set since
+// carries the head somewhere else and sizes it, and the bake goes with it, by how the head's base frame (HEADBASE,
+// with compose) has changed since. What it was at the bake is the character's own record (st.hairHead: the bake it's
+// of and the frame, saved with the character; made when the salon bakes here) or, for a bake with none (an older one,
+// one made in the salon alone), the frame the character opens with when the bake sits on that head. A bake that sits
+// on no head we know is left where it was baked and the view says so. It's only placed again: hair that lay on the
+// shoulders was shaped on the body it had (Hair, Bake makes it again)
+var SALONH = null, HAIRINFO = null, HAIRSTALE = false;
+const frameMat = hf => new THREE.Matrix4().set(hf.B[0][0] * hf.S, hf.B[0][1] * hf.S, hf.B[0][2] * hf.S, hf.C[0], hf.B[1][0] * hf.S, hf.B[1][1] * hf.S, hf.B[1][2] * hf.S, hf.C[1], hf.B[2][0] * hf.S, hf.B[2][1] * hf.S, hf.B[2][2] * hf.S, hf.C[2], 0, 0, 0, 1);
+const bakeSig = h => [...h.C, h.S].map(v => +(+v).toFixed(6));
+const sameSig = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) < 2e-6);
+function hairRecord(justBaked) {                       // which head the bake on the rig was made on
+  HAIRSTALE = false; if (!HAIRINFO || !HEADBASE) return;
+  const h = HAIRINFO.head, sig = bakeSig(h);
+  if (justBaked) { st.hairHead = { bake: sig, base: HEADBASE }; return; }      // baked on the body as it is: the head's frame now is the bake's
+  if (st.hairHead?.base?.C && sameSig(st.hairHead.bake, sig)) return;           // the character's record of this bake
+  // none: the bake sits on this head (a face's fit and a sculpt move the frame's points by millimetres, a height or an age by centimetres), so this is the head it was made on
+  if (Math.abs(h.C[1] - HEADBASE.C[1]) < 0.015 && Math.hypot(h.C[0] - HEADBASE.C[0], h.C[2] - HEADBASE.C[2]) < 0.025 && Math.abs(h.S / HEADBASE.S - 1) < 0.15) st.hairHead = { bake: sig, base: HEADBASE };
+  else { st.hairHead = null; HAIRSTALE = true; }       // made on a head we don't know: left where it was baked
+}
+function placeHair() {
+  if (!SALONH || !HAIRINFO) return;
+  const M = frameMat(HAIRINFO.head), then = st.hairHead?.base, now = HEADBASE;
+  if (then?.C && now && sameSig(st.hairHead.bake, bakeSig(HAIRINFO.head))) {
+    const moved = now.S !== then.S && Math.abs(now.S / then.S - 1) > 1e-7 || now.C.some((v, i) => Math.abs(v - then.C[i]) > 1e-6) || now.B.some((r, i) => r.some((v, j) => Math.abs(v - then.B[i][j]) > 1e-7));
+    if (moved) M.premultiply(frameMat(now).multiply(frameMat(then).invert()));   // how the head has moved and been sized since: now · then⁻¹
+  }
+  if (!SALONH.matrix.equals(M)) { SALONH.matrix.copy(M); SALONH.matrixWorldNeedsUpdate = true; HAIRPOSE = ""; }
+}
 function soften(o) {                                   // the baked cards' soft edges: their faint fringe drawn as coverage (4x MSAA), not cut at a hard line
   const m = o.material; if (m?.name !== "hair_cards") return;
   m.alphaToCoverage = true; m.alphaTest = 0.12;
@@ -2805,8 +2845,9 @@ function soften(o) {                                   // the baked cards' soft 
   }
   m.needsUpdate = true;
 }
-async function loadSalon() {
+async function loadSalon(justBaked = false) {         // justBaked: the salon has just baked on the body as it is
   if (SALONH) { rig.remove(SALONH); SALONH.traverse(o => { o.geometry?.dispose(); if (o.material) [].concat(o.material).forEach(m => { m.map?.dispose(); m.dispose(); }); }); SALONH = null; }
+  HAIRINFO = null; if (HAIRSTALE) { HAIRSTALE = false; hud(); }
   if (!WHO) return null;
   const at = `api/people/${encodeURIComponent(WHO)}/salon/`, v = `?v=${Date.now()}`;
   const [jr, gr] = await Promise.all([fetch(at + "salon_bake.json" + v), fetch(at + "salon.glb" + v)]);
@@ -2816,7 +2857,8 @@ async function loadSalon() {
   const { C, B, S } = info.head, g = new THREE.Group(); g.name = "salon hair"; g.matrixAutoUpdate = false;
   g.matrix.set(B[0][0] * S, B[0][1] * S, B[0][2] * S, C[0], B[1][0] * S, B[1][1] * S, B[1][2] * S, C[1], B[2][0] * S, B[2][1] * S, B[2][2] * S, C[2], 0, 0, 0, 1);
   let meshes = 0, swinging = 0; gltf.scene.traverse(o => { if (o.isMesh) { meshes++; o.frustumCulled = false; soften(o); } if (o.isSkinnedMesh) swinging++; });
-  g.add(gltf.scene); rig.add(g); SALONH = g; poseHair();
+  g.add(gltf.scene); rig.add(g); SALONH = g; HAIRINFO = info;
+  hairRecord(justBaked); placeHair(); HAIRPOSE = ""; poseHair(); if (HAIRSTALE) hud();
   return { meshes, swinging, head: info.head };
 }
 // ---- the brows and lashes by hand (groom.js; Face, "Brows & lashes by hand", docs/CHARACTER_STUDIO.md §2b): the user's
@@ -3061,7 +3103,7 @@ async function enterSalon() {                          // every time: the body a
   const sw = SALONF.contentWindow?.__salon;
   if (sw?.ready && WHO) await sw.refreshBody(WHO, tone).catch(e => status(e.message, "bad"));
 }
-addEventListener("message", e => { if (e.origin === location.origin && e.data && e.data.salon === "baked") loadSalon().catch(() => null); });
+addEventListener("message", e => { if (e.origin === location.origin && e.data && e.data.salon === "baked") loadSalon(true).catch(() => null); });
 const blSet = {};
 {
   const box = $("#browRows"), sets = [];
@@ -3115,7 +3157,8 @@ function hud() {
   if (FACEBAKE) lines.push(`face baked (from ${FACEBAKE.from})`);
   else if (REPORT) lines.push(`face from ${REPORT.used} front picture${REPORT.used === 1 ? "" : "s"}${REPORT.sides ? " and a side one" : ""}`);
   bakeUI();
-  $("#hud").replaceChildren(...lines.map(t => el("div", { textContent: t })), ...(REPORT?.warnings || []).map(w => el("div", { className: "warn", textContent: w })));
+  const warns = [...(REPORT?.warnings || []), ...(HAIRSTALE ? ["the hair was baked on another head: Hair, then Bake, makes it again on this one"] : [])];
+  $("#hud").replaceChildren(...lines.map(t => el("div", { textContent: t })), ...warns.map(w => el("div", { className: "warn", textContent: w })));
 }
 
 // ---- the face baked: the fit kept as it is in the character's face.bin (a header saying when and from what, then the
@@ -3225,6 +3268,7 @@ async function open(name) {
   document.querySelectorAll("#shapeRows .row").forEach((r, i) => r.classList.toggle("moved", st.shape[i] !== 0));
   st.sculpt = { ...(c.sculpt || {}) };
   st.age = { age: GW.AGE_ADULT, face: 1, ...(c.age || {}) }; st.cute = { on: false, amount: 0.6, ...(c.cute || {}) }; st.monster = !!c.monster;   // (a character from before them: an adult, as it was)
+  st.hairHead = c.hairHead?.base?.C ? c.hairHead : null; HAIRINFO = null;   // the head its hair was baked on (placeHair)
   grownUI();
   Object.assign(st.skin, { tone: "#c9b3a2", rough: 0.62, photo: false, size: 2048 }, c.skin || {});
   st.skin.proc = { ...SKINSH.DEFAULTS, ...(c.skin?.proc || {}) }; procSet.all();
@@ -3251,7 +3295,7 @@ async function open(name) {
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
   if (me === OPENING && WHO) detect();
 }
-const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), age: st.age, cute: st.cute, monster: st.monster, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, drape: st.drape, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, groom: st.groom, accessories: st.accessories,
+const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), age: st.age, cute: st.cute, monster: st.monster, hairHead: st.hairHead || undefined, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, drape: st.drape, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, groom: st.groom, accessories: st.accessories,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
@@ -3958,7 +4002,7 @@ $("#poseSel").onchange = () => { POSE = $("#poseSel").value; try { localStorage.
 $("#povShot").onchange = () => { orbit.focus = "pov"; repose(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, on: graftOn() }), EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, on: graftOn() }), EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, get headBase() { return HEADBASE; }, get hairStale() { return HAIRSTALE; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

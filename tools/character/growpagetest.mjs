@@ -3,7 +3,8 @@
 // head its share of it, the feet on the floor, the eyes in a head nine tenths an adult's; the T-pose on a child; a front
 // picture (the page's own head: no one's photo) still bends the face and nothing under the neck, and Young face turned
 // down leaves the body's proportions; Cutify grows the eyes and shortens the face, and off it's as it was; saved and
-// opened again the same; monster mode: the sliders to ±3, the Creature controls, the height to 3.5 m, every creature
+// opened again the same; hair baked on the adult's head (a made-up bake: four marks on the scalp) rides the head to the
+// child's, is still on it opened again, and a bake that sits on no head we know is left and said; monster mode: the sliders to ±3, the Creature controls, the height to 3.5 m, every creature
 // to start from a whole body with no NaN, its fangs, and leaving it brings everything back into a person's range;
 // every kind of horn on the head (rigid on it in a file), every kind of ear with its chain's joints, without its
 // headband, a cow's tag, its flop; Export for Godot: each ear's chain of bones under the head in the file, the ears'
@@ -14,6 +15,7 @@
 import { createRequire } from "module";
 import { spawnSync } from "child_process";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 const req = createRequire(import.meta.url), { chromium } = req(process.env.PLAYWRIGHT || "playwright");
 const URL = process.env.BODY_URL || "http://127.0.0.1:8793/", NAME = "_growtest", QUICK = !!process.env.QUICK, shot = process.argv[2];
@@ -26,7 +28,22 @@ page.on("pageerror", e => errs.push(e.message)); page.on("dialog", d => d.accept
 page.on("console", m => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errs.push(m.text()); });
 const say = (ok, what) => { console.log((ok ? "  ok  " : "  BAD ") + what); if (!ok) bad.push(what); };
 const B = (f, a) => page.evaluate(f, a);
+const SALON = path.join(ROOT, "Content", "Studio", "People", NAME, "salon");   // (the scratch character's hair: none, but the made-up bake below)
+// the made-up bake's four marks against the scalp points they were put on: the furthest any is from its point now (m),
+// and the head's top
+const hairOff = ids => B(ids => { const b = window.__body, H = b.salonHair; if (!H) return null; b.rig.updateMatrixWorld(true);
+  const T = b.THREE, toRig = new T.Matrix4().copy(b.rig.matrixWorld).invert(), v = new T.Vector3(), each = []; let m = null; H.traverse(o => { if (o.isMesh) m = o; });
+  const P = m.geometry.attributes.position; ids.forEach((i, k) => { v.fromBufferAttribute(P, k * 3).applyMatrix4(m.matrixWorld).applyMatrix4(toRig); each.push(Math.hypot(v.x - b.POS[i * 3], v.y - b.POS[i * 3 + 1], v.z - b.POS[i * 3 + 2])); });
+  return { most: Math.max(...each), each, y: H.matrix.elements[13], k: Math.cbrt(Math.abs(H.matrix.determinant())), record: !!b.st.hairHead, stale: b.hairStale }; }, ids);
+const age = v => B(v => { const i = document.querySelector("#ageRows input"); i.value = v; i.oninput(); }, v);
+const tog = (id, on) => B(([id, on]) => { const c = document.querySelector(id); if (c.checked !== on) { c.checked = on; c.onchange(); } }, [id, on]);
+// the body as it stands: its height, the head's share (the chin to the top), the lowest point, the eyes
+const body = () => B(() => { const b = window.__body, P = b.POS; let lo = 1e9, hi = -1e9, nan = 0; for (let i = 0; i < P.length; i++) { if (!Number.isFinite(P[i])) nan++; if (i % 3 === 1) { lo = Math.min(lo, P[i]); hi = Math.max(hi, P[i]); } }
+  const chin = b.lmk(152), eL = b.EYES.L.position, eR = b.EYES.R.position, c0 = b.lmk(33), c1 = b.lmk(133), nose = b.lmk(1), brow = b.lmk(9);
+  return { lo, hi, nan, head: (hi - chin[1]) / (hi - lo), ipd: Math.hypot(eL.x - eR.x, eL.y - eR.y, eL.z - eR.z), eyeY: (eL.y + eR.y) / 2, eyeR: b.EYES.L.scale.x, lid: Math.hypot(c0[0] - c1[0], c0[1] - c1[1], c0[2] - c1[2]),
+           face: ((eL.y + eR.y) / 2 - chin[1]) / b.scale, nose: (nose[2] - brow[2]) / b.scale, scale: b.scale, height: b.st.height, chinY: chin[1] }; });
 try {
+  fs.rmSync(SALON, { recursive: true, force: true });
   await page.goto(URL);
   await page.waitForFunction(() => window.__body && window.__body.N > 10000 && window.__body.SCULPT, null, { timeout: 180000 });
   await B(n => Promise.all(["front", "side"].map(s => fetch(`api/picture/${n}/${s}/png`, { method: "POST", body: "" })).concat(fetch(`api/people/${n}/face.bin`, { method: "POST", body: "" }))), NAME);
@@ -39,8 +56,27 @@ try {
   // ---- the adult, then eight
   const adult = await body(), ui = await B(() => ({ age: !!document.querySelector("#ageRows input"), out: document.querySelector("#ageRows output").textContent, min: +document.querySelector("#baseRows .row:last-child input").min, st: window.__body.st.age }));
   say(ui.age && ui.out === "adult" && ui.st.age === 18 && ui.min <= 1.1 && Math.abs(adult.head - 0.1248) < 0.004, `a new character is an adult as before (the head ${(1 / adult.head).toFixed(2)} to the height); the height's slider goes down to ${ui.min} m`);
+  // (hair baked on the adult's head, as the salon does: its frame from the body, its points in the head's own space; here
+  // four small marks, each on a point of the skull that an age's face leaves alone)
+  const baked = await B(async n => {
+    const b = window.__body, T = b.THREE, SR = await import("./salonref.js"), { GLTFExporter } = await import("./vendor/GLTFExporter.js");
+    const P = b.neutralBody(), hf = SR.headFrame(P), earY = P[SR.DEFAULT_ANCHORS.left * 3 + 1], best = (f, ok) => { let at = -1, top = -Infinity; for (let i = 0; i < b.N; i++) if (ok(i) && f(i) > top) { top = f(i); at = i; } return at; };
+    const up = i => P[i * 3 + 1] > earY + 0.045, ids = [best(i => -P[i * 3 + 2], up), best(i => P[i * 3], up), best(i => -P[i * 3], up), best(i => P[i * 3 + 1] - 0.6 * P[i * 3 + 2], up)];   // the back of the head, over each ear, the crown's back
+    const pts = []; for (const i of ids) { const q = SR.toLocal(hf, [P[i * 3], P[i * 3 + 1], P[i * 3 + 2]]); pts.push(...q, q[0] + 0.002, q[1], q[2], q[0], q[1] + 0.002, q[2]); }
+    const g = new T.BufferGeometry(); g.setAttribute("position", new T.BufferAttribute(new Float32Array(pts), 3)); g.computeVertexNormals();
+    const scene = new T.Scene(), mesh = new T.Mesh(g, new T.MeshStandardMaterial({ color: 0x222222, name: "hair_marks" })); mesh.name = "hair_static"; scene.add(mesh);
+    const glb = await new Promise((ok, bad) => new GLTFExporter().parse(scene, ok, bad, { binary: true }));
+    const at = `api/people/${n}/salon/`, info = { about: "GROWPAGE's made-up bake: four marks on the scalp", head: { C: hf.C, B: hf.B, S: hf.S, person: n } };
+    const r = await Promise.all([fetch(at + "salon.glb", { method: "POST", body: glb }), fetch(at + "salon_bake.json", { method: "POST", body: JSON.stringify(info) })]);
+    window.postMessage({ salon: "baked" }, location.origin);
+    return { ok: r.every(x => x.ok), ids, y: hf.C[1] };
+  }, NAME);
+  await page.waitForFunction(() => window.__body.salonHair && window.__body.st.hairHead, null, { timeout: 120000 }).catch(() => null);
+  const hair0 = await hairOff(baked.ids);
+  say(baked.ok && hair0 && hair0.record && hair0.most < 2e-4, `a hairstyle baked on the adult's head (four marks on its scalp) is worn where it was baked (${hair0 ? (hair0.most * 1000).toFixed(2) : "?"} mm off), and the character records the head it was made on`);
   await age(8); await page.waitForTimeout(2500);
-  const kid = await body();
+  const kid = await body(), hair8 = await hairOff(baked.ids);
+  say(hair8 && hair8.most < 1e-3 && hair0.y - hair8.y > 0.25 && hair8.k < hair0.k * 0.97, `at eight the bake rides the head: ${((hair0.y - (hair8?.y || 0)) * 100).toFixed(0)} cm lower and ${((1 - (hair8?.k || 0) / hair0.k) * 100).toFixed(0)}% smaller with it, its marks still on their scalp points (${hair8 ? hair8.each.map(v => (v * 1000).toFixed(2)).join(", ") : "?"} mm off)`);
   say(kid.height >= 1.26 && kid.height <= 1.29 && Math.abs(kid.hi - kid.height) < 0.001 && Math.abs(kid.lo) < 0.001 && !kid.nan, `age 8: the height set to the age's average (${kid.height} m), the body that tall with its feet on the floor`);
   say(Math.abs(kid.head / 0.1477 - 1) < 0.02, `its head ${(1 / kid.head).toFixed(2)} to the height (an adult's ${(1 / adult.head).toFixed(2)}): a child's share, not a small adult's`);
   const k = kid.scale / adult.scale;
@@ -106,6 +142,17 @@ try {
   await page.waitForFunction(n => window.__body.who === n && /points/.test(document.querySelector("#hud").textContent), NAME, { timeout: 180000 }); await page.waitForTimeout(4000);
   const again = await B(() => ({ st: window.__body.st.age, cute: window.__body.st.cute, out: document.querySelector("#ageRows output").textContent, on: document.querySelector("#cuteOn").checked, h: window.__body.st.height }));
   say(again.st.age === 10 && again.cute.on && again.out === "10" && again.on && again.h === 1.39, "opened again the same (age 10, Cutify on)");
+  await page.waitForFunction(() => window.__body.salonHair, null, { timeout: 120000 }).catch(() => null);
+  const hair10 = await hairOff(baked.ids);
+  say(hair10 && hair10.record && !hair10.stale && hair10.most < 1.5e-3, `the hair opened again on the ten-year-old's head: the record kept with the character, the marks ${hair10 ? hair10.each.map(v => (v * 1000).toFixed(2)).join(", ") : "?"} mm off their scalp points`);
+  // (a bake that sits on no head we know: no record, its frame 12 cm over this head: left where it was baked, and said)
+  const stale = await B(async n => { const b = window.__body, at = `api/people/${n}/salon/salon_bake.json`, info = await (await fetch(at + "?v=" + Date.now())).json();
+    info.head.C[1] += 0.12; await fetch(at, { method: "POST", body: JSON.stringify(info) }); b.st.hairHead = null; await b.loadSalon();
+    return { stale: b.hairStale, y: b.salonHair.matrix.elements[13], want: info.head.C[1], hud: document.querySelector("#hud").textContent }; }, NAME);
+  say(stale.stale && Math.abs(stale.y - stale.want) < 1e-6 && /baked on another head/.test(stale.hud), "a bake that sits on no head the character knows is left where it was baked, and the view says to bake it again");
+  fs.rmSync(SALON, { recursive: true, force: true });
+  const bald = await B(async () => { const b = window.__body; await b.loadSalon().catch(() => null); return { hair: !!b.salonHair, hud: document.querySelector("#hud").textContent }; });
+  say(!bald.hair && !/baked on another head/.test(bald.hud), "its hair taken away: bald again, nothing said");
   await age(18); await tog("#cuteOn", false); await B(() => { document.querySelector("#handlesOn").checked = false; window.__body.setPose("rest"); });
 
   // ---- monster mode

@@ -273,8 +273,19 @@ bigger or smaller against the rest, on MHR's own rig (a point belongs to an arm,
   thirteen horns and the thirteen ears; a ten-year-old with a cow's ears and horns), and in Godot
   `docs/godot_sheets/2026-11-10_ears_jiggle.jpg` (the export of a nine-year-old with a bull's horns and tagged cow ears:
   at rest, thrown sideways, turned, dropped, settled).
-- **Not yet**: hair baked on an adult head isn't refitted when an age changes the head's size (bake it again, or set
-  the age first); the salon shows the body it was given; clothes are cut again on the smaller body by themselves, but
+- **Hair rides the head.** The salon's bake is placed by the head's frame it was baked on (`salon_bake.json`), so a
+  height or an age set afterwards used to leave it hanging where the old head was. The character now records the head
+  its hair was made on (`hairHead` in character.json: which bake, and the head's frame on the body before its face's fit
+  and sculpt, `headBase`), written when the salon bakes here, and the bake is placed again on every change by how that
+  frame has moved and been sized since (`placeHair`: now times then's inverse; nothing at all when it hasn't). A bake
+  with no record (an older one, one made in the salon alone) takes the head the character opens with when it sits on it
+  (within 15 mm in height and 15% in size: a face's fit moves the frame's points by millimetres, a height or an age by
+  centimetres); one that sits on no head we know is left where it was baked and the view says "the hair was baked on
+  another head". It is only placed again, not made again: hair that lay on the shoulders or was kept off the body was
+  shaped on the body it had, and a skull reshaped under it (Forehead height lifts the crown 14 mm a slider, a creature's
+  Long skull the back of the head 34 mm) isn't followed (Hair, then Bake). GROWPAGE: four marks baked on an adult's
+  scalp are still on their points at eight and opened again at ten.
+- **Not yet**: the salon shows the body it was given; clothes are cut again on the smaller body by themselves, but
   the outfits' pictures are an adult's; the growth table's numbers and each creature are first passes to look at on
   the card; younger than eight (the head's share and the limbs change faster there) isn't offered.
 
