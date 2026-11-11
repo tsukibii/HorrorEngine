@@ -51,11 +51,28 @@ Studio and the look plugin (docs/CHARACTER_STUDIO.md §2d, docs/GODOT_LOOK.md §
   TAILOR and POSE now run on two children as well (every design cuts on an eight-year-old).
 
 **Run here** (the cloud, on the CPU): CHECKS, GROW, POSE, TAILOR (104 designs on nine bodies), FACEMORPHS, GROWPAGE,
-JIGGLE, LOOKPLUGIN `--nodes` and GDPLAY ok; GDTESTROOM ok from the start to station 11 and from 12 (`--from n_bath`) to
-the end, with the desk's bake made first (`node tools/godot/bake.mjs --game TestRoom001`), station 13 failing as it
-does on any fresh container (the suitcase's and closets' made props need Blender). **Not run, for the card**
-(docs/RUN_LOCALLY.md): STUDIO, SALON, GROOM, PEOPLE (`PERSON=_growtest`: a child with ears and horns on the desk),
-EXPRESSIONS.
+JIGGLE, LOOKPLUGIN `--nodes`, GDPLAY, PEOPLE (`PERSON=_growtest`: a child with ears and horns on the desk), SALON,
+GROOM and EXPRESSIONS ok; GDTESTROOM ok from the start to station 11 and from 12 (`--from n_bath`) to the end, with the
+desk's bake made first (`node tools/godot/bake.mjs --game TestRoom001`), station 13 failing as it does on any fresh
+container (the suitcase's and closets' made props need Blender).
+
+**STUDIO**, which hadn't been run to its end since late October (three of its steps had gone stale, none from this
+work):
+- its brows and lashes step looked in the Face tab (the brows have had their own since 2026-10-31) and clicked the
+  panel's first two switches (the fine hairs' since groom.js): fixed, it passes;
+- **"the eyes from the side" fails, and fails the same on the code before this branch** (`7d80d01`, a second server
+  on a worktree: the same pixel counts): from 75° and 85° the white is 36% and 35% of the opening on a fresh character
+  where the step wants over 40 (12 to 15% later in the full run, after the steps that set the eyes' softening). The
+  number is from 2026-10-28, before the grafted lids and the soft look; whether the eye or the number is wrong is the
+  user's to say on the card. Left as it was;
+- every other step passes on this branch: 1 to 29 and "the eyes softened" in the full run (`ONLY='^(?!the eyes from
+  the side)'` runs all but the one), the eleven from "the eye refracts" to the export for the desk as a group on a
+  fresh character, and the last two (the baked colours, cleared pictures) with the lipstick, clothes and brows steps
+  before them, which they need. In the full run the click that opens "the eye refracts" once waited past its thirty
+  seconds (the page's thread busy on this CPU); alone it passes.
+- EXPRESSIONS' face row step selected the body row as well (`ftrack btrack`): fixed, it passes to its end.
+
+**For the card** (docs/RUN_LOCALLY.md): STUDIO in one go, and the pictures to judge by eye.
 
 **Found on the way, not fixed (older than this work; for the user to decide)**: a Studio export's face in Godot.
 `tools/face_morphs.mjs` leaves any mesh alone that already has morph targets ("baked already"), and since the blink
