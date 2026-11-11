@@ -3,7 +3,7 @@
 ## true size, its look picked from the export or named here: §5d; and its depth, warm light from under the skin round the
 ## eyes, the nose, the mouth and the ears: §5g, Ear Glow off when the hair covers the ears), a Character Studio export's eyes on the
 ## Studio's refracting eye, card hair, lashes and brows on the hair shader, and an export's animal ears on springs
-## (HSJiggle: §5n). Drop it under the character (an
+## (HSJiggle: §5n), and a creature skin over it all when one is picked (HSCreatureSkin: §5o). Drop it under the character (an
 ## imported glb, or any model whose meshes are named skin/body/head, eye, hair/lash/brow). Put on when the game runs.
 ## The cast the game places itself already wear it (the story's `skin` word wets them).
 @tool
@@ -32,6 +32,12 @@ extends Node
 @export var jiggle := true                     ## an export's animal ears (any chain of bones named jiggle_<name>_0 ... _tip) flop as she moves (HSJiggle)
 @export_range(0.0, 2.0) var jiggle_amount: float = 1.0   ## how lively: 0 still, 2 very floppy
 @export_file("*.glb") var glb_path: String = ""  ## the export's glb (its skin and eye records); empty: the character's own file
+@export_group("Creature skin")
+@export_enum("none", "chrome", "mirror", "pearl", "greasy", "slime", "oil", "porcelain", "ember", "stone", "scales", "wax") var creature_skin: String = "none"   ## a skin that isn't skin, over her own (HSCreatureSkin.LOOKS: chrome silver, a pearl's sheen, grease, slime, black oil, cracked porcelain, burning embers, stone, scales, wax; §5o)
+@export_range(0.0, 1.0) var creature_amount: float = 1.0   ## how much of it: 0 her own paint, 1 the look (set_creature_amount while the game runs: a skin turning)
+@export var creature_tint: Color = Color(0, 0, 0, 0)       ## its colour in place of the look's own (see-through: the look's): chrome in gold, slime in purple
+@export var creature_extend := true                        ## her horns and ears wear it too
+@export_group("")
 var materials: Array = []
 
 
@@ -62,6 +68,8 @@ func wear() -> void:
 		materials.append_array(HSEye.wear(t, path).values())
 	if hair:
 		materials.append_array(HSHair.wear(t, {}, path if path.ends_with(".glb") else ""))
+	if creature_skin != "none":                    # over the skin's own material: what it had (its paint, its relief) kept under the look
+		materials.append_array(HSCreatureSkin.wear(t, creature_skin, {"amount": creature_amount, "tint": creature_tint, "extend": creature_extend}))
 	var j := HSJiggle.of(t)                        # (HSEye.wear may have added one already)
 	if jiggle and j == null:
 		j = HSJiggle.attach(t, {"amount": jiggle_amount})
@@ -74,6 +82,26 @@ func set_wet(s: Dictionary) -> void:
 	for m in materials:
 		if m is ShaderMaterial and m.shader == HSSkin.shader():
 			HSSkin.set_wet(m, s)
+
+
+## another creature skin while the game runs ("none": her own skin back)
+func set_creature(look: String, amount: float = 1.0) -> void:
+	var t := character()
+	if t == null:
+		return
+	creature_skin = look
+	creature_amount = amount
+	HSCreatureSkin.clear(t)
+	if look != "none":
+		HSCreatureSkin.wear(t, look, {"amount": amount, "tint": creature_tint, "extend": creature_extend})
+
+
+## how much of the creature skin (0 her own paint, 1 the look): for a skin that turns over a few seconds
+func set_creature_amount(k: float) -> void:
+	creature_amount = clampf(k, 0.0, 1.0)
+	var t := character()
+	if t != null:
+		HSCreatureSkin.set_amount(t, creature_amount)
 
 
 func _get_configuration_warnings() -> PackedStringArray:

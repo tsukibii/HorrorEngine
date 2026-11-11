@@ -2,6 +2,26 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-11, later (the user: weird skins for the monsters, in Godot)
+
+- **"once your done with this could we create some more weird skin shaders/textures for the monster characters that we
+  can apply in godot, e.g. a chrome silver skin, a pearlescent skin, some kind of greasy shader"**. Built in the look
+  plugin as **creature skins** (docs/GODOT_LOOK.md §5o, guides/look_plugin §8): eleven looks that go on a character's
+  skin in place of the skin shader: **chrome** (polished silver), **mirror**, **pearl**, **greasy**, **slime**, **black
+  oil**, **porcelain** (cracked), **ember** (glowing cracks), **stone**, **scales**, **wax**.
+  - **How they're put on**: under the character, the `HSCharacterLook` node's **Creature skin** row (the look, Amount,
+    Tint, Extend), or a ready-made preset dragged under her (`presets/creature_chrome.tscn` ...), or a line of script
+    (`HSCreatureSkin.wear($Demon, "chrome")`). They keep what her skin had (its colour as far as the look leaves it,
+    its pores, its creases); her horns and ears take the look too; her eyes, teeth, hair and clothes never.
+  - **Read as**: shaders, not baked textures: one shader, each look its numbers, so a look can be recoloured (chrome
+    with a gold tint), mixed with her own skin (Amount, for a skin that turns) and changed while the game runs. The
+    patterns (smears, cracks, scales) are drawn by the shader at their real size.
+  - **Chrome is two looks** on purpose. A real mirror shows only its room, and in a dark room it's a black figure with
+    glints; `chrome` keeps a sixth of its light as a surface so it reads silver under any lamp, and `mirror` is the
+    pure one for a level with a sky or a reflection probe. Neither glows: in the dark they're as dark as the room.
+  - Held by CREATURESKIN (`python tools/godot/creature_skin_check.py`); the sheet
+    `docs/godot_sheets/2026-11-11_creature_skins.jpg` (the demon from the Studio's presets in each).
+
 ## 2026-11-11 (the user: the creatures as presets, and Godot's side of them)
 
 - **"can you add presets for the monster-ish shapes you made so I can use them, fix anything that needs fixed for

@@ -96,9 +96,10 @@ try {
       let said = again ? `${name}: saved (${st.h} m${look ? `, skin ${st.tone}${st.horns ? ", horns" : ""}` : ", its shape alone"})` : `${name}: there already, left as it is (--again makes it again from the preset)`;
       if (has("--export")) {
         await B(() => { document.querySelector("#status").textContent = ""; }); await page.click("#expPack", { noWaitAfter: true });
-        await page.waitForFunction(n => new RegExp(`wrote People/${n}/export/${n}\\.glb`).test(document.querySelector("#status").textContent) || document.querySelector("#status").className === "bad", name, { timeout: 1800000 });
+        // (the page says "wrote People/... ; for Godot…" when the Studio's own file is written, then "... for Godot (drag ...)" once the copy with its face shapes baked is made: that second one)
+        await page.waitForFunction(() => /for Godot \(drag/.test(document.querySelector("#status").textContent) || document.querySelector("#status").className === "bad", null, { timeout: 1800000 });
         const word = await B(() => document.querySelector("#status").textContent);
-        if (!/wrote People/.test(word)) throw new Error(`${name}: the export: ${word}`);
+        if (!/for Godot \(drag/.test(word)) throw new Error(`${name}: the export: ${word}`);
         const godot = ["Exports", path.join("Saved", "Exports")].map(d => path.join(ROOT, d, "characters", name, name + ".glb")).find(f => fs.existsSync(f));
         said += `; exported${godot ? `: ${path.relative(ROOT, godot)} (${Math.round(fs.statSync(godot).size / 1e6)} MB)` : ""}`;
       }

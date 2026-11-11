@@ -39,7 +39,7 @@ shaft's beam runs along it (tilt the node down for the sun); a sweep's and a lea
 wall with forward into the room and X along the street or the wall; a blood splat lies on the surface its +Y (the
 green arrow) points out of.
 
-The presets (`presets/*.tscn`, 52): `rain`, `downpour`; `wet_floor`, `wet_floor_raining` (ripples), `damp_floor`;
+The presets (`presets/*.tscn`, 64; the eleven creature skins' `creature_<look>` among them, §5o): `rain`, `downpour`; `wet_floor`, `wet_floor_raining` (ripples), `damp_floor`;
 `puddle`; `blood_pool`, `blood_dried`, `blood_wall`; `wall_leak`; `window_shaft`, `window_sun` (the shaft with a
 warm spot shining the same way, a child of it); `headlight_sweep`; `caustics_light`, `blinds_light`, `leaves_light`,
 `clouds_light`; `fluorescent_tube`, `dying_bulb`, `candle`, `alarm_pulse`, `faulty_neon`, `desk_lamp_dying`;
@@ -1206,6 +1206,70 @@ The user, on the Studio's animal ears: "create it in a way that when I export it
   16 to 20 mm in the turn, back to rest within a hundredth of a millimetre. Those are at the default `amount` 1: if
   they read stiff in a game, `amount` 1.5 is the first thing to try (`HSCharacterLook`'s Jiggle amount). The picture:
   `docs/godot_sheets/2026-11-10_ears_jiggle.jpg` (at rest, thrown sideways, after, turning, after, dropped, settled).
+
+
+## 5o. Creature skins: a skin that isn't skin (DECISIONS 2026-11-11)
+
+The user: "could we create some more weird skin shaders/textures for the monster characters that we can apply in godot,
+e.g. a chrome silver skin, a pearlescent skin, some kind of greasy shader". `HSCreatureSkin` (`creature_skin.gd`,
+`creature_skin.gdshader`): one shader, a look a set of its numbers, eleven looks:
+
+| Look | What it is | Its numbers, in a line |
+|---|---|---|
+| `chrome` | polished silver, bright under any lamp, the room mirrored in it | metal 0.84 (a sixth of it still takes light as a surface does, so it reads silver in a dark room), roughness 0.13, a rim that catches the lamps, the skin's relief at a third |
+| `mirror` | a perfect mirror | metal 1, roughness 0.04: it shows the room and nothing of its own, so it's black where the room is black (it wants a sky, a reflection probe or lit walls on screen) |
+| `pearl` | a pearl's white, pinks and greens turning as she moves | a film's colours by the angle (`irid`), pastel, more toward the edges, drifting in slow patches; a clear coat; a little of her own colour kept |
+| `greasy` | her own skin, sallow, under grease | her paint kept whole under a yellowed tint; a clear coat in smears (thick and glossy, thin and dull: `blotch`); dirt in the creases (the skin's occlusion) and in patches |
+| `slime` | a wet green gel over her | her paint half kept under green; coat 1, roughness 0.16; smears; light through from behind (`backlight`) |
+| `oil` | black and wet, an oil slick's colours along its edges | near black, glossy; the film's colours at the edges only |
+| `porcelain` | a doll's glazed white, hairline cracks | white, a glaze, the skin's relief nearly gone; cracks in patches (`cracks`, `crack_cover`) |
+| `ember` | burnt black, its cracks lit from inside | matt black; cracks everywhere, emissive (`glow`), breathing three times in ten seconds (`glow_pulse`) |
+| `stone` | a statue | grey, matt; grime in patches (lichen), a few cracks |
+| `scales` | a reptile's | her colour turned green in 6 mm cells, each a dome under the light and a shade of its own (`scales`); a sheen at the edges |
+| `wax` | pale wax | soft (the relief nearly gone), light glowing through its edges (`backlight`, scattering) |
+
+**What it keeps.** It goes on the skin's surfaces in place of the skin shader and takes from what was there: her own
+paint (as much as the look leaves: `keep_paint`), her normal map (`relief`), her occlusion. `amount` runs from her own
+paint, matt (0) to the look (1), for a skin that turns over a few seconds. With `extend` her horns and ears wear it too
+(a chrome demon's horns are chrome). Her eyes, teeth, hair and clothes are never touched. `HSCreatureSkin.clear(node)`
+puts back what every surface wore.
+
+**How to put it on.** In the editor: an `HSCharacterLook` under the character, **Creature skin** (the look, Amount,
+Tint to recolour it, Extend); or drag a preset under her: `presets/creature_chrome.tscn`, `creature_pearl`,
+`creature_greasy` ... one a look. From a script:
+
+    HSCreatureSkin.wear($Demon, "chrome")
+    HSCreatureSkin.wear($Goblin, "greasy", {"amount": 0.7})
+    HSCreatureSkin.wear($Demon, "chrome", {"tint": Color(1.0, 0.78, 0.34)})     # gold
+    $Demon/HSCharacterLook.set_creature("ember")                                  # another, while the game runs
+    $Demon/HSCharacterLook.set_creature_amount(0.4)
+
+**No light of its own.** Everything is Godot's own lighting (metal, roughness, clear coat, rim, backlight): no
+`light()` in the shader, so the lamps, the room's light and the reflections treat it as they treat a wall, and with the
+lamps out it's as dark as the room (measured: chrome at 0.026 of the picture's range in the dark, 0.53 lit). Only the
+ember's cracks glow. A first chrome was a pure mirror and on a dark stage it was a black figure with glints: right, and
+not what "chrome silver" asks for; so `chrome` keeps a sixth of its light as a surface and the pure mirror is its own
+look.
+
+**The patterns** (smears, cracks, scales) are drawn in the skin's UVs at their size in metres. A Studio character's
+skin is MHR's layout, the head and hands at one density and the body at another (the region map's alpha,
+`tools/skin_detail.py`), times her own head's scale (the export's `studioScale`) and her body's (her height less her
+head): a goblin's scales are as big on its small body as on its big head. They break at the layout's seams (the back
+of the head, the inside of the limbs); a pattern in the skin's own space would want each corner's rest place, which
+the copy doesn't carry (LATER).
+
+**Also here**: `HSSkin.wear` called a second time on a character (a script after the node) made her skin again from
+its own material and lost the paint (a white figure). It keeps a skin that already wears it now, and leaves one under a
+creature skin where the look put it.
+
+**CREATURESKIN** (`python tools/godot/creature_skin_check.py`): each look on a ball with a made-up skin's paint beside
+a plain one, pictured under xvfb and measured where each lands: at none of the look every ball the plain skin (0.025
+off at most); lit, chrome bright and grey with a glint, the mirror the black room, pearl white with its colour turning
+to the edge, greasy the skin's hue under a glint, slime green, oil black with the film along its edge, porcelain white,
+stone matt, scales glinting, the ember's cracks 27% of it; the lamp out, only the ember glows; the lamp behind, wax and
+slime let it through; at half the look, halfway. Then on a creature exported from the Studio, through the
+HSCharacterLook node: every look on her skin and horns, the amount changed while worn, her own skin back with its
+paint. `docs/godot_sheets/2026-11-11_creature_skins.jpg`: the balls, and the demon in every look.
 
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 

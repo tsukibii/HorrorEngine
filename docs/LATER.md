@@ -48,6 +48,13 @@ records what's chosen.
   (each eye's middle and size as uniforms set from its bones every frame, each corner's resting room as an attribute
   the bake adds, the skin round the eye pushed out), as the desk's `pushOut` is.
 
+- **Creature skins' patterns without seams** (2026-11-11). The cracks, scales and smears are drawn in the skin's UVs,
+  so they break where MHR's layout is cut (the back of the head, the inside of the limbs). With each corner's rest
+  place carried in the Godot copy (a second UV the bake adds), the shader could draw them in the body's own space,
+  three ways blended: no seam anywhere. Also for later: the story's `skin` word naming a creature skin (the desk game's
+  cast), a creature preset in the Studio naming the Godot skin it wants, and wet creatures (the sweat's beads over a
+  creature skin).
+
 ## Unreal
 
 - **A round-trip check**: Generate, play the preview in the editor, capture the same frames as the desk's Watch and
