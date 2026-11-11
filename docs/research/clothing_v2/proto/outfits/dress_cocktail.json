@@ -1,0 +1,24 @@
+{
+ "name": "dress_cocktail",
+ "bodies": [
+  "feminine",
+  "slim_feminine",
+  "full_feminine"
+ ],
+ "wear": [
+  {
+   "mh": "mini:punkduck_black_cocktail_dress"
+  },
+  {
+   "mh": "glam:Denim_Jacket"
+  },
+  {
+   "tailor": "tights",
+   "color": "#1d1a1c"
+  },
+  {
+   "mh": "sys:shoes04",
+   "drop_above": 0.2
+  }
+ ]
+}

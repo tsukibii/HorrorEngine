@@ -21,6 +21,7 @@ export function geometry(q) {
   for (let i = 0; i < q.S.length; i++) shade[i * 3] = shade[i * 3 + 1] = shade[i * 3 + 2] = q.S[i];
   g.setAttribute("color", new THREE.BufferAttribute(shade, 3));
   if (q.CRZ) g.setAttribute("crz", new THREE.BufferAttribute(q.CRZ, 4));   // the creases' data (tailor/crease.js)
+  if (q.UVO) g.setAttribute("uvo", new THREE.BufferAttribute(q.UVO, 2));   // a library garment's own UVs, for its own texture (tailor/library.js)
   g.setIndex(new THREE.BufferAttribute(q.T, 1));
   g.computeBoundingSphere();
   return g;
@@ -68,6 +69,22 @@ function mapTexture(url, tile, srgb) {
   }
   return MAPS.get(key);
 }
+const OWN = new Map();
+/** a library garment's own colour texture, as its author painted it on the garment's own UVs (no repeat) */
+function ownTexture(url) {
+  if (!OWN.has(url)) {
+    let t; LOADS.push(new Promise(done => { t = new THREE.TextureLoader().load(url, () => {
+      // does its alpha cut anything out (lace, a net, a fringe)? Read small: an opaque painting stays an opaque cloth
+      try { const c = document.createElement("canvas"); c.width = c.height = 96; const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(t.image, 0, 0, 96, 96);
+        const d = x.getImageData(0, 0, 96, 96).data; let holes = 0; for (let i = 3; i < d.length; i += 4) if (d[i] < 128) holes++; t.userData.cut = holes > 8; } catch { t.userData.cut = false; }
+      t.userData.ready = true; for (const f of t.userData.wait.splice(0)) f(); done();
+    }, undefined, () => { console.warn("no texture at " + url); done(); }); }));
+    t.userData.wait = []; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; OWN.set(url, t);
+  }
+  return OWN.get(url);
+}
+/** does a library garment's own texture cut holes in it (lace, a net)? true or false once it's read, undefined before */
+export const ownCut = url => OWN.get(url)?.userData.cut;
 /** when every PBR map asked for so far has loaded (a test page waits for it before its pictures) */
 export const mapsLoaded = () => Promise.all(LOADS);
 
@@ -77,16 +94,22 @@ export const mapsLoaded = () => Promise.all(LOADS);
  * button) keeps its own colour on `trim` (a surface). look.debug === "uv" shows the fabric coordinates. `pbr` is a
  * set off the shelf: {ref, base (the URL its files are under), maps: {albedo, normal | normal_dx, rough, metal, ao, height,
  * opacity: file names}, orm (a packed AO/rough/metal map), normal: "gl" | "dx", tile_m (metres one repeat covers), tint
- * (the garment's colour over it)}.
+ * (the garment's colour over it)}. `own` ({url}) is a library garment's own texture on its own UVs (the part's UVO), in
+ * place of a fabric: the garment's colour tints it (white: as painted), its alpha cuts it out; a PBR set takes its place.
  */
 export function material(q, look = {}) {
   if (look.debug === "uv") return new THREE.MeshStandardMaterial({ map: checker(), roughness: 0.9, vertexColors: true });
   const own = q.fabric === false || !look.surface && !look.pattern && !look.pbr;
   const pbr = q.fabric !== false && look.pbr?.maps?.albedo ? look.pbr : null, PM = pbr ? pbr.maps : {};
+  const painted = q.fabric !== false && !pbr && look.own?.url ? look.own : null;   // a library garment as its author painted it
   const surface = pbr ? "flat" : q.surface || (q.fabric === false ? look.trim : look.surface) || "flat", S = SURFACES[surface] || SURFACES.flat, over = S[4];
   const gl = GLOSSY[surface];                                       // PVC: a clear coat over a smooth base, the clear one see-through
   const m = gl ? new THREE.MeshPhysicalMaterial({ color: "#ffffff", roughness: gl.roughness, clearcoat: gl.clearcoat, clearcoatRoughness: 0.04, vertexColors: true, transparent: gl.opacity < 1, opacity: gl.opacity, depthWrite: gl.opacity >= 1, side: THREE.FrontSide })
-    : new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.88, vertexColors: true, transparent: over, side: THREE.FrontSide });
+    : new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.88, vertexColors: true, transparent: over, side: look.double ? THREE.DoubleSide : THREE.FrontSide });   // (`double`: a library garment is one sheet, seen from inside a skirt or a collar too)
+  if (painted) {                                                   // lace and cut-outs painted into its alpha: cut out, once the painting is read
+    const t = ownTexture(painted.url), cut = () => { if (t.userData.cut) { m.alphaTest = 0.5; m.needsUpdate = true; } };
+    if (t.userData.ready) cut(); else t.userData.wait.push(cut);
+  }
   const fab = texture(() => surfaceTile(surface), "s|" + surface, false).clone(); fab.needsUpdate = true; fab.repeat.set(1 / S[1], 1 / S[1]);
   if (S[3] > 0) { m.bumpMap = texture(() => surfaceRelief(surface), "r|" + surface, false).clone(); m.bumpMap.needsUpdate = true; m.bumpMap.repeat.set(1 / S[1], 1 / S[1]); m.bumpScale = 2.5 * S[3] * (look.shoe ? 0.3 : 1); }   // (a shoe's leather, canvas and rubber read smooth: made, not woven loose)
   const tile = pbr ? +pbr.tile_m || 0.5 : 1, at = f => `${pbr.base}/${encodeURIComponent(f)}`;
@@ -104,11 +127,12 @@ export function material(q, look = {}) {
   // its prints (CLOTHING_PLAN 6): up to three, each on its panel (a tee's front and back, a sleeve); `print` the one of old
   const prints = q.fabric === false ? [] : (look.prints || (look.print ? [look.print] : [])).filter(pr => pr && (pr.text || pr.image)).slice(0, NPRINT);
   const U = {
-    uColor: { value: new THREE.Color(partColor(q, look) ?? (own ? q.color : look.color || q.color)) },
+    uColor: { value: new THREE.Color(partColor(q, look) ?? (own && !painted ? q.color : look.color || q.color)) },   // (a painted library garment: the garment's colour is its tint)
     uFabric: { value: fab }, uFabricScale: { value: 1 / S[1] }, uGloss: { value: pbr ? 0 : S[2] },
     uPbr: { value: pbr ? mapTexture(at(PM.albedo), tile, true) : null }, uPbrOn: { value: pbr ? 1 : 0 }, uPbrScale: { value: 1 / tile },
     uPbrTint: { value: pbr?.tint ? 1 : 0 }, uPbrAlpha: { value: pbr && PM.opacity ? mapTexture(at(PM.opacity), tile, false) : null }, uPbrAlphaOn: { value: pbr && PM.opacity ? 1 : 0 },
     uOver: { value: over ? (surface === "sheer" ? 2 : 1) : 0 }, uDenier: { value: look.denier ?? 0.55 },
+    uOwn: { value: painted ? ownTexture(painted.url) : null }, uOwnOn: { value: painted ? 1 : 0 },
     uPattern: { value: pat ? texture(() => patternTile(pat.kind, pat.colors || []), "p|" + pat.kind + "|" + (pat.colors || []).join(), true) : null },
     uPatternOn: { value: pat ? 1 : 0 }, uPatternScale: { value: 1 / ((pat?.size) || 0.04) },
     ...Object.fromEntries(Array.from({ length: NPRINT }, (_, k) => { const pr = prints[k]; return [
@@ -122,11 +146,12 @@ export function material(q, look = {}) {
   m.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, U);
     sh.vertexShader = sh.vertexShader
-      .replace("#include <common>", "#include <common>\nattribute vec2 uvm;\nattribute float part;\nattribute vec4 crz;\nvarying vec2 vUvm;\nvarying float vPart;\nvarying vec4 vCrz;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvUvm = uvm; vPart = part; vCrz = crz;");
+      .replace("#include <common>", "#include <common>\nattribute vec2 uvm;\nattribute vec2 uvo;\nattribute float part;\nattribute vec4 crz;\nvarying vec2 vUvm;\nvarying vec2 vUvo;\nvarying float vPart;\nvarying vec4 vCrz;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvUvm = uvm; vUvo = uvo; vPart = part; vCrz = crz;");
     sh.fragmentShader = sh.fragmentShader
       .replace("#include <common>", `#include <common>
-varying vec2 vUvm; varying float vPart;
+varying vec2 vUvm; varying vec2 vUvo; varying float vPart;
+uniform sampler2D uOwn; uniform float uOwnOn;
 uniform vec3 uColor; uniform sampler2D uFabric; uniform float uFabricScale, uGloss, uOver, uDenier;
 uniform sampler2D uPbr, uPbrAlpha; uniform float uPbrOn, uPbrScale, uPbrTint, uPbrAlphaOn;
 uniform sampler2D uPattern; uniform float uPatternOn, uPatternScale;
@@ -141,6 +166,8 @@ vec2 crG = vec2(0.0); float crH = 0.0;                                     // th
   if (uPbrOn > 0.5) {                                                        // a PBR set: its colour, tinted by the garment's if asked
     cloth = texture2D(uPbr, vUvm * uPbrScale).rgb * (uPbrTint > 0.5 ? cloth : vec3(1.0)); grain = vec4(0.5, 0.5, 0.5, 1.0);
   }
+  float ownA = 1.0;
+  if (uOwnOn > 0.5) { vec4 o = texture2D(uOwn, vUvo); cloth = o.rgb * uColor; ownA = o.a; grain = vec4(0.5, 0.5, 0.5, 1.0); }   // a library garment's own painting, tinted
 ${Array.from({ length: NPRINT }, (_, k) => `  if (uPrintOn${k} > 0.5 && abs(vPart - uPrintPart${k}) < 0.5) {                     // a print, on its panel
     vec2 d = vUvm - uPrintRect${k}.xy; float c = cos(uPrintRot${k}), s = sin(uPrintRot${k});
     vec2 q = vec2(c * d.x + s * d.y, -s * d.x + c * d.y) / uPrintRect${k}.zw + 0.5;
@@ -156,6 +183,7 @@ ${Array.from({ length: NPRINT }, (_, k) => `  if (uPrintOn${k} > 0.5 && abs(vPar
     diffuseColor.rgb *= 1.0 + clamp(crH / 0.0015, -1.0, 0.5) * 0.1;
   }
   if (uPbrAlphaOn > 0.5) diffuseColor.a = texture2D(uPbrAlpha, vUvm * uPbrScale).r;
+  if (uOwnOn > 0.5) diffuseColor.a = ownA;
   if (uOver > 1.5) diffuseColor.a = uDenier * (0.85 + 0.15 * grain.a);     // sheer: the nylon's denier
   else if (uOver > 0.5) diffuseColor.a = grain.a;                          // a net: the skin in its holes`)
       .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\n  roughnessFactor *= 1.0 - 0.75 * uGloss * (0.6 + 0.8 * grain.g);")
@@ -170,7 +198,7 @@ ${Array.from({ length: NPRINT }, (_, k) => `  if (uPrintOn${k} > 0.5 && abs(vPar
   }
   if (uOver > 1.5) { float f = 1.0 - abs(dot(normal, normalize(vViewPosition))); diffuseColor.a = mix(diffuseColor.a, 1.0, pow(f, 1.4)); }   // tights darken where they turn away`);
   };
-  m.customProgramCacheKey = () => "tailor3" + (m.bumpMap ? "b" : "") + (over ? "o" : "") + (pbr ? "p" : "") + (gl ? "g" : "");
+  m.customProgramCacheKey = () => "tailor4" + (m.bumpMap ? "b" : "") + (over ? "o" : "") + (pbr ? "p" : "") + (gl ? "g" : "");
   return m;
 }
 

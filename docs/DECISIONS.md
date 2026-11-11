@@ -2,6 +2,266 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-11, the very last (the user: fix the library garments' limits)
+
+- **"fix all the limits"**, each with its answer:
+  - **Toes through a shoe**: *"if godot hides the toes then we dont care (if the dissolve works e.g. hides anything
+    poking out /clipping above the shoe layer)"*. So the Studio's view stays as it is, and **what a garment covers is
+    hidden in the export**: the skin under it (MakeHuman's own list for it and what its cloth covers on this body:
+    `tailor/library.js` `cover`: cloth over the point within 4 cm, or the point standing through it by under 12 mm,
+    the cloth facing as the skin does, 3 cm inside the cloth's edges, 8 mm where it lies snug), left out of the file
+    as the tailor's covered skin is; and **a garment's own triangles under the opaque layers over it** (`trim`: a sock
+    inside a shoe, briefs under a dress; the tailor's own garments under a library one too, in the page).
+  - **The ballet dress**: *"remove the ballet dress all together"*. `mindfront_ballet_dress_the_swan` is out of the
+    picks, its files and its bake out of git: 89 garments.
+  - **Gravity**: *"add a gravity modifier that I can click, default should be fairly light gravity just to get it to
+    curve against the shape of the body properly"*. A worn library garment has a **Gravity** switch (on by default) and
+    *How much* (0.3 light, the default; 1 heavy): `hang`, a light cloth step after the fit: cloth lying snug stays,
+    cloth standing off the body falls, its threads keeping their lengths (drawn in a little, so it lies to the body's
+    curves), never into the skin, no point further than 5 cm. Shoes and hats don't fall. Saved as the garment's
+    `gravity` when it isn't the default. (No prints or patterns on a library garment yet: not asked for here.)
+  - **Skin specks at the hips**: *"similar to our anti clipping clothing we should have it that if skin clips through
+    in godot that it dissolves 'hides' so the clothing is visible instead , clothin should move along the body though
+    for walk animations (bend etc)"*. The covered skin is left out of the export (above), and the clothes are skinned
+    to the skeleton by the skin's own bones round them. **Measured in Godot** (`tools/godot/library_check.py`,
+    GDLIBRARY): an export in a dress over briefs, socks in flats, put through a stride, sitting, a bend, arms raised
+    and a twist: the clothes move with the bones (up to 52 cm sitting), and the skin left in the file stands through
+    cloth at 70 of 91 266 points (0.08%, 1.6 mm at most, at snug edges), the same in every pose.
+
+## 2026-11-11, the last (the user: the new outfits in other PBR sets and colours, editable in the Studio; main merged)
+
+- **"can you show me some of the new outfits with different pbrs and colors, (make sure we can edit them in the
+  studio), also can you then merge in main into this branch, resolve merge conflicts"**. So:
+  - **Library garments are worn and edited in the Character Studio now** (they were only the prototype's):
+    - **A bake, once a garment** (`python tools/clothing_library.py bake`, `storykit/clothfit.py`: the prototype's
+      stage 1): the garment carried from MakeHuman's base mesh onto MHR's average body at rest and written as
+      `assets/clothing/_mhr/<id>.bin` (its points, its own UVs, a second UV in metres, the skin it hides). Needs numpy
+      and scipy; the 90 picked ones are baked and in git (29 MB, `git add -f`), with the registration it uses
+      (`Content/Studio/Clothes/library/hm08_mhr.npz`: MakeHuman's base mesh on MHR's, made once by the prototype's
+      register.py; the base mesh is MakeHuman's, CC0).
+    - **The fit in the Studio's own JavaScript** (`tools/character/tailor/library.js`: the prototype's stage 2): the
+      baked garment carried onto the character's body (the dress form the tailor cuts on) and put outside the skin, in
+      about a tenth of a second; within 0.3 mm of the prototype's Python on the same body. It follows the view's pose
+      by the skin's bones round it, as the tailor's clothes do.
+    - **In layers, lightly** (`layerOf`, `dress`): underwear, legwear, shoes, bottoms, tops and dresses, jackets, by
+      the catalogue's group and the garment's name; an upper one is set outside the ones under it where they lie
+      together, then the lower one is pressed in where it still stood through (a skirt's waistband through a top's
+      hem). Shoes and hats keep their shape. **The tailor's own garments count too** (by their slot: under, legs, feet,
+      bottom, top, full, jacket): they don't move, the library's go outside the ones under them and are pressed in
+      under the ones over them (our tights under a library dress, our t-shirt over a library skirt). Not the
+      prototype's whole rule set: no hiding of what's covered, no outfit rules.
+    - **In the Clothes tab**: a *Library garments* section, the garments as cards with their own pictures by group; a
+      click puts one on or takes it off. Under *Worn*: its colour (a tint on its own texture: white leaves it as
+      painted), *Its own texture* on or off, and off it one of our fabrics or a PBR set off the shelf with its repeat
+      and tint. Saved with the character (`{design: "lib:<id>", library: <id>, color, own, surface, pbr...}`).
+    - **Export for Godot carries them**: skinned on MHR's skeleton, their colours baked on their own layout, the PBR
+      set's other maps on the second UV, one sheet seen from both sides; the export's `CREDITS.md` names the ones to
+      credit (tried: a CC BY 4.0 dress and CC0 flats).
+  - **The pictures** (sent): twelve looks in the Studio's own view, four outfits each as painted and in our satin,
+    denim, tweed, rib, leather, corduroy and fleece sets or tinted (`tools/character/libraryshots.mjs` makes them
+    from a list).
+  - **Limits, said to the user**: toes can show through a shoe in the Studio's view (the export leaves that skin
+    out); a garment with soft alpha (the tutu's tulle) is cut out hard; a library garment is fitted, not hung by
+    gravity; no prints or patterns on one yet.
+  - **Main merged** (PR #23, tutorial v2's floor ready-made): conflicts in CLAUDE.md, CONTINUE, DECISIONS, LESSONS and
+    check_all.py, both sides kept.
+
+## 2026-11-11, last (the user: CC-BY clothing may ship; a credits file)
+
+- **"Yes Im happy to ship with CC-BY, create a new .md file for storing credits so I can add them later when Im done
+  with my game"** (after asking which garments are CC-BY). So:
+  - **CC-BY clothing may ship, with a credit.** The asset rule is now "CC0, ours, or CC-BY with its line in
+    docs/CREDITS.md". This answers the question left open below; it roughly triples the usable library (210 more
+    garments and shoes in MakeHuman's packs) and brings in almost all the dresses, the coat and the jackets.
+  - **docs/CREDITS.md** is the new file: every CC-BY garment tested so far with its author and licence as its own
+    file says (Mindfront CC BY 4.0, punkduck CC BY 3.0 and 4.0, Elvaerwyn CC-BY with no version given, sonicteam998
+    CC BY 3.0), a column to tick as a garment is used in a game, the CC0 ones for the record, a block to paste into
+    a credits screen, and where the project's other licences are written down for the end of a game.
+  - A thing that asks for credit gets its line there in the commit that brings it in.
+  - Not changed by this: the fan costumes and the AGPL-marked suit in the same packs stay out; the garment files
+    still aren't in the repo (the packs are to be downloaded; that question is still open).
+- **"Can we import the rest of the CC-BY garments into our projects (the full community packs)"**. Yes, as far as
+  this session can reach (`tools/clothing_library.py`):
+  - **The catalogue is in**: `Content/Studio/Clothes/library/index.json`, every thing to wear in MakeHuman's 40
+    clothing packs (491: 191 CC0, 297 CC-BY, 3 refused by name), each with its author, licence, own page and pack,
+    read from MakeHuman's website source on GitHub. docs/CREDITS.md now lists all 297 CC-BY ones with their pages.
+  - **The files are fetched, not tracked**: 2.6 GB into `assets/clothing/` by `python tools/clothing_library.py
+    fetch`, as the PBR shelf's sets are (too big for git; read as: the user's own decision on that shelf carried
+    over, to be changed if they want the garments in git).
+  - **Not downloaded yet**: MakeHuman's two file servers are blocked from this session. A cloud environment
+    "HorrorEngine" that allows them was made (approved by the user), but a running session can't move onto it: the
+    fetch is one command on the user's machine, or in a new session started on that environment.
+- **"When you export the characters can you export a .md for godot can you include a .md that contains whos cc outfits
+  we used so I can credit just hte ones used"**. Every character exported for Godot now carries its own credits
+  (`storykit/clothcredits.py`): `CREDITS.md` in `Exports/characters/<name>/` (`<name>.credits.md` in a Director
+  project's `game/people/`; `<body>.credits.md` beside the prototype's .glb): the library garments that character
+  wears which ask for a credit, with author, licence, page and the lines to paste; the CC0 ones; a refused one
+  flagged; the tailor's own as ours. A Studio character has no library garments until the fit moves into the Studio,
+  so today its file says there is nothing to credit; a worn library garment will say so with `library` in the
+  character's `clothes`.
+- **"Yeah i think we might aswell  s tick with the fetch, can yu create a pr for this branch, once I merge in Ikll want
+  to just manually move this downloaded folder into my main branch so I dont need to redownload when I switchc to main
+  branch, maybe have it git ignore the newer fetched files (you can keepw hatevers alrady added in for now)"**. So:
+  - **The fetch stays the way**: the garment files are never committed; `assets/clothing/` is in `.gitignore` (the
+    whole folder, the kept zips too). Nothing under it is tracked, so nothing had to be taken out.
+  - **What is tracked stays tracked**: the catalogue (`Content/Studio/Clothes/library/index.json`) and
+    docs/CREDITS.md; a fetch's `scan` rewrites those two with each garment's own licence version, to be committed.
+  - **Switching branches keeps the download**: an ignored or untracked folder is left where it is by a checkout. In
+    one working folder there is nothing to move; in a second clone, the folder is moved into its `assets/`, or
+    `$STUDIO_CLOTHING` points both at one place.
+  - **A pull request for this branch** was opened at the user's ask.
+- **"Ive noticed the download (fetch) is sper slow, its only 3mb in 5 min, can you apss me some screenshoits of the
+  packs and ill just pick wahatever outfits I want and then youll add to only fetch those ones"**. So:
+  - **Pictures to pick from**: every garment's own thumbnail (MakeHuman's website source on GitHub has one a garment)
+    on eighteen numbered sheets, sent to the user; a garment's number is its place in the catalogue.
+    `python tools/clothing_library.py sheets` makes them again (into `Saved/Clothing/sheets`; needs Pillow), with what's
+    picked and what's on disk marked.
+  - **The picks are a tracked file**, `Content/Studio/Clothes/library/picks.json` (`pick 12 40 <name> ...`,
+    `pick --remove`, `pick` alone lists them; a refused garment isn't picked). Any machine fetches the same ones.
+  - **`fetch` gets only the picked garments** once something is picked (`--all` for every pack, pack names for whole
+    packs, `--only` for garments without picking them). A garment is cut out of its pack's zip **on the server**: the
+    zip's list of files read by a byte range, then only that garment's folder, four connections at a time
+    (`--connections`), with a line of progress every five seconds. A dress costs its own megabytes (7 to 11 MB for the
+    system pack's ones), not its pack's hundreds. A server that gives no ranges gets the whole pack downloaded and
+    only the picked folders unpacked.
+  - **Not tried against MakeHuman's servers** (blocked from this session): tried on the real system pack's zip served
+    from this machine at 150 KB/s a connection (three garments: 26 MB of 424 MB, 50 s) and held by CLOTHLIB on a
+    made-up pack. If their servers refuse ranges, the fallback is the slow whole pack: to be told.
+  - **Waiting on the user's numbers**; then `pick` them and commit picks.json. (Answered, next.)
+- **"If possible can you just add the following into our project"**, then the numbers 3, 14, 15, 19, 19, 20, 32, 33,
+  38, 40, 47, 254, 364, 427, 428, 414, 416, 281, 291, 248, 228, 362, 363, 233, 372, 311, 345, 346, 339, 337, 336,
+  420-467, 470-491. So:
+  - **They are the project's picks**: `Content/Studio/Clothes/library/picks.json`, 98 garments (the 19 given twice
+    once) from 19 packs: 60 underwear, swimwear and legwear, 12 suits and outfits, 10 dresses, 6 shoes, 4 skirts, 3
+    tops, 3 trousers; 30 CC0 and 68 CC-BY (their lines are already in docs/CREDITS.md); none of the refused three.
+    About 400 MB by each pack's share, where their packs whole are 1.5 GB and the library 2.6 GB.
+  - **Read as: picked, not committed as files.** The garment files still come by `fetch` on the user's machine
+    (MakeHuman's servers don't answer from this session, and the user chose the fetch over files in git one message
+    before). If they meant the files in the repo, they'll say.
+  - **A garment's folder by its nearest name**: the catalogue's names are the pack pages'; an uploader's folder can
+    differ a little (the mirrors have `Elvs_Crochet_Baby_Doll1` for `elvs_crochet_baby_doll`). The fetch and the scan
+    now take the exact name first, then the nearest in the pack (best pairs first, a folder to one garment), and say
+    so (`taken as ...`); what still isn't found is listed with the names near it.
+- **"why is the download speed 100KB/s when I have 900mbps internet"**, then **"Can you just download them into our
+  branch yourself ? I dont mind commiting them up since its only 400mb"**, then **"I added it to the cloud environment.
+  note the new mirror is way faster"**. So:
+  - **The picked garments are in git**: `assets/clothing/<pack>/clothes/<garment>/`, 90 garments, 486 MB (more than
+    the 400 MB guessed from each pack's share: three of Mindfront's dresses are 25 to 50 MB each). The folder stays in
+    `.gitignore`; the picks were added with `git add -f`, so **anything fetched later is ignored** until it's added the
+    same way (the user's earlier "have it git ignore the newer fetched files").
+  - **The faster mirror is first**: `files.makehumancommunity.org` (the pages' second mirror) gave 3.5 MB/s from the
+    cloud session where the user had 100 KB/s from `files2`; `fetch` now tries it first (`--mirror files2` for the
+    other). The user allowed that host on the Default cloud environment; byte ranges work there: all 98 came in one
+    run, every folder found by its exact name.
+  - **Eight of the 98 picked are held back, not committed** (taken out of picks.json, marked refused in the catalogue):
+    - **Seven whose own file says AGPL3** where their page says CC0 or CC-BY: `kwnet_at_pantyhose01`,
+      `marco_105_armsleeve02`, `marco_105_stocking01`, `marco_105_stocking02`, `jaldmic_stockings`,
+      `punkduck_bandeau_bra`, `punkduck_string_4`. It is the line the old MakeClothes exporter wrote by default
+      ("# license AGPL3 (see also .../external_tools_license.html)") and the author's page is probably what they
+      meant, but a file that says AGPL isn't shipped on a guess. The user's call to overrule.
+    - **`culturalibre_el_chapulin_colorado`**: the costume of a television character (El Chapulín Colorado, its heart
+      emblem and antennae), someone else's character; `chapulin` is on the refuse list now.
+    - Kept, said to the user: `culturalibre_heroine_suit_7` is a blue top and a red skirt with a yellow hem, close to
+      a comic heroine's colours with no emblem.
+  - **The stricter licence is the one credited** (`storykit/clothcredits.py` `licence_of`): a file that says CC BY
+    where the page says CC0 is credited (`punkduck_strappy_lace_thong`, CC BY 4.0); a page that says CC-BY where the
+    file says CC0 is still credited (`joepal_plain_bra`, `tiomegamanx_skintight_body_suit_female`). docs/CREDITS.md
+    now carries each fetched garment's own licence version (27 CC BY 3.0, 11 CC BY 4.0, the rest no version).
+
+## 2026-11-11, later (the user: the fitted outfits clip; clothing layers, a dissolve in Godot, main merged, our PBR sets, pantyhose, fishnets and socks)
+
+- **"Some issues, some of the des igns show clear clipping, can you set smart rules so skirts are  always below the
+  waistband, maybe add clothing layers so that if a piece of clothign is higher in the layer the layer below can ne ver
+  clip through (maybe we can do some dissolve effect thast hides it in godot too), can you look at the latest main and
+  merge it in as we added some new proportions and a new design, test using our custom pbrs on these outfits too.  Test
+  using the pantyhose, fishnet tights and socks too,"** (with a picture of the fit test's skirt, its waistband through
+  the sweater's hem). Done in the prototype (docs/research/clothing_v2/fit_test.md §7; `proto/layers.py`, `wear.py`):
+  - **Layers.** Every garment has a kind (from its name and its shape on the average body) and a layer from the kind:
+    legwear 15, socks 16, shoes 20, **bottoms 30, tops 40** (so a skirt or trousers are always under a top's hem; an
+    outfit's `tuck` puts tops under bottoms instead), dresses and suits 40, jackets 60, coats 70. An outfit can give a
+    garment its own layer.
+  - **A lower layer can't come through a higher one**, two ways at once: each garment is set outside the ones under it
+    (cloth against cloth, the lower giving most of a conflict, the upper the rest; a shoe never bent), and **what a
+    layer covers isn't drawn at all** from 3.5 cm inside the covering garment's edge (1.2 cm under shoes and socks), the
+    tailor's own rule for skin (TAILOR §3d) carried to cloth under cloth, so in a pose nothing is there to come
+    through.
+  - **The dissolve in Godot** (`proto/godot/cover.gdshader`, GDLAYERS): the covered part of a mesh goes out over 2 cm
+    by a dither instead of ending in a line. Each mesh's vertex colours say what hides it by band (bottoms, tops,
+    outerwear, legwear and shoes), so a game that takes a coat off turns that band down and what was under it
+    dissolves back, nothing baked again. Pictured in Godot 4.7: a coat over six garments, the coat off, half way.
+  - **Main merged** (PR #22: Anime's bust and dress form, the red sweater dress). Tested on Anime at Bust 2.1 and -2,
+    a girl of ten and a boy of fourteen, and with the red sweater dress under a library coat.
+  - **Our PBR sets** on the layered outfits (the baked fabric sets, at their real size by the metre UV, tinted) and
+    **the tailor's pantyhose, fishnet tights and socks** (knee, crew, over the knee) under library skirts and into
+    library shoes: `layers_pbr.jpg`, `layers_legwear.jpg`.
+  - Still a prototype: nothing in the Studio, at rest only (not walked), `proto/check.py` (LAYERS) its check.
+- **"When it comes to the top and skirt it seems yo uregressed, you had it fixed in the firs screenshot, but somehow
+  broke it as can be seen in screenshot 2 where the skirt clips out of the gray sweater"** (mid-session, two of the
+  session's own pictures). True: the second picture was the same skirt and sweater with pantyhose added under them, and
+  a reworked solver took the tights' turned edge at the waist for a surface the skirt and sweater were under. Fixed the
+  same hour (which way is out is now the body's own outward direction, never the cloth's faces), the same view sent
+  back, and LAYERS now runs that outfit with and without the tights (LESSONS).
+- **"Once your done with the current stuff caan you confirm if we kept in the other metahum CC 4.0 stuff you found eg
+  dresses, cocktail dresses, if they work with the new layering system etc"**. Both answered (fit_test §7.5):
+  - **Kept**: how to fit and layer them, their pictures and each one's author and licence are in the repo; **the
+    garment files themselves are not**, and never were (the six Mindfront dresses are CC BY 4.0, punkduck's cocktail
+    dress and qipao CC BY 3.0, Elvaerwyn's four CC-BY: not CC0, so they wait on the credits-screen answer). They are
+    fetched again by two `git clone` lines in `proto/README.md`.
+  - **They work with the layers**: all twelve dresses, each worn with legwear under it and a jacket or cardigan over
+    it, end with nothing coming through (`layers_dresses.jpg`).
+- **"just to interrupt, if therye wearing a dress dont worry about making them wear a coat,  Ican see it look distorted
+  but we want to create some light rules for outfitting just ot not have to deal with harder clipping and mesh
+  distortion"** (while a wide-sleeved dress under a coat was being forced to work). So **an outfit has light rules,
+  and what they refuse isn't worn** (`layers.rules`, `layers.too_full`; the run says why):
+  - by kind: one bottom (a skirt or trousers), one jacket, one coat, one pair of shoes, one legwear; a dress or a suit
+    is the top and the bottom (no separate top, skirt or trousers with it); **no coat over a dress**;
+  - by measure: nothing is worn over a garment too full to go under it (over 2% of it standing more than 5 cm
+    outside: a fitted jacket over wide hanging sleeves);
+  - and no garment is ever bent to make room: no point moves further than 5 cm from where it was fitted. Under a hem
+    that reaches the floor the shoes aren't drawn.
+  The squeeze-it-in rule that was half built is dropped.
+
+## 2026-11-11 (the user: Cloth2Tex as a second clothing system, a CloV2 tab; then what's newer and free)
+
+- **"Evaluate and determine whether we could upgrade our clothing system with the following option instead
+  https://github.com/HumanAIGC/Cloth2Tex , instead of replacing it we'd simple add a new cloV2 tab , if we could use this
+  how much vram etc would it require to run the repo , U know the repo doesnt give us phase 2 (fine textures) but im ok
+  using our exiting textrues + pbrs"**. Read at source (docs/research/clothing_v2/cloth2tex.md): **no**. It makes no
+  garments: it ships nine fixed meshes (GPL-3.0: they can't ship in a game, and they fit no body) and its whole output is
+  a 512 px texture for one of them from a front and a back photo, with holes down every seam, which its phase 2, never
+  released, was to repair. So its garments with our textures keep nothing of it but those meshes. Every photo needs its
+  landmarks clicked by hand (the detector was held back); one commit, 2023-12, and nothing since. **About 2 GB of VRAM**
+  (worked out from the code's tensors, not measured: no graphics card in the session). The idea worth keeping is a
+  garment's look from photos, which our own flat panels make a 2D warp (a print the size of a panel), no renderer and no
+  GPU. Nothing built.
+- **"I notice that repo is 3 years old, have there been any better advacnes for easier clothing for 3d game models ?
+  research into any free alternatives"**. Read as: research only, then the user picks (docs/research/clothing_v2.md, its
+  notes in docs/research/clothing_v2/). In short: nothing that generates clothing beats ready-made garments for us. The
+  sewing-pattern generators all end at the draping step that failed here in October; the image-to-3D models make an
+  object, not a garment on a body (worth it only for one-off bags and hats); the photo-to-texture models are stopped by
+  their licences or need a 48 GB card.
+- **"To add I dont actually care about generating procedural cloting, if you can find a repo or source to get good 3d
+  clothing designs and create an algorithm to apply that clothing to any of our models (make it fit), and allow custom
+  pbrs ,png decals etc that is also fine, id rather have better already designed clothing with lots of options than
+  generating crappy clothing"**. So the research turned from generators to **a library of ready-made garments and a
+  fit**.
+  - **The source**: MakeHuman's community clothing, all in one format on one base body: 129 garments and shoes and 56
+    accessories under CC0, 210 and 73 more under CC-BY (a credit line in the game).
+  - **The fit, tested** (docs/research/clothing_v2/fit_test.md, its scripts in `proto/` beside it, its pictures
+    `fit_*.jpg`): MakeHuman's base body registered onto MHR's once (4 s), then 48 garments fitted with no failure and nothing adjusted
+    by hand, fifteen of them on two to five of the Studio's seven test bodies; our own fabric at real size on one of them (a
+    second UV in metres, the garment's own seams kept as a layer) and a studio print PNG on its back.
+  - **Not done by the test**: layering between two library garments, bridging on heavy bodies, motion. A prototype
+    only: no check, nothing in the Studio.
+- **"Can you see if you can find some more korean/japanese smart casual designs, uniforms, dresses, suits."**
+  (docs/research/clothing_v2/korean_japanese.md). The packs have the plain half: suits (8 under CC0), office wear, a
+  shirt with a tie, cardigans, slacks, pleated plaid skirts, 55 dresses. Nothing specifically Japanese or Korean is in
+  them (no sailor uniform, gakuran, hanbok, kimono). The lead: Style3D's free garments on Sketchfab (school uniforms,
+  business suits, shirt-and-skirt sets, dresses; CC Attribution on most, by search summaries: each page's licence to be
+  read before use). No free hanbok, kimono or yukata was found.
+- **Not decided: the user picks** (the first answered since: yes, 2026-11-11, last). Whether CC-BY garments may ship with a credits screen (the rule today is CC0 or
+  ours); whether the fit becomes a CloV2 tab in the Studio; which garments come in first.
+
 ## 2026-11-11, after the latest (the user: tutorial v2's map pre-built, the Godot part alone)
 
 - **The ask**: **"I dont want to build the map myself for tutorial 2, can you pre-build it so i can just do the godot
@@ -28,7 +288,6 @@ The user's answers, newest first. They override the plan, the research and the d
   every node the tutorial's steps use (TUTORIAL2's list); then TUTORIAL2 whole.
 - **Not in it**: her (still a Character Studio export of yours, or the stand-in §20 describes), and nothing of the
   Godot part done for you: the user asked to do that part.
-
 ## 2026-11-11, latest (the user: the new Bust slider kept as an Anime switch, the red knit dress kept; no look-alike preset)
 
 - **The ask** (with a Daz3D screenshot of a character in a red ribbed turtleneck dress): **"could we make a 'korean

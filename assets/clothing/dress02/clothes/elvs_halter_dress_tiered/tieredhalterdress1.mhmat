@@ -1,0 +1,42 @@
+# Material definition for dresstexs
+
+name dresstexs
+description Tieredhalterdress1 material
+ambientColor 1.0 1.0 1.0
+diffuseColor 0.3843 0.0 0.3922
+specularColor 0.075 0.075 0.075
+shininess 0.0
+emissiveColor 0.0 0.0 0.0
+opacity 1.0
+translucency 0.0
+
+shadeless False
+wireframe False
+transparent False
+alphaToCoverage True
+backfaceCull False
+depthless False
+
+castShadows True
+
+receiveShadows True
+
+diffuseTexture tieredtex2b.png
+normalmapTexture normalstier1.png
+normalmapIntensity 1.0
+
+shader shaders/glsl/litsphere
+
+shaderParam litsphereTexture litspheres/lit_matte.png
+shaderParam AdditiveShading 0.03
+
+shaderDefine CALC_NORMAL_Z
+
+shaderConfig diffuse True
+shaderConfig bump False
+shaderConfig normal True
+shaderConfig displacement False
+shaderConfig spec False
+shaderConfig vertexColors False
+shaderConfig transparency True
+shaderConfig ambientOcclusion True

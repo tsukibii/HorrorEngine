@@ -1,0 +1,40 @@
+# Material definition for teddy material
+
+name teddy material
+description Teddy material
+ambientColor 0.498039215686 0.498039215686 0.498039215686
+diffuseColor 1.0 1.0 1.0
+specularColor 0.63137254902 0.63137254902 0.63137254902
+shininess 0.1
+emissiveColor 0.0 0.0 0.0
+opacity 1.0
+translucency 0.0
+
+shadeless False
+wireframe False
+transparent True
+alphaToCoverage True
+backfaceCull False
+depthless False
+
+castShadows True
+
+receiveShadows True
+
+diffuseTexture teddy.png
+normalmapTexture teddy_normals.png
+normalmapIntensity 1.0
+
+shader shaders/glsl/litsphere
+
+shaderParam AdditiveShading 0.05
+shaderParam litsphereTexture litspheres/lit_leather.png
+
+shaderConfig ambientOcclusion True
+shaderConfig normal True
+shaderConfig bump False
+shaderConfig displacement False
+shaderConfig vertexColors False
+shaderConfig spec False
+shaderConfig transparency True
+shaderConfig diffuse True

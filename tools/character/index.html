@@ -61,6 +61,11 @@
   .hairlib { display: grid; grid-template-columns: repeat(3, 96px); gap: 4px; max-height: 270px; overflow-y: auto; margin: 6px 0; }
   .hairlib div { width: 96px; height: 60px; border-radius: 4px; cursor: pointer; outline: 1px solid #333; background-repeat: no-repeat; }
   .hairlib div.on { outline: 2px solid var(--accent, #e0b060); }
+  #libGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin: 6px 0; max-height: 330px; overflow-y: auto; }   /* the clothing library's garments (tailor/library.js) */
+  #libGrid .card { padding: 0; overflow: hidden; text-align: center; display: flex; flex-direction: column; background: #151619; }
+  #libGrid .card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; background: #5c6068; }
+  #libGrid .card span { display: block; font-size: 10px; padding: 2px 3px; line-height: 1.2; color: var(--ink); }
+  #libGrid .card.on { border-color: var(--gold); } #libGrid .card.on span { color: var(--gold); }
   #outfitGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 6px; margin: 6px 0; }   /* the outfits as pictures (tailor/thumbs.mjs) */
   #outfitGrid .card { padding: 0; overflow: hidden; text-align: center; display: flex; flex-direction: column; background: #151619; }
   #outfitGrid .card img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; display: block; background: #2a2d34; }
@@ -225,6 +230,7 @@ import * as ACCS from "./accessories.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import * as LOOK from "./tailor/look.js";
 import * as WEIGHTS from "./tailor/weights.js";
+import * as LIBFIT from "./tailor/library.js";
 import { DRAPE } from "./tailor/drape.js";
 import { edited as editedDesign } from "./tailor.js";
 import { CutEditor } from "./cutedit.js";
@@ -569,10 +575,16 @@ photoBtn.onclick = async () => {
 // then hangs them by gravity (the drape, tailor/drape.js: DECISIONS 2026-10-26), each over the ones under it; what they
 // fall to is baked with the character (People/<name>/drape.bin) and taken as it is next time, until the body or what's
 // worn changes (its key says what it was draped on)
-st.clothes = [];                                       // [{design, color, surface?, pattern?, print?, denier?, edit?}], the first innermost
+st.clothes = [];                                       // [{design, color, surface?, pattern?, print?, denier?, edit?}], the first innermost; a library garment {design: "lib:<id>", library: <id>, color, own?, surface?, pbr?}
 st.drape = true;                                       // hang them by gravity
 let BAKES = {}, DRAPING = { stage: "none" };           // the drape's points by key, for drape.bin; how the last job is going
 const GARMENTS = new THREE.Group(); GARMENTS.name = "clothes";
+// (the clothing library's state and its section's elements: used further down, tailor/library.js)
+const LIB = { list: [], has: new Map(), base: null, bakes: new Map(), wearer: null, key: "", made: new Map(), skin: null, group: "dress", tailor: [], rev: 0 };   // tailor: the tailor's garments worn now, as they were cut (their layer and outsides), which the library's are layered against
+const SLOT_LAYER = { under: 10, legs: 15, feet: 20, bottom: 30, top: 40, full: 40, jacket: 60 };   // a tailor design's layer among the library's (tailor/library.js layerOf), by its slot
+const isLib = c => typeof c.library === "string";
+const LIB_GROUPS = [["dress", "Dresses"], ["suits", "Suits"], ["shirts", "Tops"], ["pants", "Trousers"], ["skirts", "Skirts"], ["shoes", "Shoes"], ["underwear", "Underwear, swim, legs"], ["hats", "Hats"], ["gloves", "Gloves"], ["glasses", "Glasses"], ["masks", "Masks"], ["jewelry", "Jewellery"], ["equipment", "Equipment"], ["system", "MakeHuman's own"]];
+const libTabs = el("div", { id: "libTabs", className: "chips" }), libGrid = el("div", { id: "libGrid" }), libNote = el("p", { className: "note" });
 let DESIGNS = {}, OUTFITS = {}, SHELF = {}, TAILOR_JOB = 0, FITTED = "", fitTimer = 0;   // SHELF: the PBR shelf's sets (Content/Studio/PBR)
 const TAILOR_W = new Worker("./tailor/worker.js", { type: "module" });
 const designSel = el("select", { id: "designSel" }), addBtn = el("button", { textContent: "Wear it" }), gColor = el("input", { type: "color", value: "#3b4a6b" });
@@ -602,6 +614,7 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
   api("api/clothes/my_outfits.json").then(m => { for (const [n, g] of Object.entries(OUTFIT_META)) if (g.group === "mine") { delete OUTFITS[n]; delete OUTFIT_META[n]; }
     for (const [n, l] of Object.entries(m.outfits || {})) if (!OUTFITS[n]) { OUTFITS[n] = l; OUTFIT_META[n] = m.meta?.[n] || { group: "mine" }; } drawOutfits(); }).catch(() => {}); });
 $("#clothesRows").append(el("h4", { textContent: "Outfits" }), wardrobeBtn, outfitTabs, outfitGrid,
+  el("h4", { textContent: "Library garments" }), libTabs, libGrid, libNote,
   el("h4", { textContent: "A garment" }), el("div", { className: "row" }, el("span", { textContent: "Design" }), designSel, el("output")),
   el("div", { className: "row" }, el("span", { textContent: "Colour" }), gColor, el("output")), addBtn, el("h4", { textContent: "Worn (under to over)" }));
 $("#worn").after(clothesExp);
@@ -654,6 +667,117 @@ Promise.all([api("api/clothes/designs.json"), api("api/clothes/outfits.json"), a
   designSel.onchange = () => { gColor.value = DESIGNS[designSel.value]?.color || gColor.value; }; designSel.onchange();
   drawWorn(); if (st.clothes.length) refresh();
 }).catch(e => status("no designs: " + e.message, "bad"));
+// ---- the clothing library (tools/clothing_library.py; tailor/library.js): garments picked from MakeHuman's community
+// packs, baked once onto MHR's average body, fitted here to this body and worn beside the tailor's. A worn one is
+// {design: "lib:<id>", library: <id>, color (a tint: white as painted), own (false: a fabric or a PBR set in place of
+// its own texture), surface, pbr, pbrTile, pbrTint}
+function drawLibrary() {
+  const groups = LIB_GROUPS.filter(([g]) => LIB.list.some(x => x.group === g));
+  if (!groups.some(([g]) => g === LIB.group) && groups.length) LIB.group = groups[0][0];
+  libTabs.replaceChildren(...groups.map(([g, label]) => { const b = el("button", { textContent: label, className: g === LIB.group ? "on" : "" }); b.dataset.group = g; b.onclick = () => { LIB.group = g; drawLibrary(); }; return b; }));
+  libGrid.replaceChildren(...LIB.list.filter(x => x.group === LIB.group).map(x => {
+    const img = el("img", { src: `api/library/${encodeURIComponent(x.id)}/thumb`, alt: "", loading: "lazy" }); img.onerror = () => img.remove();
+    const on = st.clothes.some(c => c.library === x.id);
+    const b = el("button", { className: "card" + (on ? " on" : ""), title: `${x.id}\nby ${x.author}, ${x.licence}${x.licence === "CC0" ? "" : " (credit: docs/CREDITS.md, and the CREDITS.md written with the export)"}` }, img, el("span", { textContent: x.label }));
+    b.dataset.library = x.id; b.onclick = () => wearLibrary(x.id, !on); return b;
+  }));
+  libNote.textContent = LIB.list.length ? `${LIB.list.length} garments from MakeHuman's community packs, fitted to this body. A click puts one on or takes it off; its colour, its own texture or one of our fabrics and PBR sets are under Worn.`
+    : "No library garments here yet: python tools/clothing_library.py fetch, then bake.";
+}
+function wearLibrary(id, on = true) {
+  st.clothes = st.clothes.filter(c => c.library !== id);
+  if (on) st.clothes.push({ design: "lib:" + id, library: id, color: "#ffffff" });
+  UNSAVED = true; drawLibrary(); drawWorn(); refresh();
+}
+api("api/library").then(r => { LIB.list = r.garments || []; LIB.has = new Map(LIB.list.map(x => [x.id, x])); drawLibrary(); drawWorn(); if (st.clothes.some(isLib)) refresh(); }).catch(() => drawLibrary());
+// each worn library garment fitted to the body as it is now (the dress form the tailor cuts on); made once a body
+async function dressLibrary(job, key) {
+  const worn = st.clothes.filter(c => isLib(c) && LIB.has.has(c.library));
+  if (!worn.length) return showLibrary();
+  try {
+    if (!LIB.base) LIB.base = new Float32Array(await (await fetch("api/library/_base.f32")).arrayBuffer());
+    for (const c of worn) if (!LIB.bakes.has(c.library)) {
+      const r = await fetch(`api/library/${encodeURIComponent(c.library)}.bin`); if (!r.ok) throw new Error(`${c.library}: not baked`);
+      const b = LIBFIT.readBake(await r.arrayBuffer()); LIB.has.get(c.library).texture = !!b.head.texture; LIB.bakes.set(c.library, b);
+    }
+    if (job !== TAILOR_JOB) return;                    // a newer fit is on its way
+    if (LIB.key !== key || !LIB.wearer) {
+      const P = neutralBody(true);
+      LIB.wearer = new LIBFIT.Wearer(LIB.base, P, TRIS); LIB.key = key; LIB.made.clear();
+      LIB.skin = RIG ? WEIGHTS.skinOf(P, RIG.BI, RIG.BW) : null;
+    }
+    // in layers (tailor/library.js layerOf: underwear, legwear, shoes, bottoms, tops and dresses, jackets): each set
+    // outside the ones under it where they lie together, then pressed in under what's over it; made again when what's
+    // worn with it changes
+    // (what a garment hides under it depends on whether it's opaque: its own texture with holes in it, or a set with an opacity map, hides nothing)
+    const opaque = c => !((c.own !== false && !c.pbr && LOOK.ownCut(`api/library/${encodeURIComponent(c.library)}/texture`) === true) || pbrOf(c)?.maps?.opacity);
+    const set = worn.map(c => [c.library, c.gravity ?? "", opaque(c) ? 1 : 0].join(":")).join("|") + "|" + LIB.rev;
+    if (LIB.set !== set || !LIB.made.size) {
+      LIB.made.clear(); LIB.set = set;
+      const made = LIB.wearer.dress(worn.map(c => { const x = LIB.has.get(c.library); return { bake: LIB.bakes.get(c.library), name: c.design, color: c.color, layer: LIBFIT.layerOf(x.group, x.id), rigid: LIBFIT.rigid(x.group), gravity: c.gravity, opaque: opaque(c) }; }), LIB.tailor);
+      worn.forEach((c, i) => { const g = made[i]; g.opaque = opaque(c); if (LIB.skin) g.skin = WEIGHTS.transfer(LIB.skin, g.parts[0].P); LIB.made.set(c.library, g); });   // (its bones, from the skin round it)
+    }
+    showLibrary();
+    if (!st.clothes.some(c => !isLib(c) && DESIGNS[c.design])) status(worn.map(c => { const g = LIB.made.get(c.library); return `${LIB.has.get(c.library).label} ${Math.round(g.stats.triangles / 1000)}k triangles`; }).join(", ") + " (from the library)", "ok");
+  } catch (e) { status("the library: " + e.message, "bad"); }
+}
+// the library garments' meshes among the clothes, as worn now (after the tailor's are drawn again, or one put on or taken off)
+function showLibrary(pose = true) {
+  for (const m of [...GARMENTS.children]) if (m.userData.library) { m.geometry.dispose(); m.material.dispose(); GARMENTS.remove(m); }
+  for (const k of [...COVERS.keys()]) if (k.startsWith("lib:")) COVERS.delete(k);
+  if (LIB.key !== FITTED) return;                      // made for another body: a fit is on its way
+  for (const c of st.clothes) {
+    const g = isLib(c) && LIB.made.get(c.library); if (!g) continue;
+    for (const q of g.parts) {
+      const m = LOOK.mesh({ ...q, P: q.P.slice(), N: q.N.slice() }, c.design, lookOf(c));   // (copies: the pose moves a mesh's own points)
+      m.userData.library = c.library; if (g.skin) m.userData.skin = g.skin; GARMENTS.add(m);
+    }
+    COVERS.set(c.design, g.cover);
+  }
+  // the tailor's own garments under the library's (tights inside a boot): what the layers over them cover isn't drawn
+  for (const m of GARMENTS.children) {
+    if (m.userData.library || !m.geometry.index) continue;
+    const T0 = m.userData.T0 || (m.userData.T0 = m.geometry.index.array), lay = SLOT_LAYER[DESIGNS[m.userData.garment]?.slot] ?? 40;
+    const over = LIB.wearer && LIB.key === FITTED ? st.clothes.filter(c => isLib(c) && LIB.made.has(c.library) && LIBFIT.layerOf(LIB.has.get(c.library).group, c.library) > lay && LIB.made.get(c.library).opaque).flatMap(c => LIB.made.get(c.library).outer) : [];
+    let T = T0;
+    if (over.length) { const H = LIB.wearer.hidden(m.userData.rest ? m.userData.rest.P : m.geometry.attributes.position.array, null, over, 0.02), keep = [];
+      for (let t = 0; t < T0.length; t += 3) if (!(H[T0[t]] && H[T0[t + 1]] && H[T0[t + 2]])) keep.push(T0[t], T0[t + 1], T0[t + 2]); T = new T0.constructor(keep); }
+    if (T.length !== m.geometry.index.count) m.geometry.setIndex(new THREE.BufferAttribute(T, 1));
+  }
+  if (!GARMENTS.parent) rig.add(GARMENTS);
+  if (!CUT_SKIN && LIB.skin) CUT_SKIN = LIB.skin;
+  if (pose) { GARMENTS.userData.posedFor = null; poseGarments(); }
+}
+function libRows(c) {                                  // a worn library garment: its own texture, or one of our fabrics or PBR sets, tinted by its colour
+  const box = keepOpen(el("details", {}, el("summary", { textContent: "Texture, fabric, PBR set" })), c.design + ":look"), x = LIB.has.get(c.library) || {};
+  const pick = (label, opts, val, on) => { const sel = el("select", {}, ...opts.map(([v, t]) => el("option", { value: v, textContent: t, selected: v === val }))); sel.onchange = () => on(sel.value); box.append(el("div", { className: "row" }, el("span", { textContent: label }), sel, el("output"))); return sel; };
+  const set = v => { Object.assign(c, v); for (const k of Object.keys(v)) if (v[k] === undefined) delete c[k]; UNSAVED = true; restyle(c); drawWorn(); };
+  if (x.texture !== false) {
+    const t = el("input", { type: "checkbox", checked: c.own !== false && !c.pbr });
+    t.onchange = () => set(t.checked ? { own: undefined, pbr: undefined, surface: undefined } : { own: false, surface: c.surface || "cotton" });
+    box.append(el("label", { className: "tog", title: "The texture its author painted for it (its colour here tints it: white leaves it as painted). Off: one of our fabrics or a PBR set, in its colour" }, t, el("span", { textContent: "Its own texture" })));
+  }
+  if (c.own === false || c.pbr || x.texture === false) {
+    pick("Fabric", Object.entries(SURFACES).map(([k, v]) => [k, v[0]]), c.surface ?? "cotton", v => set({ surface: v }));
+    const rank = r => SHELF[r]?.group === "fabric" ? 0 : /^pbr\/Fabric\//.test(r) ? 1 : 2, sets = Object.keys(SHELF).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+    pick("PBR set", [["", "none: the fabric above"], ...sets.map(r => [r, SHELF[r]?.group === "fabric" ? `${SHELF[r].label || r} (made)` : r.replace(/^pbr\//, "")])], c.pbr ?? "", v => set({ pbr: v || undefined, own: false }));
+    const P = pbrOf(c);
+    if (P) {
+      slider(box, "pbrtile", "Its repeat (m)", 0.02, 2, 0.01, P.tile_m, "How much cloth one repeat of the set covers.", v => { c.pbrTile = v; UNSAVED = true; restyle(c); });
+      const t = el("input", { type: "checkbox", checked: P.tint }); t.onchange = () => { c.pbrTint = t.checked; UNSAVED = true; restyle(c); };
+      box.append(el("label", { className: "tog", title: "The garment's colour over the set's own" }, t, el("span", { textContent: "Tint it with the colour" })));
+    }
+  }
+  if (!LIBFIT.rigid(x.group)) {                        // gravity (tailor/library.js hang): a light fall by default, so the cloth lies to the body's shape
+    const on = (c.gravity ?? LIBFIT.GRAVITY) > 0, t = el("input", { type: "checkbox", checked: on });
+    const put = v => { if (v === LIBFIT.GRAVITY) delete c.gravity; else c.gravity = v; UNSAVED = true; clearTimeout(fitTimer); fitTimer = setTimeout(() => { dress(); drawWorn(); }, 350); };
+    t.onchange = () => put(t.checked ? LIBFIT.GRAVITY : 0);
+    box.append(el("label", { className: "tog", title: "Lets the fitted cloth fall a little: what stands off the body drops and draws in round its curves, what lies snug stays. Off: as fitted" }, t, el("span", { textContent: "Gravity" })));
+    if (on) slider(box, "libgravity", "How much", 0.05, 1, 0.05, c.gravity ?? LIBFIT.GRAVITY, "0.3 a light fall (the default), 1 heavy cloth.", v => put(v));
+  }
+  box.append(el("p", { className: "note", textContent: `${c.library}: by ${x.author || "?"}, ${x.licence || "?"}` }));
+  return box;
+}
 const grownKey = () => { const a = st.age.age < GW.AGE_ADULT ? [st.age.age, st.age.face] : 0, c = st.cute.on && st.cute.amount ? st.cute.amount : 0, an = st.anime && Math.abs(sculptValue("bust")) > 1;   // (Anime only where it changes the body: the Bust past the plain slider's ends)
   return a || c || st.monster || an ? [[a, c, st.monster ? 1 : 0, ...(an ? ["anime"] : [])]] : []; };
 const bodyKey = () => JSON.stringify([weights().map(v => +v.toFixed(4)), st.height, DELTA ? DELTA.idx.length : 0, st.face?.strength, st.sculpt, ...grownKey()]);   // (the sculpt too: neutralBody carries it; the age, Cutify and monster mode when set)
@@ -661,7 +785,9 @@ function dress() {                                     // the worker makes every
   if (!Object.keys(DESIGNS).length) return;
   const list = st.clothes.filter(c => DESIGNS[c.design]).map(c => [c.design, c.color, lookOf(c), c.edit]), id = ++TAILOR_JOB, key = bodyKey();
   FITTED = key;
-  if (!list.length) { for (const m of GARMENTS.children) { m.geometry.dispose(); m.material.dispose(); } GARMENTS.clear(); DRAPING = { id, stage: "none" }; return; }
+  if (LIB.tailor.length && (!list.length || key !== LIB.key)) { LIB.tailor = []; LIB.rev++; }   // (the tailor's taken off, or cut for another body: not layered against any more)
+  dressLibrary(id, key);                               // the library's garments on the same body (tailor/library.js), beside the tailor's
+  if (!list.length) { for (const m of [...GARMENTS.children]) if (!m.userData.library) { m.geometry.dispose(); m.material.dispose(); GARMENTS.remove(m); } COVERS = new Map([...COVERS].filter(([k]) => k.startsWith("lib:"))); DRAPING = { id, stage: "none" }; return; }
   status(`the tailor: ${list.map(c => c[0]).join(", ")}…`);
   const P = neutralBody(true); CUT_ON.set(id, P.slice());   // (the dress form: a full bust's with no hollow under it; the same body for any other)
   DRAPING = { id, stage: "cutting" };
@@ -723,6 +849,9 @@ TAILOR_W.onmessage = e => {
   for (const g of garments) for (const q of g.parts) GARMENTS.add(LOOK.mesh(q, g.name, g.look));   // tailor/look.js: the fabric, the pattern, the print, the edges' shade
   COVERS = new Map(garments.filter(g => g.cover).map(g => [g.name, g.cover]));   // the skin each hides (the export leaves it out: hiddenUnder)
   if (!GARMENTS.parent) rig.add(GARMENTS);
+  // the library's garments put back beside them, then made again in layers against these as they are now (before the pose moves them)
+  LIB.tailor = garments.map(g => ({ layer: SLOT_LAYER[DESIGNS[g.name]?.slot] ?? 40, outer: g.parts.filter(q => q.fabric !== false).map(q => ({ P: q.P.slice(), T: q.T })) })); LIB.rev++;
+  showLibrary(false); if (st.clothes.some(isLib)) dressLibrary(id, FITTED);
   const on = CUT_ON.get(id); for (const k of [...CUT_ON.keys()]) if (k < id || (k === id && stage !== "cut")) CUT_ON.delete(k);   // (the cut's body stays for its hung clothes)
   GARMENTS.userData.posedFor = null;                   // new clothes: posed afresh
   if (!EDITING) {                                      // (in the edit mode the guides keep their handles and the skin they're on)
@@ -730,6 +859,7 @@ TAILOR_W.onmessage = e => {
     SHAPE.clear(); for (const g of garments) SHAPE.set(g.name, g.handles || []);
     drawGarmentHandles();
   }
+  if (!CUT_SKIN && LIB.skin) CUT_SKIN = LIB.skin;
   poseGarments();
   if (!$("#worn").contains(document.activeElement) || document.activeElement.type !== "range") drawWorn();   // the handles' sliders (not under a held slider)
   const ms = garments.reduce((a, g) => a + g.stats.ms, 0), was = DRAPING.stage;
@@ -751,7 +881,8 @@ function refit() {                                     // after the body changes
   fitTimer = setTimeout(dress, 700);
 }
 // a garment's look: its design's fabric, pattern and trim, then what was chosen for it here
-const lookOf = c => { const D = DESIGNS[c.design] || {}; return { color: c.color, surface: c.surface ?? D.surface, trim: D.trimSurface, pattern: c.pattern ?? D.pattern, denier: c.denier ?? D.denier, prints: c.prints || (c.print ? [c.print] : []), parts: c.parts, pbr: pbrOf(c), crease: { ...(D.crease || {}), ...(c.crease || {}) } }; };
+const lookOf = c => { const D = DESIGNS[c.design] || {}; return { color: c.color, surface: c.surface ?? D.surface, trim: D.trimSurface, pattern: c.pattern ?? D.pattern, denier: c.denier ?? D.denier, prints: c.prints || (c.print ? [c.print] : []), parts: c.parts, pbr: pbrOf(c), crease: { ...(D.crease || {}), ...(c.crease || {}) },
+  ...(c.library ? { double: true, own: c.own !== false && LIB.has.get(c.library)?.texture ? { url: `api/library/${encodeURIComponent(c.library)}/texture` } : null } : {}) }; };
 // a garment's PBR set off the shelf, as tailor/look.js draws it: its maps, a repeat in metres (the shelf's own default of
 // 2 m is a wall's: a cloth's is 0.3 unless the set or the garment says), the garment's colour over it if asked
 function pbrOf(c) {
@@ -995,7 +1126,8 @@ function drawWorn() {
   $("#worn").replaceChildren(...st.clothes.map((c, i) => {
     const col = el("input", { type: "color", value: c.color }), x = el("button", { textContent: "×", title: "take it off" });
     col.oninput = () => { c.color = col.value; restyle(c); };
-    x.onclick = () => { st.clothes.splice(i, 1); if (EDITING) EDIT_DIRTY = true; drawWorn(); refresh(); };
+    x.onclick = () => { st.clothes.splice(i, 1); if (EDITING) EDIT_DIRTY = true; drawWorn(); if (typeof drawLibrary === "function") drawLibrary(); refresh(); };
+    if (isLib(c)) return el("div", {}, el("div", { className: "row" }, el("span", { textContent: (LIB.has.get(c.library)?.label || c.library) + " (library)" }), col, x), libRows(c));
     return el("div", {}, el("div", { className: "row" }, el("span", { textContent: DESIGNS[c.design]?.label || c.design }), col, x), shapeRows(c),
               ...(DESIGNS[c.design]?.piece?.drape ? [hangRows(c)] : []), lookRows(c));
   }));
@@ -3466,12 +3598,21 @@ function skinFileMaterial() {
 // a worn part's material as a file can carry it: a garment's fabric (tailor/look.js) baked onto islands of its own,
 // the fabric's metres kept as a second UV for a PBR set's other maps; brows and lashes (the hair shader, which glTF
 // can't carry) as their strands' atlas in their look's colours, cut out as the salon's bake is; the rest as it is
+const ownLayout = a => {                              // a garment's own UVs into the unit square (most are there already), for a 2048 bake
+  let lo = [Infinity, Infinity], hi = [-Infinity, -Infinity];
+  for (let i = 0; i < a.length; i += 2) { lo[0] = Math.min(lo[0], a[i]); hi[0] = Math.max(hi[0], a[i]); lo[1] = Math.min(lo[1], a[i + 1]); hi[1] = Math.max(hi[1], a[i + 1]); }
+  const inside = lo[0] >= 0 && lo[1] >= 0 && hi[0] <= 1 && hi[1] <= 1, k = inside ? [1, 1] : [1 / Math.max(hi[0] - lo[0], 1e-9), 1 / Math.max(hi[1] - lo[1], 1e-9)], o = inside ? [0, 0] : lo, uv = new Float32Array(a.length);
+  for (let i = 0; i < a.length; i += 2) { uv[i] = (a[i] - o[0]) * k[0]; uv[i + 1] = (a[i + 1] - o[1]) * k[1]; }
+  return { uv, size: 2048 };
+};
 function fileLook(x, g) {
   const L = x.material, U = L && L.userData.uniforms;
   if (U && U.uColor) {
     const fab = g.attributes.uvm || g.attributes.uv, part = g.attributes.part, see = !!(L.transparent || U.uPbrAlphaOn.value > 0.5);
     const creased = !!(U.uCrAmt && U.uCrAmt.value > 0 && g.attributes.crz);   // its creases (tailor/crease.js) baked as its normal map, a little finer
-    const { uv, size } = ALB.pack(fab.array, part ? part.array : null, creased ? { texel: 0.0015 } : {}), B = ALB.bake(renderer, g, L, uv, { size, alpha: see });
+    // (a library garment keeps the layout its author gave it, tailor/library.js: its own UVs, fitted to the square; the tailor's are packed a part an island)
+    const own = g.attributes.uvo, { uv, size } = own ? ownLayout(own.array) : ALB.pack(fab.array, part ? part.array : null, creased ? { texel: 0.0015 } : {}), B = ALB.bake(renderer, g, L, uv, { size, alpha: see || (own && L.alphaTest > 0) });
+    if (own) g.deleteAttribute("uvo");
     let creaseMap = null;
     if (creased) creaseMap = ALB.bakeClothNormal(renderer, g, L, uv, { size });   // (what's finer than its texels fades, as in the view: sharpened, a seam's line aliased into stripes)
     g.setAttribute("uv1", new THREE.BufferAttribute(Float32Array.from(fab.array), 2)); g.setAttribute("uv", new THREE.BufferAttribute(uv, 2)); g.deleteAttribute("uvm");

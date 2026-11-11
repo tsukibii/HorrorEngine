@@ -1,0 +1,22 @@
+{
+ "name": "dress_bell_jacket",
+ "bodies": [
+  "feminine"
+ ],
+ "wear": [
+  {
+   "mh": "mini:mindfront_f_dress_05"
+  },
+  {
+   "mh": "glam:Denim_Jacket"
+  },
+  {
+   "tailor": "tights",
+   "color": "#1d1a1c"
+  },
+  {
+   "mh": "sys:shoes04",
+   "drop_above": 0.2
+  }
+ ]
+}

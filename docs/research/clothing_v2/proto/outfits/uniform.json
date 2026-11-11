@@ -1,0 +1,3 @@
+{"name": "uniform", "bodies": ["feminine", "slim_feminine"],
+ "wear": [{"mh": "glam:Elvs_Pleated_Plaid_Miniskirt1"}, {"mh": "mini:namuhekam_male_polo_shirt"}, {"mh": "glam:uniform_jacket_train_driver"},
+          {"tailor": "knee-socks", "color": "#1b2238"}, {"mh": "sys:shoes04", "drop_above": 0.2}]}

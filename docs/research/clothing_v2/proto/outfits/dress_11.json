@@ -1,0 +1,22 @@
+{
+ "name": "dress_11",
+ "bodies": [
+  "feminine"
+ ],
+ "wear": [
+  {
+   "mh": "mini:mindfront_f_dress_11"
+  },
+  {
+   "mh": "glam:uniform_jacket_train_driver"
+  },
+  {
+   "tailor": "fishnet-tights",
+   "color": "#151214"
+  },
+  {
+   "mh": "sys:shoes03",
+   "drop_above": 0.2
+  }
+ ]
+}

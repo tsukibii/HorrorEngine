@@ -1,0 +1,3 @@
+{"name": "fishnet", "bodies": ["feminine", "slim_feminine"], "tuck": true,
+ "wear": [{"mh": "glam:Elvs_Pleated_Plaid_Miniskirt1"}, {"mh": "glam:T-shirt_Basic_Tucked"}, {"mh": "glam:Denim_Jacket"},
+          {"tailor": "fishnet-tights", "color": "#151214"}, {"mh": "sys:shoes03", "drop_above": 0.2}]}

@@ -1,0 +1,36 @@
+# MakeHuman Material definition
+
+name zerosuitMAT
+
+// Color shading attributes
+ambientColor 		0.0 0.0 0.0
+diffuseColor 		1.0 1.0 1.0
+specularColor 		0.0 0.0 0.0
+emissiveColor 		0.0 0.0 0.0
+shininess 			0.0
+opacity 			1.0
+
+// Textures and properties
+diffuseTexture 			MH_Female_zerosuit_color.png
+bumpmapTexture 			MH_Female_zerosuit_b.png
+normalmapTexture 		MH_Female_zerosuit_nm.png
+specularmapTexture 		MH_Female_zerosuit_s.png
+//transparencymapTexture 	
+//aomapTexture 			
+
+bumpmapIntensity 			1.0
+normalmapIntensity 			1.0
+specularmapIntensity 		1.0
+//transparencymapIntensity 	1.0
+//aomapIntensity 				1.0
+
+// Shader programme
+shader data/shaders/glsl/phong
+
+// Configure built-in shader defines
+shaderConfig diffuse 			true
+shaderConfig bump 				true
+shaderConfig normal  			true
+shaderConfig displacement  		false
+shaderConfig spec  				false
+shaderConfig vertexColors 		false

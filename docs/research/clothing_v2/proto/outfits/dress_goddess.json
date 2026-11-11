@@ -1,0 +1,18 @@
+{
+ "name": "dress_goddess",
+ "bodies": [
+  "feminine"
+ ],
+ "wear": [
+  {
+   "mh": "glam:Elvs_Goddess_Dress8"
+  },
+  {
+   "mh": "glam:Denim_Jacket"
+  },
+  {
+   "mh": "sys:shoes01",
+   "drop_above": 0.2
+  }
+ ]
+}

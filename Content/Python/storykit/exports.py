@@ -4,7 +4,8 @@ built by hand, without the Director, each in a folder of its own to drag into th
 
     Exports/interiors/<name>/<name>.glb     the scene builder's Export for Godot: a level (a game's or a set's)
     Exports/streets/<name>/<name>.glb       the street builder's Export for Godot (street.py, streetexport.mjs)
-    Exports/characters/<name>/<name>.glb    the Character Studio's Export for Godot: the character, MHR's face shapes baked
+    Exports/characters/<name>/<name>.glb    the Character Studio's Export for Godot: the character, MHR's face shapes baked;
+                                            CREDITS.md: whose library clothes it wears (storykit/clothcredits.py)
 
 Each folder gets a README.txt saying what's in the .glb and what to do with it in Godot (guides/godot_by_hand). Nothing
 under Exports/ is tracked but its READMEs (.gitignore there) and the ready-made exports (READY_MADE: tutorial v2's hotel
@@ -80,6 +81,9 @@ the game runs. guides/godot_by_hand says how.
 Animal ears (the Studio's Accessories) come with bones of their own under the head, jiggle_<name>_0 ... jiggle_<name>_tip:
 the same HSCharacterLook makes them flop as the character moves (its Jiggle and Jiggle amount; HSJiggle by itself on any
 skeleton whose bones are named so). Without it they stand still, as made. Horns ride the head.
+
+CREDITS.md beside this file says whose clothes from the clothing library this character wears and what each asks for
+(CC-BY: a credit; CC0 and the Studio's own: nothing). The whole library's credits are the project's docs/CREDITS.md.
 """,
 }
 
@@ -138,6 +142,9 @@ def character(name, people=ROOT / "Content" / "Studio" / "People", node="node", 
         said = f"the face shapes weren't baked (node: {e})"
     if not into:
         readme("characters", name)
+    from . import clothcredits                                       # whose library clothes it wears: CREDITS.md beside it (<name>.credits.md in a folder several characters share)
+    worn, ours = clothcredits.of_character(people / name)
+    clothcredits.write(d / ("CREDITS.md" if not into else f"{name}.credits.md"), name, worn, ours)
     return out, said
 
 

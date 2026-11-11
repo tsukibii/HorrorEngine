@@ -1,0 +1,39 @@
+# Material definition for sport_bra01
+
+name sport_bra01
+description Sport_bra01 material
+ambientColor 0.698039215686 0.698039215686 0.698039215686
+diffuseColor 0.803921568627 0.803921568627 0.803921568627
+specularColor 0.109803921569 0.109803921569 0.109803921569
+shininess 0.1
+emissiveColor 0.0 0.0 0.0
+opacity 1.0
+translucency 0.0
+
+shadeless False
+wireframe False
+transparent False
+alphaToCoverage True
+backfaceCull False
+depthless False
+
+castShadows True
+
+receiveShadows True
+
+diffuseTexture sport_bra01.png
+normalmapTexture sport_bra01_norm.png
+normalmapIntensity 1.0
+
+shader shaders/glsl/litsphere
+
+shaderParam litsphereTexture litspheres/lit_leather.png
+
+shaderConfig ambientOcclusion True
+shaderConfig normal True
+shaderConfig bump False
+shaderConfig displacement False
+shaderConfig vertexColors False
+shaderConfig spec False
+shaderConfig transparency True
+shaderConfig diffuse True

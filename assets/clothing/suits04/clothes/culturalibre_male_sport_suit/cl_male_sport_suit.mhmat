@@ -1,0 +1,12 @@
+# MakeHuman Material definition
+
+name body.001Material
+
+// Color shading attributes
+diffuseColor  0.6 0.6 0.6
+specularColor  0.0 0.0 0.0
+shininess 1
+opacity 1
+
+// Textures and properties
+diffuseTexture cl_male_sport_suit.png

@@ -1,0 +1,3 @@
+{"name": "reddress", "bodies": ["feminine", "anime_full"],
+ "wear": [{"tailor": "tights", "color": "#1d1a1c"}, {"tailor": "sweater-dress-skirt", "color": "#a3152d"}, {"tailor": "sweater-dress", "color": "#a3152d", "edit": {"sleeve": "wrist-0.09"}},
+          {"mh": "sys:shoes04", "drop_above": 0.2}]}

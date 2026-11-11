@@ -1,0 +1,39 @@
+# Material definition for lacethong
+
+name lacethong
+description Strappylacethong material
+ambientColor 0.498039215686 0.498039215686 0.498039215686
+diffuseColor 0.196078431373 0.196078431373 0.196078431373
+specularColor 0.156862745098 0.156862745098 0.156862745098
+shininess 0.1961
+emissiveColor 0.0 0.0 0.0
+opacity 1.0
+translucency 0.0
+
+shadeless False
+wireframe False
+transparent True
+alphaToCoverage True
+backfaceCull False
+depthless False
+
+castShadows True
+
+receiveShadows True
+
+diffuseTexture strappylacethong.png
+normalmapTexture strappylacethong_norm.png
+normalmapIntensity 1.0
+
+shader shaders/glsl/litsphere
+
+shaderParam litsphereTexture litspheres/lit_leather.png
+
+shaderConfig ambientOcclusion True
+shaderConfig normal True
+shaderConfig bump False
+shaderConfig displacement False
+shaderConfig vertexColors False
+shaderConfig spec False
+shaderConfig transparency True
+shaderConfig diffuse True

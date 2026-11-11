@@ -3,6 +3,80 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## Skin through clothes, measured in Godot: what took a second try (2026-11-11, the very last)
+
+- **Godot's triangles face you clockwise.** A normal from (b - a) x (c - a) points into the body there: the first probe
+  looked outward and called cloth over the skin "skin through cloth". Turn the cross product round, and prove the
+  direction on a case with a known answer before trusting a zero.
+- **Godot's physics misses a trimesh on a ray a few millimetres long.** An 8 mm ray found nothing either way while a
+  30 mm one found cloth 2 mm off. Cast long, then keep the hits within the depth wanted.
+- **A zero that comes too easily is a broken probe.** Two zeros in a row (in and out) were the sign; the count that
+  followed (86 points) was the real one.
+- **Wait for the words that end a job, not ones it starts with.** "exporting for Godot…" matched a wait for "for
+  Godot"; the export's own "wrote ….glb" is the end.
+
+## Library garments in the Studio: what took a second try (2026-11-11, the last)
+
+- **A page test must start from a character it made, and wait for it.** The Studio opens the last character by
+  itself a moment after the body is there; a test that set the clothes before that load finished had them replaced
+  under it, and one that reused a scratch character found it wearing the last run's clothes (New on an existing name
+  asks first: accept the dialog). Make the character, wait for its "starts from the" status, then act.
+- **Lifting the upper garment's points isn't enough.** A top set outside a skirt point by point still had the
+  waistband's loops through its triangles. The lower garment pressed in under it, as the prototype's shared move did,
+  cleared it. A count on points alone said 0 while the picture showed patches: count the triangles' middles too.
+- **A colour that tints a texture has to reach the shader.** The cloth material took the part's own colour whenever no
+  fabric was chosen; a painted library garment has no fabric, so its tint was ignored until the test read the uniform.
+
+## The clothing fetch: whole packs were the wrong unit (2026-11-11, the last)
+
+- The first `fetch` took whole packs (2.6 GB) from servers it had never met. On the user's machine they gave 3 MB in
+  five minutes, with no progress line to show it. **A download tool written where the server can't be reached gets
+  three things from the start**: progress with a speed, the smallest unit the user can want (a garment, not a pack:
+  a zip on a server can be read by byte ranges, its list of files first), and a few connections at a time.
+- **Two mirrors: time both before the user waits on one.** The pack pages call `files2` the primary; it gave 100 KB/s
+  where the second, `files`, gave megabytes. The tool took them in the page's order.
+- **Read the files' own licence lines before anything is committed.** Seven of 98 picked garments said AGPL3 in their
+  header where their page said CC0 or CC-BY, and one costume was a television character's by its name and emblem: the
+  scan after the fetch found the first, the thumbnail sheet the second. Both checks belong before `git add`.
+- A test server for it is thirty lines of `http.server`; the first run of the test failed on its own byte budget (the
+  zip's end read first was a megabyte, most of a small test pack). Budgets in a test are worked out from the made-up
+  file's sizes, not guessed.
+
+## Clothing layers on library garments: what took a second try (2026-11-11, later)
+
+- **A cloth's own faces can't say which side is out.** The reworked layer solver asked each garment's face normals
+  whether a point was over it or under it. The tailor's tights have a small turned edge at the waist whose faces point
+  down, so the skirt and the sweater above it were "under" the tights and were shoved up to 5 cm: the user saw the
+  skirt come through the sweater again, in a picture, before the count said anything. Library garments wind either
+  way, hems are turned, pleats have side faces. Out is the body's own outward direction at the place on the skin
+  nearest the point, for every garment.
+- **Look at the same picture again after every change to the solver.** The first fix was judged by a picture; the
+  rework after it was judged by a count, and the count had changed its meaning with the rework. The reference view
+  (the waist, three bodies) is rendered again before moving on, and `proto/check.py` now holds the outfit that broke,
+  with and without the tights.
+- **A count is held to the fault, both ways.** The first count compared heights on the skin and said zero while a
+  bridged garment crossed another (cloth that spans a hollow has no height on the skin under it); the second compared
+  cloth with cloth and said a thousand for a sock's sole "outside" a shoe (the shoe's insole sits inside the foot).
+  The check asks that the fault is found without the layers as well as gone with them.
+- **A shoe isn't cloth.** Pushing a shoe's points off a sock gave its sole spikes. A rigid thing is never bent: what's
+  under it goes in and is hidden, what's over it goes out.
+- **A layer pushed in mustn't pass through the one under it.** The sweater pushed the skirt in under itself, through
+  the tights. An inward move has room: down to the skin, and down to whatever that garment itself lies on; and the
+  last pass goes outward only, so nothing ends under anything.
+- **A depth carried to a coarse mesh's corners has to be signed.** "How deep under the sweater" was 0 everywhere
+  outside it, so across one big triangle of the skirt the dissolve ran on past the hem as a dotted wedge. Negative
+  outside, and it crosses zero where the edge is.
+- **A combination that can't work is refused, not solved.** A dress with wide hanging sleeves under a fitted coat
+  has nowhere to go. The solver first blew the coat up to make room, then (capped) left it puffed with open seams, and
+  a rule to squeeze the sleeves in and hide them was half written when the user said: light rules for outfitting, so
+  the hard cases never come up. A rule by kind (no coat over a dress), one by measure (nothing over a garment too full
+  to go under it), and a cap (no point further than 5 cm from where it was fitted) took an hour and cover it. When a
+  fix starts needing a second mechanism, ask whether the input should be allowed at all.
+- **A page written inside a script: check the escapes where they land.** The renderer's page is a JavaScript template
+  in a .mjs file; a patch made from Python turned `\\n` into a real newline inside a string, the page stopped at a
+  syntax error, and five renders in the background, piped through `tail`, ended "Done" with no pictures. One in the
+  foreground first; a background job's output isn't cut down to its last line.
+
 ## A ready-made export in git (2026-11-11, after the latest)
 
 - **A level's .glb from the browser is never the same twice byte for byte.** Two exports of the hotel floor a minute
@@ -14,7 +88,6 @@ the fix.
 - **A guide's "make a new X called Y" breaks once Y ships made.** Tutorial v2's §3 said to make a new set called
   `hotel_floor`, the finished set's name, which the scene builder refuses. When a guide's result is kept in the studio,
   its from-scratch steps need a name of their own.
-
 ## A full bust, a dress over it and a look-alike: what took a second try (2026-11-11, latest)
 
 - **Bumps stacked on one spot are a cone.** The first full bust was a field like the sculpt's other controls: a bigger

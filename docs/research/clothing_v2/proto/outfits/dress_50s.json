@@ -1,0 +1,22 @@
+{
+ "name": "dress_50s",
+ "bodies": [
+  "feminine"
+ ],
+ "wear": [
+  {
+   "mh": "glam:Elvs_50s_Blouse_and_Skirt1"
+  },
+  {
+   "mh": "glam:F_Lusekofta"
+  },
+  {
+   "tailor": "tights",
+   "color": "#1d1a1c"
+  },
+  {
+   "mh": "sys:shoes01",
+   "drop_above": 0.2
+  }
+ ]
+}

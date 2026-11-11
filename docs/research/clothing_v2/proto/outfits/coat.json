@@ -1,0 +1,2 @@
+{"name": "coat", "bodies": ["masculine", "feminine"],
+ "wear": [{"mh": "glam:M_Trousers_02"}, {"mh": "glam:Knitted_Sweater_01"}, {"mh": "glam:Winter_coat"}, {"mh": "sys:shoes04", "drop_above": 0.2}]}

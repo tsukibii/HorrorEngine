@@ -189,6 +189,43 @@ class Handler(BaseHTTPRequestHandler):
         (d / fname).write_bytes(data)
         return self.send(200, {"ok": True, "path": str((d / fname).relative_to(ROOT))})
 
+    def library(self, parts):
+        """GET /api/library: the garments that can be worn (on disk and baked): id, label, group, author, licence;
+        /api/library/_base.f32: the body the bakes stand on; /api/library/<id>.bin: a bake;
+        /api/library/<id>/thumb: its picture; /api/library/<id>/texture: its own colour texture"""
+        from storykit import clothcredits as CC
+        home = Path(os.environ.get("STUDIO_CLOTHING") or ROOT / "assets" / "clothing")
+        baked = home / "_mhr"
+        ix = json.loads(CC.INDEX.read_text()) if CC.INDEX.exists() else {"assets": []}
+        if not parts:
+            out = []
+            for x in ix["assets"]:
+                if x.get("refused") or not x.get("folder") or not (baked / f"{x['id']}.bin").is_file():
+                    continue
+                out.append(dict(id=x["id"], label=x["id"].split("_", 1)[-1].replace("_", " "), group=x["group"], author=x.get("file_author") or x["author"], licence=CC.licence_of(x), pack=x["pack"]))
+            return self.send(200, {"garments": out, "base": (baked / "_base.f32").is_file()})
+        name = urllib.parse.unquote(parts[0])
+        if len(parts) == 1 and name == "_base.f32" and (baked / name).is_file():
+            return self.send(200, (baked / name).read_bytes(), "application/octet-stream")
+        gid = name[:-4] if len(parts) == 1 and name.endswith(".bin") else name
+        x = next((x for x in ix["assets"] if x["id"] == gid and x.get("folder") and not x.get("refused")), None)
+        if x is None or not re.fullmatch(r"[\w.-]+", gid):
+            return self.send(404, {"error": "no such garment"})
+        if len(parts) == 1 and name.endswith(".bin") and (baked / name).is_file():
+            return self.send(200, (baked / name).read_bytes(), "application/octet-stream")
+        folder = home / x["folder"]
+        if len(parts) == 2 and parts[1] == "thumb":
+            f = next(iter(sorted(folder.glob("*.thumb"))), None)
+            return self.send(200, f.read_bytes(), "image/png") if f else self.send(404, {"error": "no picture"})
+        if len(parts) == 2 and parts[1] == "texture" and (baked / f"{gid}.bin").is_file():
+            d = (baked / f"{gid}.bin").read_bytes()
+            tex = json.loads(d[4:4 + struct.unpack_from("<I", d, 0)[0]].decode()).get("texture") or ""
+            f = (folder / tex).resolve() if tex else None
+            if f and f.is_file() and str(f).startswith(str(folder.resolve()) + os.sep) and f.suffix.lower() in (".png", ".jpg", ".jpeg"):
+                return self.send(200, f.read_bytes(), "image/png" if f.suffix.lower() == ".png" else "image/jpeg")
+            return self.send(404, {"error": "no texture of its own"})
+        return self.send(404, {"error": "no such thing of that garment"})
+
     def do_GET(self):
         parts = [p for p in urllib.parse.urlparse(self.path).path.split("/") if p]
         if not parts:
@@ -260,6 +297,8 @@ class Handler(BaseHTTPRequestHandler):
             rel = [urllib.parse.unquote(p) for p in parts[1:]]
             f = PBR.own_file("pbr/" + "/".join(rel[:-1]), rel[-1]) if ".." not in rel and all(rel) else None
             return self.send(200, f.read_bytes(), TYPES.get(f.suffix.lower(), "image/jpeg")) if f and f.is_file() and f.suffix.lower() in PBR.WEB else self.send(404, {"error": "no such map"})
+        if parts[:2] == ["api", "library"]:                   # the clothing library's garments (tools/clothing_library.py: fetched, then baked onto MHR's average for tailor/library.js)
+            return self.library(parts[2:])
         if parts[0] in ("pbr.html", "pbr.js") and len(parts) == 1:   # the PBR shelf page (the desk's: one viewer for both), back to here
             page = (ROOT / "tools" / "director" / parts[0]).read_text(encoding="utf-8")
             if parts[0] == "pbr.html":
