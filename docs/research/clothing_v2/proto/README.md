@@ -67,9 +67,10 @@ A work folder holds `reg.npz`, `bodies/` and `sources.json`, which names the fol
 say `glam:`, `sys:` and `mini:`: the two public projects of `../fit_test.md` §2 and the system pack).
 
 **None of the garments are in this repo**, the dresses included: the system pack is CC0, but most community garments
-are CC-BY (the six Mindfront dresses CC BY 4.0, punkduck's cocktail dress and qipao CC BY 3.0, Elvaerwyn's CC-BY), and
-whether CC-BY garments ship is the user's call (docs/DECISIONS.md). What the repo keeps is how to fit, layer and
-picture them, the pictures, and each one's author and licence (`../fit_test.md` §6). The community garments used by
+are CC-BY (the six Mindfront dresses CC BY 4.0, punkduck's cocktail dress and qipao CC BY 3.0, Elvaerwyn's CC-BY).
+CC-BY clothing may ship (the user, 2026-11-11), each garment credited: `docs/CREDITS.md` has their authors and
+licences. The files aren't brought in yet (the packs are still to be downloaded). What the repo keeps is how to fit,
+layer and picture them, the pictures, and the credits. The community garments used by
 the test are fetched again with:
 
 ```bash

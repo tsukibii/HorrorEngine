@@ -59,8 +59,8 @@ dont worry about making them wear a coat").
   with them) and `python proto/godot_test.py ...` (GDLAYERS). `proto/pictures.py` makes every picture again.
 - **The dresses and the outfit rules** (fit_test §7.5, `layers_dresses.jpg`): the twelve library dresses (Mindfront's
   six CC BY 4.0, punkduck's cocktail dress and qipao CC BY 3.0, Elvaerwyn's four CC-BY) each worn with legwear under
-  and a jacket or cardigan over, nothing through. **None of the garment files are in the repo** (CC-BY waits on the
-  credits answer); `proto/README.md` has the `git clone` lines that fetch them again. **Light rules**, what they
+  and a jacket or cardigan over, nothing through. **None of the garment files are in the repo yet** (the packs are
+  still to be downloaded); `proto/README.md` has the `git clone` lines that fetch the tested ones again. **Light rules**, what they
   refuse not worn (`layers.rules`, `layers.too_full`): one bottom, one jacket, one coat; a dress or a suit is the top
   and the bottom; **no coat over a dress**; nothing over a garment too full to go under it (2% of it more than 5 cm
   outside); no point moved further than 5 cm; shoes not drawn under a hem that reaches the floor.
@@ -71,7 +71,10 @@ dont worry about making them wear a coat").
 - **This session's network** let through GitHub and little else: arxiv.org, sketchfab.com, huggingface.co and
   MakeHuman's file servers were blocked, so licences on those are from search summaries and say so.
 
-**Next, by the user's answers**: (1) may CC-BY garments ship with a credits screen? (2) the packs downloaded on their
+**CC-BY clothing may ship** (the user, DECISIONS 2026-11-11, last): each such garment has its line in
+**docs/CREDITS.md** (author, licence, a column to tick when it's used in a game, a block for the credits screen).
+
+**Next, by the user's answers**: (1) answered: yes; (2) the packs downloaded on their
 machine (`files.makehumancommunity.org`, or by MPFB2 in Blender); (3) then the build, in this order: the importer and
 the fit in the Studio's own JavaScript (the registration kept as a file), the layers as the prototype has them
 (`proto/layers.py` is the reference: port it, with its check), bridging for loose garments and skirts, weights and a

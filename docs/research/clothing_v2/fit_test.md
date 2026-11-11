@@ -283,8 +283,9 @@ some light rules for outfitting just to not have to deal with harder clipping an
 **Kept.** The twelve dresses of §6 are all still used by the test: Mindfront's dresses 01, 02, 04, 05, 08 and 11
 (CC BY 4.0), punkduck's black cocktail dress and qipao (CC BY 3.0), Elvaerwyn's halter dress, goddess dress, 50s
 blouse and skirt and crochet baby doll (CC-BY). As with every garment here, the repo keeps how to fit and layer them,
-their pictures and their credits, and **not the files**: they are not CC0, and whether CC-BY garments ship is the
-user's call. `proto/README.md` has the two `git clone` lines that fetch them again.
+their pictures and their credits, and **not the files**. (Since then the user has said CC-BY clothing may ship, with
+its credit: `docs/CREDITS.md` lists each garment's author and licence. The files come in when the packs are
+downloaded.) `proto/README.md` has the two `git clone` lines that fetch the tested ones again.
 
 **They work with the layers** (`layers_dresses.jpg`). A dress is layer 40, as a top is. Each of the twelve was worn
 with legwear under it (the tailor's pantyhose, fishnets, stockings, or socks) and a jacket or a cardigan over it (a

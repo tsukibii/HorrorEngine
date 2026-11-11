@@ -2,6 +2,21 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-11, last (the user: CC-BY clothing may ship; a credits file)
+
+- **"Yes Im happy to ship with CC-BY, create a new .md file for storing credits so I can add them later when Im done
+  with my game"** (after asking which garments are CC-BY). So:
+  - **CC-BY clothing may ship, with a credit.** The asset rule is now "CC0, ours, or CC-BY with its line in
+    docs/CREDITS.md". This answers the question left open below; it roughly triples the usable library (210 more
+    garments and shoes in MakeHuman's packs) and brings in almost all the dresses, the coat and the jackets.
+  - **docs/CREDITS.md** is the new file: every CC-BY garment tested so far with its author and licence as its own
+    file says (Mindfront CC BY 4.0, punkduck CC BY 3.0 and 4.0, Elvaerwyn CC-BY with no version given, sonicteam998
+    CC BY 3.0), a column to tick as a garment is used in a game, the CC0 ones for the record, a block to paste into
+    a credits screen, and where the project's other licences are written down for the end of a game.
+  - A thing that asks for credit gets its line there in the commit that brings it in.
+  - Not changed by this: the fan costumes and the AGPL-marked suit in the same packs stay out; the garment files
+    still aren't in the repo (the packs are to be downloaded; that question is still open).
+
 ## 2026-11-11, later (the user: the fitted outfits clip; clothing layers, a dissolve in Godot, main merged, our PBR sets, pantyhose, fishnets and socks)
 
 - **"Some issues, some of the des igns show clear clipping, can you set smart rules so skirts are  always below the
@@ -93,7 +108,7 @@ The user's answers, newest first. They override the plan, the research and the d
   them (no sailor uniform, gakuran, hanbok, kimono). The lead: Style3D's free garments on Sketchfab (school uniforms,
   business suits, shirt-and-skirt sets, dresses; CC Attribution on most, by search summaries: each page's licence to be
   read before use). No free hanbok, kimono or yukata was found.
-- **Not decided: the user picks.** Whether CC-BY garments may ship with a credits screen (the rule today is CC0 or
+- **Not decided: the user picks** (the first answered since: yes, 2026-11-11, last). Whether CC-BY garments may ship with a credits screen (the rule today is CC0 or
   ours); whether the fit becomes a CloV2 tab in the Studio; which garments come in first.
 
 ## 2026-11-11, latest (the user: the new Bust slider kept as an Anime switch, the red knit dress kept; no look-alike preset)
