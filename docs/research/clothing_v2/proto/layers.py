@@ -6,6 +6,9 @@ directly (a point against the nearest place on the other garment's surface), and
 body's own outward direction, never the cloth's faces. What each garment covers is laid on the skin (which skin
 vertices it lies over, and how close), so that "how far inside its edge" is a distance along the body.
 
+  rules       light rules for an outfit, by kind: one bottom, one coat, a dress is the top and the bottom, no coat
+              over a dress; too_full: an upper garment isn't worn over one that stands far outside it. What's refused
+              isn't worn, and nothing is bent to make it work
   order       a garment's kind from its shape and name (shoes, legs, socks, trousers, skirt, top, dress, suit, outer,
               coat, hat), its layer from the kind: bottoms under tops (a top hangs over a waistband; `tuck` puts it
               under)
@@ -34,6 +37,9 @@ SKIN_GAP = 0.002    # a library garment's faces over the skin
 SHARE = 0.65        # of a conflict, the part the lower layer gives; the upper is pushed out by the rest
 NEAR = 0.05         # cloth is compared with cloth this near it
 REACH_M = 0.08      # a push fades out over this much cloth round it
+FAR = 0.05          # no point is moved further than this from where its garment was fitted: a garment is never bent out of shape to make room (rules() refuses what would need it)
+FLOOR = 0.04        # a hem lower than this (metres off the floor) reaches the floor
+FULL = 0.02         # ...and a garment is "too full" to go under another when more than this share of its points stand further than FAR outside it
 RIGID = ("shoes", "hat", "accessory")     # these keep their shape: what's under them goes in, what's over them out
 INSET = 0.035       # hidden from this far inside the covering garment's edge (the tailor's own inset, TAILOR §3d)
 FADE = 0.02         # the dissolve's width past INSET
@@ -232,6 +238,52 @@ class Garment:
         return out, dv
 
 
+# Light rules for outfitting (the user, 2026-11-11: "if they're wearing a dress dont worry about making them wear a coat
+# ... we want to create some light rules for outfitting just to not have to deal with harder clipping and mesh
+# distortion"). What they refuse isn't worn, and the outfit says why; nothing is bent to make it work.
+ONE_OF = [("skirt", "trousers"), ("coat",), ("outer",), ("shoes",), ("legs",), ("socks",), ("dress", "suit"), ("hat",)]
+
+
+def rules(garments):
+    """the garments of an outfit that may be worn together, in the order given, and those that aren't with the reason:
+    (worn, [(garment, why)]). By kind only: nothing is measured here (too_full does that, once they're on the body)."""
+    worn, refused = [], []
+    for g in garments:
+        kinds = [w.kind for w in worn]
+        why = None
+        for fam in ONE_OF:
+            if g.kind in fam and any(k in fam for k in kinds):
+                other = next(w for w in worn if w.kind in fam)
+                why = f"one {' or '.join(fam)} at a time ({other.name} is worn)"
+        whole = next((w for w in worn if w.kind in ("dress", "suit")), None)
+        if whole is not None and g.kind in ("top", "skirt", "trousers"):
+            why = f"a {whole.kind} is the top and the bottom already ({whole.name})"
+        if g.kind in ("dress", "suit") and any(k in ("top", "skirt", "trousers") for k in kinds):
+            why = f"a {g.kind} isn't worn with a separate top or bottom"
+        if g.kind == "coat" and any(k == "dress" for k in kinds):
+            why = "no coat over a dress"
+        if g.kind == "dress" and any(k == "coat" for k in kinds):
+            why = "no dress under a coat"
+        (refused.append((g, why)) if why else worn.append(g))
+    return worn, refused
+
+
+def too_full(body, L, G):
+    """the share of the lower garment L's points that stand further than FAR outside the upper garment G as fitted:
+    over FULL of them, G isn't worn over L (wide hanging sleeves under a fitted jacket's): making room would bend G
+    out of shape. Cloth near G is compared with G's surface; cloth too far off for that, by its height off the body
+    against G's own at the same place."""
+    S, own = L.sample()
+    _, out, sd = _against(S, G, body)
+    near = L.most(own, np.where(out, sd, 0.0)) > FAR
+    atg = body.at(G.sample()[0])
+    _, lo, cov = body.field(atg, atg["h"])
+    atl = body.at(L.P)
+    v = atl["v"]
+    far = cov[v] & (lo[v] < CLOSE) & (atl["h"] > np.where(cov[v], lo[v], np.inf) + FAR)
+    return float((near | far).mean())
+
+
 def order(garments, tuck=False):
     """innermost first: by layer, then as given; a tucked top goes under the bottoms"""
     for g in garments:
@@ -318,6 +370,16 @@ def _against(S, G, body):
     return ok, out, sd
 
 
+def _held(g):
+    """a garment keeps its shape: no point further than FAR from where it was fitted"""
+    d = g.P - g.home
+    n = np.linalg.norm(d, axis=1)
+    far = n > FAR
+    if far.any():
+        g.P = g.P.copy()
+        g.P[far] = g.home[far] + d[far] * (FAR / n[far])[:, None]
+
+
 def _under(worn, k):
     """what garment k is compared with: the ones under it that are near it and weren't made together with it"""
     G = worn[k]
@@ -347,7 +409,11 @@ def _out(body, G, lowers, share=1.0, goes=1):
                 mv = np.where(up, m2, mv); dv = np.where(up[:, None], d2, dv)
         hit = mv > 1e-5
         if hit.any():
+            before = G.P
             _shift(G, dv, mv * share, hit, G.facing(body))
+            _held(G)
+            if np.abs(G.P - before).max() < 5e-5:                    # (held: it can't make more room)
+                break
         if not (mv > 2e-4).any():
             break
 
@@ -378,6 +444,7 @@ def _in(body, L, G, below):
         far = d > room + 1e-9
         if far.any():
             L.P[far] = g_before[far] + (L.P[far] - g_before[far]) * (room[far] / d[far])[:, None]
+        _held(L)
 
 
 def resolve(body, worn, rounds=3):
@@ -388,6 +455,8 @@ def resolve(body, worn, rounds=3):
     only its points, are kept outside the skin."""
     worn = [g for g in worn if g.kind != "accessory"]
     start = [g.P.copy() for g in worn]
+    for g in worn:
+        g.home = g.P.copy()                                          # (where it was fitted: _held keeps it within FAR of this)
     for k, G in enumerate(worn):
         lowers = _under(worn, k)
         soft = [L for L in lowers if L.kind not in RIGID]
@@ -448,6 +517,8 @@ def hide(body, worn):
             if G.kind not in RIGID:                                   # (inside a shoe, all of it: its sole may be thinner than a sock)
                 ok, out, _ = _against(L.P, G, body)
                 c = np.where(ok & ~out, c, np.minimum(c, 0.0))        # only what is under G's surface
+            if L.kind == "shoes" and G.kind in ("dress", "coat", "skirt") and G.P[:, 1].min() < FLOOR:
+                c = np.full(len(L.P), 2.0)                            # a light rule: under a hem that reaches the floor the shoes aren't drawn (the hem lies where they are)
             L.covers[b] = np.maximum(L.covers[b], c)
     for g in worn:
         g.cover = g.covers.max(0)

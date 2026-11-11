@@ -1,0 +1,23 @@
+{
+ "name": "dress_cardigan",
+ "bodies": [
+  "feminine"
+ ],
+ "wear": [
+  {
+   "mh": "mini:mindfront_f_dress_01"
+  },
+  {
+   "tailor": "knee-socks",
+   "color": "#f0efea"
+  },
+  {
+   "tailor": "cardigan",
+   "color": "#8a7a68"
+  },
+  {
+   "mh": "sys:shoes04",
+   "drop_above": 0.2
+  }
+ ]
+}

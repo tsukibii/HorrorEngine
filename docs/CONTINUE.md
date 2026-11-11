@@ -34,7 +34,9 @@ five things (DECISIONS 2026-11-11, both sections): whether Cloth2Tex could be a 
 what's newer and free; then "I dont actually care about generating procedural cloting ... id rather have better
 already designed clothing with lots of options"; then more Korean and Japanese smart casual, uniforms, dresses,
 suits; then, seeing the fitted outfits clip, **clothing layers** ("the layer below can never clip through"), a
-dissolve in Godot, main merged, our PBR sets on them, and the pantyhose, fishnet tights and socks.
+dissolve in Godot, main merged, our PBR sets on them, and the pantyhose, fishnet tights and socks; then whether the
+library's dresses were kept and work with the layers, and **light rules for outfitting** ("if they're wearing a dress
+dont worry about making them wear a coat").
 
 - **docs/research/clothing_v2.md** is the report; its notes are in `docs/research/clothing_v2/`: `cloth2tex.md` (read at
   source: no), `sewing_patterns.md`, `mesh_generators.md`, `photo_to_look.md` (the generators and texturing models: none
@@ -55,6 +57,13 @@ dissolve in Godot, main merged, our PBR sets on them, and the pantyhose, fishnet
   off (a coat taken off) brings back what it hid. Two checks, run by hand because they need the fetched garments:
   `python proto/check.py <work dir>` (LAYERS: the outfits that clipped, the fault counted without the layers and gone
   with them) and `python proto/godot_test.py ...` (GDLAYERS). `proto/pictures.py` makes every picture again.
+- **The dresses and the outfit rules** (fit_test §7.5, `layers_dresses.jpg`): the twelve library dresses (Mindfront's
+  six CC BY 4.0, punkduck's cocktail dress and qipao CC BY 3.0, Elvaerwyn's four CC-BY) each worn with legwear under
+  and a jacket or cardigan over, nothing through. **None of the garment files are in the repo** (CC-BY waits on the
+  credits answer); `proto/README.md` has the `git clone` lines that fetch them again. **Light rules**, what they
+  refuse not worn (`layers.rules`, `layers.too_full`): one bottom, one jacket, one coat; a dress or a suit is the top
+  and the bottom; **no coat over a dress**; nothing over a garment too full to go under it (2% of it more than 5 cm
+  outside); no point moved further than 5 cm; shoes not drawn under a hem that reaches the floor.
 - **What the layers don't do yet**: nothing was walked (the covers are made at rest; garments skinned from the same
   skin should keep them, untested); a hem that crosses pleats is a little wavy; on Anime's full bust the cloth covers
   and layers but stretches over it; the look plugin's skin shader and the Studio's export don't write or read the

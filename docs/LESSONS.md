@@ -27,6 +27,12 @@ the fix.
 - **A depth carried to a coarse mesh's corners has to be signed.** "How deep under the sweater" was 0 everywhere
   outside it, so across one big triangle of the skirt the dissolve ran on past the hem as a dotted wedge. Negative
   outside, and it crosses zero where the edge is.
+- **A combination that can't work is refused, not solved.** A dress with wide hanging sleeves under a fitted coat
+  has nowhere to go. The solver first blew the coat up to make room, then (capped) left it puffed with open seams, and
+  a rule to squeeze the sleeves in and hide them was half written when the user said: light rules for outfitting, so
+  the hard cases never come up. A rule by kind (no coat over a dress), one by measure (nothing over a garment too full
+  to go under it), and a cap (no point further than 5 cm from where it was fitted) took an hour and cover it. When a
+  fix starts needing a second mechanism, ask whether the input should be allowed at all.
 - **A page written inside a script: check the escapes where they land.** The renderer's page is a JavaScript template
   in a .mjs file; a patch made from Python turned `\\n` into a real newline inside a string, the page stopped at a
   syntax error, and five renders in the background, piped through `tail`, ended "Done" with no pictures. One in the

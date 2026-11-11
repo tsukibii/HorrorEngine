@@ -35,6 +35,25 @@ The user's answers, newest first. They override the plan, the research and the d
   a reworked solver took the tights' turned edge at the waist for a surface the skirt and sweater were under. Fixed the
   same hour (which way is out is now the body's own outward direction, never the cloth's faces), the same view sent
   back, and LAYERS now runs that outfit with and without the tights (LESSONS).
+- **"Once your done with the current stuff caan you confirm if we kept in the other metahum CC 4.0 stuff you found eg
+  dresses, cocktail dresses, if they work with the new layering system etc"**. Both answered (fit_test §7.5):
+  - **Kept**: how to fit and layer them, their pictures and each one's author and licence are in the repo; **the
+    garment files themselves are not**, and never were (the six Mindfront dresses are CC BY 4.0, punkduck's cocktail
+    dress and qipao CC BY 3.0, Elvaerwyn's four CC-BY: not CC0, so they wait on the credits-screen answer). They are
+    fetched again by two `git clone` lines in `proto/README.md`.
+  - **They work with the layers**: all twelve dresses, each worn with legwear under it and a jacket or cardigan over
+    it, end with nothing coming through (`layers_dresses.jpg`).
+- **"just to interrupt, if therye wearing a dress dont worry about making them wear a coat,  Ican see it look distorted
+  but we want to create some light rules for outfitting just ot not have to deal with harder clipping and mesh
+  distortion"** (while a wide-sleeved dress under a coat was being forced to work). So **an outfit has light rules,
+  and what they refuse isn't worn** (`layers.rules`, `layers.too_full`; the run says why):
+  - by kind: one bottom (a skirt or trousers), one jacket, one coat, one pair of shoes, one legwear; a dress or a suit
+    is the top and the bottom (no separate top, skirt or trousers with it); **no coat over a dress**;
+  - by measure: nothing is worn over a garment too full to go under it (over 2% of it standing more than 5 cm
+    outside: a fitted jacket over wide hanging sleeves);
+  - and no garment is ever bent to make room: no point moves further than 5 cm from where it was fitted. Under a hem
+    that reaches the floor the shoes aren't drawn.
+  The squeeze-it-in rule that was half built is dropped.
 
 ## 2026-11-11 (the user: Cloth2Tex as a second clothing system, a CloV2 tab; then what's newer and free)
 

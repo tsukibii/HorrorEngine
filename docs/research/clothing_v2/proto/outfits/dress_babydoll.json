@@ -1,0 +1,23 @@
+{
+ "name": "dress_babydoll",
+ "bodies": [
+  "feminine"
+ ],
+ "wear": [
+  {
+   "mh": "mini:mindfront_female_trousers_1"
+  },
+  {
+   "mh": "glam:T-shirt_Basic_Tucked"
+  },
+  {
+   "mh": "glam:Elvs_Crochet_Baby_Doll1",
+   "sheer": true,
+   "kind": "top"
+  },
+  {
+   "mh": "sys:shoes04",
+   "drop_above": 0.2
+  }
+ ]
+}

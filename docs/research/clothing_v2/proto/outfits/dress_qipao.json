@@ -1,0 +1,20 @@
+{
+ "name": "dress_qipao",
+ "bodies": [
+  "feminine",
+  "slim_feminine"
+ ],
+ "wear": [
+  {
+   "mh": "glam:Middle_Length_Qipao"
+  },
+  {
+   "tailor": "stockings",
+   "color": "#1d1a1c"
+  },
+  {
+   "mh": "sys:shoes04",
+   "drop_above": 0.2
+  }
+ ]
+}

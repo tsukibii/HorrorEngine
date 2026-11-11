@@ -85,6 +85,11 @@ def main():
         pbr=[("pbr_uniform", "uniform", 360, "feminine", "0,45,180", "", "uniform"), ("pbr_coat", "coat", 360, "feminine", "0,45,180", "", "coat"), ("pbr_tights", "tights", 360, "feminine", "0,45,180", "", "tights"),
              ("pbr_fishnet", "fishnet", 360, "feminine", "0,45,180", "", "fishnet"), ("pbr_close1", "uniform", 500, "feminine", "0,45", "top", "uniform"), ("pbr_close2", "tights", 500, "feminine", "0,45", "waist", "tights")],
         bodies=[("b_anime", "anime", 290), ("b_anime_uniform", "anime_uniform", 290), ("b_girl", "girl", 290), ("b_boy", "boy", 290), ("b_red", "reddress", 290), ("b_redcoat0", "reddress_coat_plain", 290), ("b_redcoat1", "reddress_coat", 290)],
+        dresses=[(f"dr_{n}{'0' if plain else ''}", f"dress_{n}{'_plain' if plain else ''}", 240, body) for n, plain, body in
+                 [("halter", True, "feminine"), ("halter", False, "feminine"), ("cocktail", False, "feminine"), ("50s", True, "feminine"), ("50s", False, "feminine"), ("qipao", False, "feminine"),
+                  ("cardigan", True, "feminine"), ("cardigan", False, "feminine"), ("goddess", False, "feminine"), ("coat", True, "feminine"), ("coat", False, "feminine"), ("bell_jacket", False, "feminine"),
+                  ("02", False, "feminine"), ("04", False, "feminine"), ("08", False, "feminine"), ("11", False, "feminine"), ("babydoll", False, "feminine")]]
+        + [("dr_cocktail_full", "dress_cocktail", 240, "full_feminine")],
     )
     todo = [j for k, v in jobs.items() if not only or k in only for j in v]
     with ThreadPoolExecutor(4) as ex:
@@ -110,6 +115,14 @@ def main():
                   across([label(op("b_girl"), "age 10: pleated skirt, polo, sweater, knee socks"), label(op("b_boy"), "age 14: trousers, polo, denim jacket, crew socks, trainers")]),
                   across([label(op("b_red"), "main's red sweater dress (the tailor's) with pantyhose and library shoes"), label(op("b_redcoat0"), "a library coat over it, before"), label(op("b_redcoat1"), "after")])])
         s.save(out / "layers_bodies.jpg", quality=84); print("layers_bodies.jpg", s.size)
+    if not only or "dresses" in only:
+        s = down([across([label(op("dr_halter0"), "before: a halter dress (Elvaerwyn, CC-BY) under a uniform jacket, pantyhose"), label(op("dr_halter"), "after: layers"), label(op("dr_cocktail"), "cocktail dress (punkduck, CC BY 3.0), denim jacket, pantyhose")]),
+                  across([label(op("dr_50s0"), "before: a 50s blouse and skirt (Elvaerwyn, CC-BY) under a knitted jacket"), label(op("dr_50s"), "after"), label(op("dr_qipao"), "qipao (punkduck, CC BY 3.0), the tailor's stockings")]),
+                  across([label(op("dr_cardigan0"), "before: dress 01 (Mindfront, CC BY 4.0) under the tailor's cardigan, knee socks"), label(op("dr_cardigan"), "after"), label(op("dr_goddess"), "a floor-length dress (Elvaerwyn, CC-BY), denim jacket: its shoes not drawn")]),
+                  across([label(op("dr_coat0"), "a coat asked for over dress 05 (Mindfront, CC BY 4.0), as fitted: what the rule avoids"), label(op("dr_coat"), "with the rules: no coat over a dress, so it isn't worn"), label(op("dr_bell_jacket"), "a jacket asked for over the same dress: its sleeves are too full, so it isn't worn")]),
+                  across([label(op("dr_02"), "dress 02 (Mindfront, CC BY 4.0), a knitted jacket, over-the-knee socks"), label(op("dr_04"), "dress 04, denim jacket, pantyhose"), label(op("dr_08"), "dress 08, denim jacket, crew socks, trainers")]),
+                  across([label(op("dr_11"), "dress 11, uniform jacket, fishnet tights, boots"), label(op("dr_babydoll"), "a crochet top (Elvaerwyn, CC-BY) over a tee and trousers"), label(op("dr_cocktail_full"), "the cocktail dress and jacket on the full body")])])
+        s.save(out / "layers_dresses.jpg", quality=84); print("layers_dresses.jpg", s.size)
     if not only or "godot" in only:
         gp = work / "godot_pics"
         if run([PY, str(HERE / "godot_test.py"), str(work / "godot"), "feminine", str(gp), str(work / "godot_project")], log=work / "godot.log"):

@@ -1,0 +1,22 @@
+{
+ "name": "dress_halter",
+ "bodies": [
+  "feminine"
+ ],
+ "wear": [
+  {
+   "mh": "glam:Elvs_Knee_length_Halter_dress1"
+  },
+  {
+   "mh": "glam:uniform_jacket_train_driver"
+  },
+  {
+   "tailor": "tights",
+   "color": "#3a3236"
+  },
+  {
+   "mh": "sys:shoes04",
+   "drop_above": 0.2
+  }
+ ]
+}

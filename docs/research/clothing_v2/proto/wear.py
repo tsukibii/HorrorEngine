@@ -8,9 +8,11 @@
                            {"tailor": "tights"}, {"tailor": "knee-socks", "color": "#f2f2f2"}],
                   "looks": {"<garment name>": {...}}}        (looks: render.mjs's)
                  a line of "wear" may also say "layer" (a number) or "kind" (layers.LAYER's) when the name misleads,
-                 and "drop_above" (metres): without the garment's pieces that reach above it (a shoe's built-in sock)
+                 "drop_above" (metres): without the garment's pieces that reach above it (a shoe's built-in sock),
+                 and "sheer": true for a library garment that is see-through (crochet, lace): it hides nothing
   writes <work dir>/<name>/<body>.bin and index.json, which render.mjs draws.
 
+The outfit's light rules come first (layers.rules: a coat asked for over a dress isn't worn, and the run says so).
 Each garment is put on the body (fit.py), then all of them are ordered, set outside one another and what's covered is
 marked (layers.py). `--no-layers` leaves that out and hides the skin by the authors' own lists: the fit as it was.
 `--glb` also writes <body>.glb for Godot (glb.py): what each band of layers hides in every mesh's vertex colours.
@@ -38,6 +40,18 @@ def pieces(n, faces):
     from scipy.sparse.csgraph import connected_components
     i = [f[a] for f in faces for a in range(len(f))]; j = [f[(a + 1) % len(f)] for f in faces for a in range(len(f))]
     return connected_components(sp.coo_matrix((np.ones(len(i)), (i, j)), shape=(n, n)), directed=False)[1]
+
+
+def tailor_kind(design, slot):
+    """a tailor design's kind for the layers, from its slot"""
+    return ("socks" if "sock" in design else "shoes") if slot == "feet" else ("skirt" if slot == "bottom" and "skirt" in design else layers.SLOTS[slot])
+
+
+class Line:
+    """one line of an outfit, for the rules: its name, its kind, the line itself"""
+
+    def __init__(self, name, kind, line):
+        self.name, self.kind, self.line = name, kind, line
 
 
 def tailor_parts(work, body, wear):
@@ -100,9 +114,24 @@ def main():
         kind = w.get("kind") or layers.kind_of(gname + " " + folder.name, rest, H_avg, rig_at, rig["names"])
         lib_g.append(dict(spec=w, name=gname, rest=rest, faces=o["faces"], T=lib.tris_of(o["faces"])[0], src=srci, uv=uv, uv2=uv2, tris=tris, mat=mat,
                           folder=folder, delete=np.array(c["delete"], np.int64), meta=meta, kind=kind,
-                          opaque=not any(s in gname.lower() for s in SHEER)))
+                          opaque=not w.get("sheer", any(s in gname.lower() for s in SHEER))))
     tree = cKDTree(reg["hm_X"])
     hm_of_mhr = reg["body_idx"][tree.query(reg["mhr_posed"])[1]]
+
+    # the light rules, by kind (layers.rules): what the outfit asks for that isn't worn, and why
+    designs = json.loads((HERE.parents[3] / "Content" / "Studio" / "Clothes" / "designs.json").read_text())["designs"]
+    lines, k = [], 0
+    for w in spec["wear"]:
+        if "mh" in w:
+            lines.append(Line(lib_g[k]["name"], lib_g[k]["kind"], w)); k += 1
+        else:
+            lines.append(Line(w["tailor"], w.get("kind") or tailor_kind(w["tailor"], designs[w["tailor"]]["slot"]), w))
+    refused = [] if plain else layers.rules(lines)[1]
+    for g, why in refused:
+        print(f"not worn: {g.name} ({why})")
+    off = {id(g.line) for g, _ in refused}
+    lib_g = [g for g in lib_g if id(g["spec"]) not in off]
+    tailor_wear = [w for w in spec["wear"] if "tailor" in w and id(w) not in off]
 
     index = dict(name=spec["name"], layers=not plain, bodies=[], looks=spec.get("looks", {}),
                  garments=[dict(name=g["name"], kind=g["kind"], tex=str(g["folder"] / g["mat"]["diffuseTexture"]) if g["mat"].get("diffuseTexture") else None,
@@ -126,9 +155,9 @@ def main():
             G, moved = fit.push_out(warp(g["rest"]), g["faces"], Pf, T)
             L = layers.Garment(g["name"], G, g["T"], g["kind"], g["spec"].get("layer"), g["opaque"])
             worn.append(L); recs.append(("lib", k, L))
-        for tg in tailor_parts(work, name, [w for w in spec["wear"] if "tailor" in w]):
+        for tg in tailor_parts(work, name, tailor_wear):
             d = tg["design"]
-            kind = ("socks" if "sock" in d else "shoes") if tg["slot"] == "feet" else ("skirt" if tg["slot"] == "bottom" and "skirt" in d else layers.SLOTS[tg["slot"]])
+            kind = tailor_kind(d, tg["slot"])
             Pn, Tn, at = [], [], 0
             for q in tg["parts"]:
                 Pn.append(q["P"].reshape(-1, 3).astype(np.float64)); Tn.append(q["T"].reshape(-1, 3).astype(np.int64) + at); at += len(Pn[-1])
@@ -137,6 +166,23 @@ def main():
                                opaque=not (tg.get("sheer") or any(s in (tg.get("surface") or "") + d for s in SHEER)), dense=True, group="tailor")
             worn.append(L); recs.append(("tailor", tg, L))
         ordered = layers.order(worn, spec.get("tuck", False))
+        unfit, fullest = [], {}
+        if not plain:                                               # ...and by measure, on this body: nothing is worn over a garment too full to go under it
+            for G in list(ordered):
+                if G.kind in layers.RIGID:
+                    continue
+                for L in ordered[:ordered.index(G)]:
+                    if L.kind in layers.RIGID or (G.group and L.group == G.group) or not layers._near(L, G):
+                        continue
+                    share = layers.too_full(body, L, G)
+                    fullest[G.name] = max(fullest.get(G.name, 0.0), share)
+                    if share > layers.FULL:
+                        unfit.append((G, f"{L.name} is too full to go under it: {100 * share:.0f}% of it stands more than {layers.FAR * 100:.0f} cm outside"))
+                        ordered.remove(G)
+                        break
+            for G, why in unfit:
+                print(f"{name}: not worn: {G.name} ({why})")
+            recs = [r for r in recs if r[2] in ordered]
         if plain:
             hidden = np.zeros(len(P), bool)
             for g in lib_g:
@@ -151,7 +197,8 @@ def main():
               + f"; skin hidden {int((skin >= 1).sum())}/{len(P)}")
         report.append(dict(body=name, garments=[dict(name=g.name, kind=g.kind, layer=g.layer, points=len(g.P), moved_in=g.moved["inward"], moved_out=g.moved["outward"], moved_most_mm=round(g.moved.get("most", 0.0) * 1000, 1), opaque=bool(g.opaque), group=g.group,
                                                      hidden=int((g.cover >= 1).sum()), through=cross.get(g.name, (0, 0, {}))[0], through_mm=round(cross.get(g.name, (0, 0, {}))[1] * 1000, 1), through_what=cross.get(g.name, (0, 0, {}))[2]) for g in ordered],
-                           skin_hidden=int((skin >= 1).sum())))
+                           skin_hidden=int((skin >= 1).sum()), refused=[dict(name=g.name, why=why) for g, why in refused] + [dict(name=G.name, why=why) for G, why in unfit],
+                           fullest={k: round(v, 4) for k, v in fullest.items()}))
 
         head = dict(body=dict(P=len(P) * 3, T=T.size, C=len(P)), garments=[], tailor=[])
         blobs = [P.astype(np.float32).tobytes(), T.astype(np.uint32).tobytes(), skin.astype(np.float32).tobytes()]

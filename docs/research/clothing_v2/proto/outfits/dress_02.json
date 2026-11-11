@@ -1,0 +1,22 @@
+{
+ "name": "dress_02",
+ "bodies": [
+  "feminine"
+ ],
+ "wear": [
+  {
+   "mh": "mini:mindfront_f_dress_02"
+  },
+  {
+   "mh": "glam:F_Lusekofta"
+  },
+  {
+   "tailor": "over-knee-socks",
+   "color": "#16161a"
+  },
+  {
+   "mh": "sys:shoes04",
+   "drop_above": 0.2
+  }
+ ]
+}
