@@ -268,6 +268,15 @@ export const MONSTERS = {
 // the sculpt's controls on the head (a creature's face alone on the character's own body: useCreature's Face only): the
 // Face group and the Creature group's but the hunch
 export const onHead = c => c.group === "Face" || (c.group === "Creature" && c.id !== "hunch");
+// a slider that runs further than the rest for a person ([least, most]; the others -1 to 1, a monster's -3 to 3): the
+// Bust, flat at -2, small at -1, the body's own at 0, then past 1 a full bust to 3 (sculpt.js bustShape; DECISIONS 2026-11-11)
+export const SPAN = { bust: [-2, 3] };
+// a control's sum kept within reach: as it is up to the first, easing into the second past it (soften). A person's
+// sliders run to 1, a monster's to 3, a control with a longer slider to its own end
+export function limits(id, monster) {
+  const [lin, lim] = monster ? [3, 3.4] : [1.75, 2.3], far = SPAN[id] ? Math.max(Math.abs(SPAN[id][0]), Math.abs(SPAN[id][1])) : 0;
+  return far > lin ? [far, far + 0.4] : [lin, lim];
+}
 // how far a control's whole value may go whatever the sliders say (past it the field turns the skin inside out: a nose
 // narrowed to nothing, lips pushed through the teeth, an arm pinched to a thread): [least, most]
 export const REACH = { nose_size: [-2.3, 9], nose_projection: [-1.7, 9], lips: [-1.6, 9], ears_size: [-1.6, 9], upper_arms: [-2.2, 9], forearms: [-2.2, 9], eye_size: [-2.4, 9], face_height: [-3, 3.4],

@@ -178,5 +178,70 @@ const span = X => { let lo = Infinity, hi = -Infinity; for (let i = 1; i < X.len
   say(lowY(p.upper.teeth) < -1.5 && lowY(p.upper.teeth) > -3 && wide(p.upper.teeth) !== wide(a.upper.teeth), `pointed teeth at 1: every tooth drawn to a point, the front ones ${(-lowY(p.upper.teeth) - 0.6).toFixed(1)} mm longer`);
 }
 
+// ---- the Bust slider past its bump's ends (sculpt.js bustShape; DECISIONS 2026-11-11: "more flat too but also more
+// busty like the image", and of the first try "unnaturally pointy ... more how a water balloon would sit"): on the
+// feminine body, the slider from flat (-2) to its top (3). The bump's field stops at -1 and 1; past them the shape is
+// made on the body as it is. Nothing but the breasts' own points moves (the fold under them, the ribs, the arms stay);
+// the two sides alike; bigger at every step; the front of a full bust a ball (a sphere fits it: no point), its middle
+// below the breast's root (the weight low), the ball's front blunt; at -2 the chest flat
+{
+  const bustC = byId.get("bust"), F = S.bust, foot = new Set([...F[0].idx, ...F[1].idx]);
+  say(SC.fieldValue(bustC, () => 3) === 1 && SC.fieldValue(bustC, () => -2) === -1 && SC.fieldValue(bustC, () => 0.4) === 0.4 && GW.SPAN.bust && byId.has("bust") && GW.limits("bust", false)[0] === 3 && GW.limits("waist", false)[0] === 1.75 && GW.limits("bust", true)[0] === 3,
+    "the Bust's bump stops at -1 and 1 (past them the shape is made on the body); its slider runs -2 to 3 and its sum eases in past 3, the others' as before");
+  const body = v => grownBody(M, { base: -1, height: 1.62, sculpt: { bust: v } }), B0 = body(0), at = (X, i) => [X[i * 3], X[i * 3 + 1], X[i * 3 + 2]];
+  let nan = 0, stray = 0, asym = 0, last = -1, grows = true; const front = {};
+  const mirror = new Map(); { const key = (x, y, z) => `${Math.round(Math.abs(x) * 2e4)},${Math.round(y * 2e4)},${Math.round(z * 2e4)}`, L = new Map();
+    for (const i of F[0].idx) L.set(key(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]), i); for (const j of F[1].idx) { const i = L.get(key(P[j * 3], P[j * 3 + 1], P[j * 3 + 2])); if (i !== undefined) mirror.set(i, j); } }
+  for (const v of [-2, -1.5, 1.3, 1.6, 2, 3]) {
+    const X = body(v).P, R = body(Math.max(-1, Math.min(1, v))).P;      // against the bump's own end: what the shape adds
+    for (let i = 0; i < N; i++) { const d = Math.hypot(X[i * 3] - R[i * 3], X[i * 3 + 1] - R[i * 3 + 1], X[i * 3 + 2] - R[i * 3 + 2]); if (!Number.isFinite(d)) nan++; else if (d > 2e-5 && !foot.has(i)) stray++; }
+    for (const [i, j] of mirror) asym = Math.max(asym, Math.abs(X[i * 3] + X[j * 3]), Math.abs(X[i * 3 + 1] - X[j * 3 + 1]), Math.abs(X[i * 3 + 2] - X[j * 3 + 2]));
+    let z = -1; for (const i of F[0].idx) z = Math.max(z, X[i * 3 + 2]); front[v] = z; if (v > 0) { if (z <= last) grows = false; last = z; }
+  }
+  say(!nan && !stray && mirror.size > 0.9 * F[0].idx.length, `the shape moves the breasts' own ${F[0].idx.length} points a side and nothing else (the fold, the ribs and the arms stay), no NaN`);
+  say(asym < 0.002, `the two sides alike (${(asym * 1000).toFixed(2)} mm apart at most)`);
+  let z0 = -1; for (const i of F[0].idx) z0 = Math.max(z0, B0.P[i * 3 + 2]);
+  say(grows && front[3] - z0 > 0.07 && front[1.6] - z0 > 0.02 && front[1.6] - z0 < 0.06, `fuller at every step: the front ${((front[1.3] - z0) * 100).toFixed(1)} cm further out at 1.3, ${((front[1.6] - z0) * 100).toFixed(1)} at 1.6, ${((front[2] - z0) * 100).toFixed(1)} at 2, ${((front[3] - z0) * 100).toFixed(1)} at 3 (the picture's)`);
+  // a ball: a sphere through the points of the breast's front half (those nearer its middle than its edge)
+  const sphere = X => { const pts = []; F[0].idx.forEach((i, q) => { if (F[0].share[q] < 0.62 && F[0].g[q] > 0.9) pts.push(at(X, i)); });
+    // least squares: |p|^2 = 2 c.p + (r^2 - |c|^2)
+    const A = [0, 0, 0, 0].map(() => [0, 0, 0, 0]), b = [0, 0, 0, 0];
+    for (const p of pts) { const r = [2 * p[0], 2 * p[1], 2 * p[2], 1], y = p[0] * p[0] + p[1] * p[1] + p[2] * p[2]; for (let a = 0; a < 4; a++) { b[a] += r[a] * y; for (let c = 0; c < 4; c++) A[a][c] += r[a] * r[c]; } }
+    for (let c = 0; c < 4; c++) { let pv = c; for (let r = c + 1; r < 4; r++) if (Math.abs(A[r][c]) > Math.abs(A[pv][c])) pv = r; [A[c], A[pv]] = [A[pv], A[c]]; [b[c], b[pv]] = [b[pv], b[c]];
+      for (let r = 0; r < 4; r++) { if (r === c) continue; const m = A[r][c] / A[c][c]; for (let k = c; k < 4; k++) A[r][k] -= m * A[c][k]; b[r] -= m * b[c]; } }
+    const c = [b[0] / A[0][0], b[1] / A[1][1], b[2] / A[2][2]], rad = Math.sqrt(b[3] / A[3][3] + c[0] * c[0] + c[1] * c[1] + c[2] * c[2]);
+    let rms = 0, tip = 0; for (const p of pts) { const e = Math.hypot(p[0] - c[0], p[1] - c[1], p[2] - c[2]) - rad; rms += e * e; tip = Math.max(tip, e); }
+    let rootY = 0, n = 0; for (const j of F[0].ring) { rootY += X[j * 3 + 1]; n++; }
+    return { rad, rms: Math.sqrt(rms / pts.length), tip, n: pts.length, below: rootY / n - c[1] }; };
+  const b3 = sphere(body(3).P), b16 = sphere(body(1.6).P);
+  // the cone it replaces: the bump alone pushed to 3 on the same body, as the slider did before
+  const cone = (() => { const G0 = grownBody(M, { base: -1, height: 1.62, sculpt: {} }), Y = Float32Array.from(G0.P), c = byId.get("bust");
+    for (let q = 0; q < c.idx.length; q++) { const i = c.idx[q] * 3; Y[i] += 3 * G0.scale * c.d[q * 3]; Y[i + 1] += 3 * G0.scale * c.d[q * 3 + 1]; Y[i + 2] += 3 * G0.scale * c.d[q * 3 + 2]; } return sphere(Y); })();
+  say(b3.rms < 0.006 && b3.tip < 0.012 && b3.rad > 0.07 && b3.rad < 0.12 && b16.rms < 0.006 && b16.rad > 0.045 && b16.rad < b3.rad,
+    `a full bust's front is a ball: a sphere of ${(b3.rad * 100).toFixed(1)} cm fits ${b3.n} of its points within ${(b3.rms * 1000).toFixed(1)} mm (none over ${(b3.tip * 1000).toFixed(1)} mm proud of it) at 3, ${(b16.rad * 100).toFixed(1)} cm within ${(b16.rms * 1000).toFixed(1)} mm at 1.6`);
+  say(cone.tip > 2 * b3.tip && cone.rms > 2 * b3.rms && b3.below > 0.02 && b16.below > 0, `not a point (the bump alone pushed to 3, as it was: ${(cone.tip * 1000).toFixed(0)} mm proud of its best sphere, ${(cone.rms * 1000).toFixed(1)} mm off it all over) and its weight low (the ball's middle ${(b3.below * 100).toFixed(1)} cm under the middle of the breast's root at 3, ${(b16.below * 100).toFixed(1)} at 1.6)`);
+  // flat: how far the breast stands in front of the plane through its own ring (z = a x + b y + c, least squares)
+  const proud = v => { const X = body(v).P, Rg = [...F[0].ring].map(j => at(X, j)), A = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], b = [0, 0, 0];
+    for (const p of Rg) { const r = [p[0], p[1], 1]; for (let a = 0; a < 3; a++) { b[a] += r[a] * p[2]; for (let c = 0; c < 3; c++) A[a][c] += r[a] * r[c]; } }
+    for (let c = 0; c < 3; c++) { let pv = c; for (let r = c + 1; r < 3; r++) if (Math.abs(A[r][c]) > Math.abs(A[pv][c])) pv = r; [A[c], A[pv]] = [A[pv], A[c]]; [b[c], b[pv]] = [b[pv], b[c]];
+      for (let r = 0; r < 3; r++) { if (r === c) continue; const m = A[r][c] / A[c][c]; for (let k = c; k < 3; k++) A[r][k] -= m * A[c][k]; b[r] -= m * b[c]; } }
+    const pl = [b[0] / A[0][0], b[1] / A[1][1], b[2] / A[2][2]]; let best = -1;
+    for (const i of F[0].idx) best = Math.max(best, X[i * 3 + 2] - (pl[0] * X[i * 3] + pl[1] * X[i * 3 + 1] + pl[2])); return best; };
+  // the dress form (what the tailor cuts on): the same ball with no hollow under it. On the real one the skin under a
+  // full bust faces away from the chest's front (its underside); on the form none does. It moves the breasts' points and
+  // the skin under the ball (the apron) and nothing else; under 1 it's the body itself
+  { const tris = []; const inF = new Set(F[0].idx); for (let t = 0; t < T.length; t += 3) if (inF.has(T[t]) || inF.has(T[t + 1]) || inF.has(T[t + 2])) tris.push(t);   // (with the strip between the breast's last points and the fold's)
+    const away = X => { let n = 0; for (const t of tris) { const a = at(X, T[t]), b = at(X, T[t + 1]), c = at(X, T[t + 2]), u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], w = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+      const nx = u[1] * w[2] - u[2] * w[1], ny = u[2] * w[0] - u[0] * w[2], nz = u[0] * w[1] - u[1] * w[0], l = Math.hypot(nx, ny, nz); if (l > 1e-12 && (nx * F[0].nrm[0] + nz * F[0].nrm[2]) / l < -0.6) n += l / 2 * 1e4; } return n; };   // cm2 turned well away (the form's own side under the ball stands square to the chest, its foot flaring a little)
+    const form = v => grownBody(M, { base: -1, height: 1.62, sculpt: { bust: v }, form: true }).P, f3 = form(3), r3 = body(3).P, apron = new Set([...F[0].apron, ...F[1].apron]);
+    let strayF = 0, movedA = 0, same = 0; for (let i = 0; i < N; i++) { const d = Math.hypot(f3[i * 3] - r3[i * 3], f3[i * 3 + 1] - r3[i * 3 + 1], f3[i * 3 + 2] - r3[i * 3 + 2]); if (d > 2e-5) { if (apron.has(i)) movedA++; else if (!foot.has(i)) strayF++; } }
+    const f08 = form(0.8), r08 = body(0.8).P; for (let i = 0; i < N * 3; i++) if (f08[i] !== r08[i]) same++;
+    const aR3 = away(r3), aR2 = away(body(2).P), aF3 = away(f3), aF2 = away(form(2));
+    say(aR3 > 60 && aR2 > 20 && aF2 < 0.5 && aF3 < 0.5 * aR3 && !strayF && movedA > 0 && !same,
+      `the dress form has no underside: of the breast's skin ${aF2.toFixed(1)} cm2 faces away from the chest's front at 2 (at the slider's very top, 3, ${aF3.toFixed(0)} still do: by the armpit, where the ball's side meets the arm, and at its outer foot), where the hanging one's underside is ${aR2.toFixed(0)} cm2 at 2 and ${aR3.toFixed(0)} at 3; it moves the breasts and ${movedA} points of the skin under them out from under the ball, nothing else (${strayF}); under 1 it's the body itself`); }
+  const f0 = proud(0), f1 = proud(-1), f2 = proud(-2);
+  say(f2 < 0.02 && f2 < f1 - 0.008 && f1 < f0, `flatter under -1: the breast ${(f0 * 100).toFixed(1)} cm in front of the plane through its root at 0, ${(f1 * 100).toFixed(1)} at -1, ${(f2 * 100).toFixed(1)} at -2 (the chest's own wall)`);
+}
+
 if (bad) { console.log(`GROW FAIL: ${bad}`); process.exit(1); }
 console.log("GROW ok");

@@ -334,10 +334,10 @@ const baseSculpt = id => (BASE_SCULPT.feminine?.[id] || 0) * (1 - st.base) / 2 +
 // a control's whole value: the character's own slider, its base's, its age's and Cutify's, kept within reach (a person's
 // sliders run to 1, a monster's to 3: their sums ease into a limit a little past that, so a small nose made smaller by
 // an age and by Cutify never turns inside out). Sums a character could have before (a base's and a slider's) are as they were
-const LIMITS = { person: [1.75, 2.3], monster: [3, 3.4] };
+// (grow.js limits: a slider with a longer run of its own, the Bust's, eases in past its own end)
 function sculptValue(id) {
   const v = (st.sculpt[id] || 0) + baseSculpt(id) + (AGE.sculpt[id] || 0) + (st.cute.on ? st.cute.amount * (GW.CUTE[id] || 0) : 0);
-  if (!v) return 0; const [lin, lim] = LIMITS[st.monster ? "monster" : "person"], R = GW.REACH[id];
+  if (!v) return 0; const [lin, lim] = GW.limits(id, st.monster), R = GW.REACH[id];
   let out = GW.soften(v, lin, lim);
   if (R) out = Math.min(R[1], Math.max(R[0], out));    // (never past where its field turns the skin inside out)
   // the nose's size and its projection both take the nose's height off the face (0.35 and 0.5 of it a slider): never
@@ -635,7 +635,7 @@ function setEditing(on, bake = false) {
 function redrawGuides(opts = {}) {                      // the guides of everything worn, as edited now (only what changed is made again)
   if (!EDITING || !Object.keys(DESIGNS).length) return;
   const list = st.clothes.filter(c => DESIGNS[c.design]).map(c => ({ design: c.design, slot: DESIGNS[c.design].slot, D: editedDesign(DESIGNS[c.design], c.edit) }));
-  CUTED.set(list, neutralBody(), bodyKey());
+  CUTED.set(list, neutralBody(true), bodyKey());
   CUT_SKIN = CUTED.skin;
   if (opts.handles !== false) { SHAPE.clear(); for (const g of CUTED.garments) SHAPE.set(g.design, g.handles); drawGarmentHandles(); }
   GARMENTS.userData.posedFor = null; poseGarments();
@@ -660,7 +660,7 @@ function dress() {                                     // the worker makes every
   FITTED = key;
   if (!list.length) { for (const m of GARMENTS.children) { m.geometry.dispose(); m.material.dispose(); } GARMENTS.clear(); DRAPING = { id, stage: "none" }; return; }
   status(`the tailor: ${list.map(c => c[0]).join(", ")}…`);
-  const P = neutralBody(); CUT_ON.set(id, P.slice());
+  const P = neutralBody(true); CUT_ON.set(id, P.slice());   // (the dress form: a full bust's with no hollow under it; the same body for any other)
   DRAPING = { id, stage: "cutting" };
   TAILOR_W.postMessage({ id, key, P, T: TRIS, list, designs: DESIGNS, drape: st.drape, gpu: st.drape && GPU_ON }, [P.buffer]);
 }
@@ -1131,11 +1131,11 @@ function computeBody() {                               // RAW: MHR with the weig
     for (let i = 0; i < RAW.length; i++) RAW[i] += a * S[i];
   }
 }
-function neutralBody() {                               // the body as saved for the salon: RAW in its proportions and the face, scaled, no expression
+function neutralBody(form = false) {                   // the body as saved for the salon: RAW in its proportions and the face, scaled, no expression. form: the dress form the clothes are cut on (sculpt.js bustShape)
   const X = proportioned(); let lo = Infinity; for (let i = 1; i < X.length; i += 3) lo = Math.min(lo, X[i]);
   const P = new Float32Array(N * 3);
   for (let i = 0; i < X.length; i += 3) { P[i] = X[i] * SCALE; P[i + 1] = (X[i + 1] - lo) * SCALE; P[i + 2] = X[i + 2] * SCALE; }
-  if (fitOffsets()) for (let i = 0; i < N * 3; i++) P[i] += SCALE * PARTK[(i / 3) | 0] * FIT[i];   // the face and the sculpt
+  if (fitOffsets(X, form)) for (let i = 0; i < N * 3; i++) P[i] += SCALE * PARTK[(i / 3) | 0] * FIT[i];   // the face and the sculpt
   if (exactHeight()) { let a = Infinity; for (let i = 1; i < P.length; i += 3) a = Math.min(a, P[i]); for (let i = 1; i < P.length; i += 3) P[i] -= a; }   // (SCALE is compose's, the exact one: only the floor is left to find)
   return P;
 }
@@ -1158,13 +1158,23 @@ function proportioned() {
 // what's added to the body before it's scaled: the face's fit (by its strength), the sculpt (sculpt.js) and the lower
 // lip's curl, in MHR's metres. The fit is made on the body without the sculpt, so the sculpt stays as set over any picture
 const FIT = new Float32Array(N * 3);
-function fitOffsets() {                                // true if anything is added
+function fitOffsets(X = null, form = false) {          // true if anything is added. X: the body it's added to (proportioned(), MHR's units); form: a full bust as the tailor's dress form
   FIT.fill(0); let on = false;
   if (DELTA) { const k = st.face.strength; for (let j = 0; j < DELTA.idx.length; j++) { const i = DELTA.idx[j] * 3; FIT[i] += k * DELTA.d[j * 3]; FIT[i + 1] += k * DELTA.d[j * 3 + 1]; FIT[i + 2] += k * DELTA.d[j * 3 + 2]; } on = true; }
   if (SCULPT) for (const c of SCULPT.controls) {
     if (c.prop) continue;                               // (a proportion: proportioned(), before the scale)
-    const v = sculptValue(c.id); if (!v) continue; on = true;
+    const v = SC.fieldValue(c, sculptValue); if (!v) continue; on = true;
     for (let q = 0; q < c.idx.length; q++) { const i = c.idx[q] * 3; FIT[i] += v * c.d[q * 3]; FIT[i + 1] += v * c.d[q * 3 + 1]; FIT[i + 2] += v * c.d[q * 3 + 2]; }
+  }
+  // the Bust past its bump's ends (over 1 a full bust, under -1 toward a flat chest): not a field, a shape made on the
+  // body as it now stands with the fields on it (sculpt.js bustShape), at its chest's own size (a child's, a goblin's)
+  const bust = SCULPT && X ? sculptValue("bust") : 0;
+  if (Math.abs(bust) > 1) {
+    const K = GROWN ? PARTK : null, foot = SCULPT.bust[0].idx; let size = 1;
+    if (K) { size = 0; for (const i of foot) size += K[i]; size /= foot.length; }
+    const r = SC.bustShape(SCULPT, i => { const k = K ? K[i] : 1; return [X[i * 3] + k * FIT[i * 3], X[i * 3 + 1] + k * FIT[i * 3 + 1], X[i * 3 + 2] + k * FIT[i * 3 + 2]]; }, bust, size, form);
+    for (let q = 0; q < r.idx.length; q++) { const i = r.idx[q], k = K ? K[i] : 1; FIT[i * 3] += r.d[q * 3] / k; FIT[i * 3 + 1] += r.d[q * 3 + 1] / k; FIT[i * 3 + 2] += r.d[q * 3 + 2] / k; }
+    on = on || r.idx.length > 0;
   }
   const k = CURL ? st.teeth?.curl ?? 0 : 0;             // the lower lip's curl (below, with the mouth)
   if (k) { on = true; for (let q = 0; q < CURL.idx.length; q++) { const i = CURL.idx[q] * 3; FIT[i] += k * CURL.d[q * 3]; FIT[i + 1] += k * CURL.d[q * 3 + 1]; FIT[i + 2] += k * CURL.d[q * 3 + 2]; } }
@@ -1216,7 +1226,7 @@ function compose() {                                   // POS: RAW in its propor
   SCALE = st.height / (hi - lo); TOP = st.height; LO = lo;
   if (GROWN) HEADOFF.set((X[TOPV * 3] - RAW[TOPV * 3]) * SCALE, Math.min(0, (X[TOPV * 3 + 1] - lo) * SCALE - TOP), (X[TOPV * 3 + 2] - RAW[TOPV * 3 + 2]) * SCALE); else HEADOFF.set(0, 0, 0);
   for (let i = 0; i < X.length; i += 3) { POS[i] = X[i] * SCALE; POS[i + 1] = (X[i + 1] - lo) * SCALE; POS[i + 2] = X[i + 2] * SCALE; }
-  const fitted = fitOffsets();                         // the face's fit and the sculpt
+  const fitted = fitOffsets(X);                        // the face's fit and the sculpt
   if (fitted) { if (GROWN) for (let i = 0; i < N * 3; i++) POS[i] += SCALE * PARTK[(i / 3) | 0] * FIT[i]; else for (let i = 0; i < N * 3; i++) POS[i] += SCALE * FIT[i]; }
   let floor = 0;
   if (exactHeight()) {                                 // a child, a creature, a cutified face: exactly as tall as the height says, soles on the floor
@@ -2109,6 +2119,7 @@ if (LMK) {
 }
 const SCULPT_GROUPS = [...SC.GROUPS, ...GW.GROUPS];
 const reach = () => st.monster ? 3 : 1;                // how far a sculpt slider goes: a person's, or a creature's
+const sliderSpan = id => { const r = reach(), sp = GW.SPAN[id]; return sp ? [Math.min(-r, sp[0]), Math.max(r, sp[1])] : [-r, r]; };   // (one with a longer run of its own: the Bust, flat to very full)
 const sculptSet = {}, sculptRow = {}, sculptGroup = {};
 if (SCULPT) for (const g of SCULPT_GROUPS) {
   const d = el("details", { open: g === "Forehead" }, el("summary", { textContent: g })); sculptGroup[g] = d;
@@ -2125,7 +2136,7 @@ $("#resetSculpt").onclick = () => { st.sculpt = {}; sculptAll(); compose(); };
 // range comes back into it (asked first when something is)
 function monsterUI() {
   const r = reach(), [lo, hi] = HEIGHTS[st.monster ? "monster" : "person"];
-  for (const id in sculptRow) { const inp = sculptRow[id].querySelector("input"); inp.min = -r; inp.max = r; }
+  for (const id in sculptRow) { const inp = sculptRow[id].querySelector("input"), [a, b] = sliderSpan(id); inp.min = a; inp.max = b; }
   heightIn.min = lo; heightIn.max = hi;
   if (sculptGroup.Creature) sculptGroup.Creature.hidden = !st.monster;
   $("#monsterOn").checked = st.monster; creatureMark();
@@ -2135,9 +2146,9 @@ function setMonster(on, ask = true) {
   if (!on) delete st.creature;
   if (!on) {
     const [lo, hi] = HEIGHTS.person, creature = id => SCULPT?.controls.find(c => c.id === id)?.group === "Creature";
-    const past = Object.entries(st.sculpt).filter(([id, v]) => Math.abs(v) > 1 || (v && creature(id)));
+    const span = id => GW.SPAN[id] || [-1, 1], past = Object.entries(st.sculpt).filter(([id, v]) => v < span(id)[0] || v > span(id)[1] || (v && creature(id)));
     if (ask && (past.length || st.height < lo || st.height > hi) && !confirm("Leaving monster mode brings every slider back into a person's range (and the creature's own controls to 0). Leave it?")) { $("#monsterOn").checked = true; return; }
-    for (const [id, v] of past) st.sculpt[id] = creature(id) ? 0 : Math.sign(v);
+    for (const [id, v] of past) st.sculpt[id] = creature(id) ? 0 : Math.min(span(id)[1], Math.max(span(id)[0], v));
     st.height = Math.min(hi, Math.max(lo, st.height));
   }
   st.monster = !!on; monsterUI(); UNSAVED = true; compose(); hud();
@@ -2267,8 +2278,7 @@ function pull(ev) {                                    // the sliders' change wh
     const r0 = A[0][0] * t[0] + A[0][1] * t[1], r1 = A[1][0] * t[0] + A[1][1] * t[1], det = a * c - b * b;
     u = [(c * r0 - b * r1) / det, (a * r1 - b * r0) / det];
   }
-  const lim = reach();
-  d.cs.forEach((c, i) => { if (!d.D[i]) return; const v = Math.round(Math.min(lim, Math.max(-lim, d.start[i] + u[i])) * 100) / 100; st.sculpt[c.id] = v; sculptSet[c.id](v); sculptRow[c.id].classList.toggle("moved", v !== 0); });
+  d.cs.forEach((c, i) => { if (!d.D[i]) return; const [lo, hi] = sliderSpan(c.id), v = Math.round(Math.min(hi, Math.max(lo, d.start[i] + u[i])) * 100) / 100; st.sculpt[c.id] = v; sculptSet[c.id](v); sculptRow[c.id].classList.toggle("moved", v !== 0); });
   UNSAVED = true; compose();
 }
 function letGo() {
