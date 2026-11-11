@@ -470,7 +470,10 @@
    "group": "dress",
    "author": "MargaretToigo",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/1706"
+   "page": "http://www.makehumancommunity.org/node/1706",
+   "folder": "dress01/clothes/toigo_bodice_dress_with_lace_ruffle_skirt",
+   "file_licence": "CC0",
+   "file_author": "MRT"
   },
   {
    "id": "toigo_camisole_dress_with_full_skirt",
@@ -558,7 +561,9 @@
    "group": "dress",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1719"
+   "page": "http://www.makehumancommunity.org/node/1719",
+   "folder": "dress02/clothes/elvs_crochet_baby_doll",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_double_handkerchief_halter_dress",
@@ -566,7 +571,9 @@
    "group": "dress",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1920"
+   "page": "http://www.makehumancommunity.org/node/1920",
+   "folder": "dress02/clothes/elvs_double_handkerchief_halter_dress",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_fashion_stylized_qipoa",
@@ -598,7 +605,9 @@
    "group": "dress",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/2392"
+   "page": "http://www.makehumancommunity.org/node/2392",
+   "folder": "dress02/clothes/elvs_fringe_leather_dress",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_fringe_off_shoulder_dress",
@@ -606,7 +615,9 @@
    "group": "dress",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/2395"
+   "page": "http://www.makehumancommunity.org/node/2395",
+   "folder": "dress02/clothes/elvs_fringe_off_shoulder_dress",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_goddess_dress1",
@@ -702,7 +713,9 @@
    "group": "dress",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1919"
+   "page": "http://www.makehumancommunity.org/node/1919",
+   "folder": "dress02/clothes/elvs_halter_dress_tiered",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_ladies_apron",
@@ -710,7 +723,9 @@
    "group": "dress",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1446"
+   "page": "http://www.makehumancommunity.org/node/1446",
+   "folder": "dress02/clothes/elvs_ladies_apron",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_sarong_cover_up",
@@ -750,7 +765,10 @@
    "group": "dress",
    "author": "Mindfront",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/565"
+   "page": "http://www.makehumancommunity.org/node/565",
+   "folder": "dress03/clothes/mindfront_ballet_dress_the_swan",
+   "file_licence": "CC BY 4.0",
+   "file_author": "Mindfront (Sweden)"
   },
   {
    "id": "mindfront_f_dress_01",
@@ -766,7 +784,10 @@
    "group": "dress",
    "author": "Mindfront",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/346"
+   "page": "http://www.makehumancommunity.org/node/346",
+   "folder": "dress03/clothes/mindfront_f_dress_02",
+   "file_licence": "CC BY 4.0",
+   "file_author": "Mindfront (Sweden)"
   },
   {
    "id": "mindfront_f_dress_03",
@@ -822,7 +843,10 @@
    "group": "dress",
    "author": "Mindfront",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1424"
+   "page": "http://www.makehumancommunity.org/node/1424",
+   "folder": "dress03/clothes/mindfront_f_dress_09",
+   "file_licence": "CC BY 4.0",
+   "file_author": "Mindfront (Sweden)"
   },
   {
    "id": "mindfront_f_dress_10",
@@ -2271,7 +2295,8 @@
    "group": "pants",
    "author": "Cortu",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/2800"
+   "page": "http://www.makehumancommunity.org/node/2800",
+   "folder": "pants01/clothes/cortu_jeans_shorts"
   },
   {
    "id": "toigo_harem_pants",
@@ -2311,7 +2336,9 @@
    "group": "pants",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/2583"
+   "page": "http://www.makehumancommunity.org/node/2583",
+   "folder": "pants02/clothes/elvs_disco_pants_skinny",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_gored_elephant_pants",
@@ -2431,7 +2458,10 @@
    "group": "pants",
    "author": "Mindfront",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/329"
+   "page": "http://www.makehumancommunity.org/node/329",
+   "folder": "pants03/clothes/mindfront_male_swimming_trunks_01",
+   "file_licence": "CC BY 4.0",
+   "file_author": "Mindfront (Sweden)"
   },
   {
    "id": "mindfront_male_swimming_trunks_02",
@@ -2479,7 +2509,9 @@
    "group": "shirts",
    "author": "namuhekam",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/2909"
+   "page": "http://www.makehumancommunity.org/node/2909",
+   "folder": "shirts01/clothes/namuhekam_male_polo_shirt",
+   "file_licence": "CC0"
   },
   {
    "id": "skalldyrssuppe_tube_top_funky_colors",
@@ -2696,7 +2728,9 @@
    "group": "shirts",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1431"
+   "page": "http://www.makehumancommunity.org/node/1431",
+   "folder": "shirts03/clothes/elvs_male_athletic_tank1",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_male_logo_tshirt1",
@@ -2776,7 +2810,9 @@
    "group": "shirts",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/459"
+   "page": "http://www.makehumancommunity.org/node/459",
+   "folder": "shirts03/clothes/punkduck_spaghetti_strap_tank_top",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_tube_top",
@@ -2936,7 +2972,10 @@
    "group": "shoes",
    "author": "MargaretToigo",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/1734"
+   "page": "http://www.makehumancommunity.org/node/1734",
+   "folder": "shoes01/clothes/toigo_ballet_flats",
+   "file_licence": "CC0",
+   "file_author": "MRT"
   },
   {
    "id": "toigo_ballet_flats_with_bows",
@@ -3136,7 +3175,9 @@
    "group": "shoes",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/438"
+   "page": "http://www.makehumancommunity.org/node/438",
+   "folder": "shoes02/clothes/punkduck_comfortable_sneakers",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_cycling_shoes",
@@ -3144,7 +3185,9 @@
    "group": "shoes",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/669"
+   "page": "http://www.makehumancommunity.org/node/669",
+   "folder": "shoes02/clothes/punkduck_cycling_shoes",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_kill_bill_shoes",
@@ -3160,7 +3203,9 @@
    "group": "shoes",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/570"
+   "page": "http://www.makehumancommunity.org/node/570",
+   "folder": "shoes02/clothes/punkduck_running_shoes_01",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_tennis_shoes",
@@ -3208,7 +3253,10 @@
    "group": "shoes",
    "author": "Mindfront",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/623"
+   "page": "http://www.makehumancommunity.org/node/623",
+   "folder": "shoes03/clothes/mindfront_shoes_biker_boots_female",
+   "file_licence": "CC BY 4.0",
+   "file_author": "Mindfront (Sweden)"
   },
   {
    "id": "mindfront_shoes_biker_boots_male",
@@ -3216,7 +3264,10 @@
    "group": "shoes",
    "author": "Mindfront",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/624"
+   "page": "http://www.makehumancommunity.org/node/624",
+   "folder": "shoes03/clothes/mindfront_shoes_biker_boots_male",
+   "file_licence": "CC BY 4.0",
+   "file_author": "Mindfront (Sweden)"
   },
   {
    "id": "punkduck_female_half-boots",
@@ -3344,7 +3395,9 @@
    "group": "skirts",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/2576"
+   "page": "http://www.makehumancommunity.org/node/2576",
+   "folder": "skirts02/clothes/elvs_gored_midi_skirt",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_pencil_skirt",
@@ -3352,7 +3405,9 @@
    "group": "skirts",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/2581"
+   "page": "http://www.makehumancommunity.org/node/2581",
+   "folder": "skirts02/clothes/elvs_pencil_skirt",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_pleated_plaid_mini_skirt",
@@ -3360,7 +3415,9 @@
    "group": "skirts",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1925"
+   "page": "http://www.makehumancommunity.org/node/1925",
+   "folder": "skirts02/clothes/elvs_pleated_plaid_mini_skirt",
+   "file_licence": "CC BY"
   },
   {
    "id": "mtknife_low_mini_skirt",
@@ -3424,7 +3481,9 @@
    "group": "skirts",
    "author": "sonicteam998",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/784"
+   "page": "http://www.makehumancommunity.org/node/784",
+   "folder": "skirts02/clothes/sonicteam998_maria_skirt",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "toigo_female_double-breasted_suit",
@@ -3761,7 +3820,10 @@
    "group": "suits",
    "author": "Mindfront",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/390"
+   "page": "http://www.makehumancommunity.org/node/390",
+   "folder": "suits03/clothes/mindfront_m_suit_01",
+   "file_licence": "CC BY 4.0",
+   "file_author": "Mindfront (Sweden)"
   },
   {
    "id": "punkduck_diver_suit",
@@ -3777,7 +3839,9 @@
    "group": "suits",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/855"
+   "page": "http://www.makehumancommunity.org/node/855",
+   "folder": "suits03/clothes/punkduck_short_bodysuit_female",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_tennis_dress",
@@ -3809,7 +3873,9 @@
    "group": "suits",
    "author": "TioMegamanX",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1604"
+   "page": "http://www.makehumancommunity.org/node/1604",
+   "folder": "suits03/clothes/tiomegamanx_skintight_body_suit_female",
+   "file_licence": "CC0"
   },
   {
    "id": "culturalibre_el_chapulin_colorado",
@@ -3817,7 +3883,8 @@
    "group": "suits",
    "author": "culturalibre",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/2876"
+   "page": "http://www.makehumancommunity.org/node/2876",
+   "refused": "someone else's character or film"
   },
   {
    "id": "culturalibre_hero_suit_4",
@@ -3825,7 +3892,9 @@
    "group": "suits",
    "author": "culturalibre",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/3282"
+   "page": "http://www.makehumancommunity.org/node/3282",
+   "folder": "suits04/clothes/culturalibre_hero_suit_4",
+   "file_licence": "CC BY"
   },
   {
    "id": "culturalibre_heroine_suit_5",
@@ -3833,7 +3902,9 @@
    "group": "suits",
    "author": "culturalibre",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/3364"
+   "page": "http://www.makehumancommunity.org/node/3364",
+   "folder": "suits04/clothes/culturalibre_heroine_suit_5",
+   "file_licence": "CC BY"
   },
   {
    "id": "culturalibre_heroine_suit_6",
@@ -3841,7 +3912,9 @@
    "group": "suits",
    "author": "culturalibre",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/3380"
+   "page": "http://www.makehumancommunity.org/node/3380",
+   "folder": "suits04/clothes/culturalibre_heroine_suit_6",
+   "file_licence": "CC BY"
   },
   {
    "id": "culturalibre_heroine_suit_7",
@@ -3849,7 +3922,9 @@
    "group": "suits",
    "author": "culturalibre",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/3387"
+   "page": "http://www.makehumancommunity.org/node/3387",
+   "folder": "suits04/clothes/culturalibre_heroine_suit_7",
+   "file_licence": "CC BY"
   },
   {
    "id": "culturalibre_male_sport_suit",
@@ -3857,7 +3932,9 @@
    "group": "suits",
    "author": "culturalibre",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/3001"
+   "page": "http://www.makehumancommunity.org/node/3001",
+   "folder": "suits04/clothes/culturalibre_male_sport_suit",
+   "file_licence": "CC BY"
   },
   {
    "id": "culturalibre_heroine_suit_1",
@@ -3865,7 +3942,9 @@
    "group": "suits",
    "author": "culturalibre",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/2145"
+   "page": "http://www.makehumancommunity.org/node/2145",
+   "folder": "suits05/clothes/culturalibre_heroine_suit_1",
+   "file_licence": "CC0"
   },
   {
    "id": "culturalibre_heroine_suit_3",
@@ -3873,7 +3952,9 @@
    "group": "suits",
    "author": "culturalibre",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/2469"
+   "page": "http://www.makehumancommunity.org/node/2469",
+   "folder": "suits05/clothes/culturalibre_heroine_suit_3",
+   "file_licence": "CC0"
   },
   {
    "id": "culturalibre_heroine_suit_4",
@@ -3881,7 +3962,9 @@
    "group": "suits",
    "author": "culturalibre",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/2855"
+   "page": "http://www.makehumancommunity.org/node/2855",
+   "folder": "suits05/clothes/culturalibre_heroine_suit_4",
+   "file_licence": "CC0"
   },
   {
    "id": "kwnet_at_pantyhose01",
@@ -3889,7 +3972,8 @@
    "group": "underwear",
    "author": "kwnet_at",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/927"
+   "page": "http://www.makehumancommunity.org/node/927",
+   "refused": "its file says \"AGPL3 (see also http://www.makehuman.org/doc/node/external_tools_license.html)\", its page CC0"
   },
   {
    "id": "marco_105_armsleeve02",
@@ -3897,7 +3981,8 @@
    "group": "underwear",
    "author": "Marco_105",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/352"
+   "page": "http://www.makehumancommunity.org/node/352",
+   "refused": "its file says \"AGPL3 (see also http://www.makehuman.org/doc/node/external_tools_license.html)\", its page CC0"
   },
   {
    "id": "marco_105_stocking01",
@@ -3905,7 +3990,8 @@
    "group": "underwear",
    "author": "Marco_105",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/348"
+   "page": "http://www.makehumancommunity.org/node/348",
+   "refused": "its file says \"AGPL3 (see also http://www.makehuman.org/doc/node/external_tools_license.html)\", its page CC0"
   },
   {
    "id": "marco_105_stocking02",
@@ -3913,7 +3999,8 @@
    "group": "underwear",
    "author": "Marco_105",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/349"
+   "page": "http://www.makehumancommunity.org/node/349",
+   "refused": "its file says \"AGPL3 (see also http://www.makehuman.org/doc/node/external_tools_license.html)\", its page CC0"
   },
   {
    "id": "punkduck_strappy_lace_thong",
@@ -3921,7 +4008,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/1166"
+   "page": "http://www.makehumancommunity.org/node/1166",
+   "folder": "underwear01/clothes/punkduck_strappy_lace_thong",
+   "file_licence": "CC BY 4.0"
   },
   {
    "id": "v0rt3x_armsleeves_black_fishnet_large",
@@ -3929,7 +4018,9 @@
    "group": "underwear",
    "author": "V0rT3X",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/305"
+   "page": "http://www.makehumancommunity.org/node/305",
+   "folder": "underwear01/clothes/v0rt3x_armsleeves_black_fishnet_large",
+   "file_licence": "CC0"
   },
   {
    "id": "v0rt3x_armsleeves_black_fishnet_medium",
@@ -3937,7 +4028,9 @@
    "group": "underwear",
    "author": "V0rT3X",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/304"
+   "page": "http://www.makehumancommunity.org/node/304",
+   "folder": "underwear01/clothes/v0rt3x_armsleeves_black_fishnet_medium",
+   "file_licence": "CC0"
   },
   {
    "id": "v0rt3x_armsleeves_black_fishnet_small",
@@ -3945,7 +4038,9 @@
    "group": "underwear",
    "author": "V0rT3X",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/303"
+   "page": "http://www.makehumancommunity.org/node/303",
+   "folder": "underwear01/clothes/v0rt3x_armsleeves_black_fishnet_small",
+   "file_licence": "CC0"
   },
   {
    "id": "v0rt3x_armsleeves_white_fishnet_large",
@@ -3953,7 +4048,9 @@
    "group": "underwear",
    "author": "V0rT3X",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/302"
+   "page": "http://www.makehumancommunity.org/node/302",
+   "folder": "underwear01/clothes/v0rt3x_armsleeves_white_fishnet_large",
+   "file_licence": "CC0"
   },
   {
    "id": "v0rt3x_armsleeves_white_fishnet_medium",
@@ -3961,7 +4058,9 @@
    "group": "underwear",
    "author": "V0rT3X",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/301"
+   "page": "http://www.makehumancommunity.org/node/301",
+   "folder": "underwear01/clothes/v0rt3x_armsleeves_white_fishnet_medium",
+   "file_licence": "CC0"
   },
   {
    "id": "v0rt3x_armsleeves_white_fishnet_small",
@@ -3969,7 +4068,9 @@
    "group": "underwear",
    "author": "V0rT3X",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/300"
+   "page": "http://www.makehumancommunity.org/node/300",
+   "folder": "underwear01/clothes/v0rt3x_armsleeves_white_fishnet_small",
+   "file_licence": "CC0"
   },
   {
    "id": "v0rt3x_stockings_black_fishnet_large",
@@ -3977,7 +4078,9 @@
    "group": "underwear",
    "author": "V0rT3X",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/296"
+   "page": "http://www.makehumancommunity.org/node/296",
+   "folder": "underwear01/clothes/v0rt3x_stockings_black_fishnet_large",
+   "file_licence": "CC0"
   },
   {
    "id": "v0rt3x_stockings_black_fishnet_medium",
@@ -3985,7 +4088,9 @@
    "group": "underwear",
    "author": "V0rT3X",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/295"
+   "page": "http://www.makehumancommunity.org/node/295",
+   "folder": "underwear01/clothes/v0rt3x_stockings_black_fishnet_medium",
+   "file_licence": "CC0"
   },
   {
    "id": "v0rt3x_stockings_black_fishnet_small",
@@ -3993,7 +4098,9 @@
    "group": "underwear",
    "author": "V0rT3X",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/294"
+   "page": "http://www.makehumancommunity.org/node/294",
+   "folder": "underwear01/clothes/v0rt3x_stockings_black_fishnet_small",
+   "file_licence": "CC0"
   },
   {
    "id": "v0rt3x_stockings_white_fishnet_large",
@@ -4001,7 +4108,9 @@
    "group": "underwear",
    "author": "V0rT3X",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/299"
+   "page": "http://www.makehumancommunity.org/node/299",
+   "folder": "underwear01/clothes/v0rt3x_stockings_white_fishnet_large",
+   "file_licence": "CC0"
   },
   {
    "id": "v0rt3x_stockings_white_fishnet_medium",
@@ -4009,7 +4118,9 @@
    "group": "underwear",
    "author": "V0rT3X",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/298"
+   "page": "http://www.makehumancommunity.org/node/298",
+   "folder": "underwear01/clothes/v0rt3x_stockings_white_fishnet_medium",
+   "file_licence": "CC0"
   },
   {
    "id": "v0rt3x_stockings_white_fishnet_small",
@@ -4017,7 +4128,9 @@
    "group": "underwear",
    "author": "V0rT3X",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/297"
+   "page": "http://www.makehumancommunity.org/node/297",
+   "folder": "underwear01/clothes/v0rt3x_stockings_white_fishnet_small",
+   "file_licence": "CC0"
   },
   {
    "id": "wolgade_female_panties_01",
@@ -4025,7 +4138,9 @@
    "group": "underwear",
    "author": "wolgade",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/338"
+   "page": "http://www.makehumancommunity.org/node/338",
+   "folder": "underwear01/clothes/wolgade_female_panties_01",
+   "file_licence": "CC0"
   },
   {
    "id": "wolgade_female_top_01",
@@ -4033,7 +4148,9 @@
    "group": "underwear",
    "author": "wolgade",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/339"
+   "page": "http://www.makehumancommunity.org/node/339",
+   "folder": "underwear01/clothes/wolgade_female_top_01",
+   "file_licence": "CC0"
   },
   {
    "id": "elvs_bow_bottom_panty",
@@ -4041,7 +4158,9 @@
    "group": "underwear",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1665"
+   "page": "http://www.makehumancommunity.org/node/1665",
+   "folder": "underwear02/clothes/elvs_bow_bottom_panty",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_bow_front_bra",
@@ -4049,7 +4168,9 @@
    "group": "underwear",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1666"
+   "page": "http://www.makehumancommunity.org/node/1666",
+   "folder": "underwear02/clothes/elvs_bow_front_bra",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_crude_bootyshorts",
@@ -4057,7 +4178,9 @@
    "group": "underwear",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1718"
+   "page": "http://www.makehumancommunity.org/node/1718",
+   "folder": "underwear02/clothes/elvs_crude_bootyshorts",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_lace_panty",
@@ -4065,7 +4188,9 @@
    "group": "underwear",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1931"
+   "page": "http://www.makehumancommunity.org/node/1931",
+   "folder": "underwear02/clothes/elvs_lace_panty",
+   "file_licence": "CC BY"
   },
   {
    "id": "jaldmic_stockings",
@@ -4073,7 +4198,8 @@
    "group": "underwear",
    "author": "JALdMIC",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/3011"
+   "page": "http://www.makehumancommunity.org/node/3011",
+   "refused": "its file says \"AGPL3 (see also http://www.makehuman.org/doc/node/external_tools_license.html)\", its page CC-BY"
   },
   {
    "id": "mindfront_bikini_01",
@@ -4081,7 +4207,10 @@
    "group": "underwear",
    "author": "Mindfront",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/336"
+   "page": "http://www.makehumancommunity.org/node/336",
+   "folder": "underwear02/clothes/mindfront_bikini_01",
+   "file_licence": "CC BY 4.0",
+   "file_author": "Mindfront (Sweden)"
   },
   {
    "id": "punkduck_babydoll",
@@ -4089,7 +4218,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/406"
+   "page": "http://www.makehumancommunity.org/node/406",
+   "folder": "underwear02/clothes/punkduck_babydoll",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_bandeau_bikini_bra",
@@ -4097,7 +4228,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/460"
+   "page": "http://www.makehumancommunity.org/node/460",
+   "folder": "underwear02/clothes/punkduck_bandeau_bikini_bra",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_bandeau_bikini_slip",
@@ -4105,7 +4238,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/461"
+   "page": "http://www.makehumancommunity.org/node/461",
+   "folder": "underwear02/clothes/punkduck_bandeau_bikini_slip",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_bandeau_bra",
@@ -4113,7 +4248,8 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/385"
+   "page": "http://www.makehumancommunity.org/node/385",
+   "refused": "its file says \"AGPL3 (see also http://www.makehuman.org/doc/node/external_tools_license.html)\", its page CC-BY"
   },
   {
    "id": "punkduck_bikini02_bra",
@@ -4121,7 +4257,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/513"
+   "page": "http://www.makehumancommunity.org/node/513",
+   "folder": "underwear02/clothes/punkduck_bikini02_bra",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_bikini02_slip",
@@ -4129,7 +4267,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/514"
+   "page": "http://www.makehumancommunity.org/node/514",
+   "folder": "underwear02/clothes/punkduck_bikini02_slip",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_brazilian_bikini_bra",
@@ -4137,7 +4277,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/429"
+   "page": "http://www.makehumancommunity.org/node/429",
+   "folder": "underwear02/clothes/punkduck_brazilian_bikini_bra",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_brazilian_bikini_slip",
@@ -4145,7 +4287,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/430"
+   "page": "http://www.makehumancommunity.org/node/430",
+   "folder": "underwear02/clothes/punkduck_brazilian_bikini_slip",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_french_lingerie_bra",
@@ -4153,7 +4297,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/470"
+   "page": "http://www.makehumancommunity.org/node/470",
+   "folder": "underwear02/clothes/punkduck_french_lingerie_bra",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_french_lingerie_mini_briefs",
@@ -4161,7 +4307,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/471"
+   "page": "http://www.makehumancommunity.org/node/471",
+   "folder": "underwear02/clothes/punkduck_french_lingerie_mini_briefs",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_french_lingerie_stockings",
@@ -4169,7 +4317,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/932"
+   "page": "http://www.makehumancommunity.org/node/932",
+   "folder": "underwear02/clothes/punkduck_french_lingerie_stockings",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_french_lingerie_suspender_belt",
@@ -4177,7 +4327,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/930"
+   "page": "http://www.makehumancommunity.org/node/930",
+   "folder": "underwear02/clothes/punkduck_french_lingerie_suspender_belt",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_french_lingerie_thong",
@@ -4185,7 +4337,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1064"
+   "page": "http://www.makehumancommunity.org/node/1064",
+   "folder": "underwear02/clothes/punkduck_french_lingerie_thong",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_frill_bikini_bottom",
@@ -4209,7 +4363,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1225"
+   "page": "http://www.makehumancommunity.org/node/1225",
+   "folder": "underwear02/clothes/punkduck_sport_bra",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_sport_briefs",
@@ -4217,7 +4373,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/749"
+   "page": "http://www.makehumancommunity.org/node/749",
+   "folder": "underwear02/clothes/punkduck_sport_briefs",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_string_2",
@@ -4225,7 +4383,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/404"
+   "page": "http://www.makehumancommunity.org/node/404",
+   "folder": "underwear02/clothes/punkduck_string_2",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_string_4",
@@ -4233,7 +4393,8 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/387"
+   "page": "http://www.makehumancommunity.org/node/387",
+   "refused": "its file says \"AGPL3 (see also http://www.makehuman.org/doc/node/external_tools_license.html)\", its page CC-BY"
   },
   {
    "id": "punkduck_string_5",
@@ -4241,7 +4402,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/542"
+   "page": "http://www.makehumancommunity.org/node/542",
+   "folder": "underwear02/clothes/punkduck_string_5",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_teddy_erotic_lingerie",
@@ -4249,7 +4412,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/424"
+   "page": "http://www.makehumancommunity.org/node/424",
+   "folder": "underwear02/clothes/punkduck_teddy_erotic_lingerie",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_transparent_bra",
@@ -4257,7 +4422,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/405"
+   "page": "http://www.makehumancommunity.org/node/405",
+   "folder": "underwear02/clothes/punkduck_transparent_bra",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "elvs_all_tied_up_bikini",
@@ -4265,7 +4432,9 @@
    "group": "underwear",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1492"
+   "page": "http://www.makehumancommunity.org/node/1492",
+   "folder": "underwear03/clothes/elvs_all_tied_up_bikini",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_bandeau_swimwear_top_1",
@@ -4273,7 +4442,9 @@
    "group": "underwear",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1956"
+   "page": "http://www.makehumancommunity.org/node/1956",
+   "folder": "underwear03/clothes/elvs_bandeau_swimwear_top_1",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_camisole1",
@@ -4281,7 +4452,9 @@
    "group": "underwear",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1930"
+   "page": "http://www.makehumancommunity.org/node/1930",
+   "folder": "underwear03/clothes/elvs_camisole1",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_swimwear_micro_shorts",
@@ -4289,7 +4462,9 @@
    "group": "underwear",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1957"
+   "page": "http://www.makehumancommunity.org/node/1957",
+   "folder": "underwear03/clothes/elvs_swimwear_micro_shorts",
+   "file_licence": "CC BY"
   },
   {
    "id": "elvs_vintage_swimwear1_50s_strapless",
@@ -4297,7 +4472,9 @@
    "group": "underwear",
    "author": "Elvaerwyn",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1495"
+   "page": "http://www.makehumancommunity.org/node/1495",
+   "folder": "underwear03/clothes/elvs_vintage_swimwear1_50s_strapless",
+   "file_licence": "CC BY"
   },
   {
    "id": "joepal_plain_bra",
@@ -4305,7 +4482,10 @@
    "group": "underwear",
    "author": "Joel Palmius",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/3384"
+   "page": "http://www.makehumancommunity.org/node/3384",
+   "folder": "underwear03/clothes/joepal_plain_bra",
+   "file_licence": "CC0",
+   "file_author": "unknown"
   },
   {
    "id": "mindfront_f_one-piece_swimsuit_01",
@@ -4313,7 +4493,10 @@
    "group": "underwear",
    "author": "Mindfront",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/331"
+   "page": "http://www.makehumancommunity.org/node/331",
+   "folder": "underwear03/clothes/mindfront_f_one-piece_swimsuit_01",
+   "file_licence": "CC BY 4.0",
+   "file_author": "Mindfront (Sweden)"
   },
   {
    "id": "punkduck_female_strapless_bodysuit",
@@ -4321,7 +4504,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/816"
+   "page": "http://www.makehumancommunity.org/node/816",
+   "folder": "underwear03/clothes/punkduck_female_strapless_bodysuit",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_halterneck_romper",
@@ -4329,7 +4514,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/803"
+   "page": "http://www.makehumancommunity.org/node/803",
+   "folder": "underwear03/clothes/punkduck_halterneck_romper",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "punkduck_one_piece_bikini01",
@@ -4337,7 +4524,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/1483"
+   "page": "http://www.makehumancommunity.org/node/1483",
+   "folder": "underwear03/clothes/punkduck_one_piece_bikini01",
+   "file_licence": "CC BY 4.0"
   },
   {
    "id": "punkduck_shapewear",
@@ -4345,7 +4534,9 @@
    "group": "underwear",
    "author": "punkduck",
    "licence": "CC-BY",
-   "page": "http://www.makehumancommunity.org/node/555"
+   "page": "http://www.makehumancommunity.org/node/555",
+   "folder": "underwear03/clothes/punkduck_shapewear",
+   "file_licence": "CC BY 3.0"
   },
   {
    "id": "joepal_crude_high_socks",
@@ -4353,7 +4544,9 @@
    "group": "underwear",
    "author": "Joel Palmius",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/25"
+   "page": "http://www.makehumancommunity.org/node/25",
+   "folder": "underwear04/clothes/joepal_crude_high_socks",
+   "file_licence": "CC0"
   },
   {
    "id": "joepal_crude_low_socks",
@@ -4361,7 +4554,9 @@
    "group": "underwear",
    "author": "Joel Palmius",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/32"
+   "page": "http://www.makehumancommunity.org/node/32",
+   "folder": "underwear04/clothes/joepal_crude_low_socks",
+   "file_licence": "CC0"
   },
   {
    "id": "toigo_lace_frill_socks",
@@ -4369,7 +4564,10 @@
    "group": "underwear",
    "author": "MargaretToigo",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/1078"
+   "page": "http://www.makehumancommunity.org/node/1078",
+   "folder": "underwear04/clothes/toigo_lace_frill_socks",
+   "file_licence": "CC0",
+   "file_author": "MRT"
   },
   {
    "id": "toigo_leg_warmer_socks",
@@ -4377,7 +4575,10 @@
    "group": "underwear",
    "author": "MargaretToigo",
    "licence": "CC0",
-   "page": "http://www.makehumancommunity.org/node/1092"
+   "page": "http://www.makehumancommunity.org/node/1092",
+   "folder": "underwear04/clothes/toigo_leg_warmer_socks",
+   "file_licence": "CC0",
+   "file_author": "MRT"
   }
  ]
 }

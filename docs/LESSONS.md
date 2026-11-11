@@ -9,6 +9,11 @@ the fix.
   five minutes, with no progress line to show it. **A download tool written where the server can't be reached gets
   three things from the start**: progress with a speed, the smallest unit the user can want (a garment, not a pack:
   a zip on a server can be read by byte ranges, its list of files first), and a few connections at a time.
+- **Two mirrors: time both before the user waits on one.** The pack pages call `files2` the primary; it gave 100 KB/s
+  where the second, `files`, gave megabytes. The tool took them in the page's order.
+- **Read the files' own licence lines before anything is committed.** Seven of 98 picked garments said AGPL3 in their
+  header where their page said CC0 or CC-BY, and one costume was a television character's by its name and emblem: the
+  scan after the fetch found the first, the thumbnail sheet the second. Both checks belong before `git add`.
 - A test server for it is thirty lines of `http.server`; the first run of the test failed on its own byte budget (the
   zip's end read first was a megabyte, most of a small test pack). Budgets in a test are worked out from the made-up
   file's sizes, not guessed.

@@ -50,7 +50,6 @@ packs (the catalogue marks them `refused`).
 |  | `culturalibre_leather_bracelet` | jewelry | culturalibre | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/2552) | jewelry02 |
 |  | `culturalibre_bandana_mask` | masks | culturalibre | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/2483) | masks02 |
 |  | `culturalibre_sneakers` | shoes | culturalibre | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/2555) | shoes02 |
-|  | `culturalibre_el_chapulin_colorado` | suits | culturalibre | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/2876) | suits04 |
 |  | `culturalibre_hero_suit_4` | suits | culturalibre | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/3282) | suits04 |
 |  | `culturalibre_heroine_suit_5` | suits | culturalibre | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/3364) | suits04 |
 |  | `culturalibre_heroine_suit_6` | suits | culturalibre | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/3380) | suits04 |
@@ -187,9 +186,8 @@ packs (the catalogue marks them `refused`).
 |  | `jaldmic_m1951_72` | hats | JALdMIC | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/2942) | hats04 |
 |  | `jaldmic_ankh_collar` | jewelry | JALdMIC | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/2994) | jewelry02 |
 |  | `jaldmic_no_heart_enchanted_gemstone` | jewelry | JALdMIC | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/3312) | jewelry02 |
-|  | `jaldmic_stockings` | underwear | JALdMIC | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/3011) | underwear02 |
 |  | `janexx_old_female_sweater` | shirts | janexx | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/2767) | shirts02 |
-|  | `joepal_plain_bra` | underwear | Joel Palmius | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/3384) | underwear03 |
+|  | `joepal_plain_bra` | underwear | unknown | CC-BY (its page; its file says CC0) | [page](http://www.makehumancommunity.org/node/3384) | underwear03 |
 |  | `maciekg_hammer` | equipment | MaciekG | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1488) | equipment02 |
 |  | `maciekg_short_bow` | equipment | MaciekG | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1465) | equipment02 |
 |  | `maciekg_horned_helmet` | hats | MaciekG | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1487) | hats04 |
@@ -199,16 +197,16 @@ packs (the catalogue marks them `refused`).
 |  | `maciekg_wizard_robe` | suits | MaciekG | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1482) | suits03 |
 |  | `madmanny_tight_leather_boots` | shoes | madmanny | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1448) | shoes03 |
 |  | `gredal_gas_mask` | masks | Mathias_Gredal | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/2715) | masks02 |
-|  | `mindfront_ballet_dress_the_swan` | dress | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/565) | dress03 |
+|  | `mindfront_ballet_dress_the_swan` | dress | Mindfront (Sweden) | CC BY 4.0 | [page](http://www.makehumancommunity.org/node/565) | dress03 |
 |  | `mindfront_f_dress_01` | dress | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/343) | dress03 |
-|  | `mindfront_f_dress_02` | dress | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/346) | dress03 |
+|  | `mindfront_f_dress_02` | dress | Mindfront (Sweden) | CC BY 4.0 | [page](http://www.makehumancommunity.org/node/346) | dress03 |
 |  | `mindfront_f_dress_03` | dress | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/354) | dress03 |
 |  | `mindfront_f_dress_04` | dress | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/386) | dress03 |
 |  | `mindfront_f_dress_05` | dress | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1234) | dress03 |
 |  | `mindfront_f_dress_06` | dress | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1236) | dress03 |
 |  | `mindfront_f_dress_07` | dress | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1277) | dress03 |
 |  | `mindfront_f_dress_08` | dress | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1422) | dress03 |
-|  | `mindfront_f_dress_09` | dress | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1424) | dress03 |
+|  | `mindfront_f_dress_09` | dress | Mindfront (Sweden) | CC BY 4.0 | [page](http://www.makehumancommunity.org/node/1424) | dress03 |
 |  | `mindfront_f_dress_10` | dress | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1426) | dress03 |
 |  | `mindfront_f_dress_11` | dress | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1703) | dress03 |
 |  | `mindfront_tactical_vest_female` | equipment | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/847) | equipment03 |
@@ -219,7 +217,7 @@ packs (the catalogue marks them `refused`).
 |  | `mindfront_patrol_cap` | hats | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/841) | hats03 |
 |  | `mindfront_sherpa_hat` | hats | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/3172) | hats03 |
 |  | `mindfront_female_trousers_1` | pants | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/790) | pants02 |
-|  | `mindfront_male_swimming_trunks_01` | pants | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/329) | pants03 |
+|  | `mindfront_male_swimming_trunks_01` | pants | Mindfront (Sweden) | CC BY 4.0 | [page](http://www.makehumancommunity.org/node/329) | pants03 |
 |  | `mindfront_male_swimming_trunks_02` | pants | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/340) | pants03 |
 |  | `mindfront_male_swimming_trunks_03` | pants | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/851) | pants03 |
 |  | `mindfront_male_trousers_1` | pants | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/746) | pants02 |
@@ -229,16 +227,16 @@ packs (the catalogue marks them `refused`).
 |  | `mindfront_knitted_sweater_02` | shirts | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/661) | shirts02 |
 |  | `mindfront_lusekofta` | shirts | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1527) | shirts02 |
 |  | `mindfront_tank_top_01` | shirts | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/341) | shirts03 |
-|  | `mindfront_shoes_biker_boots_female` | shoes | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/623) | shoes03 |
-|  | `mindfront_shoes_biker_boots_male` | shoes | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/624) | shoes03 |
+|  | `mindfront_shoes_biker_boots_female` | shoes | Mindfront (Sweden) | CC BY 4.0 | [page](http://www.makehumancommunity.org/node/623) | shoes03 |
+|  | `mindfront_shoes_biker_boots_male` | shoes | Mindfront (Sweden) | CC BY 4.0 | [page](http://www.makehumancommunity.org/node/624) | shoes03 |
 |  | `mindfront_shoes_monk_strap_female` | shoes | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/621) | shoes02 |
 |  | `mindfront_shoes_monk_strap_male` | shoes | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/622) | shoes02 |
 |  | `mindfront_shoes_oxford_female` | shoes | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/619) | shoes02 |
 |  | `mindfront_shoes_oxford_male` | shoes | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/620) | shoes02 |
 |  | `mindfront_f_ninja` | suits | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/896) | suits03 |
-|  | `mindfront_m_suit_01` | suits | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/390) | suits03 |
-|  | `mindfront_bikini_01` | underwear | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/336) | underwear02 |
-|  | `mindfront_f_one-piece_swimsuit_01` | underwear | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/331) | underwear03 |
+|  | `mindfront_m_suit_01` | suits | Mindfront (Sweden) | CC BY 4.0 | [page](http://www.makehumancommunity.org/node/390) | suits03 |
+|  | `mindfront_bikini_01` | underwear | Mindfront (Sweden) | CC BY 4.0 | [page](http://www.makehumancommunity.org/node/336) | underwear02 |
+|  | `mindfront_f_one-piece_swimsuit_01` | underwear | Mindfront (Sweden) | CC BY 4.0 | [page](http://www.makehumancommunity.org/node/331) | underwear03 |
 |  | `mtknife_low_mini_skirt` | skirts | MTKnife | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/142) | skirts02 |
 |  | `mtknife_pleated_mini_skirt` | skirts | MTKnife | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1961) | skirts02 |
 |  | `punkduck_black_cocktail_dress` | dress | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/379) | dress03 |
@@ -282,17 +280,17 @@ packs (the catalogue marks them `refused`).
 |  | `punkduck_retro_top` | shirts | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/781) | shirts03 |
 |  | `punkduck_sleeveless_crop_top` | shirts | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/925) | shirts03 |
 |  | `punkduck_sleeveless_shirt` | shirts | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/440) | shirts03 |
-|  | `punkduck_spaghetti_strap_tank_top` | shirts | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/459) | shirts03 |
+|  | `punkduck_spaghetti_strap_tank_top` | shirts | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/459) | shirts03 |
 |  | `punkduck_tube_top` | shirts | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/420) | shirts03 |
 |  | `punkduck_v_neck_top` | shirts | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/419) | shirts03 |
-|  | `punkduck_comfortable_sneakers` | shoes | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/438) | shoes02 |
-|  | `punkduck_cycling_shoes` | shoes | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/669) | shoes02 |
+|  | `punkduck_comfortable_sneakers` | shoes | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/438) | shoes02 |
+|  | `punkduck_cycling_shoes` | shoes | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/669) | shoes02 |
 |  | `punkduck_female_half-boots` | shoes | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/958) | shoes03 |
 |  | `punkduck_female_knee_boots` | shoes | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/817) | shoes03 |
 |  | `punkduck_kill_bill_shoes` | shoes | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/837) | shoes02 |
 |  | `punkduck_medieval_boots` | shoes | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1381) | shoes03 |
 |  | `punkduck_riding_boots` | shoes | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1566) | shoes03 |
-|  | `punkduck_running_shoes_01` | shoes | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/570) | shoes02 |
+|  | `punkduck_running_shoes_01` | shoes | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/570) | shoes02 |
 |  | `punkduck_tennis_shoes` | shoes | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/748) | shoes02 |
 |  | `punkduck_winter_boots` | shoes | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/444) | shoes03 |
 |  | `punkduck_black_mini_skirt` | skirts | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/421) | skirts02 |
@@ -300,40 +298,39 @@ packs (the catalogue marks them `refused`).
 |  | `punkduck_retro_polka_dot_skirt` | skirts | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/780) | skirts02 |
 |  | `punkduck_skirt_native_american_fashion` | skirts | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/923) | skirts02 |
 |  | `punkduck_diver_suit` | suits | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1274) | suits03 |
-|  | `punkduck_short_bodysuit_female` | suits | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/855) | suits03 |
+|  | `punkduck_short_bodysuit_female` | suits | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/855) | suits03 |
 |  | `punkduck_tennis_dress` | suits | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/747) | suits03 |
 |  | `punkduck_triathlon_suit_female` | suits | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/668) | suits03 |
 |  | `punkduck_wetsuit` | suits | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/662) | suits03 |
-|  | `punkduck_babydoll` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/406) | underwear02 |
-|  | `punkduck_bandeau_bikini_bra` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/460) | underwear02 |
-|  | `punkduck_bandeau_bikini_slip` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/461) | underwear02 |
-|  | `punkduck_bandeau_bra` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/385) | underwear02 |
-|  | `punkduck_bikini02_bra` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/513) | underwear02 |
-|  | `punkduck_bikini02_slip` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/514) | underwear02 |
-|  | `punkduck_brazilian_bikini_bra` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/429) | underwear02 |
-|  | `punkduck_brazilian_bikini_slip` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/430) | underwear02 |
-|  | `punkduck_female_strapless_bodysuit` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/816) | underwear03 |
-|  | `punkduck_french_lingerie_bra` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/470) | underwear02 |
-|  | `punkduck_french_lingerie_mini_briefs` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/471) | underwear02 |
-|  | `punkduck_french_lingerie_stockings` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/932) | underwear02 |
-|  | `punkduck_french_lingerie_suspender_belt` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/930) | underwear02 |
-|  | `punkduck_french_lingerie_thong` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1064) | underwear02 |
+|  | `punkduck_babydoll` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/406) | underwear02 |
+|  | `punkduck_bandeau_bikini_bra` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/460) | underwear02 |
+|  | `punkduck_bandeau_bikini_slip` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/461) | underwear02 |
+|  | `punkduck_bikini02_bra` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/513) | underwear02 |
+|  | `punkduck_bikini02_slip` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/514) | underwear02 |
+|  | `punkduck_brazilian_bikini_bra` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/429) | underwear02 |
+|  | `punkduck_brazilian_bikini_slip` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/430) | underwear02 |
+|  | `punkduck_female_strapless_bodysuit` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/816) | underwear03 |
+|  | `punkduck_french_lingerie_bra` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/470) | underwear02 |
+|  | `punkduck_french_lingerie_mini_briefs` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/471) | underwear02 |
+|  | `punkduck_french_lingerie_stockings` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/932) | underwear02 |
+|  | `punkduck_french_lingerie_suspender_belt` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/930) | underwear02 |
+|  | `punkduck_french_lingerie_thong` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/1064) | underwear02 |
 |  | `punkduck_frill_bikini_bottom` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1504) | underwear02 |
 |  | `punkduck_frill_bikini_top` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1505) | underwear02 |
-|  | `punkduck_halterneck_romper` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/803) | underwear03 |
-|  | `punkduck_one_piece_bikini01` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1483) | underwear03 |
-|  | `punkduck_shapewear` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/555) | underwear03 |
-|  | `punkduck_sport_bra` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1225) | underwear02 |
-|  | `punkduck_sport_briefs` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/749) | underwear02 |
-|  | `punkduck_string_2` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/404) | underwear02 |
-|  | `punkduck_string_4` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/387) | underwear02 |
-|  | `punkduck_string_5` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/542) | underwear02 |
-|  | `punkduck_teddy_erotic_lingerie` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/424) | underwear02 |
-|  | `punkduck_transparent_bra` | underwear | punkduck | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/405) | underwear02 |
+|  | `punkduck_halterneck_romper` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/803) | underwear03 |
+|  | `punkduck_one_piece_bikini01` | underwear | punkduck | CC BY 4.0 | [page](http://www.makehumancommunity.org/node/1483) | underwear03 |
+|  | `punkduck_shapewear` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/555) | underwear03 |
+|  | `punkduck_sport_bra` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/1225) | underwear02 |
+|  | `punkduck_sport_briefs` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/749) | underwear02 |
+|  | `punkduck_strappy_lace_thong` | underwear | punkduck | CC BY 4.0 (its page says CC0) | [page](http://www.makehumancommunity.org/node/1166) | underwear01 |
+|  | `punkduck_string_2` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/404) | underwear02 |
+|  | `punkduck_string_5` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/542) | underwear02 |
+|  | `punkduck_teddy_erotic_lingerie` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/424) | underwear02 |
+|  | `punkduck_transparent_bra` | underwear | punkduck | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/405) | underwear02 |
 |  | `scailman_low-heeled_boots` | shoes | scailman | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/853) | shoes03 |
 |  | `scsouza_mini_denin_skirt` | skirts | scsouza | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/293) | skirts02 |
-|  | `sonicteam998_maria_skirt` | skirts | sonicteam998 | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/784) | skirts02 |
-|  | `tiomegamanx_skintight_body_suit_female` | suits | TioMegamanX | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1604) | suits03 |
+|  | `sonicteam998_maria_skirt` | skirts | sonicteam998 | CC BY 3.0 | [page](http://www.makehumancommunity.org/node/784) | skirts02 |
+|  | `tiomegamanx_skintight_body_suit_female` | suits | TioMegamanX | CC-BY (its page; its file says CC0) | [page](http://www.makehumancommunity.org/node/1604) | suits03 |
 |  | `wojackowl_belly_piercing` | jewelry | WojackOWL | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/3470) | jewelry02 |
 
 <!-- /clothing -->

@@ -76,7 +76,7 @@ dont worry about making them wear a coat").
 
 **The clothing library** (`tools/clothing_library.py`, CLOTHLIB in check_all): the catalogue of MakeHuman's 40
 clothing packs is tracked (`Content/Studio/Clothes/library/index.json`, 491 things to wear), docs/CREDITS.md lists the
-297 CC-BY ones, and every character export writes its own `CREDITS.md` (`storykit/clothcredits.py`). **The 2.6 GB of
+CC-BY ones (294 after the refusals below), and every character export writes its own `CREDITS.md` (`storykit/clothcredits.py`). **The 2.6 GB of
 files are not downloaded yet**: the file servers are blocked from the Default cloud environment. Either the user runs
 `python tools/clothing_library.py fetch` on their machine, or a session is started on the cloud environment
 "HorrorEngine" (made 2026-11-11, it allows the two servers) and runs it there. After a fetch, `scan` writes each
@@ -85,13 +85,13 @@ against the real servers: its unpacking and scanning were tried on the system pa
 **The files stay out of git** (the user, 2026-11-11: "stick with the fetch"): `assets/clothing/` is ignored, so the
 download survives a switch of branch in the same folder; a pull request for this branch is open
 (tsukibii/HorrorEngine#24). **Their servers are slow** (3 MB in five minutes for the user), so the user picks: eighteen
-numbered sheets of every garment were sent (`clothing_library.py sheets` makes them again) and **the user picked 98**
-(`Content/Studio/Clothes/library/picks.json`: mostly underwear, swimwear and legwear, twelve suits, ten dresses, shoes,
-skirts; about 400 MB). **Next is the user's**: `uv run python tools/clothing_library.py fetch` on their machine gets
-only those, each cut out of its pack's zip on the server by byte ranges; then commit the `index.json` and
-`docs/CREDITS.md` the scan rewrites. Whatever it reports as not found by name comes back here to be put right. That ranged fetch
-has not met MakeHuman's servers either (tried on the real system pack served from this machine): if they give no
-ranges it falls back to whole packs and says so.
+numbered sheets of every garment were sent (`clothing_library.py sheets` makes them again) and **the user picked 98**.
+**90 of them are in git** (`assets/clothing/<pack>/clothes/<garment>/`, 486 MB, added with `git add -f`: the folder is
+still ignored, so later fetches stay out until added the same way), fetched in the cloud session once the user allowed
+`files.makehumancommunity.org` on the Default environment (the faster mirror, tried first now; byte ranges work).
+**Eight are held back** for the user's word: seven whose own file says AGPL3 where the page says CC0 or CC-BY (the old
+MakeClothes default line), and a television character's costume (DECISIONS 2026-11-11, the last). `picks.json` lists
+the 90. Next for these garments: the fit and layers into the Studio (they're still only worn by the prototype).
 
 **Next, by the user's answers**: (1) answered: yes; (2) the packs downloaded on their
 machine (`files.makehumancommunity.org`, or by MPFB2 in Blender); (3) then the build, in this order: the importer and

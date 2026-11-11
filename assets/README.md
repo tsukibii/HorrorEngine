@@ -31,4 +31,6 @@ is tracked; only this README is.
   the numbers on the sheets `sheets` makes; kept in `Content/Studio/Clothes/library/picks.json`), each cut out of its
   pack on the server, or every pack when nothing is picked (`--all`; `--licence cc0` or `cc-by` for one half, pack
   names for whole packs). What's tracked is the catalogue, `Content/Studio/Clothes/library/index.json` (every
-  garment's author, licence, page and pack), the picks, and `docs/CREDITS.md`. `$STUDIO_CLOTHING` puts the files somewhere else.
+  garment's author, licence, page and pack), the picks, `docs/CREDITS.md`, and **the picked garments themselves**
+  (DECISIONS 2026-11-11: 90 garments, 486 MB, added with `git add -f`; the folder is ignored, so a garment fetched
+  later is kept out of git until it's added the same way). `$STUDIO_CLOTHING` puts the files somewhere else.

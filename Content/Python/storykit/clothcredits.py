@@ -36,12 +36,25 @@ def catalogue():
     return {norm(x["id"]): x for x in json.loads(INDEX.read_text())["assets"]} if INDEX.exists() else {}
 
 
+def licence_of(x):
+    """a catalogued garment's licence: the stricter of what its page and its own file say. A file's CC BY with its
+    version wins; a page's CC-BY stands when the file says CC0 or nothing; anything else is given as the file writes it"""
+    f = x.get("file_licence") or ""
+    if f and not (f.startswith("CC BY") or f == "CC0"):
+        return f
+    if f.startswith("CC BY"):
+        return f
+    return "CC BY" if x.get("licence") == "CC-BY" else "CC0" if x else ""
+
+
 def garment(name, author="", licence="", folder="", cat=None):
     """one worn library garment for the credits: what its own file says (author, licence), filled in and given its
     page from the catalogue when a name of it (its own, its folder's) is there"""
     cat = catalogue() if cat is None else cat
     x = cat.get(norm(name)) or cat.get(norm(folder)) or {}
-    lic = tidy(licence) if licence else (x.get("file_licence") or ("CC0" if x.get("licence") == "CC0" else "CC BY" if x else ""))
+    lic = tidy(licence) if licence else licence_of(x)
+    if x and licence_of(x).startswith("CC BY") and not lic.startswith("CC BY") and lic == "CC0":
+        lic = licence_of(x)                                          # (a file that says CC0 where the page asks for credit: credited)
     return dict(name=name, author=author or x.get("file_author") or x.get("author", ""), licence=lic, page=x.get("page", ""), pack=x.get("pack", ""), refused=x.get("refused", ""))
 
 

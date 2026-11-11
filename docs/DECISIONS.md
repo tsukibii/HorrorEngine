@@ -78,6 +78,31 @@ The user's answers, newest first. They override the plan, the research and the d
     differ a little (the mirrors have `Elvs_Crochet_Baby_Doll1` for `elvs_crochet_baby_doll`). The fetch and the scan
     now take the exact name first, then the nearest in the pack (best pairs first, a folder to one garment), and say
     so (`taken as ...`); what still isn't found is listed with the names near it.
+- **"why is the download speed 100KB/s when I have 900mbps internet"**, then **"Can you just download them into our
+  branch yourself ? I dont mind commiting them up since its only 400mb"**, then **"I added it to the cloud environment.
+  note the new mirror is way faster"**. So:
+  - **The picked garments are in git**: `assets/clothing/<pack>/clothes/<garment>/`, 90 garments, 486 MB (more than
+    the 400 MB guessed from each pack's share: three of Mindfront's dresses are 25 to 50 MB each). The folder stays in
+    `.gitignore`; the picks were added with `git add -f`, so **anything fetched later is ignored** until it's added the
+    same way (the user's earlier "have it git ignore the newer fetched files").
+  - **The faster mirror is first**: `files.makehumancommunity.org` (the pages' second mirror) gave 3.5 MB/s from the
+    cloud session where the user had 100 KB/s from `files2`; `fetch` now tries it first (`--mirror files2` for the
+    other). The user allowed that host on the Default cloud environment; byte ranges work there: all 98 came in one
+    run, every folder found by its exact name.
+  - **Eight of the 98 picked are held back, not committed** (taken out of picks.json, marked refused in the catalogue):
+    - **Seven whose own file says AGPL3** where their page says CC0 or CC-BY: `kwnet_at_pantyhose01`,
+      `marco_105_armsleeve02`, `marco_105_stocking01`, `marco_105_stocking02`, `jaldmic_stockings`,
+      `punkduck_bandeau_bra`, `punkduck_string_4`. It is the line the old MakeClothes exporter wrote by default
+      ("# license AGPL3 (see also .../external_tools_license.html)") and the author's page is probably what they
+      meant, but a file that says AGPL isn't shipped on a guess. The user's call to overrule.
+    - **`culturalibre_el_chapulin_colorado`**: the costume of a television character (El Chapulín Colorado, its heart
+      emblem and antennae), someone else's character; `chapulin` is on the refuse list now.
+    - Kept, said to the user: `culturalibre_heroine_suit_7` is a blue top and a red skirt with a yellow hem, close to
+      a comic heroine's colours with no emblem.
+  - **The stricter licence is the one credited** (`storykit/clothcredits.py` `licence_of`): a file that says CC BY
+    where the page says CC0 is credited (`punkduck_strappy_lace_thong`, CC BY 4.0); a page that says CC-BY where the
+    file says CC0 is still credited (`joepal_plain_bra`, `tiomegamanx_skintight_body_suit_female`). docs/CREDITS.md
+    now carries each fetched garment's own licence version (27 CC BY 3.0, 11 CC BY 4.0, the rest no version).
 
 ## 2026-11-11, later (the user: the fitted outfits clip; clothing layers, a dissolve in Godot, main merged, our PBR sets, pantyhose, fishnets and socks)
 
