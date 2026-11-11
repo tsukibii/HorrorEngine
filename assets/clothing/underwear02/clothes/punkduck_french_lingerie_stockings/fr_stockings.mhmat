@@ -1,0 +1,33 @@
+# Material definition for pantyhose
+
+name fr_stockings
+description Fr_Stockings material
+ambientColor 0.521568627451 0.521568627451 0.521568627451
+diffuseColor 1.0 1.0 1.0
+specularColor 0.0941176470588 0.0941176470588 0.0941176470588
+shininess 0.1961
+emissiveColor 0.0 0.0 0.0
+opacity 1.0
+translucency 0.0
+
+shadeless False
+wireframe False
+transparent False
+alphaToCoverage True
+backfaceCull True
+depthless False
+
+castShadows True
+
+receiveShadows True
+
+diffuseTexture fr_stockings.png
+
+shaderConfig ambientOcclusion True
+shaderConfig normal False
+shaderConfig bump False
+shaderConfig displacement False
+shaderConfig vertexColors False
+shaderConfig spec False
+shaderConfig transparency True
+shaderConfig diffuse True

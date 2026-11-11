@@ -1,0 +1,33 @@
+# Material definition for BabyDollDark
+
+name BabyDollDark
+description BabyDoll-Dark material
+ambientColor 0.501960784314 0.501960784314 0.501960784314
+diffuseColor 1.0 1.0 1.0
+specularColor 0.164705882353 0.164705882353 0.164705882353
+shininess 0.8
+emissiveColor 0.0 0.0 0.0
+opacity 1.0
+translucency 0.0
+
+shadeless False
+wireframe False
+transparent True
+alphaToCoverage True
+backfaceCull False
+depthless False
+
+castShadows True
+
+receiveShadows True
+
+diffuseTexture babydoll.png
+
+shaderConfig ambientOcclusion True
+shaderConfig normal False
+shaderConfig bump False
+shaderConfig displacement False
+shaderConfig vertexColors False
+shaderConfig spec False
+shaderConfig transparency True
+shaderConfig diffuse True

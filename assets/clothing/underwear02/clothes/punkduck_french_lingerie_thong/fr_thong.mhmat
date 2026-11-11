@@ -1,0 +1,39 @@
+# Material definition for fr_thong
+
+name fr_thong
+description Fr_thong material
+ambientColor 0.796078431373 0.796078431373 0.796078431373
+diffuseColor 1.0 1.0 1.0
+specularColor 0.0549019607843 0.0549019607843 0.0549019607843
+shininess 0.1961
+emissiveColor 0.0 0.0 0.0
+opacity 1.0
+translucency 0.0
+
+shadeless False
+wireframe False
+transparent True
+alphaToCoverage True
+backfaceCull False
+depthless False
+
+castShadows True
+
+receiveShadows True
+
+diffuseTexture fr_thong.png
+normalmapTexture fr_thong_norm.png
+normalmapIntensity 1.0
+
+shader shaders/glsl/litsphere
+
+shaderParam litsphereTexture litspheres/lit_leather.png
+
+shaderConfig ambientOcclusion True
+shaderConfig normal True
+shaderConfig bump False
+shaderConfig displacement False
+shaderConfig vertexColors False
+shaderConfig spec False
+shaderConfig transparency True
+shaderConfig diffuse True
