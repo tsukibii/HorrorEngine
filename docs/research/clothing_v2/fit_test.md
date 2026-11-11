@@ -98,7 +98,7 @@ are credited in §6.
 | Their size | 630 to 11,150 points a garment as authored (quads, meant to be subdivided); community dresses up to 32,900 |
 | A fit | per garment, once: read 0.02 to 0.09 s, onto MHR's average 0.08 to 0.23 s; per body, once: 0.36 s; per garment on a body: across 0.01 to 0.04 s, out of the skin 0.11 to 0.30 s (3,195 and 11,152 points) |
 | Distance off the skin after the fit | medians from 4.5 mm (the office blouse) to 56 mm (a halter dress); never under 2.4 mm but for a few points at edges |
-| Bodies | every garment on at least one (the average or the feminine); fifteen on two to five; all seven bodies used; the pictures show average, feminine, masculine, slim feminine, slim masculine, full masculine |
+| Bodies | every garment on at least one (the average or the feminine); fifteen on two to five; all seven bodies used; the pictures show all seven (the full ones in `fit_bodies.jpg`) |
 
 ## 5. What it doesn't do yet
 
@@ -108,7 +108,7 @@ Each of these is visible in the pictures, and each has an answer in `fit_and_ski
   (`fit_styles.jpg`, third row); a skirt's waistband crosses a sweater's hem. The tailor's rule (each garment starts
   from how far the ones under it stand off the skin) is the answer: one cover height per skin point, shared by cut and
   imported garments.
-- **Bridging.** On the full bodies a suit follows the belly's folds, and a skirt dips between the thighs. Loose
+- **Bridging.** On the full bodies a suit follows the belly's folds, and a skirt dips between the thighs (`fit_bodies.jpg`). Loose
   garments should lie on the body's bridged outline (the tailor's `bridge`), and skirts and coats' skirts on rings, as
   MakeHuman does with its skirt helper and the tailor with its own. Skirts and dresses are fine on bodies near the
   average.
@@ -132,6 +132,7 @@ Each of these is visible in the pictures, and each has an answer in `fit_and_ski
 | `fit_first.jpg` | the first outfit close up on the average and the feminine body: a denim jacket, a tee, trousers |
 | `fit_catalogue.jpg` | 34 garments, each alone on the average body, as fitted |
 | `fit_refabric.jpg` | the same jacket in the tailor's plaid flannel at real size with the studio's print `varsity_tokyo.png` on its back; the tee recoloured |
+| `fit_bodies.jpg` | across bodies: the CC0 men's suit on the masculine, slim masculine and full masculine bodies (left), the Maria skirt and knitted sweater on the feminine, slim feminine and full feminine ones (right); the full bodies show the clinging, the right side the skirt's waistband through the sweater |
 | `fit_cc0_office.jpg` | the CC0 office blouse and skirt with shoes on the feminine and slim feminine bodies |
 | `fit_dresses.jpg` | seven dresses, jeans, a sweater, a polo and a handbag, each alone on the feminine body |
 | `fit_styles.jpg` | library pieces in our fabrics as a blazer-type school uniform, a gakuran-like set, a camel coat over a sweater (the layering fault), and the CC0 men's suit |
