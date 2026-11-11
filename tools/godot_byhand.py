@@ -17,11 +17,20 @@ Godot instead of through Director I can"; guides/godot_by_hand): what guides/god
     python tools/godot_byhand.py exports ~/Games/MyGame [--link]
         the studio's Exports/ (interiors, streets, characters) copied into the project's exports/; --link makes them
         links instead, so an export from the studio's editors is in the project at once (Godot imports it on focus)
+    python tools/godot_byhand.py ready [--check]
+        the ready-made exports (DECISIONS 2026-11-11: tutorial v2's hotel floor, Exports/interiors/hotel_floor, tracked
+        in git so the tutorial can start in Godot) made again from their sets, the desk's server running; a .glb is kept
+        as it was when what it holds is the same, so git sees a new one only when there is one. --check (READYMADE, in
+        check_all): each one there, the one its ready.json records, and made from what its set holds now
 
 Ends with what it did. The Director route instead: tools/godot_director.py."""
+import json
+import os
 import shutil
 import subprocess
 import sys
+import time
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -115,7 +124,73 @@ def exports(proj, link=False):
     return did
 
 
+READY_HOW = "python tools/godot_byhand.py ready (the desk's server running: python tools/director/serve.py)"
+
+
+def ready(check=False):
+    """the ready-made exports (storykit/exports.py READY_MADE) made again from their sets, or (check) each one there, the
+    one its ready.json records, and made from what its set holds now: (lines said, problems). A browser writes a level's
+    pictures in a different order each time, so what's compared is the .glb's signature, not its bytes; when that's the
+    same the bytes it had are put back."""
+    said, bad = [], []
+    for (kind, name), src in EX.READY_MADE.items():
+        d, where = EX.EXPORTS / kind / name, f"Exports/{kind}/{name}"
+        glb, rec_f, meta_f = d / f"{name}.glb", d / "ready.json", d / "export.json"
+        rec = json.loads(rec_f.read_text(encoding="utf-8")) if rec_f.is_file() else {}
+        if check:
+            if not glb.is_file() or not rec:
+                bad.append(f"{where}: no {glb.name if not glb.is_file() else 'ready.json'}: {READY_HOW}")
+            elif EX.signature(glb)[0] != rec.get("signature"):
+                bad.append(f"{where}/{glb.name} isn't the one its ready.json records (an export of your own over it? "
+                           f"git checkout {where} puts the ready-made one back; {READY_HOW} makes it {src}'s again)")
+            elif EX.fingerprint(src) != rec.get("story"):
+                bad.append(f"{where} is older than {src}, changed since it was made ({rec.get('made', '?')}): {READY_HOW}")
+            else:
+                said.append(f"{where}: {src} as it is now (made {rec.get('made', '?')})")
+            continue
+        if kind != "interiors":
+            bad.append(f"{where}: only interiors are made here (tools/director/levelexport.mjs)")
+            continue
+        desk = os.environ.get("DESK_URL", "http://127.0.0.1:8780/")
+        try:
+            urllib.request.urlopen(desk, timeout=5).read(1)
+        except OSError:
+            bad.append(f"{where}: the desk's server isn't answering at {desk}: python tools/director/serve.py, then again")
+            continue
+        old = (glb.read_bytes(), EX.signature(glb), meta_f.read_bytes() if meta_f.is_file() else None) if glb.is_file() else None
+        r = subprocess.run([shutil.which("node") or "node", str(ROOT / "tools" / "director" / "levelexport.mjs"), "--game", src],
+                           cwd=ROOT, capture_output=True, text=True, timeout=900)
+        if r.returncode or not glb.is_file():
+            bad.append(f"{where}: the export failed: " + (r.stdout + r.stderr).strip()[-400:])
+            continue
+        new = EX.signature(glb)
+        if old and old[1][0] == new[0]:                # the same level: the bytes it had, so git sees nothing new
+            glb.write_bytes(old[0])
+            if old[2] is not None:
+                meta_f.write_bytes(old[2])
+            made = rec.get("made") or json.loads(old[2] or b"{}").get("made") or time.strftime("%Y-%m-%d %H:%M:%S")
+            said.append(f"{where}: the same as before, kept")
+        else:
+            made = time.strftime("%Y-%m-%d %H:%M:%S")
+            said.append(f"{where}: made again from {src} ({round(glb.stat().st_size / 1048576, 1)} MB)"
+                        + (f": {EX.differ(old[1][1], new[1], ('the old', 'the new'))}" if old else ""))
+        rec_f.write_text(json.dumps({"from": src, "made": made, "story": EX.fingerprint(src), "signature": new[0],
+                                     "how": READY_HOW}, indent=1) + "\n", encoding="utf-8")
+    return said, bad
+
+
 def main(argv):
+    if argv and argv[0] == "ready":
+        said, bad = ready(check="--check" in argv)
+        for s in said:
+            print("  " + s)
+        for b in bad:
+            print("FAIL " + b)
+        if "--check" in argv:
+            print("READYMADE ok" if not bad else f"READYMADE FAILED ({len(bad)})")
+        else:
+            print("ready-made: done; commit what changed in Exports/" if not bad else "ready-made: not all made")
+        return 1 if bad else 0
     if len(argv) < 2 or argv[0] not in ("new", "install", "exports"):
         print(__doc__)
         return 2

@@ -1,7 +1,13 @@
 # What the studio's editors export for a Godot project built by hand (storykit/exports.py): made again from the studio's
-# own files, never tracked. Only the READMEs are.
+# own files, never tracked. Only the READMEs are, and the ready-made exports (storykit/exports.py READY_MADE).
 *
 !.gitignore
 !README.md
 !*/
 !*/README.md
+# tutorial v2's hotel floor, ready-made so the tutorial can start in Godot (DECISIONS 2026-11-11): the .glb, its README
+# and what made it; `python tools/godot_byhand.py ready` makes it again. What Godot leaves beside it (.import) isn't kept.
+!interiors/hotel_floor/hotel_floor.glb
+!interiors/hotel_floor/README.txt
+!interiors/hotel_floor/export.json
+!interiors/hotel_floor/ready.json

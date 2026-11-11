@@ -1,0 +1,7 @@
+{
+ "from": "set:hotel_floor",
+ "made": "2026-11-11 15:45:15",
+ "story": "51017421a90290e4",
+ "signature": "c89cc80bb084721e",
+ "how": "python tools/godot_byhand.py ready (the desk's server running: python tools/director/serve.py)"
+}
