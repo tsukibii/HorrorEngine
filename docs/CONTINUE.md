@@ -82,6 +82,8 @@ files are not downloaded yet**: the file servers are blocked from the Default cl
 "HorrorEngine" (made 2026-11-11, it allows the two servers) and runs it there. After a fetch, `scan` writes each
 garment's own licence version into the catalogue and the credits: commit those two files. The fetch has not been run
 against the real servers: its unpacking and scanning were tried on the system pack and one dress from other sources.
+**The files stay out of git** (the user, 2026-11-11: "stick with the fetch"): `assets/clothing/` is ignored, so the
+download survives a switch of branch in the same folder; a pull request for this branch is open.
 
 **Next, by the user's answers**: (1) answered: yes; (2) the packs downloaded on their
 machine (`files.makehumancommunity.org`, or by MPFB2 in Blender); (3) then the build, in this order: the importer and

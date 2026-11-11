@@ -35,6 +35,17 @@ The user's answers, newest first. They override the plan, the research and the d
   flagged; the tailor's own as ours. A Studio character has no library garments until the fit moves into the Studio,
   so today its file says there is nothing to credit; a worn library garment will say so with `library` in the
   character's `clothes`.
+- **"Yeah i think we might aswell  s tick with the fetch, can yu create a pr for this branch, once I merge in Ikll want
+  to just manually move this downloaded folder into my main branch so I dont need to redownload when I switchc to main
+  branch, maybe have it git ignore the newer fetched files (you can keepw hatevers alrady added in for now)"**. So:
+  - **The fetch stays the way**: the garment files are never committed; `assets/clothing/` is in `.gitignore` (the
+    whole folder, the kept zips too). Nothing under it is tracked, so nothing had to be taken out.
+  - **What is tracked stays tracked**: the catalogue (`Content/Studio/Clothes/library/index.json`) and
+    docs/CREDITS.md; a fetch's `scan` rewrites those two with each garment's own licence version, to be committed.
+  - **Switching branches keeps the download**: an ignored or untracked folder is left where it is by a checkout. In
+    one working folder there is nothing to move; in a second clone, the folder is moved into its `assets/`, or
+    `$STUDIO_CLOTHING` points both at one place.
+  - **A pull request for this branch** was opened at the user's ask.
 
 ## 2026-11-11, later (the user: the fitted outfits clip; clothing layers, a dissolve in Godot, main merged, our PBR sets, pantyhose, fishnets and socks)
 
