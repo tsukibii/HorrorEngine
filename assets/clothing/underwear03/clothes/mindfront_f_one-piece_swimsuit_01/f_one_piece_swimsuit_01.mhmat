@@ -1,0 +1,25 @@
+# MakeHuman Material definition
+
+name f_one_piece_swimsuit_01
+
+// Color shading attributes
+diffuseColor  0.8 0.2389 0
+specularColor  0 0 0
+shininess 0.1961
+opacity 1
+
+// Textures and properties
+diffuseTexture F_One-piece_Swimsuit_01.png
+bumpTexture F_One-piece_Swimsuit_01_NRM.png
+specularTexture F_One-piece_Swimsuit_01_SPEC.png
+
+// Shader programme
+shader data/shaders/glsl/phong
+
+// Configure built-in shader defines
+shaderConfig diffuse true
+shaderConfig bump false
+shaderConfig normal  true
+shaderConfig displacement  false
+shaderConfig spec  true
+shaderConfig vertexColors false

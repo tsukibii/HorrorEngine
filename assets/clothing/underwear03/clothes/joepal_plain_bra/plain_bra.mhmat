@@ -1,0 +1,25 @@
+# This is a clothes file for MakeHuman Community, exported by MakeClothes 2
+#
+# author: unknown
+# license: CC0
+#
+name plain_bra material
+
+// Color shading attributes
+diffuseColor  0.6000 0.6000 0.6000
+specularColor  0.3000 0.3000 0.3000
+shininess 0.2000
+opacity 1
+
+// Textures
+
+diffuseTexture plain_bra_diffuse.jpg
+normalmapTexture plain_bra_normal.jpg
+roughnessmapTexture plain_bra_rough.png
+
+// Settings
+
+transparent False
+alphaToCoverage True
+backfaceCull True
+depthless False

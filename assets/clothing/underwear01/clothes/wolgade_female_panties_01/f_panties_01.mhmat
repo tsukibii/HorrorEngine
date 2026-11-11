@@ -1,0 +1,24 @@
+# MakeHuman Material definition
+
+name materialMaterial
+
+// Color shading attributes
+diffuseColor  0.6395 0.6395 0.6395
+specularColor  0.1726 0.1726 0.1726
+shininess 0.08235
+opacity 1
+
+// Textures and properties
+diffuseTexture f_panties_01_diffuse.png
+bumpTexture f_panties_01_bump.png
+
+// Shader programme
+shader data/shaders/glsl/phong
+
+// Configure built-in shader defines
+shaderConfig diffuse true
+shaderConfig bump true
+shaderConfig normal  false
+shaderConfig displacement  false
+shaderConfig spec  false
+shaderConfig vertexColors false
