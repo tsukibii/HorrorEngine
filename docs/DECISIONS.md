@@ -2,6 +2,32 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-11, the very last (the user: fix the library garments' limits)
+
+- **"fix all the limits"**, each with its answer:
+  - **Toes through a shoe**: *"if godot hides the toes then we dont care (if the dissolve works e.g. hides anything
+    poking out /clipping above the shoe layer)"*. So the Studio's view stays as it is, and **what a garment covers is
+    hidden in the export**: the skin under it (MakeHuman's own list for it and what its cloth covers on this body:
+    `tailor/library.js` `cover`: cloth over the point within 4 cm, or the point standing through it by under 12 mm,
+    the cloth facing as the skin does, 3 cm inside the cloth's edges, 8 mm where it lies snug), left out of the file
+    as the tailor's covered skin is; and **a garment's own triangles under the opaque layers over it** (`trim`: a sock
+    inside a shoe, briefs under a dress; the tailor's own garments under a library one too, in the page).
+  - **The ballet dress**: *"remove the ballet dress all together"*. `mindfront_ballet_dress_the_swan` is out of the
+    picks, its files and its bake out of git: 89 garments.
+  - **Gravity**: *"add a gravity modifier that I can click, default should be fairly light gravity just to get it to
+    curve against the shape of the body properly"*. A worn library garment has a **Gravity** switch (on by default) and
+    *How much* (0.3 light, the default; 1 heavy): `hang`, a light cloth step after the fit: cloth lying snug stays,
+    cloth standing off the body falls, its threads keeping their lengths (drawn in a little, so it lies to the body's
+    curves), never into the skin, no point further than 5 cm. Shoes and hats don't fall. Saved as the garment's
+    `gravity` when it isn't the default. (No prints or patterns on a library garment yet: not asked for here.)
+  - **Skin specks at the hips**: *"similar to our anti clipping clothing we should have it that if skin clips through
+    in godot that it dissolves 'hides' so the clothing is visible instead , clothin should move along the body though
+    for walk animations (bend etc)"*. The covered skin is left out of the export (above), and the clothes are skinned
+    to the skeleton by the skin's own bones round them. **Measured in Godot** (`tools/godot/library_check.py`,
+    GDLIBRARY): an export in a dress over briefs, socks in flats, put through a stride, sitting, a bend, arms raised
+    and a twist: the clothes move with the bones (up to 52 cm sitting), and the skin left in the file stands through
+    cloth at 70 of 91 266 points (0.08%, 1.6 mm at most, at snug edges), the same in every pose.
+
 ## 2026-11-11, the last (the user: the new outfits in other PBR sets and colours, editable in the Studio; main merged)
 
 - **"can you show me some of the new outfits with different pbrs and colors, (make sure we can edit them in the

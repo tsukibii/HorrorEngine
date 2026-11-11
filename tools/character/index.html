@@ -709,11 +709,13 @@ async function dressLibrary(job, key) {
     // in layers (tailor/library.js layerOf: underwear, legwear, shoes, bottoms, tops and dresses, jackets): each set
     // outside the ones under it where they lie together, then pressed in under what's over it; made again when what's
     // worn with it changes
-    const set = worn.map(c => c.library).join("|") + "|" + LIB.rev;
+    // (what a garment hides under it depends on whether it's opaque: its own texture with holes in it, or a set with an opacity map, hides nothing)
+    const opaque = c => !((c.own !== false && !c.pbr && LOOK.ownCut(`api/library/${encodeURIComponent(c.library)}/texture`) === true) || pbrOf(c)?.maps?.opacity);
+    const set = worn.map(c => [c.library, c.gravity ?? "", opaque(c) ? 1 : 0].join(":")).join("|") + "|" + LIB.rev;
     if (LIB.set !== set || !LIB.made.size) {
       LIB.made.clear(); LIB.set = set;
-      const made = LIB.wearer.dress(worn.map(c => { const x = LIB.has.get(c.library); return { bake: LIB.bakes.get(c.library), name: c.design, color: c.color, layer: LIBFIT.layerOf(x.group, x.id), rigid: LIBFIT.rigid(x.group) }; }), LIB.tailor);
-      worn.forEach((c, i) => { const g = made[i]; if (LIB.skin) g.skin = WEIGHTS.transfer(LIB.skin, g.parts[0].P); LIB.made.set(c.library, g); });   // (its bones, from the skin round it)
+      const made = LIB.wearer.dress(worn.map(c => { const x = LIB.has.get(c.library); return { bake: LIB.bakes.get(c.library), name: c.design, color: c.color, layer: LIBFIT.layerOf(x.group, x.id), rigid: LIBFIT.rigid(x.group), gravity: c.gravity, opaque: opaque(c) }; }), LIB.tailor);
+      worn.forEach((c, i) => { const g = made[i]; g.opaque = opaque(c); if (LIB.skin) g.skin = WEIGHTS.transfer(LIB.skin, g.parts[0].P); LIB.made.set(c.library, g); });   // (its bones, from the skin round it)
     }
     showLibrary();
     if (!st.clothes.some(c => !isLib(c) && DESIGNS[c.design])) status(worn.map(c => { const g = LIB.made.get(c.library); return `${LIB.has.get(c.library).label} ${Math.round(g.stats.triangles / 1000)}k triangles`; }).join(", ") + " (from the library)", "ok");
@@ -731,6 +733,16 @@ function showLibrary(pose = true) {
       m.userData.library = c.library; if (g.skin) m.userData.skin = g.skin; GARMENTS.add(m);
     }
     COVERS.set(c.design, g.cover);
+  }
+  // the tailor's own garments under the library's (tights inside a boot): what the layers over them cover isn't drawn
+  for (const m of GARMENTS.children) {
+    if (m.userData.library || !m.geometry.index) continue;
+    const T0 = m.userData.T0 || (m.userData.T0 = m.geometry.index.array), lay = SLOT_LAYER[DESIGNS[m.userData.garment]?.slot] ?? 40;
+    const over = LIB.wearer && LIB.key === FITTED ? st.clothes.filter(c => isLib(c) && LIB.made.has(c.library) && LIBFIT.layerOf(LIB.has.get(c.library).group, c.library) > lay && LIB.made.get(c.library).opaque).flatMap(c => LIB.made.get(c.library).outer) : [];
+    let T = T0;
+    if (over.length) { const H = LIB.wearer.hidden(m.userData.rest ? m.userData.rest.P : m.geometry.attributes.position.array, null, over, 0.02), keep = [];
+      for (let t = 0; t < T0.length; t += 3) if (!(H[T0[t]] && H[T0[t + 1]] && H[T0[t + 2]])) keep.push(T0[t], T0[t + 1], T0[t + 2]); T = new T0.constructor(keep); }
+    if (T.length !== m.geometry.index.count) m.geometry.setIndex(new THREE.BufferAttribute(T, 1));
   }
   if (!GARMENTS.parent) rig.add(GARMENTS);
   if (!CUT_SKIN && LIB.skin) CUT_SKIN = LIB.skin;
@@ -755,6 +767,13 @@ function libRows(c) {                                  // a worn library garment
       const t = el("input", { type: "checkbox", checked: P.tint }); t.onchange = () => { c.pbrTint = t.checked; UNSAVED = true; restyle(c); };
       box.append(el("label", { className: "tog", title: "The garment's colour over the set's own" }, t, el("span", { textContent: "Tint it with the colour" })));
     }
+  }
+  if (!LIBFIT.rigid(x.group)) {                        // gravity (tailor/library.js hang): a light fall by default, so the cloth lies to the body's shape
+    const on = (c.gravity ?? LIBFIT.GRAVITY) > 0, t = el("input", { type: "checkbox", checked: on });
+    const put = v => { if (v === LIBFIT.GRAVITY) delete c.gravity; else c.gravity = v; UNSAVED = true; clearTimeout(fitTimer); fitTimer = setTimeout(() => { dress(); drawWorn(); }, 350); };
+    t.onchange = () => put(t.checked ? LIBFIT.GRAVITY : 0);
+    box.append(el("label", { className: "tog", title: "Lets the fitted cloth fall a little: what stands off the body drops and draws in round its curves, what lies snug stays. Off: as fitted" }, t, el("span", { textContent: "Gravity" })));
+    if (on) slider(box, "libgravity", "How much", 0.05, 1, 0.05, c.gravity ?? LIBFIT.GRAVITY, "0.3 a light fall (the default), 1 heavy cloth.", v => put(v));
   }
   box.append(el("p", { className: "note", textContent: `${c.library}: by ${x.author || "?"}, ${x.licence || "?"}` }));
   return box;

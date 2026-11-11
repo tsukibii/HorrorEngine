@@ -157,6 +157,7 @@ TOOLS = [
     ("Checks", "Score check (music cues and palettes)", "node tools/score/check.js", {}),
     ("Checks", "PBR shelf check", "tools/pbr.py check", {}),
     ("Checks", "Wood sets check (WOODPBR: they tile, their boards found as cells, wood's colours)", "tools/woodpbr.py check", {}),
+    ("Checks", "Library garments in Godot (GDLIBRARY: an export wearing them posed, the clothes following the bones, hardly any skin through cloth; needs LIBRARYPAGE --export's export)", "tools/godot/library_check.py", {}),
     ("Checks", "Library garments' fit check (LIBRARY: baked garments fitted to the Studio's test bodies in JavaScript, a top set outside a skirt)", "tools/character/tailor/librarytest.mjs", {}),
     ("Checks", "Clothing library check (CLOTHLIB: the catalogue of MakeHuman's packs, every CC-BY garment in docs/CREDITS.md, a character's own credits)", "tools/clothing_library.py check", {}),
     ("Checks", "Sound shelf check", "tools/sfx.py check", {}),

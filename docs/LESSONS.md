@@ -3,6 +3,18 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## Skin through clothes, measured in Godot: what took a second try (2026-11-11, the very last)
+
+- **Godot's triangles face you clockwise.** A normal from (b - a) x (c - a) points into the body there: the first probe
+  looked outward and called cloth over the skin "skin through cloth". Turn the cross product round, and prove the
+  direction on a case with a known answer before trusting a zero.
+- **Godot's physics misses a trimesh on a ray a few millimetres long.** An 8 mm ray found nothing either way while a
+  30 mm one found cloth 2 mm off. Cast long, then keep the hits within the depth wanted.
+- **A zero that comes too easily is a broken probe.** Two zeros in a row (in and out) were the sign; the count that
+  followed (86 points) was the real one.
+- **Wait for the words that end a job, not ones it starts with.** "exporting for Godot…" matched a wait for "for
+  Godot"; the export's own "wrote ….glb" is the end.
+
 ## Library garments in the Studio: what took a second try (2026-11-11, the last)
 
 - **A page test must start from a character it made, and wait for it.** The Studio opens the last character by

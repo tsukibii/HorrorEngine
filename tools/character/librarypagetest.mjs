@@ -3,11 +3,12 @@
 // On a scratch character, `_librarytest`: the Library section lists the baked garments with their pictures; a click
 // wears one, fitted to the body, its own texture on it; its colour tints it; switched to one of our fabrics and then
 // to a PBR set off the shelf (its repeat, its tint); a second one worn beside it; it follows the T-pose; saved with the
-// character and worn again when it's opened; taken off. --out keeps a picture of each step.
+// character and worn again when it's opened; taken off. --out keeps a picture of each step; --export also exports an
+// outfit in layers for Godot (People/_librarytest/export: what tools/godot/library_check.py, GDLIBRARY, reads).
 import { createRequire } from "module";
 import { mkdirSync } from "fs";
 const req = createRequire(import.meta.url), { chromium } = req(process.env.PLAYWRIGHT || "playwright");
-const args = process.argv.slice(2), OUT = args.indexOf("--out") >= 0 ? args[args.indexOf("--out") + 1] : "";
+const args = process.argv.slice(2), OUT = args.indexOf("--out") >= 0 ? args[args.indexOf("--out") + 1] : "", EXPORT = args.includes("--export");
 const URL = process.env.BODY_URL || "http://127.0.0.1:8793/", NAME = "_librarytest";
 if (OUT) mkdirSync(OUT, { recursive: true });
 const browser = await req("../browser.cjs").launch(chromium);
@@ -91,6 +92,23 @@ try {
   if (!back) fail("opened again: the dress isn't worn");
   else if (sets.length && (back.pbr !== 1 || back.color !== "#c04060")) fail(`opened again: the dress came back without its set or its colour (pbr ${back.pbr}, ${back.color})`);
   await shot("6_opened_again");
+  // (--export: an outfit in layers exported for Godot, for GDLIBRARY: briefs under a dress in a PBR set, socks in flats)
+  if (EXPORT) {
+    await B(() => { const b = window.__body, L = (id, more = {}) => ({ design: "lib:" + id, library: id, color: "#ffffff", ...more });
+      b.st.clothes = [L("punkduck_sport_briefs"), L("toigo_lace_frill_socks"), L("mindfront_f_dress_02", { own: false, pbr: "pbr/Procedural/fabric_satin", color: "#7a1830" }), L("toigo_ballet_flats")].filter(c => document.querySelector("#libGrid") && true); b.dress(); });
+    const out = await worn(4, 180000), hid = out.filter(x => x.id === "punkduck_sport_briefs" || x.id === "toigo_lace_frill_socks");
+    if (!out.every(x => x.finite)) fail("the export's outfit: a garment isn't finite");
+    await B(() => { document.querySelector("#status").textContent = ""; }); await page.click("#save");
+    await page.waitForFunction(() => /^saved /.test(document.querySelector("#status").textContent), null, { timeout: 180000 });
+    await page.click("#expPack");
+    await page.waitForFunction(() => { const s = document.querySelector("#status"); return /wrote .*\.glb/.test(s.textContent) || s.className.includes("bad"); }, null, { timeout: 500000 });
+    const said = await B(() => document.querySelector("#status").textContent);
+    if (!/\.glb/.test(said)) fail("Export for Godot: " + said.slice(0, 160)); else console.log("  exported: " + said.slice(0, 110));
+    await page.waitForTimeout(8000);                                         // (the copy for Godot, with the face's shapes, written after)
+    await B(() => { const b = window.__body; b.st.clothes = b.st.clothes.filter(c => /f_dress_02|ballet_flats/.test(c.library)); b.dress(); });
+    await worn(2);
+    await page.click('#tabs button[data-tab="clothes"]');
+  }
   // 6. taken off
   await page.click('#tabs button[data-tab="clothes"]');
   await B(() => { const r = [...document.querySelectorAll("#worn > div")].find(d => /\(library\)/.test(d.textContent)); [...r.querySelectorAll("button")].find(b => b.textContent === "×").click(); });

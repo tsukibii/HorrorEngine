@@ -96,8 +96,11 @@ the 90. **They are worn in the Character Studio now** (DECISIONS 2026-11-11, the
 (`clothing_library.py bake`, `assets/clothing/_mhr/`, in git), fitted in JavaScript (`tailor/library.js`), in light
 layers, shown as cards in the Clothes tab's *Library garments*, their colour, own texture, fabric or PBR set under
 *Worn*, saved with the character and carried by Export for Godot with the credits. Checks: LIBRARY (node, in
-check_all), LIBRARYPAGE (the page). They are layered against the tailor's own garments too (by slot; only the library's move). **Next for them**: the
-covered skin hidden in the Studio's view (toes through shoes), soft alpha, prints and patterns on one, a walk test.
+check_all), LIBRARYPAGE (the page). They are layered against the tailor's own garments too (by slot; only the library's move). **Since (the very
+last)**: a Gravity switch on each (a light fall by default), what a garment covers hidden in the export (the skin
+under it, the layers under it), the ballet dress removed (89 garments), and GDLIBRARY: the export posed in Godot, the
+clothes following the bones, 0.08% of the skin through cloth. **Next for them**: prints and patterns on one, soft
+alpha, the covered skin hidden in the Studio's own view, a real walk animation in the game.
 
 **Next, by the user's answers**: (1) answered: yes; (2) the packs downloaded on their
 machine (`files.makehumancommunity.org`, or by MPFB2 in Blender); (3) then the build, in this order: the importer and

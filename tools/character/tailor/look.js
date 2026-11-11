@@ -83,6 +83,8 @@ function ownTexture(url) {
   }
   return OWN.get(url);
 }
+/** does a library garment's own texture cut holes in it (lace, a net)? true or false once it's read, undefined before */
+export const ownCut = url => OWN.get(url)?.userData.cut;
 /** when every PBR map asked for so far has loaded (a test page waits for it before its pictures) */
 export const mapsLoaded = () => Promise.all(LOADS);
 

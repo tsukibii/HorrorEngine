@@ -69,7 +69,8 @@ for (const [bname, make] of bodies) {
     let most = 0; for (let i = 0; i < plain.outer[0].P.length; i += 3) most = Math.max(most, Math.hypot(layered.outer[0].P[i] - plain.outer[0].P[i], layered.outer[0].P[i + 1] - plain.outer[0].P[i + 1], layered.outer[0].P[i + 2] - plain.outer[0].P[i + 2]));
     if (after > Math.max(3, 0.1 * before)) fail(`${up} over ${lo}: ${after} of its points still under it (${before} before the layers)`);
     if (most > 0.05) fail(`${up} over ${lo}: a point moved ${(most * 1000).toFixed(0)} mm`);
-    if (!W.wear(bake(up), up, "#ffffff", { under: L.outer, rigid: true }).outer[0].P.every((v, i) => v === plain.outer[0].P[i])) fail("a rigid garment was moved by what's under it");
+    const stiff = W.wear(bake(up), up, "#ffffff", { rigid: true }).outer[0].P;
+    if (!W.wear(bake(up), up, "#ffffff", { under: L.outer, rigid: true }).outer[0].P.every((v, i) => v === stiff[i])) fail("a rigid garment was moved by what's under it");
     // the two worn as an outfit: the lower one pressed in where it still stood through the upper's triangles
     const [L2, U2] = W.dress([{ bake: bake(lo), name: lo, layer: 30 }, { bake: bake(up), name: up, layer: 40 }]);
     const mid0 = W.crossings(layered.outer[0].P, L.outer, layered.outer[0].T), mid1 = W.crossings(U2.outer[0].P, L2.outer, U2.outer[0].T);
@@ -79,6 +80,36 @@ for (const [bname, make] of bodies) {
     if (inside > Math.max(4, 0.01 * GL.length / 3)) fail(`${lo} under ${up}: pressed into the skin at ${inside} points`);
     if (!L2.parts[0].P.every(Number.isFinite)) fail(`${lo} under ${up}: points that aren't finite`);
     layerNote.push(`${up} over ${lo}: ${before} points under it, ${after} after; with its triangles ${mid0}, ${mid1} once the lower is pressed in`);
+  }
+}
+// 5. gravity, what's covered, what's left out (DECISIONS 2026-11-11, the last)
+{
+  const H = 1.62, P = Float32Array.from(mhrBody(m, bodyWeights("feminine"), H, bodySculpt("feminine")).P), W = new Wearer(base, P, T), id = "mindfront_f_dress_02";
+  if (all.includes(id)) {
+    const flat = W.wear(bake(id), id, "#fff", { gravity: 0 }), light = W.wear(bake(id), id), A = flat.outer[0].P, B = light.outer[0].P, Tw = flat.outer[0].T;
+    let most = 0, down = 0, k = 0; for (let i = 0; i < A.length; i += 3) { const d = Math.hypot(B[i] - A[i], B[i + 1] - A[i + 1], B[i + 2] - A[i + 2]); most = Math.max(most, d); if (d > 0.001) { down += B[i + 1] - A[i + 1]; k++; } }
+    if (!(light.stats.fell > 50) || flat.stats.fell !== 0) fail(`gravity: ${light.stats.fell} points of the dress fell with it on, ${flat.stats.fell} with it off`);
+    if (most > 0.0501) fail(`gravity: a point moved ${(most * 1000).toFixed(0)} mm`);
+    if (!(down / Math.max(k, 1) < 0)) fail("gravity: the cloth that moved didn't go down on the whole");
+    let stretch = 0; for (let t = 0; t < Tw.length; t += 3) for (let e = 0; e < 3; e++) { const a = Tw[t + e] * 3, b = Tw[t + (e + 1) % 3] * 3, l0 = Math.hypot(A[a] - A[b], A[a + 1] - A[b + 1], A[a + 2] - A[b + 2]), l1 = Math.hypot(B[a] - B[b], B[a + 1] - B[b + 1], B[a + 2] - B[b + 2]); if (l0 > 0.004) stretch = Math.max(stretch, l1 / l0); }
+    if (stretch > 1.3) fail(`gravity: a thread stretched to ${stretch.toFixed(2)} of its length`);
+    const heavy = W.wear(bake(id), id, "#fff", { gravity: 1 }); if (!(heavy.stats.fell >= light.stats.fell)) fail("gravity: heavier moved less cloth than light");
+    // the skin the dress hides here: the belly and hips under it, not the head, the hands or the feet
+    const [g] = W.dress([{ bake: bake(id), name: id, layer: 40 }]), cv = g.cover; let n = 0, wrong = 0, belly = 0, bellyAll = 0;
+    for (let i = 0; i < cv.length; i++) { const x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2]; if (cv[i]) { n++; if (y > 0.88 * H || y < 0.25 * H || Math.abs(x) > 0.3) wrong++; } if (y > 0.56 * H && y < 0.66 * H && Math.abs(x) < 0.1) { bellyAll++; if (cv[i]) belly++; } }
+    if (!(n > 1500) || wrong) fail(`the dress hides ${n} skin points, ${wrong} of them on the head, the lower legs or the arms`);
+    if (!(belly > 0.9 * bellyAll)) fail(`the dress hides ${belly} of the ${bellyAll} skin points round the waist`);
+    layerNote.push(`the dress: ${light.stats.fell} points fall, ${n} skin points hidden`);
+  }
+  const shoe = "toigo_ballet_flats", sock = "toigo_lace_frill_socks";
+  if (all.includes(shoe) && all.includes(sock)) {
+    const [so, sh] = W.dress([{ bake: bake(sock), name: sock, layer: 15 }, { bake: bake(shoe), name: shoe, layer: 20, rigid: true }]);
+    let toes = 0, toesAll = 0; for (let i = 0; i < sh.cover.length; i++) if (P[i * 3 + 1] < 0.03 && P[i * 3 + 2] > 0.08) { toesAll++; if (sh.cover[i] || so.cover[i]) toes++; }
+    if (!(toes > 0.9 * toesAll)) fail(`a shoe over a sock hides ${toes} of the ${toesAll} skin points of the toes`);
+    if (!(so.stats.trimmed > 0) || so.parts[0].T.length + so.stats.trimmed * 3 !== bake(sock).tris.length) fail(`the sock inside the shoe: ${so.stats.trimmed} of its triangles left out`);
+    const [so2] = W.dress([{ bake: bake(sock), name: sock, layer: 15 }, { bake: bake(shoe), name: shoe, layer: 20, rigid: true, opaque: false }]);
+    if (so2.stats.trimmed) fail("a sock under a see-through shoe lost triangles");
+    layerNote.push(`a sock in a shoe: ${so.stats.trimmed} triangles left out, ${toes} of ${toesAll} toe points hidden`);
   }
 }
 for (const f of faults) console.log("LIBRARY FAIL:", f);

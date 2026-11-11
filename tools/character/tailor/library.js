@@ -7,13 +7,19 @@
 // proto/fit.py Warp, push_out), in plain typed arrays: the Studio page, its worker and node run the same code.
 // The result is a part as the tailor's own (tailor.js: P, T, N, UV in metres, PART, S), with UVO: the garment's own UV
 // for its own texture (tailor/look.js `own`).
-import { normals, adjacency, Surface } from "./mesh.js";
+import { normals, adjacency, Surface, PointGrid, smooth } from "./mesh.js";
 
 export const K = 16, EPS = 0.004, EASE = 0.003;
 // layers (the prototype's rule, docs/research/clothing_v2/fit_test.md §7, lightly: only the upper garment moves): a
 // garment's layer from its group in the catalogue and its name; one on a higher layer is set outside the ones under
 // it where they lie together; shoes, hats and the like keep their shape (they aren't moved)
 export const GAP = 0.0025, NEAR = 0.03, MOST = 0.03, H_MIN = 0.0015;
+// gravity (DECISIONS 2026-11-11: "a gravity modifier that I can click, default should be fairly light"): how much of a
+// fall a fitted garment is given; what's covered (the skin under cloth, cloth under the layers over it) is found within
+// OVER of the cloth above it, or standing THROUGH it by less than that, at least INSET inside the cloth's own edges
+export const GRAVITY = 0.3, OVER = 0.04, THROUGH = 0.012, INSET = 0.03, SNUG = 0.008, SNUG_INSET = 0.008;
+const yes = () => true;
+
 const STIFF = new Set(["shoes", "hats", "glasses", "jewelry", "masks", "equipment", "gloves"]);
 export const rigid = group => STIFF.has(group);
 export function layerOf(group, id = "") {
@@ -214,6 +220,84 @@ export class Wearer {
       D[i * 3] = hs.nx * need; D[i * 3 + 1] = hs.ny * need; D[i * 3 + 2] = hs.nz * need; return true;
     }, rounds);
   }
+  /** a fitted garment let fall a little (a light cloth step: no simulation of folds): cloth that lies snug on the skin
+      stays as fitted, cloth that stands off it falls by gravity, its threads keeping their lengths (a little shorter:
+      it draws in round the body's curves), never into the skin, no point further than 5 cm. `amount`: 0 none, GRAVITY
+      light, 1 heavy. How many points moved more than a millimetre */
+  hang(G, W, A, amount = GRAVITY) {
+    const n = G.length / 3; if (!(amount > 0)) return 0;
+    const X = Float32Array.from(G), V = new Float32Array(n * 3), free = new Float32Array(n), c = {};
+    let loose = 0;
+    for (let i = 0; i < n; i++) { const h = this.skin.closest(G[i * 3], G[i * 3 + 1], G[i * 3 + 2], 0.25, c); free[i] = h ? smooth(0.004, 0.015, h.d) : 1; if (free[i] > 0) loose++; }
+    if (!loose) return 0;
+    const ea = [], eb = []; for (let i = 0; i < n; i++) for (let q = A.start[i]; q < A.start[i + 1]; q++) { const j = A.list[q]; if (j > i && (free[i] > 0 || free[j] > 0)) { ea.push(i); eb.push(j); } }
+    const m = ea.length, rest = new Float32Array(m), draw = 1 - 0.03 * Math.min(1, amount);
+    for (let e = 0; e < m; e++) { const i = ea[e] * 3, j = eb[e] * 3; rest[e] = Math.hypot(G[i] - G[j], G[i + 1] - G[j + 1], G[i + 2] - G[j + 2]) * draw; }
+    const steps = n > 40000 ? 10 : n > 15000 ? 18 : 30, g = 0.00033 * amount;
+    for (let st = 0; st < steps; st++) {
+      for (let i = 0; i < n; i++) { const f = free[i]; if (!f) continue; const o = i * 3; V[o] *= 0.9; V[o + 1] = (V[o + 1] - g) * 0.9; V[o + 2] *= 0.9; X[o] += f * V[o]; X[o + 1] += f * V[o + 1]; X[o + 2] += f * V[o + 2]; }
+      for (let it = 0; it < 4; it++) for (let e = 0; e < m; e++) {      // the threads' lengths: stretch taken back whole, a squeeze half
+        const a = ea[e], b = eb[e], wa = free[a], wb = free[b], w = wa + wb; if (!w) continue;
+        const i = a * 3, j = b * 3, dx = X[j] - X[i], dy = X[j + 1] - X[i + 1], dz = X[j + 2] - X[i + 2], l = Math.hypot(dx, dy, dz) || 1e-9, k = (l - rest[e]) / l * (l > rest[e] ? 1 : 0.5) / w;
+        X[i] += wa * k * dx; X[i + 1] += wa * k * dy; X[i + 2] += wa * k * dz; X[j] -= wb * k * dx; X[j + 1] -= wb * k * dy; X[j + 2] -= wb * k * dz;
+      }
+      for (let i = 0; i < n; i++) {                                    // out of the skin, and no further than 5 cm from where it was fitted
+        if (!free[i]) continue; const o = i * 3;
+        const h = this.skin.closest(X[o], X[o + 1], X[o + 2], 0.06, c);
+        if (h && h.d < EASE) { X[o] = h.x + EASE * h.nx; X[o + 1] = h.y + EASE * h.ny; X[o + 2] = h.z + EASE * h.nz; V[o] *= 0.5; V[o + 1] *= 0.5; V[o + 2] *= 0.5; }
+        const dx = X[o] - G[o], dy = X[o + 1] - G[o + 1], dz = X[o + 2] - G[o + 2], d = Math.hypot(dx, dy, dz);
+        if (d > 0.05) { const k = 0.05 / d; X[o] = G[o] + dx * k; X[o + 1] = G[o + 1] + dy * k; X[o + 2] = G[o + 2] + dz * k; }
+      }
+    }
+    let moved = 0; for (let i = 0; i < n; i++) if (Math.hypot(X[i * 3] - G[i * 3], X[i * 3 + 1] - G[i * 3 + 1], X[i * 3 + 2] - G[i * 3 + 2]) > 0.001) moved++;
+    G.set(X); return moved;
+  }
+  // a cloth ({P, T} welded) ready to be asked what it covers: its surface, and its open edges' points in a grid
+  _cloth(u) {
+    if (u._cloth) return u._cloth;
+    const P = u.P, T = u.T, n = P.length / 3, seen = new Map();
+    for (let t = 0; t < T.length; t += 3) for (let k = 0; k < 3; k++) { const a = T[t + k], b = T[t + (k + 1) % 3], key = a < b ? a * n + b : b * n + a; seen.set(key, (seen.get(key) || 0) + 1); }
+    const rim = new Set(); for (const [key, c] of seen) if (c === 1) { rim.add(Math.floor(key / n)); rim.add(key % n); }
+    return (u._cloth = { S: new Surface(P, T, null, 0.012), rim: rim.size ? new PointGrid(P, 0.02, [...rim]) : null });
+  }
+  /** which of the points Q (3 a point; their own outward directions N, or the skin's where they lie when N is null)
+      a cloth covers: the cloth lies over the point within OVER, or the point stands through it by under THROUGH; the
+      cloth there faces as the point does (not a sleeve's inside near a dress's side); at least `inset` inside the
+      cloth's own edges. A byte a point */
+  hidden(Q, N, cloths, inset = INSET) {
+    const n = Q.length / 3, out = new Uint8Array(n), cs = cloths.map(u => this._cloth(u)), c = {}, c2 = {}, c3 = {};
+    for (let i = 0; i < n; i++) {
+      const x = Q[i * 3], y = Q[i * 3 + 1], z = Q[i * 3 + 2];
+      let nx, ny, nz;
+      if (N) { nx = N[i * 3]; ny = N[i * 3 + 1]; nz = N[i * 3 + 2]; }
+      else { const h = this.skin.closest(x, y, z, 0.25, c3); if (!h) continue; nx = h.nx; ny = h.ny; nz = h.nz; }
+      for (const { S, rim } of cs) {
+        const q = S.closest(x, y, z, 0.06, c); if (!q) continue;
+        const dx = q.x - x, dy = q.y - y, dz = q.z - z, dist = Math.hypot(dx, dy, dz), side = dx * nx + dy * ny + dz * nz;
+        if (!(side >= 0 ? dist < OVER : dist < THROUGH)) continue;
+        const hq = this.skin.closest(q.x, q.y, q.z, 0.25, c2); if (!hq || hq.nx * nx + hq.ny * ny + hq.nz * nz < 0.5) continue;
+        if (rim && rim.any(q.x, q.y, q.z, dist < SNUG ? Math.min(inset, SNUG_INSET) : inset, yes)) continue;   // (snug cloth doesn't lift off its edge: covered nearer to it)
+        out[i] = 1; break;
+      }
+    }
+    return out;
+  }
+  /** the skin a garment hides on this body: MakeHuman's own list for it (the bake's) and what its cloth covers as it is
+      worn here (a foot inside a shoe, toes that stand through it, hips under a dress): a byte a body point. The
+      Studio's export leaves that skin out, so it can't come through the cloth in Godot when a joint bends */
+  cover(g, bake) {
+    const out = this.hidden(this.P, this.skin.N, g.outer);
+    if (bake) for (const i of bake.cover) out[i] = 1;
+    return out;
+  }
+  /** a garment's triangles that the garments over it cover left out of its part (a sock inside a shoe, briefs under
+      a dress): `over` their welded {P, T}, opaque ones only. How many triangles were left out */
+  trim(g, bake, over) {
+    if (!over.length) return 0;
+    const H = this.hidden(g.outer[0].P, null, over, 0.02), q = g.parts[0], src = bake.src, T = bake.tris, keep = [];
+    for (let t = 0; t < T.length; t += 3) if (!(H[src[T[t]]] && H[src[T[t + 1]]] && H[src[T[t + 2]]])) keep.push(T[t], T[t + 1], T[t + 2]);
+    q.T = Uint32Array.from(keep); return (T.length - keep.length) / 3;
+  }
   /** a garment pressed in under the ones worn over it (their welded {P, T}) where it still stands through them (a
       waistband's loops through a top's hem, a sock through a shoe): toward the skin, never nearer it than H_MIN; how
       many points the first round moved */
@@ -247,14 +331,20 @@ export class Wearer {
       stands through (tuck); they come back in the list's order. `fixed`: garments that are worn with them and don't move
       (the tailor's own, already cut and hung: [{layer, outer: [{P, T}]}]): the library's go outside the ones under them
       and are pressed in under the ones over them */
+  // (list: {bake, name, color, layer, rigid, gravity, opaque (false: a net or lace, which hides nothing under it)})
   dress(list, fixed = []) {
     const order = list.map((x, i) => [x.layer ?? 40, i, x]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(a => a[2]), made = new Map(), lay = x => x.layer ?? 40;
-    for (const x of order) made.set(x, this.wear(x.bake, x.name, x.color, { rigid: x.rigid,
+    for (const x of order) made.set(x, this.wear(x.bake, x.name, x.color, { rigid: x.rigid, gravity: x.gravity,
       under: [...order.filter(y => lay(y) < lay(x) && made.has(y)).flatMap(y => made.get(y).outer), ...fixed.filter(f => lay(f) < lay(x)).flatMap(f => f.outer)] }));
     for (const x of order) {
       const above = [...order.filter(y => lay(y) > lay(x)).flatMap(y => made.get(y).outer), ...fixed.filter(f => lay(f) > lay(x)).flatMap(f => f.outer)]; if (x.rigid || !above.length) continue;
       const g = made.get(x), o = g.outer[0], n = this.tuck(o.P, adjacency(o.P.length / 3, o.T), above);
       if (n) { g.stats.tucked = n; this.finish(g, x.bake); }
+    }
+    for (const x of order) {                                          // what each hides of the skin, and what's hidden of each under the opaque layers over it
+      const g = made.get(x); g.cover = this.cover(g, x.bake);
+      const above = [...order.filter(y => lay(y) > lay(x) && y.opaque !== false).flatMap(y => made.get(y).outer), ...fixed.filter(f => lay(f) > lay(x) && f.opaque !== false).flatMap(f => f.outer)];
+      g.stats.trimmed = this.trim(g, x.bake, above);
     }
     return list.map(x => made.get(x));
   }
@@ -275,12 +365,14 @@ export class Wearer {
     const G = this.warp(rest);
     const W = new Uint32Array(tris.length); for (let i = 0; i < tris.length; i++) W[i] = src[tris[i]];   // the triangles on the welded points
     const A = adjacency(n, W), moved = this.pushOut(G, A);
+    const fell = o.rigid ? 0 : this.hang(G, W, A, o.gravity ?? GRAVITY);   // (o.gravity: 0 as fitted, GRAVITY a light fall, 1 heavy)
+    if (fell) this.pushOut(G, A, EASE, 2);
     const lifted = o.under?.length && !o.rigid ? this.over(G, A, o.under) : 0;   // (o.under: the outsides of what's worn under it; o.rigid: a shoe, a hat: as made)
     const Nw = normals(G, W);                                 // smooth across the UV seams
     const P = new Float32Array(m * 3), N = new Float32Array(m * 3);
     for (let i = 0; i < m; i++) { const j = src[i] * 3; P[i * 3] = G[j]; P[i * 3 + 1] = G[j + 1]; P[i * 3 + 2] = G[j + 2]; N[i * 3] = Nw[j]; N[i * 3 + 1] = Nw[j + 1]; N[i * 3 + 2] = Nw[j + 2]; }
     const cover = new Uint8Array(this.P.length / 3); for (const i of bake.cover) cover[i] = 1;
     const part = { name, color, fabric: true, P, T: Uint32Array.from(tris), N, UV: Float32Array.from(uv2), UVO: Float32Array.from(uv), PART: new Float32Array(m), S: new Float32Array(m).fill(1) };
-    return { name, library: bake.head.id, parts: [part], outer: [{ P: G, T: W }], cover, handles: [], stats: { triangles: tris.length / 3, vertices: m, moved, lifted, ms: Date.now() - t0 } };
+    return { name, library: bake.head.id, parts: [part], outer: [{ P: G, T: W }], cover, handles: [], stats: { triangles: tris.length / 3, vertices: m, moved, fell, lifted, ms: Date.now() - t0 } };
   }
 }

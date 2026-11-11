@@ -197,7 +197,7 @@ packs (the catalogue marks them `refused`).
 |  | `maciekg_wizard_robe` | suits | MaciekG | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1482) | suits03 |
 |  | `madmanny_tight_leather_boots` | shoes | madmanny | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/1448) | shoes03 |
 |  | `gredal_gas_mask` | masks | Mathias_Gredal | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/2715) | masks02 |
-|  | `mindfront_ballet_dress_the_swan` | dress | Mindfront (Sweden) | CC BY 4.0 | [page](http://www.makehumancommunity.org/node/565) | dress03 |
+|  | `mindfront_ballet_dress_the_swan` | dress | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/565) | dress03 |
 |  | `mindfront_f_dress_01` | dress | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/343) | dress03 |
 |  | `mindfront_f_dress_02` | dress | Mindfront (Sweden) | CC BY 4.0 | [page](http://www.makehumancommunity.org/node/346) | dress03 |
 |  | `mindfront_f_dress_03` | dress | Mindfront | CC-BY (version: in its file) | [page](http://www.makehumancommunity.org/node/354) | dress03 |
