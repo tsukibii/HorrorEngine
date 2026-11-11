@@ -72,6 +72,7 @@ signal ended                                      ## over: what appeared is gone
 @export var fact := ""
 @export_enum("keep", "silence", "calm", "uneasy", "dread", "chase") var music := "keep"
 @export var target: Node                          ## its fire() too
+@export var head_m := 1.5                         ## the head of what appears, over its feet (m): where the cue's spot is taken when no Spot is set, and where its sound comes from; a child's about 1.2, an imp's 0.8, an ogre's 2.3
 
 var count := 0                                    ## times it's happened (a check's)
 var held := 0.0                                   ## seconds all of it has been so (a check's)
@@ -149,7 +150,7 @@ func where() -> Vector3:
 	if spot != null:
 		return spot.global_position
 	if appear != null:
-		return appear.global_transform * Vector3(0, 1.5, 0)
+		return appear.global_transform * Vector3(0, head_m, 0)
 	return global_position
 
 
@@ -211,7 +212,7 @@ func fire(_a = null, _b = null) -> void:
 			_animate(true)
 	heard = null
 	if sound != "" and snd != null and snd.has_method("play"):
-		var at: Vector3 = sound_at.global_position if sound_at != null else (appear.global_transform * Vector3(0, 1.5, 0) if appear != null else where())
+		var at: Vector3 = sound_at.global_position if sound_at != null else (appear.global_transform * Vector3(0, head_m, 0) if appear != null else where())
 		heard = snd.play(sound, at, sound_db, "event" if scare else "sfx")
 	var st := get_tree().get_first_node_in_group("hs_story")
 	if st != null:

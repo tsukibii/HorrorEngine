@@ -1,5 +1,6 @@
-// The tailor's check: every design in Content/Studio/Clothes/designs.json is cut on seven bodies (MHR's average, its
-// feminine and masculine presets, and slim and full ones of each: tailor/bodies.json), every outfit in outfits.json on
+// The tailor's check: every design in Content/Studio/Clothes/designs.json is cut on nine bodies (MHR's average, its
+// feminine and masculine presets, slim and full ones of each: tailor/bodies.json; and two children as the Studio's ages
+// make them, an eight-year-old and a girl of twelve: grow.js, node.mjs grownBody), every outfit in outfits.json on
 // the feminine one, in order. Each garment has triangles, no stray numbers, indices in range, fabric coordinates and
 // normals on every point, lies outside the body (its outside never under the skin), reaches the heights its design
 // names, and comes out the same twice. Then the drape (tailor/drape.js): outfits that show each kind of garment hung by
@@ -12,12 +13,16 @@
 // trouser hem, where the relaxed cloth bridges the ankle's hollow; 5 for a skirt's flare, found on a waved or pleated hem).
 // The skin the clothes hide (§3d): a cardigan hides its elbow's skin and not its wrist's or the neck's base, a t-shirt
 // not the elbow, a skirt and the feet nothing.
+// A full bust (the Studio's Anime switch, sculpt.js bustShape; TAILOR.md §1j): outfits cut and hung on its dress form
+// (the hollow under the breasts closed, its skin gathered onto single points that the tailor makes one) at Bust 2 and
+// at the slider's top, each garment as any other and its outside never under the skin of the body that's shown, the
+// hanging one.
 // Ends "TAILOR ok".
 //
 //   node tools/character/tailor/check.mjs
 import { readFileSync } from "fs";
 import { join } from "path";
-import { loadMhr, namedBody, bodyWeights, ROOT } from "./node.mjs";
+import { loadMhr, namedBody, grownBody, bodyWeights, ROOT } from "./node.mjs";
 import * as PO from "../pose.js";
 import * as TAILOR from "../tailor.js";
 import { height, frame } from "./frame.js";
@@ -95,7 +100,9 @@ const look = (label, B, g, hung = false) => {
 };
 
 const m = loadMhr(), t0 = Date.now(), counts = {};
-const BODIES = [["average", 1.7], ["feminine", 1.62], ["masculine", 1.78], ["slim_feminine", 1.6], ["slim_masculine", 1.76], ["full_feminine", 1.64], ["full_masculine", 1.78]];
+// (and two children, as the Studio's ages make them, grow.js: an eight-year-old halfway between the bases, a girl of twelve)
+const BODIES = [["average", 1.7], ["feminine", 1.62], ["masculine", 1.78], ["slim_feminine", 1.6], ["slim_masculine", 1.76], ["full_feminine", 1.64], ["full_masculine", 1.78],
+                ["child_8", 1.28, { age: 8, base: 0 }], ["child_12", 1.52, { age: 12, base: -1 }]];
 const rig = readFileSync(join(ROOT, "Content", "Studio", "Bodies", "MHR_lod1_rig.bin")), R = PO.readRig(rig.buffer.slice(rig.byteOffset, rig.byteOffset + rig.byteLength));
 const joints = (P, w, h) => {                                      // MHR's joints fitted to this body (pose.js), as the Studio's T-pose fits them
   const Q = new Float32Array(m.P); let lo = 1e9, hi = -1e9;
@@ -104,8 +111,9 @@ const joints = (P, w, h) => {                                      // MHR's join
   const J = PO.joints(R, P, m.P, h / (hi - lo));
   return name => { const k = R.byName.get(name); return [J[k * 3], J[k * 3 + 1], J[k * 3 + 2]]; };
 };
-for (const [bname, h] of BODIES) {
-  const b = namedBody(m, bname, h), B = TAILOR.body(b.P, b.T), J = joints(b.P, bodyWeights(bname), h);
+for (const [bname, h, grown] of BODIES) {
+  const b = grown ? grownBody(m, { ...grown, height: h }) : namedBody(m, bname, h), B = TAILOR.body(b.P, b.T);
+  const J = grown ? (Jg => name => { const k = R.byName.get(name); return [Jg[k * 3], Jg[k * 3 + 1], Jg[k * 3 + 2]]; })(PO.joints(R, b.P, m.P, b.scale, b.F)) : joints(b.P, bodyWeights(bname), h);
   for (const side of ["L", "R"]) {                                  // where the sleeves end: the wrist and the elbow on the arm's line
     const A = B.F.arms[side], c = side.toLowerCase(), off = { wrist: A.wrist - A.line.project(...J(`${c}_wrist`))[0], elbow: A.elbow - A.line.project(...J(`${c}_lowarm`))[0] };
     for (const [k, d] of Object.entries(off)) if (!(Math.abs(d) < 0.035)) errs.push(`${bname}: its ${side} ${k} ${(d * 100).toFixed(1)} cm from MHR's own`);
@@ -154,6 +162,25 @@ for (const [bname, h, names] of HUNG) {
     });
     const again = TAILOR.dress(B, list, designs, { drape: true, body: bname, bakes });   // from its bakes: the same, and nothing falls
     again.forEach((g, i) => { if (worn[i].drape && (!g.drape?.baked || sum(g) !== sum(worn[i]))) errs.push(`${label}: ${g.name} isn't the same from its bake`); });
+  }
+}
+// a full bust (Anime): what's worn is cut and hung on the dress form, and measured against the body that's shown
+for (const [bust, names] of [[2, ["casual: red sweater dress", "t-shirt and skirt", "business: turtleneck and blazer"]], [3, ["casual: red sweater dress"]]]) {
+  const opt = { base: -1, height: 1.62, sculpt: { bust }, anime: true }, shown = grownBody(m, opt), form = grownBody(m, { ...opt, form: true });
+  const B = TAILOR.body(form.P, form.T), S = TAILOR.body(shown.P, shown.T), on = { ...B, surf: S.surf };   // (the form's frame, the shown body's skin)
+  if (!B.map || !form.gather.length) errs.push(`a full bust (${bust}): its dress form gathers nothing`);
+  if (S.map) errs.push(`a full bust (${bust}): the body that's shown has points lying on one another`);
+  for (const oname of names) {
+    const label = `${oname} on a full bust (${bust}), hung`; let worn;
+    try { worn = TAILOR.dress(B, outfits[oname], designs, { drape: true, body: `bust_${bust}` }); } catch (e) { errs.push(`${label}: ${e.message}`); continue; }
+    for (const g of worn) {
+      look(`${label}: ${g.name}`, on, g, !!g.drape);
+      if (!g.drape) continue;
+      const d = g.drape;
+      if (!(d.moving.rms < 0.005)) errs.push(`${label}: ${g.name} still moving at ${(d.moving.rms * 1000).toFixed(1)} mm/s`);
+      if (!(d.stretch.p99 < 1.25)) errs.push(`${label}: ${g.name} stretched ${((d.stretch.p99 - 1) * 100).toFixed(0)}% (one edge in a hundred)`);
+      console.log(`  ${label}: ${g.name.padEnd(16)} ${d.steps} steps, ${(d.ms / 1000).toFixed(1)} s, stretch ${d.stretch.p50}/${d.stretch.p90}/${d.stretch.p99}, fell ${(d.fell * 100).toFixed(1)} cm`);
+    }
   }
 }
 {                                       // a bake comes back only if nothing it hangs from changed, what closes over it later too

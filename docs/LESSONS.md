@@ -3,6 +3,153 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## A full bust, a dress over it and a look-alike: what took a second try (2026-11-11, latest)
+
+- **Bumps stacked on one spot are a cone.** The first full bust was a field like the sculpt's other controls: a bigger
+  bump added onto the body, which already has a small breast there and the Bust's own bump on it. From the front it
+  read; from the side it came to a point (the user: "unnaturally pointy ... it should feel more how a waterballoon would
+  sit"). An offset field can only exaggerate the shape that's under it. A shape with a geometry of its own (a ball that
+  hangs, a flat chest) is made on the body as it stands: take what's there back to a base (the chest wall, a membrane
+  across the breast's root) and build the shape on that.
+- **Judged from one view isn't judged.** The first bust was looked at from the front, where it was fine. A body sheet
+  is front, three quarter and side before it's shown; the side is where volume reads.
+- **Count the mesh's rows before choosing where they go.** MHR has four rows of points from a breast's middle to the
+  fold under it and many more above. The first ball spread the skin evenly round it: the lower rows went to the
+  underside nobody sees and the ball's bottom was one row, a blade. The skin's middle now lands below the ball's front
+  (as skin slides down a heavy breast), so the dense upper rows make the front.
+- **Taking a bump off isn't flat.** Bust −2 as "the bump, twice, the other way" left dents on a breast of another
+  shape. Flat is a place (the chest's own wall), not a negative amount.
+- **Cloth cut from skin that doubles back is three layers.** Under a hanging breast the skin runs down, back up and
+  down again; garments cut from it lay in each other and tore. Pushing layers apart afterwards was the wrong end: the
+  skin a garment isn't made from is taken out of the tailor's body (a dress form, its hollow gathered onto single
+  points, made one). And gathered onto the first row *at* the ball's widest ring, not the last row before it: that
+  cut the ball's bottom off and skin showed through the sweater.
+- **Two garments that read as one hang, they don't tuck.** The sweater dress is a sweater and a skirt (a shell can't
+  pass the crotch). Tucked in, the sweater bunched at the hips and the join showed; hanging free over the skirt its hem
+  hides the join.
+- **New behaviour on an existing control goes behind a switch.** The new bust first replaced the Bust slider's range
+  for everyone. The user kept it "as an 'anime' toggleable": off, the slider is to the bit what it was. Cutify and
+  Monster mode were already built that way; the next addition to a control starts there.
+- **A look-alike is the user's to judge, part by part.** A whole character after a picture (a figure preset, a face
+  look, face controls, a hair preset) was built on first guesses, each part on the one before, and the user kept the
+  two parts they had seen and answered (the bust, after their review; the dress) and disliked the rest. Measuring a
+  picture's angles doesn't make a likeness. Show a rough of each part and wait for the answer before building on it;
+  a preset isn't the deliverable until its parts are liked.
+
+## A Studio character's face in Godot: what took a second try (2026-11-11)
+
+- **"Done already" must name what it means.** The face bake skipped any mesh that had morph targets at all, as "baked
+  already". That was true the day it was written; ten days later the blink gave every export morph targets of its own
+  and the bake quietly did nothing, on every character, with `FACEMORPHS ok (nothing to bake)` in the log. A step that
+  skips work says what it found (the names it looked for), and its check uses a file made the way files are made today.
+- **A rule on the corners isn't a rule on the surface.** Keeping every corner of the lids outside the eye left 14 mm2
+  of eye showing through a lid: MHR's lid skin is a few triangles 4 to 8 mm a side, and a flat triangle with all three
+  corners on a 17 mm ball dips half a millimetre under it in the middle. Try the triangle's inside, not its corners.
+- **Measure what the picture shows, not the rule's own terms.** The first check of the baked lids read the file back
+  with the same profile the bake had used and found nothing wrong; the depth of the eye against the lid, drawn as
+  EYELIDS draws the blink, found 26 mm2. A check that shares its subject's model can only agree with it.
+- **A profile averaged round an axis hides what's off the axis.** The desk's eye is 24 steps of a solid of revolution,
+  a frame's budget; a cornea rises 2.6 mm in 30 degrees and sits a little off the joint's axis, so a lid resting beside
+  it was measured up to 0.6 mm wrong. A bake has time for the real surface (rays from the eye's middle).
+- **Each alone exact isn't the mix exact.** With every shape's lids kept off the eye at its own full weight, the check
+  passed at 0.000 mm2 and the first picture of a smile still had iris through the lower lid: a smile is six shapes at
+  once, their slides add, and a lid needs more room the further it goes (the cornea stands proud of the white). A check
+  on parts wants a check on a sum; the picture (a real expression in Godot) was what found it. The fix that held was
+  not a cleverer bake but the eye drawn 1.2 mm deeper: one line that covers any mix.
+- **A fix measured on one character is a guess on the next.** The eye drawn 1.2 mm deeper cost a plain face nothing
+  at rest; on the first creature it took a fifth of a demon's eye opening (deep-set eyes rest their lids' edges inside
+  the eye's front), and the demon never needed it: its lids don't reach its eyes. One number for everyone was wrong
+  twice. The bake now measures what each character's own face wants and the blinker turns it on only while lids move.
+  Run a fix on the oddest character there is before calling it done; the creatures existed the same day.
+- **A count of corners can't see what's hidden.** The first measure of that per-character room counted lid corners
+  deeper than they rest and said 2 mm for everyone: a thick lid's back slides into the eye by design, behind its own
+  front. Whether an eye shows through a lid is a question about a picture; the bake draws one (depth, back faces left
+  out, as Godot draws) and agrees with the check.
+- **A check with two ways in is two checks.** TUTORIAL2 builds her from the Studio's test character when the machine
+  has one and from a stand-in when it hasn't; a step added later read the stand-in's `Head` node and had only ever run
+  where there was no export. It stopped on the first machine that had both. When a check branches on what the machine
+  has, run the new step down each branch (or make it say which one it took).
+- **Try the cheap fix on paper before building the exact one.** The exact answer (the desk's per-frame push in the
+  skin's vertex shader) wanted a per-corner attribute in the copy, the eyes' places as uniforms every frame and a stage
+  in every skin shader. Ten minutes with the depth measure said a depth offset on the eyeball hid all of the leftover
+  and revealed nothing at rest; the numbers decided it.
+- **A measure made for one pose misreads another.** EYELIDS' rule for the grafted eyes leaves out skin inside the
+  white's sphere (their lining). A squint slides a lid's edge over the cornea, which stands 0.8 mm proud of that
+  sphere, and the hidden part of the edge was counted as the eye coming through. What's within 0.3 mm of the opening
+  is the rim; the picture of it (a red hair along the lid) said so before the numbers did.
+
+## Ages, creatures, horns and ears in the Character Studio: what took a second try (2026-11-10, night)
+
+- **A child isn't a small adult, and the fix isn't on the head**: the first thought was to scale the head up against the
+  body. Everything made on the head is sized by the body's scale (the eyeball's 12 mm, the lashes, the teeth, the
+  face's fit, the expressions' offsets), so a head scaled apart would have needed every one of them told. Scaling the
+  body under the head instead, and letting the height's scale come out of the whole, leaves the head and all on it
+  untouched: when one part must change against another, move the one nothing else is measured in.
+- **A thin sheet needs a weight that's the same on both its faces**: the ears' first weight was how far a point stands
+  off the head's side. The ear is a sheet with a front and a back a few millimetres apart, so the two faces got
+  different weights and moved through each other (154 triangles turned over at a slider of 1). The weight is now a
+  harmonic blend over the mesh itself (1 on what stands clear, 0 on the skull, each point between the mean of its
+  neighbours): both faces are ear alike. And a move that's the same size all over the ear tears at its root, where the
+  weight falls to 0 in a few millimetres: the ears' moves grow with the stand-off, so there's nothing to tear.
+- **Count turned-over triangles per sign**: the ears' counts at ±3 looked hopeless until they were split by sign: all
+  the folding was on the negative side (an ear pressed into the head, a pointed tip pulled down). A field that's fine
+  one way and folds the other gets a limit on the bad side (`REACH`), not a redesign.
+- **A push along the normals turns slivers**: the round face's field flipped twenty triangles at a slider of 1, all
+  under a third of a square millimetre, at the mouth's corners: the membrane that seals MHR's lips. Fields along the
+  normal keep clear of it.
+- **Stacked bumps read as rolls**: an ogre made of the sculpt's chest, waist, belly and hips at 3 was a column of
+  tyres, and a ghoul's waist at -1.6 a wasp's. Big and thin bodies come from MHR's own identity shapes (one body,
+  from real ones); the sculpt's bumps are for what's left.
+- **A helper's missing field is NaN, and NaN draws nothing**: `hornLines` took `rise` out of the head's frame, which
+  didn't have it; the bases were NaN, the meshes had their vertices and counted as made, and nothing showed. The page
+  check counts NaN in every horn and ear now. Destructure only what the caller's object says it has.
+- **A picture taken while a character is still opening shows another character**: the first row of a contact sheet
+  came out as the adult, because the script changed the age while `open()` was still between its awaits and its later
+  steps put the saved state back. Wait for the view's own word that it's composed (the HUD's line) before driving it.
+- **A Godot check must not be able to hang**: HSJiggle's script had a type error; the SceneTree script then never got
+  to its `quit()` and the check sat for ten minutes saying nothing. The demo stops itself after a count of frames and
+  the check runs it with a timeout and prints what Godot said.
+- **Gravity does nothing to a chain that stands straight up**: the spring's gravity pulls along the bone and has no
+  lever; the check's long ear leans out now. (And `for sk in array` gives a Variant: `sk.get_node_or_null()` can't be
+  given to `:=`.)
+- **A new freedom breaks every reader that derived one thing from another**: while every body was an adult's, the
+  head's size could be read off the body's height, and two readers did (the desk's `face.js` and the Godot face bake
+  sized MHR's 72 face shapes by the height over MHR's). An age makes the head 0.93 of an adult's on a body 0.77 as
+  tall, and nothing failed: the expressions would only have been a fifth too weak. Found by reading who uses the
+  export's scale, not by a check. The file says the head's scale itself now (`studioScale`). When something that used
+  to follow something else is set free, search for whoever computed the one from the other.
+- **Measure the claim, not a neighbour of it**: "Young face leaves the body as it was" was checked by the eyes' height
+  staying within a tenth of a millimetre, and failed by 0.18 mm on a body that hadn't moved at all: the eye itself is
+  smaller without the age's face, and its middle goes with it. The check now compares the points under the neck (none
+  moves) and lets the eyes be. When a check fails by a hair on something right, it was measuring the part that's
+  allowed to change.
+- **A face's switch shouldn't lift the skull**: Cutify carried a little Forehead height, which raises the whole crown
+  (14 mm a slider at the back of the top): 1.6 mm under the hair at its default and 4 mm at its most, found by marks
+  baked on the scalp, not by eye. The short face under the eyes already gives the high forehead; the lift is gone, and
+  Cutify leaves the crown where it was.
+- **A table by age needs its results checked across the ages, not at one**: the head's share of the height came from
+  one column for girls and boys, checked at eight against the chart and by eye on a sheet. A girl reaches her adult
+  height two years before a boy, so the same share on her nearly adult height gave her a skull 4% bigger at fourteen
+  than at eighteen: a head that shrank as she grew up. Seen only when a hairstyle's scale was printed at four ages.
+  The share is capped at the adult's skull, and GROW walks every age at each base: never smaller than the year before,
+  never bigger than the adult's. A curve is checked for its shape (monotonic, bounded), not only for its points.
+- **A check too slow to run here goes stale without anyone knowing**: STUDIO stopped at its brows and lashes step,
+  and EXPRESSIONS at its face row, both on things from before this work: the brows moved to a tab of their own on
+  2026-10-31 and one step still looked for their switches in Face; the desk's body rows share the face rows' class
+  and a selector written for one row found two. Neither had been run to its end since. When a part of a page moves or
+  gets a sibling, search every check for its old place and its class (`grep -n "browRows\|ftrack" tools/**/*test*`),
+  and say in CONTINUE which slow checks were not run, so the next run's first failure isn't taken for its own.
+- **One drawing job at a time means the Godot checks too**: a sixty-six-picture run of the Studio stopped at its
+  twenty-fourth on a click that waited thirty seconds for a button to hold still, because GDPLAY and GDTESTROOM had
+  been started beside it and the page's thread got no turn. A script that pictures a software-drawn page sets its
+  default timeout long (five minutes), names its pictures so a run can be picked up where it stopped, and nothing else
+  that eats a core runs with it.
+- **Hair is placed by a frame that the chin is in**: the salon's head frame is sized by the face from chin to crown,
+  and an age's short face moves the chin. Measuring how a head has moved since a bake from that frame would have shrunk
+  the hair by a twentieth onto a skull that hadn't changed. The move is measured on the body before its face's fit and
+  sculpt go on, where the head is carried and sized whole; and since that frame was never written down for older bakes,
+  a bake takes the head the character opens with when it still sits on it, rather than guessing what it was.
+
 ## Tutorial v2 using every system: what took a second try (2026-11-10, `update-tutorialv2`)
 
 - **Putting systems together finds what their own checks can't**: each plugin's check passed alone, and two bugs only

@@ -27,7 +27,7 @@ the pellets' holes going with them, its dust, bits and sound; weaker shots dent 
 
 And **someone who bleeds black ichor** (DECISIONS 2026-11-10: "a reactive system for characters/enemies to be shot,
 but dont do blood, instead create some form of demonic dark smoke and dark splatters like black blood"):
-**HSHitReact**, put under a character, gives her hitboxes on her bones on a layer of their own, a flinch on springs on
+**HSHitReact**, put under a character, gives her hitboxes on her bones on a layer of their own (**sized to her**: a child's, a goblin's or an ogre's limbs, shoulders and head measured from her own skeleton, an adult's as they were; `girth` for a heavy creature whose flesh stands wide of its bones), a flinch on springs on
 top of her animation (**HSFlinch**), a stagger counter that holds her where she is and shoves her back, black ichor
 where she's hit (a wound riding her bone, drops, the spray behind her, glossy, embers in it) and black smoke out of each
 wound trailing after her; shot down, she chars over, crumbles into the smoke and is gone. Its look is an

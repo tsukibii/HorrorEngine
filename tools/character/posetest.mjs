@@ -1,6 +1,6 @@
 // POSE: the Character Studio's T-pose (pose.js on MHR's rig, rig_mhr.mjs) and its Belly control (sculpt.js), checked
-// without a browser on MHR's bodies: the average, the bases (feminine, masculine) and the tailor's slim and full ones,
-// each at its own height. The rig skins every point (four bones, the weights summing to one). In the T-pose the arms
+// without a browser on MHR's bodies: the average, the bases (feminine, masculine), the tailor's slim and full ones and
+// two children (eight and twelve, as the Studio's ages make them: grow.js), each at its own height. The rig skins every point (four bones, the weights summing to one). In the T-pose the arms
 // level out from the shoulders with the elbows and wrists straight, the legs stand straight under the hips with the
 // soles where they were, the neck stands up (MHR's rest pose carries the head's joint 6 to 7.5 cm ahead of the
 // shoulders': the body under it moves forward, level, until the head's joint is pose.js's NECK_AHEAD ahead of the
@@ -17,7 +17,7 @@
 //   node tools/character/posetest.mjs
 import { readFileSync } from "fs";
 import { join } from "path";
-import { loadMhr, mhrBody, bodyWeights, ROOT } from "./tailor/node.mjs";
+import { loadMhr, mhrBody, grownBody, bodyWeights, ROOT } from "./tailor/node.mjs";
 import * as PO from "./pose.js";
 import * as SC from "./sculpt.js";
 
@@ -51,11 +51,13 @@ function earAhead(P, A, J) {
 }
 
 const edges = []; { const seen = new Set(); for (let t = 0; t < M.T.length; t += 3) for (let k = 0; k < 3; k++) { const a = M.T[t + k], b = M.T[t + (k + 1) % 3], key = a < b ? a * N + b : b * N + a; if (!seen.has(key)) { seen.add(key); edges.push(a, b); } } }
-const HEIGHT = { average: 1.7, feminine: 1.62, masculine: 1.78, slim_feminine: 1.6, slim_masculine: 1.76, full_feminine: 1.64, full_masculine: 1.78 };
+const HEIGHT = { average: 1.7, feminine: 1.62, masculine: 1.78, slim_feminine: 1.6, slim_masculine: 1.76, full_feminine: 1.64, full_masculine: 1.78, child_8: 1.28, child_12: 1.52 };
+// (the last two as the Studio's ages make them, grow.js: the body under the head scaled against it, the joints by each part's own scale)
+const GROWN = { child_8: { age: 8, base: 0 }, child_12: { age: 12, base: -1 } };
 for (const [name, H] of Object.entries(HEIGHT)) {
-  const w = bodyWeights(name), raw = mhrBody(M, w, 1);                  // its own proportions; the scale the Studio gives it
+  const g = GROWN[name] ? grownBody(M, { ...GROWN[name], height: H }) : null, w = g ? g.weights : bodyWeights(name);   // its own proportions; the scale the Studio gives it
   let lo = 1e9, hi = -1e9; { const P = new Float32Array(M.P); for (let k = 0; k < w.length; k++) if (w[k]) for (let i = 0; i < P.length; i++) P[i] += w[k] * M.shapes[k * N * 3 + i]; for (let i = 1; i < P.length; i += 3) { lo = Math.min(lo, P[i]); hi = Math.max(hi, P[i]); } }
-  const scale = H / (hi - lo), P = mhrBody(M, w, H).P, X = PO.pose(R, PO.joints(R, P, M.P, scale), "t"), S = PO.skin(R, X, P), J = n => { const b = R.byName.get(n); return [X.J2[b * 3], X.J2[b * 3 + 1], X.J2[b * 3 + 2]]; };
+  const scale = g ? g.scale : H / (hi - lo), P = g ? g.P : mhrBody(M, w, H).P, X = PO.pose(R, PO.joints(R, P, M.P, scale, g ? g.F : null), "t"), S = PO.skin(R, X, P), J = n => { const b = R.byName.get(n); return [X.J2[b * 3], X.J2[b * 3 + 1], X.J2[b * 3 + 2]]; };
   const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], ang = (a, b) => Math.acos(Math.min(1, (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]) / Math.hypot(...a) / Math.hypot(...b))) * 180 / Math.PI;
   let arms = 0, bend = 0, legs = 0;
   for (const s of ["l", "r"]) {

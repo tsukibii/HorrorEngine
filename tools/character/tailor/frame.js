@@ -2,7 +2,7 @@
 // the neck's axis, the torso's axis at any height, each arm's centre line from the shoulder joint to the fingertips
 // (its length, the wrist), and which side of the sleeve seam a point is on. Made from scan.js's slices.
 import { scan } from "./scan.js";
-import { clamp, lerp } from "./mesh.js";
+import { clamp, lerp, welded } from "./mesh.js";
 
 const avg = a => a.reduce((s, v) => s + v, 0) / (a.length || 1);
 
@@ -52,7 +52,15 @@ export class Line {
 }
 
 /** everything a garment is cut to, measured on this body (P, T: metres, Y up, facing +Z, feet on the floor) */
-export function frame(P, T) {
+/** the frame of a body as the tailor takes it, and the body it's the frame of: a dress form (a full bust's: sculpt.js
+    bustShape) has its gathered points made one (mesh.js welded; `map`: each point of the body as it came -> its point
+    here) and its fabric lines read softly (torsoArcs); any other body is itself, its frame as it always was */
+export const FORM_SOFT = 0.03;                                        // (metres on MHR's average)
+export function bodyFrame(P, T) {
+  const w = welded(P, T);
+  return w ? { P: w.P, T: w.T, map: w.map, F: frame(w.P, w.T, { soft: FORM_SOFT }) } : { P, T, map: null, F: frame(P, T) };
+}
+export function frame(P, T, o = {}) {                               // o.soft: the torso's panels read over this many metres of height (a dress form's: torsoArcs)
   const S = scan(P, T), { H, s } = S;
   const rowsIn = (a, b) => S.rows.filter(r => r.y >= a && r.y <= b);
   const torsoLoop = r => S.central(r);
@@ -160,7 +168,7 @@ export function frame(P, T) {
     H, s, scan: S, neck, torsoAxis, feet, crotchY: S.crotchY, armpitY: S.armpitY, waistY: waist.y, hipY: hips.y, bustY: bust.y, neckBaseY,
     kneeY: avg([legs.L.knee, legs.R.knee]), ankleY: 0.045 * H, arms, legs, legLines,
     // the torso's panels as arc lengths, the parts' radii: fabric coordinates in metres (tailor/uv.js)
-    torsoU: torsoArcs(S, torsoAxis, S.crotchY - 0.06 * s, S.armpitY - 0.015 * s),
+    torsoU: torsoArcs(S, torsoAxis, S.crotchY - 0.06 * s, S.armpitY - 0.015 * s, (o.soft || 0) * s),
     torsoR: avg(tor.filter(t => t.y > waist.y && t.y < S.armpitY).map(t => t.l.perim / (2 * Math.PI))),
     armR: avg(arms.L.profile.filter(([t]) => t > arms.L.seam && t < arms.L.wrist).map(p => p[1])) + 0.01 * s,
     legR: avg(S.leg.L.filter(p => p.y > 0.3 * H).map(p => Math.sqrt(p.area / Math.PI))),
@@ -179,7 +187,7 @@ export function frame(P, T) {
 /** the torso's outline at every row as arc lengths by angle round its middle, from the front's middle (the front half,
     +-pi/2) and from the back's (the back half): u(x, y, z) is how far across a panel laid on the body a point is, in
     metres, the way a flat front and back sewn at the sides would lie */
-function torsoArcs(S, axis, y0, y1) {
+function torsoArcs(S, axis, y0, y1, soft = 0) {
   const rows = [];
   for (const r of S.rows) {
     if (r.y < y0 || r.y > y1) continue;
@@ -222,6 +230,15 @@ function torsoArcs(S, axis, y0, y1) {
   return (x, y, z, back = z < (rows[0]?.cz ?? 0)) => {
     if (!rows.length) return x;
     const row = y2 => {
+      if (soft) {
+        // a dress form's (a full bust: tailor.js body): each row's outline changes fast with the height over a ball and
+        // steps where the ball ends, and a line of the fabric (a knit's rib) read row by row steps sideways with it.
+        // So the rows round this height are read together, nearer ones more: the lines run smoothly over the bust
+        let a = 0, w = 0, lo = 0, hi = rows.length - 1; const ya = y2 - 2.5 * soft;
+        while (hi - lo > 1) { const m = (lo + hi) >> 1; if (rows[m].y <= ya) lo = m; else hi = m; }
+        for (let k = lo; k < rows.length && rows[k].y <= y2 + 2.5 * soft; k++) { const d = (rows[k].y - y2) / soft, g = Math.exp(-0.5 * d * d); a += g * one(rows[k], x, z, back); w += g; }
+        if (w > 1e-9) return a / w;
+      }
       if (y2 <= rows[0].y) return one(rows[0], x, z, back);
       if (y2 >= top.y) return one(top, x, z, back);
       let lo = 0, hi = rows.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (rows[m].y <= y2) lo = m; else hi = m; }

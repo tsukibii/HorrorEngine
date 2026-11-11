@@ -17,6 +17,7 @@ signal returned
 @export var away_min := 60.0
 @export var away_max := 120.0
 @export var retreat: Node3D                       ## where she withdraws to (empty: gone)
+@export var head_m := 1.5                         ## her head over her feet (m): where she sees from and where her sounds come from; a child's about 1.2, an imp's 0.8, an ogre's 2.3
 
 var level := 0.0                                  ## the gauge (a check's)
 var away := false
@@ -37,7 +38,7 @@ func _process(dt: float) -> void:
 	if not her.is_visible_in_tree():
 		level = maxf(0.0, level - fall * dt)
 		return
-	var head := her.global_position + Vector3.UP * 1.5
+	var head := her.global_position + Vector3.UP * head_m
 	var d := cam.global_position.distance_to(head)
 	var rate := -fall
 	if d <= near_m:

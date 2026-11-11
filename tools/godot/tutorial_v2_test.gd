@@ -815,8 +815,16 @@ func _initialize() -> void:
 		bad("her menace (menace.gd): the gauge %.2f near her, withdrew %s, the director relaxing %s, back %s" % [men_level, men_gone, men_relax, her.visible])
 	# the steps behind you (behind_you.gd, started by the batteries' picked): out of the vending corner
 	var unc_her: Node = her.get_node("Uncanny")
-	var head := her.get_node("Head") as Node3D
-	var bent := rad_to_deg(head.global_basis.y.angle_to(her.global_basis.y))
+	var head := her.get_node_or_null("Head") as Node3D          # a stand-in's head; a Studio export (a machine that has one: _studiotest) has a head bone instead
+	var bent := 0.0
+	if head != null:
+		bent = rad_to_deg(head.global_basis.y.angle_to(her.global_basis.y))
+	else:
+		for sk in her.find_children("*", "Skeleton3D", true, false):
+			for nm in unc_her.tilted:
+				var bi: int = (sk as Skeleton3D).find_bone(str(nm))
+				if bi >= 0:                                        # how far the bone is turned from where it rests
+					bent = rad_to_deg(((sk as Skeleton3D).get_bone_global_pose(bi).basis.orthonormalized() * (sk as Skeleton3D).get_bone_global_rest(bi).basis.orthonormalized().inverse()).get_rotation_quaternion().get_angle())
 	var her_x0 := her.global_position.x
 	var her_steps0: int = unc_her.steps
 	var bh: Node = main.get_node("BehindYou")

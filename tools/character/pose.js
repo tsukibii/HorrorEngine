@@ -8,8 +8,8 @@
 // below the head moves forward under it, level, the neck part of the way). The head and everything on it (the face, the
 // eyes, the teeth) stays exactly where it was. Plain JS, no three.js (posetest.mjs checks it).
 //
-//   const R = readRig(buffer)             {N, bones: [{name, parent, at}], BI, BW, rings}
-//   const J = joints(R, P, P0, scale)     each bone's place on body P (P0: the rest body the rig was made on, `scale` P's scale to it)
+//   const R = readRig(buffer)             {N, bones: [{name, parent, at}], BI, BW, rings, owns}
+//   const J = joints(R, P, P0, scale, F)  each bone's place on body P (P0: the rest body the rig was made on, `scale` P's scale to it, F: each point's own scale or null)
 //   const X = pose(R, J, "t" | "rest")    each bone's turn and pivots (null for "rest": nothing moves)
 //   skin(R, X, P, out)                    the posed points; at(R, X, i, p) where point i's skinning takes p; turn(R, X, i, d) a direction
 //   skinWith(X, BI, BW, Q, out)           any points with their own four bones (a garment's, tailor/weights.js)
@@ -45,22 +45,31 @@ export function readRig(buf) {
     const s = [...use.values()].reduce((a, w) => a + w, 0);
     return { idx: Uint32Array.from(use.keys()), w: Float32Array.from([...use.values()].map(w => w / s)) };
   });
-  return { N, bones, byName, order, BI, BW, rings };
+  // each bone's own points (what's weighted to it), for a body whose parts were sized apart (joints' F): the bone's own scale
+  const owns = bones.map((_, b) => { const s = [...own[b].values()].reduce((a, w) => a + w, 0); return s > 0 ? { idx: Uint32Array.from(own[b].keys()), w: Float32Array.from([...own[b].values()].map(w => w / s)) } : null; });
+  return { N, bones, byName, order, BI, BW, rings, owns };
 }
 
-// the joints on a body: each the ring's middle on P plus the ring's middle's offset from the joint on P0, scaled
-export function joints(R, P, P0, scale = 1) {
-  const J = new Float64Array(R.bones.length * 3);
+// the joints on a body: each the ring's middle on P plus the ring's middle's offset from the joint on P0, scaled.
+// F (per point, or null): each point's own scale on a body whose parts were sized apart (grow.js: a child's body under
+// its head, big hands): a joint's offset from its ring is scaled by its ring's too; a bone without a ring keeps its
+// place on its parent by the parent's own scale (its own points': an eye in a head that kept its size stays put,
+// though the head's ring, down the neck, is part body)
+export function joints(R, P, P0, scale = 1, F = null) {
+  const J = new Float64Array(R.bones.length * 3), K = F ? new Float64Array(R.bones.length).fill(1) : null;
   for (const b of R.order) {
     const g = R.rings[b], at = R.bones[b].at, par = R.bones[b].parent;
+    if (K) { const o = R.owns && R.owns[b]; if (o) { let k = 0; for (let q = 0; q < o.idx.length; q++) k += o.w[q] * F[o.idx[q]]; K[b] = k; } else K[b] = par >= 0 ? K[par] : 1; }   // the bone's own scale (its parent's when no skin is its own)
     if (!g) {                                                             // no skin of its own: it keeps its place on its parent
-      for (let a = 0; a < 3; a++) J[b * 3 + a] = par < 0 ? at[a] * scale : J[par * 3 + a] + (at[a] - R.bones[par].at[a]) * scale;
+      const k = K && par >= 0 ? K[par] : 1;
+      for (let a = 0; a < 3; a++) J[b * 3 + a] = par < 0 ? at[a] * scale : J[par * 3 + a] + (at[a] - R.bones[par].at[a]) * scale * k;
       continue;
     }
+    let k = 1; if (F) { k = 0; for (let q = 0; q < g.idx.length; q++) k += g.w[q] * F[g.idx[q]]; }
     for (let a = 0; a < 3; a++) {
       let m = 0, m0 = 0;
       for (let q = 0; q < g.idx.length; q++) { m += g.w[q] * P[g.idx[q] * 3 + a]; m0 += g.w[q] * P0[g.idx[q] * 3 + a]; }
-      J[b * 3 + a] = m + (at[a] - m0) * scale;
+      J[b * 3 + a] = m + (at[a] - m0) * scale * k;
     }
   }
   return J;

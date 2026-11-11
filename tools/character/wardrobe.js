@@ -34,7 +34,7 @@ function dummyBody(height = 1.7) {
   const s = height / (hi - lo); for (let i = 0; i < P.length; i += 3) { P[i] *= s; P[i + 1] = (P[i + 1] - lo) * s; P[i + 2] *= s; }
   const sculpt = {}; for (const [k, v] of Object.entries(BASES.sculpt?.feminine || {})) sculpt[k] = v / 2;
   for (const c of SC.buildSculpt({ P: BASEP, T: TRIS, lm: () => [0, 1.6, 0.1] }).controls.filter(c => c.group === "Body")) {
-    const v = (sculpt[c.id] || 0) * s; if (!v) continue;
+    const v = SC.fieldValue(c, id => sculpt[id] || 0) * s; if (!v) continue;
     for (let q = 0; q < c.idx.length; q++) { const i = c.idx[q] * 3; P[i] += v * c.d[q * 3]; P[i + 1] += v * c.d[q * 3 + 1]; P[i + 2] += v * c.d[q * 3 + 2]; }
   }
   return P;

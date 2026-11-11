@@ -204,6 +204,7 @@ def nodes(g, keep, env):
         ("the flicker lights moving (%s)" % ", ".join(moved), len(moved) >= 5),
         ("a mirror's reflection attached to the game's camera, a window pane's glass, a CRT screen's glass", rep.get("mirror") is True and rep.get("pane") is True and rep.get("crt") is True),
         ("a character's skin worn (%d materials)" % rep.get("character", 0), rep.get("character", 0) >= 1),
+        ("the creature skins' presets each put their own look on their figure (%s of %s)" % (rep.get("creatures"), rep.get("creature_looks")), rep.get("creatures", 0) == rep.get("creature_looks", -1) and rep.get("creatures", 0) >= 11),
         ("the editor-only look environment stepping aside in the game", rep.get("look_env_freed") is True),
         ("a save: the meshes' own materials back, the lights at full, no projector, nothing the nodes made in the packed scene; on again after",
          rep.get("save_materials_back") is True and rep.get("save_lights_full") is True and rep.get("save_no_projector") is True and rep.get("save_nothing_made") is True and rep.get("after_save_on") is True),

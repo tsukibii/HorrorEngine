@@ -41,6 +41,24 @@ export function subdivide(P, T) {
   return { P: P2, T: T2, parents };
 }
 
+/** the mesh with points that lie exactly on one another made one: {P, T, map (each old point's new index)}, the
+    triangles that came to nothing left out (and one that came to the same three points as another), or null when no
+    two points coincide (every body but a dress form's: the form of a full bust gathers the skin a garment isn't cut
+    from, the hollow under the breast, onto single points: sculpt.js bustShape, tailor.js body) */
+export function welded(P, T) {
+  const n = P.length / 3, at = new Map(), map = new Int32Array(n), f = new Float32Array(3), u = new Uint32Array(f.buffer); let m = 0;
+  for (let i = 0; i < n; i++) { f[0] = P[i * 3]; f[1] = P[i * 3 + 1]; f[2] = P[i * 3 + 2]; const k = u[0] + "," + u[1] + "," + u[2]; let j = at.get(k); if (j === undefined) { j = m++; at.set(k, j); } map[i] = j; }
+  if (m === n) return null;
+  const Q = new Float32Array(m * 3), seen = new Uint8Array(m), tri = [], had = new Set();
+  for (let i = 0; i < n; i++) { const j = map[i]; if (seen[j]) continue; seen[j] = 1; Q[j * 3] = P[i * 3]; Q[j * 3 + 1] = P[i * 3 + 1]; Q[j * 3 + 2] = P[i * 3 + 2]; }
+  for (let t = 0; t < T.length; t += 3) {
+    const a = map[T[t]], b = map[T[t + 1]], c = map[T[t + 2]]; if (a === b || b === c || a === c) continue;
+    const lo = Math.min(a, b, c), hi = Math.max(a, b, c), k = (lo * m + (a + b + c - lo - hi)) * m + hi; if (had.has(k)) continue;
+    had.add(k); tri.push(a, b, c);
+  }
+  return { P: Q, T: new Uint32Array(tri), map };
+}
+
 /** neighbours as a compressed list: vertex i's are list[start[i] .. start[i + 1]) */
 export function adjacency(n, T) {
   const sets = Array.from({ length: n }, () => new Set());

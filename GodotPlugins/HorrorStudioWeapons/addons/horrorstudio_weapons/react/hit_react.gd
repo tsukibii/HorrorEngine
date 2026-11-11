@@ -49,6 +49,7 @@ const SKIP := ["twist", "proc", "null", "_end", "roll", "ik_", "pole", "nub", "t
 @export var gone_secs := 0.0                      ## down, back whole after this long (0: never; a demon stays gone)
 @export var look: HSWoundLook                     ## how she bleeds (none: react/looks/demon.tres)
 @export var hitboxes := true                      ## capsules on her bones (none: her own colliders, or a capsule round her)
+@export_range(0.3, 3.0) var girth := 1.0          ## how thick her hitboxes are against what her bones say: more for a heavy creature whose flesh stands wide of its skeleton (a belly), less for a gaunt one
 @export var target: Node                          ## its fire() when she's down (a scare, a cue)
 @export var cry: AudioStream                      ## a sound of hers when she's hit (the wound's own plays anyway)
 
@@ -136,6 +137,7 @@ func _setup() -> void:
 	if _sk != null:
 		_roles = _find_roles(_sk)
 		_fwd = _facing()
+		_measure()
 		_flinch = HSFlinch.new()
 		_flinch.name = "HSFlinch"
 		_sk.add_child(_flinch)
@@ -236,21 +238,71 @@ func _facing() -> Vector3:
 	return f.normalized() if f.length() > 1e-4 else -_sk.global_basis.z
 
 
+# Her size against an adult's, part by part, from her own bones (DECISIONS 2026-11-11: children and creatures are shot at
+# too). The capsules' lengths always followed her skeleton; their thickness was an adult's whoever she was: a head 20 cm
+# across on an imp 90 cm tall, a chest 28 cm through on an ogre of 2.6 m (a shot that hit his side passed through).
+# Now each part's thickness goes with its bones: the legs' by the leg's length, the arms' by the arm's, the torso's and
+# the neck's by the shoulders' width, the head's by the head's own length (a child's head is nearly an adult's on a small
+# body: it doesn't shrink with her height). Within an eighth of an adult's, a part keeps the adult's numbers exactly (a
+# person of any rig is as before). `girth` is what bones can't say: flesh.
+const ADULT := {"leg": 0.84, "arm": 0.527, "shoulders": 0.352, "head": 0.191, "eyes": 0.064}   # MHR's adult, m: hip to ankle, shoulder to wrist, shoulder to shoulder, the head's joint to its top, eye to eye
+var _size := {"head": 1.0, "torso": 1.0, "arm": 1.0, "leg": 1.0}
+
+func _measure() -> void:
+	var R := _roles
+	var between := func(a: String, b: String) -> float: return _bpos(R[a]).distance_to(_bpos(R[b])) if R.has(a) and R.has(b) else 0.0
+	var snap := func(k: float) -> float: return 1.0 if absf(k - 1.0) < 0.125 else clampf(k, 0.3, 3.5)
+	var leg := 0.0
+	var arm := 0.0
+	for sd in ["l", "r"]:
+		leg = maxf(leg, between.call("upleg_" + sd, "lowleg_" + sd) + between.call("lowleg_" + sd, "foot_" + sd))
+		arm = maxf(arm, between.call("uparm_" + sd, "lowarm_" + sd) + between.call("lowarm_" + sd, "hand_" + sd))
+	if leg > 0.05:
+		_size["leg"] = snap.call(leg / ADULT["leg"])
+	_size["arm"] = snap.call(arm / ADULT["arm"]) if arm > 0.05 else _size["leg"]
+	var sh: float = between.call("uparm_l", "uparm_r")
+	_size["torso"] = snap.call(sh / ADULT["shoulders"]) if sh > 0.05 else _size["leg"]
+	_size["head"] = _size["torso"]
+	if R.has("head"):
+		var hn := _sk.find_bone(_sk.get_bone_name(R["head"]) + "_null")
+		var le := -1
+		var re := -1
+		for nm in ["l_eye", "lefteye", "eye_l"]:
+			if le < 0:
+				le = _sk.find_bone(nm)
+		for nm in ["r_eye", "righteye", "eye_r"]:
+			if re < 0:
+				re = _sk.find_bone(nm)
+		if hn >= 0 and _bpos(hn).distance_to(_bpos(R["head"])) > 0.03:
+			_size["head"] = snap.call(_bpos(hn).distance_to(_bpos(R["head"])) / ADULT["head"])
+		elif le >= 0 and re >= 0 and _bpos(le).distance_to(_bpos(re)) > 0.01:
+			_size["head"] = snap.call(_bpos(le).distance_to(_bpos(re)) / ADULT["eyes"])
+
+
+## her parts' sizes against an adult's (a check's)
+func sizes() -> Dictionary:
+	return _size.duplicate()
+
+
 # capsules along her bones on HITBOX_LAYER, each riding its bone (a BoneAttachment3D): the head, the neck, the spine
 # piece by piece, the arms and the legs in two pieces and a hand and a foot
 func _make_hitboxes() -> void:
 	var segs: Array = []                          # [from bone, to (world), radius, part]
 	var R := _roles
+	var kh: float = _size["head"]
+	var kt: float = _size["torso"]
+	var ka: float = _size["arm"]
+	var kl: float = _size["leg"]
 	if R.has("head"):
-		var top := _bpos(R["head"]) + Vector3.UP * 0.2
+		var top := _bpos(R["head"]) + Vector3.UP * 0.2 * kh
 		var hn := _sk.find_bone(_sk.get_bone_name(R["head"]) + "_null")
 		if hn >= 0:
 			top = _bpos(hn)
 		elif R.has("neck"):
-			top = _bpos(R["head"]) + (_bpos(R["head"]) - _bpos(R["neck"])).normalized() * 0.2
-		segs.append([R["head"], top, 0.1, "head"])
+			top = _bpos(R["head"]) + (_bpos(R["head"]) - _bpos(R["neck"])).normalized() * 0.2 * kh
+		segs.append([R["head"], top, 0.1 * kh, "head"])
 	if R.has("neck") and R.has("head"):
-		segs.append([R["neck"], _bpos(R["head"]), 0.055, "head"])
+		segs.append([R["neck"], _bpos(R["head"]), 0.055 * kt * girth, "head"])
 	var chain: Array = []
 	if R.has("pelvis"):
 		chain.append(R["pelvis"])
@@ -260,22 +312,22 @@ func _make_hitboxes() -> void:
 	for i in chain.size() - 1:
 		var a: int = chain[i]
 		var b: int = chain[i + 1]
-		if _bpos(a).distance_to(_bpos(b)) > 0.04:
-			segs.append([a, _bpos(b), 0.14 if i >= chain.size() - 3 else 0.13, "torso"])
-	if R.has("pelvis") and not (R["spine"] as Array).is_empty() and _bpos(R["pelvis"]).distance_to(_bpos(R["spine"][0])) <= 0.04:
-		segs.append([R["pelvis"], _bpos(R["pelvis"]) + Vector3.DOWN * 0.12, 0.14, "torso"])
+		if _bpos(a).distance_to(_bpos(b)) > 0.04 * kt:
+			segs.append([a, _bpos(b), (0.14 if i >= chain.size() - 3 else 0.13) * kt * girth, "torso"])
+	if R.has("pelvis") and not (R["spine"] as Array).is_empty() and _bpos(R["pelvis"]).distance_to(_bpos(R["spine"][0])) <= 0.04 * kt:
+		segs.append([R["pelvis"], _bpos(R["pelvis"]) + Vector3.DOWN * 0.12 * kt, 0.14 * kt * girth, "torso"])
 	for s in ["l", "r"]:
 		for spec in [["uparm", "lowarm", 0.05, "arm"], ["lowarm", "hand", 0.042, "arm"], ["upleg", "lowleg", 0.075, "leg"], ["lowleg", "foot", 0.055, "leg"]]:
 			var a_role: String = spec[0] + "_" + s
 			var b_role: String = spec[1] + "_" + s
 			if R.has(a_role) and R.has(b_role):
-				segs.append([R[a_role], _bpos(R[b_role]), spec[2], spec[3]])
+				segs.append([R[a_role], _bpos(R[b_role]), spec[2] * (ka if spec[3] == "arm" else kl) * girth, spec[3]])
 		if R.has("hand_" + s) and R.has("lowarm_" + s):
 			var hd := (_bpos(R["hand_" + s]) - _bpos(R["lowarm_" + s])).normalized()
-			segs.append([R["hand_" + s], _bpos(R["hand_" + s]) + hd * 0.14, 0.045, "arm"])
+			segs.append([R["hand_" + s], _bpos(R["hand_" + s]) + hd * 0.14 * ka, 0.045 * ka, "arm"])
 		if R.has("foot_" + s):
-			var to := _bpos(R["ball_" + s]) if R.has("ball_" + s) else _bpos(R["foot_" + s]) + _fwd * 0.14
-			segs.append([R["foot_" + s], to, 0.045, "leg"])
+			var to := _bpos(R["ball_" + s]) if R.has("ball_" + s) else _bpos(R["foot_" + s]) + _fwd * 0.14 * kl
+			segs.append([R["foot_" + s], to, 0.045 * kl, "leg"])
 	for sg in segs:
 		_capsule(sg[0], sg[1], sg[2], sg[3])
 
@@ -419,7 +471,7 @@ func _where(h: Dictionary) -> Dictionary:
 
 func _height() -> float:
 	if _roles.has("head") and _sk != null:
-		return _bpos(_roles["head"]).y - _her().global_position.y + 0.15
+		return _bpos(_roles["head"]).y - _her().global_position.y + 0.15 * float(_size["head"])
 	return 1.7
 
 
@@ -784,7 +836,7 @@ func _ooze(kind: String, size: float, at: Vector3, nrm: Vector3, along: Vector3,
 	if not _ooze_mats.has(o.kind):
 		_ooze_mats[o.kind] = HSOoze.make_material(_lk, o.kind)
 	o.size_m = size
-	o.depth_m = 0.14 if kind == "wound" else 0.16           # (on her skin: her hitbox is a capsule, her skin a few cm off it)
+	o.depth_m = (0.14 if kind == "wound" else 0.16) * maxf(1.0, float(_size["torso"]) * girth)   # (on her skin: her hitbox is a capsule, her skin a few cm off it; further on a big creature)
 	o.embers = clampf(_lk.embers / 2.5, 0.0, 2.0)
 	o.embers_s = _lk.embers_s
 	o.material_override = _ooze_mats[o.kind]

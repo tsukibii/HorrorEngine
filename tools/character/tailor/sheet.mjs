@@ -7,6 +7,8 @@
 //        [--drape [JSON]]   hung by gravity (tailor/drape.js); JSON: {design: {drape settings}} over the designs' own
 //        [--edit JSON]      a garment's own edits, as the Studio keeps them: {"t-shirt": {"fit": 0}} (skin tight)
 //        [--sculpt JSON]    the body's sculpt over its base's (sculpt.js's body controls): {"belly": -0.5}
+//        [--anime]          the Bust past -1 and 1 as the Studio's Anime switch makes it: --sculpt '{"bust": 2}' a full bust (sculpt.js bustShape)
+//        [--form]           the dress form shown in the body's place (what the clothes are cut on: a full bust with no hollow under it)
 //
 // Needs Playwright (npm i playwright, or PLAYWRIGHT=<path to its package>).
 import { createServer } from "http";
@@ -43,10 +45,12 @@ const list = list0 && list0.map(([d, c, l, e]) => [d, c, extra || pbrs[d] ? { ..
 if (!list) { console.error("no such outfit"); process.exit(1); }
 const out = arg("out", "tailor_sheet.png"), size = parseInt(arg("size", 360));
 
-const b = mhrBody(loadMhr(), bodyWeights(bodyName), H, arg("sculpt") ? { ...bodySculpt(bodyName), ...JSON.parse(arg("sculpt")) } : bodySculpt(bodyName));
+const MHR = loadMhr(), SCULPT = arg("sculpt") ? { ...bodySculpt(bodyName), ...JSON.parse(arg("sculpt")) } : bodySculpt(bodyName);
+const b = mhrBody(MHR, bodyWeights(bodyName), H, SCULPT, { anime: has("anime") }), form = mhrBody(MHR, bodyWeights(bodyName), H, SCULPT, { anime: has("anime"), form: true });   // the body shown, and the dress form the clothes are cut on (a full bust's: sculpt.js bustShape; --form shows the form instead)
 const dset = typeof arg("drape") === "string" && arg("drape").startsWith("{") ? JSON.parse(arg("drape")) : {};
 for (const [d, o] of Object.entries(dset)) designs[d].piece.drape = { ...(designs[d].piece.drape || {}), ...o };
-const t0 = Date.now(), B = TAILOR.body(b.P, b.T), worn = TAILOR.dress(B, list, designs, { drape: has("drape") });
+const t0 = Date.now(), B = TAILOR.body(form.P, form.T), worn = TAILOR.dress(B, list, designs, { drape: has("drape") });
+if (has("form")) b.P = form.P;
 const stats = worn.map(g => `${g.name} ${g.stats.triangles} tris ${g.stats.ms} ms` + (g.drape ? ` (drape ${g.drape.ms} ms, ${g.drape.steps} steps, fell ${(g.drape.fell * 100).toFixed(1)} cm)` : ""));
 console.log(`made in ${Date.now() - t0} ms: ${stats.join(", ")}`);
 

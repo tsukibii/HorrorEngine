@@ -43,6 +43,142 @@ The user's answers, newest first. They override the plan, the research and the d
 - **Not decided: the user picks.** Whether CC-BY garments may ship with a credits screen (the rule today is CC0 or
   ours); whether the fit becomes a CloV2 tab in the Studio; which garments come in first.
 
+## 2026-11-11, latest (the user: the new Bust slider kept as an Anime switch, the red knit dress kept; no look-alike preset)
+
+- **The ask** (with a Daz3D screenshot of a character in a red ribbed turtleneck dress): **"could we make a 'korean
+  anime' proportion preset, that's vaguely like the character shown in the screenshot (can we also recreate the same
+  dress), try get it as 1:1 as possible and make it so it's easily adjustable (we should be able to make the woman more
+  flat too but also more busty like the image ... maybe make it about 60% as busty as the image given that being too
+  busty might cause clipping issues), try re-create that kind of face and makeup look too and create a hair preset
+  that matches my image"**.
+- **On the first bust** (an annotated screenshot, ticks on the front view, red lines on the side views): **"from the
+  front angle it looks perfect, but as you go towards a side view it looks unnaturally pointy, it should feel more how
+  a waterballoon would sit rather than a fine point"**. The bust was rebuilt from that: not a bigger bump but a ball
+  hung in the skin from the breast's root, resting on the ribs, its weight low (CHARACTER_STUDIO §2e).
+- **Then the stop: "for the latest work on recreating the korean character I dislike everything we've done aside from
+  the new red clothing fabric and the new bust slider, keep the new bust slider as an 'anime' toggleable, and the
+  clothing, don't worry about creating a preset for the 1:1 character anymore"**. So:
+  - **Kept, as a switch: Anime** (Character Studio, Body, under Cutify). On, a **Bust** slider under it runs from −2
+    to 3: −2 a flat chest, 0 the body's own, 1 the plain slider's top, and past 1 a full, heavy bust that hangs like a
+    water balloon (2 large; 3 about the picture's, so 2 to 2.2 is the "60% as busty" asked for). Clothes are cut on a
+    dress form of it, so they go over a full bust without tearing or showing skin (TAILOR §1j). **Off (the default),
+    the Bust is the plain slider it always was, −1 to 1**: every character made before is the same, and a character
+    saved with Anime on that's switched off has its Bust brought back into that range.
+  - **Kept: the red knit.** A new fabric, **Rib knit, chunky** (`chunky`: a sweater's wide ribs, eight 6 mm ribs a
+    tile), and the dress as an outfit in Casual, **"casual: red sweater dress"**: a long turtleneck sweater
+    (`sweater-dress`: a folded rib neck, rib cuffs) hanging free over a straight skirt of the same knit
+    (`sweater-dress-skirt`), both designs usable alone and in any colour.
+  - **Taken out, all of it**: the figure preset and its cards, the face look and makeup made after the picture, the
+    face controls made for it (face size, jawline), the hair preset and its hairstyle, the figures tool. **No preset
+    of the 1:1 character**: not to be picked up again unless the user asks.
+- **Read as, for next time**: a look-alike of a picture is the user's to judge, part by part. Show a rough of each part
+  (a body sheet, a face sheet, the hair) before building the next on it, and don't finish a whole character on a
+  first guess (LESSONS).
+
+## 2026-11-11, later (the user: weird skins for the monsters, in Godot)
+
+- **"once your done with this could we create some more weird skin shaders/textures for the monster characters that we
+  can apply in godot, e.g. a chrome silver skin, a pearlescent skin, some kind of greasy shader"**. Built in the look
+  plugin as **creature skins** (docs/GODOT_LOOK.md §5o, guides/look_plugin §8): eleven looks that go on a character's
+  skin in place of the skin shader: **chrome** (polished silver), **mirror**, **pearl**, **greasy**, **slime**, **black
+  oil**, **porcelain** (cracked), **ember** (glowing cracks), **stone**, **scales**, **wax**.
+  - **How they're put on**: under the character, the `HSCharacterLook` node's **Creature skin** row (the look, Amount,
+    Tint, Extend), or a ready-made preset dragged under her (`presets/creature_chrome.tscn` ...), or a line of script
+    (`HSCreatureSkin.wear($Demon, "chrome")`). They keep what her skin had (its colour as far as the look leaves it,
+    its pores, its creases); her horns and ears take the look too; her eyes, teeth, hair and clothes never.
+  - **Read as**: shaders, not baked textures: one shader, each look its numbers, so a look can be recoloured (chrome
+    with a gold tint), mixed with her own skin (Amount, for a skin that turns) and changed while the game runs. The
+    patterns (smears, cracks, scales) are drawn by the shader at their real size.
+  - **Chrome is two looks** on purpose. A real mirror shows only its room, and in a dark room it's a black figure with
+    glints; `chrome` keeps a sixth of its light as a surface so it reads silver under any lamp, and `mirror` is the
+    pure one for a level with a sky or a reflection probe. Neither glows: in the dark they're as dark as the room.
+  - Held by CREATURESKIN (`python tools/godot/creature_skin_check.py`); the sheet
+    `docs/godot_sheets/2026-11-11_creature_skins.jpg` (the demon from the Studio's presets in each).
+
+## 2026-11-11 (the user: the creatures as presets, and Godot's side of them)
+
+- **"can you add presets for the monster-ish shapes you made so I can use them, fix anything that needs fixed for
+  godot too"**. Read as: the seven creatures were chips that only showed with Monster mode on and only set a shape, so
+  they weren't something to pick up and use; make them presets in the Studio's own sense (pictures, one click, a whole
+  creature) and make sure what comes out of them works in Godot.
+  - **The creatures are cards** (Body, under Monster mode, there whether it's on or not): Goblin, Ghoul, Ogre, Grey
+    alien, Demon, Hag, Imp, each a picture of it. A click makes the character that creature and switches Monster mode
+    on: its shape, height, build and teeth as before, and now **its look**: a skin colour on the procedural skin, its
+    eyes, lips, stained teeth, and the demon's and the imp's horns. Everything it sets is a slider that's still yours.
+    **With its look** off gives the shape alone on the character's own skin; **Face only** gives its head on the
+    character's own body. The card worn is marked and kept with the character. (docs/CHARACTER_STUDIO.md §2d.)
+  - **As characters, and for Godot**: `node tools/character/creatures.mjs make` makes each a character of its own
+    (`creature_goblin` ... in the Studio's list), `--export` also exports each for Godot. The cards' pictures are
+    kept in the project (`Content/Studio/Creatures/thumbs/`, `creatures.mjs thumbs` makes them again).
+  - **Fixed for Godot: a Studio character's face moves** (docs/GODOT_DIRECTOR.md §6c; GDFACES holds it). It didn't:
+    the bake that gives the Godot copy MHR's 72 face shapes skipped every export made since the blink (it took the
+    blink's own morph targets for "baked already"), the runtime's face player drove one mesh and left the lashes
+    behind, and an expression's closed eyes fought the blinker. Now the 72 go in beside the blink, every mesh that
+    carries them is driven, and the lids are handed to the blinker. And one more found by measuring: MHR's shapes are
+    made for MHR's eyes, so on a Studio character a look down or a squint slid the lids into the eyeballs and the eye
+    showed through them (up to 138 mm2 on a test character); the desk puts that right every frame, Godot had nothing,
+    so the bake now keeps the lids off the eyes in each shape (0.000 mm2 through a lid after it), and the look
+    plugin's eye is drawn a little deeper than it is while the face moves its lids, which covers what several shapes
+    at once (a smile) still slid in: as much as that character's own face wants, measured by the bake (2 mm on a plain
+    face, none on a demon whose lids never reach its eyes), and nothing at rest.
+    Characters already in a Godot project want their copy made again: Export for Godot in the Studio, or `python
+    tools/godot_director.py install <project>`, or the game's next export.
+  - **Fixed for Godot: a creature or a child can be shot at.** The weapons plugin's hitboxes were an adult's thickness
+    on any skeleton (a head 20 cm across on an imp, a chest 28 cm through on an ogre of 2.6 m, where a shot at his side
+    passed through). They're measured from her own bones now (legs, arms, shoulders, the head by its own length: a
+    child's head stays an adult's), an adult keeping exactly what it had; `girth` on the node for a belly (HITBOXES).
+    And the starter kit's hunter, chase, menace and cue take a `head_m` (1.5 m as before) for a short or a tall one.
+  - **Checked on the creatures in Godot**: the demon, the goblin and the ogre made from the presets and exported go
+    through the look, the faces and the skins. What that found is in the two lines above and in the eye's room being
+    each character's own; nothing else of the Godot side assumed an adult (the Director's Kimodo retarget already
+    scales a motion's travel by the legs).
+
+## 2026-11-10, night (the user: younger characters, Cutify, monster mode, more horns and animal ears)
+
+- **"Currently we are restricted to making older characters in the studio creator, I want you to add compatibility to
+  do the following. A toggle for monster mode (where we can modify and exaggerate features - especially facial
+  features for creating creatures) / making younger npcs 8-18 age, I think the main issue is the height selector only
+  allows us to create 18+ characters, I may decide to have a game which is about a family being haunted by a
+  poltergeist so need the ability to make younger npcs, I dont need very young just 8+, maybe allow the face to be more
+  'cuter' softer, so maybe a seperate toggleable 'cutify', but we should still be able to import image to face /
+  enhance the horns and add different type, add cow ears an animal ears to the props, maybe create it in a way that
+  when I export it to godot i could add a jiggle bone (doesnt exist yet) to the ears e.g so they flop when the
+  character moves."** In the Character Studio (docs/CHARACTER_STUDIO.md §2d):
+  - **Ages 8 to 17** (Body, Age; 18 is the adult the Studio always made, and every character saved before is one). The
+    height slider's floor was a symptom: a child isn't a small adult. The age sets the body's proportions from the
+    growth charts (the head's share of the height: a sixth and a half at eight where MHR's adult is an eighth; legs that
+    run ahead of the torso toward twelve; a narrow, straight build; a girl's and a boy's builds the same at eight and
+    parting through puberty) and a short, soft face, and moving it sets the height to the age's average (the height
+    slider goes down to 1.1 m and stays yours). **The head is the unit**: nothing of an age moves a point of the head
+    against another; the body under it is what's scaled. So a face fitted to a picture, the expressions, the eyes, the
+    teeth, the lashes and the hair work on a child as they did, and **image to face still works** (the age goes on after
+    the fit, like the sculpt); **Young face** turns the age's own face down when a child's picture already gives it.
+  - **Cutify**: a switch of its own with an amount (Body, under the age), at any age: bigger eyes (the iris with them),
+    a shorter, rounder face, fuller cheeks, a smaller nose, mouth and chin. Also after a picture's fit.
+  - **Monster mode**: a switch over the sculpt. On, every sculpt slider and circle goes three times as far, the height
+    runs from 0.4 to 3.5 m, the **Creature** controls show (pointed ears, slanted eyes, a snout, a long skull, a hunch)
+    beside new ones a person can use too (Proportions: head size, neck, torso, leg and arm length, hands, feet,
+    fingers; the face's length, a round face, the eyes' size, spacing and depth, the ears' size and how far they stand
+    out; bust, seat), and seven creatures to start from (goblin, ghoul, ogre, grey alien, demon, hag, imp: sliders
+    yours to move on). Fangs and pointed teeth (Face, Mouth). Off, everything comes back into a person's range (asked first).
+  - **Horns**, thirteen kinds where there were two (a devil's, budding stubs, an oni's, a unicorn's, a bull's, a cow's,
+    a goat's, a gazelle's ringed lyre, a kudu's corkscrew, a ram's spiral, a demon's great horns, a dragon's, antlers
+    with tines): their growth rings real ridges, their colour from base to tip and their grain drawn in code, their
+    length, thickness, spread, curl and lean sliders. **Animal ears**, thirteen kinds where there were three (bunny, lop
+    bunny, cat, fox, wolf, bear, mouse, **cow** (with its tag), goat, sheep, deer, a dog's floppy ones, a pig's), on a
+    headband or growing from the head, each with Flop.
+  - **Ready for a jiggle bone, and the jiggle bone**: read as "make the export ready, the jiggle doesn't exist yet".
+    Export for Godot gives every ear a chain of bones of its own under the head (`jiggle_<name>_0` ... `_tip`), the ear
+    skinned along it; a plain viewer shows them still. And the look plugin now has the jiggle: **HSJiggle**
+    (docs/GODOT_LOOK.md §5n), Godot's own SpringBoneSimulator3D on every chain named so; HSCharacterLook and the game's
+    cast put it on by themselves. Horns ride the head whole.
+  - **Open for you**: the look of a child's face and of each creature on your card (the numbers are tables in
+    `tools/character/grow.js`); how floppy the ears should be in Godot (HSJiggle's `amount`).
+  - **Hair on a head that changes** (ours, so a character with hair can be given an age): the salon's bake now rides
+    the head, placed again by how the head has moved and been sized since it was baked (the character records the head
+    its hair was made on). It isn't made again: hair that lay on the shoulders was shaped on the body it had, and
+    Hair, Bake does that.
+
 ## 2026-11-10, after that (the user: tutorial v2 to use every system)
 
 - **"make a new branch called update-tutorialv2, that implements (gets the user to imeplmenet) every feature we've
