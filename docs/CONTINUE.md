@@ -83,7 +83,13 @@ files are not downloaded yet**: the file servers are blocked from the Default cl
 garment's own licence version into the catalogue and the credits: commit those two files. The fetch has not been run
 against the real servers: its unpacking and scanning were tried on the system pack and one dress from other sources.
 **The files stay out of git** (the user, 2026-11-11: "stick with the fetch"): `assets/clothing/` is ignored, so the
-download survives a switch of branch in the same folder; a pull request for this branch is open.
+download survives a switch of branch in the same folder; a pull request for this branch is open
+(tsukibii/HorrorEngine#24). **Their servers are slow** (3 MB in five minutes for the user), so the user picks: eighteen
+numbered sheets of every garment were sent (`clothing_library.py sheets` makes them again), **the user's numbers are
+awaited**; then `python tools/clothing_library.py pick <numbers>` (writes the tracked `library/picks.json`), commit,
+and the user's `fetch` gets only those, each cut out of its pack's zip on the server by byte ranges. That ranged fetch
+has not met MakeHuman's servers either (tried on the real system pack served from this machine): if they give no
+ranges it falls back to whole packs and says so.
 
 **Next, by the user's answers**: (1) answered: yes; (2) the packs downloaded on their
 machine (`files.makehumancommunity.org`, or by MPFB2 in Blender); (3) then the build, in this order: the importer and

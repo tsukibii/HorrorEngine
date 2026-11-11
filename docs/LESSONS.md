@@ -3,6 +3,16 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The clothing fetch: whole packs were the wrong unit (2026-11-11, the last)
+
+- The first `fetch` took whole packs (2.6 GB) from servers it had never met. On the user's machine they gave 3 MB in
+  five minutes, with no progress line to show it. **A download tool written where the server can't be reached gets
+  three things from the start**: progress with a speed, the smallest unit the user can want (a garment, not a pack:
+  a zip on a server can be read by byte ranges, its list of files first), and a few connections at a time.
+- A test server for it is thirty lines of `http.server`; the first run of the test failed on its own byte budget (the
+  zip's end read first was a megabyte, most of a small test pack). Budgets in a test are worked out from the made-up
+  file's sizes, not guessed.
+
 ## Clothing layers on library garments: what took a second try (2026-11-11, later)
 
 - **A cloth's own faces can't say which side is out.** The reworked layer solver asked each garment's face normals

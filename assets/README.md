@@ -27,6 +27,8 @@ is tracked; only this README is.
   python tools/clothing_library.py fetch
   ```
 
-  from MakeHuman's two file servers (`--licence cc0` or `cc-by` for one half, pack names for some). What's tracked is
-  the catalogue, `Content/Studio/Clothes/library/index.json` (every garment's author, licence, page and pack), and
-  `docs/CREDITS.md`. `$STUDIO_CLOTHING` puts the files somewhere else.
+  from MakeHuman's two file servers: **only the garments picked** (`python tools/clothing_library.py pick 12 40 ...`,
+  the numbers on the sheets `sheets` makes; kept in `Content/Studio/Clothes/library/picks.json`), each cut out of its
+  pack on the server, or every pack when nothing is picked (`--all`; `--licence cc0` or `cc-by` for one half, pack
+  names for whole packs). What's tracked is the catalogue, `Content/Studio/Clothes/library/index.json` (every
+  garment's author, licence, page and pack), the picks, and `docs/CREDITS.md`. `$STUDIO_CLOTHING` puts the files somewhere else.

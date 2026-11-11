@@ -9,10 +9,20 @@ pack and where the pack is downloaded from), and the credits, `docs/CREDITS.md`.
 
     python tools/clothing_library.py catalogue [--site DIR]   the pack pages of MakeHuman's website (cloned from GitHub when no DIR) into the index
     python tools/clothing_library.py list [--licence cc0|cc-by] [--group dress] [--author NAME]
-    python tools/clothing_library.py fetch [pack ...] [--licence cc0|cc-by] [--materials] [--keep-zips]   download and unpack into assets/clothing/<pack>/, then scan
+    python tools/clothing_library.py sheets [--site DIR] [--out DIR]   numbered pictures of every garment to pick from (Saved/Clothing/sheets; needs Pillow)
+    python tools/clothing_library.py pick [number or name ...] [--remove]   the garments wanted, kept in library/picks.json (no words: what's picked)
+    python tools/clothing_library.py fetch                   the picked garments only, each cut out of its pack's zip on the server (every pack when nothing is picked, or --all)
+    python tools/clothing_library.py fetch --only 12 40 elvs_goddess_dress1   those garments, without picking them
+    python tools/clothing_library.py fetch <pack ...> [--licence cc0|cc-by] [--materials] [--keep-zips]   whole packs, downloaded and unpacked into assets/clothing/<pack>/
     python tools/clothing_library.py scan                    read every garment on disk: what its own file says of its author and licence, beside its page
     python tools/clothing_library.py credits [--block]       docs/CREDITS.md's table made again (the ticks kept); --block: the lines to paste for the ticked ones
     python tools/clothing_library.py check                   CLOTHLIB
+
+**Picking** (DECISIONS 2026-11-11, the last: the servers gave 3 MB in five minutes; "ill just pick wahatever outfits I
+want and then youll add to only fetch those ones"): a garment's number is its place in the catalogue, as the sheets
+show it. A picked garment is fetched alone: the pack's zip is read on the server by byte ranges (its list of files,
+then only that garment's folder), a few connections at a time, so a dress costs its own megabytes and not its pack's
+hundreds. A server that won't give ranges gets the whole pack downloaded and only the picked folders unpacked.
 
 `$STUDIO_CLOTHING` puts the files somewhere else. Downloaded archives are only unpacked and read as text, never run.
 The fit and the layers that put these garments on our bodies are the prototype in docs/research/clothing_v2/proto
@@ -26,6 +36,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -34,6 +46,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "Content" / "Python"))
 from storykit.clothcredits import norm, tidy  # noqa: E402
 INDEX = ROOT / "Content" / "Studio" / "Clothes" / "library" / "index.json"
+PICKS = INDEX.with_name("picks.json")          # the garments the user picked: tracked, so any machine fetches the same ones
 CREDITS = ROOT / "docs" / "CREDITS.md"
 SITE = "https://github.com/makehumancommunity/makehuman-static-website"
 MIRRORS = {"primaryFilesUrl": "https://files2.makehumancommunity.org", "secondaryFilesUrl": "https://files.makehumancommunity.org"}
@@ -134,14 +147,149 @@ def catalogue(a):
 def listing(a):
     ix = load()
     n = 0
-    for x in ix["assets"]:
+    mine = set(picked())
+    for k, x in enumerate(ix["assets"]):
+        if a.picked and x["id"] not in mine:
+            continue
         if a.licence and x["licence"].lower().replace("-", "") != a.licence.lower().replace("-", ""):
             continue
         if (a.group and x["group"] != a.group) or (a.author and a.author.lower() not in x["author"].lower()):
             continue
         n += 1
-        print(f"{x['pack']:12s} {x['id']:48s} {x['author']:22s} {x.get('file_licence') or x['licence']:10s}{' on disk' if x.get('folder') else ''}{'  REFUSED: ' + x['refused'] if x.get('refused') else ''}")
-    print(f"{n} of {len(ix['assets'])}")
+        print(f"#{k + 1:<4d}{'*' if x['id'] in mine else ' '} {x['pack']:12s} {x['id']:48s} {x['author']:22s} {x.get('file_licence') or x['licence']:10s}{' on disk' if x.get('folder') else ''}{'  REFUSED: ' + x['refused'] if x.get('refused') else ''}")
+    print(f"{n} of {len(ix['assets'])}" + (f" (* picked: {len(mine)})" if mine else ""))
+
+
+# ---- picking
+
+def picked():
+    return json.loads(PICKS.read_text()).get("wear", []) if PICKS.exists() else []
+
+
+def named(ix, words):
+    """catalogue entries from numbers (12, #12, 12-15: places in the catalogue, as the sheets show them) and names"""
+    A = ix["assets"]
+    by = {}
+    for x in A:
+        by.setdefault(norm(x["id"]), x)
+    out, bad = [], []
+    for w in (v for word in words for v in str(word).replace(",", " ").split()):
+        m = re.fullmatch(r"#?(\d+)(?:-#?(\d+))?", w)
+        if m:
+            lo, hi = int(m.group(1)), int(m.group(2) or m.group(1))
+            if not 1 <= lo <= hi <= len(A):
+                bad.append(w); continue
+            out += A[lo - 1:hi]
+        elif norm(w) in by:
+            out.append(by[norm(w)])
+        else:
+            bad.append(w)
+    if bad:
+        raise SystemExit(f"not in the catalogue (1 to {len(A)}, or a garment's name): {' '.join(bad)}")
+    seen = set()
+    return [x for x in out if not (x["id"] in seen or seen.add(x["id"]))]
+
+
+def pick(a):
+    ix = load()
+    mine = picked()
+    if a.words:
+        got = named(ix, a.words)
+        no = [x for x in got if x.get("refused")]
+        for x in no:
+            print(f"  not picked: {x['id']} ({x['refused']})")
+        ids = [x["id"] for x in got if not x.get("refused")]
+        mine = [i for i in mine if i not in ids] if a.remove else mine + [i for i in ids if i not in mine]
+        order = {x["id"]: k for k, x in enumerate(ix["assets"])}
+        mine.sort(key=lambda i: order.get(i, 1 << 30))
+        PICKS.write_text(json.dumps(dict(about="The garments picked from MakeHuman's packs (tools/clothing_library.py pick): `fetch` gets these and no others.", wear=mine), indent=1) + "\n")
+    at = {x["id"]: (k + 1, x) for k, x in enumerate(ix["assets"])}
+    for i in mine:
+        k, x = at.get(i, (0, None))
+        print(f"#{k:<4d} {i:48s} {x['pack']:12s} {x['author']:22s} {x.get('file_licence') or x['licence']:10s}{' on disk' if x.get('folder') else ''}" if x else f"      {i}: no longer in the catalogue")
+    print(f"{len(mine)} picked ({sum(1 for i in mine if i in at and at[i][1]['licence'] == 'CC-BY')} CC-BY: their lines are in docs/CREDITS.md) -> {PICKS.relative_to(ROOT)}")
+    return 0
+
+
+# ---- the pictures to pick from
+
+SHEETS = [("Dresses", ["dress"]), ("Suits and outfits", ["suits"]), ("Shirts, tops and jackets", ["shirts"]), ("Trousers and skirts", ["pants", "skirts"]), ("Shoes", ["shoes"]),
+          ("Underwear, swimwear, legwear", ["underwear"]), ("Hats", ["hats"]), ("Jewellery", ["jewelry"]), ("Glasses, masks, gloves", ["glasses", "masks", "gloves"]),
+          ("Equipment and MakeHuman's own", ["equipment", "system"])]
+
+
+def sheets(a):
+    """every garment's own thumbnail (MakeHuman's website source has one a garment) on numbered sheets: its number its place in the catalogue"""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        raise SystemExit("the sheets need Pillow: uv run --with pillow python tools/clothing_library.py sheets")
+    ix = load()
+    A = ix["assets"]
+    site, tmp = (Path(a.site), None) if a.site else (None, tempfile.mkdtemp(prefix="mh_site_"))
+    if site is None:
+        r = subprocess.run(["git", "clone", "-q", "--depth", "1", SITE, tmp], capture_output=True, text=True)
+        if r.returncode:
+            raise SystemExit(f"couldn't clone {SITE}: {r.stderr[-300:]}")
+        site = Path(tmp)
+    thumbs = site / ix["source"]["pages"]
+    out = Path(a.out) if a.out else ROOT / "Saved" / "Clothing" / "sheets"
+    out.mkdir(parents=True, exist_ok=True)
+    for f in out.glob("*.jpg"):
+        f.unlink()
+    mine, base = set(picked()), home()
+
+    def font(size, bold=False):
+        for f in (["DejaVuSans-Bold.ttf"] if bold else []) + ["DejaVuSans.ttf"]:
+            try:
+                return ImageFont.truetype(f, size)
+            except OSError:
+                pass
+        return ImageFont.load_default(size)
+    F, FB, FT = font(12), font(15, True), font(24, True)
+    COLS, PER, C, LAB, PAD = 8, 40, 200, 58, 8
+    made = 0
+    for title, groups in SHEETS:
+        items = [(k + 1, x) for g in groups for k, x in enumerate(A) if x["group"] == g]
+        parts = [items[i:i + PER] for i in range(0, len(items), PER)]
+        for k, part in enumerate(parts):
+            rows = -(-len(part) // COLS)
+            im = Image.new("RGB", (PAD + COLS * (C + PAD), 52 + rows * (C + LAB + PAD) + PAD), (24, 24, 28))
+            dr = ImageDraw.Draw(im)
+            dr.text((PAD, 12), title + (f"  ({k + 1} of {len(parts)})" if len(parts) > 1 else "") + "    pick by number", font=FT, fill=(235, 235, 235))
+            for j, (n, x) in enumerate(part):
+                px, py = PAD + (j % COLS) * (C + PAD), 52 + (j // COLS) * (C + LAB + PAD)
+                cell = Image.new("RGBA", (C, C), (92, 96, 104, 255))
+                f = thumbs / (x["id"] + ".png")
+                if f.exists():
+                    cell.alpha_composite(Image.open(f).convert("RGBA").resize((C, C), Image.LANCZOS))
+                im.paste(cell.convert("RGB"), (px, py))
+                if x["id"] in mine:
+                    dr.rectangle([px - 3, py - 3, px + C + 2, py + C + 2], outline=(255, 255, 255), width=3)
+                tag = f"#{n}" + (" picked" if x["id"] in mine else "") + (" · here" if x.get("folder") and (base / x["folder"]).is_dir() else "")
+                dr.rectangle([px, py, px + dr.textlength(tag, font=FB) + 10, py + 22], fill=(0, 0, 0))
+                dr.text((px + 5, py + 2), tag, font=FB, fill=(255, 255, 255))
+                lic = "NOT TO SHIP" if x.get("refused") else x["licence"]
+                lw = dr.textlength(lic, font=F)
+                dr.rectangle([px + C - lw - 8, py, px + C, py + 18], fill=(200, 60, 60) if x.get("refused") else (230, 170, 60) if x["licence"] != "CC0" else (90, 190, 120))
+                dr.text((px + C - lw - 4, py + 2), lic, font=F, fill=(0, 0, 0))
+                name, lines = x["id"], []
+                while name and len(lines) < 2:                                # the name on two lines at most, broken where it fits
+                    cutat = len(name)
+                    while dr.textlength(name[:cutat], font=F) > C and cutat > 1:
+                        cutat -= 1
+                    lines.append(name[:cutat]); name = name[cutat:]
+                for q, l in enumerate(lines):
+                    dr.text((px, py + C + 3 + q * 14), l, font=F, fill=(225, 225, 225))
+                dr.text((px, py + C + 31), f"{x['author'][:20]} · {x['pack']}", font=F, fill=(150, 150, 160))
+            made += 1
+            fn = out / f"{made:02d}_{title.split(',')[0].split(' ')[0].lower()}{'_' + str(k + 1) if len(parts) > 1 else ''}.jpg"
+            im.save(fn, quality=88)
+            print(f"  {fn.name}: #{min(n for n, _ in part)} to #{max(n for n, _ in part)}")
+    if tmp:
+        shutil.rmtree(tmp, ignore_errors=True)
+    print(f"sheets: {len(A)} garments on {made} sheets in {out}  (pick: python tools/clothing_library.py pick 12 40 ...)")
+    return 0
 
 
 # ---- fetching
@@ -153,7 +301,13 @@ def download(urls, to):
     for u in urls:
         try:
             with urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "clothing-library-fetch"}), timeout=60) as r, open(part, "wb") as f:
-                shutil.copyfileobj(r, f, 1 << 20)
+                total, tick = int(r.headers.get("Content-Length") or 0), Progress(Path(u).name)
+                while True:
+                    b = r.read(1 << 16)
+                    if not b:
+                        break
+                    f.write(b); tick(len(b), total)
+                tick.done()
         except Exception as e:                                       # (a proxy that needs curl's settings, a server that is down: the next way)
             why.append(f"{u}: {e}")
             if shutil.which("curl") and subprocess.run(["curl", "-sS", "-L", "--fail", "-o", str(part), u], capture_output=True).returncode == 0:
@@ -168,22 +322,231 @@ def download(urls, to):
     return why
 
 
-def unpack(z, to):
-    """a pack's files into `to`: nothing outside it, nothing absurdly large"""
+class Progress:
+    """a line now and then while bytes come in: how much, how fast"""
+    def __init__(self, what):
+        self.what, self.n, self.t0, self.said, self.lock = what, 0, time.time(), False, threading.Lock()
+        self.last = self.t0
+
+    def __call__(self, n, total=0):
+        with self.lock:
+            self.n += n
+            now = time.time()
+            if now - self.last >= 5:
+                self.last, self.said = now, True
+                print(f"    {self.what}: {self.n / 1e6:.1f}" + (f" of {total / 1e6:.1f}" if total else "") + f" MB, {self.n / 1e3 / max(now - self.t0, 1e-3):.0f} KB/s", flush=True)
+
+    def done(self):
+        if self.said:
+            print(f"    {self.what}: {self.n / 1e6:.1f} MB in {time.time() - self.t0:.0f} s", flush=True)
+
+
+def unpack(z, to, only=None):
+    """a pack's files into `to`: nothing outside it, nothing absurdly large; `only`: the folders in it to take"""
     with zipfile.ZipFile(z) as zf:
         if sum(i.file_size for i in zf.infolist()) > 8 << 30:
-            raise SystemExit(f"{z.name}: over 8 GB unpacked: not unpacked")
+            raise SystemExit(f"{Path(str(z)).name}: over 8 GB unpacked: not unpacked")
         for i in zf.infolist():
-            p = (to / i.filename).resolve()
-            if i.is_dir() or not str(p).startswith(str(to.resolve()) + os.sep):
+            if only is not None and not any(i.filename.startswith(f) for f in only):
                 continue
-            p.parent.mkdir(parents=True, exist_ok=True)
-            with zf.open(i) as src, open(p, "wb") as dst:
-                shutil.copyfileobj(src, dst, 1 << 20)
+            put(zf, i, to)
+
+
+def put(zf, i, to):
+    p = (to / i.filename).resolve()
+    if i.is_dir() or not str(p).startswith(str(to.resolve()) + os.sep):
+        return
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with zf.open(i) as src, open(p, "wb") as dst:
+        shutil.copyfileobj(src, dst, 1 << 20)
+
+
+# ---- one garment out of a pack's zip, without the pack: the zip read on the server a range at a time
+
+class NoRanges(Exception):
+    pass
+
+
+TAIL, AHEAD, PIECE, GAP = 1 << 18, 1 << 18, 1 << 19, 1 << 16      # the zip's end read first (its list of files is there); a stray read's reach; a request's size; holes this small are fetched with their neighbours
+
+
+class Ranged:
+    """a file on a server as zipfile wants one (seek, read), every read answered from ranges fetched before it"""
+    def __init__(self, url, conns=4):
+        self.url, self.conns, self.pos, self.got, self.asked = url, max(1, conns), 0, [], 0
+        b, self.size = self.get(None, TAIL)
+        self.got.append((self.size - len(b), b))
+
+    def get(self, lo, hi):
+        """bytes lo..hi-1 (lo None: the last `hi` bytes) and the file's size; NoRanges when the server sends the whole file instead"""
+        why = None
+        for go in range(4):
+            try:
+                req = urllib.request.Request(self.url, headers={"User-Agent": "clothing-library-fetch", "Range": f"bytes=-{hi}" if lo is None else f"bytes={lo}-{hi - 1}"})
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    m = re.match(r"bytes (\d+)-(\d+)/(\d+)", r.headers.get("Content-Range") or "")
+                    if r.status != 206 or not m:
+                        raise NoRanges(self.url)
+                    b = r.read()
+                if len(b) != int(m.group(2)) - int(m.group(1)) + 1 or (lo is not None and int(m.group(1)) != lo):
+                    raise OSError("a range came back short")
+                self.asked += len(b)
+                return b, int(m.group(3))
+            except NoRanges:
+                raise
+            except Exception as e:                                   # (a slow server drops connections: again, a little later)
+                why = e
+                time.sleep(2 * 2 ** go if go < 3 else 0)
+        raise OSError(f"{self.url}: {why}")
+
+    def need(self, spans, what=""):
+        """fetch these (lo, hi) spans ahead of the reads, a few requests at a time"""
+        from concurrent.futures import ThreadPoolExecutor
+        spans = sorted((lo, min(hi, self.size)) for lo, hi in spans if not self.have(lo, min(hi, self.size)))
+        joined = []
+        for lo, hi in spans:
+            if joined and lo - joined[-1][1] <= GAP:
+                joined[-1][1] = max(joined[-1][1], hi)
+            else:
+                joined.append([lo, hi])
+        pieces = [(lo, min(lo + PIECE, hi)) for a, b in joined for lo in range(a, b, PIECE) for hi in [b]]
+        total, tick = sum(h - l for l, h in pieces), Progress(what or "ranges")
+
+        def one(p):
+            b = self.get(*p)[0]
+            tick(len(b), total)
+            return b
+        with ThreadPoolExecutor(self.conns) as ex:
+            parts = dict(zip(pieces, ex.map(one, pieces)))
+        tick.done()
+        for a, b in joined:
+            self.got.append((a, b"".join(parts[p] for p in pieces if a <= p[0] < b)))
+        return total
+
+    def have(self, lo, hi):
+        return next((b[lo - s:hi - s] for s, b in self.got if s <= lo and hi <= s + len(b)), None)
+
+    def drop(self):
+        self.got = self.got[:1]                                      # (the zip's end is kept: its list of files)
+
+    def seekable(self): return True
+    def readable(self): return True
+    def tell(self): return self.pos
+
+    def seek(self, n, whence=0):
+        self.pos = n if whence == 0 else self.pos + n if whence == 1 else self.size + n
+        return self.pos
+
+    def read(self, n=-1):
+        lo = self.pos
+        hi = self.size if n is None or n < 0 else min(self.size, lo + n)
+        if hi <= lo:
+            return b""
+        b = self.have(lo, hi)
+        if b is None:
+            more = min(self.size, max(hi, lo + AHEAD))
+            self.got.append((lo, self.get(lo, more)[0]))
+            b = self.have(lo, hi)
+        self.pos = hi
+        return b
+
+
+def folders(names, want):
+    """in a zip's file names: each wanted garment's folder (found as a scan finds a garment: by its folder's or its .mhclo's name)"""
+    by = {norm(i): i for i in want}
+    out = {}
+    for n in names:
+        if n.lower().endswith(".mhclo"):
+            f = Path(n)
+            i = by.get(norm(f.parent.name)) or by.get(norm(f.stem))
+            if i and i not in out and str(f.parent) != ".":
+                out[i] = str(f.parent).replace(os.sep, "/") + "/"
+    return out
+
+
+def cut(urls, want, to, conns=4):
+    """the wanted garments' folders out of a pack's zip at one of `urls`, into `to`: {id: MB fetched}; NoRanges, or OSError with why"""
+    why, plain = [], False
+    for u in urls:
+        try:
+            r = Ranged(u, conns)
+            zf = zipfile.ZipFile(r)
+        except NoRanges:
+            plain = True; continue                                   # (the other mirror may give them)
+        except Exception as e:
+            why.append(f"{u}: {e}"); continue
+        infos = sorted(zf.infolist(), key=lambda i: i.header_offset)
+        end = {i.filename: (infos[k + 1].header_offset if k + 1 < len(infos) else zf.start_dir) for k, i in enumerate(infos)}
+        where = folders([i.filename for i in infos], want)
+        done = {}
+        for i, f in where.items():
+            mine = [x for x in infos if x.filename.startswith(f)]
+            if sum(x.file_size for x in mine) > 2 << 30:
+                raise OSError(f"{i}: over 2 GB unpacked: not fetched")
+            n = r.need([(x.header_offset, end[x.filename]) for x in mine], i)
+            for x in mine:
+                put(zf, x, to)
+            r.drop()
+            done[i] = n / 1e6
+        if set(want) - set(where):                                   # said with what the zip does call its garments, so a name can be put right
+            import difflib
+            theirs = sorted({Path(n).parent.name for n in end if n.lower().endswith(".mhclo")})
+            for i in sorted(set(want) - set(where)):
+                near = difflib.get_close_matches(norm(i), [norm(n) for n in theirs], 3, 0.6)
+                print(f"    {i}: no folder of that name in {Path(u).name}" + (f" (near it: {', '.join(n for n in theirs if norm(n) in near)})" if near else ""))
+        return done
+    if plain:
+        raise NoRanges()
+    raise OSError("; ".join(why))
+
+
+def fetch_garments(ix, got, a):
+    base = home()
+    here = [x for x in got if x.get("folder") and any((base / x["folder"]).glob("*.mhclo")) and not a.again]
+    todo = [x for x in got if x not in here]
+    by = {}
+    for x in todo:
+        by.setdefault(x["pack"], []).append(x["id"])
+    print(f"fetching {len(todo)} garments from {len(by)} packs into {base}" + (f" ({len(here)} there already)" if here else ""))
+    failed = []
+    for p, ids in by.items():
+        info = ix["packs"][p]
+        urls = [m + info["zip"] for m in info["mirrors"]]
+        try:
+            done = cut(urls, ids, base / p, a.connections)
+        except NoRanges:                                             # the whole pack then, and only the picked folders out of it
+            print(f"  {p}: the server gives no ranges: the whole pack ({info['size_mb']:.0f} MB) for {len(ids)} of its garments")
+            z = base / "_zips" / Path(info["zip"]).name
+            z.parent.mkdir(parents=True, exist_ok=True)
+            why = None if (z.exists() and zipfile.is_zipfile(z)) else download(urls, z)
+            if why:
+                failed += ids; print(f"  {p}: NOT fetched\n    " + "\n    ".join(why)); continue
+            with zipfile.ZipFile(z) as zf:
+                where = folders(zf.namelist(), ids)
+            unpack(z, base / p, list(where.values()))
+            done = {i: 0 for i in where}
+            if not a.keep_zips:
+                z.unlink()
+        except OSError as e:
+            failed += ids; print(f"  {p}: NOT fetched\n    {e}"); continue
+        for i in ids:
+            print(f"  {i}: {done[i]:.1f} MB" if i in done else f"  {i}: NOT in {Path(info['zip']).name} under that name")
+        failed += [i for i in ids if i not in done]
+    scan(a)
+    if failed:
+        print(f"FETCH: {len(failed)} of {len(todo)} garments not fetched: {' '.join(failed)}")
+        return 1
+    print(f"FETCH ok: {len(got)} garments in {base}")
+    return 0
 
 
 def fetch(a):
     ix = load()
+    if a.only or (picked() and not a.packs and not a.all):
+        mine = picked()
+        if not a.only:
+            print(f"the picked garments only ({len(mine)}: {PICKS.relative_to(ROOT)}); --all for every pack")
+        return fetch_garments(ix, [x for x in named(ix, a.only or mine) if not x.get("refused")], a)
     want = [p for p in ix["packs"] if (p in a.packs if a.packs else (p not in MATERIALS or a.materials))]
     if a.licence:
         want = [p for p in want if ix["packs"][p]["licence"].lower().replace("-", "") == a.licence.lower().replace("-", "")]
@@ -343,6 +706,19 @@ def check(a):
         h = header(Path(t) / "out" / "clothes" / "a_dress" / "a_dress.mhclo")
         if h.get("author") != "Somebody" or tidy(h.get("license", "")) != "CC BY 4.0":
             faults.append(f"a garment's header misread: {h}")
+    faults += ranged_check()
+    # picking: numbers are places in the catalogue, names found whatever their case; what isn't there is said
+    got = named(ix, ["#2", "4-5", assets[9]["id"].upper(), "2"])
+    if [x["id"] for x in got] != [assets[k]["id"] for k in (1, 3, 4, 9)]:
+        faults.append(f"picking by number and name read wrong: {[x['id'] for x in got]}")
+    try:
+        named(ix, [str(len(assets) + 1)]); faults.append("a number past the catalogue's end was taken")
+    except SystemExit:
+        pass
+    if set(picked()) - {x["id"] for x in assets}:
+        faults.append(f"picks.json names garments the catalogue doesn't have: {sorted(set(picked()) - {x['id'] for x in assets})[:4]}")
+    if {x["id"] for x in assets if x.get("refused")} & set(picked()):
+        faults.append("picks.json has a refused garment")
     for w, t in (("CC-BY", "CC BY"), ("cc by 3.0", "CC BY 3.0"), ("CC_by", "CC BY"), ("CC0", "CC0"), ("AGPL3", "AGPL3"), ("CC BY 4", "CC BY 4.0")):
         if tidy(w) != t:
             faults.append(f"the licence \"{w}\" read as \"{tidy(w)}\"")
@@ -372,18 +748,98 @@ def check(a):
     return 1 if faults else 0
 
 
+def ranged_check():
+    """one garment cut out of a pack on a server of our own (this machine, a made-up zip): with ranges only its bytes
+    cross the wire; from a server with none the whole pack comes and still only its folder is unpacked"""
+    import http.server
+    faults = []
+    for k in ("no_proxy", "NO_PROXY"):
+        os.environ[k] = ",".join(filter(None, [os.environ.get(k, ""), "127.0.0.1"]))
+    with tempfile.TemporaryDirectory() as t:
+        t = Path(t)
+        big, other = os.urandom(1_300_000), os.urandom(2_000_000)      # (over two requests' worth; noise doesn't compress)
+        with zipfile.ZipFile(t / "p.zip", "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("clothes/b_coat/b_coat.mhclo", "name b_coat\n"); zf.writestr("clothes/b_coat/b_coat.png", other)
+            zf.writestr("clothes/a_dress/a_dress.mhclo", "# author Somebody\n# license CC_by 4.0\nname a_dress\n")
+            zf.writestr("clothes/a_dress/a_dress.obj", "v 0 0 0\n" * 3000); zf.writestr("clothes/a_dress/textures/a_dress.png", big)
+            zf.writestr("clothes/a_dress/../../../outside.txt", "no")
+            zf.writestr("clothes/c_Hat-01/hat.mhclo", "name c hat 01\n"); zf.writestr("clothes/c_Hat-01/hat.png", other)
+        data = (t / "p.zip").read_bytes()
+        sent = [0]
+
+        class H(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def do_GET(self):
+                m = re.match(r"bytes=(\d*)-(\d*)", self.headers.get("Range") or "")
+                if m and self.path.startswith("/ranges/"):
+                    lo, hi = (max(0, len(data) - int(m.group(2))), len(data) - 1) if not m.group(1) else (int(m.group(1)), min(int(m.group(2) or len(data) - 1), len(data) - 1))
+                    b = data[lo:hi + 1]
+                    self.send_response(206); self.send_header("Content-Range", f"bytes {lo}-{hi}/{len(data)}")
+                else:
+                    b = data
+                    self.send_response(200)
+                sent[0] += len(b)
+                self.send_header("Content-Length", str(len(b))); self.end_headers()
+                try:
+                    self.wfile.write(b)
+                except OSError:                                      # (the fetch hangs up on a server with no ranges: as it should)
+                    pass
+        srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        url = f"http://127.0.0.1:{srv.server_address[1]}"
+        try:
+            done = cut([url + "/ranges/p.zip"], ["a_dress", "c_hat_01", "not_there"], t / "cut")
+            got = sorted(str(f.relative_to(t / "cut")).replace(os.sep, "/") for f in (t / "cut").rglob("*") if f.is_file())
+            if sorted(done) != ["a_dress", "c_hat_01"]:
+                faults.append(f"a ranged fetch found {sorted(done)} in the pack, not the dress and the hat")
+            if got != ["clothes/a_dress/a_dress.mhclo", "clothes/a_dress/a_dress.obj", "clothes/a_dress/textures/a_dress.png", "clothes/c_Hat-01/hat.mhclo", "clothes/c_Hat-01/hat.png"]:
+                faults.append(f"a ranged fetch unpacked {got}")
+            elif (t / "cut/clothes/a_dress/textures/a_dress.png").read_bytes() != big or (t / "cut/clothes/c_Hat-01/hat.png").read_bytes() != other:
+                faults.append("a ranged fetch's files aren't the pack's")
+            if (t / "outside.txt").exists() or (t / "cut" / "outside.txt").exists():
+                faults.append("a ranged fetch let a file out of its folder")
+            if sent[0] > len(data) - 1_500_000:
+                faults.append(f"a ranged fetch of two garments pulled {sent[0]} of the pack's {len(data)} bytes: the coat's too")
+            sent[0] = 0
+            cut([url + "/ranges/p.zip"], ["a_dress"], t / "one")
+            if sent[0] > 1_300_000 + TAIL + 100_000:
+                faults.append(f"a ranged fetch of the dress alone (1.3 MB) pulled {sent[0]} bytes")
+            try:
+                cut([url + "/plain/p.zip"], ["a_dress"], t / "no"); faults.append("a server with no ranges wasn't noticed")
+            except NoRanges:
+                pass
+            if cut([url + "/plain/p.zip", url + "/ranges/p.zip"], ["a_dress"], t / "two").keys() != {"a_dress"}:
+                faults.append("the second mirror's ranges weren't used when the first gave none")
+            why = download([url + "/plain/p.zip"], t / "whole.zip")
+            with zipfile.ZipFile(t / "whole.zip") as zf:
+                where = folders(zf.namelist(), ["a_dress"])
+            unpack(t / "whole.zip", t / "plain", list(where.values()))
+            if why or sorted(f.name for f in (t / "plain").rglob("*") if f.is_file()) != ["a_dress.mhclo", "a_dress.obj", "a_dress.png"] or (t / "outside.txt").exists():
+                faults.append(f"from a whole pack, more or less than the picked garment's folder was unpacked ({why})")
+        except Exception as e:
+            faults.append(f"the ranged fetch broke on a server of our own: {type(e).__name__}: {e}")
+        finally:
+            srv.shutdown(); srv.server_close()
+    return faults
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("catalogue"); s.add_argument("--site", default="")
-    s = sub.add_parser("list"); s.add_argument("--licence", default=""); s.add_argument("--group", default=""); s.add_argument("--author", default="")
+    s = sub.add_parser("list"); s.add_argument("--licence", default=""); s.add_argument("--group", default=""); s.add_argument("--author", default=""); s.add_argument("--picked", action="store_true")
+    s = sub.add_parser("pick"); s.add_argument("words", nargs="*"); s.add_argument("--remove", action="store_true")
+    s = sub.add_parser("sheets"); s.add_argument("--site", default=""); s.add_argument("--out", default="")
     s = sub.add_parser("fetch"); s.add_argument("packs", nargs="*"); s.add_argument("--licence", default=""); s.add_argument("--materials", action="store_true")
-    s.add_argument("--keep-zips", action="store_true"); s.add_argument("--again", action="store_true")
+    s.add_argument("--keep-zips", action="store_true"); s.add_argument("--again", action="store_true"); s.add_argument("--all", action="store_true")
+    s.add_argument("--only", nargs="+", default=[]); s.add_argument("--connections", type=int, default=4)
     sub.add_parser("scan")
     s = sub.add_parser("credits"); s.add_argument("--block", action="store_true")
     sub.add_parser("check")
     a = ap.parse_args()
-    return dict(catalogue=catalogue, list=listing, fetch=fetch, scan=scan, credits=credits, check=check)[a.cmd](a) or 0
+    return dict(catalogue=catalogue, list=listing, pick=pick, sheets=sheets, fetch=fetch, scan=scan, credits=credits, check=check)[a.cmd](a) or 0
 
 
 if __name__ == "__main__":

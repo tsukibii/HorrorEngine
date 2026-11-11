@@ -46,6 +46,24 @@ The user's answers, newest first. They override the plan, the research and the d
     one working folder there is nothing to move; in a second clone, the folder is moved into its `assets/`, or
     `$STUDIO_CLOTHING` points both at one place.
   - **A pull request for this branch** was opened at the user's ask.
+- **"Ive noticed the download (fetch) is sper slow, its only 3mb in 5 min, can you apss me some screenshoits of the
+  packs and ill just pick wahatever outfits I want and then youll add to only fetch those ones"**. So:
+  - **Pictures to pick from**: every garment's own thumbnail (MakeHuman's website source on GitHub has one a garment)
+    on eighteen numbered sheets, sent to the user; a garment's number is its place in the catalogue.
+    `python tools/clothing_library.py sheets` makes them again (into `Saved/Clothing/sheets`; needs Pillow), with what's
+    picked and what's on disk marked.
+  - **The picks are a tracked file**, `Content/Studio/Clothes/library/picks.json` (`pick 12 40 <name> ...`,
+    `pick --remove`, `pick` alone lists them; a refused garment isn't picked). Any machine fetches the same ones.
+  - **`fetch` gets only the picked garments** once something is picked (`--all` for every pack, pack names for whole
+    packs, `--only` for garments without picking them). A garment is cut out of its pack's zip **on the server**: the
+    zip's list of files read by a byte range, then only that garment's folder, four connections at a time
+    (`--connections`), with a line of progress every five seconds. A dress costs its own megabytes (7 to 11 MB for the
+    system pack's ones), not its pack's hundreds. A server that gives no ranges gets the whole pack downloaded and
+    only the picked folders unpacked.
+  - **Not tried against MakeHuman's servers** (blocked from this session): tried on the real system pack's zip served
+    from this machine at 150 KB/s a connection (three garments: 26 MB of 424 MB, 50 s) and held by CLOTHLIB on a
+    made-up pack. If their servers refuse ranges, the fallback is the slow whole pack: to be told.
+  - **Waiting on the user's numbers**; then `pick` them and commit picks.json.
 
 ## 2026-11-11, later (the user: the fitted outfits clip; clothing layers, a dissolve in Godot, main merged, our PBR sets, pantyhose, fishnets and socks)
 
