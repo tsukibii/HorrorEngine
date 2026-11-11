@@ -1,0 +1,42 @@
+# Material definition for material.001Material
+
+name material.001Material
+description Babydoll_elvruff1a material
+ambientColor 1.0 1.0 1.0
+diffuseColor 0.64 0.5459 0.563
+specularColor 0.5 0.5 0.5
+shininess 0.0
+emissiveColor 0.0 0.0 0.0
+opacity 1.0
+translucency 0.0
+
+shadeless False
+wireframe False
+transparent True
+alphaToCoverage True
+backfaceCull False
+depthless False
+
+castShadows True
+
+receiveShadows True
+
+diffuseTexture ruffbabydolltex7b.png
+normalmapTexture normals.png
+normalmapIntensity 0.65
+
+shader shaders/glsl/litsphere
+
+shaderParam AdditiveShading 0.275
+shaderParam litsphereTexture litspheres/lit_matte.png
+
+shaderDefine CALC_NORMAL_Z
+
+shaderConfig ambientOcclusion True
+shaderConfig normal True
+shaderConfig bump False
+shaderConfig displacement False
+shaderConfig vertexColors False
+shaderConfig spec False
+shaderConfig transparency True
+shaderConfig diffuse True

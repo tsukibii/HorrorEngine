@@ -1,0 +1,42 @@
+# Material definition for chiefmats
+
+name chiefmats
+description Doublechiefhalterdress1 material
+ambientColor 1.0 1.0 1.0
+diffuseColor 0.3843 0.0 0.3922
+specularColor 0.075 0.075 0.075
+shininess 0.0
+emissiveColor 0.0 0.0 0.0
+opacity 1.0
+translucency 0.0
+
+shadeless False
+wireframe False
+transparent False
+alphaToCoverage True
+backfaceCull False
+depthless False
+
+castShadows True
+
+receiveShadows True
+
+diffuseTexture chiefdoubletex1.png
+normalmapTexture normalschiefdb.png
+normalmapIntensity 1.0
+
+shader shaders/glsl/litsphere
+
+shaderParam litsphereTexture litspheres/lit_refl_sharp_aniso_hard.png
+shaderParam AdditiveShading 0.05
+
+shaderDefine CALC_NORMAL_Z
+
+shaderConfig diffuse True
+shaderConfig bump False
+shaderConfig normal True
+shaderConfig displacement False
+shaderConfig spec False
+shaderConfig vertexColors False
+shaderConfig transparency True
+shaderConfig ambientOcclusion True
