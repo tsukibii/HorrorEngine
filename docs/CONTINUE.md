@@ -55,8 +55,9 @@ skin, a pearlescent skin, some kind of greasy shader"**
 
 **Run here** (the cloud, on the CPU): CHECKS, GROW, GROWPAGE (QUICK), FACEMORPHS, GDFACES (on `_studiotest`,
 `_growtest`, the demon, the goblin, the ogre; `--pictures` on `_studiotest`), EYELIDS, GDPEOPLE, GDPLAY, DIRECTOR,
-EXPORTS, CREATURESKIN (on the demon), LOOKPLUGIN `--nodes`, HITBOXES, WEAPONS; GDTESTROOM but station 13 (made props
-need Blender, as before here).
+EXPORTS, CREATURESKIN (on the demon), LOOKPLUGIN `--nodes`, HITBOXES, WEAPONS, TUTORIAL2 (its test read a stand-in's
+`Head` node and stopped on a machine that has `_studiotest`, where she is the export: it measures her head's bone
+now); GDTESTROOM but station 13 (made props need Blender, as before here).
 
 **The pictures**: `docs/studio_sheets/2026-11-11_creature_cards.jpg` (the seven cards),
 `docs/godot_sheets/2026-11-11_faces.jpg` (a face at rest, smiling, squinting down: MHR's moves alone, baked, as a game

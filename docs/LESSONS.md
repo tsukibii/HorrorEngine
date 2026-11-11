@@ -32,6 +32,10 @@ the fix.
   deeper than they rest and said 2 mm for everyone: a thick lid's back slides into the eye by design, behind its own
   front. Whether an eye shows through a lid is a question about a picture; the bake draws one (depth, back faces left
   out, as Godot draws) and agrees with the check.
+- **A check with two ways in is two checks.** TUTORIAL2 builds her from the Studio's test character when the machine
+  has one and from a stand-in when it hasn't; a step added later read the stand-in's `Head` node and had only ever run
+  where there was no export. It stopped on the first machine that had both. When a check branches on what the machine
+  has, run the new step down each branch (or make it say which one it took).
 - **Try the cheap fix on paper before building the exact one.** The exact answer (the desk's per-frame push in the
   skin's vertex shader) wanted a per-corner attribute in the copy, the eyes' places as uniforms every frame and a stage
   in every skin shader. Ten minutes with the depth measure said a depth offset on the eyeball hid all of the leftover
