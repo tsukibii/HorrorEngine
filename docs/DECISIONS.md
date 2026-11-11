@@ -2,6 +2,44 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-11, the last (the user: the new outfits in other PBR sets and colours, editable in the Studio; main merged)
+
+- **"can you show me some of the new outfits with different pbrs and colors, (make sure we can edit them in the
+  studio), also can you then merge in main into this branch, resolve merge conflicts"**. So:
+  - **Library garments are worn and edited in the Character Studio now** (they were only the prototype's):
+    - **A bake, once a garment** (`python tools/clothing_library.py bake`, `storykit/clothfit.py`: the prototype's
+      stage 1): the garment carried from MakeHuman's base mesh onto MHR's average body at rest and written as
+      `assets/clothing/_mhr/<id>.bin` (its points, its own UVs, a second UV in metres, the skin it hides). Needs numpy
+      and scipy; the 90 picked ones are baked and in git (29 MB, `git add -f`), with the registration it uses
+      (`Content/Studio/Clothes/library/hm08_mhr.npz`: MakeHuman's base mesh on MHR's, made once by the prototype's
+      register.py; the base mesh is MakeHuman's, CC0).
+    - **The fit in the Studio's own JavaScript** (`tools/character/tailor/library.js`: the prototype's stage 2): the
+      baked garment carried onto the character's body (the dress form the tailor cuts on) and put outside the skin, in
+      about a tenth of a second; within 0.3 mm of the prototype's Python on the same body. It follows the view's pose
+      by the skin's bones round it, as the tailor's clothes do.
+    - **In layers, lightly** (`layerOf`, `dress`): underwear, legwear, shoes, bottoms, tops and dresses, jackets, by
+      the catalogue's group and the garment's name; an upper one is set outside the ones under it where they lie
+      together, then the lower one is pressed in where it still stood through (a skirt's waistband through a top's
+      hem). Shoes and hats keep their shape. **The tailor's own garments count too** (by their slot: under, legs, feet,
+      bottom, top, full, jacket): they don't move, the library's go outside the ones under them and are pressed in
+      under the ones over them (our tights under a library dress, our t-shirt over a library skirt). Not the
+      prototype's whole rule set: no hiding of what's covered, no outfit rules.
+    - **In the Clothes tab**: a *Library garments* section, the garments as cards with their own pictures by group; a
+      click puts one on or takes it off. Under *Worn*: its colour (a tint on its own texture: white leaves it as
+      painted), *Its own texture* on or off, and off it one of our fabrics or a PBR set off the shelf with its repeat
+      and tint. Saved with the character (`{design: "lib:<id>", library: <id>, color, own, surface, pbr...}`).
+    - **Export for Godot carries them**: skinned on MHR's skeleton, their colours baked on their own layout, the PBR
+      set's other maps on the second UV, one sheet seen from both sides; the export's `CREDITS.md` names the ones to
+      credit (tried: a CC BY 4.0 dress and CC0 flats).
+  - **The pictures** (sent): twelve looks in the Studio's own view, four outfits each as painted and in our satin,
+    denim, tweed, rib, leather, corduroy and fleece sets or tinted (`tools/character/libraryshots.mjs` makes them
+    from a list).
+  - **Limits, said to the user**: toes can show through a shoe in the Studio's view (the export leaves that skin
+    out); a garment with soft alpha (the tutu's tulle) is cut out hard; a library garment is fitted, not hung by
+    gravity; no prints or patterns on one yet.
+  - **Main merged** (PR #23, tutorial v2's floor ready-made): conflicts in CLAUDE.md, CONTINUE, DECISIONS, LESSONS and
+    check_all.py, both sides kept.
+
 ## 2026-11-11, last (the user: CC-BY clothing may ship; a credits file)
 
 - **"Yes Im happy to ship with CC-BY, create a new .md file for storing credits so I can add them later when Im done

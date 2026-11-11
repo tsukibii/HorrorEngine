@@ -365,6 +365,9 @@ Licences: creativecommons.org/licenses/by/4.0 and creativecommons.org/licenses/b
 
 ## 4. Other things to go through when a game is finished
 
+- **MakeHuman's base mesh** (hm08, CC0): its points are in `Content/Studio/Clothes/library/hm08_mhr.npz`, the
+  registration the library garments are carried onto MHR by. No credit needed; MakeHuman asks for none.
+
 Not gathered here yet. These are the places in the project where a licence is already written down, to be read
 through once at the end and brought into this file:
 

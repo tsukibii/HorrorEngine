@@ -18,7 +18,8 @@ STUDIO = [["pbr.py", "check"], ["sfx.py", "check"], ["face_capture.py", "check"]
           ["score/moods.mjs", "--check"],                                                                               # the music's moods as beds (MOODS),
           ["godot_byhand.py", "ready", "--check"],                                                                      # the ready-made exports made from their sets as they are (READYMADE),
           ["character/growtest.mjs"],                                                                                   # the Character Studio's ages, proportions and creatures (GROW),
-          ["clothing_library.py", "check"]]                                                                             # the clothing library's catalogue and credits (CLOTHLIB)
+          ["clothing_library.py", "check"],                                                                             # the clothing library's catalogue and credits (CLOTHLIB),
+          ["character/tailor/librarytest.mjs"]]                                                                         # the library garments' fit to a body, in layers (LIBRARY)
 game, _ = L.pick_game(sys.argv[1:])
 bad = 0
 for g in ([game] if game else L.games()):

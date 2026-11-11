@@ -92,7 +92,12 @@ still ignored, so later fetches stay out until added the same way), fetched in t
 `files.makehumancommunity.org` on the Default environment (the faster mirror, tried first now; byte ranges work).
 **Eight are held back** for the user's word: seven whose own file says AGPL3 where the page says CC0 or CC-BY (the old
 MakeClothes default line), and a television character's costume (DECISIONS 2026-11-11, the last). `picks.json` lists
-the 90. Next for these garments: the fit and layers into the Studio (they're still only worn by the prototype).
+the 90. **They are worn in the Character Studio now** (DECISIONS 2026-11-11, the last): baked onto MHR's average
+(`clothing_library.py bake`, `assets/clothing/_mhr/`, in git), fitted in JavaScript (`tailor/library.js`), in light
+layers, shown as cards in the Clothes tab's *Library garments*, their colour, own texture, fabric or PBR set under
+*Worn*, saved with the character and carried by Export for Godot with the credits. Checks: LIBRARY (node, in
+check_all), LIBRARYPAGE (the page). They are layered against the tailor's own garments too (by slot; only the library's move). **Next for them**: the
+covered skin hidden in the Studio's view (toes through shoes), soft alpha, prints and patterns on one, a walk test.
 
 **Next, by the user's answers**: (1) answered: yes; (2) the packs downloaded on their
 machine (`files.makehumancommunity.org`, or by MPFB2 in Blender); (3) then the build, in this order: the importer and

@@ -3,6 +3,18 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## Library garments in the Studio: what took a second try (2026-11-11, the last)
+
+- **A page test must start from a character it made, and wait for it.** The Studio opens the last character by
+  itself a moment after the body is there; a test that set the clothes before that load finished had them replaced
+  under it, and one that reused a scratch character found it wearing the last run's clothes (New on an existing name
+  asks first: accept the dialog). Make the character, wait for its "starts from the" status, then act.
+- **Lifting the upper garment's points isn't enough.** A top set outside a skirt point by point still had the
+  waistband's loops through its triangles. The lower garment pressed in under it, as the prototype's shared move did,
+  cleared it. A count on points alone said 0 while the picture showed patches: count the triangles' middles too.
+- **A colour that tints a texture has to reach the shader.** The cloth material took the part's own colour whenever no
+  fabric was chosen; a painted library garment has no fabric, so its tint was ignored until the test read the uniform.
+
 ## The clothing fetch: whole packs were the wrong unit (2026-11-11, the last)
 
 - The first `fetch` took whole packs (2.6 GB) from servers it had never met. On the user's machine they gave 3 MB in

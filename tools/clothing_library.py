@@ -15,6 +15,7 @@ pack and where the pack is downloaded from), and the credits, `docs/CREDITS.md`.
     python tools/clothing_library.py fetch --only 12 40 elvs_goddess_dress1   those garments, without picking them
     (fetch --mirror files2 tries that mirror first; --connections N; --again fetches what's there once more)
     python tools/clothing_library.py fetch <pack ...> [--licence cc0|cc-by] [--materials] [--keep-zips]   whole packs, downloaded and unpacked into assets/clothing/<pack>/
+    python tools/clothing_library.py bake [number or name ...] [--again]   each garment on disk onto MHR's average body, for the Character Studio to wear (<clothing>/_mhr/<id>.bin; needs numpy and scipy: uv run --with numpy --with scipy)
     python tools/clothing_library.py scan                    read every garment on disk: what its own file says of its author and licence, beside its page
     python tools/clothing_library.py credits [--block]       docs/CREDITS.md's table made again (the ticks kept); --block: the lines to paste for the ticked ones
     python tools/clothing_library.py check                   CLOTHLIB
@@ -651,6 +652,39 @@ def scan(a):
     return 0
 
 
+# ---- the bakes: each garment on MHR's average body, what the Character Studio wears (storykit/clothfit.py)
+
+def bake(a):
+    try:
+        from storykit import clothfit
+        import numpy, scipy  # noqa: F401, E401
+    except ImportError as e:
+        raise SystemExit(f"the bake needs numpy and scipy ({e}): uv run --with numpy --with scipy python tools/clothing_library.py bake")
+    ix = load()
+    base = home(); out = base / "_mhr"; out.mkdir(parents=True, exist_ok=True)
+    want = named(ix, a.words) if a.words else [x for x in ix["assets"] if x.get("folder")]
+    B = clothfit.Baker()
+    (out / "_base.f32").write_bytes(B.base().tobytes())
+    done = failed = kept = 0
+    for x in want:
+        if x.get("refused"):
+            continue
+        folder = base / x["folder"] if x.get("folder") else None
+        if not folder or not folder.is_dir():
+            print(f"  {x['id']}: not on disk (fetch it first)"); failed += 1; continue
+        f = out / f"{x['id']}.bin"
+        if f.exists() and not a.again and f.stat().st_mtime >= max(q.stat().st_mtime for q in folder.iterdir()):
+            kept += 1; continue
+        try:
+            head, data = B.bake(folder, x["id"])
+        except Exception as e:                                       # (a garment whose files don't agree: said, the rest go on)
+            print(f"  {x['id']}: NOT baked: {type(e).__name__}: {e}"); failed += 1; continue
+        f.write_bytes(data); done += 1
+        print(f"  {x['id']}: {head['points']} points, {head['triangles']} triangles, {len(data) / 1e6:.1f} MB" + ("" if head["texture"] else ", no texture of its own"))
+    print(f"bake: {done} baked, {kept} as they were, {failed} not, in {out}")
+    return 1 if failed else 0
+
+
 # ---- the credits
 
 def credits(a):
@@ -880,10 +914,11 @@ def main():
     s.add_argument("--keep-zips", action="store_true"); s.add_argument("--again", action="store_true"); s.add_argument("--all", action="store_true")
     s.add_argument("--only", nargs="+", default=[]); s.add_argument("--connections", type=int, default=4); s.add_argument("--mirror", default="")
     sub.add_parser("scan")
+    s = sub.add_parser("bake"); s.add_argument("words", nargs="*"); s.add_argument("--again", action="store_true")
     s = sub.add_parser("credits"); s.add_argument("--block", action="store_true")
     sub.add_parser("check")
     a = ap.parse_args()
-    return dict(catalogue=catalogue, list=listing, pick=pick, sheets=sheets, fetch=fetch, scan=scan, credits=credits, check=check)[a.cmd](a) or 0
+    return dict(catalogue=catalogue, list=listing, pick=pick, sheets=sheets, bake=bake, fetch=fetch, scan=scan, credits=credits, check=check)[a.cmd](a) or 0
 
 
 if __name__ == "__main__":
