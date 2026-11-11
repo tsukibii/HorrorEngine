@@ -18,10 +18,37 @@ bedding, curtains, tables and chairs, the props' kept pictures, real wood in the
 `sakura-rabbit-research`: the Sakura Rabbit research note, then the three notes on dread, the CRT, and the props and
 systems that open, hold, move and are read; 2026-11-05, night, on `gameplay-enhancements`: the kit's stairs, the scene
 builder's floors, the street's steel stair, climbing in Godot and on the desk; 2026-11-08 on
-`claude/friendly-newton-9o2xey`, from the user's `retro-enhance`: the retro pack in the prop generator). Then 2026-11-10 on `update-tutorialv2`: tutorial v2 using every system. Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
+`claude/friendly-newton-9o2xey`, from the user's `retro-enhance`: the retro pack in the prop generator). Then 2026-11-10 on `update-tutorialv2`: tutorial v2 using every system. Then 2026-11-11 on `claude/compassionate-babbage-3bnfqx`: the clothing research (Cloth2Tex, ready-made garments, the fit test). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-10, `update-tutorialv2`): tutorial v2 uses every system, and says what's missing
+## Where it stopped last (2026-11-11, `claude/compassionate-babbage-3bnfqx`): ready-made clothing fitted to our bodies, researched and tested
+
+Research only, from main (PR #21 merged); nothing in the Studio changed. The user asked four things (DECISIONS
+2026-11-11): whether Cloth2Tex could be a second clothing system, a CloV2 tab; what's newer and free; then "I dont
+actually care about generating procedural cloting ... id rather have better already designed clothing with lots of
+options"; then more Korean and Japanese smart casual, uniforms, dresses, suits.
+
+- **docs/research/clothing_v2.md** is the report; its notes are in `docs/research/clothing_v2/`: `cloth2tex.md` (read at
+  source: no), `sewing_patterns.md`, `mesh_generators.md`, `photo_to_look.md` (the generators and texturing models: none
+  beats ready-made garments; their licence traps), `tools_and_assets.md` (**MakeHuman's community clothing is the one
+  free library**: 129 CC0 garments and shoes, 210 CC-BY; where the files are), `fit_and_skin.md` (the fit's algorithm
+  from MakeHuman's and Blender's own code, weights, hidden skin, layering, a second UV in metres, decals),
+  `korean_japanese.md` (what the packs have for those; Style3D's free garments on Sketchfab the lead).
+- **The fit test** (`clothing_v2/fit_test.md`, scripts `clothing_v2/proto/`, pictures `clothing_v2/fit_*.jpg`): MakeHuman's
+  base body registered onto MHR once, 37 garments carried onto the Studio's seven test bodies with nothing adjusted by
+  hand, the tailor's own plaid on a library jacket at real size, a studio print on its back. A prototype: no check, not
+  on the launcher.
+- **This session's network** let through GitHub and little else: arxiv.org, sketchfab.com, huggingface.co and
+  MakeHuman's file servers were blocked, so licences on those are from search summaries and say so.
+
+**Next, by the user's answers**: (1) may CC-BY garments ship with a credits screen? (2) the packs downloaded on their
+machine (`files.makehumancommunity.org`, or by MPFB2 in Blender); (3) then the build, in this order: the importer and
+the fit in the Studio's own JavaScript (the registration kept as a file), layering against the tailor's garments (one
+cover height per skin point), bridging for loose garments and skirts, weights and a walk test (`tailor/motion.mjs`),
+the look (second UV, the detail layer, decals baked by `albedo.js`), the tab. A placement step for garments with no
+source body (Style3D's) comes after.
+
+## Before that (2026-11-10, `update-tutorialv2`): tutorial v2 uses every system, and says what's missing
 
 The branch `update-tutorialv2`, made from main with `laptop` merged (PR #20). The user: "make a new branch called
 update-tutorialv2, that implements (gets the user to imeplmenet) every feature we've created so far so we can see whats

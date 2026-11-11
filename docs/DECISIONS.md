@@ -16,7 +16,32 @@ The user's answers, newest first. They override the plan, the research and the d
   garment's look from photos, which our own flat panels make a 2D warp (a print the size of a panel), no renderer and no
   GPU. Nothing built.
 - **"I notice that repo is 3 years old, have there been any better advacnes for easier clothing for 3d game models ?
-  research into any free alternatives"**. Read as: research only, then the user picks.
+  research into any free alternatives"**. Read as: research only, then the user picks (docs/research/clothing_v2.md, its
+  notes in docs/research/clothing_v2/). In short: nothing that generates clothing beats ready-made garments for us. The
+  sewing-pattern generators all end at the draping step that failed here in October; the image-to-3D models make an
+  object, not a garment on a body (worth it only for one-off bags and hats); the photo-to-texture models are stopped by
+  their licences or need a 48 GB card.
+- **"To add I dont actually care about generating procedural cloting, if you can find a repo or source to get good 3d
+  clothing designs and create an algorithm to apply that clothing to any of our models (make it fit), and allow custom
+  pbrs ,png decals etc that is also fine, id rather have better already designed clothing with lots of options than
+  generating crappy clothing"**. So the research turned from generators to **a library of ready-made garments and a
+  fit**.
+  - **The source**: MakeHuman's community clothing, all in one format on one base body: 129 garments and shoes and 56
+    accessories under CC0, 210 and 73 more under CC-BY (a credit line in the game).
+  - **The fit, tested** (docs/research/clothing_v2/fit_test.md, its scripts in `proto/` beside it, its pictures
+    `fit_*.jpg`): MakeHuman's base body registered onto MHR's once (4 s), then 37 garments carried onto the Studio's
+    seven test bodies with no failure and nothing adjusted by hand; our own fabric at real size on one of them (a
+    second UV in metres, the garment's own seams kept as a layer) and a studio print PNG on its back.
+  - **Not done by the test**: layering between two library garments, bridging on heavy bodies, motion. A prototype
+    only: no check, nothing in the Studio.
+- **"Can you see if you can find some more korean/japanese smart casual designs, uniforms, dresses, suits."**
+  (docs/research/clothing_v2/korean_japanese.md). The packs have the plain half: suits (8 under CC0), office wear, a
+  shirt with a tie, cardigans, slacks, pleated plaid skirts, 55 dresses. Nothing specifically Japanese or Korean is in
+  them (no sailor uniform, gakuran, hanbok, kimono). The lead: Style3D's free garments on Sketchfab (school uniforms,
+  business suits, shirt-and-skirt sets, dresses; CC Attribution on most, by search summaries: each page's licence to be
+  read before use). No free hanbok, kimono or yukata was found.
+- **Not decided: the user picks.** Whether CC-BY garments may ship with a credits screen (the rule today is CC0 or
+  ours); whether the fit becomes a CloV2 tab in the Studio; which garments come in first.
 
 ## 2026-11-10, after that (the user: tutorial v2 to use every system)
 
