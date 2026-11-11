@@ -74,6 +74,15 @@ dont worry about making them wear a coat").
 **CC-BY clothing may ship** (the user, DECISIONS 2026-11-11, last): each such garment has its line in
 **docs/CREDITS.md** (author, licence, a column to tick when it's used in a game, a block for the credits screen).
 
+**The clothing library** (`tools/clothing_library.py`, CLOTHLIB in check_all): the catalogue of MakeHuman's 40
+clothing packs is tracked (`Content/Studio/Clothes/library/index.json`, 491 things to wear), docs/CREDITS.md lists the
+297 CC-BY ones, and every character export writes its own `CREDITS.md` (`storykit/clothcredits.py`). **The 2.6 GB of
+files are not downloaded yet**: the file servers are blocked from the Default cloud environment. Either the user runs
+`python tools/clothing_library.py fetch` on their machine, or a session is started on the cloud environment
+"HorrorEngine" (made 2026-11-11, it allows the two servers) and runs it there. After a fetch, `scan` writes each
+garment's own licence version into the catalogue and the credits: commit those two files. The fetch has not been run
+against the real servers: its unpacking and scanning were tried on the system pack and one dress from other sources.
+
 **Next, by the user's answers**: (1) answered: yes; (2) the packs downloaded on their
 machine (`files.makehumancommunity.org`, or by MPFB2 in Blender); (3) then the build, in this order: the importer and
 the fit in the Studio's own JavaScript (the registration kept as a file), the layers as the prototype has them

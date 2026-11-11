@@ -19,3 +19,14 @@ is tracked; only this README is.
   (http://127.0.0.1:8793/pbr.html) or the desk's (http://127.0.0.1:8780/pbr.html): each set on a sphere, a cube, a
   room corner and a close-up, at its real size. `python tools/pbr.py` lists the shelf; `$STUDIO_PBR` puts it
   somewhere else. The shelf's first place, `Content/Studio/PBR`, is still read.
+
+- **`clothing/`**: the clothing library's files (DECISIONS 2026-11-11, last): MakeHuman's community clothing packs,
+  about 2.6 GB, a folder a pack (`clothing/dress02/...`), fetched by
+
+  ```
+  python tools/clothing_library.py fetch
+  ```
+
+  from MakeHuman's two file servers (`--licence cc0` or `cc-by` for one half, pack names for some). What's tracked is
+  the catalogue, `Content/Studio/Clothes/library/index.json` (every garment's author, licence, page and pack), and
+  `docs/CREDITS.md`. `$STUDIO_CLOTHING` puts the files somewhere else.

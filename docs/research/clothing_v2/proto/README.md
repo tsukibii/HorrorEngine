@@ -81,8 +81,10 @@ git clone --depth 1 https://github.com/k3yg4n/glamcam-makehuman-clothing-assets 
 git clone --depth 1 https://github.com/RavinMaddHatter/Madhatters-Table-Top-RPG-Mini-Maker /tmp/minimaker
 ```
 
-(the test used them at commits `9211804` and `01e848f`; the whole packs are on MakeHuman's own servers, see
-`../tools_and_assets.md`). Then:
+(the test used them at commits `9211804` and `01e848f`). **The whole packs** are fetched by the project's own tool,
+`python tools/clothing_library.py fetch`, into `assets/clothing/<pack>/`; a `sources.json` can point at those folders
+(`{"dress02": "/path/to/HorrorEngine/assets/clothing/dress02/clothes"}`, then `{"mh": "dress02:elvs_goddess_dress8"}`
+in an outfit: the folder inside a pack is as its zip lays it out). Then:
 
 ```bash
 echo '{"glam": "/tmp/glamcam/finalized_clothes", "sys": "/tmp/mh_system/clothes", "mini": "/tmp/minimaker/src/assets/clothes"}' > /tmp/fit/sources.json

@@ -15,9 +15,11 @@
 The outfit's light rules come first (layers.rules: a coat asked for over a dress isn't worn, and the run says so).
 Each garment is put on the body (fit.py), then all of them are ordered, set outside one another and what's covered is
 marked (layers.py). `--no-layers` leaves that out and hides the skin by the authors' own lists: the fit as it was.
-`--glb` also writes <body>.glb for Godot (glb.py): what each band of layers hides in every mesh's vertex colours.
+`--glb` also writes <body>.glb for Godot (glb.py): what each band of layers hides in every mesh's vertex colours;
+and <body>.credits.md beside it: whose library garments that export wears, and what each asks for.
 """
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -31,6 +33,8 @@ import layers
 import lib
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parents[3] / "Content" / "Python"))
+from storykit import clothcredits  # noqa: E402
 SHEER = ("sheer", "fishnet", "lace", "net", "web", "mesh")
 
 
@@ -238,6 +242,10 @@ def main():
                                        COVER=None if plain else L.covers[:, at:at + n], color=hexc(q.get("color"), 1.0 if L.opaque else 0.55), alpha=None if L.opaque else "blend", extras=dict(ex, hs_sheer=not L.opaque)))
                         at += n
             glb.write(out / f"{name}.glb", ms)
+            # and whose library clothes this export wears: <body>.credits.md beside it (storykit/clothcredits.py)
+            said = lambda g, key: next((re.sub(r"^(author|licen[sc]e)\s*:?\s*", "", c, flags=re.I).strip() for c in g["meta"].get("credit", []) if c.lower().startswith(key)), "")
+            wornlib = [clothcredits.garment(lib_g[ref]["name"], said(lib_g[ref], "author"), said(lib_g[ref], "licen"), folder=lib_g[ref]["folder"].name) for what, ref, L in recs if what == "lib"]
+            clothcredits.write(out / f"{name}.credits.md", f"{spec['name']} on {name}", wornlib, [ref["design"] for what, ref, L in recs if what == "tailor"])
         hb = json.dumps(head).encode(); hb += b" " * ((4 - len(hb) % 4) % 4)
         with open(out / f"{name}.bin", "wb") as fh:
             fh.write(np.array([len(hb)], np.uint32).tobytes()); fh.write(hb)

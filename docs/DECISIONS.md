@@ -16,6 +16,25 @@ The user's answers, newest first. They override the plan, the research and the d
   - A thing that asks for credit gets its line there in the commit that brings it in.
   - Not changed by this: the fan costumes and the AGPL-marked suit in the same packs stay out; the garment files
     still aren't in the repo (the packs are to be downloaded; that question is still open).
+- **"Can we import the rest of the CC-BY garments into our projects (the full community packs)"**. Yes, as far as
+  this session can reach (`tools/clothing_library.py`):
+  - **The catalogue is in**: `Content/Studio/Clothes/library/index.json`, every thing to wear in MakeHuman's 40
+    clothing packs (491: 191 CC0, 297 CC-BY, 3 refused by name), each with its author, licence, own page and pack,
+    read from MakeHuman's website source on GitHub. docs/CREDITS.md now lists all 297 CC-BY ones with their pages.
+  - **The files are fetched, not tracked**: 2.6 GB into `assets/clothing/` by `python tools/clothing_library.py
+    fetch`, as the PBR shelf's sets are (too big for git; read as: the user's own decision on that shelf carried
+    over, to be changed if they want the garments in git).
+  - **Not downloaded yet**: MakeHuman's two file servers are blocked from this session. A cloud environment
+    "HorrorEngine" that allows them was made (approved by the user), but a running session can't move onto it: the
+    fetch is one command on the user's machine, or in a new session started on that environment.
+- **"When you export the characters can you export a .md for godot can you include a .md that contains whos cc outfits
+  we used so I can credit just hte ones used"**. Every character exported for Godot now carries its own credits
+  (`storykit/clothcredits.py`): `CREDITS.md` in `Exports/characters/<name>/` (`<name>.credits.md` in a Director
+  project's `game/people/`; `<body>.credits.md` beside the prototype's .glb): the library garments that character
+  wears which ask for a credit, with author, licence, page and the lines to paste; the CC0 ones; a refused one
+  flagged; the tailor's own as ours. A Studio character has no library garments until the fit moves into the Studio,
+  so today its file says there is nothing to credit; a worn library garment will say so with `library` in the
+  character's `clothes`.
 
 ## 2026-11-11, later (the user: the fitted outfits clip; clothing layers, a dissolve in Godot, main merged, our PBR sets, pantyhose, fishnets and socks)
 

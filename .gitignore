@@ -90,6 +90,9 @@ Content/Studio/Library/index/local.json
 # the PBR shelf (docs/ASSETS.md §6): your texture sets in assets/pbr/, a folder each, too big for git: nothing in it is
 # tracked (assets/README.md says what goes there); its old place, Content/Studio/PBR, still read, keeps only its README
 assets/pbr/
+# the clothing library's files (tools/clothing_library.py fetch: MakeHuman's community packs, 2.6 GB): the catalogue
+# Content/Studio/Clothes/library/index.json and docs/CREDITS.md are what's tracked
+assets/clothing/
 Content/Studio/PBR/*
 !Content/Studio/PBR/README.md
 # faces from photos (tools/face_mesh.py): made from real people's pictures, they stay on your machine
