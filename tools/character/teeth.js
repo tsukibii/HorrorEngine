@@ -15,7 +15,7 @@ const LOWER = [["central", 5.3, 9, 6, "incisor"], ["lateral", 5.9, 9.5, 6.2, "in
 // first molars
 const ARCH = [[0, -3.5], [4.4, -4], [10.5, -6], [15.6, -9.6], [19, -15], [21.3, -21], [23.5, -28.5], [25.5, -38], [26.8, -47], [27.6, -56]];
 export const LOWER_ARCH = { sx: 0.95, dz: -2.6, over: 1.6 };   // the lower arch: a little narrower, behind the upper incisors (overjet), their edges 1.6 mm above the upper's (overbite)
-export const TEETH_DEFAULTS = { on: true, shade: 0.35, size: 1, forward: 0, up: 0, tongue: true, curl: 0.5 };   // (curl: the lower lip's, index.html)
+export const TEETH_DEFAULTS = { on: true, shade: 0.35, size: 1, forward: 0, up: 0, tongue: true, curl: 0.5, fangs: 0, points: 0 };   // (curl: the lower lip's, index.html; fangs, points: a creature's teeth, below)
 
 function arch(sx = 1, dz = 0) {                         // the centre line sampled finely, with its length along it
   const P = []; for (let i = 0; i < ARCH.length - 1; i++) {
@@ -39,17 +39,21 @@ function along({ P, S }, s) {                          // the point at length s 
 // a crown: rings of a rounded rectangle from the biting edge to the gum, closed at both ends. The ring's width and
 // thickness change with the height by kind: an incisor is a blade at its edge, a canine comes to a point
 const RING = 14;
-function shapeAt(kind, v) {                            // v: 0 the edge, 1 the gum -> [width, thickness] as parts of the full size
+function shapeAt(kind, v, sharp = 0) {                 // v: 0 the edge, 1 the gum -> [width, thickness] as parts of the full size
   const e = Math.min(1, v / 0.55), s = e * (2 - e);    // eased up from the edge
-  if (kind === "incisor") return [0.92 + 0.08 * s - 0.2 * Math.max(0, v - 0.7) / 0.3, 0.28 + 0.72 * s];
-  if (kind === "canine") return [0.4 + 0.6 * Math.min(1, v / 0.45) - 0.2 * Math.max(0, v - 0.7) / 0.3, 0.45 + 0.55 * s];
-  if (kind === "premolar") return [0.8 + 0.2 * s - 0.15 * Math.max(0, v - 0.75) / 0.25, 0.75 + 0.25 * s];
-  return [0.88 + 0.12 * s - 0.1 * Math.max(0, v - 0.8) / 0.2, 0.85 + 0.15 * s];
+  const pt = 1 - sharp * (1 - Math.min(1, v / 0.6)), k = [1 - 0.8 * (1 - pt), 1 - 0.55 * (1 - pt)];   // sharp (a fang, a pointed tooth): drawn in to a point toward the edge
+  if (kind === "incisor") return [(0.92 + 0.08 * s - 0.2 * Math.max(0, v - 0.7) / 0.3) * k[0], (0.28 + 0.72 * s) * k[1]];
+  if (kind === "canine") return [(0.4 + 0.6 * Math.min(1, v / 0.45) - 0.2 * Math.max(0, v - 0.7) / 0.3) * k[0], (0.45 + 0.55 * s) * k[1]];
+  if (kind === "premolar") return [(0.8 + 0.2 * s - 0.15 * Math.max(0, v - 0.75) / 0.25) * k[0], (0.75 + 0.25 * s) * k[1]];
+  return [(0.88 + 0.12 * s - 0.1 * Math.max(0, v - 0.8) / 0.2) * k[0], (0.85 + 0.15 * s) * k[1]];
 }
-function pushCrown(out, at, [, w, h, t, kind], up, edgeY, shade) {
-  const base = out.pos.length / 3, rows = 7;
+// o: a creature's teeth (DECISIONS 2026-11-10, night): `fangs` 0..1 the canines longer past the biting edge (the upper
+// 7 mm at 1, the lower 4.5) and sharper; `points` 0..1 every tooth drawn to a point, the front ones a little longer
+function pushCrown(out, at, [, w, h, t, kind], up, edgeY, shade, o = {}) {
+  const base = out.pos.length / 3, rows = 7, fang = kind === "canine" ? o.fangs || 0 : 0, pts = o.points || 0;
+  const ext = fang * (up > 0 ? 7 : 4.5) + pts * (kind === "incisor" ? 1.6 : kind === "canine" ? 1.2 : kind === "premolar" ? 0.8 : 0.4), sharp = Math.min(1, Math.max(fang, pts));
   for (let r = 0; r <= rows; r++) {
-    const v = r / rows, [kw, kt] = shapeAt(kind, Math.max(0.04, v)), y = edgeY + up * v * h;
+    const v = r / rows, [kw, kt] = shapeAt(kind, Math.max(0.04, v), sharp), y = edgeY - up * ext + up * v * (h + ext);
     for (let k = 0; k < RING; k++) {
       const a = k / RING * Math.PI * 2, c = Math.cos(a), s = Math.sin(a);
       const u = Math.sign(c) * Math.pow(Math.abs(c), 0.6) * w / 2 * kw, n = Math.sign(s) * Math.pow(Math.abs(s), 0.6) * t / 2 * kt;   // a superellipse: squarish, rounded
@@ -68,11 +72,11 @@ function pushCrown(out, at, [, w, h, t, kind], up, edgeY, shade) {
     out.idx.push(a, c, b, b, c, d);
   }
   for (const [r, dir] of [[0, -1], [rows, 1]]) {       // the ends: a fan to the middle, nudged out so the edge is rounded
-    const m = out.pos.length / 3, y = edgeY + up * (r / rows * h + dir * 0.6);
+    const m = out.pos.length / 3, y = edgeY - up * ext + up * (r / rows * (h + ext) + dir * 0.6 * (r ? 1 : 1 - 0.7 * sharp));
     out.pos.push(at.x, y, at.z); out.col.push(shade, shade, shade);
     for (let k = 0; k < RING; k++) out.idx.push(base + r * RING + k, base + r * RING + (k + 1) % RING, m);
   }
-  const mid = [at.x, edgeY + up * h / 2, at.z];
+  const mid = [at.x, edgeY - up * ext + up * (h + ext) / 2, at.z];
   orient(out, t0, () => mid);
 }
 // every triangle from t0 on turned to face away from its middle (mirroring and the lower jaw flip the winding)
@@ -129,7 +133,7 @@ function pushTongue(out, frontZ, topY, halfW) {         // an ellipsoid, flatten
 }
 
 // both jaws: { upper: {teeth, gums}, lower: {teeth, gums, tongue} }, each { pos, col, idx } in the frame above
-export function buildMouth() {
+export function buildMouth(o = {}) {                  // o: { fangs, points } (pushCrown)
   const mesh = () => ({ pos: [], col: [], idx: [] });
   const R = { upper: { teeth: mesh(), gums: mesh() }, lower: { teeth: mesh(), gums: mesh(), tongue: mesh() } };
   const up = arch(), lo = arch(LOWER_ARCH.sx, LOWER_ARCH.dz);
@@ -138,7 +142,7 @@ export function buildMouth() {
     for (const [n, tooth] of teeth.entries()) {
       const p = along(line, s + tooth[1] / 2), shade = 1 - 0.6 * n / (teeth.length - 1);   // the back teeth in the mouth's shadow
       const e = tooth[4] === "molar" || tooth[4] === "premolar" ? (dir > 0 ? 0.5 : 0) : edge;   // the back teeth meet on one plane, the front overlap
-      for (const side of [1, -1]) pushCrown(out.teeth, { ...p, x: p.x * side, tx: p.tx * side, nx: p.nx * side }, tooth, dir, e, shade);
+      for (const side of [1, -1]) pushCrown(out.teeth, { ...p, x: p.x * side, tx: p.tx * side, nx: p.nx * side }, tooth, dir, e, shade, o);
       s += tooth[1];
     }
     pushGum(out.gums, line, teeth, dir, edge * 0.5, 1);

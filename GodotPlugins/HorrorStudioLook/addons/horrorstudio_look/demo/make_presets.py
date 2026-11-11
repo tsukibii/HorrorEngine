@@ -80,6 +80,8 @@ one("tape_camhybrid.tscn", "TapeCamhybrid", "Node", "tape.gd")
 one("tape_worn.tscn", "TapeWorn", "Node", "tape.gd", {"preset": '"worn"'})
 one("character_look.tscn", "CharacterLook", "Node", "character_look.gd")
 one("character_sweating.tscn", "CharacterSweating", "Node", "character_look.gd", {"sweat": "0.7", "drips": "0.3"})
+for _look in ["chrome", "mirror", "pearl", "greasy", "slime", "oil", "porcelain", "ember", "stone", "scales", "wax"]:   # a creature skin each (HSCreatureSkin.LOOKS; GODOT_LOOK §5o)
+    one(f"creature_{_look}.tscn", "Creature" + _look.capitalize(), "Node", "character_look.gd", {"creature_skin": f'"{_look}"'})
 # rooms: a light zone (a box 4 x 3 x 4 m about its middle: put it in the room's middle and size it to the room) with its
 # lights, shadows on the room's main light only (a GTX 1060's budget: one shadowed light a room)
 Z = N + "light_zone.gd"

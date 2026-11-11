@@ -73,6 +73,10 @@ Its materials are its baked colours (skin, eyes, hair, clothes) as plain PBR: it
 studio's own skin, eyes and hair (the pores, the refracting eyes, the hair's two highlights, its blink) give the
 character an HSCharacterLook child (the HorrorStudio Look plugin, GodotPlugins/HorrorStudioLook): it dresses it when
 the game runs. guides/godot_by_hand says how.
+
+Animal ears (the Studio's Accessories) come with bones of their own under the head, jiggle_<name>_0 ... jiggle_<name>_tip:
+the same HSCharacterLook makes them flop as the character moves (its Jiggle and Jiggle amount; HSJiggle by itself on any
+skeleton whose bones are named so). Without it they stand still, as made. Horns ride the head.
 """,
 }
 

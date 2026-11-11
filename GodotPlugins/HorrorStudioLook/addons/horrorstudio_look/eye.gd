@@ -13,6 +13,12 @@ class_name HSEye
 ## the socket's shade kept under the wet layer: the Studio's is a guess at the lids' shadow (darker all over, more toward
 ## the brow and the corners); with the real lids' shade on top, its whole was the grey, dead white (GODOT_LOOK §5h)
 const WET_SOCKET := 0.5
+## the eyeball drawn this much (m) deeper than it is (eye.gdshader's and the wet layer's `lid_room`; GODOT_LOOK §5f): a
+## lid that expressions played together have slid a little into the eye still covers it. MHR's face shapes are baked
+## with the lids kept off the eye one shape at a time (tools/face_morphs.mjs); a smile is five at once, and their sum
+## went up to 1.2 mm in. Her blinker (HSBlink) turns it on only while such shapes play and off at rest, where the eye
+## is drawn where it is; a character with no blinker (an export from before the blink) keeps it on always
+const LID_ROOM := HSBlink.LID_ROOM
 
 
 static func shader() -> Shader:
@@ -72,7 +78,8 @@ static func params(rec: Dictionary) -> Dictionary:
 		"limbal_soft": float(p.get("limbalSoft", 0.0)), "caustic": float(p.get("caustic", 0.6)) if real else 0.0,
 		"roughness": 0.4 - 0.34 * gloss, "coat_roughness": 0.18 - 0.16 * gloss,
 		"occlusion": 1.0, "sclera_bright": 0.58, "sclera_warm": 0.35,     # the lids' shadow and a white that isn't paper, warmer toward the corners (a doll's eyes glow: docs/GODOT_LOOK.md §5d, §5f)
-		"socket": float(p.get("socket", 0.35))}                         # the socket's shade (the Studio's; an export from before it, the Studio's default)
+		"socket": float(p.get("socket", 0.35)),                          # the socket's shade (the Studio's; an export from before it, the Studio's default)
+		"lid_room": LID_ROOM}
 
 
 static func material(rec: Dictionary, paint: Texture2D) -> ShaderMaterial:
@@ -92,7 +99,7 @@ static func wet_material(rec: Dictionary, mesh: Mesh) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
 	m.shader = wet_shader()
 	var p := params(rec)
-	for k in ["rho", "limbus_plane", "dome_centre", "dome_radius"]:
+	for k in ["rho", "limbus_plane", "dome_centre", "dome_radius", "lid_room"]:
 		m.set_shader_parameter(k, p[k])
 	if mesh != null:
 		var box := mesh.get_aabb()
@@ -138,7 +145,15 @@ static func wear(node: Node, glb_path: String, overrides: Dictionary = {}) -> Di
 				for k in overrides:
 					if String(k).begins_with("wet_"):
 						wm.set_shader_parameter(String(k).substr(4), overrides[k])
+				if overrides.has("lid_room"):          # (the layer lies where the eye is drawn)
+					wm.set_shader_parameter("lid_room", overrides["lid_room"])
 				mi.material_overlay = wm
+	var bl := HSBlink.attach(node) if not out.is_empty() else null   # her blinker: the blink, and the eyes' room while the face moves its lids (0 at rest)
+	if bl != null:
+		bl._find_eyes(node)
+		bl.room = -1.0                                 # (set on its next frame, whatever the materials start with)
+		if overrides.has("lid_room"):
+			bl.room_scale = float(overrides["lid_room"]) / LID_ROOM
 	var tears := records(glb_path, "studioTear")
 	for mi in node.find_children("*", "MeshInstance3D", true, false):   # the tear line, wet
 		if mi.mesh == null:
@@ -152,4 +167,5 @@ static func wear(node: Node, glb_path: String, overrides: Dictionary = {}) -> Di
 				out[name if name != "" else String(mi.name)] = m
 	if not out.is_empty():
 		HSBlink.attach(node)                          # and the lids blink, when the export carries the blink (blink.gd)
+		HSJiggle.attach(node)                         # and its ears flop, when it carries chains to jiggle (jiggle.gd)
 	return out

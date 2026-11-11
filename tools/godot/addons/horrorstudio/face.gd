@@ -1,7 +1,8 @@
 ## Faces in play (STORY_FORMAT §4 `expr`, DECISIONS 2026-11-01): an expression from the studio's library (an HSFaceClip,
-## tools/face_export.mjs: res://faces/<id>.tres, the loops in res://faces/loops/) on a cast member's face: the mesh
-## carrying MHR's face shapes, by Meta's names (the bake's bodies, a Character Studio export carrying them) or as the
-## plain MHR body has them (shape_c_45 on, in MHR's order). Each face has what it rests in (a loop running; none: at
+## tools/face_export.mjs: res://faces/<id>.tres, the loops in res://faces/loops/) on a cast member's face: every mesh
+## carrying MHR's face shapes, by Meta's names (the bake's bodies; a Character Studio export's skin, brows and lashes,
+## tools/face_morphs.mjs) or as the plain MHR body has them (shape_c_45 on, in MHR's order). A Studio export's lids are
+## its blinker's (HSBlink: the blink with its in-betweens): an expression's eyesClosed goes to it as the least it shows. Each face has what it rests in (a loop running; none: at
 ## rest) and what plays over it: a capture once, faded in and out, then gone; a loop until another takes over. The
 ## newest takes over from the one before over its fade in, as the desk's face rows do (face.js faceAt).
 extends RefCounted
@@ -23,7 +24,7 @@ const MHR72 := [
 	"upperLidRaiser_L", "upperLidRaiser_R", "upperLipRaiser_L", "upperLipRaiser_R"]
 
 var rt = null
-var people := {}             # who -> {node, mesh, idx: {shape: blend index}, rest: [layers], over: [layers], live: {}}
+var people := {}             # who -> {node, mesh, idx: {shape: blend index}, meshes: [[mesh, idx]...], blink, rest: [layers], over: [layers], live: {}}
 static var _clips := {}
 
 
@@ -44,10 +45,15 @@ static func clip(id: String):
 	return c
 
 
-## the mesh on a person carrying MHR's face shapes, each one's blend index by its Meta name ({} when she has none)
+## the meshes on a person carrying MHR's face shapes, each one's blend index by its Meta name ({} when she has none):
+## `meshes` every one of them, [[mesh, {shape: blend index}]...], the one with the most first (a Character Studio
+## export's skin; its brows and lashes are meshes of their own and ride the same shapes), `mesh` and `idx` that first
+## one's, and `blink` her HSBlink when she has one (an export's lids shut by its own blink and its in-betweens: an
+## expression's eyesClosed is handed to it, not set beside it)
 static func face_of(node: Node) -> Dictionary:
 	if node == null:
 		return {}
+	var meshes: Array = []
 	for mi in node.find_children("*", "MeshInstance3D", true, false):
 		if mi.mesh == null or not (mi.mesh is ArrayMesh) or (mi.mesh as ArrayMesh).get_blend_shape_count() == 0:
 			continue
@@ -59,8 +65,16 @@ static func face_of(node: Node) -> Dictionary:
 			if b >= 0:
 				idx[MHR72[i]] = b
 		if idx.size() > 0:
-			return {"mesh": mi, "idx": idx}
-	return {}
+			meshes.append([mi, idx])
+	if meshes.is_empty():
+		return {}
+	meshes.sort_custom(func(a, b): return (a[1] as Dictionary).size() > (b[1] as Dictionary).size())
+	var blink: HSBlink = null                          # (under her body, which is under her: HSBlink.of looks at one node's children)
+	for n in ([node] + node.find_children("*", "", true, false)):
+		if n is HSBlink:
+			blink = n
+			break
+	return {"mesh": meshes[0][0], "idx": meshes[0][1], "meshes": meshes, "blink": blink}
 
 
 ## `id` on who's face: opts `loop` (else as the clip is), `w` its weight (1), `in` and `out` its fades (0.25, 0.3),
@@ -69,7 +83,7 @@ static func face_of(node: Node) -> Dictionary:
 func play(who: String, node: Node, id, opts: Dictionary = {}) -> bool:
 	var p: Dictionary = people.get(who, {})
 	if p.is_empty():
-		p = {"node": null, "mesh": null, "idx": {}, "rest": [], "over": [], "live": {}}
+		p = {"node": null, "mesh": null, "idx": {}, "meshes": [], "blink": null, "rest": [], "over": [], "live": {}}
 		people[who] = p
 	var rest := bool(opts.get("rest", false))
 	var list: Array = p["rest"] if rest else p["over"]
@@ -147,21 +161,31 @@ func tick(dt: float) -> void:
 			p["node"] = node
 			p["mesh"] = f.get("mesh")
 			p["idx"] = f.get("idx", {})
+			p["meshes"] = f.get("meshes", [])
+			p["blink"] = f.get("blink")
 			p["live"] = {}
 		if p["mesh"] == null:
 			continue
 		var acc := {}
 		var over := _mix(p["over"], acc, 1.0)
 		_mix(p["rest"], acc, 1.0 - over)
-		var mi: MeshInstance3D = p["mesh"]
-		var idx: Dictionary = p["idx"]
 		var live: Dictionary = p["live"]
-		for nm in live:                               # what was on and isn't now: back to 0
-			if not acc.has(nm) and idx.has(nm):
-				mi.set_blend_shape_value(idx[nm], 0.0)
-		for nm in acc:
-			if idx.has(nm):
-				mi.set_blend_shape_value(idx[nm], clamp(float(acc[nm]), 0.0, 1.0))
+		var blink = p.get("blink")
+		if blink != null and not is_instance_valid(blink):
+			blink = null
+		for row in p["meshes"]:                           # every mesh that carries them: the skin, the brows, the lashes
+			if not is_instance_valid(row[0]):
+				continue
+			var mi: MeshInstance3D = row[0]
+			var idx: Dictionary = row[1]
+			for nm in live:                               # what was on and isn't now: back to 0
+				if not acc.has(nm) and idx.has(nm) and not (blink != null and str(nm).begins_with("eyesClosed_")):
+					mi.set_blend_shape_value(idx[nm], 0.0)
+			for nm in acc:
+				if idx.has(nm) and not (blink != null and str(nm).begins_with("eyesClosed_")):
+					mi.set_blend_shape_value(idx[nm], clamp(float(acc[nm]), 0.0, 1.0))
+		if blink != null:                                 # her lids are her blinker's: what the face asks is the least it shows
+			blink.hold = Vector2(clamp(float(acc.get("eyesClosed_L", 0.0)), 0.0, 1.0), clamp(float(acc.get("eyesClosed_R", 0.0)), 0.0, 1.0))
 		p["live"] = acc
 
 
@@ -175,4 +199,5 @@ func state(who: String) -> Dictionary:
 		big = max(big, float(p["live"][nm]))
 	var r: Array = p["rest"].filter(func(l): return not l["going"])
 	var o: Array = p["over"].filter(func(l): return not l["going"])
-	return {"rest": r[-1]["id"] if r.size() else "", "over": o[-1]["id"] if o.size() else "", "weight": big, "mesh": p.get("mesh") != null}
+	return {"rest": r[-1]["id"] if r.size() else "", "over": o[-1]["id"] if o.size() else "", "weight": big, "mesh": p.get("mesh") != null,
+		"meshes": (p.get("meshes", []) as Array).size(), "blink": p.get("blink") != null}

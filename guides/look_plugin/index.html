@@ -215,14 +215,43 @@ skin, eye, hair) puts the studio's skin, eyes and hair on it when the game runs:
   warm light from under it round the eyes, the nose, the mouth and the ears (<code>skin_depth</code>, <code>ear_glow</code>), and wet:
   <code>wetness</code>, <code>sweat</code> (beads), <code>drips</code>, <code>oil</code>;</li>
   <li><b>the eyes</b>: the refracting cornea, the wet layer, the tear line, an idle blink;</li>
-  <li><b>the hair</b>: the salon's bake worn MetaHuman's way (two highlights, light through it from behind).</li>
+  <li><b>the hair</b>: the salon's bake worn MetaHuman's way (two highlights, light through it from behind);</li>
+  <li><b>animal ears that flop</b>: the Character Studio's animal ears (Accessories) come with a chain of bones each, and
+  they swing as she moves and settle back (<code>jiggle</code> on, <code>jiggle_amount</code> 0 still to 2 very floppy).
+  It is <span class="node">HSJiggle</span>, which you can also put under any character yourself: it springs every chain of
+  bones named <code>jiggle_&lt;name&gt;_0</code>, <code>_1</code>… <code>jiggle_&lt;name&gt;_tip</code>, so a tail of your own works the same way.</li>
 </ul>
 <div class="pair">
   <figure><img src="img/skin.jpg" width="1280" height="720" alt="Skin spheres dry, sweating and oiled"><figcaption>The skin dry, sweating and oiled.</figcaption></figure>
   <figure><img src="img/hair.jpg" width="1280" height="720" alt="Card hair on the hair shader"><figcaption>Card hair on the hair shader.</figcaption></figure>
 </div>
+<figure><img src="img/ears.jpg" width="1280" height="560" alt="A child with a bull's horns and tagged cow ears, at rest and thrown sideways"><figcaption>A Studio export's cow ears at rest, and a moment after she's thrown sideways: the ears and the tag lag behind the head. The horns ride the head whole.</figcaption></figure>
 <p>It needs <code>HumanShaders/</code> at the project's root. In a shipped game, keep the character's <code>.glb</code> in the
 export (<code>*.glb</code> in the preset's non-resource filters): the look reads its records from it.</p>
+<h3>Creature skins: a skin that isn't skin</h3>
+<p>For monsters. On the same <span class="node">HSCharacterLook</span>, open <b>Creature skin</b> and pick one (or drag a ready-made
+one under the character: <code>presets/creature_chrome.tscn</code>, <code>creature_pearl</code>, <code>creature_greasy</code>…):</p>
+<table class="keys">
+<tr><td><code>chrome</code></td><td>polished silver: bright under any lamp, the room mirrored in it</td></tr>
+<tr><td><code>mirror</code></td><td>a perfect mirror: it shows the room and nothing else, so it is black where the room is black</td></tr>
+<tr><td><code>pearl</code></td><td>a pearl's white, pinks and greens turning as she moves</td></tr>
+<tr><td><code>greasy</code></td><td>her own skin under a film of grease in smears, dirt in every crease</td></tr>
+<tr><td><code>slime</code></td><td>a wet green gel over her, the light coming through it</td></tr>
+<tr><td><code>oil</code></td><td>black and wet, an oil slick's colours along its edges</td></tr>
+<tr><td><code>porcelain</code></td><td>a doll's glazed white with hairline cracks</td></tr>
+<tr><td><code>ember</code></td><td>burnt black, its cracks glowing and breathing (the only one that lights itself)</td></tr>
+<tr><td><code>stone</code></td><td>a statue: grey, matt, cracked here and there</td></tr>
+<tr><td><code>scales</code></td><td>a reptile's small glossy scales in her own colour</td></tr>
+<tr><td><code>wax</code></td><td>pale wax, the light glowing through its edges</td></tr>
+</table>
+<figure><img src="img/creature_skins.jpg" width="1280" height="774" alt="The demon from the Character Studio in its own skin and in each of the eleven creature skins"><figcaption>The Character Studio's demon in Godot: its own skin, then each creature skin. Its horns wear the look too.</figcaption></figure>
+<p><b>Amount</b> runs from her own skin's colour (0) to the look (1): animate it for a skin that turns. <b>Tint</b> recolours
+a look (chrome with a gold tint is gold; leave it see-through for the look's own colour). <b>Extend</b> puts it on her horns
+and ears too. Her eyes, teeth, hair and clothes are never touched. The looks keep what her skin had: its colour (as much
+as the look leaves), its pores and wrinkles, its shading in the creases.</p>
+<p>They have no light of their own: with the lamps out a chrome creature is as dark as the room, and a flashlight on it
+flares. From a script: <code>HSCreatureSkin.wear($Demon, "chrome")</code>, <code>HSCreatureSkin.clear($Demon)</code> to take it off,
+<code>$Demon/HSCharacterLook.set_creature("ember")</code> and <code>set_creature_amount(0.4)</code> while the game runs.</p>
 </section>
 
 <section id="finish">
@@ -242,7 +271,7 @@ warm or none, then each number (lift, gamma, gain, warmth, saturation, contrast,
 
 <section id="presets">
 <h2><span class="n">11</span>The presets</h2>
-<p><code>addons/horrorstudio_look/presets/</code> holds 52 ready-made nodes. Drag one from the FileSystem dock into the level and move it:</p>
+<p><code>addons/horrorstudio_look/presets/</code> holds 64 ready-made nodes. Drag one from the FileSystem dock into the level and move it:</p>
 <table class="keys">
 <tr><td>Lights</td><td><code>candle</code>, <code>dying_bulb</code>, <code>desk_lamp_dying</code>, <code>fluorescent_tube</code>, <code>faulty_neon</code>, <code>alarm_pulse</code></td></tr>
 <tr><td>Rooms</td><td><code>room_bulb</code>, <code>room_lamp</code>, <code>room_candle</code>, <code>room_dying</code>, <code>room_fluorescent</code>, <code>room_night</code> (light zones with their lights)</td></tr>
@@ -251,6 +280,7 @@ warm or none, then each number (lift, gamma, gain, warmth, saturation, contrast,
 <tr><td>Water</td><td><code>rain</code>, <code>downpour</code>, <code>wet_floor</code>, <code>wet_floor_raining</code>, <code>damp_floor</code>, <code>puddle</code>, <code>window_pane</code>, <code>wall_leak</code></td></tr>
 <tr><td>Blood</td><td><code>blood_pool</code>, <code>blood_wall</code>, <code>blood_dried</code></td></tr>
 <tr><td>People</td><td><code>character_look</code>, <code>character_sweating</code></td></tr>
+<tr><td>Creature skins</td><td><code>creature_chrome</code>, <code>creature_mirror</code>, <code>creature_pearl</code>, <code>creature_greasy</code>, <code>creature_slime</code>, <code>creature_oil</code>, <code>creature_porcelain</code>, <code>creature_ember</code>, <code>creature_stone</code>, <code>creature_scales</code>, <code>creature_wax</code> (each under a character)</td></tr>
 <tr><td>The finish</td><td><code>look_balanced</code>, <code>look_environment</code>, <code>grade_cinema</code>, <code>grade_cold</code>, <code>grade_noir</code>, <code>tape_camhybrid</code>, <code>tape_worn</code>, <code>mirror</code></td></tr>
 </table>
 <figure><img src="img/window_sun.jpg" width="1280" height="720" alt="The window sun preset"><figcaption><code>window_sun</code>: the beam from the glass to the floor.</figcaption></figure>
@@ -266,7 +296,8 @@ add_child(HSRain.make(Vector3(12, 6, 12), 4000, 0.8))
 HSMirror.attach($Bathroom/Mirror, 0, get_viewport().get_camera_3d(), 512)
 $Air.fog_to(0.75, 4.0)                       # the fog rolls in (an HSAtmosphere)
 $Flashlight.light_projector = HSAir.cookie("flashlight")
-HSSkin.wear($Mari, {"sweat": 0.6}, "res://exports/characters/mari/mari.glb")</pre>
+HSSkin.wear($Mari, {"sweat": 0.6}, "res://exports/characters/mari/mari.glb")
+HSCreatureSkin.wear($Demon, "chrome", {"extend": true})       # a creature skin; HSCreatureSkin.clear($Demon) takes it off</pre>
 <p>The full list, with what each takes: <code>GodotPlugins/HorrorStudioLook/README.md</code>, and the numbers behind them in the studio's <code>docs/GODOT_LOOK.md</code>.</p>
 </section>
 

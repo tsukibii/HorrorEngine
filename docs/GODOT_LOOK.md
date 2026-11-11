@@ -39,7 +39,7 @@ shaft's beam runs along it (tilt the node down for the sun); a sweep's and a lea
 wall with forward into the room and X along the street or the wall; a blood splat lies on the surface its +Y (the
 green arrow) points out of.
 
-The presets (`presets/*.tscn`, 52): `rain`, `downpour`; `wet_floor`, `wet_floor_raining` (ripples), `damp_floor`;
+The presets (`presets/*.tscn`, 64; the eleven creature skins' `creature_<look>` among them, §5o): `rain`, `downpour`; `wet_floor`, `wet_floor_raining` (ripples), `damp_floor`;
 `puddle`; `blood_pool`, `blood_dried`, `blood_wall`; `wall_leak`; `window_shaft`, `window_sun` (the shaft with a
 warm spot shining the same way, a child of it); `headlight_sweep`; `caustics_light`, `blinds_light`, `leaves_light`,
 `clouds_light`; `fluorescent_tube`, `dying_bulb`, `candle`, `alarm_pulse`, `faulty_neon`, `desk_lamp_dying`;
@@ -741,9 +741,40 @@ every twentieth of the blink, as Godot puts the targets together: nothing of the
 0.005 mm², 0.01 mm deep, on `_skintest`), open the eyes show, shut nothing of them from the front; then in Godot with the
 eyeballs a flat green: open thousands of green pixels, held shut none; `blink.jpg` open, half and shut. A file with the grafted eyes (its skin's extras `eyeGraft`, CHARACTER_STUDIO §2c) is measured with its lining and its lids' backs on the eye left out (they face the eyeball and lie in it), a 2.5 mm reach and the lids' touch within 0.1 mm.
 
-**Not yet**: the eyes don't turn in Godot (a glance, look-at); the Studio export carries only the blink of MHR's 72
-shapes (bakeplay.gd sets the others on a body that has them); the lid has no thickness of its own (MetaHuman's waterline);
+**Not yet**: the eyes don't turn in Godot (a glance, look-at); the lid has no thickness of its own (MetaHuman's waterline);
+(the Studio's own export carries only the blink of MHR's 72 shapes: the copy a Godot project wears has the other
+seventy baked in beside it, below);
 in the shut picture a lash clump at an inner corner and a fold at an outer corner want a look.
+
+**The eyes behind the lids when the face moves** (DECISIONS 2026-11-11: "fix anything that needs fixed for godot
+too"; GDFACES). The blink above is the export's own and exact. Every other move of the lids is MHR's (the 72 face shapes
+baked into the Godot copy, docs/GODOT_DIRECTOR.md §6c), made for MHR's own eyes: on a Studio character a look down, a
+squint or a raised cheek slid a lid 2 to 3 mm into the eyeball, and the file showed the eye through the lid (up to 138
+mm2 by the file's own depth). Two things hold it now:
+- **the bake** (`tools/face_morphs.mjs`) keeps the lids off the eye in each shape at its full weight: the eye's real
+  surface by rays from its middle, no corner ending deeper than it rests, each lid triangle tried across its inside
+  (MHR's lid skin is a few triangles 4 to 8 mm a side: flat where the eye is round). After it, each shape alone:
+  0.000 mm2 through a lid;
+- **the eyeball is drawn a little deeper than it is while the face moves its lids** (`lid_room` in eye.gdshader and
+  its wet layer: the same pixel, further along its ray, as the fragment's DEPTH; nothing else of the eye changes). A
+  face is several shapes at once (a smile: cheeks, lids and lip corners), each exact alone and their sum not: baked
+  alone a smile still left 8 mm2 of iris through the lower lid, 1.2 mm deep. Drawn deeper, a lid up to that far into
+  the eye covers it, as a lid does: 0.000 mm2 for a smile and a squint, from the front, the side and below.
+  - **How much, per character**: the bake draws nine ordinary mixes (a smile, a grin, a squint looking down, anger,
+    surprise, looks to each side...) as depth, as Godot will, and writes the deepest an eye still stands through a lid
+    on the copy's skin node (`lidRoom`, to 2 mm). A plain face asked for 2.0 mm; a goblin 0.68; a demon and an ogre 0:
+    their lids never reach their eyes, and they keep their eyes exactly as made.
+  - **When**: her blinker (`HSBlink`) reads the lid-moving shapes' weights on her skin every frame (`LID_MOVERS`: the
+    cheek raiser, the lid tightener, the looks, the nose wrinkler, the brows...) and sets the room: 0 at rest and in
+    the blink (the export's own, exact), her copy's `lidRoom` with such a shape full on. So a face at rest is the
+    Studio's to the pixel. (Always on, the room would thicken a creature's lids: a demon's deep-set eyes rest their
+    lids' edges inside the eye's front, and 1.2 mm of room gave a fifth of its opening to them.) It works whatever
+    moves the shapes: the story's `expr`, the bake's faces, an AnimationPlayer of your own.
+  - A copy from before (no `lidRoom`) gets 1.2 mm (`HSBlink.LID_ROOM`); a character with no blinker keeps it on always.
+    `"lid_room": 0.0` in `HSEye.wear`'s overrides takes it off.
+
+`docs/godot_sheets/2026-11-11_faces.jpg`: a test character at rest, smiling and squinting down, as MHR's moves alone
+leave her (the iris through both lids), baked, and as a game wears her.
 
 ## 5g. The skin's depth: warm light from under the skin round the eyes, the nose, the mouth and the ears (DECISIONS 2026-11-01)
 
@@ -1145,6 +1176,109 @@ LOOKPLUGIN's steam stage is a mirror of its own with a checker on the wall behin
 - **Half steamed**: the bottom fifth of the glass loses its sharpness (under 0.4 of the clear glass's) while the
   top keeps it.
 - **Steamed all over with 308 written**: the words' box is more than three times sharper than the fog beside it.
+
+## 5n. Ears that flop: jiggle for an export's chains (`jiggle.gd`, `HSJiggle`; DECISIONS 2026-11-10, night)
+
+The user, on the Studio's animal ears: "create it in a way that when I export it to godot I could add a jiggle bone
+(doesn't exist yet) to the ears, so they flop when the character moves". Both halves are done.
+
+- **What the export carries** (docs/CHARACTER_STUDIO.md §2d, the Studio's `exportRig`): every animal ear has a chain
+  of bones of its own under the head, `jiggle_<name>_0`, `_1`... and `jiggle_<name>_tip` (no skin on the tip: it's
+  where the last bone ends), after MHR's 127 in the skeleton; `ear_L` and `ear_R` on one character, two to four bones
+  by the ear's kind. The ear, its inside and its tag are skinned along it; the chain's softness (0..1: a long or a
+  hanging ear more than a short pricked one) is in the ear's node's extras (`jiggle: {chain, bones, soft}`), and all
+  the chains in the scene's. The bones are unturned, at rest where the ear was made; a plain viewer, the desk and
+  Unreal show the ears still.
+- **`HSJiggle`** springs them with Godot's own `SpringBoneSimulator3D` (Godot 4.4 on), a child of the skeleton made
+  when the game runs, a setting a chain: its root bone the `_0`, its end bone the `_tip`; the stiffness from 4.0 (a
+  cat's ear) to 1.2 (a lop's), the drag from 0.5 to 0.3, by the chain's softness (the export's word, else the chain's
+  length over 13 cm); `gravity` 0.12 times the softness (an ear is made in the shape it hangs in: a little is enough);
+  `amount` scales how lively (0 holds them still, 2 very floppy; `set_amount` while the game runs); `reset()` after a
+  teleport. `HSJiggle.attach(node)` adds one when a skeleton under the node has such chains: `HSEye.wear` calls it, so
+  the game's cast and anything that wears a Studio export's eyes jiggles by itself, and `HSCharacterLook` has **Jiggle**
+  and **Jiggle amount**. Dropped by hand under any character it springs every chain of bones named with its `prefix`:
+  a tail or a strand of hair as well as an ear.
+- **JIGGLE** (`python tools/godot/jiggle_check.py`, headless at 60 frames a second, `demo/jiggle.gd`): on a skeleton
+  made in the demo (a long ear of four bones leaning out, a short upright one of two) one simulator with a setting a
+  chain, the long ear softer; the head jerked 40 cm sideways in a fifth of a second, both tips lag and the long ear's
+  several times further; left alone four seconds, both back where they rested to a hundredth of a millimetre; a
+  walk's bob (the head up and down 2.5 cm twice a second, swaying a centimetre) moves the long ear's tip between 2 and
+  60 mm against the head and the short one's less: a flop, not a flail; the head turned 60 degrees in a third of a
+  second, the long ear swings further behind than the short one; with gravity the long ear hangs lower; at amount 0
+  the same jerk moves nothing. Then on a Studio export with ears when the machine has one (`--person`, `--glb`): the
+  file's chains found on Godot's skeleton, each under `c_head`, the ears' meshes skinned to them and to nothing else,
+  the softness read from the extras, the same jerk, walk and turn moving every tip, and their settling back.
+- **Measured here** (2026-11-10): the made-up long ear's tip 179 mm from where it rests in the jerk (flung right
+  over: 2 m a second is a throw, not a walk) and the short one's 22 mm, 28 and 1 mm in the walk, 47 and 3 mm in the
+  turn. On the export GROWPAGE makes (a nine-year-old with tagged cow ears, each a chain of three bones, softness
+  0.69): 61 and 18 mm in the jerk (the ear that points the way the head is thrown lags the more), 13 to 14 mm walking,
+  16 to 20 mm in the turn, back to rest within a hundredth of a millimetre. Those are at the default `amount` 1: if
+  they read stiff in a game, `amount` 1.5 is the first thing to try (`HSCharacterLook`'s Jiggle amount). The picture:
+  `docs/godot_sheets/2026-11-10_ears_jiggle.jpg` (at rest, thrown sideways, after, turning, after, dropped, settled).
+
+
+## 5o. Creature skins: a skin that isn't skin (DECISIONS 2026-11-11)
+
+The user: "could we create some more weird skin shaders/textures for the monster characters that we can apply in godot,
+e.g. a chrome silver skin, a pearlescent skin, some kind of greasy shader". `HSCreatureSkin` (`creature_skin.gd`,
+`creature_skin.gdshader`): one shader, a look a set of its numbers, eleven looks:
+
+| Look | What it is | Its numbers, in a line |
+|---|---|---|
+| `chrome` | polished silver, bright under any lamp, the room mirrored in it | metal 0.84 (a sixth of it still takes light as a surface does, so it reads silver in a dark room), roughness 0.13, a rim that catches the lamps, the skin's relief at a third |
+| `mirror` | a perfect mirror | metal 1, roughness 0.04: it shows the room and nothing of its own, so it's black where the room is black (it wants a sky, a reflection probe or lit walls on screen) |
+| `pearl` | a pearl's white, pinks and greens turning as she moves | a film's colours by the angle (`irid`), pastel, more toward the edges, drifting in slow patches; a clear coat; a little of her own colour kept |
+| `greasy` | her own skin, sallow, under grease | her paint kept whole under a yellowed tint; a clear coat in smears (thick and glossy, thin and dull: `blotch`); dirt in the creases (the skin's occlusion) and in patches |
+| `slime` | a wet green gel over her | her paint half kept under green; coat 1, roughness 0.16; smears; light through from behind (`backlight`) |
+| `oil` | black and wet, an oil slick's colours along its edges | near black, glossy; the film's colours at the edges only |
+| `porcelain` | a doll's glazed white, hairline cracks | white, a glaze, the skin's relief nearly gone; cracks in patches (`cracks`, `crack_cover`) |
+| `ember` | burnt black, its cracks lit from inside | matt black; cracks everywhere, emissive (`glow`), breathing three times in ten seconds (`glow_pulse`) |
+| `stone` | a statue | grey, matt; grime in patches (lichen), a few cracks |
+| `scales` | a reptile's | her colour turned green in 6 mm cells, each a dome under the light and a shade of its own (`scales`); a sheen at the edges |
+| `wax` | pale wax | soft (the relief nearly gone), light glowing through its edges (`backlight`, scattering) |
+
+**What it keeps.** It goes on the skin's surfaces in place of the skin shader and takes from what was there: her own
+paint (as much as the look leaves: `keep_paint`), her normal map (`relief`), her occlusion. `amount` runs from her own
+paint, matt (0) to the look (1), for a skin that turns over a few seconds. With `extend` her horns and ears wear it too
+(a chrome demon's horns are chrome). Her eyes, teeth, hair and clothes are never touched. `HSCreatureSkin.clear(node)`
+puts back what every surface wore.
+
+**How to put it on.** In the editor: an `HSCharacterLook` under the character, **Creature skin** (the look, Amount,
+Tint to recolour it, Extend); or drag a preset under her: `presets/creature_chrome.tscn`, `creature_pearl`,
+`creature_greasy` ... one a look. From a script:
+
+    HSCreatureSkin.wear($Demon, "chrome")
+    HSCreatureSkin.wear($Goblin, "greasy", {"amount": 0.7})
+    HSCreatureSkin.wear($Demon, "chrome", {"tint": Color(1.0, 0.78, 0.34)})     # gold
+    $Demon/HSCharacterLook.set_creature("ember")                                  # another, while the game runs
+    $Demon/HSCharacterLook.set_creature_amount(0.4)
+
+**No light of its own.** Everything is Godot's own lighting (metal, roughness, clear coat, rim, backlight): no
+`light()` in the shader, so the lamps, the room's light and the reflections treat it as they treat a wall, and with the
+lamps out it's as dark as the room (measured: chrome at 0.026 of the picture's range in the dark, 0.53 lit). Only the
+ember's cracks glow. A first chrome was a pure mirror and on a dark stage it was a black figure with glints: right, and
+not what "chrome silver" asks for; so `chrome` keeps a sixth of its light as a surface and the pure mirror is its own
+look.
+
+**The patterns** (smears, cracks, scales) are drawn in the skin's UVs at their size in metres. A Studio character's
+skin is MHR's layout, the head and hands at one density and the body at another (the region map's alpha,
+`tools/skin_detail.py`), times her own head's scale (the export's `studioScale`) and her body's (her height less her
+head): a goblin's scales are as big on its small body as on its big head. They break at the layout's seams (the back
+of the head, the inside of the limbs); a pattern in the skin's own space would want each corner's rest place, which
+the copy doesn't carry (LATER).
+
+**Also here**: `HSSkin.wear` called a second time on a character (a script after the node) made her skin again from
+its own material and lost the paint (a white figure). It keeps a skin that already wears it now, and leaves one under a
+creature skin where the look put it.
+
+**CREATURESKIN** (`python tools/godot/creature_skin_check.py`): each look on a ball with a made-up skin's paint beside
+a plain one, pictured under xvfb and measured where each lands: at none of the look every ball the plain skin (0.025
+off at most); lit, chrome bright and grey with a glint, the mirror the black room, pearl white with its colour turning
+to the edge, greasy the skin's hue under a glint, slime green, oil black with the film along its edge, porcelain white,
+stone matt, scales glinting, the ember's cracks 27% of it; the lamp out, only the ember glows; the lamp behind, wax and
+slime let it through; at half the look, halfway. Then on a creature exported from the Studio, through the
+HSCharacterLook node: every look on her skin and horns, the amount changed while worn, her own skin back with its
+paint. `docs/godot_sheets/2026-11-11_creature_skins.jpg`: the balls, and the demon in every look.
 
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 

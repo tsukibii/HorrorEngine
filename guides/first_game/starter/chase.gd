@@ -32,6 +32,7 @@ signal lost                                       ## out of her sight too long
 @export var start_sound := "sting_short"
 @export var door_sound := "slam"                  ## her at a door you shut, off the shelf
 @export var start_says := ""
+@export var head_m := 1.5                         ## her head over her feet (m): where she sees from and where her sounds come from; a child's about 1.2, an imp's 0.8, an ogre's 2.3
 
 var state := "idle"                               ## idle, starting, chasing, door, done
 var seen := false
@@ -89,7 +90,7 @@ func start(_a = null, _b = null) -> void:
 		_mood_was = str(snd.get("now_mood")) if snd.get("now_mood") != null else ""
 		if mood != "" and snd.has_method("music"):
 			snd.music(mood, 0.4)
-	_sound(start_sound, her.global_position + Vector3.UP * 1.5, -2.0, "event")
+	_sound(start_sound, her.global_position + Vector3.UP * head_m, -2.0, "event")
 	_dread("raise", 0.3)
 	if start_says != "":
 		var st := get_tree().get_first_node_in_group("hs_story")
@@ -239,7 +240,7 @@ func _catch(her: Node3D, pl: Node3D) -> void:
 		her.global_position = Vector3(at.x, her.global_position.y, at.z)
 		her.global_rotation.y = atan2(-from.x, -from.z)
 		pl.global_rotation.y = atan2(-from.x, -from.z)
-	_sound("sting_big", her.global_position + Vector3.UP * 1.5, 0.0, "event")
+	_sound("sting_big", her.global_position + Vector3.UP * head_m, 0.0, "event")
 	var fear := get_tree().get_first_node_in_group("hs_fear")
 	if fear != null and fear.has_method("scare"):
 		fear.scare()
@@ -248,7 +249,7 @@ func _catch(her: Node3D, pl: Node3D) -> void:
 
 # you, within her sight (the chase's: light or dark, she's onto you)
 func _sees(her: Node3D, pl: Node3D) -> bool:
-	var head := her.global_position + Vector3.UP * 1.5
+	var head := her.global_position + Vector3.UP * head_m
 	var eye := (pl.get_node("Eye") as Node3D).global_position
 	return head.distance_to(eye) <= see_m and _clear(head, eye, pl)
 

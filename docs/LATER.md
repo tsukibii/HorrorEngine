@@ -36,6 +36,42 @@ records what's chosen.
 - **LODs for faraway characters**: MHR's LOD 2 to 4 for figures more than a few metres away (the clothes and hair
   simplified with them); the games are first person, so most of the cast is far most of the time.
 
+- **The head cut from the body in a character's Godot copy** (2026-11-11). Godot keeps a mesh's blend shapes whole:
+  88 shapes (the 72 of the face and the blink's own) on a skin of 136,000 corners is 240 MB on the card for one
+  character, though only the head moves. The bake (`tools/face_morphs.mjs`) could split the skin at the neck into two
+  meshes on the same skeleton and material, the shapes on the head's alone: about a third of the memory, and a crowd
+  of faces becomes possible on a 6 GB card. What reads the skin by its name (`HSSkin.wear`, the hit reactions' ooze,
+  the desk's `face.js`) has to take two. Saves memory and load time, nothing to see.
+- **The lids against the eye every frame, in Godot.** The bake keeps each face shape's lids off the eyeballs at its
+  full weight and the eye is drawn 1.2 mm deeper than it is, which covers a smile and a squint. A mix that slides a lid
+  further than that (three or four lid shapes at full) would want the exact answer: a vertex step in the skin's shader
+  (each eye's middle and size as uniforms set from its bones every frame, each corner's resting room as an attribute
+  the bake adds, the skin round the eye pushed out), as the desk's `pushOut` is.
+
+- **Creature skins' patterns without seams** (2026-11-11). The cracks, scales and smears are drawn in the skin's UVs,
+  so they break where MHR's layout is cut (the back of the head, the inside of the limbs). With each corner's rest
+  place carried in the Godot copy (a second UV the bake adds), the shader could draw them in the body's own space,
+  three ways blended: no seam anywhere. Also for later: the story's `skin` word naming a creature skin (the desk game's
+  cast), a creature preset in the Studio naming the Godot skin it wants, and wet creatures (the sweat's beads over a
+  creature skin).
+
+- **A full bust, further** (2026-11-11, the Studio's Anime switch; CHARACTER_STUDIO §2e, TAILOR §1j). Four things
+  it doesn't do, each small beside what's there:
+  - **It doesn't move.** The ears leave the Studio with bone chains that Godot's HSJiggle springs; a full bust has
+    none. Two bones a side under the chest's bone (`jiggle_bust_L_0`, `_tip`), the breast's points weighted along
+    them by how far round the ball they are, the softness from its size: HSJiggle springs any `jiggle_*` chain as it
+    is. Only when Anime is on and the Bust past 1.
+  - **Nothing holds it.** A bra is cut on the dress form and sits on it; the breast under it is still the hanging
+    one. A form with a lift (the ball's middle raised and drawn in when what's worn holds it) wants the body that's
+    shown to follow what's worn, which nothing in the Studio does yet.
+  - **The cloth under it is cut from little.** The form gathers the hollow's skin onto a ring of 16 points at Bust 2,
+    so the cloth from the bust's widest to the ribs is a few long triangles: it creases hard there and frays at the
+    ends of the crease. A tent in the form's place (the hollow's skin laid in order along a line from the ball to the
+    ribs a few centimetres on, nothing gathered) would cut that cloth from the skin's own small triangles; how far
+    on the tent lands is how much a knit clings.
+  - **MHR's chest is coarse**: 104 points a breast. The slider's top is faceted close up; the breast's triangles
+    cut finer in the Studio's view and in the export would round it.
+
 ## Unreal
 
 - **A round-trip check**: Generate, play the preview in the editor, capture the same frames as the desk's Watch and

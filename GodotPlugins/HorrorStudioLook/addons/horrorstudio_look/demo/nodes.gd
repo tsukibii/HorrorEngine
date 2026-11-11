@@ -16,6 +16,7 @@ var floor_mi: MeshInstance3D
 var wall: MeshInstance3D
 var tiles: Array = []
 var body: Node3D
+var creatures: Array = []     # [look, its figure]
 var got := {}                  # preset name -> its node
 var rep := {}
 var n := 0
@@ -126,6 +127,20 @@ func _initialize() -> void:
 	put("crt_screen", world, Vector3(0.3, 2.2, -2.99))
 	put("character_look", body, Vector3.ZERO)
 	put("character_sweating", body, Vector3.ZERO).target = body
+	# the creature skins: each preset on a small figure of its own (a ball named skin: what a character's look finds)
+	var ci := 0
+	for look in HSCreatureSkin.names():
+		var fig := Node3D.new()
+		fig.name = "Creature_%s" % look
+		world.add_child(fig)
+		fig.position = Vector3(-2.6 + 0.48 * ci, 0.25, 2.7)
+		var ball := SphereMesh.new()
+		ball.radius = 0.16
+		ball.height = 0.32
+		mesh(ball, Vector3.ZERO, Color(0.78, 0.56, 0.47), fig).name = "skin"
+		put("creature_%s" % look, fig, Vector3.ZERO)
+		creatures.append([look, fig])
+		ci += 1
 	put("look_environment", world, Vector3.ZERO)
 	# the air: one atmosphere acts (the first in), the others wait; a flashlight and an LED torch aimed across the room
 	# with their beams; a lamp's cone; motes; a dusty room's own air
@@ -232,6 +247,13 @@ func measure() -> void:
 	rep["pane"] = got["window_pane"].material_override is ShaderMaterial and got["window_pane"].material_override.shader == HSGlass.shader()
 	rep["crt"] = got["crt_screen"].material_override is ShaderMaterial and got["crt_screen"].material_override.shader == HSCrt.shader() and got["crt_screen"].get_node("Screen").materials.size() == 1
 	rep["character"] = got["character_look"].materials.size()
+	var worn := 0                                    # each creature preset's figure wears its own look, over the skin shader the same node put on
+	for c in creatures:
+		var ms: Array = HSCreatureSkin.worn(c[1])
+		if ms.size() == 1 and str(ms[0].get_meta("hs_creature")) == str(c[0]):
+			worn += 1
+	rep["creatures"] = worn
+	rep["creature_looks"] = creatures.size()
 	rep["look_env_freed"] = not is_instance_valid(got["look_environment"])
 
 

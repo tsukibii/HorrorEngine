@@ -8,7 +8,8 @@
 // is baked.
 import * as THREE from "three";
 import * as JW from "./jewellery.js";
-export { JW };
+import * as HN from "./horns.js";
+export { JW, HN };
 
 export const KINDS = {
   glasses: { label: "Glasses", styles: ["round", "square", "cat-eye", "aviator", "rimless", "sunglasses", "heart"] },
@@ -18,8 +19,8 @@ export const KINDS = {
   patch: { label: "Eyepatch", styles: ["eyepatch"] },
   neck: { label: "Necklace", styles: ["chain", "pearls", "beads", "cord", "choker"] },
   hat: { label: "Hat", styles: ["beret", "cap", "bucket", "beanie"] },
-  horns: { label: "Horns", styles: ["devil", "ram"] },
-  ears: { label: "Ears (headband)", styles: ["bunny", "cat", "fox"] },
+  horns: { label: "Horns", styles: Object.keys(HN.HORNS) },          // horns.js: a devil's, a bull's, a goat's, a ram's spiral, antlers...
+  ears: { label: "Animal ears", styles: Object.keys(HN.EARS) },      // on a headband, or growing from the head: a bunny's, a cat's, a cow's, a dog's...
 };
 // every accessory can be moved and turned from where it's made (mm, degrees): ox, oy, oz along the face's right, up and
 // forward, rx, ry, rz about them (the user, 2026-11-01: "make props more adjustable via an x,y,z slider")
@@ -46,8 +47,8 @@ export const DEFAULTS = {
   patch: { style: "eyepatch", spot: "right eye", colour: "#141414", size: 1, turn: 0, shine: 0.1, strap: true },
   neck: { style: "chain", material: "gold", colour: "#151515", shine: 0.8, length: 45, ease: 0, size: 1, pendant: "none", gem: "#d4245a" },
   hat: { style: "beret", colour: "#141416", size: 1, tilt: 18, turn: 0, height: 0, shine: 0.1, material: "" },
-  horns: { style: "devil", colour: "#1c1414", material: "", shine: 0.35, size: 1, spread: 1, curl: 1 },
-  ears: { style: "bunny", colour: "#f2f0ec", inner: "#f2b6c6", band: "#18181a", material: "", shine: 0.1, size: 1, tilt: 0 },
+  horns: { style: "devil", colour: "#1c1414", tip: "#1c1414", material: "", shine: 0.35, size: 1, length: 1, thick: 1, spread: 1, curl: 1, ridges: 1, lean: 0 },
+  ears: { style: "bunny", colour: "#f2f0ec", inner: "#f2b6c6", band: "#18181a", headband: true, material: "", shine: 0.1, size: 1, length: 1, width: 1, tilt: 0, droop: 0, tag: false, tagColour: "#f2c418" },
 };
 const LENS = { round: [1, 0.84, 2.2], square: [1.04, 0.74, 5], "cat-eye": [1.06, 0.72, 3], aviator: [1.08, 0.9, 2.4], rimless: [1, 0.74, 3.5], sunglasses: [1.12, 0.82, 3], heart: [1.06, 0.98, 2] };
 
@@ -66,11 +67,21 @@ export function fresh(kind, style) {
   if (kind === "hat" && style !== "beret") a.tilt = 0;
   if (kind === "hat" && style === "bucket") a.colour = "#3a3528";
   if (kind === "hat" && style === "beanie") Object.assign(a, { colour: "#4a3a3a", shine: 0 });
+  if (kind === "horns" || kind === "ears") Object.assign(a, styleDefaults(kind, a.style, true));
   return a;
+}
+// what a kind of horn or ear brings of its own: how it flops and whether it's tagged (always, when the style is picked),
+// its colours (only on a fresh one: a style changed keeps the colours chosen)
+export function styleDefaults(kind, style, colours = false) {
+  if (kind === "horns") { const K = HN.HORNS[style]; return K && colours ? { colour: K.colour, tip: K.tip || K.colour } : {}; }
+  if (kind === "ears") { const K = HN.EARS[style]; return K ? { droop: K.droop || 0, tag: !!K.tag, ...(colours && K.colour ? { colour: K.colour, inner: K.inner } : {}) } : {}; }
+  return {};
 }
 // a saved accessory with today's fields (an older file's choker had a height, its piercings a colour only)
 export function normalize(a) {
   const b = { ...DEFAULTS[a.kind], ...a };
+  if (a.kind === "horns" && a.tip === undefined) b.tip = b.colour;         // an older file's horns: one colour, base to tip
+  if (a.kind === "ears" && a.droop === undefined) b.droop = HN.EARS[b.style]?.droop || 0;
   if (a.kind === "piercing" && a.material === undefined && a.colour && a.colour !== DEFAULTS.piercing.colour) b.material = "colour";
   if (a.kind === "neck" && a.length === undefined) Object.assign(b, a.style === "choker" ? { length: 0 } : { material: a.colour && a.colour !== DEFAULTS.neck.colour ? "colour" : "gold" });
   return b;
@@ -176,7 +187,7 @@ export class Accessories {
     const f = this.faceFrame(), P = this.c.POS, eL = f.L(454), eR = f.L(234);
     let top = -1e9; for (let i = 1; i < P.length; i += 3) top = Math.max(top, P[i]);
     const c = eL.clone().add(eR).multiplyScalar(0.5);
-    return { ...f, c, W: eL.distanceTo(eR), crown: top };
+    return { ...f, c, W: eL.distanceTo(eR), crown: top, rise: top - c.y };   // (rise: from the ears' level to the crown)
   }
   clear(m) { for (const o of [...m.obj.children]) { m.obj.remove(o); o.geometry?.dispose(); } }
 
@@ -411,50 +422,55 @@ export class Accessories {
     g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
     const hat = new THREE.Mesh(g, mat); hat.castShadow = true; m.obj.add(hat);
   }
-  // ---- horns: devil's (up from the forehead's corners, curving back to a point) or a ram's (curling back round the
-  // ear); cones swept along their curve, their bases sunk into the head
+  // ---- horns (horns.js): a tube along its kind's curve from the scalp, its growth rings real ridges, its colour from
+  // base to tip and its grain a texture drawn there (or a set off the shelf, or a metal); rigid on the head in a file
+  // (`rigid`). Made again only when the head or its own settings change (not at every expression)
+  headKey() {
+    const P = this.c.POS, r = v => Math.round(v * 5000); let top = -1e9; for (let i = 1; i < P.length; i += 3) top = Math.max(top, P[i]);
+    return [234, 454, 168].flatMap(i => this.c.lmk(i)).map(r).join(",") + "," + r(top) + "," + r(this.c.scale());
+  }
+  scalp(p) { const at = nearestOn(this.c.POS, this.c.TRIS, p.toArray()); return at ? this.point(at) : null; }
   draw_horns(a, m) {
-    this.clear(m);
-    const H = this.headFrame(), mm = 0.001 * this.c.scale(), k = a.size || 1, mat = this.surfaceOf(a, a.colour);
-    for (const sg of [1, -1]) {
-      const R = H.right.clone().multiplyScalar(sg), rise = H.crown - H.c.y, C = [], rad = [];
-      if (a.style === "ram") {                       // a spiral beside the head, from the temple's top back, down and round
-        const base = H.c.clone().addScaledVector(H.up, rise * 0.62).addScaledVector(R, H.W * 0.36 * (a.spread ?? 1)).addScaledVector(H.fwd, H.W * 0.05);
-        const R0 = 34 * mm * k, mid = base.clone().addScaledVector(H.up, -R0).addScaledVector(H.fwd, -R0 * 0.2), turns = 1.55 * (a.curl ?? 1);
-        for (let i = 0; i <= 64; i++) {
-          const t = i / 64, th = t * turns * Math.PI * 2, r = R0 * (1 - 0.42 * t);
-          C.push(mid.clone().addScaledVector(H.up, Math.cos(th) * r).addScaledVector(H.fwd, -Math.sin(th) * r).addScaledVector(R, (6 + 16 * t) * mm * k));
-          rad.push((15 * (1 - 0.68 * t) * (1 + 0.07 * Math.sin(th * 9))) * mm * k);   // tapering, ridged
-        }
-      } else {                                         // devil's: up and out from the forehead's top corners, swept back
-        const base = H.c.clone().addScaledVector(H.up, rise * 0.8).addScaledVector(R, H.W * 0.2 * (a.spread ?? 1)).addScaledVector(H.fwd, H.W * 0.2);
-        const L = 58 * mm * k, d0 = H.up.clone().multiplyScalar(1).addScaledVector(R, 0.35).addScaledVector(H.fwd, 0.15).normalize(), back = H.fwd.clone().multiplyScalar(-0.55 * (a.curl ?? 1)).addScaledVector(R, 0.12);
-        for (let i = 0; i <= 40; i++) { const t = i / 40; C.push(base.clone().addScaledVector(d0, L * t).addScaledVector(back, L * t * t).addScaledVector(d0, -4 * mm)); rad.push((10 * Math.pow(1 - t, 0.85) + 0.5) * mm * k); }
-      }
-      m.obj.add(new THREE.Mesh(sweep(C, i => [rad[i], rad[i]], H.fwd), mat));
+    const key = this.headKey() + "|" + JSON.stringify([a.style, a.colour, a.tip, a.material, a.shine, a.size, a.length, a.thick, a.spread, a.curl, a.ridges, a.lean]);
+    if (m.key === key && m.obj.children.length) return;
+    this.clear(m); m.key = key;
+    const H = this.headFrame(), mm = 0.001 * this.c.scale(), K = HN.HORNS[a.style] || HN.HORNS.devil, plain = !!a.material && a.material !== "colour";
+    for (const sg of K.one ? [0] : [1, -1]) for (const l of HN.hornLines(a.style, H, sg, mm, a, p => this.scalp(p))) {
+      const d = l.def, geo = HN.hornTube(l.C, l.R, { side: l.side, sect: d.sect, keel: d.keel, twist: d.twist, groove: d.groove, vScale: plain ? 3 : 1 });
+      let mat;
+      if (plain) mat = this.surfaceOf(a, a.colour);
+      else { const T = HN.hornTextures({ colour: a.colour, tip: a.tip || a.colour, tipAt: d.tipAt ?? 0.55, rings: d.rings || 0, ringTo: d.ringTo ?? 0.8 });
+        mat = new THREE.MeshStandardMaterial({ map: T.map, normalMap: T.normalMap, normalScale: new THREE.Vector2(0.8, 0.8), roughness: 0.84 - 0.55 * (a.shine ?? 0.35), metalness: 0 }); mat.name = `horn_${a.style}`; }
+      const o = new THREE.Mesh(geo, mat); o.castShadow = true; o.name = `horn_${a.style}`; o.userData.rigid = "c_head"; m.obj.add(o);
     }
   }
-  // ---- ears on a headband: a band over the head from ear to ear, two ears standing on it (a bunny's long and soft, a
-  // cat's and a fox's triangles), their inside a colour of its own
+  // ---- animal ears (horns.js): on a headband over the head from ear to ear, or growing from the scalp (no band); each a
+  // cupped shell along its line (upright, out to the side, flopped over), its inside a colour of its own, a cow's with
+  // a tag. Each ear carries its chain's joints (`jiggle`: root to tip) and how far along it every point is (`along`):
+  // a file gives it bones to flop with (index.html exportRig; Godot's HSJiggle)
   draw_ears(a, m) {
-    this.clear(m);
-    const H = this.headFrame(), mm = 0.001 * this.c.scale(), k = a.size || 1, rise = H.crown - H.c.y;
-    const bandMat = this.surfaceOf(a, a.band, 0.5), outMat = this.surfaceOf(a, a.colour), inMat = new THREE.MeshStandardMaterial({ color: a.inner, roughness: 0.85, side: THREE.DoubleSide });
+    const key = this.headKey() + "|" + JSON.stringify([a.style, a.colour, a.inner, a.band, a.headband, a.material, a.shine, a.size, a.length, a.width, a.tilt, a.droop, a.tag, a.tagColour]);
+    if (m.key === key && m.obj.children.length) return;
+    this.clear(m); m.key = key;
+    const H = this.headFrame(), mm = 0.001 * this.c.scale(), rise = H.crown - H.c.y, K = HN.EARS[a.style] || HN.EARS.bunny, band = a.headband !== false;
+    const outMat = this.surfaceOf(a, a.colour), inMat = new THREE.MeshStandardMaterial({ color: a.inner, roughness: 0.85, side: THREE.DoubleSide });
+    outMat.name = "ear"; inMat.name = "ear_inner";
     const ring = th => H.c.clone().addScaledVector(H.right, Math.cos(th) * (H.W / 2 + 7 * mm)).addScaledVector(H.up, Math.sin(th) * (rise + 6 * mm)).addScaledVector(H.fwd, H.W * 0.06);
-    const band = []; for (let i = 0; i <= 48; i++) band.push(ring(0.12 + (Math.PI - 0.24) * i / 48));
-    m.obj.add(new THREE.Mesh(sweep(band, () => [2.5 * mm, 4 * mm], H.fwd), bandMat));
-    const sty = { bunny: [112, 36, 0.75, 0.32], cat: [40, 42, 0, 0.42], fox: [56, 40, 0, 0.4] }[a.style] || [112, 36, 0.75, 0.32];
-    const [len, wid, soft, at] = sty;
+    if (band) {
+      const pts = []; for (let i = 0; i <= 48; i++) pts.push(ring(0.12 + (Math.PI - 0.24) * i / 48));
+      const b = new THREE.Mesh(sweep(pts, () => [2.5 * mm, 4 * mm], H.fwd), this.surfaceOf(a, a.band, 0.5)); b.name = "ear_band"; b.material.name = "ear_band"; b.userData.rigid = "c_head"; m.obj.add(b);
+    }
     for (const sg of [1, -1]) {
-      const th = Math.PI / 2 - sg * at, root = ring(th), out = root.clone().sub(H.c).normalize();   // straight out of the head there
-      const lean = (a.tilt || 0) * Math.PI / 180, dir = out.clone().applyAxisAngle(H.fwd, -sg * lean).normalize(), side = new THREE.Vector3().crossVectors(H.fwd, dir).normalize();
-      const C = [], W = [], Ci = [], Wi = [];
-      for (let i = 0; i <= 30; i++) {
-        const t = i / 30, w = (soft ? Math.pow(Math.sin(Math.PI * Math.min(1, t * 0.92 + 0.06)), 0.7) : 1 - t) * wid * mm * k / 2 + 0.6 * mm;
-        const p = root.clone().addScaledVector(dir, len * mm * k * t).addScaledVector(H.fwd, -soft * 12 * mm * k * t * t);   // a bunny's tips lean back
-        C.push(p); W.push([w, 3.5 * mm * k]); Ci.push(p.clone().addScaledVector(H.fwd, 2.4 * mm * k)); Wi.push([w * 0.62, 1.2 * mm * k]);
-      }
-      m.obj.add(new THREE.Mesh(sweep(C, i => W[i], H.fwd, side), outMat), new THREE.Mesh(sweep(Ci.slice(2, 27), i => Wi[i + 2], H.fwd, side), inMat));
+      const th = Math.PI / 2 - sg * K.at, on = ring(th), out = on.clone().sub(H.c).normalize();   // straight out of the head there
+      let root = on;
+      if (!band) { const p = this.scalp(on); if (p) root = p.addScaledVector(out, -2.5 * mm); }   // no band: from the scalp itself, its root a little under the skin
+      const lean = ((a.tilt || 0) + (K.lean || 0)) * Math.PI / 180, dir = out.clone().applyAxisAngle(H.fwd, -sg * lean).normalize();
+      const C = HN.earLine(K, root, dir, H, sg, mm, a), shell = HN.earShell(C, K, H, sg, mm, a, H.fwd), side = sg > 0 ? "L" : "R";
+      const droop = a.droop ?? K.droop ?? 0, soft = Math.min(1, 0.25 + 0.5 * droop + 0.004 * K.len * (a.length || 1));   // how floppy: a long or a hanging ear more than a short pricked one
+      const jiggle = { name: `ear_${side}`, joints: HN.earJoints(C, K.bones || 3).map(p => p.toArray()), soft: +soft.toFixed(2) };
+      const add = (geo, mat, name) => { const o = new THREE.Mesh(geo, mat); o.name = `${name}_${side}`; o.castShadow = true; o.userData.jiggle = jiggle; m.obj.add(o); };
+      add(shell.outer, outMat, "ear"); add(shell.inner, inMat, "ear_inner");
+      if (a.tag && sg > 0) { const tm = new THREE.MeshStandardMaterial({ color: a.tagColour || "#f2c418", roughness: 0.45 }); tm.name = "ear_tag"; for (const g of HN.earTag(C, shell, H, sg, mm, a)) add(g, tm, "ear_tag"); }
     }
   }
   // the head's (or the neck's) outline between two heights: the outermost skin by angle round its own middle, in

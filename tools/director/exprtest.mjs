@@ -150,25 +150,25 @@ if (!video && fs.existsSync(LIB)) for (const d of fs.readdirSync(LIB)) { const f
   });
   await step("the loop on a scene's face row: dropped on Mari's row it rides the nearest clip edge; the stage's face moves inside it and rests outside; the block dragged along moves its edge; its weight and length set; picked by a double-click too; taken off", async () => {
     await page.evaluate(() => { window.__dd.select("n_message"); window.__dd.rightTab("inspector"); });
-    await page.waitForSelector('.ftrack[data-who="mari"]', { timeout: 20000 });
+    await page.waitForSelector('.ftrack:not(.btrack)[data-who="mari"]', { timeout: 20000 });
     const drop = (sel, id, fx) => page.evaluate(([sel, id, fx, type]) => { const t = document.querySelector(sel), r = t.getBoundingClientRect(), dt = new DataTransfer(); dt.setData(type, id);
       const o = { clientX: r.left + r.width * fx, clientY: r.top + r.height / 2, dataTransfer: dt, bubbles: true, cancelable: true };
       t.dispatchEvent(new DragEvent("dragenter", o)); t.dispatchEvent(new DragEvent("dragover", o)); t.dispatchEvent(new DragEvent("drop", o)); }, [sel, id, fx, "application/x-expression"]);
-    await drop('.ftrack[data-who="mari"]', loopId, 0.5);
+    await drop('.ftrack:not(.btrack)[data-who="mari"]', loopId, 0.5);
     const faces = () => page.evaluate(() => JSON.parse(JSON.stringify(window.__dd.S.scenes.s_message.faces || [])));
     let f = await faces();
     if (f.length !== 1 || f[0].who !== "mari" || f[0].expr !== loopId || !/^c\d$/.test((f[0].at || {}).clip)) throw new Error("the drop: " + JSON.stringify(f));
-    await page.waitForSelector(`.ftrack[data-who="mari"] .fblk[data-expr="${loopId}"]`, { timeout: 20000 });
+    await page.waitForSelector(`.ftrack:not(.btrack)[data-who="mari"] .fblk[data-expr="${loopId}"]`, { timeout: 20000 });
     const faceAt = T => page.evaluate(async T => {
       const { FACES } = await import("/stage.js"); const t0 = performance.now(); while (!FACES.M && performance.now() - t0 < 20000) await new Promise(r => setTimeout(r, 100));
       const sc = document.querySelector("#scrub"); sc.value = T; sc.dispatchEvent(new Event("input"));
       const fig = window.__dd.flowStage.cast.mari; let s = 0; for (const t of fig._faceT || []) if (t.idx) for (const i of t.idx) if (i >= 0) s += t.mesh.morphTargetInfluences[i]; return s;
     }, T);
-    const span = await page.evaluate(id => { const b = document.querySelector(`.ftrack[data-who="mari"] .fblk[data-expr="${id}"]`), tot = +document.querySelector("#scrub").max; return { s: parseFloat(b.style.left) / 100 * tot, e: (parseFloat(b.style.left) + parseFloat(b.style.width)) / 100 * tot, tot }; }, loopId);
+    const span = await page.evaluate(id => { const b = document.querySelector(`.ftrack:not(.btrack)[data-who="mari"] .fblk[data-expr="${id}"]`), tot = +document.querySelector("#scrub").max; return { s: parseFloat(b.style.left) / 100 * tot, e: (parseFloat(b.style.left) + parseFloat(b.style.width)) / 100 * tot, tot }; }, loopId);
     await page.waitForFunction(id => import("/stage.js").then(m => !!m.FACES.lib[id]), loopId, { timeout: 20000 });
     const inside = await faceAt(Math.min(span.e - 0.2, span.s + 1.2)), before = span.s > 0.6 ? await faceAt(span.s - 0.5) : 0;
     if (!(inside > 0.05) || before > 1e-6) throw new Error(`the face on the stage: ${inside} inside (${span.s.toFixed(2)} to ${span.e.toFixed(2)} s), ${before} before`);
-    const b = await page.locator(`.ftrack[data-who="mari"] .fblk[data-expr="${loopId}"]`).boundingBox(), tb = await page.locator('.ftrack[data-who="mari"]').boundingBox();
+    const b = await page.locator(`.ftrack:not(.btrack)[data-who="mari"] .fblk[data-expr="${loopId}"]`).boundingBox(), tb = await page.locator('.ftrack:not(.btrack)[data-who="mari"]').boundingBox();
     await page.mouse.move(b.x + 6, b.y + b.height / 2); await page.mouse.down(); await page.mouse.move(tb.x + tb.width * 0.08, b.y + b.height / 2, { steps: 6 }); await page.mouse.up();
     f = await faces(); if (f[0].at.clip !== "c1" || (f[0].at.edge || "start") !== "start") throw new Error("dragged to the start: " + JSON.stringify(f[0].at));
     await page.waitForSelector(".fform");                     // a block dragged stays open (a click on it again closes it)
@@ -176,10 +176,10 @@ if (!video && fs.existsSync(LIB)) for (const d of fs.readdirSync(LIB)) { const f
     f = await faces(); if (f[0].w !== 0.5) throw new Error("the weight: " + JSON.stringify(f[0]));
     const len = page.locator('.fform input[placeholder="its own"]').first(); await len.fill("2"); await len.dispatchEvent("change");   // a loop runs to the scene's end: 2 s of it leaves the row's end free
     f = await faces(); if (f[0].secs !== 2) throw new Error("the length: " + JSON.stringify(f[0]));
-    const tb2 = await page.locator('.ftrack[data-who="mari"]').boundingBox(); await page.mouse.dblclick(tb2.x + tb2.width * 0.95, tb2.y + tb2.height / 2);
+    const tb2 = await page.locator('.ftrack:not(.btrack)[data-who="mari"]').boundingBox(); await page.mouse.dblclick(tb2.x + tb2.width * 0.95, tb2.y + tb2.height / 2);
     await page.waitForSelector(".mdl .xp-pickl"); await page.click(`.mdl .xp-pickl button[data-id="${loopId}"]`);
     f = await faces(); if (f.length !== 2 || f[1].expr !== loopId) throw new Error("picked by a double-click: " + JSON.stringify(f));
-    for (let k = 0; k < 2; k++) { await page.click(`.ftrack[data-who="mari"] .fblk[data-expr="${loopId}"]`); await page.waitForSelector(".fform"); await page.click(".fform button.ghost"); }
+    for (let k = 0; k < 2; k++) { await page.click(`.ftrack:not(.btrack)[data-who="mari"] .fblk[data-expr="${loopId}"]`); await page.waitForSelector(".fform"); await page.click(".fform button.ghost"); }
     f = await faces(); if (f.length) throw new Error("taken off: " + JSON.stringify(f));
     if (await page.evaluate(() => "faces" in window.__dd.S.scenes.s_message)) throw new Error("an empty faces list left on the scene");
     await page.evaluate(() => window.__dd.rightTab("exprPanel")); await page.waitForSelector(`.xp-card[data-id="${id}"]`);

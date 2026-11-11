@@ -6,7 +6,7 @@
 // plackets, pockets, waistbands, belts, cuffs) and buttons sewn on the hanging cloth; every piece has a thickness.
 // The designs are data: Content/Studio/Clothes/designs.json; outfits in outfits.json.
 // Plain ES module: the Studio page (tools/character/index.html) and node (tools/character/tailor/cli.mjs) run it.
-import { frame } from "./tailor/frame.js";
+import { bodyFrame } from "./tailor/frame.js";
 import { prepare, shell, skirt, shoeShell, detail, buttons, thicken, lifted, cut, handles, soles, waistline, sleeveEnd, bust } from "./tailor/pieces.js";
 import { halterCords } from "./tailor/cords.js";
 import { unwrap } from "./tailor/uv.js";
@@ -23,8 +23,9 @@ export const DRAPE_VERSION = 3;                                     // a bake of
 export function body(P, T) {
   let low = Infinity; for (let i = 1; i < P.length; i += 3) low = Math.min(low, P[i]);
   if (Math.abs(low) > 1e-4) { const B = body(raised(P, -low), T); B.floor = low; return B; }
-  const F = frame(P, T);
-  return prepare(P, T, F);
+  // (a dress form's gathered points made one: the tailor's own body has none lying on another; what it says of the
+  // body's points, the skin a garment hides, is said of the body as it came: B.map)
+  const f = bodyFrame(P, T), B = prepare(f.P, f.T, f.F); if (f.map) B.map = f.map; return B;
 }
 const raised = (P, dy) => { const Q = Float32Array.from(P); for (let i = 1; i < Q.length; i += 3) Q[i] += dy; return Q; };
 
@@ -126,7 +127,7 @@ export function covered(B, V) {
     if (v < COVER.open * s) { const k = V.which ? V.which(x, y, z)[1] : "open"; if (k === "neck" || k === "open") continue; }   // (a boot's line says no edge: the wider margin)
     out[i] = 1;
   }
-  return out;
+  return B.map ? Uint8Array.from(B.map, j => out[j]) : out;            // (each point of the body as it came: its own, or the one it was gathered onto)
 }
 /** the cloth under the bands that hold their shape as cut: a neckband, a sleeve's cuff (buttoned or ribbed round the
     wrist: the sleeve blouses above it, never over the hand), a ribbed hem (rib pulls in round the hips), any detail with

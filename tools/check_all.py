@@ -15,7 +15,8 @@ STUDIO = [["pbr.py", "check"], ["sfx.py", "check"], ["face_capture.py", "check"]
           ["street.py", "check"], ["skin_detail.py", "check"], ["eye_patch.py", "check"], ["fabric_bake.py", "check"],   # the streets, the skin's detail tiles, the grafted eyes, the made fabrics,
           ["face_export.mjs", "--check"], ["face_morphs.mjs", "--check"],                                            # the library baked for Godot (FACEEXPORT), a Studio export's face shapes (FACEMORPHS)
           ["propgen.py", "thumbs", "--check"], ["woodpbr.py", "check"], ["weapon_fx.py", "check"],                     # the props' kept pictures and sticker passes (THUMBS), the made wood sets (WOODPBR), the weapons' effect maps (WEAPONFX),
-          ["score/moods.mjs", "--check"]]                                                                                # the music's moods as beds (MOODS)
+          ["score/moods.mjs", "--check"],                                                                               # the music's moods as beds (MOODS),
+          ["character/growtest.mjs"]]                                                                                    # the Character Studio's ages, proportions and creatures (GROW)
 
 game, _ = L.pick_game(sys.argv[1:])
 bad = 0

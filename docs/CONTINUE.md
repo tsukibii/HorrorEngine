@@ -18,10 +18,181 @@ bedding, curtains, tables and chairs, the props' kept pictures, real wood in the
 `sakura-rabbit-research`: the Sakura Rabbit research note, then the three notes on dread, the CRT, and the props and
 systems that open, hold, move and are read; 2026-11-05, night, on `gameplay-enhancements`: the kit's stairs, the scene
 builder's floors, the street's steel stair, climbing in Godot and on the desk; 2026-11-08 on
-`claude/friendly-newton-9o2xey`, from the user's `retro-enhance`: the retro pack in the prop generator). Then 2026-11-10 on `update-tutorialv2`: tutorial v2 using every system. Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
+`claude/friendly-newton-9o2xey`, from the user's `retro-enhance`: the retro pack in the prop generator; 2026-11-09 and
+10 the weapons and the laptop, merged; 2026-11-10 on `update-tutorialv2`: tutorial v2 using every system, merged;
+2026-11-10, night, and 11 on `claude/nifty-tesla-dc904q`: children, Cutify, monster mode, horns and animal ears in the
+Character Studio, then the creature presets and a Studio character's face in Godot, then the Anime switch and the red
+knit dress). Read this after CLAUDE.md's start
+list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-10, `update-tutorialv2`): tutorial v2 uses every system, and says what's missing
+## Where it stopped last (2026-11-11, latest, `claude/nifty-tesla-dc904q`): Anime (the Bust from flat to very full) and the red knit dress
+
+The user asked for a look-alike of a Daz3D character (proportions, the red ribbed turtleneck dress, the face and
+makeup, the hair, "as 1:1 as possible"), reviewed the first bust ("unnaturally pointy ... how a waterballoon would
+sit"), and then stopped it: **"I dislike everything we've done aside from the new red clothing fabric and the new bust
+slider, keep the new bust slider as an 'anime' toggleable, and the clothing, don't worry about creating a preset for
+the 1:1 character anymore"** (DECISIONS 2026-11-11, latest). So two things are in the project and nothing else of it:
+
+- **Anime** (Character Studio, Body, under Cutify): a switch. On, a **Bust** slider under it runs −2 to 3 (the same
+  value as Sculpt, Body, Bust): −2 a flat chest, 0 the body's own, past 1 a full bust that hangs (a ball in the skin
+  from the breast's root, its weight low; 2 large, 3 about the picture's). **Off, the default, the Bust is the plain
+  −1 to 1 slider, to the bit what it was.** CHARACTER_STUDIO §2e; `sculpt.js` `bustShape`.
+- **Clothes over a full bust** are cut on a **dress form** (the hollow under the bust closed; TAILOR §1j). The body
+  shown, saved and exported is the hanging one.
+- **The red knit**: the fabric **Rib knit, chunky** (`chunky`) and the outfit **"casual: red sweater dress"** in
+  Casual (a long turtleneck sweater over a straight skirt of the same knit: `sweater-dress`, `sweater-dress-skirt`).
+- **Taken out**: the figure preset and its cards, the face look, the face controls made for it, the hair preset, the
+  figures tool. **No 1:1 preset**: don't pick it up again unless the user asks.
+
+**The picture**: `docs/studio_sheets/2026-11-11_anime_bust.jpg` (the switch and its slider; the body with Anime off at
+Bust 1, on at −2, 2 and 3; the red sweater dress on the plain body and on Bust 2).
+
+**For the user's eye, on the card** (drawn on the CPU here):
+- the Anime Bust at 2, 2.2 and 3 from the side and three quarter, bare and under the red dress and a t-shirt;
+- the knit under a full bust: the cloth creases hard where it turns in under the bust (LATER: a tent in the form's
+  place would smooth it; say if it should cling less or more);
+- the flat end (−2) on the feminine base.
+
+**Run here** (the cloud, on the CPU): CHECKS, GROW, POSE, TAILOR (with its new full-bust case), GROWPAGE (QUICK),
+WARDROBE, and the Anime switch driven in the page by hand (off and on, its slider and the sculpt's moving each other,
+no clothes cut again while the Bust is plain, the dress worn, saved, opened again). **Not run here: STUDIO** (50
+minutes on the CPU): the page's script changed (the switch, the body's form for the tailor), so it wants a run on the
+card (docs/RUN_LOCALLY.md).
+
+**Not done** (LATER, "A full bust, further"): it doesn't move in play (no bones, where the ears have chains); nothing
+lifts it (a bra sits on the form); the cloth under it is cut from little; MHR's chest is coarse at the slider's top.
+
+## Before that (2026-11-11, `claude/nifty-tesla-dc904q`): the creatures as presets, a face that moves in Godot, creature skins
+
+Two asks from the user on the same branch, after the ages and monster mode below (DECISIONS 2026-11-11, both entries).
+
+**"add presets for the monster-ish shapes you made so I can use them, fix anything that needs fixed for godot too"**
+- **The creatures are cards** in the Character Studio (Body, under Monster mode, always there): Goblin, Ghoul, Ogre,
+  Grey alien, Demon, Hag, Imp, each a picture. A click is the whole creature: shape, height, build, teeth and **its
+  look** (a skin colour on the procedural skin, eyes, lips, horns for the demon and the imp). *With its look* and *Face
+  only* under them. `node tools/character/creatures.mjs make [--only goblin,ogre] [--export]` makes each a character
+  of its own (`creature_<id>`) and its Godot export; `thumbs` makes the cards' pictures again
+  (`Content/Studio/Creatures/thumbs/`). CHARACTER_STUDIO §2d.
+- **A Studio character's face moves in Godot** (GODOT_DIRECTOR §6c, GODOT_LOOK §5f; GDFACES). It didn't: the face
+  bake skipped every export made since the blink, face.gd drove one mesh, an expression's closed eyes fought the
+  blinker. And once it moved, the eyes came through the lids (MHR's shapes are for MHR's eyes): the bake now keeps the
+  lids off the eyeballs in each shape, measures how much room that character's mixed expressions still want and writes
+  it in her copy (`lidRoom`), and the look plugin's eye is drawn that much deeper while her lids move (her blinker
+  turns it on and off; at rest the eye is the Studio's to the pixel). **Characters already in a Godot project want
+  their copy made again** (Export for Godot, `godot_director.py install`, or the game's next export).
+- **A creature or a child can be shot at**: the weapons plugin's hitboxes are sized by her own bones (HITBOXES); the
+  starter kit's hunter, chase, menace and cue take a `head_m`.
+
+**"some more weird skin shaders/textures for the monster characters that we can apply in godot, e.g. a chrome silver
+skin, a pearlescent skin, some kind of greasy shader"**
+- **Creature skins** in the look plugin (GODOT_LOOK §5o, guides/look_plugin §8; CREATURESKIN): eleven looks on a
+  character's skin in place of the skin shader: chrome, mirror, pearl, greasy, slime, oil, porcelain, ember, stone,
+  scales, wax. On the `HSCharacterLook` node's **Creature skin** row, as presets (`presets/creature_<look>.tscn`) or
+  `HSCreatureSkin.wear(node, "chrome")`; Amount (a skin that turns), Tint (chrome in gold), Extend (her horns and ears).
+
+**Run here** (the cloud, on the CPU): CHECKS, GROW, GROWPAGE (QUICK), FACEMORPHS, GDFACES (on `_studiotest`,
+`_growtest`, the demon, the goblin, the ogre; `--pictures` on `_studiotest`), EYELIDS, GDPEOPLE, GDPLAY, DIRECTOR,
+EXPORTS, CREATURESKIN (on the demon), LOOKPLUGIN `--nodes`, HITBOXES, WEAPONS, TUTORIAL2 (its test read a stand-in's
+`Head` node and stopped on a machine that has `_studiotest`, where she is the export: it measures her head's bone
+now); GDTESTROOM but station 13 (made props need Blender, as before here).
+
+**The pictures**: `docs/studio_sheets/2026-11-11_creature_cards.jpg` (the seven cards),
+`docs/godot_sheets/2026-11-11_faces.jpg` (a face at rest, smiling, squinting down: MHR's moves alone, baked, as a game
+wears her), `docs/godot_sheets/2026-11-11_creature_skins.jpg` (the looks on balls; the demon in each).
+
+**For the user's eye, on the card** (everything here was drawn on the CPU):
+- each creature card's look in the Studio (`MONSTERS` in grow.js: the tone, the skin preset and its tweak, the eyes);
+- the creature skins on a real creature in a real level: chrome and mirror want something to mirror (a sky, a
+  reflection probe); the looks' numbers are `HSCreatureSkin.LOOKS`; the greasy smears and the slime are the two I'd
+  look at first;
+- an expression on a character in Godot (the story's `expr`, or the Director's Animate tab's Face cards): the lids
+  over the eyes in a close-up, on a plain face and on a creature;
+- a creature shot at: the ogre's and the imp's hitboxes, `girth` for the ogre's belly.
+
+**Not done, and why**: the creature skins' patterns break at MHR's UV seams (LATER: the rest place per corner); the
+story's `skin` word doesn't name a creature skin yet (a desk game's cast: the format, its check and the desk's command
+in one commit); 88 blend shapes on a 136,000-corner skin are 240 MB on the card a character (LATER: the head cut from
+the body in the copy); the starter kit's hunter still sees from `head_m` as set by hand, not measured.
+
+**Next, if the user wants it**: more creature presets and skins (both are a dictionary entry each); the Studio's
+creature cards naming the Godot skin they want; tails and wings on HSJiggle's chains; the eyes turning in Godot (a
+glance, look-at).
+
+## Before that (2026-11-10, night, `claude/nifty-tesla-dc904q`): children, Cutify, monster mode, horns and ears that flop
+
+The user: "we are restricted to making older characters in the studio creator ... a toggle for monster mode ... making
+younger npcs 8-18 age ... maybe a separate toggleable 'cutify', but we should still be able to import image to face ...
+enhance the horns and add different type, add cow ears and animal ears ... when I export it to godot I could add a
+jiggle bone (doesn't exist yet) to the ears so they flop" (DECISIONS 2026-11-10, night). Built, all in the Character
+Studio and the look plugin (docs/CHARACTER_STUDIO.md §2d, docs/GODOT_LOOK.md §5n):
+
+- **`tools/character/grow.js`**: proportions (parts of the body sized against the rest on MHR's rig, before the
+  height's scale), the ages' table, Cutify, the creatures. **The head is the unit**: an age scales the body under the
+  head, so nothing made on the head needed changing and a picture still fits the face on a child.
+- **Body tab**: Age (8 to 17, or the adult; sets the height to the age's average; Young face), Cutify (a switch and an
+  amount), Monster mode (the sliders and circles to ±3, the height 0.4 to 3.5 m, the Creature controls, seven creatures
+  as chips), new sliders (Proportions; Face length, Round face, Eye size, spacing and depth, Ear size, Ears out; Bust,
+  Seat). Face, Mouth: Fangs, Pointed teeth.
+- **Accessories**: `horns.js`: thirteen horns, thirteen animal ears (a cow's with its tag), on a headband or from the
+  head, Flop.
+- **The export**: each ear a chain of bones under the head (`jiggle_ear_L_0` ... `_tip`), horns whole on the head.
+  **HSJiggle** in the look plugin springs them (Godot's SpringBoneSimulator3D); HSCharacterLook and the game's cast put
+  it on by themselves.
+- **Hair rides the head**: a bake made on an adult follows the head to a child's (the character records the head its
+  hair was baked on, `hairHead`; `placeHair` in index.html); a bake on no head we know is left and the view says so.
+- **The head's scale in the export** (`studioScale` on the skin's node): the 72 face shapes sized by the head, not by
+  the body's height (the desk's `face.js`, the Godot bake `face_morphs.mjs`; older files as before).
+- **Checks**: GROW (in check_all), GROWPAGE (the page, a scratch character `_growtest`), JIGGLE (Godot, headless);
+  TAILOR and POSE now run on two children as well (every design cuts on an eight-year-old).
+
+**Run here** (the cloud, on the CPU): CHECKS, GROW, POSE, TAILOR (104 designs on nine bodies), FACEMORPHS, GROWPAGE,
+JIGGLE, LOOKPLUGIN `--nodes`, GDPLAY, PEOPLE (`PERSON=_growtest`: a child with ears and horns on the desk), SALON,
+GROOM and EXPRESSIONS ok; GDTESTROOM ok from the start to station 11 and from 12 (`--from n_bath`) to the end, with the
+desk's bake made first (`node tools/godot/bake.mjs --game TestRoom001`), station 13 failing as it does on any fresh
+container (the suitcase's and closets' made props need Blender).
+
+**STUDIO**, which hadn't been run to its end since late October (three of its steps had gone stale, none from this
+work):
+- its brows and lashes step looked in the Face tab (the brows have had their own since 2026-10-31) and clicked the
+  panel's first two switches (the fine hairs' since groom.js): fixed, it passes;
+- **"the eyes from the side" fails, and fails the same on the code before this branch** (`7d80d01`, a second server
+  on a worktree: the same pixel counts): from 75° and 85° the white is 36% and 35% of the opening on a fresh character
+  where the step wants over 40 (12 to 15% later in the full run, after the steps that set the eyes' softening). The
+  number is from 2026-10-28, before the grafted lids and the soft look; whether the eye or the number is wrong is the
+  user's to say on the card. Left as it was;
+- every other step passes on this branch: 1 to 29 and "the eyes softened" in the full run (`ONLY='^(?!the eyes from
+  the side)'` runs all but the one), the eleven from "the eye refracts" to the export for the desk as a group on a
+  fresh character, and the last two (the baked colours, cleared pictures) with the lipstick, clothes and brows steps
+  before them, which they need. In the full run the click that opens "the eye refracts" once waited past its thirty
+  seconds (the page's thread busy on this CPU); alone it passes.
+- EXPRESSIONS' face row step selected the body row as well (`ftrack btrack`): fixed, it passes to its end.
+
+**For the card** (docs/RUN_LOCALLY.md): STUDIO in one go, and the pictures to judge by eye.
+
+**Found on the way, and fixed the next day** (2026-11-11, below): a Studio export's face in Godot didn't move
+(the bake skipped every export made since the blink, face.gd drove one mesh, the lids fought the blinker).
+
+**The pictures**: `docs/studio_sheets/2026-11-10_ages_cutify.jpg`, `2026-11-10_creatures.jpg`, `2026-11-10_horns_ears.jpg`,
+`2026-11-10_child_hair.jpg` (a salon preset baked on a nine-year-old, riding her head at eight, fourteen and grown);
+in Godot `docs/godot_sheets/2026-11-10_ears_jiggle.jpg`.
+
+**For the user's eye, on the card** (nothing here was judged on a real GPU: the pictures were drawn on the CPU):
+- an eight-, a twelve- and a fifteen-year-old of each base: the head's size, the build, the face (`CHILD_BODY`,
+  `CHILD_FACE` and the table in grow.js are the numbers to change);
+- Cutify at 0.6 and 1 on an adult and on a child (`CUTE`);
+- each creature chip (`MONSTERS`), and the sliders at 3: where a field breaks before its limit, `REACH` takes a number;
+- the horns' and ears' sizes and places on a real character with hair (they're made on the bare scalp);
+- the ears in Godot: HSJiggle's `amount` and `gravity` (how floppy), on a character that walks.
+
+**Next, if the user wants it**: hair made again by itself when the body under it changes (today the bake rides the
+head: what lay on the shoulders needs Hair, Bake); the outfits' pictures on a child; children's sizes in the wardrobe
+(clothes cut for a child keep an adult's ease in centimetres); younger than eight; tails and wings on the same chains
+(HSJiggle springs any `jiggle_` chain); the creatures' skin (the procedural skin's greens and greys as looks); the
+desk's stand-in bodies by age; the salon's own frame on a child's short face (it sizes the hair by the face's height,
+chin to crown, which an age shortens by a twentieth: presets may want a little more volume there).
+
+## Before that (2026-11-10, `update-tutorialv2`): tutorial v2 uses every system, and says what's missing
 
 The branch `update-tutorialv2`, made from main with `laptop` merged (PR #20). The user: "make a new branch called
 update-tutorialv2, that implements (gets the user to imeplmenet) every feature we've created so far so we can see whats

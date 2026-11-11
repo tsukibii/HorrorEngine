@@ -44,6 +44,7 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            (sitting, lying in bed, walking...), the flashlight, how near, for how long, a chance;
                            then someone there for a moment with a sound and an animation, gone in a blink (a jump
                            scare), and/or a line, a task, a fact, the music, a target's fire()
+                           (head_m: her head over her feet, 1.5 m; set it for a child or a creature)
   seat.gd                  somewhere to sit, lie down or hide: E there and back up; its box on collision layer 2,
                            which only E's aim finds (your body, the sound and sight pass through it)
   noise.gd                 a noise: Noises.make(tree, where, how loud); your steps, a run, a door, a gasp make one,
@@ -53,10 +54,12 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            her chance of finding you, a light on makes it certain; found, she pulls you out; then
                            back to her post; seen in the open while she looks (or a chase); a number of
                            searches, or stop()
+                           (head_m: her head over her feet, 1.5 m; set it for a child or a creature)
   chase.gd                 under a copy of her: after you at about your run speed, along the way she saw you go
                            (no navigation mesh); a door you shut holds her 2 s; 6 s out of her sight and she's lost
                            you (her searcher searches there); caught, a fright; safe rooms she won't follow you into;
                            20 to 40 s at most; the chase mood, then the hush; start() from a signal, or a searcher's
+                           (head_m: her head over her feet, 1.5 m; set it for a child or a creature)
   steam_mirror.gd          writing in the steam: a mirror (the Look plugin's HSMirrorSurface) fogs over from the
                            bottom, the words a finger left on it showing as it comes; it holds, then clears; fire()
                            from a cue or a signal
@@ -88,6 +91,7 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            weight, cooldown, distance and where (behind you, in view, out of sight)
   menace.gd                under her: a gauge filling while you're near her and see her; full, she withdraws a
                            while and the director relaxes
+                           (head_m: her head over her feet, 1.5 m; set it for a child or a creature)
   arms_down.gd             under a Character Studio character: its arms down by its sides
   lights.gd, reach.gd      helpers the others use: lights switched, dimmed, flickered and blinked as the Look plugin
                            keeps them, a collider round a thing you use

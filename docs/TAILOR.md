@@ -95,7 +95,7 @@ list is tucked into it).
 `tailor/fabric.js` ports Woohill's surfaces (`creator/src/js/60-character.js` `surfaceTile`, `surfaceAux`; their sizes,
 gloss and relief from `20-clothes.js`): each a seamless tile drawn in code at four times Woohill's size, the cloth's
 light and dark round a mid grey, laid on the fabric coordinates at its real size in metres. **Cotton, jersey, denim,
-canvas, twill, knit, rib, wool, tweed, silk, satin, spandex, leather, patent, suede, velvet, quilted, sequin** (discs
+canvas, twill, knit, rib, chunky rib (a sweater's: §1j), wool, tweed, silk, satin, spandex, leather, patent, suede, velvet, quilted, sequin** (discs
 in staggered rows, each catching the light its own way), **laced** (lace lined: the same net and flowers raised on an
 opaque ground, for a lace top that isn't see-through), and the three that let the skin through: **sheer** (pantyhose:
 the nylon at its `denier`, darker where the leg turns away, a sheen down the leg), **fishnet** and **lace** (their
@@ -297,6 +297,59 @@ The clothes are skinned, never simulated, so the cut keeps to what skinning carr
   where to try a change of method without a card (`gpulike.mjs "outfit"`: both ways in node). `gputest.mjs`
   (GPUDRAPE). Next, measured on the 3090: fewer dispatches (the bends are most of them), the skin's search on the card.
 
+## 1j. A full bust: the dress form; the chunky rib and the red sweater dress (DECISIONS 2026-11-11, latest)
+
+The Studio's **Anime** switch (CHARACTER_STUDIO §2e) gives a body a full bust that hangs: a ball in the skin, with a
+hollow under it. Two things came of it for the tailor, and one outfit.
+
+- **Why a form.** A garment is cut from the skin (§1). Under a hanging breast the skin runs down the ball's front,
+  back up under it to the fold, and down the ribs again: cloth cut there is three layers where a garment has one, and
+  pushed out to hang as a garment does they lie in each other (the first turtleneck on a full bust was torn under it,
+  and a slot was cut down between the two). A real garment goes from the fullest part of the bust straight to the
+  ribs; it has no cloth in the hollow at all.
+- **The dress form** (`sculpt.js` `bustShape(..., form)`; the Studio's `neutralBody(true)`, `node.mjs`
+  `mhrBody`/`grownBody` with `form: true`): the body the clothes are cut and hung on when the Bust is past 1. It is the
+  same ball, with the hollow closed: the skin goes round the ball only to where it's widest over the chest wall (or to
+  the middle of the chest, where the two balls meet: no slot between them), and all the skin past that, the ball's
+  underside and the ribs' own skin under the ball, is **gathered**: each of its points is put exactly on the first
+  point to reach that ring that it's joined to through the gathered skin. The form holds the whole ball, so what's cut
+  on it clears the real one. The body shown, saved and exported is always the hanging one; the form is only the
+  tailor's (the cut, the drape, the edit mode's guides).
+- **Points that lie on one another are one** (`tailor/mesh.js` `welded`, in `tailor.js` `body()`): the tailor's own
+  body has every set of exactly coincident points made a single point and the triangles that came to nothing left out,
+  so no cloth is cut from the gathered skin and the cloth's edges round it are joined. What the tailor says of the
+  body's points (the skin a garment hides, §3d) is still said of the body as it came (`B.map`). Only exact coincidence
+  counts (the floats' own bits), so a body with no gathered points, every body until now, is untouched: `welded`
+  returns nothing and the tailor runs as it did.
+- **A knit's ribs over it** (`tailor/frame.js` `torsoArcs`, `soft`): the torso's fabric coordinate is the arc length
+  across each 5 mm row's own outline (§1b), read row by row. Over a ball that outline changes fast with the height
+  and steps where the ball ends, so a rib stepped sideways with every row: the chunky rib zigzagged across the bust.
+  On a dress form's frame the rows round a height are read together (a bell 3 cm wide on MHR's average), and the ribs
+  run smoothly over the bust and in under it. Only a form's frame does this; every other body's coordinates are to
+  the bit what they were.
+- **Measured** (TAILOR's full-bust case): outfits cut and hung on the form at Bust 2 (the red sweater dress, a t-shirt
+  and skirt, a turtleneck under a blazer) lie outside the body that's shown, settle and stretch as on any body. At the
+  slider's very top (3) the same sweater has 3 points in 16,000 a few millimetres inside, at the bottom of the cleft
+  between the breasts (the form's two balls press together there); under the check's limit, and out of sight.
+- **Not yet**: the cloth under a full bust is cut from little: the form's ring is 16 points at Bust 2, so from the
+  bust's widest to the ribs the cloth is a few long triangles, and it creases hard where it turns in under the bust
+  and frays a little at the crease's ends (docs/LATER.md, "A full bust, further": a tent in the form's place); nothing
+  holds a full bust up (a bra is cut on the form and sits on it, the breast under it the hanging one); the form is
+  made only past Bust 1, where the hollow appears; the wardrobe's dummy and the outfits' pictures are plain bodies.
+
+**Rib knit, chunky** (`chunky` in `tailor/fabric.js`: "a sweater's wide ribs"): eight ribs to a 4.8 cm tile, 6 mm each,
+a rounded ridge of knit stitches with a dark furrow between, a strong relief (0.8, twice the fine rib's). Beside the
+fine `rib` (cuffs, socks, hems), for a whole garment.
+
+**The red sweater dress** ("casual: red sweater dress", after the dress in the user's picture; the designs
+`sweater-dress` and `sweater-dress-skirt`, usable alone and in any colour). A knit dress to mid-thigh can't be one
+shell: a shell's hem can't pass the crotch (below it the skin is two legs: the long coat's reason, §4). So it is two
+garments of the same chunky knit that read as one: a **straight skirt** from the hips to mid-thigh, its hem a rib
+band, and over it a **long turtleneck sweater** hanging free to just above the crotch (a folded rib neck 5 cm up the
+neck, rib cuffs, sleeves to the wrist; the outfit wears them 9 cm short of it, as the picture's). The first try tucked the sweater into
+the skirt: it bunched at the hips; hanging free over the skirt the join is hidden under the sweater's hem and the ribs
+run on. Its ease is at the limits skinning carries (body 16 mm as a jacket's, sleeves 14).
+
 ## 2. The designs are data
 
 `Content/Studio/Clothes/designs.json`: each design has a `label`, a `slot` (`under`, `top`, `bottom`, `full`, `legs`, `feet`, `jacket`), a
@@ -405,9 +458,11 @@ lifted by them yet).
   [--uv | --debug] [--drape ['{"t-shirt": {"slack": 0.3}}']] [--edit '{"t-shirt": {"fit": 0}}'] [--out x.png]` renders a
   contact sheet (Playwright), hung by gravity with `--drape` (and a design's drape settings over its own), with a
   garment's own edits as the Studio keeps them; `node tools/character/tailor/check.mjs` is
-  TAILOR, on seven bodies: MHR's average, its feminine and masculine presets, and the slim and full ones in
+  TAILOR, on nine bodies: MHR's average, its feminine and masculine presets, the slim and full ones in
   `tailor/bodies.json` (fitted with `mhr.py`'s `fit_measures`: a waist and hips 15 to 20% in, or a waist 15% out with
-  a rounder belly, wider hips and thicker thighs). Where a gap in the body is narrower than the cloth's clearance
+  a rounder belly, wider hips and thicker thighs), and two children (an eight-year-old at 1.28 m and a twelve-year-old
+  at 1.52 m, made as the Studio makes an age: `tailor/node.mjs` `grownBody`, CHARACTER_STUDIO §2d; every design cuts on
+  them, with an adult's ease in centimetres). Where a gap in the body is narrower than the cloth's clearance
   (between full thighs), the cloth settles in the middle of it, outside both sides.
 - **Export clothes OBJ** carries the fabric coordinates (`vt`, metres) and the normals (`vn`).
 

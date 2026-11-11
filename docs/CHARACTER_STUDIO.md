@@ -177,11 +177,212 @@ it; within 15 mm of the eye's centre the base mesh has 4,391 points at its secon
 - **Not yet**: the eyelid-line handles on the graft; a lighter waterline along the shut lash line (the bake carries a
   little of its pink to the lid's front).
 
+## 2d. Ages, Cutify and monster mode (DECISIONS 2026-11-10, night)
+
+The user: "we are restricted to making older characters ... a toggle for monster mode (where we can modify and
+exaggerate features) ... making younger npcs 8-18 age, I think the main issue is the height selector ... maybe a
+separate toggleable 'cutify', but we should still be able to import image to face". The height slider stopped at 1.4 m,
+but that was the symptom: an adult scaled down to 1.28 m is a small adult. `tools/character/grow.js` (plain JS, checked
+in node by GROW) adds what the sculpt's offset fields couldn't: **proportions**, parts of the body made longer, shorter,
+bigger or smaller against the rest, on MHR's own rig (a point belongs to an arm, a hand, the neck by its skin weights).
+
+- **The head is the unit.** Nothing in grow.js moves a point of the head against another: "a bigger head" is the body
+  under it made smaller about the top of the neck (the neck tapering from the body's size at its base to the head's at
+  its top), and the Studio then scales the whole to the height. So everything made on the head stays exactly as it was
+  made and needs no change: a face fitted to a picture, the 72 expressions, the eyes and their lids, the teeth, the
+  brows and lashes, the hair's bake, the accessories (which are sized by the head: a child's glasses are a child's). In
+  the body's compose (`index.html`): RAW (MHR with the identity weights, what the face fit sees) → `proportioned()`
+  (grow.js `applyProps`: lengths first, each a plain move; then the hunch's bend; then sizes about their joints as those
+  have moved; the body against the head last) → the height's scale from that body's own extent → the face's fit and the
+  sculpt on top, each point's offset scaled by its part's own scale (`PARTK`: 1 on the head). With nothing set,
+  `proportioned()` is RAW itself: every character from before is the same to the bit, and its clothes' bake keeps its
+  key. The rig's joints follow (pose.js `joints` takes each point's scale: the T-pose and the export's skeleton on a
+  child).
+- **The height's rule.** A body from before the ages is as tall as its height says before its sculpt and its picture's
+  fit go on (a taller forehead stands a few millimetres over it): its clothes' bake and its hair were made on that, and
+  it stays so. A body with an age, in monster mode or with Cutify on is measured after everything (`exactHeight`): a
+  1.28 m child is 1.28 m, an ogre with a low skull is still 2.6 m, soles on the floor.
+- **Age** (Body, Age: 8 to 17, or the adult). `ageOf(age, base)` from a table by year: the head's height as a share of
+  the stature (CDC's stature for age and Snyder's 1977 anthropometry of children: 0.156 at eight to 0.132 grown; MHR's
+  own adult is 0.125, an eighth, so each age is the chart's ratio to its adult's times MHR's: 6.8 heads at eight, 7.5 at
+  twelve, 8 grown: a child beside the Studio's adults as a real one beside real ones), the girls' and boys' average
+  stature, how much of a child's build is left (`young`: narrow shoulders and pelvis, thin limbs, a straight waist, a
+  flat chest and seat, a thin neck), how far the legs have run ahead of the torso (`leggy`: most at twelve) and how far
+  the two builds have parted (`sexed`: nothing at eight, all by eighteen: the base's body weights are blended by it, so
+  Feminine and Masculine give the same body at eight). The values go onto the sculpt's own controls, under the
+  character's sliders as a base's sculpt does (they don't show in the sliders, which stay the character's own). Moving
+  the age sets the height to its average (girls' to boys' by the base); the height slider (now from 1.1 m) is still
+  free. At eight on a 1.28 m body the head is 18.8 cm from chin to crown, its skull 93% of the adult's at 1.70 m (a real
+  child's head is about 93% round at eight) over a face a tenth shorter: the body is sized to the head with its short
+  face counted, whether the age's own or a child's picture shortens it. And a head never shrinks growing up: the chart's
+  one column of head shares is nearer a boy's timing, and a girl is at her adult height two years sooner, so the share
+  is held to what gives the adult's skull at that age's height (unheld, a fourteen-year-old girl's skull came out 4%
+  bigger than at eighteen). The skull against the adult's of the same base: feminine 97% at eight and full from twelve,
+  halfway 94% and 98% at twelve, masculine 90%, 93% at twelve and 98% at fourteen (GROW holds it). A girl's earlier
+  timing in the build itself (`young`, `leggy`, `sexed` are one column for both) is not modelled.
+- **The age's face** (`CHILD_FACE`, times `young`): the face a tenth shorter from the eyes down (`face_height`: the
+  nose, mouth, jaw and chin together toward the eyes' line; the eyes and ears stay), a narrower jaw, a smaller, shorter,
+  flatter nose with a low bridge, a softer brow, a round lower face (`face_round`), bigger eyes (`eye_size`), a rounder
+  forehead. **Young face** (0 to 1) turns it down alone, the body's proportions staying: for a child's own picture,
+  whose fit already gives the face.
+- **Image to face on a child.** The fit is still made on RAW and added after; the age's fields go on after it, as the
+  sculpt's always did. GROWPAGE fits a front picture on a nine-year-old: the face fitted, nothing under the neck
+  moved, the head still the age's share of the height.
+- **Cutify** (Body, under the age; `CUTE`, times its amount, 0.6 by default, to 1.5): at any age, the baby schema on the
+  sculpt's controls: bigger eyes a little further apart, a shorter, rounder face, a smaller nose, mouth and chin, a soft
+  brow, a round forehead; the face alone (nothing of it lifts the crown: hair and hats stay as they sit). An eye made
+  bigger by the sculpt keeps its iris's share (`eyeGrow`: the iris grows with it;
+  an eyeball bigger for any other reason keeps the iris's own size, as before).
+- **A control's whole value** is the character's slider plus its base's, its age's and Cutify's, eased into a limit
+  (`soften`: as it is up to 1.75, never past 2.3; in monster mode 3 and 3.4) and never past where its field turns the
+  skin inside out (`REACH`: a nose narrowed to nothing, lips pushed through the teeth, an ear pressed into the head).
+- **Monster mode** (the switch over the sculpt, saved with the character): the sliders' and the circles' reach is 3
+  instead of 1, the height runs 0.4 to 3.5 m, and the **Creature** group shows: Eye slant, Pointed ears, Snout, Long
+  skull, Hunch (the back bent forward from the waist, the head brought back up to look ahead). New controls a person
+  can use too: **Proportions** (Head size, Neck length, Torso length, Leg length, Arm length, Hands, Feet, Fingers),
+  Face (Face length, Round face, Eye size, Eye spacing, Deep-set eyes, Ear size, Ears out), Body (Bust, Seat).
+  **Fangs** and **Pointed teeth** (Face, Mouth; teeth.js). Off, every slider comes back into a person's range and the
+  creature's own go to 0 (asked first). The head's view follows a head a hunch or a long neck has carried (`HEADOFF`),
+  and small and giant bodies are framed to fill the view.
+- **The creatures as presets** (DECISIONS 2026-11-11: "add presets for the monster-ish shapes you made so I can use
+  them"). Body, under Monster mode: seven **cards**, each a picture of the creature (`MONSTERS` in grow.js: goblin,
+  ghoul, ogre, grey alien, demon, hag, imp), there whether Monster mode is on or not. A click makes the character that
+  creature and switches Monster mode on: its sculpt, its height, its base, its build from MHR's own identity shapes
+  (a big body made of them is one body; the sculpt's bumps stacked up read as rolls), its teeth, and **its look**: a
+  skin colour on the procedural skin (a skin preset and what's changed on it: the goblin's green with dark freckles,
+  the ghoul's grey with veins, the hag's seventy years), its eyes (an eye style and what's changed on it: the goblin's
+  yellow slit, the ghoul's milky white, the alien's all black), its lips, how stained its teeth are and, for the demon
+  and the imp, horns off the Accessories. All of it is plain settings: every slider it sets is still the character's
+  to move, and Skin, Face and Accessories show what it chose. Two switches under the cards: **With its look** (off:
+  the shape and the teeth alone, on the character's own skin and eyes) and **Face only** (its head on the character's
+  own body: the Face group's controls and the Creature group's but the hunch, `onHead`; the height, the build and the
+  body's sliders stay). A whole creature starts from the adult (an imp is small, not a child; the age is still there
+  after). The card worn is marked and kept with the character (`creature`), until Monster mode goes off. A character
+  with a shape of its own is asked before a card replaces it.
+  - **The pictures** are kept in the project, `Content/Studio/Creatures/thumbs/<id>.jpg` (as the outfits' are), made by
+    the page itself: `node tools/character/creatures.mjs thumbs` (each creature with its look on a scratch character,
+    its head and what it wears fitted into the card through the view's own camera). A card with no picture yet shows
+    its skin's colour.
+  - **As characters of their own**: `node tools/character/creatures.mjs make [--only goblin,ogre] [--export]` makes
+    each creature a character (`creature_goblin` ...) from its preset and saves it; `--export` also runs Export for
+    Godot on each (`Exports/characters/creature_goblin/creature_goblin.glb`, its face shapes baked: ready to drop into
+    a Godot project). One that's there already is left as it is (it may be yours by now) unless `--again`.
+  - A new creature is an entry in `MONSTERS` (its `label`, `about`, `height`, `base`, `shape`, `teeth`, `sculpt` and
+    `look`: `tone`, `skin` {`preset`, `tweak`}, `eyes` {`style`, `set`}, `lips`, `teeth`, `horns` {`style`, `set`});
+    GROW checks its controls exist, GROWPAGE that every name its look uses is the page's own, then `creatures.mjs
+    thumbs --only <id>` for its picture.
+- **The ears as a sheet** (LESSONS): an ear's weight is a harmonic blend over the mesh (1 where it stands clear of the
+  head, 0 on the skull, each point between the mean of its neighbours), so its front and back faces are ear alike; its
+  fields grow with how far a point stands off the head, so nothing moves at its root.
+- **Horns and animal ears** (Accessories; `tools/character/horns.js`). Horns: a tube along its kind's curve from the
+  scalp (found as the nearest skin, so they sit on any head, a creature's too), frames carried along the curve (a
+  spiral never flips), growth rings as real ridges, a keel, a twist, a base that swells where it leaves the skin; its
+  colour from base to tip, its rings and its grain a texture drawn here with their relief as a normal map (or a set off
+  the shelf, or a metal); thirteen kinds; Length, Thickness, Spread, Curl, Rings, Tip forward, a Tip colour. Ears: a
+  cupped shell along a line (upright, out to the side, flopped over by **Flop**, a pig's tip folded forward), its
+  inside a panel of its own colour, on a headband or growing from the head; thirteen kinds, a cow's with a tag. Made
+  again only when the head or their own settings change.
+- **In a file** (§3.1): each ear's chain of bones, `jiggle_ear_L_0` ... `jiggle_ear_L_tip` under `c_head`, after MHR's
+  127 in the skeleton, the ear, its inside and its tag skinned along it (each point between the two bones whose
+  middles it lies between), the chain's softness in the ear's node's extras and all chains in the scene's
+  (`jiggle`); horns and the headband whole on the head's bone (they took the nearest skin's weights before: a ram's
+  horn by the jaw bent with the neck). Godot's **HSJiggle** springs them (docs/GODOT_LOOK.md §5n).
+- **The head's scale in a file.** The 72 face shapes are MHR's moves times the head's scale. A reader (the desk's
+  `tools/shared/face.js`, the Godot copy's bake `tools/face_morphs.mjs`) took that from the body's height over MHR's,
+  which was near enough while every body was an adult's; a nine-year-old's head is 0.93 of MHR's on a body 0.77 as
+  tall, and an ogre's is near MHR's on a body half as tall again. The export now says it (`studioScale` on its skin's
+  node) and both readers use it, falling back to the height for a file from before. (FACEMORPHS has the case; GROWPAGE
+  reads it in the file.)
+- **Checks**: GROW (`node tools/character/growtest.mjs`, in check_all), GROWPAGE (`node
+  tools/character/growpagetest.mjs`, the Studio's server running), JIGGLE (`python tools/godot/jiggle_check.py`).
+- **Pictures** (drawn on the CPU here, small: to be looked at again on the card):
+  `docs/studio_sheets/2026-11-10_ages_cutify.jpg` (each base at eight, ten, twelve, fourteen, sixteen and grown; a face
+  grown, cutified at 0.6 and 1, at nine with and without Cutify, at fourteen; a ten-year-old in the summer school
+  uniform, a nine-year-old in a t-shirt and shorts, a fifteen-year-old in a hoodie and jeans),
+  `2026-11-10_creatures.jpg` (the seven creatures, body and head; the demon's fangs), `2026-11-10_horns_ears.jpg` (the
+  thirteen horns and the thirteen ears; a ten-year-old with a cow's ears and horns), and in Godot
+  `docs/godot_sheets/2026-11-10_ears_jiggle.jpg` (the export of a nine-year-old with a bull's horns and tagged cow ears:
+  at rest, thrown sideways, turned, dropped, settled).
+- **Hair rides the head.** The salon's bake is placed by the head's frame it was baked on (`salon_bake.json`), so a
+  height or an age set afterwards used to leave it hanging where the old head was. The character now records the head
+  its hair was made on (`hairHead` in character.json: which bake, and the head's frame on the body before its face's fit
+  and sculpt, `headBase`), written when the salon bakes here, and the bake is placed again on every change by how that
+  frame has moved and been sized since (`placeHair`: now times then's inverse; nothing at all when it hasn't). A bake
+  with no record (an older one, one made in the salon alone) takes the head the character opens with when it sits on it
+  (within 15 mm in height and 15% in size: a face's fit moves the frame's points by millimetres, a height or an age by
+  centimetres); one that sits on no head we know is left where it was baked and the view says "the hair was baked on
+  another head". It is only placed again, not made again: hair that lay on the shoulders or was kept off the body was
+  shaped on the body it had, and a skull reshaped under it (Forehead height lifts the crown 14 mm a slider, a creature's
+  Long skull the back of the head 34 mm) isn't followed (Hair, then Bake). GROWPAGE: four marks baked on an adult's
+  scalp are still on their points at eight and opened again at ten. And with real hair, end to end: the salon's eight
+  presets all build on a nine-year-old's head (96 to 99% of the scalp covered, nothing inside the head, as SALON asks of
+  an adult's), one let fall and baked onto her is worn in the Studio, and it rides her head at eight, at fourteen and
+  grown (`docs/studio_sheets/2026-11-10_child_hair.jpg`).
+- **Not yet**: the salon shows the body it was given; clothes are cut again on the smaller body by themselves, but
+  the outfits' pictures are an adult's; the growth table's numbers and each creature are first passes to look at on
+  the card; younger than eight (the head's share and the limbs change faster there) isn't offered.
+
+## 2e. Anime: a bust from flat to very full (DECISIONS 2026-11-11, latest)
+
+The user asked for a figure after a Daz3D picture ("we should be able to make the woman more flat too but also more
+busty like the image"), said of the first try "from the front angle it looks perfect, but as you go towards a side view
+it looks unnaturally pointy, it should feel more how a waterballoon would sit rather than a fine point", and then kept
+only this of the whole look-alike: "keep the new bust slider as an 'anime' toggleable". So it's a switch, as Cutify and
+Monster mode are.
+
+- **The switch** (Body, under Cutify; saved with the character as `anime`). On, a **Bust** slider shows under it and
+  runs from −2 to 3; it is the same value as Sculpt, Body, Bust (each moves the other, and that slider and its circle
+  on the body run as far). **Off, the Bust is the plain slider it always was**, −1 to 1 (a creature's ±3), one small
+  bump added to the body: nothing below runs, and every character made before is the same to the bit. Switched off
+  on a character whose Bust is past the plain range, the value comes back into it (the status line says so).
+- **Between −1 and 1 it is that same bump**, Anime or not: switching Anime on changes nothing until the slider leaves
+  the plain range (no clothes cut again, a clothes bake keeps its key).
+- **Past 1: a ball hung from the breast's root** (`sculpt.js` `bustShape`). The first try was a field like the other
+  controls, a bigger bump added onto the body. But the body already has a small breast, and the Bust's own bump sits
+  on it: three bumps on one spot are a cone, whatever their profiles. So this is not a field: it makes the shape
+  itself, on the body as it stands (its base, shape sliders, age and other sculpt already on it).
+  - **The foot**: on each side the points of the breast's root, an oval on the chest from under the collarbone to the
+    fold under the breast, found once on MHR's base (104 points a side), and the ring of points round it.
+  - **The chest wall under the breast** is the body's own: a membrane across the foot's ring (each foot point a fixed
+    blend of the ring's points, weights solved once), so the breast the body has is taken up into the ball instead of
+    standing on it.
+  - **The ball**: its middle below the foot's middle and a little outward, more the bigger it is (the weight low);
+    each foot point goes its own share of the way along the skin from the ball's front to its place on the foot's
+    edge: round the ball, then straight to the edge where the skin leaves the ball (the long slope down from the
+    collarbone, eased into the chest at the top: no crease), or, where the ball hangs out past the edge (below the
+    fold, and at the sides when it's big), on round the ball back to the ribs (the fold stays where it is). The spot
+    of skin that was the breast's middle lands below the ball's front, more the bigger (skin slides down a heavy
+    breast). The two never pass through each other: they press together 4 mm either side of the chest's middle.
+  - **Its size**, at the slider's value v, k = v − 1, on an adult's chest: the front stands 6 + 5.5k cm off the chest
+    wall, the ball's radius is 5.5 + 2.5k cm, its middle 1.5 + 1.8k cm below the foot's. The body's own breast blends
+    into the ball over the first 0.6 (all ball from 1.6). Measured on the feminine base at 1.62 m: the front 2.1 cm
+    further out at 1.3, 4.2 at 1.6, 6.2 at 2, 10.9 at 3; a sphere of 9.7 cm fits the front at 3 within 2 mm, where the
+    plain bump pushed to 3 stood 11 mm proud of its best sphere. **3 is about the picture's size**, 2 to 2.2 the "60% as
+    busty" the user asked for; it is scaled to the chest it's on (a child's, a goblin's: the part's own scale).
+- **Under −1: flatter.** The breast is taken back toward that same wall, at −2 a flat chest with 4 mm of a chest's own
+  swell left on it (taking the bump off a breast of another shape left dents: the first −2).
+- **A control's whole value** with Anime on: the Bust's bump stops at −1 and 1 (`fieldValue`, the control's `cap`), its
+  slider's run is `grow.js` `SPAN.bust`, and its sum (the slider, the base's, the age's) eases into a limit past 3
+  instead of past 1.75 (`limits`).
+- **Clothes** are cut on a **dress form** of a full bust, not on the hanging shape itself (TAILOR §1j): the same ball
+  with the hollow under it closed. The body shown, saved for the salon and exported is always the hanging one.
+- **Outside the page**: `tailor/node.mjs` `mhrBody(m, weights, height, sculpt, { anime, form })` and
+  `grownBody(m, { ..., anime, form })`; `node tools/character/tailor/sheet.mjs --anime --sculpt '{"bust": 2}'` pictures
+  clothes on one. The wardrobe's dummy and the outfits' pictures are plain bodies.
+- **Checks**: GROW. Anime off: the bump alone at any value, as it was. On: only the breasts' own points move (the
+  fold, the ribs and the arms stay), the two sides alike, fuller at every step, the front a ball and not a point, its
+  weight low, flat at −2, the dress form with no underside and its gathered points exactly on the points they lie on.
+- **Pictures** (drawn on the CPU here): `docs/studio_sheets/2026-11-11_anime_bust.jpg` (the switch and its slider; the
+  feminine base with Anime off at Bust 1, on at −2, 2 and 3; the red sweater dress on the plain body and on Bust 2).
+- **Not yet**: MHR's chest is coarse (104 points a breast), so the very top of the slider is faceted close up; nothing
+  lifts or holds a full bust (a bra is cut on the form and sits on it, the breast under it the hanging one); it
+  doesn't move in play (the ears have bone chains for HSJiggle, the bust none: LATER).
+
 ## 3. Each stage against the rule (as of this branch)
 
 | Stage | Sources kept | Bakes | Gaps |
 |---|---|---|---|
-| Body | `character.json`: base, shape, height, sculpt (the controls not at 0) | none (computed live) | none |
+| Body | `character.json`: base, shape, height, sculpt (the controls not at 0), `age` (the age and Young face), `cute` (Cutify and its amount), `monster` (§2d) | none (computed live) | none |
 | Face | `pictures/` front and side; face settings in `character.json` | the face's fit (made live by the worker), or once baked `face.bin` (its header the receipt: when, the pictures, the settings, the body's weights; carried in the recipe) | a body changed after the bake keeps the baked offsets (nothing left to refit to) |
 | Expressions | none: a preview, not saved | none | fine for now; a character's own expression set would be a source later |
 | Skin: photo | the front picture; size | `skin.png`, `skin_mask.png` | no receipt: a body or face change after the skin was made leaves it silently stale |

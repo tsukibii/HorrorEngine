@@ -263,6 +263,12 @@ static func wear(node: Node, settings: Dictionary = {}, glb_path: String = "") -
 			var studio_skin: bool = String(mi.name).to_lower().ends_with("_skin")   # a Studio export's <name>_skin is the skin whatever the name (a character called Hairo)
 			if not studio_skin and (names.contains("eye") or names.contains("lash") or names.contains("brow") or names.contains("hair") or names.contains("teeth") or names.contains("tongue")):
 				continue
+			if old is ShaderMaterial and (old as ShaderMaterial).shader == shader():   # worn already (wear called again: a node's and a script's): kept, with these settings' wetness; made again it would lose its paint and maps
+				set_wet(old, settings)
+				out.append(old)
+				continue
+			if old is ShaderMaterial and old.has_meta("hs_creature"):   # a creature skin over it (HSCreatureSkin): the skin under it is kept where the look put it
+				continue
 			var tex: Texture2D = null
 			var tone := Color(1, 1, 1)
 			var maps := {}
