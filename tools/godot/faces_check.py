@@ -156,7 +156,7 @@ def pictures(g, baked, raw, keep):
     flat = ['--eye={"lid_room": 0.0}']
     rows = ([("raw", "raw", flat, "MHR's moves alone")] if raw.exists() else []) + [
         ("baked", "baked", flat, "baked: the lids kept off the eyes, a shape at a time"),
-        ("game", "baked", [], "and the eyeball drawn %.1f mm deeper: as a game wears her" % (LID_ROOM * 1000))]
+        ("game", "baked", [], "and the eyeball drawn deeper while her lids move: as a game wears her")]
     px = {}
     for row, which, extra, _ in rows:
         for name, face in FACES:
@@ -244,6 +244,16 @@ def eyes_through_mix(path, mix, views=("front", "left", "below"), deep=0.0):
     return out
 
 
+def lid_room_of(path):
+    """the room a baked copy says its mixed expressions want (its skin node's lidRoom, m); None when it says none"""
+    j = glb_json(path) or {}
+    for n in j.get("nodes", []):
+        ex = n.get("extras") or {}
+        if str(n.get("name", "")).endswith("_skin") and "lidRoom" in ex:
+            return float(ex["lidRoom"])
+    return None
+
+
 def find_export(person):
     if person:
         f = PEOPLE / person / "export" / f"{person}.glb"
@@ -326,6 +336,9 @@ def main():
     if had:
         say(skin["blink"] >= 2 and skin["all"] >= 72 + skin["blink"] - 2, "beside its own blink: %d shapes in all, %d of them the blink and its in-betweens (kept as the export made them)" % (skin["all"], skin["blink"]))
         say(rep.get("blinker") and rep.get("found_blink"), "her blinker (HSBlink) is put on and the face player finds it under her body")
+        rr, rp, ra = rep.get("room_rest") or [1, [1]], rep.get("room_playing") or [0, [0]], rep.get("room_after") or [1, [1]]
+        say(rep.get("movers", 0) >= 20 and rep.get("eye_mats", 0) >= 2 and abs(rr[0]) < 1e-9 and all(abs(x) < 1e-9 for x in rr[1]),
+            "the eyes on the Studio's eye (%d materials with their wet layers); at rest they're drawn where they are (lid_room 0; her blinker watches %d lid-moving shapes)" % (rep.get("eye_mats", 0), rep.get("movers", 0)))
     else:
         print("  --  this export is from before the blink: no blinker, the lids are the 72's own (Export for Godot again for the blink)")
     rest = [m for m in meshes[1:]]
@@ -360,8 +373,15 @@ def main():
         say(abs(wb.get("eyesClosed_L", -1) - 0.7) < 0.02 and abs(wb.get("eyesClosed_R", -1) - 0.3) < 0.02 and (not inb or any(v > 0.01 for v in inb.values())),
             "the blinker shuts the lids that far with the blink's own arc (the left lid %.2f%s), the player leaving them be" % (
                 wb.get("eyesClosed_L", -1), "".join(", %s %.2f" % (k.split(":")[1].replace("eyesClosed_", ""), v) for k, v in inb.items() if v > 0.01 and "_L_" in k)))
+        said = lid_room_of(who)
+        most = rep.get("room_most", -1)
+        say(said is not None and abs(most - said) < 1e-6, "the room her mixed expressions want, measured by the bake and written in her copy (%.2f mm), is what her blinker reads (%.2f mm)" % ((said or 0) * 1000, most * 1000))
+        if said and said > 0:
+            say(abs(rp[0] - said) < 1e-6 and all(abs(x - rp[0]) < 1e-7 for x in rp[1]), "while the expression moves her lids the eyeballs are drawn that much deeper (%.2f mm, every eye material)" % (rp[0] * 1000))
+        else:
+            say(abs(rp[0]) < 1e-9 and all(abs(x) < 1e-9 for x in rp[1]), "her lids never reach her eyes: no room asked, the eyeballs drawn where they are while the expression plays too")
         ha = rep.get("hold_after") or [1, 1]
-        say(abs(ha[0]) < 1e-6 and abs(ha[1]) < 1e-6, "when it ends the lids are given back (the blinker asked for nothing)")
+        say(abs(ha[0]) < 1e-6 and abs(ha[1]) < 1e-6 and abs(ra[0]) < 1e-9 and all(abs(x) < 1e-9 for x in ra[1]), "when it ends the lids are given back (the blinker asked for nothing) and the eyes are drawn where they are again")
     after = rep.get("after") or {}
     left_on = [(n, k, v) for n, vs in after.items() for k, v in vs.items() if abs(v) > 1e-4]
     say(not left_on and (rep.get("state_after") or {}).get("over") == "", "and every shape on every mesh is back at 0" + ("" if not left_on else ": not %s" % ", ".join("%s %s %.2f" % t for t in left_on[:4])))
@@ -383,15 +403,20 @@ def main():
             len(after), worst[1][0], worst[0], rest[0], edge[1][2], edge[0]))
         if before:
             bw = sorted(before.items(), key=lambda kv: -kv[1][0])[:4]
-            say(bw and bw[0][1][0] > max(1.0, 10 * worst[1][0]), "MHR's own moves alone would have left it through them: %s" % "; ".join("%s %.1f mm2, %.1f mm deep" % (k, v[0], v[1]) for k, v in bw))
+            if bw and bw[0][1][0] < 0.5:
+                print("  --  on this character MHR's own moves leave nothing of an eye through a lid either (%.2f mm2 at most: her lids don't reach the eye's dome)" % bw[0][1][0])
+            else:
+                say(bw and bw[0][1][0] > max(1.0, 10 * worst[1][0]), "MHR's own moves alone would have left it through them: %s" % "; ".join("%s %.1f mm2, %.1f mm deep" % (k, v[0], v[1]) for k, v in bw))
         # several shapes at once (a smile, a squint): each alone is exact, their sum isn't; the eye drawn a little deeper covers it
         flat = lambda d: (max(v[0] for v in d.values()), max(v[1] for v in d.values()), max(v[3] for v in d.values()))
-        mixes = {name: (flat(eyes_through_mix(who, mix)), flat(eyes_through_mix(who, mix, deep=LID_ROOM))) for name, mix in FACES[1:]}
-        rest_deep = flat(eyes_through_mix(who, {}, deep=LID_ROOM))
-        say(all(d[0] <= 0.05 for _, d in mixes.values()), "several shapes at once (%s): baked alone they still leave %s of an eye through a lid; with the eyeball drawn %.1f mm deeper, as HSEye draws it, %s" % (
-            ", ".join("a %s of %d" % (n, len(m)) for n, m in FACES[1:]), "; ".join("%.1f mm2, %.1f mm deep" % (b[0], b[1]) for b, _ in mixes.values()), LID_ROOM * 1000,
+        room = lid_room_of(who) or 0.0
+        mixes = {name: (flat(eyes_through_mix(who, mix)), flat(eyes_through_mix(who, mix, deep=room))) for name, mix in FACES[1:]}
+        say(all(d[0] <= 0.05 for _, d in mixes.values()), "several shapes at once (%s): baked alone they leave %s of an eye through a lid; with the eyeball drawn the %.2f mm deeper her copy asks for, %s" % (
+            ", ".join("a %s of %d" % (n, len(m)) for n, m in FACES[1:]), "; ".join("%.1f mm2, %.1f mm deep" % (b[0], b[1]) for b, _ in mixes.values()), room * 1000,
             "; ".join("%.3f mm2" % d[0] for _, d in mixes.values())))
-        say(rest_deep[2] <= 4.0, "and at rest that costs the eye %.1f mm2 (a lid's edge resting on it; nothing else faces out within %.1f mm behind it)" % (rest_deep[2], LID_ROOM * 1000))
+        if room > 0:
+            rest_deep = flat(eyes_through_mix(who, {}, deep=room))
+            print("      (drawn that much deeper at rest too it would give up %.1f mm2 of the eye to the lids' edges: the room is on only while lids move)" % rest_deep[2])
     if a.pictures and ok:
         ok = pictures(g, who, raw, keep) and ok
     if not ok:

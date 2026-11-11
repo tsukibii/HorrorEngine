@@ -375,9 +375,11 @@ have spoiled it once it moved:
 - **Several shapes at once: the eyeball drawn a little deeper.** A face is never one shape. A smile (cheeks raised,
   lids tightened, lip corners pulled) slides the lower lid further than any of them alone, and each one's own push
   isn't enough for the sum: baked alone, 8 mm2 of iris still showed through the lower lid, 1.2 mm deep. The look
-  plugin's eye now draws itself 1.2 mm deeper than it is (`lid_room`, GODOT_LOOK §5f): the lid covers it, in any mix
-  of shapes up to that depth, whatever the skin's material. Measured: 0.000 mm2 for a smile and a squint from the
-  front, the side and below, and nothing taken from the eye at rest.
+  plugin's eye draws itself a little deeper than it is while the face moves its lids (`lid_room`, GODOT_LOOK §5f): the
+  lid covers it, whatever the skin's material. How much is each character's own: the bake draws nine ordinary mixes
+  as depth and writes what they still want on the copy's skin (`lidRoom`: 2.0 mm on a plain face, 0.68 on a goblin, 0
+  on a demon whose lids never reach its eyes), and her blinker turns it on with the lid-moving shapes and off at rest.
+  Measured: 0.000 mm2 for a smile and a squint from the front, the side and below; at rest the eye as made.
 
 What it costs: a skin of 136,000 corners with 88 shapes is 240 MB of blend shapes on the card (Godot keeps them whole,
 20 bytes a corner a shape), and a copy of 35 to 65 MB read in 5 to 6 s at run time on this CPU. One or two faces in a

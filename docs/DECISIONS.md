@@ -45,9 +45,20 @@ The user's answers, newest first. They override the plan, the research and the d
     made for MHR's eyes, so on a Studio character a look down or a squint slid the lids into the eyeballs and the eye
     showed through them (up to 138 mm2 on a test character); the desk puts that right every frame, Godot had nothing,
     so the bake now keeps the lids off the eyes in each shape (0.000 mm2 through a lid after it), and the look
-    plugin's eye is drawn 1.2 mm deeper than it is, which covers what several shapes at once (a smile) still slid in.
+    plugin's eye is drawn a little deeper than it is while the face moves its lids, which covers what several shapes
+    at once (a smile) still slid in: as much as that character's own face wants, measured by the bake (2 mm on a plain
+    face, none on a demon whose lids never reach its eyes), and nothing at rest.
     Characters already in a Godot project want their copy made again: Export for Godot in the Studio, or `python
     tools/godot_director.py install <project>`, or the game's next export.
+  - **Fixed for Godot: a creature or a child can be shot at.** The weapons plugin's hitboxes were an adult's thickness
+    on any skeleton (a head 20 cm across on an imp, a chest 28 cm through on an ogre of 2.6 m, where a shot at his side
+    passed through). They're measured from her own bones now (legs, arms, shoulders, the head by its own length: a
+    child's head stays an adult's), an adult keeping exactly what it had; `girth` on the node for a belly (HITBOXES).
+    And the starter kit's hunter, chase, menace and cue take a `head_m` (1.5 m as before) for a short or a tall one.
+  - **Checked on the creatures in Godot**: the demon, the goblin and the ogre made from the presets and exported go
+    through the look, the faces and the skins. What that found is in the two lines above and in the eye's room being
+    each character's own; nothing else of the Godot side assumed an adult (the Director's Kimodo retarget already
+    scales a motion's travel by the legs).
 
 ## 2026-11-10, night (the user: younger characters, Cutify, monster mode, more horns and animal ears)
 

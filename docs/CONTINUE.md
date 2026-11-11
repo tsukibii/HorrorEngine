@@ -25,7 +25,62 @@ Character Studio, then the creature presets and a Studio character's face in God
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-10, night, `claude/nifty-tesla-dc904q`): children, Cutify, monster mode, horns and ears that flop
+## Where it stopped last (2026-11-11, `claude/nifty-tesla-dc904q`): the creatures as presets, a face that moves in Godot, creature skins
+
+Two asks from the user on the same branch, after the ages and monster mode below (DECISIONS 2026-11-11, both entries).
+
+**"add presets for the monster-ish shapes you made so I can use them, fix anything that needs fixed for godot too"**
+- **The creatures are cards** in the Character Studio (Body, under Monster mode, always there): Goblin, Ghoul, Ogre,
+  Grey alien, Demon, Hag, Imp, each a picture. A click is the whole creature: shape, height, build, teeth and **its
+  look** (a skin colour on the procedural skin, eyes, lips, horns for the demon and the imp). *With its look* and *Face
+  only* under them. `node tools/character/creatures.mjs make [--only goblin,ogre] [--export]` makes each a character
+  of its own (`creature_<id>`) and its Godot export; `thumbs` makes the cards' pictures again
+  (`Content/Studio/Creatures/thumbs/`). CHARACTER_STUDIO §2d.
+- **A Studio character's face moves in Godot** (GODOT_DIRECTOR §6c, GODOT_LOOK §5f; GDFACES). It didn't: the face
+  bake skipped every export made since the blink, face.gd drove one mesh, an expression's closed eyes fought the
+  blinker. And once it moved, the eyes came through the lids (MHR's shapes are for MHR's eyes): the bake now keeps the
+  lids off the eyeballs in each shape, measures how much room that character's mixed expressions still want and writes
+  it in her copy (`lidRoom`), and the look plugin's eye is drawn that much deeper while her lids move (her blinker
+  turns it on and off; at rest the eye is the Studio's to the pixel). **Characters already in a Godot project want
+  their copy made again** (Export for Godot, `godot_director.py install`, or the game's next export).
+- **A creature or a child can be shot at**: the weapons plugin's hitboxes are sized by her own bones (HITBOXES); the
+  starter kit's hunter, chase, menace and cue take a `head_m`.
+
+**"some more weird skin shaders/textures for the monster characters that we can apply in godot, e.g. a chrome silver
+skin, a pearlescent skin, some kind of greasy shader"**
+- **Creature skins** in the look plugin (GODOT_LOOK §5o, guides/look_plugin §8; CREATURESKIN): eleven looks on a
+  character's skin in place of the skin shader: chrome, mirror, pearl, greasy, slime, oil, porcelain, ember, stone,
+  scales, wax. On the `HSCharacterLook` node's **Creature skin** row, as presets (`presets/creature_<look>.tscn`) or
+  `HSCreatureSkin.wear(node, "chrome")`; Amount (a skin that turns), Tint (chrome in gold), Extend (her horns and ears).
+
+**Run here** (the cloud, on the CPU): CHECKS, GROW, GROWPAGE (QUICK), FACEMORPHS, GDFACES (on `_studiotest`,
+`_growtest`, the demon, the goblin, the ogre; `--pictures` on `_studiotest`), EYELIDS, GDPEOPLE, GDPLAY, DIRECTOR,
+EXPORTS, CREATURESKIN (on the demon), LOOKPLUGIN `--nodes`, HITBOXES, WEAPONS; GDTESTROOM but station 13 (made props
+need Blender, as before here).
+
+**The pictures**: `docs/studio_sheets/2026-11-11_creature_cards.jpg` (the seven cards),
+`docs/godot_sheets/2026-11-11_faces.jpg` (a face at rest, smiling, squinting down: MHR's moves alone, baked, as a game
+wears her), `docs/godot_sheets/2026-11-11_creature_skins.jpg` (the looks on balls; the demon in each).
+
+**For the user's eye, on the card** (everything here was drawn on the CPU):
+- each creature card's look in the Studio (`MONSTERS` in grow.js: the tone, the skin preset and its tweak, the eyes);
+- the creature skins on a real creature in a real level: chrome and mirror want something to mirror (a sky, a
+  reflection probe); the looks' numbers are `HSCreatureSkin.LOOKS`; the greasy smears and the slime are the two I'd
+  look at first;
+- an expression on a character in Godot (the story's `expr`, or the Director's Animate tab's Face cards): the lids
+  over the eyes in a close-up, on a plain face and on a creature;
+- a creature shot at: the ogre's and the imp's hitboxes, `girth` for the ogre's belly.
+
+**Not done, and why**: the creature skins' patterns break at MHR's UV seams (LATER: the rest place per corner); the
+story's `skin` word doesn't name a creature skin yet (a desk game's cast: the format, its check and the desk's command
+in one commit); 88 blend shapes on a 136,000-corner skin are 240 MB on the card a character (LATER: the head cut from
+the body in the copy); the starter kit's hunter still sees from `head_m` as set by hand, not measured.
+
+**Next, if the user wants it**: more creature presets and skins (both are a dictionary entry each); the Studio's
+creature cards naming the Godot skin they want; tails and wings on HSJiggle's chains; the eyes turning in Godot (a
+glance, look-at).
+
+## Before that (2026-11-10, night, `claude/nifty-tesla-dc904q`): children, Cutify, monster mode, horns and ears that flop
 
 The user: "we are restricted to making older characters in the studio creator ... a toggle for monster mode ... making
 younger npcs 8-18 age ... maybe a separate toggleable 'cutify', but we should still be able to import image to face ...

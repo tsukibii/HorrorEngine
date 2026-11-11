@@ -23,6 +23,15 @@ the fix.
   once, their slides add, and a lid needs more room the further it goes (the cornea stands proud of the white). A check
   on parts wants a check on a sum; the picture (a real expression in Godot) was what found it. The fix that held was
   not a cleverer bake but the eye drawn 1.2 mm deeper: one line that covers any mix.
+- **A fix measured on one character is a guess on the next.** The eye drawn 1.2 mm deeper cost a plain face nothing
+  at rest; on the first creature it took a fifth of a demon's eye opening (deep-set eyes rest their lids' edges inside
+  the eye's front), and the demon never needed it: its lids don't reach its eyes. One number for everyone was wrong
+  twice. The bake now measures what each character's own face wants and the blinker turns it on only while lids move.
+  Run a fix on the oddest character there is before calling it done; the creatures existed the same day.
+- **A count of corners can't see what's hidden.** The first measure of that per-character room counted lid corners
+  deeper than they rest and said 2 mm for everyone: a thick lid's back slides into the eye by design, behind its own
+  front. Whether an eye shows through a lid is a question about a picture; the bake draws one (depth, back faces left
+  out, as Godot draws) and agrees with the check.
 - **Try the cheap fix on paper before building the exact one.** The exact answer (the desk's per-frame push in the
   skin's vertex shader) wanted a per-corner attribute in the copy, the eyes' places as uniforms every frame and a stage
   in every skin shader. Ten minutes with the depth measure said a depth offset on the eyeball hid all of the leftover

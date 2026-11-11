@@ -755,14 +755,23 @@ mm2 by the file's own depth). Two things hold it now:
   surface by rays from its middle, no corner ending deeper than it rests, each lid triangle tried across its inside
   (MHR's lid skin is a few triangles 4 to 8 mm a side: flat where the eye is round). After it, each shape alone:
   0.000 mm2 through a lid;
-- **the eyeball is drawn 1.2 mm deeper than it is** (`lid_room` in eye.gdshader and its wet layer, `HSEye.LID_ROOM`:
-  the same pixel, further along its ray, as the fragment's DEPTH; nothing else of the eye changes). A face is several
-  shapes at once (a smile: cheeks, lids and lip corners), each exact alone and their sum not: baked alone a smile still
-  left 8 mm2 of iris through the lower lid, 1.2 mm deep. Drawn deeper, a lid up to that far into the eye covers it, as a
-  lid does: 0.000 mm2 for a smile and a squint, from the front, the side and below. At rest it costs the eye nothing
-  (no skin faces out within 1.3 mm behind an eye: lids' backs and the lining face the eye's middle and are culled) but
-  a hair of a thick lid's edge on the grafted eyes (2.8 mm2 round an opening of 174). `"lid_room": 0.0` in
-  `HSEye.wear`'s overrides takes it off.
+- **the eyeball is drawn a little deeper than it is while the face moves its lids** (`lid_room` in eye.gdshader and
+  its wet layer: the same pixel, further along its ray, as the fragment's DEPTH; nothing else of the eye changes). A
+  face is several shapes at once (a smile: cheeks, lids and lip corners), each exact alone and their sum not: baked
+  alone a smile still left 8 mm2 of iris through the lower lid, 1.2 mm deep. Drawn deeper, a lid up to that far into
+  the eye covers it, as a lid does: 0.000 mm2 for a smile and a squint, from the front, the side and below.
+  - **How much, per character**: the bake draws nine ordinary mixes (a smile, a grin, a squint looking down, anger,
+    surprise, looks to each side...) as depth, as Godot will, and writes the deepest an eye still stands through a lid
+    on the copy's skin node (`lidRoom`, to 2 mm). A plain face asked for 2.0 mm; a goblin 0.68; a demon and an ogre 0:
+    their lids never reach their eyes, and they keep their eyes exactly as made.
+  - **When**: her blinker (`HSBlink`) reads the lid-moving shapes' weights on her skin every frame (`LID_MOVERS`: the
+    cheek raiser, the lid tightener, the looks, the nose wrinkler, the brows...) and sets the room: 0 at rest and in
+    the blink (the export's own, exact), her copy's `lidRoom` with such a shape full on. So a face at rest is the
+    Studio's to the pixel. (Always on, the room would thicken a creature's lids: a demon's deep-set eyes rest their
+    lids' edges inside the eye's front, and 1.2 mm of room gave a fifth of its opening to them.) It works whatever
+    moves the shapes: the story's `expr`, the bake's faces, an AnimationPlayer of your own.
+  - A copy from before (no `lidRoom`) gets 1.2 mm (`HSBlink.LID_ROOM`); a character with no blinker keeps it on always.
+    `"lid_room": 0.0` in `HSEye.wear`'s overrides takes it off.
 
 `docs/godot_sheets/2026-11-11_faces.jpg`: a test character at rest, smiling and squinting down, as MHR's moves alone
 leave her (the iris through both lids), baked, and as a game wears her.

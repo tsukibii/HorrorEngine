@@ -16,8 +16,9 @@ const WET_SOCKET := 0.5
 ## the eyeball drawn this much (m) deeper than it is (eye.gdshader's and the wet layer's `lid_room`; GODOT_LOOK §5f): a
 ## lid that expressions played together have slid a little into the eye still covers it. MHR's face shapes are baked
 ## with the lids kept off the eye one shape at a time (tools/face_morphs.mjs); a smile is five at once, and their sum
-## went up to 1.2 mm in. At rest it takes nothing from the eye (measured: no skin faces out within 1.3 mm behind it)
-const LID_ROOM := 0.0012
+## went up to 1.2 mm in. Her blinker (HSBlink) turns it on only while such shapes play and off at rest, where the eye
+## is drawn where it is; a character with no blinker (an export from before the blink) keeps it on always
+const LID_ROOM := HSBlink.LID_ROOM
 
 
 static func shader() -> Shader:
@@ -147,6 +148,12 @@ static func wear(node: Node, glb_path: String, overrides: Dictionary = {}) -> Di
 				if overrides.has("lid_room"):          # (the layer lies where the eye is drawn)
 					wm.set_shader_parameter("lid_room", overrides["lid_room"])
 				mi.material_overlay = wm
+	var bl := HSBlink.attach(node) if not out.is_empty() else null   # her blinker: the blink, and the eyes' room while the face moves its lids (0 at rest)
+	if bl != null:
+		bl._find_eyes(node)
+		bl.room = -1.0                                 # (set on its next frame, whatever the materials start with)
+		if overrides.has("lid_room"):
+			bl.room_scale = float(overrides["lid_room"]) / LID_ROOM
 	var tears := records(glb_path, "studioTear")
 	for mi in node.find_children("*", "MeshInstance3D", true, false):   # the tear line, wet
 		if mi.mesh == null:

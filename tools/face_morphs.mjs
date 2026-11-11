@@ -129,7 +129,7 @@ export function eyeFits(json, bin) {
     const det = a * (e * k - f * h) - b * (d * k - f * g) + c3 * (d * h - e * g); if (!det) continue;
     const R = [[(e * k - f * h) / det, (c3 * h - b * k) / det, (b * f - c3 * e) / det], [(f * g - d * k) / det, (a * k - c3 * g) / det, (c3 * d - a * f) / det], [(d * h - e * g) / det, (b * g - a * h) / det, (a * e - b * d) / det]];
     const c = R.map(r => -(r[0] * t[0] + r[1] * t[1] + r[2] * t[2]));
-    const map = new Float64Array((TH + 1) * PH); let far = 0;
+    const map = new Float64Array((TH + 1) * PH); let far = 0; const ball = [];
     const dirs = new Float64Array((TH + 1) * PH * 3);
     for (let i = 0; i <= TH; i++) for (let j = 0; j < PH; j++) { const th = i * Math.PI / 180, ph = j * 2 * Math.PI / PH, o = (i * PH + j) * 3; dirs[o] = Math.sin(th) * Math.cos(ph); dirs[o + 1] = Math.sin(th) * Math.sin(ph); dirs[o + 2] = Math.cos(th); }
     for (const p of json.meshes[n.mesh].primitives) {
@@ -139,6 +139,7 @@ export function eyeFits(json, bin) {
       for (let q = 0; q + 2 < I.length; q += 3) {
         // a triangle from the eye's middle: the rays that could meet it are those between its corners' directions (and a step more)
         const P = [0, 1, 2].map(w => [V[I[q + w] * 3] - c[0], V[I[q + w] * 3 + 1] - c[1], V[I[q + w] * 3 + 2] - c[2]]);
+        ball.push(...P[0], ...P[1], ...P[2]);
         const ths = P.map(v => Math.acos(Math.max(-1, Math.min(1, v[2] / (Math.hypot(...v) || 1)))) * 180 / Math.PI);
         const i0 = Math.max(0, Math.floor(Math.min(...ths)) - 1), i1 = Math.min(TH, Math.ceil(Math.max(...ths)) + 1); if (i0 > TH) continue;
         const phs = P.map(v => ((Math.atan2(v[1], v[0]) / (2 * Math.PI) + 1) % 1) * PH), lo = Math.min(...phs), hi = Math.max(...phs);
@@ -163,7 +164,10 @@ export function eyeFits(json, bin) {
       let got = 0; for (let s = 1; s < PH / 2 && !got; s++) got = map[i * PH + (j + s) % PH] || map[i * PH + (j - s + PH) % PH];
       map[i * PH + j] = got || (i ? map[(i - 1) * PH + j] : 0);
     }
-    fits.push({ side: m[1], c, map, far });
+    // the white's ball, as EYELIDS takes it: the eyeball's box (the cornea's dome only adds depth), its middle from the joint
+    let lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+    for (let t = 0; t < ball.length; t++) { lo[t % 3] = Math.min(lo[t % 3], ball[t]); hi[t % 3] = Math.max(hi[t % 3], ball[t]); }
+    fits.push({ side: m[1], c, map, far, ball: Float64Array.from(ball), white: (hi[0] - lo[0]) / 2, mid: [(hi[0] + lo[0]) / 2, (hi[1] + lo[1]) / 2, (hi[2] + lo[2]) / 2] });
   }
   return fits;
 }
@@ -176,6 +180,75 @@ export function eyeFits(json, bin) {
 // off it), the triangle's corners are lifted straight out from the eye by what's missing, the corners that share a
 // place together, and tried again until none is. Returns how many points were lifted.
 const STEP = 0.001, HAIR = 0.00005;
+// Faces are several shapes at once, and each alone kept off the eye isn't their sum kept off it (a lid needs more room
+// the further it slides: the cornea stands proud of the white). How far these ordinary mixes still take a lid's
+// corner into an eye is measured here and written on the skin's node (`lidRoom`, m): the look plugin draws the
+// eyeball that much deeper while the face moves its lids (blink.gd, eye.gdshader's lid_room), and no deeper: a
+// creature whose lids never reach its eyes gets 0 and keeps its eyes exactly as made.
+const MIXES = [
+  { cheekRaiser: 0.8, lidTightener: 0.5, lipCornerPuller: 0.9 },                       // a smile
+  { cheekRaiser: 1, lidTightener: 1, lipCornerPuller: 1, noseWrinkler: 0.4 },          // a grin
+  { lidTightener: 1, eyesLookDown: 1, browLowerer: 0.6 },                              // a squint, looking down
+  { browLowerer: 1, lidTightener: 0.8, noseWrinkler: 0.8, upperLipRaiser: 0.6 },       // anger, disgust
+  { innerBrowRaiser: 1, outerBrowRaiser: 1, upperLidRaiser: 1 },                       // surprise
+  { eyesLookUp: 1, upperLidRaiser: 0.6 }, { eyesLookLeft: 1, lidTightener: 0.5 }, { eyesLookRight: 1, lidTightener: 0.5 },
+  { cheekRaiser: 1, eyesLookDown: 1, lidTightener: 1 },
+];
+const ROOM_MOST = 0.002;
+const MIX_SHAPES = new Set(MIXES.flatMap(m => Object.keys(m)));
+// How deep an eye stands in front of a lid with the skin as `sum` leaves it (the near corners' moves): drawn as depth,
+// as Godot draws it (the skin's triangles that face the eye of the viewer; the ones facing away, a lid's back and the
+// socket's lining, aren't drawn) and as GDFACES and EYELIDS measure it, from the front, a side and below, a tenth of a
+// millimetre a pixel. Where the eye is nearer than the nearest skin by less than 5 mm it stands in front of a lid; what
+// is within 0.3 mm of the opening is a lid's edge resting on the eye, not the eye through the lid. Returns the deepest
+// (m), 0 when less than a fifth of a square millimetre of it shows.
+const PIX = 0.0001, VIEWS = [[0, 0], [25, 0], [-25, 0], [0, 20]];
+function throughLids(q, fits, sum, lined = false) {
+  let worst = 0;
+  fits.forEach((f, fi) => {
+    const r = f.far, x0 = -1.6 * r, y0 = -1.2 * r, W = Math.floor(3.2 * r / PIX), H = Math.floor(2.4 * r / PIX);
+    for (const [yawD, pitchD] of VIEWS) {
+      const cy = Math.cos(yawD * Math.PI / 180), sy = Math.sin(yawD * Math.PI / 180), cp = Math.cos(pitchD * Math.PI / 180), sp = Math.sin(pitchD * Math.PI / 180);
+      const turn = (x, y, z) => { const X1 = cy * x + sy * z, Z1 = -sy * x + cy * z; return [X1, cp * y - sp * Z1, sp * y + cp * Z1]; };   // about the up, then about the across
+      const draw = (Z, a, b, c) => {                   // a triangle into a depth picture (the nearest kept: +z toward the viewer), back faces left out
+        const d = (b[1] - c[1]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[1] - c[1]); if (!(d > 1e-18)) return;
+        const i0 = Math.max(0, Math.floor((Math.min(a[0], b[0], c[0]) - x0) / PIX)), i1 = Math.min(W - 1, Math.floor((Math.max(a[0], b[0], c[0]) - x0) / PIX));
+        const j0 = Math.max(0, Math.floor((Math.min(a[1], b[1], c[1]) - y0) / PIX)), j1 = Math.min(H - 1, Math.floor((Math.max(a[1], b[1], c[1]) - y0) / PIX));
+        for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+          const X = x0 + (i + 0.5) * PIX, Y = y0 + (j + 0.5) * PIX;
+          const w0 = ((b[1] - c[1]) * (X - c[0]) + (c[0] - b[0]) * (Y - c[1])) / d, w1 = ((c[1] - a[1]) * (X - c[0]) + (a[0] - c[0]) * (Y - c[1])) / d, w2 = 1 - w0 - w1;
+          if (w0 < -1e-9 || w1 < -1e-9 || w2 < -1e-9) continue;
+          const z = w0 * a[2] + w1 * b[2] + w2 * c[2]; if (z > Z[j * W + i]) Z[j * W + i] = z;
+        }
+      };
+      const key = `${yawD},${pitchD}`; f.seen = f.seen || {};
+      let Ze = f.seen[key];
+      if (!Ze) { Ze = f.seen[key] = new Float32Array(W * H).fill(-Infinity); for (let t = 0; t < f.ball.length; t += 9) draw(Ze, turn(f.ball[t], f.ball[t + 1], f.ball[t + 2]), turn(f.ball[t + 3], f.ball[t + 4], f.ball[t + 5]), turn(f.ball[t + 6], f.ball[t + 7], f.ball[t + 8])); }
+      const Zs = new Float32Array(W * H).fill(-Infinity), T = q.tris, at = v => { const k = q.nearAt[v]; return turn(q.X[v * 3] + sum[k * 3] - f.c[0], q.X[v * 3 + 1] + sum[k * 3 + 1] - f.c[1], q.X[v * 3 + 2] + sum[k * 3 + 2] - f.c[2]); };
+      for (let t = 0; t < T.length; t += 3) if (q.eye[T[t]] === fi) draw(Zs, at(T[t]), at(T[t + 1]), at(T[t + 2]));
+      // the opening (the eye seen), grown by 0.3 mm: a lid's edge on the eye
+      const open = new Uint8Array(W * H), poke = new Uint8Array(W * H);
+      // (the grafted eyes, as EYELIDS reads them: their lids are thick and their edges roll in, so skin inside the white's
+      // ball is their lining, hidden by the eye as it should be; a lid in the eye shows nearer: within 2.5 mm, outside that ball)
+      const mid = turn(f.mid[0], f.mid[1], f.mid[2]), near = lined ? 0.0025 : 0.005, least = lined ? 0.0001 : 0, wr2 = (f.white - 0.0001) * (f.white - 0.0001);
+      for (let k = 0; k < W * H; k++) {
+        if (Ze[k] === -Infinity) continue;
+        const dz = Ze[k] - Zs[k];
+        let in_ = Zs[k] !== -Infinity && dz > least && dz < near;
+        if (in_ && lined) { const X = x0 + (k % W + 0.5) * PIX - mid[0], Y = y0 + (Math.floor(k / W) + 0.5) * PIX - mid[1], Z = Zs[k] - mid[2]; if (X * X + Y * Y + Z * Z < wr2) in_ = false; }
+        if (in_) poke[k] = 1; else if (Zs[k] === -Infinity || dz > 0) open[k] = 1;
+      }
+      let rim = open;
+      for (const [di, dj] of [[1, 0], [0, 1]]) { const g = new Uint8Array(rim); for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (rim[j * W + i]) for (let s2 = -3; s2 <= 3; s2++) { const ii = i + di * s2, jj = j + dj * s2; if (ii >= 0 && jj >= 0 && ii < W && jj < H) g[jj * W + ii] = 1; } rim = g; }
+      let n = 0, deep = 0;
+      for (let k = 0; k < W * H; k++) if (poke[k] && !rim[k]) { n++; deep = Math.max(deep, Ze[k] - Zs[k]); }
+      if (process.env.FM_DEBUG) { let e = 0, sk = 0, op = 0, pk = 0; for (let k = 0; k < W * H; k++) { if (Ze[k] > -Infinity) e++; if (Zs[k] > -Infinity) sk++; op += open[k]; pk += poke[k]; }
+        console.log(`    eye ${f.side} view ${yawD},${pitchD}: ${W}x${H}, eye px ${e}, skin px ${sk}, open ${op}, poke ${pk}, through ${n} (${(n * PIX * PIX * 1e6).toFixed(2)} mm2), deepest ${(deep * 1000).toFixed(2)} mm`); }
+      if (n * PIX * PIX * 1e6 > 0.2) worst = Math.max(worst, deep);
+    }
+  });
+  return worst;
+}
 function liftTriangles(q, fits, dl) {
   const X = q.X, T = q.tris, P = new Float64Array(9), R = new Float64Array(9);
   let total = 0;
@@ -252,7 +325,7 @@ export function bake(json, bin, F = mhrFace(), raw = false) {   // raw: MHR's mo
   // (the export's own word for the head's scale, studioScale on its skin's node: a child's or a creature's head isn't sized by its height)
   const known = (json.nodes || []).map(n => +(n.extras && n.extras.studioScale)).find(k => k > 0);
   const scale = known || (tall > 0 ? tall / F.tall : 1);
-  let corners = 0, targets = 0, kept = 0, deepest = 0, lifted = 0;
+  let corners = 0, targets = 0, kept = 0, deepest = 0, lifted = 0, lidRoom = 0;
   const move = (e, s) => [F.D[(e * F.k + s) * 3] * scale, F.D[(e * F.k + s) * 3 + 1] * scale, F.D[(e * F.k + s) * 3 + 2] * scale];
   // the skin that could reach an eye (in front of its middle, within half again its size), and how far outside it rests
   // (a hair at most; skin that rests inside, the socket's, hidden, keeps its depth)
@@ -277,8 +350,9 @@ export function bake(json, bin, F = mhrFace(), raw = false) {   // raw: MHR's mo
       for (const v of [a, b, c]) if (q.weld[v] < 0) { const key = `${q.X[v * 3]},${q.X[v * 3 + 1]},${q.X[v * 3 + 2]}`; let w = at.get(key); if (w === undefined) at.set(key, w = at.size); q.weld[v] = w; }
     }
     q.points = at.size;
+    q.nearList = []; q.nearAt = new Int32Array(n).fill(-1); for (let c = 0; c < n; c++) if (q.eye[c] >= 0) { q.nearAt[c] = q.nearList.length; q.nearList.push(c); }   // every corner round an eye, and where it is in that list
   }
-  for (const { mesh, prims, have, lack } of parts) {
+  for (const { mi, mesh, prims, have, lack } of parts) {
     for (const [pi, prim] of mesh.primitives.entries()) {
       const q = prims[pi], count = json.accessors[prim.attributes.POSITION].count;
       let cards = null;
@@ -324,6 +398,11 @@ export function bake(json, bin, F = mhrFace(), raw = false) {   // raw: MHR's mo
             dl[c * 3] = x; dl[c * 3 + 1] = y; dl[c * 3 + 2] = z;
           }
           if (nearMoved && q.tris && q.tris.length) lifted += liftTriangles(q, fits, dl);
+          if (q.nearList && q.nearList.length && MIX_SHAPES.has(F.names[e].replace(/_[LR]$/, ""))) {   // (kept for the mixes: this shape's moves round the eyes, as baked)
+            const nd = new Float32Array(q.nearList.length * 3);
+            for (let k = 0; k < q.nearList.length; k++) { const c = q.nearList[k]; nd[k * 3] = dl[c * 3]; nd[k * 3 + 1] = dl[c * 3 + 1]; nd[k * 3 + 2] = dl[c * 3 + 2]; }
+            (q.nd || (q.nd = new Map())).set(F.names[e], nd);
+          }
           for (let c = 0; c < count; c++) if (Math.hypot(dl[c * 3], dl[c * 3 + 1], dl[c * 3 + 2]) > TINY) { idx.push(c); val.push(dl[c * 3], dl[c * 3 + 1], dl[c * 3 + 2]); }
         }
         const acc = { componentType: 5126, count, type: "VEC3", min: [0, 0, 0], max: [0, 0, 0] };
@@ -338,10 +417,22 @@ export function bake(json, bin, F = mhrFace(), raw = false) {   // raw: MHR's mo
         targets++;
       }
     }
+    const lined = (json.nodes || []).some(n => n.mesh === mi && n.extras && n.extras.eyeGraft);   // the grafted eyes (CHARACTER_STUDIO §2c)
+    for (const q of prims) if (q && q.nd && q.nearList.length) {
+      let deep = 0;
+      for (const mix of MIXES) {
+        const sum = new Float32Array(q.nearList.length * 3);
+        for (const [stem, w] of Object.entries(mix)) for (const side of ["_L", "_R", ""]) { const nd = q.nd.get(stem + side); if (nd) for (let i = 0; i < sum.length; i++) sum[i] += w * nd[i]; }
+        deep = Math.max(deep, throughLids(q, fits, sum, lined));
+      }
+      const room = deep > 0 ? Math.min(ROOM_MOST, deep * 1.1 + 0.0001) : 0;   // (and a tenth more, and a tenth of a millimetre: between the drawn views)
+      lidRoom = Math.max(lidRoom, room);
+      for (const n of json.nodes || []) if (n.mesh === mi) n.extras = Object.assign({}, n.extras || {}, { lidRoom: +room.toFixed(5) });
+    }
     mesh.weights = [...(Array.isArray(mesh.weights) && mesh.weights.length === have.length ? mesh.weights : new Array(have.length).fill(0)), ...new Array(lack.length).fill(0)];
     mesh.extras = Object.assign({}, mesh.extras || {}, { targetNames: [...have, ...lack.map(([n]) => n)] });
   }
-  return { meshes: parts.length, corners, targets, scale, kept, deepest, lifted, eyes: fits.length, bin: Buffer.concat(chunks) };
+  return { meshes: parts.length, corners, targets, scale, kept, deepest, lifted, lidRoom, eyes: fits.length, bin: Buffer.concat(chunks) };
 }
 
 export function bakeFile(input, output = input, raw = false) {
@@ -474,6 +565,11 @@ function check() {
     }
   }
   ok(`and across its triangles (${tried4} that rest outside it tried over five shapes, a point every 0.75 mm): none cuts under the ball (${cut4} points, ${(cutDeep * 1000).toFixed(3)} mm), ${r4.lifted} points lifted for it`, tried4 > 200 && cut4 === 0 && r4.lifted > 0);
+  const said4 = (g4.json.nodes.find(n => n.mesh === 0).extras || {}).lidRoom;
+  ok(`several shapes at once (a smile, a squint, seven more): how far they still take a lid in, written on the skin's node for the look plugin's eye (lidRoom ${(r4.lidRoom * 1000).toFixed(2)} mm, on the node ${said4})`,
+     r4.lidRoom > 0.0002 && r4.lidRoom <= ROOM_MOST && Math.abs(said4 - r4.lidRoom) < 1e-5);
+  const g1 = readGlb(file);                              // (a file with no eyeball: no room said)
+  ok("a file with no eyeball says no room", (g1.json.nodes[0].extras || {}).lidRoom === undefined && r.lidRoom === 0);
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log(bad.length ? `FACEMORPHS FAIL (${bad.length})` : "FACEMORPHS ok");
   return bad.length ? 1 : 0;
@@ -485,5 +581,5 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const raw = args.includes("--raw"), files = args.filter(x => !x.startsWith("--"));
   if (!files[0]) { console.log("node tools/face_morphs.mjs <in.glb> [out.glb] [--raw]   |   --check"); process.exit(1); }
   const r = bakeFile(path.resolve(files[0]), path.resolve(files[1] || files[0]), raw);
-  console.log(r.meshes ? `FACEMORPHS ok (${r.meshes} meshes, ${r.targets} morph targets, ${r.corners} corners; scale ${r.scale.toFixed(3)}${r.eyes ? `; the lids kept off ${r.eyes} eyes: ${r.kept} corner moves ended on an eye's surface, the deepest ${(r.deepest * 1000).toFixed(1)} mm in, ${r.lifted} points lifted for their triangles` : ""})` : "FACEMORPHS ok (nothing to bake: no MHR points, or baked already)");
+  console.log(r.meshes ? `FACEMORPHS ok (${r.meshes} meshes, ${r.targets} morph targets, ${r.corners} corners; scale ${r.scale.toFixed(3)}${r.eyes ? `; the lids kept off ${r.eyes} eyes: ${r.kept} corner moves ended on an eye's surface, the deepest ${(r.deepest * 1000).toFixed(1)} mm in, ${r.lifted} points lifted for their triangles; several shapes at once still want ${(r.lidRoom * 1000).toFixed(2)} mm of room (lidRoom)` : ""})` : "FACEMORPHS ok (nothing to bake: no MHR points, or baked already)");
 }

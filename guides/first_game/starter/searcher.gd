@@ -46,6 +46,7 @@ signal search_over                                ## back at her post, whether s
 @export var step_sound := ""                      ## her steps off the shelf; empty: the floor's own (sound.gd)
 @export var breath_sound := "breath_close"        ## her breathing at a close pass
 @export var found_sound := "sting_big"
+@export var head_m := 1.5                         ## her head over her feet (m): where she sees from and where her sounds come from; a child's about 1.2, an imp's 0.8, an ogre's 2.3
 
 var state := "idle"                               ## idle, listening, going, passing, found, leaving, held (a chase has her), gone
 var heard_at := Vector3.INF
@@ -237,7 +238,7 @@ func _walk(her: Node3D, dt: float) -> void:
 			_pass_len = randf_range(pass_min, pass_max)
 			_t = _pass_len
 			_rolled = false
-			_sound(breath_sound, her.global_position + Vector3.UP * 1.5, -4.0)
+			_sound(breath_sound, her.global_position + Vector3.UP * head_m, -4.0)
 		return
 	her.global_position += to.normalized() * step
 	her.global_rotation.y = lerp_angle(her.global_rotation.y, atan2(to.x, to.z), minf(1.0, dt * 8.0))   # her front (+Z) the way she goes
@@ -342,7 +343,7 @@ func _sees_you(her: Node3D) -> bool:
 	var pl := get_tree().get_first_node_in_group("hs_player") as Node3D
 	if pl == null or str(pl.get("pose")) == "hiding":
 		return false
-	var head := her.global_position + Vector3.UP * 1.5
+	var head := her.global_position + Vector3.UP * head_m
 	var eye := (pl.get_node("Eye") as Node3D).global_position
 	var to := eye - head
 	if to.length() > (see_m if _lit(pl) else see_dark_m) or her.global_basis.z.dot(to.normalized()) < 0.5:
@@ -381,7 +382,7 @@ func _find(her: Node3D) -> void:
 			var p := atan2(her.global_position.y + 1.45 - eye.global_position.y, 0.45)
 			pl.set("pitch", p)
 			eye.rotation.x = p
-	_sound(found_sound, her.global_position + Vector3.UP * 1.5, 0.0, "event")
+	_sound(found_sound, her.global_position + Vector3.UP * head_m, 0.0, "event")
 	var fear := get_tree().get_first_node_in_group("hs_fear")
 	if fear != null and fear.has_method("scare"):
 		fear.scare()

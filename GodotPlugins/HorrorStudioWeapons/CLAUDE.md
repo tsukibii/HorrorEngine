@@ -58,6 +58,12 @@ export and the Director's projects don't copy it yet (nothing in the runtime use
   ones' colliders are at least 6 cm along every axis and they're laid down onto the floor at rest (LESSONS).
 - **Nobody bleeds red** (the user's): HSHitReact's ichor is black and glossy with embers, its smoke black; a new look is
   an HSWoundLook, never blood.
+- **Her hitboxes are sized by her own bones** (DECISIONS 2026-11-11; HITBOXES, `python tools/godot/hitbox_check.py`):
+  `_measure()` takes her legs' length, her arms', her shoulders' width and her head's own length (its bone to its
+  `_null` end, else eye to eye) against MHR's adult (`ADULT`), each snapped to 1 within an eighth (an adult of any rig
+  keeps the capsules it had: WEAPONS' numbers don't move), and `_make_hitboxes` scales each capsule's radius and the few
+  fixed lengths by its part's (`_size`); `girth` times the torso's, neck's and limbs' radii for flesh. A child's head is
+  an adult's on a smaller body: it never shrinks with her height. Don't size anything by her height alone.
 - **Her hitboxes are on layer 11** (`HSHitReact.HITBOX_LAYER`): the gun's rays and a blast's query use `HSGun.SHOT_MASK`
   (layers 1 and 11); everything else (the player, her movement, sight, the hulls) stays on layer 1. **Only while she's
   seen** (`_sync_boxes` in `_physics_process`: hidden, their layers 0; down, `_gone` and `restore` keep them): tutorial

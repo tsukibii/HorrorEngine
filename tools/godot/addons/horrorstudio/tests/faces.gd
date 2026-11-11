@@ -74,6 +74,14 @@ func values(f: Dictionary, names: Array) -> Dictionary:
 	return o
 
 
+## the eyes' materials' own lid_room now (each)
+func _rooms(blink: HSBlink) -> Array:
+	var out := []
+	for m in blink.eyes:
+		out.append(float(m.get_shader_parameter("lid_room")))
+	return out
+
+
 func frames(n: int) -> void:
 	for i in n:
 		await process_frame
@@ -91,8 +99,12 @@ func run() -> void:
 	if b == null:
 		return finish()
 	her.add_child(b)
-	var blink := HSBlink.attach(b)                    # as HSEye.wear does for a Studio export
+	rep["eyes"] = HSEye.wear(b, glb).size()           # as a game wears her: the Studio's eye, its wet layer, the tear line and her blinker
+	var blink := HSBlink.of(b)
 	rep["blinker"] = blink != null
+	rep["movers"] = (blink.movers[1] as Array).size() if blink != null and not blink.movers.is_empty() else 0
+	rep["eye_mats"] = blink.eyes.size() if blink != null else 0
+	rep["room_most"] = blink.room_most if blink != null else -1.0   # the most room her face asks for: her copy's own word (lidRoom), read from its skin
 	if blink != null:
 		blink.idle = false                            # (no blink of its own while it's measured)
 	var f: Dictionary = FaceC.face_of(her)
@@ -140,8 +152,10 @@ func run() -> void:
 	var rt := Rt.new()
 	rt.cast_nodes["her"] = her
 	var face = FaceC.new(rt)
-	if blink != null:
-		blink.set_process(false)                      # (first without it running: what the player alone sets)
+	if blink != null:                                 # at rest the eyes are drawn where they are
+		await frames(3)
+		rep["room_rest"] = [blink.room, _rooms(blink)]
+		blink.set_process(false)
 	rep["played"] = face.play("her", her, "_test", {"in": 0.1, "out": 0.1})
 	for i in 10:
 		face.tick(0.05)
@@ -153,6 +167,7 @@ func run() -> void:
 		await frames(3)
 		face.tick(0.01)                               # (the player again after the blinker: it leaves the lids alone)
 		rep["with_blink"] = values(f, PLAYED.keys())
+		rep["room_playing"] = [blink.room, _rooms(blink)]   # the face moving its lids: the eyes drawn their room deeper
 		var inb := {}
 		for row in blink.shapes:
 			var mi: MeshInstance3D = row[0]
@@ -164,6 +179,7 @@ func run() -> void:
 	await frames(3)
 	rep["after"] = values(f, PLAYED.keys())
 	rep["hold_after"] = [blink.hold.x, blink.hold.y] if blink != null else []
+	rep["room_after"] = [blink.room, _rooms(blink)] if blink != null else []
 	rep["state_after"] = face.state("her")
 
 	# ---- a body with no blinker (an older export's copy, the bake's body): the lids set on the meshes themselves

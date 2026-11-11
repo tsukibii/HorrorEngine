@@ -169,11 +169,12 @@ func _initialize() -> void:
 			if String(mi.name).contains("_eye_") and mi.mesh != null:
 				for k in mi.mesh.get_surface_count():
 					var own = mi.get_active_material(k)
-					if own is ShaderMaterial and own.get_shader_parameter("lid_room") != null:
-						green.set_shader_parameter("lid_room", float(own.get_shader_parameter("lid_room")))
-						report["lid_room"] = float(own.get_shader_parameter("lid_room"))
 					mi.set_surface_override_material(k, green)
 				mi.material_overlay = null               # the wet layer off: the green counted as it's drawn
+		green.set_shader_parameter("lid_room", 0.0)
+		if bl != null:                               # her blinker gives the mask the room it gives the eye (while the face moves its lids)
+			bl._find_eyes(who)
+			bl.room = -1.0
 	var hs: Script = load("res://addons/horrorstudio_look/hair.gd")       # an older plugin's wear takes no glb (--plugin pictures one)
 	var hair_mats: Array = hs.callv("wear", [who, {}, glb] if hs.has_method("records") else [who, {}])
 	report["hair_mats"] = hair_mats.size()           # the hair: how much of it wears the salon's bake MetaHuman's way, and the scalp in its own colour
@@ -425,6 +426,8 @@ func _process(_d: float) -> bool:
 		report["shots"][name]["probes"] = probe_colours(img)
 	if eye_mask:
 		report["shots"][name]["eye_px"] = greens(img)
+	var blk = who.get_node_or_null("HSBlink")
+	report["lid_room"] = blk.room if blk != null else -1.0
 	stage += 1
 	n = 0
 	if stage >= STAGES.size():
