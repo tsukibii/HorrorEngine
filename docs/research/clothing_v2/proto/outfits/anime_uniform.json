@@ -1,0 +1,3 @@
+{"name": "anime_uniform", "bodies": ["anime_full", "anime_flat"],
+ "wear": [{"mh": "glam:Elvs_Pleated_Plaid_Miniskirt1"}, {"mh": "mini:namuhekam_male_polo_shirt"}, {"mh": "glam:uniform_jacket_train_driver"},
+          {"tailor": "over-knee-socks", "color": "#16161a"}, {"mh": "sys:shoes04", "drop_above": 0.2}]}

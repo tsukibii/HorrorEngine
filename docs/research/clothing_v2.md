@@ -9,8 +9,11 @@ carried **48 real garments onto your MHR test bodies with no failure and no hand
 second each on a CPU, with pockets, collars and buttons intact. It then dressed a library jacket in the tailor's own
 plaid with one of your prints on its back. MakeHuman's packs hold **129 garments and shoes and 56 accessories under
 CC0** (no conditions) and **210 more garments and shoes and 67 accessories under CC-BY** (free to sell with, if you
-credit the author). All are tied to one base body, so one alignment fits the lot. The test did not prove layering,
-heavy bodies, motion or the look in Godot; those are the build. No free library found has a sailor uniform, a
+credit the author). All are tied to one base body, so one alignment fits the lot. A second pass the same day, after
+you saw the outfits clip, added **layers**: library garments worn over each other and over the tailor's pantyhose,
+fishnets and socks with nothing coming through, on your PBR sets, and a dissolve for it in Godot 4.7
+(`clothing_v2/fit_test.md` §7, [`layers_before_after.jpg`](clothing_v2/layers_before_after.jpg)). The test did not
+prove heavy bodies or motion; those are the build. No free library found has a sailor uniform, a
 gakuran, a hanbok or a kimono; the best lead is Style3D's garments on Sketchfab, not yet confirmed. Three calls are
 yours: whether CC-BY garments may ship with a credits screen, how the packs get downloaded, and which garments come
 first.
@@ -197,13 +200,13 @@ and using it put the sleeves beside the arms. The binding is the truth, not the 
 
 | What it did not prove | What was seen | What closes it |
 |---|---|---|
-| Two garments worn together | They cross. A sweater comes through a coat in large patches, a skirt shows through a jacket's back in small ones, and a skirt's waistband comes through a sweater's hem: [`fit_styles.jpg`](clothing_v2/fit_styles.jpg), rows 3 and 1; `fit_bodies.jpg`, right | The tailor's layering rule, as one "cover height" for each point of the skin (how far the clothes already worn stand off it), shared by cut and library garments |
+| Two garments worn together | They crossed in the first test: a sweater through a coat in large patches, a skirt through a jacket's back, a skirt's waistband through a sweater's hem ([`fit_styles.jpg`](clothing_v2/fit_styles.jpg), rows 3 and 1; `fit_bodies.jpg`, right). **Closed in the prototype since** (`fit_test.md` §7, [`layers_before_after.jpg`](clothing_v2/layers_before_after.jpg)): a layer for each garment, each set outside the ones under it, and what a layer covers not drawn | Move `proto/layers.py` into the Character Studio with its check; walk it |
 | Heavy bodies, and skirts between the legs | A suit follows a full belly's folds and a skirt dips between full thighs: [`fit_bodies.jpg`](clothing_v2/fit_bodies.jpg), the bottom row on each side. The sweater and tees also cling to the average body's belly (`fit_catalogue.jpg`), and a pleated skirt's back hem dips between the legs (`fit_styles.jpg`, row 1, back view) | Lay loose garments across the body's hollows instead of into them, as the tailor's bridging does; hang skirts on rings |
 | Smooth edges | Collars and hems are angular close up. The garments are a few thousand faces, drawn as they come | Subdivide each once, as they were made to be |
 | Fabric direction | The plaid turns from one panel to the next: `fit_refabric.jpg` | Turn each piece so the weave runs down the body or along the limb |
 | Shoes | They were bent like cloth, so a sole can curve with the foot | Carry each shoe as a rigid piece |
 | Motion | Nothing was skinned and walked | The tailor's `weights.js` and `motion.mjs` |
-| The look in the game | Every picture was drawn by three.js in a headless browser. Nothing was exported to Godot or seen under the VHS filter | An export and a look check |
+| The look in the game | The fit's pictures were drawn by three.js in a headless browser. Since then one layered outfit was exported as a .glb and drawn by Godot 4.7 with the layers' dissolve ([`layers_godot.jpg`](clothing_v2/layers_godot.jpg)); nothing yet on the look plugin's shaders or under the VHS filter | The Character Studio's export writing the same data, and a look check |
 | Other libraries | A garment that is not in MakeHuman's format has no base body to line up | A placement step first, then the same fit |
 
 Three points from the wider reading shape the real build ([fit_and_skin.md](clothing_v2/fit_and_skin.md)). Nobody was
@@ -327,7 +330,7 @@ prototype behind steps 1, 2 and part of 6 was written and run inside this one re
 | 1. Keep the files and read them | The packs on disk before the source gets worse; each garment's author and licence read from its own header; a refuse-list for logos and fan costumes | The test's reader; the ledger your CC0 prop library keeps | Small. The notes: 1 to 2 days |
 | 2. Move the fit into the Character Studio | Any library garment on any character, refitted when the body changes, with a check on the seven test bodies | `proto/register.py` and `proto/fit.py` | Medium. The notes guessed 2 to 4 days for the alignment before the prototype existed |
 | 3. Walk it, and look at it in Godot | The go or no-go: one outfit on two bodies walking, sitting and crouching, then in a level under the VHS filter at 1 to 2 m | The tailor's `weights.js` and `motion.mjs`; the Character Studio's export | Small (my estimate) |
-| 4. Layers, heavy bodies, smooth edges | A coat over a sweater, a library jacket over a tailor tee, suits that span a belly, smooth collars, flat soles, buttons that stay round | The tailor's layering rule as a cover height; its bridging; one subdivision; rigid carry for shoes and small parts | Medium (my estimate; the notes give none) |
+| 4. Layers, heavy bodies, smooth edges | A coat over a sweater, a library jacket over a tailor tee, suits that span a belly, smooth collars, flat soles, buttons that stay round | The layers as the prototype now has them (`proto/layers.py`, `fit_test.md` §7), moved over with their check; the tailor's bridging; one subdivision; rigid carry for shoes and small parts | Medium (my estimate; the notes give none); the layers' rules are settled, so less than it was |
 | 5. The tab | Cards, wearing with the tailor's garments, saving with the character, export with weights and hidden skin | The Clothes tab's cards and the wardrobe page | Medium (my estimate) |
 | 6. Your fabrics and decals | Any shelf set at real size with the weave turned right, the garment's seams kept, PNG decals placed and baked, a credits list written by itself | The test's three steps; the tailor's print bake; xatlas | Medium. The notes: 2 to 3 days for the metre UV map, 1 for overlapping ones, 1 for projected decals |
 | 7. What hangs | Skirts, dresses and coat skirts hung over this body's hips; hems that swing in the game | The tailor's cloth solver and skirt rings; Godot's spring bones | Large (my estimate), and the least certain |

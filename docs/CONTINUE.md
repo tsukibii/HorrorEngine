@@ -27,12 +27,14 @@ knit dress; 2026-11-11 on `claude/compassionate-babbage-3bnfqx`: the clothing re
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-11, `claude/compassionate-babbage-3bnfqx`): ready-made clothing fitted to our bodies, researched and tested
+## Where it stopped last (2026-11-11, `claude/compassionate-babbage-3bnfqx`): ready-made clothing fitted to our bodies, researched and tested, then worn in layers
 
-Research only, from main (PR #21 merged); nothing in the Studio changed. The user asked four things (DECISIONS
-2026-11-11): whether Cloth2Tex could be a second clothing system, a CloV2 tab; what's newer and free; then "I dont
-actually care about generating procedural cloting ... id rather have better already designed clothing with lots of
-options"; then more Korean and Japanese smart casual, uniforms, dresses, suits.
+Research and a prototype, from main (PR #21, then PR #22 merged in); nothing in the Studio changed. The user asked
+five things (DECISIONS 2026-11-11, both sections): whether Cloth2Tex could be a second clothing system, a CloV2 tab;
+what's newer and free; then "I dont actually care about generating procedural cloting ... id rather have better
+already designed clothing with lots of options"; then more Korean and Japanese smart casual, uniforms, dresses,
+suits; then, seeing the fitted outfits clip, **clothing layers** ("the layer below can never clip through"), a
+dissolve in Godot, main merged, our PBR sets on them, and the pantyhose, fishnet tights and socks.
 
 - **docs/research/clothing_v2.md** is the report; its notes are in `docs/research/clothing_v2/`: `cloth2tex.md` (read at
   source: no), `sewing_patterns.md`, `mesh_generators.md`, `photo_to_look.md` (the generators and texturing models: none
@@ -42,17 +44,31 @@ options"; then more Korean and Japanese smart casual, uniforms, dresses, suits.
   `korean_japanese.md` (what the packs have for those; Style3D's free garments on Sketchfab the lead).
 - **The fit test** (`clothing_v2/fit_test.md`, scripts `clothing_v2/proto/`, pictures `clothing_v2/fit_*.jpg`): MakeHuman's
   base body registered onto MHR once, 48 garments fitted with nothing adjusted by hand (fifteen of them on two to five of the Studio's
-  seven test bodies), the tailor's own plaid on a library jacket at real size, a studio print on its back. A prototype: no check, not
-  on the launcher.
+  seven test bodies), the tailor's own plaid on a library jacket at real size, a studio print on its back. A prototype:
+  not on the launcher.
+- **The layers** (fit_test §7; `proto/layers.py`, `wear.py`, `tailor_parts.mjs`, `glb.py`, `godot/`; pictures
+  `clothing_v2/layers_*.jpg`): a kind and a layer a garment (bottoms 30 under tops 40, jackets 60, coats 70; legwear,
+  socks and shoes under them), each garment set outside the ones under it, cloth against cloth, and what a layer
+  covers left out from 3.5 cm inside its edge. Library garments worn with the tailor's pantyhose, fishnets, socks and
+  the red sweater dress; on the baked PBR fabric sets; on Anime at Bust 2.1 (its dress form) and -2, a girl of ten, a
+  boy of fourteen. **In Godot 4.7**: `cover.gdshader` dissolves the covered part out by a dither, and a band switched
+  off (a coat taken off) brings back what it hid. Two checks, run by hand because they need the fetched garments:
+  `python proto/check.py <work dir>` (LAYERS: the outfits that clipped, the fault counted without the layers and gone
+  with them) and `python proto/godot_test.py ...` (GDLAYERS). `proto/pictures.py` makes every picture again.
+- **What the layers don't do yet**: nothing was walked (the covers are made at rest; garments skinned from the same
+  skin should keep them, untested); a hem that crosses pleats is a little wavy; on Anime's full bust the cloth covers
+  and layers but stretches over it; the look plugin's skin shader and the Studio's export don't write or read the
+  covers yet (the prototype's glb and shader do).
 - **This session's network** let through GitHub and little else: arxiv.org, sketchfab.com, huggingface.co and
   MakeHuman's file servers were blocked, so licences on those are from search summaries and say so.
 
 **Next, by the user's answers**: (1) may CC-BY garments ship with a credits screen? (2) the packs downloaded on their
 machine (`files.makehumancommunity.org`, or by MPFB2 in Blender); (3) then the build, in this order: the importer and
-the fit in the Studio's own JavaScript (the registration kept as a file), layering against the tailor's garments (one
-cover height per skin point), bridging for loose garments and skirts, weights and a walk test (`tailor/motion.mjs`),
-the look (second UV, the detail layer, decals baked by `albedo.js`), the tab. A placement step for garments with no
-source body (Style3D's) comes after.
+the fit in the Studio's own JavaScript (the registration kept as a file), the layers as the prototype has them
+(`proto/layers.py` is the reference: port it, with its check), bridging for loose garments and skirts, weights and a
+walk test with the covers on (`tailor/motion.mjs`), the look (second UV, the detail layer, decals baked by
+`albedo.js`), the covers written by Export for Godot and read by the look plugin's skin and cloth, the tab. A placement
+step for garments with no source body (Style3D's) comes after.
 
 ## Beside it (2026-11-11, latest, `claude/nifty-tesla-dc904q`, merged in PR #22): Anime (the Bust from flat to very full) and the red knit dress
 

@@ -6,7 +6,7 @@ also fine, id rather have better already designed clothing with lots of options 
 
 This note is the hands-on half of the research: a first version of that algorithm, written and run in this session on
 real library garments and the Studio's own test bodies. It is a **prototype** (`proto/` beside this note: numpy, scipy
-and three.js; no check, not on the launcher, nothing wired into the Studio), built to answer one question before
+and three.js; not on the launcher, nothing wired into the Studio; its layers have a check of their own, §7.6), built to answer one question before
 anything is built properly: **does a library garment made for another body land on ours looking right, on every body,
 with no hand work?** It does, with the limits in §5.
 
@@ -25,10 +25,13 @@ Everything was run on the CPU in the cloud session. Pictures were drawn by three
   tileable fabric (here the tailor's own plaid and flannel, `tailor/fabric.js`) lie at its real size on a garment whose
   UVs were made for its own texture; the garment's own seams, stitches and folds are kept as a detail layer over the new
   fabric; a PNG from the studio's prints is projected onto the back.
-- **Two things a real build must add**, both visible in the pictures: **layering** between garments (two library
-  garments worn together cross each other: `fit_styles.jpg`, the coat over the sweater), and **bridging** on heavy
-  bodies (cloth follows the skin into folds a real garment would span). Both are things the tailor already does for its
-  own garments.
+- **Layers, added the same day** (§7), after the user saw the outfits clip: every garment has a layer, each is set
+  outside the ones under it, and what a layer covers isn't drawn. Library garments are worn over each other and over
+  the tailor's pantyhose, fishnets and socks with nothing coming through (`layers_before_after.jpg`,
+  `layers_legwear.jpg`), on the shelf's PBR sets (`layers_pbr.jpg`), on main's newer bodies (`layers_bodies.jpg`), and
+  in Godot 4.7 with a dissolve (`layers_godot.jpg`).
+- **One thing a real build must still add**, visible in the pictures: **bridging** on heavy bodies (cloth follows the
+  skin into folds a real garment would span), which the tailor already does for its own garments.
 
 ## 2. What was used
 
@@ -104,10 +107,8 @@ are credited in §6.
 
 Each of these is visible in the pictures, and each has an answer in `fit_and_skin.md`.
 
-- **Layering.** Garments are fitted one at a time, against the skin only. A sweater under a coat comes through it
-  (`fit_styles.jpg`, third row); a skirt's waistband crosses a sweater's hem. The tailor's rule (each garment starts
-  from how far the ones under it stand off the skin) is the answer: one cover height per skin point, shared by cut and
-  imported garments.
+- **Layering.** In §3 garments are fitted one at a time, against the skin only: a sweater under a coat comes through
+  it (`fit_styles.jpg`, third row), a skirt's waistband crosses a sweater's hem. **Done since, in §7.**
 - **Bridging.** On the full bodies a suit follows the belly's folds, and a skirt dips between the thighs (`fit_bodies.jpg`). Loose
   garments should lie on the body's bridged outline (the tailor's `bridge`), and skirts and coats' skirts on rings, as
   MakeHuman does with its skirt helper and the tailor with its own. Skirts and dresses are fine on bodies near the
@@ -136,6 +137,11 @@ Each of these is visible in the pictures, and each has an answer in `fit_and_ski
 | `fit_cc0_office.jpg` | the CC0 office blouse and skirt with shoes on the feminine and slim feminine bodies |
 | `fit_dresses.jpg` | seven dresses, jeans, a sweater, a polo and a handbag, each alone on the feminine body |
 | `fit_styles.jpg` | library pieces in our fabrics as a blazer-type school uniform, a gakuran-like set, a camel coat over a sweater (the layering fault), and the CC0 men's suit |
+| `layers_before_after.jpg` | §7: four outfits before and after the layers: the skirt and sweater at the waist on the feminine and full bodies; a polo over a pleated skirt; trousers, a sweater and a coat; a uniform jacket over a polo and a pleated skirt with the tailor's knee socks |
+| `layers_legwear.jpg` | the tailor's pantyhose, fishnet tights, over-the-knee, crew and knee socks under library skirts and into library shoes |
+| `layers_pbr.jpg` | the layered outfits on the shelf's baked fabric sets, and two close-ups of the weave at its real size |
+| `layers_bodies.jpg` | Anime at Bust 2.1 and -2, a girl of ten, a boy of fourteen; main's red sweater dress with pantyhose, then under a library coat before and after |
+| `layers_godot.jpg` | Godot 4.7: the coat over six garments, the coat made invisible (what isn't drawn), the covers painted, half way, the coat off; and the same close |
 
 Credits (MakeHuman community assets; each as its file's header states):
 
@@ -152,3 +158,170 @@ Credits (MakeHuman community assets; each as its file's header states):
 
 All were changed here: fitted to another body, and in `fit_refabric.jpg` and `fit_styles.jpg` given other fabrics and
 colours. The bodies are Meta's MHR (Apache-2.0) as the Character Studio shapes them.
+
+## 7. Layers
+
+The user, on seeing §6's pictures (2026-11-11): "some of the designs show clear clipping, can you set smart rules so
+skirts are always below the waistband, maybe add clothing layers so that if a piece of clothing is higher in the layer
+the layer below can never clip through (maybe we can do some dissolve effect that hides it in godot too) ... test
+using our custom pbrs on these outfits too. Test using the pantyhose, fishnet tights and socks too".
+
+`proto/layers.py` does it; `proto/wear.py` wears an outfit (library garments and the tailor's own together) with it or
+without. Nothing is simulated: it's geometry on the body at rest, a few seconds to a minute an outfit.
+
+### 7.1 A layer for every garment
+
+| Kind | Layer | How it's known |
+|---|---|---|
+| legwear (pantyhose, fishnets, leggings) | 15 | the tailor's `legs` slot; a library garment by its name |
+| socks | 16 | the tailor's `feet` slot with "sock" in its name |
+| shoes | 20 | a library garment that stays under 14% of the body's height |
+| **trousers, skirts** | **30** | where it lies on the average body (below the chest, to the legs), a skirt by cloth between the legs |
+| **tops**, dresses, suits | **40** | reaches above 70% of the height; a dress or a suit when it also reaches the legs |
+| jackets, cardigans | 60 | its name, on a garment shaped like a top |
+| coats | 70 | its name, or a jacket's name on a garment that reaches the legs |
+| hats, accessories | 90, 95 | above 80% of the height; names (bags, glasses: left alone) |
+
+Garments are worn innermost first, by layer; two of one layer in the order the outfit lists them (a polo, then a
+sweater). **Bottoms are under tops**: a top's hem always lies over a skirt's or trousers' waistband. An outfit's
+`"tuck": true` puts its tops at 25, under the bottoms. An outfit can give any garment a `layer` or a `kind` of its own
+when its name misleads.
+
+### 7.2 Nothing under comes through: two rules together
+
+**Each garment is set outside the ones under it.** Going outward, a garment is compared with everything under it,
+cloth against cloth: a point of the upper one that is under the lower one's surface, or nearer than 2.5 mm, is a
+conflict. The lower gives 65% of it and the upper the rest, three rounds; the lower never goes closer to the skin than
+1.5 mm, nor through whatever it lies on itself, nor further in than the cloth round it can go (a hem over pleats goes
+in to their ridges as a line). Then once more going outward with only the upper one moving, so at the end nothing is
+under anything. Details that mattered:
+
+- **Which way is out** is the body's own outward direction at the place on the skin nearest the point. Not the
+  cloth's faces: library garments wind either way, a hem's turned edge faces down, a pleat has side faces (§7.7).
+- **Judged on the faces, not only the points.** Library garments are coarse (the skirt of the first picture has 972
+  points) and the tailor's are fine (45,800 for the pantyhose). Points are taken every 7 mm on a coarse garment's
+  triangles, and each lower garment's points are also checked against the upper one's faces, so a pleat's ridge
+  between two of a polo's points is caught.
+- **A push carries along the cloth**, fading over 8 cm, so a hem pushed out by a row of pleats moves as a line.
+- **A shoe is never bent.** What's under it goes in; what's over it (a trouser hem) goes out.
+- **The tailor's garments are left as the tailor made them among themselves** (pantyhose under its socks): it has
+  already layered them.
+- A library garment's faces are also kept 2 mm outside the skin (§3's step 9 moves only its points).
+
+**What a layer covers isn't drawn.** The part of a garment (and of the skin) that an opaque garment over it covers
+closely is left out, starting 3.5 cm inside the covering garment's edge and fully gone 2 cm further in: the tailor's
+own rule for skin under clothes (docs/TAILOR.md §3d), carried to cloth under cloth. Under a hem one can look in, so
+the lower garment is kept that far; past it nothing is there to come through, in any pose. Under shoes and socks,
+whose edges lie tight, the inset is 1.2 cm. Where the upper garment hangs more than 4 cm away (a skirt round the
+legs, an open coat) nothing is hidden: one can see in. Sheer garments (pantyhose, fishnets) hide nothing.
+
+How deep under a layer each point is travels with the mesh as a number per point: 0 where the dissolve starts, 1
+where the cloth is gone, negative in the open (signed, so that across a coarse triangle it crosses zero where the
+edge really is). It is kept per **band** of what does the covering: bottoms, tops, outerwear, legwear and shoes.
+
+### 7.3 The numbers
+
+`layers.crossings` counts the fault itself: points of a garment (with the faces round them) that stand outside a
+garment worn over it and are still drawn. A garment with a lining or an insole counts as one: between two of its
+sheets is inside it.
+
+| Worn, innermost first | Bodies | Points through without the layers, a body each (deepest) | With them | Most any garment was moved | Of the cloth's points, not drawn |
+|---|---|---|---|---|---|
+| a skirt, a sweater | feminine, slim feminine, full feminine | 231 / 231 / 226 (to 46 mm) | 0 / 0 / 0 | 29 mm | 24% |
+| pantyhose, shoes, a skirt, a sweater | feminine, slim feminine, full feminine | 775 / 863 / 671 (to 46 mm) | 0 / 0 / 0 | 40 mm | 51% |
+| crew socks, trainers, a pleated skirt, a polo | feminine, masculine | 3034 / 3066 (to 26 mm) | 0 / 0 | 17 mm | 55% |
+| shoes, trousers, a sweater, a coat | masculine, feminine | 1008 / 1003 (to 24 mm) | 0 / 0 | 30 mm | 23% |
+| knee socks, shoes, a pleated skirt, a polo, a uniform jacket | feminine, slim feminine | 4718 / 4733 (to 30 mm) | 0 / 0 | 34 mm | 50% |
+| fishnet tights, boots, a tucked tee, a pleated skirt, a denim jacket | feminine, slim feminine | 739 / 684 (to 11 mm) | 0 / 0 | 15 mm | 46% |
+| over-the-knee socks, shoes, a pleated skirt, a sweater | feminine, slim feminine | 2189 / 2177 (to 20 mm) | 0 / 0 | 15 mm | 42% |
+| pantyhose, shoes, a skirt, a sweater | anime full, anime flat | 770 / 775 (to 29 mm) | 0 / 0 | 20 mm | 52% |
+| over-the-knee socks, shoes, a pleated skirt, a polo, a uniform jacket | anime full, anime flat | 4748 / 4720 (to 30 mm) | 0 / 0 | 39 mm | 46% |
+| knee socks, shoes, a pleated skirt, a polo, a sweater | girl 10 | 5190 (to 15 mm) | 0 | 30 mm | 49% |
+| crew socks, trainers, trousers, a polo, a denim jacket | boy 14 | 1038 (to 20 mm) | 0 | 22 mm | 62% |
+| pantyhose, shoes, the red sweater dress (two pieces) | feminine, anime full | 544 / 544 (to 7 mm) | 0 / 0 | 0 mm | 26% |
+| fishnet tights, boots, the red sweater dress, a coat | feminine, anime full | 35946 / 35673 (to 42 mm) | 0 / 9 | 104 mm | 55% |
+| pantyhose, knee socks, shoes, a pleated skirt, a polo, a sweater, a coat | feminine | 12182 (to 32 mm) | 4 | 59 mm | 67% |
+
+Twelve of the fourteen outfits end at zero on every body. On the other two a few points are left, all under 2 mm:
+nine of the chunky sweater dress at the coat's edge on the full bust, and in the seven-garment outfit two of the
+pantyhose at the knee socks' cuff (the tailor's own pair, left as made) and two of a sock at the shoe's collar.
+
+The lower layers move little: in the first two rows the skirt goes in by at most 24 mm and the sweater out by at
+most 40 mm (on the full body). An outer garment has further to go the more is under it: the coat moves up to 59 mm
+over six garments, and up to 104 mm over the chunky sweater dress on the full bust, where the knit already stands
+that far off the body the coat was fitted to. A shoe is never moved.
+
+### 7.4 With the tailor's garments, the shelf's PBR sets, and main's newer bodies
+
+- **Pantyhose, fishnet tights, socks** (`layers_legwear.jpg`): the tailor's `tights`, `fishnet-tights`, `knee-socks`,
+  `crew-socks` and `over-knee-socks`, cut on the same body by `proto/tailor_parts.mjs` and drawn in the tailor's own
+  materials, under library skirts and into library shoes. The library's shoes come with a white sock modelled in as a
+  separate piece; an outfit's `"drop_above": 0.2` leaves it out. One thing found on the way: the tailor's garments
+  span the body's hollows, so they have no "height off the skin" there; that is why cloth is compared with cloth.
+- **PBR sets** (`layers_pbr.jpg`): the baked fabric sets of `assets/pbr/Procedural/fabric_*` (melton, herringbone,
+  oxford, gabardine, sweater, rib, corduroy, denim, tweed, jersey) on the layered outfits through §3's metre UV, at
+  each set's own `tile_m`, tinted by a colour where the set says it tints, the garment's own seams kept over them at
+  40% to 90%. A garment whose own texture is a pattern (the plaid skirt) keeps that pattern's lines in its detail
+  layer unless `keep` is turned down.
+- **Main's newer bodies** (`layers_bodies.jpg`; main merged first, PR #22): Anime at Bust 2.1, where the garments are
+  fitted and layered on the body's dress form (TAILOR §1j) and the skin drawn is the body's own; Anime at Bust -2; a
+  girl of ten and a boy of fourteen (`grownBody`); and the red sweater dress (the tailor's `sweater-dress-skirt` and
+  `sweater-dress`) with pantyhose, library shoes, and a library coat over it. Nothing comes through on any of them.
+  On the full bust the cloth covers and layers, but a knit stretches over it and a coat crumples under it: the fit's
+  own limit (§5, bridging), not the layers'.
+
+### 7.5 In Godot: the dissolve, and taking a layer off
+
+`wear.py --glb` writes the outfit as one .glb (`proto/glb.py`): the body and each garment a mesh, and in every mesh's
+vertex colours how deep it is under each band (red under bottoms, green under tops, blue under outerwear, alpha under
+legwear and shoes). `proto/godot/cover.gdshader` reads them:
+
+- what's covered is not drawn (a `discard`), and where the mesh goes under the covering layer's edge it **dissolves
+  over those 2 cm** by a dither (interleaved gradient noise, which TAA resolves into a fade) instead of ending in a
+  line;
+- four uniforms, one a band, say whether that band is worn. **A game that takes a coat off turns `outerwear` down**
+  and what the coat hid is drawn again, dissolving back in; nothing is baked again;
+- `show_cover` paints what's hidden instead of leaving it out, for looking at it.
+
+`proto/godot_test.py` (GDLAYERS) drops the .glb into a scratch Godot 4.7 project, imports it headless and pictures it
+under xvfb (`layers_godot.jpg`): a coat over six garments (pantyhose, knee socks, shoes, a pleated skirt, a polo, a
+sweater); the coat made invisible, showing what isn't drawn under it; the same painted; half way through taking it
+off; the coat off. It checks that the covers came through the import and that the pictures differ as they should.
+What Godot read back from the vertex colours, as the share of each mesh's area that isn't drawn: the sweater 74% (all
+of it by the coat), the polo 85% (66% by the sweater, 76% by the coat), the pleated skirt 76%, the pantyhose 60%, the
+knee socks 31% (the part in the shoes), the skin 65%, the coat and the shoes nothing.
+
+The dither is this prototype's own shader. The look plugin's skin and cloth shaders don't read the covers yet, and the
+Character Studio's Export for Godot doesn't write them.
+
+### 7.6 The check
+
+`python proto/check.py <work dir>` (LAYERS; by hand: it needs the fetched garments, so it isn't in `check_all`). On
+seven outfits that clipped (sixteen bodies), each worn without the layers and with them: without, the fault is found
+and counted (so the count is known to see it); with, nothing comes through (a sliver at an edge is let be: under half
+a percent of a garment's points, each under 2 mm); no garment is moved further than 45 mm (the coat over the chunky
+dress: 120) and no shoe at all; the outermost garment is hidden by nothing; bottoms sit under tops (the other way in
+an outfit that tucks them in) and outerwear over both. It ends `LAYERS ok (7 outfits, 16 bodies)`.
+
+### 7.7 What went wrong on the way
+
+The first version compared heights off the skin. It cured the first picture and then missed the tailor's pantyhose,
+which span hollows. The second compared cloth with cloth using each garment's own face normals, and broke the first
+picture again once pantyhose went under the skirt: the tights' turned edge at the waist faces down, so the skirt and
+sweater above it read as under it and were pushed up to 5 cm. The user caught it in a picture ("you had it fixed in
+the first screenshot, but somehow broke it"). The third takes "out" from the body and is the one described above;
+the outfit that broke is in the check, with and without the tights. docs/LESSONS.md has the rules drawn from it.
+
+### 7.8 What the layers don't do yet
+
+- **Nothing was walked.** The covers are made at rest. Garments skinned from the same skin should keep them (what's
+  hidden stays under the edge it was hidden under), but that is untested; `tailor/motion.mjs` is the place.
+- **A hem across pleats** is left a little wavy (`layers_before_after.jpg`, the polo's hem), and a garment squeezed
+  between two others (a polo between a pleated skirt and a sweater) shows it most (`layers_godot.jpg`, the coat off).
+- **Collars.** A lower garment's collar that should stand over the upper one's neck (a shirt collar over a sweater)
+  is pushed under it or hidden like any other part.
+- **An open coat** hides what it covers closely at the sides and back, and nothing at the open front; a coat that is
+  worn open and then closed in the game needs the closed shape's covers.
+- **Sheer over opaque** has no rule of its own: pantyhose over an opaque sock would be drawn as a veil over it.
+- **Speed.** Twenty seconds to two minutes an outfit on a body in numpy, nearly all of it nearest-point searches; a
+  real build keeps a search tree a garment.

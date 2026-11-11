@@ -1,0 +1,2 @@
+{"name": "anime", "bodies": ["anime_full", "anime_flat"],
+ "wear": [{"mh": "glam:Maria_Skirt"}, {"mh": "glam:Knitted_Sweater_01"}, {"tailor": "tights", "color": "#1d1a1c"}, {"mh": "sys:shoes04", "drop_above": 0.2}]}

@@ -3,6 +3,35 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## Clothing layers on library garments: what took a second try (2026-11-11, later)
+
+- **A cloth's own faces can't say which side is out.** The reworked layer solver asked each garment's face normals
+  whether a point was over it or under it. The tailor's tights have a small turned edge at the waist whose faces point
+  down, so the skirt and the sweater above it were "under" the tights and were shoved up to 5 cm: the user saw the
+  skirt come through the sweater again, in a picture, before the count said anything. Library garments wind either
+  way, hems are turned, pleats have side faces. Out is the body's own outward direction at the place on the skin
+  nearest the point, for every garment.
+- **Look at the same picture again after every change to the solver.** The first fix was judged by a picture; the
+  rework after it was judged by a count, and the count had changed its meaning with the rework. The reference view
+  (the waist, three bodies) is rendered again before moving on, and `proto/check.py` now holds the outfit that broke,
+  with and without the tights.
+- **A count is held to the fault, both ways.** The first count compared heights on the skin and said zero while a
+  bridged garment crossed another (cloth that spans a hollow has no height on the skin under it); the second compared
+  cloth with cloth and said a thousand for a sock's sole "outside" a shoe (the shoe's insole sits inside the foot).
+  The check asks that the fault is found without the layers as well as gone with them.
+- **A shoe isn't cloth.** Pushing a shoe's points off a sock gave its sole spikes. A rigid thing is never bent: what's
+  under it goes in and is hidden, what's over it goes out.
+- **A layer pushed in mustn't pass through the one under it.** The sweater pushed the skirt in under itself, through
+  the tights. An inward move has room: down to the skin, and down to whatever that garment itself lies on; and the
+  last pass goes outward only, so nothing ends under anything.
+- **A depth carried to a coarse mesh's corners has to be signed.** "How deep under the sweater" was 0 everywhere
+  outside it, so across one big triangle of the skirt the dissolve ran on past the hem as a dotted wedge. Negative
+  outside, and it crosses zero where the edge is.
+- **A page written inside a script: check the escapes where they land.** The renderer's page is a JavaScript template
+  in a .mjs file; a patch made from Python turned `\\n` into a real newline inside a string, the page stopped at a
+  syntax error, and five renders in the background, piped through `tail`, ended "Done" with no pictures. One in the
+  foreground first; a background job's output isn't cut down to its last line.
+
 ## A full bust, a dress over it and a look-alike: what took a second try (2026-11-11, latest)
 
 - **Bumps stacked on one spot are a cone.** The first full bust was a field like the sculpt's other controls: a bigger

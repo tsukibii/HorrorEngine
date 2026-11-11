@@ -2,6 +2,40 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-11, later (the user: the fitted outfits clip; clothing layers, a dissolve in Godot, main merged, our PBR sets, pantyhose, fishnets and socks)
+
+- **"Some issues, some of the des igns show clear clipping, can you set smart rules so skirts are  always below the
+  waistband, maybe add clothing layers so that if a piece of clothign is higher in the layer the layer below can ne ver
+  clip through (maybe we can do some dissolve effect thast hides it in godot too), can you look at the latest main and
+  merge it in as we added some new proportions and a new design, test using our custom pbrs on these outfits too.  Test
+  using the pantyhose, fishnet tights and socks too,"** (with a picture of the fit test's skirt, its waistband through
+  the sweater's hem). Done in the prototype (docs/research/clothing_v2/fit_test.md §7; `proto/layers.py`, `wear.py`):
+  - **Layers.** Every garment has a kind (from its name and its shape on the average body) and a layer from the kind:
+    legwear 15, socks 16, shoes 20, **bottoms 30, tops 40** (so a skirt or trousers are always under a top's hem; an
+    outfit's `tuck` puts tops under bottoms instead), dresses and suits 40, jackets 60, coats 70. An outfit can give a
+    garment its own layer.
+  - **A lower layer can't come through a higher one**, two ways at once: each garment is set outside the ones under it
+    (cloth against cloth, the lower giving most of a conflict, the upper the rest; a shoe never bent), and **what a
+    layer covers isn't drawn at all** from 3.5 cm inside the covering garment's edge (1.2 cm under shoes and socks), the
+    tailor's own rule for skin (TAILOR §3d) carried to cloth under cloth, so in a pose nothing is there to come
+    through.
+  - **The dissolve in Godot** (`proto/godot/cover.gdshader`, GDLAYERS): the covered part of a mesh goes out over 2 cm
+    by a dither instead of ending in a line. Each mesh's vertex colours say what hides it by band (bottoms, tops,
+    outerwear, legwear and shoes), so a game that takes a coat off turns that band down and what was under it
+    dissolves back, nothing baked again. Pictured in Godot 4.7: a coat over six garments, the coat off, half way.
+  - **Main merged** (PR #22: Anime's bust and dress form, the red sweater dress). Tested on Anime at Bust 2.1 and -2,
+    a girl of ten and a boy of fourteen, and with the red sweater dress under a library coat.
+  - **Our PBR sets** on the layered outfits (the baked fabric sets, at their real size by the metre UV, tinted) and
+    **the tailor's pantyhose, fishnet tights and socks** (knee, crew, over the knee) under library skirts and into
+    library shoes: `layers_pbr.jpg`, `layers_legwear.jpg`.
+  - Still a prototype: nothing in the Studio, at rest only (not walked), `proto/check.py` (LAYERS) its check.
+- **"When it comes to the top and skirt it seems yo uregressed, you had it fixed in the firs screenshot, but somehow
+  broke it as can be seen in screenshot 2 where the skirt clips out of the gray sweater"** (mid-session, two of the
+  session's own pictures). True: the second picture was the same skirt and sweater with pantyhose added under them, and
+  a reworked solver took the tights' turned edge at the waist for a surface the skirt and sweater were under. Fixed the
+  same hour (which way is out is now the body's own outward direction, never the cloth's faces), the same view sent
+  back, and LAYERS now runs that outfit with and without the tights (LESSONS).
+
 ## 2026-11-11 (the user: Cloth2Tex as a second clothing system, a CloV2 tab; then what's newer and free)
 
 - **"Evaluate and determine whether we could upgrade our clothing system with the following option instead

@@ -1,0 +1,3 @@
+{"Denim_Jacket": {"pbr": "Procedural/fabric_denim", "keep": 0.9},
+ "pleated_skirtelv1": {"pbr": "Procedural/fabric_tweed", "keep": 0.6},
+ "T-shirt_basic_tucked": {"pbr": "Procedural/fabric_jersey", "color": "#ecebe6", "keep": 0.6}}

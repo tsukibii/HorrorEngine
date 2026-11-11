@@ -1,0 +1,2 @@
+{"name": "overknee", "bodies": ["feminine", "slim_feminine"],
+ "wear": [{"mh": "glam:Elvs_Pleated_Plaid_Miniskirt1"}, {"mh": "glam:Knitted_Sweater_01"}, {"tailor": "over-knee-socks", "color": "#16161a"}, {"mh": "sys:shoes04", "drop_above": 0.2}]}
