@@ -53,6 +53,17 @@ the fix.
   syntax error, and five renders in the background, piped through `tail`, ended "Done" with no pictures. One in the
   foreground first; a background job's output isn't cut down to its last line.
 
+## A ready-made export in git (2026-11-11, after the latest)
+
+- **A level's .glb from the browser is never the same twice byte for byte.** Two exports of the hotel floor a minute
+  apart, same machine, same set: the geometry identical, but the 21 pictures written in a different order (they finish
+  loading and encoding as they please), so the offsets and the binary differ. Comparing bytes would call every export
+  new and put another 45 MB in git each time: compare what it holds (`storykit/exports.py` `signature`: every node's
+  path, place, extras, light and mesh, each map's picture's size), and put the old bytes back when that's the same
+  (`godot_byhand.py ready`).
+- **A guide's "make a new X called Y" breaks once Y ships made.** Tutorial v2's §3 said to make a new set called
+  `hotel_floor`, the finished set's name, which the scene builder refuses. When a guide's result is kept in the studio,
+  its from-scratch steps need a name of their own.
 ## A full bust, a dress over it and a look-alike: what took a second try (2026-11-11, latest)
 
 - **Bumps stacked on one spot are a cone.** The first full bust was a field like the sculpt's other controls: a bigger

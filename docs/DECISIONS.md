@@ -198,6 +198,32 @@ The user's answers, newest first. They override the plan, the research and the d
 - **Not decided: the user picks** (the first answered since: yes, 2026-11-11, last). Whether CC-BY garments may ship with a credits screen (the rule today is CC0 or
   ours); whether the fit becomes a CloV2 tab in the Studio; which garments come in first.
 
+## 2026-11-11, after the latest (the user: tutorial v2's map pre-built, the Godot part alone)
+
+- **The ask**: **"I dont want to build the map myself for tutorial 2, can you pre-build it so i can just do the godot
+  part of the tutorial"**. Read as: the hotel floor (guides/tutorial_v2 §3 to §8, the scene builder) comes made, so the
+  tutorial starts at §9, The project, with nothing to do in the scene builder or the desk.
+- **Built**: **the floor ready-made, in git**: `Exports/interiors/hotel_floor/` (`hotel_floor.glb`, its README, what
+  made it), the set `hotel_floor` exported as the scene builder's Export for Godot does. §9's two commands
+  (`godot_byhand.py new`, `exports --link`) put it in the project as `exports/interiors/hotel_floor/hotel_floor.glb`.
+  The only export kept in git (45 MB, nearly all its textures: the biggest file in the repository); every other export
+  is still made on the machine. Exporting the set yourself writes over it (`git checkout Exports/interiors/hotel_floor`
+  puts it back).
+  - **Kept current**: its `ready.json` records the set's fingerprint and the .glb's signature (what it holds: nodes,
+    places, shapes, materials, metadata). Not its bytes: the browser writes a level's pictures in a different order
+    each time, so two exports of one set never match byte for byte (LESSONS). `python tools/godot_byhand.py ready` makes
+    it again (the desk's server running) and keeps the old bytes when nothing in it changed, so git only sees a new
+    .glb when there is one; READYMADE (`ready --check`, in CHECKS) fails when the set has changed since, or the .glb
+    isn't the one recorded; TUTORIAL2 holds it to the export it makes itself.
+  - **The guide**: §2 opens with it (the floor is ready-made: skip to §9), the contents mark §3 to §8 optional, §9
+    says the floor's in the project at once. And a slip fixed on the way: §3 had you make a new set called
+    `hotel_floor`, which the scene builder refuses (that name is the finished set's); it's `my_hotel` now, with §8 saying
+    to read `my_hotel` wherever the guide says `hotel_floor` after that.
+- **Checked here**: a project made as §9 says, opened by Godot 4.7 through the link: the start on the stairwell's
+  landing, 304 locked by `key_304` and the six others by `flag:never`, the colliders under the start, her spot, and
+  every node the tutorial's steps use (TUTORIAL2's list); then TUTORIAL2 whole.
+- **Not in it**: her (still a Character Studio export of yours, or the stand-in §20 describes), and nothing of the
+  Godot part done for you: the user asked to do that part.
 ## 2026-11-11, latest (the user: the new Bust slider kept as an Anime switch, the red knit dress kept; no look-alike preset)
 
 - **The ask** (with a Daz3D screenshot of a character in a red ribbed turtleneck dress): **"could we make a 'korean

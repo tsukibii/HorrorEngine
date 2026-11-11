@@ -16,3 +16,11 @@ Each folder has a `README.txt` saying what's in its `.glb` and what to do with i
 
 Nothing here but the READMEs is in git: an export is made again from the studio's own files whenever you press the
 button. A name starting with `_` (a check's scratch one) goes to `Saved/Exports/` instead.
+
+**One export is ready-made and in git** (DECISIONS 2026-11-11): `interiors/hotel_floor/`, tutorial v2's hotel floor
+(the set `hotel_floor` exported), so the tutorial starts in Godot without the scene builder (`guides/tutorial_v2`, §2).
+Its `ready.json` says what made it. `python tools/godot_byhand.py ready` makes it again from the set (the desk's server
+running) and keeps the .glb as it was when what it holds is the same; `python tools/godot_byhand.py ready --check`
+(READYMADE) says when it's older than its set. Exporting the set yourself writes over it: `git checkout
+Exports/interiors/hotel_floor` puts the ready-made one back. What Godot unpacks beside it when a project links this folder
+(`hotel_floor_0.png`..., `.import` files) stays out of git.

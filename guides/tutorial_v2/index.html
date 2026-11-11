@@ -8,7 +8,9 @@
      out the story from scratch in godot using our plugin (not director), should make use of every aspect we've added so
      far"; 2026-11-10: "implements every feature we've created so far ... so we can see whats missing": the HUD and quest
      markers, the laptop's shop and its parcels, the shotgun, things that break and glow, her shot down, and a table of
-     every system with what a game by hand can't do yet). Nothing loads from outside: the pictures in img/ are that game drawn by Godot and the scene builder showing
+     every system with what a game by hand can't do yet; 2026-11-11: "I dont want to build the map myself for tutorial 2,
+     can you pre-build it so i can just do the godot part": the floor ready-made, Exports/interiors/hotel_floor, §2's
+     tip, §3 to §8 optional). Nothing loads from outside: the pictures in img/ are that game drawn by Godot and the scene builder showing
      its floor (python tools/godot/tutorial_v2.py --pictures); TUTORIAL2 builds the game as these steps say and plays it
      through. -->
 <style>
@@ -71,7 +73,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   <ol>
     <li><a href="#what">What you'll make</a></li>
     <li><a href="#before">Before you start</a></li>
-    <li class="part">The floor: the scene builder</li>
+    <li class="part">The floor (optional): the scene builder</li>
     <li><a href="#plan">The plan: rooms and floors</a></li>
     <li><a href="#stairs">The stairwell</a></li>
     <li><a href="#doors">Doors, locks and windows</a></li>
@@ -116,12 +118,13 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   <h1>Tutorial v2: Room 304</h1>
   <p>A business hotel's third floor at night. You come up the stairwell because the lift is out. Your room's card
   reader is broken, the master key is in the linen closet, the corridor's lights won't stay on, and your flashlight is
-  dying. Someone is standing at the end of the corridor, and she doesn't like the light. You'll model the floor in the
-  <b>scene builder</b>, then build the whole game in Godot by hand: the <b>Look plugin</b> for the light, the weather and
+  dying. Someone is standing at the end of the corridor, and she doesn't like the light. The floor comes
+  <a href="#ready"><b>ready-made</b></a> (or you model it yourself in the <b>scene builder</b>), and you build the whole
+  game in Godot by hand: the <b>Look plugin</b> for the light, the weather and
   the surfaces, and the <b>starter scripts</b> for the story, the sound and the scares; then the <b>UI plugin</b>'s HUD and
   quest markers, the <b>devices plugin</b>'s laptop to order things on (they come in a parcel to your door), the
   <b>weapons plugin</b>'s double barrel, and made props that glow, steam and break. No Director.</p>
-  <div class="chips"><span class="chip">about two hours</span><span class="chip">Godot 4.7</span><span class="chip">the scene builder</span>
+  <div class="chips"><span class="chip">about two hours</span><span class="chip">Godot 4.7</span><span class="chip">the floor ready-made, or the scene builder</span>
   <span class="chip">the HorrorStudio Look plugin</span><span class="chip">the UI, Devices and Weapons plugins</span><span class="chip">36 starter scripts</span><span class="chip">the sound shelf and the four moods</span></div>
 </header>
 
@@ -133,7 +136,8 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
 </div>
 <p>It uses everything the studio has for a game built by hand:</p>
 <ul>
-  <li><b>The scene builder:</b> rooms, two floors, a dog-leg stair, doors locked by a key, windows, furniture, lamps and paint.</li>
+  <li><b>The scene builder:</b> rooms, two floors, a dog-leg stair, doors locked by a key, windows, furniture, lamps and
+  paint. The floor comes made, so this part is yours to skip: <a href="#ready">the ready-made floor</a>.</li>
   <li><b>The Look plugin:</b> its look, a grade, light zones, flickering tubes, a dying bulb, rain on a window, a car's
   lights crossing a room, a CRT's static, a real mirror, a wet floor and blood, a street lamp's shaft through a window,
   water leaking down a wall into a puddle, leaves' shadows on a wall, her skin wet, the tape breaking up, and the air
@@ -160,21 +164,28 @@ emptied each time.</p>
 
 <section id="before">
 <h2><span class="n">2</span>Before you start</h2>
+<div class="tip" id="ready"><b>The floor is ready-made.</b> You don't have to build the map. The studio has it already,
+exported for Godot: <code>Exports/interiors/hotel_floor/hotel_floor.glb</code>, the set <span class="ui">hotel_floor</span>
+exactly as <a href="#plan">§3</a> to <a href="#export">§8</a> make it. Skip to <a href="#project">§9 The project</a>: its
+two commands put the floor in your project as <code>exports/interiors/hotel_floor/hotel_floor.glb</code>, and everything
+from there on is Godot. No scene builder, no desk server. §3 to §8 stay here for when you want to see how a floor is
+made, or to make one of your own.</div>
 <ul>
   <li><b>Godot 4.7</b> (the standard build).</li>
-  <li><b>The studio's desk server</b> for the scene builder: <code>python tools/director/serve.py</code>, then
+  <li><b>The studio's desk server</b>, only if you model the floor yourself (§3 to §8): <code>python tools/director/serve.py</code>, then
   http://127.0.0.1:8780/builder.html. You can also use the dashboard's <span class="ui">Scene builder</span> tile (<code>python dashboard.py</code>).</li>
   <li><a href="../first_game/index.html">Your first game</a> is the short version of this. It's worth reading if Godot is new to you. <a href="../godot_by_hand/index.html">Godot by hand</a>
   explains what's underneath (the export's folders, the settings, shipping).</li>
-  <li>The finished floor is in the studio already as <span class="ui">set: hotel_floor</span>. Open it to compare with
-  yours, or use it and go straight to <a href="#export">Export it</a>.</li>
+  <li>The ready-made floor's set is <span class="ui">set: hotel_floor</span> in the scene builder's game list. Open it
+  to see how it's made, or to compare with yours.</li>
 </ul>
 </section>
 
 <section id="plan">
 <h2><span class="n">3</span>The plan: rooms and floors</h2>
+<div class="note">Using the <a href="#ready">ready-made floor</a>? Skip to <a href="#project">§9</a>. Read on to make it yourself.</div>
 <p>Open the scene builder. In its <span class="ui">game</span> list pick <span class="ui">+ new set…</span> and call it
-<code>hotel_floor</code>. A set is a place designed before any game uses it, kept in <code>Content/Studio/Sets/</code>.
+<code>my_hotel</code> (<code>hotel_floor</code> is the ready-made one's). A set is a place designed before any game uses it, kept in <code>Content/Studio/Sets/</code>.
 The plan is a top-down grid: one square is a metre, north is up, and rooms are rectangles you drag out.</p>
 <figure><img src="img/builder_plan.jpg" width="1600" height="900" alt="The scene builder with the hotel's third floor: the plan on the left, the corridor from the player's eye on the right"><figcaption>The third floor in the scene builder: the plan, and the corridor seen from the player's eye at 1.65 m.</figcaption></figure>
 <ol class="steps">
@@ -268,8 +279,11 @@ builder opens it like any set.</div>
 
 <section id="export">
 <h2><span class="n">8</span>Export it</h2>
-<p>Press <span class="ui">Export for Godot</span> in the toolbar. It writes <code>Exports/interiors/hotel_floor/</code>:
-<code>hotel_floor.glb</code> and a README. Inside the .glb:</p>
+<p>Press <span class="ui">Export for Godot</span> in the toolbar. It writes <code>Exports/interiors/my_hotel/</code>:
+<code>my_hotel.glb</code> and a README. From here on, wherever the guide says <code>hotel_floor</code>, read your
+<code>my_hotel</code> (<code>exports/interiors/my_hotel/my_hotel.glb</code>, <code>Hotel → my_hotel → markers</code>).
+The ready-made floor is this export of the set <span class="ui">hotel_floor</span>, in <code>Exports/interiors/hotel_floor/</code>.
+Inside the .glb:</p>
 <table class="vals">
 <tr><td><code>visual/</code></td><td>every room's walls, floors, ceilings and things, each piece a node named by its id (<code>r304_kt_tv_55_1</code>...), with its materials</td></tr>
 <tr><td><code>doors/</code></td><td>each door on its hinge, with its lock in its metadata (<code>locked_by: key_304</code>)</td></tr>
@@ -286,7 +300,11 @@ studio's sound shelf and the four moods:</p>
 <pre>python tools/godot_byhand.py new ~/Games/Room304 --name "Room 304"
 python tools/godot_byhand.py exports ~/Games/Room304 --link</pre>
 <p>Open it in Godot (Project Manager, <span class="ui">Import</span>). The second command links the studio's
-<code>Exports/</code> in, so a new export from the scene builder shows up at once. You can drag the folders in instead.</p>
+<code>Exports/</code> in: the <a href="#ready">ready-made floor</a> is in your project at once, as
+<code>exports/interiors/hotel_floor/hotel_floor.glb</code>, and so is anything you export from the studio's editors later.
+You can drag the folders in instead. The first time Godot opens the project it imports everything, the floor too: a
+minute or two, and the floor's textures are unpacked beside it as <code>hotel_floor_0.png</code>... (that's Godot's way
+with a .glb; leave them).</p>
 <div class="tree">res://
   addons/horrorstudio_look/     <i>the Look plugin (on)</i>
   addons/horrorstudio_ui/       <i>the HUD and quest markers (on)</i>
@@ -1117,7 +1135,7 @@ one shows up. Here's each one and where it is. <code>python tools/godot/tutorial
 game as these steps say and plays all of it.</p>
 <table class="vals">
 <tr><th>System</th><th>In this game</th></tr>
-<tr><td><b>Scene builder</b></td><td>rooms on two floors, a dog-leg stair, doors locked by a key, windows, furniture, lamps, paint, the export: <a href="#plan">§3</a> to <a href="#export">§8</a></td></tr>
+<tr><td><b>Scene builder</b></td><td>rooms on two floors, a dog-leg stair, doors locked by a key, windows, furniture, lamps, paint, the export: <a href="#plan">§3</a> to <a href="#export">§8</a>, or the <a href="#ready">ready-made floor</a></td></tr>
 <tr><td><b>Character Studio</b></td><td>her, a Studio export with its skin wet (a stand-in when you have none): <a href="#scene">§10</a>, <a href="#her">§20</a></td></tr>
 <tr><td><b>Look plugin</b></td><td>the look and the grade, light zones, the tube and dying bulb presets: <a href="#light">§11</a>; rain on glass, a car's lights, a CRT, a real mirror, a wet floor, blood, a light shaft, a leak and a puddle, leaves' shadows, the tape: <a href="#dress">§12</a>; the air, its dust and the beam: <a href="#air">§13</a>; lightning, breath and frost, steam writing: <a href="#intense">§22</a>; made props' effects (HSPropFX) and a liquid's level (HSLiquidFill): <a href="#breaks">§28</a></td></tr>
 <tr><td><b>Starter kit</b> (36 scripts)</td><td>the player, flashlight, story, pocket and cash, sound and its physics, room tones, footsteps, notes, pickups, doors and locks, event and scare areas, lights: <a href="#story">§15</a> to <a href="#jump">§21</a>; fear, the steps behind you, her signs, the glimpse, the one closer each time, the mirror figure, the shadow, the feet, the uncanny, the night's director and its moments, her menace, the searcher, the chase, the cold, the steam: <a href="#intense">§22</a>; cues and seats: <a href="#cues">§23</a></td></tr>
@@ -1161,9 +1179,10 @@ way to use them yet:</p>
 </ul>
 </section>
 
-<footer>Tutorial v2: the hotel floor set from the scene builder, built into a game by hand in Godot 4.7 with the
+<footer>Tutorial v2: the hotel floor set from the scene builder (ready-made in <code>Exports/interiors/hotel_floor</code>),
+built into a game by hand in Godot 4.7 with the
 HorrorStudio Look, UI, Devices and Weapons plugins and the starter kit. <code>python tools/godot/tutorial_v2.py</code>
-(TUTORIAL2) builds it as these steps do and plays it through: the stairs, the dim, the locked door, the note, the key and
+(TUTORIAL2) builds it as these steps do, holds the ready-made floor to the export it makes, and plays it through: the stairs, the dim, the locked door, the note, the key and
 the lights out one by one, 304, the flashlight's batteries, her in the beam, the hush and the jump; the HUD's markers,
 the $20, the laptop's shop and its parcels, the gun, the kettle, the mug and the bulb shot, her shot down; the ending. <code>--pictures</code> draws the
 pictures here again.</footer>

@@ -8,10 +8,13 @@ built by hand, without the Director, each in a folder of its own to drag into th
                                             CREDITS.md: whose library clothes it wears (storykit/clothcredits.py)
 
 Each folder gets a README.txt saying what's in the .glb and what to do with it in Godot (guides/godot_by_hand). Nothing
-under Exports/ is tracked but its READMEs (.gitignore there): what's exported is made again from the studio's files. A
-name starting with _ is a check's scratch one (_studiotest, a page test's street): it goes to Saved/Exports/ instead."""
+under Exports/ is tracked but its READMEs (.gitignore there) and the ready-made exports (READY_MADE: tutorial v2's hotel
+floor, so the tutorial can start in Godot): what's exported is made again from the studio's files. A name starting with
+_ is a check's scratch one (_studiotest, a page test's street): it goes to Saved/Exports/ instead."""
+import hashlib
 import json
 import re
+import struct
 import time
 from pathlib import Path
 
@@ -147,3 +150,111 @@ def character(name, people=ROOT / "Content" / "Studio" / "People", node="node", 
 
 def rel(p):
     return str(Path(p).resolve().relative_to(ROOT))
+
+
+# ---- the ready-made exports (DECISIONS 2026-11-11, the user: "I dont want to build the map myself for tutorial 2, can
+# you pre-build it so i can just do the godot part of the tutorial") ----
+# Exports the studio keeps made and tracked in git beside the READMEs (Exports/.gitignore names their files), each with
+# what it's made from, so a tutorial can start in Godot. tools/godot_byhand.py `ready` makes them again (the desk's server
+# running), `ready --check` (READYMADE, in check_all) says when one is older than what it's made from, and TUTORIAL2
+# holds tutorial v2's to the export it makes itself.
+READY_MADE = {("interiors", "hotel_floor"): "set:hotel_floor"}       # tutorial v2's floor (guides/tutorial_v2 §2)
+
+
+def fingerprint(game):
+    """a story's content as a short hash: its JSON with the keys sorted, so a save that changes nothing changes nothing"""
+    from . import storylib as L
+    j = json.loads(Path(L.story_path(game)).read_text(encoding="utf-8"))
+    return hashlib.sha1(json.dumps(j, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()[:16]
+
+
+def _num(v, k=4):
+    """numbers rounded (a tenth of a millimetre), -0 as 0, inside lists and dicts too"""
+    if v is None or isinstance(v, (bool, str)):
+        return v
+    if isinstance(v, (int, float)):
+        return round(float(v), k) + 0.0
+    if isinstance(v, list):
+        return [_num(x, k) for x in v]
+    if isinstance(v, dict):
+        return {key: _num(x, k) for key, x in v.items()}
+    return v
+
+
+def signature(path):
+    """what a .glb holds, its pictures' pixels aside (a browser's PNG bytes aren't the same from one machine to the next):
+    every node by its path, with its place, its extras, its light and its mesh (each primitive's attributes, its vertex and
+    index counts and bounds, its material's factors, extras and maps, each map's picture's size). Two exports with one
+    signature give Godot the same nodes, shapes, materials and metadata. -> (a short hash, {node path: what})"""
+    b = Path(path).read_bytes()
+    if b[:4] != b"glTF":
+        raise ValueError(f"{path}: not a binary glTF")
+    n = struct.unpack_from("<I", b, 12)[0]
+    j, binary = json.loads(b[20:20 + n]), b[20 + n + 8:]
+    views, acc = j.get("bufferViews", []), j.get("accessors", [])
+    lights = (j.get("extensions") or {}).get("KHR_lights_punctual", {}).get("lights", [])
+
+    def picture(i):                                    # a map's picture: a PNG's width and height, from its header
+        im = j["images"][i]
+        if "bufferView" not in im:
+            return im.get("uri", "")
+        v = views[im["bufferView"]]
+        data = binary[v.get("byteOffset", 0):v.get("byteOffset", 0) + 24]
+        return list(struct.unpack(">II", data[16:24])) if data[:8] == b"\x89PNG\r\n\x1a\n" else im.get("mimeType", "")
+
+    def texture(t):
+        src = j["textures"][t["index"]].get("source")
+        return dict({k: _num(t[k]) for k in ("scale", "strength") if k in t}, picture=None if src is None else picture(src),
+                    uv=t.get("texCoord", 0))
+
+    def material(i):
+        if i is None:
+            return None
+        m = j["materials"][i]
+        out = {k: _num(v) for k, v in m.items() if not k.endswith("Texture") and k != "pbrMetallicRoughness"}
+        for k, v in m.get("pbrMetallicRoughness", {}).items():
+            out[k] = texture(v) if k.endswith("Texture") else _num(v)
+        for k in ("normalTexture", "occlusionTexture", "emissiveTexture"):
+            if k in m:
+                out[k] = texture(m[k])
+        return out
+
+    def mesh(i):
+        prims = []
+        for p in j["meshes"][i]["primitives"]:
+            pos = acc[p["attributes"]["POSITION"]]
+            prims.append({"mode": p.get("mode", 4), "attributes": sorted(p["attributes"]), "vertices": pos["count"],
+                          "indices": acc[p["indices"]]["count"] if "indices" in p else None,
+                          "box": _num([pos.get("min"), pos.get("max")], 3), "material": material(p.get("material")),
+                          "extras": _num(p.get("extras")), "targets": len(p.get("targets", []))})
+        return {"primitives": prims, "extras": _num(j["meshes"][i].get("extras"))}
+
+    nodes, out = j.get("nodes", []), {}
+
+    def walk(i, parent):
+        nd = nodes[i]
+        path = (parent + "/" if parent else "") + nd.get("name", f"#{i}")
+        while path in out:                             # two of one name under one parent (Godot numbers them)
+            path += "+"
+        what = {k: _num(nd[k]) for k in ("matrix", "translation", "rotation", "scale", "extras") if k in nd}
+        light = (nd.get("extensions") or {}).get("KHR_lights_punctual", {}).get("light")
+        if light is not None:
+            what["light"] = _num(lights[light], 3)
+        if "mesh" in nd:
+            what["mesh"] = mesh(nd["mesh"])
+        out[path] = what
+        for c in nd.get("children", []):
+            walk(c, path)
+
+    for r in j.get("scenes", [{}])[j.get("scene", 0)].get("nodes", []):
+        walk(r, "")
+    return hashlib.sha1(json.dumps(out, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()[:16], out
+
+
+def differ(a, b, names=("the first", "the second"), most=4):
+    """how two signatures' nodes differ, in words: those only in a, only in b, and changed (a few of each named)"""
+    only_a, only_b = [p for p in a if p not in b], [p for p in b if p not in a]
+    changed = [p for p in a if p in b and a[p] != b[p]]
+    said = [f"{len(xs)} {what} ({', '.join(x.split('/')[-1] for x in xs[:most])}{'...' if len(xs) > most else ''})"
+            for xs, what in ((only_a, "only in " + names[0]), (only_b, "only in " + names[1]), (changed, "changed")) if xs]
+    return "; ".join(said) or "the same"
