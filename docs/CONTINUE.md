@@ -35,8 +35,8 @@ options"; then more Korean and Japanese smart casual, uniforms, dresses, suits.
   from MakeHuman's and Blender's own code, weights, hidden skin, layering, a second UV in metres, decals),
   `korean_japanese.md` (what the packs have for those; Style3D's free garments on Sketchfab the lead).
 - **The fit test** (`clothing_v2/fit_test.md`, scripts `clothing_v2/proto/`, pictures `clothing_v2/fit_*.jpg`): MakeHuman's
-  base body registered onto MHR once, 37 garments carried onto the Studio's seven test bodies with nothing adjusted by
-  hand, the tailor's own plaid on a library jacket at real size, a studio print on its back. A prototype: no check, not
+  base body registered onto MHR once, 48 garments fitted with nothing adjusted by hand (fifteen of them on two to five of the Studio's
+  seven test bodies), the tailor's own plaid on a library jacket at real size, a studio print on its back. A prototype: no check, not
   on the launcher.
 - **This session's network** let through GitHub and little else: arxiv.org, sketchfab.com, huggingface.co and
   MakeHuman's file servers were blocked, so licences on those are from search summaries and say so.

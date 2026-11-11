@@ -69,6 +69,10 @@ Nothing free was found for a hanbok, a kimono or a yukata under CC0 or CC-BY.
    garments worn together cross each other (the layering the test doesn't do yet).
 4. **The CC0 men's suit** as it comes.
 
+`fit_dresses.jpg` shows the library's dresses as they come, on the feminine body: Mindfront's checked sheath dress
+with three-quarter sleeves is the office look; its black day dress, a summer dress, a halter dress and an evening gown
+are beside it, with a cocktail dress and a handbag by punkduck.
+
 So the library gets the silhouettes of uniforms, suits and office wear now, and Style3D's garments are where the
 actual Japanese and Korean cuts would come from.
 

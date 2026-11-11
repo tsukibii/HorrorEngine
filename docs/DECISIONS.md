@@ -29,8 +29,8 @@ The user's answers, newest first. They override the plan, the research and the d
   - **The source**: MakeHuman's community clothing, all in one format on one base body: 129 garments and shoes and 56
     accessories under CC0, 210 and 73 more under CC-BY (a credit line in the game).
   - **The fit, tested** (docs/research/clothing_v2/fit_test.md, its scripts in `proto/` beside it, its pictures
-    `fit_*.jpg`): MakeHuman's base body registered onto MHR's once (4 s), then 37 garments carried onto the Studio's
-    seven test bodies with no failure and nothing adjusted by hand; our own fabric at real size on one of them (a
+    `fit_*.jpg`): MakeHuman's base body registered onto MHR's once (4 s), then 48 garments fitted with no failure and nothing adjusted
+    by hand, fifteen of them on two to five of the Studio's seven test bodies; our own fabric at real size on one of them (a
     second UV in metres, the garment's own seams kept as a layer) and a studio print PNG on its back.
   - **Not done by the test**: layering between two library garments, bridging on heavy bodies, motion. A prototype
     only: no check, nothing in the Studio.

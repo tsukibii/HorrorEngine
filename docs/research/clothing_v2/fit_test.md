@@ -15,8 +15,9 @@ Everything was run on the CPU in the cloud session. Pictures were drawn by three
 ## 1. Takeaway
 
 - **It works, and it is cheap.** MakeHuman's base body is registered onto MHR's once (4 seconds); after that any
-  MakeHuman-format garment is carried onto any MHR body in a tenth to a third of a second. **37 different garments
-  went across with no failure and nothing adjusted by hand** (34 of them in `fit_catalogue.jpg`): jackets, a coat, shirts,
+  MakeHuman-format garment is carried onto any MHR body in a tenth to a third of a second. **48 different garments
+  went across with no failure and nothing adjusted by hand** (34 of them in `fit_catalogue.jpg`, eleven more in
+  `fit_dresses.jpg`): jackets, a coat, shirts,
   sweaters, trousers, skirts, dresses, two suits, an office blouse and skirt, overalls, shoes, a hat.
 - **The designs survive.** Pockets, plackets, buttons, yokes, collars and the authors' textures arrive intact
   (`fit_first.jpg`): this is the "already designed" look the user asked for, which the tailor's cut shells don't have.
@@ -34,7 +35,7 @@ Everything was run on the CPU in the cloud session. Pictures were drawn by three
 | | |
 |---|---|
 | The source body | MakeHuman's `hm08` base mesh (`base.obj` from `makehumancommunity/mpfb2`, CC0): 19,158 vertices, the skin the first 13,380, the rest helpers and joint markers; a decimetre a unit; an A-pose |
-| The garments | the official system assets (`mh_system_CC0.zip` from `Makehuman-2/MH2_Asset_Repository_CCO`'s release: 20 outfits, shoes and a hat with their textures, "All of these assets are CC0") and 23 community garments from a public collection of them (`k3yg4n/glamcam-makehuman-clothing-assets`: CC-BY mostly, each file's header names its author and licence) |
+| The garments | the official system assets (`mh_system_CC0.zip` from `Makehuman-2/MH2_Asset_Repository_CCO`'s release: 20 outfits, shoes and a hat with their textures, "All of these assets are CC0") and 34 community garments from two public projects that carry them as files (`k3yg4n/glamcam-makehuman-clothing-assets` and `RavinMaddHatter/Madhatters-Table-Top-RPG-Mini-Maker`: CC-BY mostly, each file's header names its author and licence) |
 | Our bodies | the Studio's own seven test bodies as the Studio makes them (`tailor/node.mjs` `mhrBody`: identity weights, the base's sculpt, the height): average, feminine, masculine, and the slim and full ones of `tailor/bodies.json` |
 | MHR's rig | `Content/Studio/Bodies/MHR_lod1_rig.bin`: 127 bones, four weights a point |
 
@@ -93,11 +94,11 @@ are credited in §6.
 | | |
 |---|---|
 | Registration | 4.1 s once; 20 joints; 20 rounds; 90.8% of the skin matched; the last round's mean gap 0.01 mm |
-| Garments tried | 37 (14 system, 23 community); 34 pictured (two fan costumes and one whose header says AGPL left out of the picture); **none failed** once the reader took keyword lines between vertex lines (the system shoes have two) |
+| Garments tried | 48 (14 system, 34 community); 45 pictured (two fan costumes and one whose header says AGPL left out of the pictures); **none failed** once the reader took keyword lines between vertex lines (the system shoes have two) |
 | Their size | 630 to 11,150 points a garment as authored (quads, meant to be subdivided); community dresses up to 32,900 |
 | A fit | per garment, once: read 0.02 to 0.09 s, onto MHR's average 0.08 to 0.23 s; per body, once: 0.36 s; per garment on a body: across 0.01 to 0.04 s, out of the skin 0.11 to 0.30 s (3,195 and 11,152 points) |
 | Distance off the skin after the fit | medians from 4.5 mm (the office blouse) to 56 mm (a halter dress); never under 2.4 mm but for a few points at edges |
-| Bodies | all seven; the pictures show average, feminine, masculine, slim feminine, slim masculine, full masculine |
+| Bodies | every garment on at least one (the average or the feminine); fifteen on two to five; all seven bodies used; the pictures show average, feminine, masculine, slim feminine, slim masculine, full masculine |
 
 ## 5. What it doesn't do yet
 
@@ -132,17 +133,20 @@ Each of these is visible in the pictures, and each has an answer in `fit_and_ski
 | `fit_catalogue.jpg` | 34 garments, each alone on the average body, as fitted |
 | `fit_refabric.jpg` | the same jacket in the tailor's plaid flannel at real size with the studio's print `varsity_tokyo.png` on its back; the tee recoloured |
 | `fit_cc0_office.jpg` | the CC0 office blouse and skirt with shoes on the feminine and slim feminine bodies |
+| `fit_dresses.jpg` | seven dresses, jeans, a sweater, a polo and a handbag, each alone on the feminine body |
 | `fit_styles.jpg` | library pieces in our fabrics as a blazer-type school uniform, a gakuran-like set, a camel coat over a sweater (the layering fault), and the CC0 men's suit |
 
 Credits (MakeHuman community assets; each as its file's header states):
 
-- **punkduck**, CC BY 3.0: denim jacket, uniform jacket, winter coat, qipao, retro top.
-- **Mindfront (Sweden)**, CC BY 4.0: trousers 02, knitted sweater 01, lusekofta.
+- **punkduck**, CC BY 3.0: denim jacket, uniform jacket, winter coat, qipao, retro top, black cocktail dress; CC BY 4.0:
+  handbag.
+- **Mindfront (Sweden)**, CC BY 4.0: trousers 02, knitted sweater 01, lusekofta; dresses 01, 02, 04, 05, 08 and 11, women's
+  trousers 1.
 - **Elvaerwyn**, CC BY: pleated plaid miniskirt, knee-length halter dress, goddess dress 8, 50s blouse and skirt,
   crochet baby doll, butterfly disco top, double-ruffle disco pants, gored elephant pants, men's boho top; with
   **punkduck**, CC BY 4.0: the rescue team jacket.
 - **sonicteam998**, CC BY 3.0: Maria skirt.
-- **MRT**, CC0: basic tucked tee.
+- **MRT**, CC0: basic tucked tee, fisherman's sweater. **Namuhekam**, CC0: polo shirt.
 - **The MakeHuman team**, CC0 (released September 2020): the system outfits, shoes and fedora.
 
 All were changed here: fitted to another body, and in `fit_refabric.jpg` and `fit_styles.jpg` given other fabrics and
