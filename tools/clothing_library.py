@@ -451,20 +451,35 @@ class Ranged:
         return b
 
 
-def folders(names, want):
-    """in a zip's file names: each wanted garment's folder (found as a scan finds a garment: by its folder's or its .mhclo's name)"""
-    by = {norm(i): i for i in want}
-    out = {}
+def folders(names, want, every=None):
+    """in a pack's file names: each wanted garment's folder, and which were found by a near name only.
+    A garment is its .mhclo's folder; found by that folder's or the .mhclo's name, exactly first. What's left is
+    matched loosely over the whole pack (`every`: all the pack's catalogued names), best pairs first, a folder to one
+    garment: the catalogue says elvs_crochet_baby_doll where an uploader's folder says Elvs_Crochet_Baby_Doll1."""
+    import difflib
+    every = list(every or want)
+    found = {}                                                       # folder -> (its own name, its .mhclo's name), as written
     for n in names:
-        if n.lower().endswith(".mhclo"):
-            f = Path(n)
-            i = by.get(norm(f.parent.name)) or by.get(norm(f.stem))
-            if i and i not in out and str(f.parent) != ".":
-                out[i] = str(f.parent).replace(os.sep, "/") + "/"
-    return out
+        f = Path(str(n).replace("\\", "/"))
+        if f.suffix.lower() == ".mhclo" and str(f.parent) != ".":
+            found.setdefault(f.parent.as_posix() + "/", (norm(f.parent.name), norm(f.stem)))
+    by = {norm(i): i for i in every}
+    out, loose = {}, set()
+    for folder, keys in found.items():
+        i = by.get(keys[0]) or by.get(keys[1])
+        if i and i not in out:
+            out[i] = folder
+    free = [f for f in found if f not in out.values()]
+    pairs = sorted(((max(difflib.SequenceMatcher(None, norm(i), k).ratio() for k in found[f]), i, f) for i in every if i not in out for f in free), reverse=True)
+    for score, i, f in pairs:
+        if score < 0.8:
+            break
+        if i not in out and f not in out.values():
+            out[i] = f; loose.add(i)
+    return {i: f for i, f in out.items() if i in set(want)}, loose & set(want)
 
 
-def cut(urls, want, to, conns=4):
+def cut(urls, want, to, conns=4, every=None):
     """the wanted garments' folders out of a pack's zip at one of `urls`, into `to`: {id: MB fetched}; NoRanges, or OSError with why"""
     why, plain = [], False
     for u in urls:
@@ -477,9 +492,11 @@ def cut(urls, want, to, conns=4):
             why.append(f"{u}: {e}"); continue
         infos = sorted(zf.infolist(), key=lambda i: i.header_offset)
         end = {i.filename: (infos[k + 1].header_offset if k + 1 < len(infos) else zf.start_dir) for k, i in enumerate(infos)}
-        where = folders([i.filename for i in infos], want)
+        where, loose = folders([i.filename for i in infos], want, every)
         done = {}
         for i, f in where.items():
+            if i in loose:
+                print(f"    {i}: taken as {f.rstrip('/').split('/')[-1]} (the nearest name in {Path(u).name})")
             mine = [x for x in infos if x.filename.startswith(f)]
             if sum(x.file_size for x in mine) > 2 << 30:
                 raise OSError(f"{i}: over 2 GB unpacked: not fetched")
@@ -513,7 +530,7 @@ def fetch_garments(ix, got, a):
         info = ix["packs"][p]
         urls = [m + info["zip"] for m in info["mirrors"]]
         try:
-            done = cut(urls, ids, base / p, a.connections)
+            done = cut(urls, ids, base / p, a.connections, [x["id"] for x in ix["assets"] if x["pack"] == p])
         except NoRanges:                                             # the whole pack then, and only the picked folders out of it
             print(f"  {p}: the server gives no ranges: the whole pack ({info['size_mb']:.0f} MB) for {len(ids)} of its garments")
             z = base / "_zips" / Path(info["zip"]).name
@@ -522,7 +539,7 @@ def fetch_garments(ix, got, a):
             if why:
                 failed += ids; print(f"  {p}: NOT fetched\n    " + "\n    ".join(why)); continue
             with zipfile.ZipFile(z) as zf:
-                where = folders(zf.namelist(), ids)
+                where, _ = folders(zf.namelist(), ids, [x["id"] for x in ix["assets"] if x["pack"] == p])
             unpack(z, base / p, list(where.values()))
             done = {i: 0 for i in where}
             if not a.keep_zips:
@@ -592,13 +609,16 @@ def scan(a):
     base = home()
     by = {}
     for x in ix["assets"]:
-        by.setdefault(x["pack"], {})[norm(x["id"])] = x
+        by.setdefault(x["pack"], {})[x["id"]] = x
         for k in ("file_licence", "file_author", "folder"):
             x.pop(k, None)
     found = odd = strays = 0
     for pack in sorted(by):
-        for f in sorted((base / pack).rglob("*.mhclo")) if (base / pack).is_dir() else []:
-            x = by[pack].get(norm(f.parent.name)) or by[pack].get(norm(f.stem))
+        files = sorted((base / pack).rglob("*.mhclo")) if (base / pack).is_dir() else []
+        where, _ = folders([f.relative_to(base / pack).as_posix() for f in files], list(by[pack]))
+        whose = {f: i for i, f in where.items()}
+        for f in files:
+            x = by[pack].get(whose.get(f.parent.relative_to(base / pack).as_posix() + "/"))
             if x is None:
                 strays += 1; continue
             if "folder" in x:                                        # (a garment with several .mhclo, one a body kind: the first stands for it)
@@ -707,6 +727,14 @@ def check(a):
         if h.get("author") != "Somebody" or tidy(h.get("license", "")) != "CC BY 4.0":
             faults.append(f"a garment's header misread: {h}")
     faults += ranged_check()
+    # a garment's folder by name: exactly, else the nearest in its pack, best pairs first and a folder to one garment
+    names = ["clothes/Elvs_Crochet_Baby_Doll1/babydoll_elvruff1a.mhclo", "clothes/Goddess_Dress_1/gd1.mhclo", "clothes/Goddess_Dress_2/gd2.mhclo", "clothes/toigo_shift_dress/toigo_shift_dress.mhclo",
+             "clothes/toigo_shift_dress/toigo_shift_dress_b.mhclo", "loose.mhclo", "clothes/Something_Else/else.mhclo"]
+    pack = ["elvs_crochet_baby_doll", "elvs_goddess_dress1", "elvs_goddess_dress2", "toigo_shift_dress", "wdg_mycenaean_tunic"]
+    where, loose = folders(names, ["elvs_goddess_dress2", "toigo_shift_dress", "elvs_crochet_baby_doll", "wdg_mycenaean_tunic"], pack)
+    if where != {"elvs_goddess_dress2": "clothes/Goddess_Dress_2/", "toigo_shift_dress": "clothes/toigo_shift_dress/", "elvs_crochet_baby_doll": "clothes/Elvs_Crochet_Baby_Doll1/"} \
+            or loose != {"elvs_goddess_dress2", "elvs_crochet_baby_doll"}:
+        faults.append(f"garments' folders found by name wrongly: {where}, loosely {sorted(loose)}")
     # picking: numbers are places in the catalogue, names found whatever their case; what isn't there is said
     got = named(ix, ["#2", "4-5", assets[9]["id"].upper(), "2"])
     if [x["id"] for x in got] != [assets[k]["id"] for k in (1, 3, 4, 9)]:
@@ -814,7 +842,7 @@ def ranged_check():
                 faults.append("the second mirror's ranges weren't used when the first gave none")
             why = download([url + "/plain/p.zip"], t / "whole.zip")
             with zipfile.ZipFile(t / "whole.zip") as zf:
-                where = folders(zf.namelist(), ["a_dress"])
+                where, _ = folders(zf.namelist(), ["a_dress"])
             unpack(t / "whole.zip", t / "plain", list(where.values()))
             if why or sorted(f.name for f in (t / "plain").rglob("*") if f.is_file()) != ["a_dress.mhclo", "a_dress.obj", "a_dress.png"] or (t / "outside.txt").exists():
                 faults.append(f"from a whole pack, more or less than the picked garment's folder was unpacked ({why})")

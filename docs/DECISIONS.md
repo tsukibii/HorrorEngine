@@ -63,7 +63,21 @@ The user's answers, newest first. They override the plan, the research and the d
   - **Not tried against MakeHuman's servers** (blocked from this session): tried on the real system pack's zip served
     from this machine at 150 KB/s a connection (three garments: 26 MB of 424 MB, 50 s) and held by CLOTHLIB on a
     made-up pack. If their servers refuse ranges, the fallback is the slow whole pack: to be told.
-  - **Waiting on the user's numbers**; then `pick` them and commit picks.json.
+  - **Waiting on the user's numbers**; then `pick` them and commit picks.json. (Answered, next.)
+- **"If possible can you just add the following into our project"**, then the numbers 3, 14, 15, 19, 19, 20, 32, 33,
+  38, 40, 47, 254, 364, 427, 428, 414, 416, 281, 291, 248, 228, 362, 363, 233, 372, 311, 345, 346, 339, 337, 336,
+  420-467, 470-491. So:
+  - **They are the project's picks**: `Content/Studio/Clothes/library/picks.json`, 98 garments (the 19 given twice
+    once) from 19 packs: 60 underwear, swimwear and legwear, 12 suits and outfits, 10 dresses, 6 shoes, 4 skirts, 3
+    tops, 3 trousers; 30 CC0 and 68 CC-BY (their lines are already in docs/CREDITS.md); none of the refused three.
+    About 400 MB by each pack's share, where their packs whole are 1.5 GB and the library 2.6 GB.
+  - **Read as: picked, not committed as files.** The garment files still come by `fetch` on the user's machine
+    (MakeHuman's servers don't answer from this session, and the user chose the fetch over files in git one message
+    before). If they meant the files in the repo, they'll say.
+  - **A garment's folder by its nearest name**: the catalogue's names are the pack pages'; an uploader's folder can
+    differ a little (the mirrors have `Elvs_Crochet_Baby_Doll1` for `elvs_crochet_baby_doll`). The fetch and the scan
+    now take the exact name first, then the nearest in the pack (best pairs first, a folder to one garment), and say
+    so (`taken as ...`); what still isn't found is listed with the names near it.
 
 ## 2026-11-11, later (the user: the fitted outfits clip; clothing layers, a dissolve in Godot, main merged, our PBR sets, pantyhose, fishnets and socks)
 

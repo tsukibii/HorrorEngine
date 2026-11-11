@@ -85,9 +85,11 @@ against the real servers: its unpacking and scanning were tried on the system pa
 **The files stay out of git** (the user, 2026-11-11: "stick with the fetch"): `assets/clothing/` is ignored, so the
 download survives a switch of branch in the same folder; a pull request for this branch is open
 (tsukibii/HorrorEngine#24). **Their servers are slow** (3 MB in five minutes for the user), so the user picks: eighteen
-numbered sheets of every garment were sent (`clothing_library.py sheets` makes them again), **the user's numbers are
-awaited**; then `python tools/clothing_library.py pick <numbers>` (writes the tracked `library/picks.json`), commit,
-and the user's `fetch` gets only those, each cut out of its pack's zip on the server by byte ranges. That ranged fetch
+numbered sheets of every garment were sent (`clothing_library.py sheets` makes them again) and **the user picked 98**
+(`Content/Studio/Clothes/library/picks.json`: mostly underwear, swimwear and legwear, twelve suits, ten dresses, shoes,
+skirts; about 400 MB). **Next is the user's**: `uv run python tools/clothing_library.py fetch` on their machine gets
+only those, each cut out of its pack's zip on the server by byte ranges; then commit the `index.json` and
+`docs/CREDITS.md` the scan rewrites. Whatever it reports as not found by name comes back here to be put right. That ranged fetch
 has not met MakeHuman's servers either (tried on the real system pack served from this machine): if they give no
 ranges it falls back to whole packs and says so.
 
