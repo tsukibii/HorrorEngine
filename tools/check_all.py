@@ -16,6 +16,7 @@ STUDIO = [["pbr.py", "check"], ["sfx.py", "check"], ["face_capture.py", "check"]
           ["face_export.mjs", "--check"], ["face_morphs.mjs", "--check"],                                            # the library baked for Godot (FACEEXPORT), a Studio export's face shapes (FACEMORPHS)
           ["propgen.py", "thumbs", "--check"], ["woodpbr.py", "check"], ["weapon_fx.py", "check"],                     # the props' kept pictures and sticker passes (THUMBS), the made wood sets (WOODPBR), the weapons' effect maps (WEAPONFX),
           ["score/moods.mjs", "--check"],                                                                               # the music's moods as beds (MOODS),
+          ["godot_byhand.py", "ready", "--check"],                                                                      # the ready-made exports made from their sets as they are (READYMADE),
           ["character/growtest.mjs"]]                                                                                    # the Character Studio's ages, proportions and creatures (GROW)
 
 game, _ = L.pick_game(sys.argv[1:])

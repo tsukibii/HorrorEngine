@@ -22,11 +22,35 @@ builder's floors, the street's steel stair, climbing in Godot and on the desk; 2
 10 the weapons and the laptop, merged; 2026-11-10 on `update-tutorialv2`: tutorial v2 using every system, merged;
 2026-11-10, night, and 11 on `claude/nifty-tesla-dc904q`: children, Cutify, monster mode, horns and animal ears in the
 Character Studio, then the creature presets and a Studio character's face in Godot, then the Anime switch and the red
-knit dress). Read this after CLAUDE.md's start
+knit dress; then on `claude/beautiful-cray-a622xx`: tutorial v2's floor ready-made). Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-11, latest, `claude/nifty-tesla-dc904q`): Anime (the Bust from flat to very full) and the red knit dress
+## Where it stopped last (2026-11-11, after the latest, `claude/beautiful-cray-a622xx`): tutorial v2's floor ready-made
+
+The user, following tutorial v2: **"I dont want to build the map myself for tutorial 2, can you pre-build it so i can
+just do the godot part of the tutorial"** (DECISIONS 2026-11-11, after the latest). So:
+
+- **The floor is in git, made**: `Exports/interiors/hotel_floor/` (`hotel_floor.glb`, README.txt, export.json,
+  ready.json), the set `hotel_floor` exported as the scene builder's button does. The guide's §9 commands
+  (`godot_byhand.py new ~/Games/Room304 --name "Room 304"`, then `exports ~/Games/Room304 --link`) put it in the
+  project, and the user starts at §10 in Godot. It's the only export in git: 45 MB, the biggest file in the repository.
+- **Kept current**: `ready.json` holds the set's fingerprint and the .glb's signature (what it holds, not its bytes: a
+  browser export's pictures come out in a new order each time, LESSONS). `python tools/godot_byhand.py ready` makes it
+  again (the desk's server running), keeping the old bytes when nothing changed; READYMADE (`ready --check`, in CHECKS)
+  fails when the set's changed since; TUTORIAL2 holds it to its own fresh export. **When the hotel's set or the level
+  exporter changes, run `ready` and commit what it says changed.**
+- **The guide** (guides/tutorial_v2): §2 opens with a tip (the floor's ready-made: skip to §9), §3 to §8 are marked
+  optional, §9 says the floor's there at once; §3's new set is `my_hotel` now (`hotel_floor` is taken: the builder
+  refused it, a slip since the guide was written) and §8 says to read `my_hotel` for `hotel_floor` from there on.
+- **Checked here**: CHECKS (READYMADE in it, and its four cases: a reformatted set passes, a changed one fails, the same
+  export with other bytes passes, another level over it fails), a project made as §9 says and imported by Godot through
+  the link (the start, the locks, the colliders, her spot, every node TUTORIAL2 needs), TUTORIAL2.
+
+**For the user**: pull, then §9's two commands; Godot imports the floor on the first open (its textures unpacked beside
+it, `hotel_floor_0.png`..., kept out of git). Her is still theirs to make (or §20's stand-in).
+
+## Before that (2026-11-11, latest, `claude/nifty-tesla-dc904q`): Anime (the Bust from flat to very full) and the red knit dress
 
 The user asked for a look-alike of a Daz3D character (proportions, the red ribbed turtleneck dress, the face and
 makeup, the hair, "as 1:1 as possible"), reviewed the first bust ("unnaturally pointy ... how a waterballoon would

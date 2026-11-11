@@ -4,7 +4,9 @@ for a floor in a hotel to building out the story from scratch in godot using our
 use of every aspect we've added so far"). The tutorial's project, made as its steps say:
 
 - a new by-hand project (tools/godot_byhand.py new: the Look plugin, the starter kit, the sound shelf, the moods);
-- the hotel floor set (Content/Studio/Sets/hotel_floor) exported as the scene builder's Export for Godot does;
+- the hotel floor set (Content/Studio/Sets/hotel_floor) exported as the scene builder's Export for Godot does, and the
+  ready-made floor held to it (Exports/interiors/hotel_floor, tracked so the tutorial can start in Godot: the same nodes,
+  shapes, materials and metadata; tools/godot_byhand.py ready makes it again);
 - a Character Studio character made Godot's (a capsule stand-in when the machine has none);
 - main.tscn as the guide builds it: the look and the grade, the hotel (its own lamps off), a light zone a room lit by
   the plugin's presets, rain at the end window and a car's lights past 304's, the TV's static, the bath's mirror, wet
@@ -84,6 +86,18 @@ else:
     r = run([node, str(ROOT / "tools/director/levelexport.mjs"), "--game", "set:" + SET, "--out", str(proj / "exports/interiors/hotel_floor/hotel_floor.glb")], cwd=ROOT, timeout=900)
     if r.returncode:
         sys.exit("TUTORIAL2 FAILED: the hotel's export: " + (r.stdout + r.stderr)[-500:])
+    # the ready-made floor (Exports/interiors/hotel_floor, tracked so the tutorial can start in Godot: DECISIONS 2026-11-11)
+    # is this export, what it holds if not its pictures' bytes (storykit/exports.py signature)
+    ready_glb = EX.EXPORTS / "interiors" / SET / f"{SET}.glb"
+    if not ready_glb.is_file():
+        errs.append(f"no ready-made floor, {EX.rel(ready_glb)}: {BH.READY_HOW}")
+    else:
+        mine, kept = EX.signature(proj / "exports/interiors/hotel_floor/hotel_floor.glb"), EX.signature(ready_glb)
+        if mine[0] != kept[0]:
+            errs.append(f"the ready-made floor ({EX.rel(ready_glb.parent)}) isn't the set as it exports now: "
+                        f"{EX.differ(kept[1], mine[1], ('the ready-made', 'this export'))}; {BH.READY_HOW}, then commit it")
+        else:
+            print(f"  the ready-made floor ({EX.rel(ready_glb.parent)}) is this export: {len(mine[1])} nodes alike")
     # 2. her
     people = ROOT / "Content" / "Studio" / "People"
     who = "_studiotest" if (people / "_studiotest/export/_studiotest.glb").is_file() else next((p.name for p in sorted(people.glob("*")) if (p / "export" / f"{p.name}.glb").is_file()), None) if people.is_dir() else None
