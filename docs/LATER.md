@@ -36,6 +36,18 @@ records what's chosen.
 - **LODs for faraway characters**: MHR's LOD 2 to 4 for figures more than a few metres away (the clothes and hair
   simplified with them); the games are first person, so most of the cast is far most of the time.
 
+- **The head cut from the body in a character's Godot copy** (2026-11-11). Godot keeps a mesh's blend shapes whole:
+  88 shapes (the 72 of the face and the blink's own) on a skin of 136,000 corners is 240 MB on the card for one
+  character, though only the head moves. The bake (`tools/face_morphs.mjs`) could split the skin at the neck into two
+  meshes on the same skeleton and material, the shapes on the head's alone: about a third of the memory, and a crowd
+  of faces becomes possible on a 6 GB card. What reads the skin by its name (`HSSkin.wear`, the hit reactions' ooze,
+  the desk's `face.js`) has to take two. Saves memory and load time, nothing to see.
+- **The lids against the eye every frame, in Godot.** The bake keeps each face shape's lids off the eyeballs at its
+  full weight and the eye is drawn 1.2 mm deeper than it is, which covers a smile and a squint. A mix that slides a lid
+  further than that (three or four lid shapes at full) would want the exact answer: a vertex step in the skin's shader
+  (each eye's middle and size as uniforms set from its bones every frame, each corner's resting room as an attribute
+  the bake adds, the skin round the eye pushed out), as the desk's `pushOut` is.
+
 ## Unreal
 
 - **A round-trip check**: Generate, play the preview in the editor, capture the same frames as the desk's Watch and

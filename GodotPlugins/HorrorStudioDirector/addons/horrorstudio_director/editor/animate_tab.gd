@@ -34,7 +34,7 @@ var _acts := {}
 var body_clips: Array = []          # HSLibrary.body(), as last read
 var face_clips: Array = []
 var playing := {}                   # what's being looked at in the editor: {actor, ap, sk} for a body clip
-var face_play := {}                 # {actor, mesh, idx, clip, t, was: {blend index: weight}} for a face clip
+var face_play := {}                 # {actor, mesh, idx, meshes, clip, t, was: {blend index: weight}, others} for a face clip
 var _fs_hooked := false
 var figs: Array = []                # the cards' figures: [{ctl, fig, t, on}], played while the mouse is over the card
 var _sig := ""                      # the folders' files and times as last drawn (Godot's scan skips an .npz: polled here)
@@ -112,10 +112,13 @@ func _process(dt: float) -> void:
 		var c = face_play["clip"]
 		var w := PackedFloat32Array()
 		c.at(float(face_play["t"]) if c.loop else fmod(float(face_play["t"]), maxf(float(c.secs), 0.1)), w)
-		for i in c.shapes.size():
-			var b = (face_play["idx"] as Dictionary).get(str(c.shapes[i]), -1)
-			if int(b) >= 0:
-				mi.set_blend_shape_value(int(b), w[i])
+		for row in face_play.get("meshes", [[mi, face_play["idx"]]]):   # every mesh that carries the shapes (a Studio export's skin, brows and lashes)
+			if not is_instance_valid(row[0]):
+				continue
+			for i in c.shapes.size():
+				var b = (row[1] as Dictionary).get(str(c.shapes[i]), -1)
+				if int(b) >= 0:
+					(row[0] as MeshInstance3D).set_blend_shape_value(int(b), w[i])
 
 
 ## the two folders' files with their times, as one string
@@ -767,7 +770,14 @@ func preview_face(a: Node3D, c: Dictionary) -> void:
 	var was := {}
 	for i in mi.get_blend_shape_count():
 		was[i] = mi.get_blend_shape_value(i)
-	face_play = {"actor": a, "mesh": mi, "idx": fo["idx"], "clip": fc, "t": 0.0, "was": was}
+	var others: Array = []                              # the other meshes that carry the shapes, as they were: [mesh, {blend index: weight}]
+	for row in fo.get("meshes", []):
+		if row[0] != mi:
+			var w0 := {}
+			for i in (row[0] as MeshInstance3D).get_blend_shape_count():
+				w0[i] = (row[0] as MeshInstance3D).get_blend_shape_value(i)
+			others.append([row[0], w0])
+	face_play = {"actor": a, "mesh": mi, "idx": fo["idx"], "meshes": fo.get("meshes", [[mi, fo["idx"]]]), "clip": fc, "t": 0.0, "was": was, "others": others}
 	panel.say("%s on %s's face (■ Stop puts it back)" % [c["id"], a.name])
 	refresh()
 
@@ -805,4 +815,8 @@ func _stop_face() -> void:
 	if is_instance_valid(mi):
 		for i in face_play["was"]:
 			mi.set_blend_shape_value(int(i), float(face_play["was"][i]))
+	for row in face_play.get("others", []):
+		if is_instance_valid(row[0]):
+			for i in row[1]:
+				(row[0] as MeshInstance3D).set_blend_shape_value(int(i), float(row[1][i]))
 	face_play = {}

@@ -741,9 +741,31 @@ every twentieth of the blink, as Godot puts the targets together: nothing of the
 0.005 mm², 0.01 mm deep, on `_skintest`), open the eyes show, shut nothing of them from the front; then in Godot with the
 eyeballs a flat green: open thousands of green pixels, held shut none; `blink.jpg` open, half and shut. A file with the grafted eyes (its skin's extras `eyeGraft`, CHARACTER_STUDIO §2c) is measured with its lining and its lids' backs on the eye left out (they face the eyeball and lie in it), a 2.5 mm reach and the lids' touch within 0.1 mm.
 
-**Not yet**: the eyes don't turn in Godot (a glance, look-at); the Studio export carries only the blink of MHR's 72
-shapes (bakeplay.gd sets the others on a body that has them); the lid has no thickness of its own (MetaHuman's waterline);
+**Not yet**: the eyes don't turn in Godot (a glance, look-at); the lid has no thickness of its own (MetaHuman's waterline);
+(the Studio's own export carries only the blink of MHR's 72 shapes: the copy a Godot project wears has the other
+seventy baked in beside it, below);
 in the shut picture a lash clump at an inner corner and a fold at an outer corner want a look.
+
+**The eyes behind the lids when the face moves** (DECISIONS 2026-11-11: "fix anything that needs fixed for godot
+too"; GDFACES). The blink above is the export's own and exact. Every other move of the lids is MHR's (the 72 face shapes
+baked into the Godot copy, docs/GODOT_DIRECTOR.md §6c), made for MHR's own eyes: on a Studio character a look down, a
+squint or a raised cheek slid a lid 2 to 3 mm into the eyeball, and the file showed the eye through the lid (up to 138
+mm2 by the file's own depth). Two things hold it now:
+- **the bake** (`tools/face_morphs.mjs`) keeps the lids off the eye in each shape at its full weight: the eye's real
+  surface by rays from its middle, no corner ending deeper than it rests, each lid triangle tried across its inside
+  (MHR's lid skin is a few triangles 4 to 8 mm a side: flat where the eye is round). After it, each shape alone:
+  0.000 mm2 through a lid;
+- **the eyeball is drawn 1.2 mm deeper than it is** (`lid_room` in eye.gdshader and its wet layer, `HSEye.LID_ROOM`:
+  the same pixel, further along its ray, as the fragment's DEPTH; nothing else of the eye changes). A face is several
+  shapes at once (a smile: cheeks, lids and lip corners), each exact alone and their sum not: baked alone a smile still
+  left 8 mm2 of iris through the lower lid, 1.2 mm deep. Drawn deeper, a lid up to that far into the eye covers it, as a
+  lid does: 0.000 mm2 for a smile and a squint, from the front, the side and below. At rest it costs the eye nothing
+  (no skin faces out within 1.3 mm behind an eye: lids' backs and the lining face the eye's middle and are culled) but
+  a hair of a thick lid's edge on the grafted eyes (2.8 mm2 round an opening of 174). `"lid_room": 0.0` in
+  `HSEye.wear`'s overrides takes it off.
+
+`docs/godot_sheets/2026-11-11_faces.jpg`: a test character at rest, smiling and squinting down, as MHR's moves alone
+leave her (the iris through both lids), baked, and as a game wears her.
 
 ## 5g. The skin's depth: warm light from under the skin round the eyes, the nose, the mouth and the ears (DECISIONS 2026-11-01)
 

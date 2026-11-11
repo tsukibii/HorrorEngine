@@ -3,6 +3,35 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## A Studio character's face in Godot: what took a second try (2026-11-11)
+
+- **"Done already" must name what it means.** The face bake skipped any mesh that had morph targets at all, as "baked
+  already". That was true the day it was written; ten days later the blink gave every export morph targets of its own
+  and the bake quietly did nothing, on every character, with `FACEMORPHS ok (nothing to bake)` in the log. A step that
+  skips work says what it found (the names it looked for), and its check uses a file made the way files are made today.
+- **A rule on the corners isn't a rule on the surface.** Keeping every corner of the lids outside the eye left 14 mm2
+  of eye showing through a lid: MHR's lid skin is a few triangles 4 to 8 mm a side, and a flat triangle with all three
+  corners on a 17 mm ball dips half a millimetre under it in the middle. Try the triangle's inside, not its corners.
+- **Measure what the picture shows, not the rule's own terms.** The first check of the baked lids read the file back
+  with the same profile the bake had used and found nothing wrong; the depth of the eye against the lid, drawn as
+  EYELIDS draws the blink, found 26 mm2. A check that shares its subject's model can only agree with it.
+- **A profile averaged round an axis hides what's off the axis.** The desk's eye is 24 steps of a solid of revolution,
+  a frame's budget; a cornea rises 2.6 mm in 30 degrees and sits a little off the joint's axis, so a lid resting beside
+  it was measured up to 0.6 mm wrong. A bake has time for the real surface (rays from the eye's middle).
+- **Each alone exact isn't the mix exact.** With every shape's lids kept off the eye at its own full weight, the check
+  passed at 0.000 mm2 and the first picture of a smile still had iris through the lower lid: a smile is six shapes at
+  once, their slides add, and a lid needs more room the further it goes (the cornea stands proud of the white). A check
+  on parts wants a check on a sum; the picture (a real expression in Godot) was what found it. The fix that held was
+  not a cleverer bake but the eye drawn 1.2 mm deeper: one line that covers any mix.
+- **Try the cheap fix on paper before building the exact one.** The exact answer (the desk's per-frame push in the
+  skin's vertex shader) wanted a per-corner attribute in the copy, the eyes' places as uniforms every frame and a stage
+  in every skin shader. Ten minutes with the depth measure said a depth offset on the eyeball hid all of the leftover
+  and revealed nothing at rest; the numbers decided it.
+- **A measure made for one pose misreads another.** EYELIDS' rule for the grafted eyes leaves out skin inside the
+  white's sphere (their lining). A squint slides a lid's edge over the cornea, which stands 0.8 mm proud of that
+  sphere, and the hidden part of the edge was counted as the eye coming through. What's within 0.3 mm of the opening
+  is the rim; the picture of it (a red hair along the lid) said so before the numbers did.
+
 ## Ages, creatures, horns and ears in the Character Studio: what took a second try (2026-11-10, night)
 
 - **A child isn't a small adult, and the fix isn't on the head**: the first thought was to scale the head up against the

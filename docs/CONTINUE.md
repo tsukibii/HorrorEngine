@@ -76,15 +76,8 @@ work):
 
 **For the card** (docs/RUN_LOCALLY.md): STUDIO in one go, and the pictures to judge by eye.
 
-**Found on the way, not fixed (older than this work; for the user to decide)**: a Studio export's face in Godot.
-`tools/face_morphs.mjs` leaves any mesh alone that already has morph targets ("baked already"), and since the blink
-(GODOT_LOOK §5f) every export's skin, lashes and brows carry the blink's own targets: so the 72 face shapes are not
-baked onto a current export at all ("nothing to bake"; `_growtest`'s Godot copy has the blink's 18 and no others), and
-the story's `expr` moves nothing on it but the lids. Three things would make it work, together (one alone looks worse
-than none): the bake adding the 70 shapes a mesh lacks beside its blink's; `face.gd` driving every mesh that carries
-them, not the first (the brows' and lashes' cards are meshes of their own); and an expression's own `eyesClosed`
-handed to HSBlink's `hold` as `bakeplay.gd` does, not set beside it. The desk plays expressions on an export by its
-MHR points and is right. EXPORTS would have said so (it wants 72 blend shapes on a Studio export) on a machine with one.
+**Found on the way, and fixed the next day** (2026-11-11, below): a Studio export's face in Godot didn't move
+(the bake skipped every export made since the blink, face.gd drove one mesh, the lids fought the blinker).
 
 **The pictures**: `docs/studio_sheets/2026-11-10_ages_cutify.jpg`, `2026-11-10_creatures.jpg`, `2026-11-10_horns_ears.jpg`,
 `2026-11-10_child_hair.jpg` (a salon preset baked on a nine-year-old, riding her head at eight, fourteen and grown);

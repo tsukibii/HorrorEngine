@@ -342,9 +342,49 @@ export): each shape's move on every corner it touches, scaled by her head's scal
 on its skin's node, 2026-11-10: a child's or a creature's head isn't sized by its height; an older file: her height
 over MHR's), as sparse morph targets named
 by Meta's names; a lash card turns whole about its eye as its root moves (as face.js turns it). Godot makes them blend
-shapes; face.gd plays on them. What the desk adds that isn't a morph (the lids kept off the eyeballs, the eyes turned
-by the gaze) isn't in Godot yet. FACEMORPHS (`--check`, in CHECKS): a made-up export of MHR's own face, its 72 morphs
-MHR's own moves (0.0001 mm at worst), a lash card turned whole on a blink; Godot reads them as 72 blend shapes.
+shapes; face.gd plays on them. FACEMORPHS (`--check`, in CHECKS): a made-up export of MHR's own face, its 72 morphs
+MHR's own moves (0.02 mm at worst: smaller moves aren't written), a lash card turned whole on a blink.
+
+**Put right on 2026-11-11** (DECISIONS: "fix anything that needs fixed for godot too"; GDFACES holds it,
+`python tools/godot/faces_check.py`). Three things kept a Studio character's face still in Godot, and a fourth would
+have spoiled it once it moved:
+- **The bake skipped every current export.** It left alone any mesh that already had morph targets ("baked already"),
+  and since the blink (GODOT_LOOK §5f) every export's skin, lashes and brows carry the blink's own: nothing was baked,
+  and an `expr` moved nothing but the lids. Now a mesh keeps the targets it has (the blink and its in-betweens stay the
+  export's own, first, as they were) and gets the MHR shapes it lacks after them: 88 on a skin, all 72 by name.
+- **face.gd drove one mesh.** A Studio export's lashes and lash line are meshes of their own carrying the same shapes
+  (and the brows when they're cards). Every mesh that carries them is driven (`face_of`'s `meshes`), in the Director's
+  Animate tab's preview too.
+- **The lids are the blinker's.** An expression's `eyesClosed_L` and `_R` set beside HSBlink fought it every frame and
+  skipped the blink's in-betweens (the lid cut straight through the eye's curve). face.gd hands them to her blinker's
+  `hold` (the least it shows, as bakeplay.gd does) and takes them back when the expression ends; a body with no blinker
+  (the bake's, an older copy) has them set on its meshes as before.
+- **The lids kept off the eyeballs, baked.** MHR's shapes are for MHR's own eyes. The Studio's eyeball is grown to fill
+  its opening, and a look down, a squint or a raised cheek slides a lid 2 to 3 mm into it: measured on a real export by
+  the file's own depth, up to 138 mm2 of an eye standing in front of its lid (the eye drawn through the lid). The desk
+  puts that right every frame (face.js `pushOut`); Godot has no such step, so the bake does it once for each shape at
+  its full weight: each eye's real surface found by rays from its middle (a degree a step; the desk's 24 steps of a
+  solid of revolution left a lid resting beside the cornea up to 0.6 mm wrong), no corner round an eye ending deeper
+  than it rests, and then **each triangle tried across its inside** (a lid's skin is MHR's own few big triangles, 4 to
+  8 mm a side: with all three corners outside, the flat middle of one stretched over the cornea still cut half a
+  millimetre under it), its corners lifted straight out from the eye by what's missing, corners that share a place
+  together. After it: 0.000 mm2 through a lid on eighteen lid-moving shapes, from the front and from below; what's left
+  is the hair of a lid's edge resting on the eye along the opening's rim (the grafted eyes' thick lids: up to 2.4 mm2).
+  Between rest and a shape's full weight a corner goes straight, a sixth of a millimetre under the eye's curve at most.
+  The eyes turned by the gaze stay the desk's.
+- **Several shapes at once: the eyeball drawn a little deeper.** A face is never one shape. A smile (cheeks raised,
+  lids tightened, lip corners pulled) slides the lower lid further than any of them alone, and each one's own push
+  isn't enough for the sum: baked alone, 8 mm2 of iris still showed through the lower lid, 1.2 mm deep. The look
+  plugin's eye now draws itself 1.2 mm deeper than it is (`lid_room`, GODOT_LOOK §5f): the lid covers it, in any mix
+  of shapes up to that depth, whatever the skin's material. Measured: 0.000 mm2 for a smile and a squint from the
+  front, the side and below, and nothing taken from the eye at rest.
+
+What it costs: a skin of 136,000 corners with 88 shapes is 240 MB of blend shapes on the card (Godot keeps them whole,
+20 bytes a corner a shape), and a copy of 35 to 65 MB read in 5 to 6 s at run time on this CPU. One or two faces in a
+scene are fine on a 6 GB card; a crowd wants the head cut from the body in the export (not done: LATER).
+
+`docs/godot_sheets/2026-11-11_faces.jpg` (GDFACES `--pictures`): at rest, smiling, squinting down; MHR's moves alone,
+baked, and as a game wears her.
 
 ## 6d. A desk game as a Director project (the user, 2026-11-01: "when we export from director to godot it now follows this format/new system too")
 

@@ -37,6 +37,7 @@ uniform float wrap = 0.3;             // the white's light wrapped past the term
 uniform vec3 scatter_color : source_color = vec3(1.0, 0.72, 0.62);   // the wrapped light's colour (MetaHuman's sclera transmission: warm, pinkish)
 uniform float sss = 0.3;              // Godot's screen-space scattering on the white, none on the iris (HumanShaders' eye 0.4, RoboPoets' 0.5)
 uniform int debug = 0;                // 1 q (where the iris is read), 2 the view in the tangent space, 3 the frame's tangent
+uniform float lid_room = 0.0012;      // the eyeball drawn this much (m) deeper than it is, so a lid an expression has slid up to that far into the eye still covers it (0: its own depth)
 
 varying vec3 v_eyeN;                  // the surface's frame in the eye's own units, per vertex
 varying float v_onc;
@@ -112,6 +113,14 @@ void fragment() {
 	v_spec = SPECULAR;
 	AO = 1.0 - occ;
 	SSS_STRENGTH = sss * (1.0 - irisW);
+	// the eyeball drawn `lid_room` deeper than it is (GODOT_LOOK §5f): a lid that an expression has slid a little into the
+	// eye still covers it, as a lid does (the same pixel, further along its ray; nothing else of the eye changes)
+	vec4 hs_deep = PROJECTION_MATRIX * vec4(VERTEX + normalize(VERTEX) * lid_room, 1.0);
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+	DEPTH = hs_deep.z / hs_deep.w * 0.5 + 0.5;
+#else
+	DEPTH = hs_deep.z / hs_deep.w;
+#endif
 }
 
 float eye_ggx(float ndh, float a) { float k = a / (1.0 - ndh * ndh + ndh * ndh * a * a); return k * k / PI; }   // Godot's own D and V

@@ -12,6 +12,7 @@ render_mode unshaded, blend_mix, depth_draw_never, cull_back, shadows_disabled, 
 
 uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap, repeat_disable;
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest, repeat_disable;
+uniform float lid_room = 0.0012;      // as the eye's own (eye.gdshader): the layer lies where the eye is drawn, behind a lid that has slid into it
 uniform float eye_radius = 0.012;     // the eyeball's radius in the mesh's units (metres), from its bounds
 uniform float rho = 0.5;              // the eye's shape, as eye.gdshader's: the limbus's radius and plane, the dome
 uniform float limbus_plane = 0.866;
@@ -131,4 +132,12 @@ void fragment() {
 	if (debug == 1)
 		ALBEDO = vec3(rim, hood, 0.0);
 	ALPHA = 1.0;
+	// the eyeball drawn `lid_room` deeper than it is (GODOT_LOOK §5f): a lid that an expression has slid a little into the
+	// eye still covers it, as a lid does (the same pixel, further along its ray; nothing else of the eye changes)
+	vec4 hs_deep = PROJECTION_MATRIX * vec4(VERTEX + normalize(VERTEX) * lid_room, 1.0);
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+	DEPTH = hs_deep.z / hs_deep.w * 0.5 + 0.5;
+#else
+	DEPTH = hs_deep.z / hs_deep.w;
+#endif
 }

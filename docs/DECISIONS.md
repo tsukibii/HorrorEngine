@@ -17,6 +17,17 @@ The user's answers, newest first. They override the plan, the research and the d
   - **As characters, and for Godot**: `node tools/character/creatures.mjs make` makes each a character of its own
     (`creature_goblin` ... in the Studio's list), `--export` also exports each for Godot. The cards' pictures are
     kept in the project (`Content/Studio/Creatures/thumbs/`, `creatures.mjs thumbs` makes them again).
+  - **Fixed for Godot: a Studio character's face moves** (docs/GODOT_DIRECTOR.md §6c; GDFACES holds it). It didn't:
+    the bake that gives the Godot copy MHR's 72 face shapes skipped every export made since the blink (it took the
+    blink's own morph targets for "baked already"), the runtime's face player drove one mesh and left the lashes
+    behind, and an expression's closed eyes fought the blinker. Now the 72 go in beside the blink, every mesh that
+    carries them is driven, and the lids are handed to the blinker. And one more found by measuring: MHR's shapes are
+    made for MHR's eyes, so on a Studio character a look down or a squint slid the lids into the eyeballs and the eye
+    showed through them (up to 138 mm2 on a test character); the desk puts that right every frame, Godot had nothing,
+    so the bake now keeps the lids off the eyes in each shape (0.000 mm2 through a lid after it), and the look
+    plugin's eye is drawn 1.2 mm deeper than it is, which covers what several shapes at once (a smile) still slid in.
+    Characters already in a Godot project want their copy made again: Export for Godot in the Studio, or `python
+    tools/godot_director.py install <project>`, or the game's next export.
 
 ## 2026-11-10, night (the user: younger characters, Cutify, monster mode, more horns and animal ears)
 

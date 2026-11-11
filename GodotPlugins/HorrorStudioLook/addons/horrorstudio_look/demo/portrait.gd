@@ -7,7 +7,8 @@
 ## one side, and its strands close over the ear; `--shots=front,eyes` the head from the front and both eyes close under
 ## a portrait grid's soft frontal light (the eyes, brows and lashes against their reference). `--detail=off` pictures the same with the skin's detail layer off
 ## (HSSkin's `detail` 0), for the before and after. `--blink=W` holds both eyes that far shut (the export's blink, blink.gd;
-## the idle blink is always off here) and `--eyes=mask` draws the eyeballs a flat green, each shot counting the green
+## the idle blink is always off here), `--face=JSON` holds a face (MHR's shapes by name on every mesh that carries them: a
+## baked copy's) and `--eyes=mask` draws the eyeballs a flat green, each shot counting the green
 ## pixels (`eye_px`): a shut eye shows none (tools/godot/eyelids_check.py, EYELIDS).
 ## `--hide=lash,hair` leaves out the meshes whose names hold those words.
 ## The skin's depth layer (§5g): `--depth=N` its amount (0 off; HSSkin.wear's own when unset), `--ears=off` the ears'
@@ -29,6 +30,7 @@ var eye_json := ""
 var ssr_off := false
 var blink := 0.0                  # how far shut both eyes are held
 var eye_mask := false             # the eyeballs a flat green (counted in each shot)
+var face_json := ""               # a face held: MHR's shapes by Meta's names with their weights, on every mesh that carries them (a baked copy: tools/face_morphs.mjs)
 var hide: Array = []              # meshes left out by name (what a look is made of)
 var depth := -1.0                 # the depth layer's amount (-1: as HSSkin.wear sets it)
 var ears := true                  # the ears' glow
@@ -74,6 +76,8 @@ func _initialize() -> void:
 			blink = clampf(float(a.substr(8)), 0.0, 1.0)
 		elif a == "--eyes=mask":
 			eye_mask = true
+		elif a.begins_with("--face="):
+			face_json = a.substr(7)
 		elif a.begins_with("--hide="):
 			hide = Array(a.substr(7).split(","))
 		elif a.begins_with("--shots="):
@@ -142,13 +146,32 @@ func _initialize() -> void:
 	if bl != null:
 		bl.idle = false
 		bl.hold = Vector2(blink, blink)
+	if face_json != "":                              # a face held (GDFACES' pictures): each shape on every mesh that has it
+		var fw = JSON.parse_string(face_json)
+		report["face_meshes"] = 0
+		if fw is Dictionary:
+			for mi in who.find_children("*", "MeshInstance3D", true, false):
+				if not (mi.mesh is ArrayMesh):
+					continue
+				var any := false
+				for nm in fw:
+					var bi: int = mi.find_blend_shape_by_name(str(nm))
+					if bi >= 0:
+						mi.set_blend_shape_value(bi, float(fw[nm]))
+						any = true
+				if any:
+					report["face_meshes"] += 1
 	if eye_mask:                                     # the eyeballs flat green: what shows of them, counted
-		var green := StandardMaterial3D.new()
-		green.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		green.albedo_color = Color(0.0, 1.0, 0.0)
+		var green := ShaderMaterial.new()            # (drawn where the eye's own shader draws it: its lid_room deeper than it is)
+		green.shader = Shader.new()
+		green.shader.code = "shader_type spatial;\nrender_mode unshaded, cull_back;\nuniform float lid_room = 0.0;\nvoid fragment() {\n\tALBEDO = vec3(0.0, 1.0, 0.0);\n\tvec4 d = PROJECTION_MATRIX * vec4(VERTEX + normalize(VERTEX) * lid_room, 1.0);\n\tDEPTH = d.z / d.w;\n}\n"
 		for mi in who.find_children("*", "MeshInstance3D", true, false):
 			if String(mi.name).contains("_eye_") and mi.mesh != null:
 				for k in mi.mesh.get_surface_count():
+					var own = mi.get_active_material(k)
+					if own is ShaderMaterial and own.get_shader_parameter("lid_room") != null:
+						green.set_shader_parameter("lid_room", float(own.get_shader_parameter("lid_room")))
+						report["lid_room"] = float(own.get_shader_parameter("lid_room"))
 					mi.set_surface_override_material(k, green)
 				mi.material_overlay = null               # the wet layer off: the green counted as it's drawn
 	var hs: Script = load("res://addons/horrorstudio_look/hair.gd")       # an older plugin's wear takes no glb (--plugin pictures one)

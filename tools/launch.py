@@ -169,6 +169,7 @@ TOOLS = [
     ("Checks", "Ages, proportions and creatures (the Character Studio's ages 8 to 17, Cutify and monster mode on MHR's body)", "node tools/character/growtest.mjs", {}),
     ("Checks", "Ages page test (a child, Cutify, a creature, horns, ears and their export in a headless browser; the Character Studio's server running)", "node tools/character/growpagetest.mjs", {}),
     ("Checks", "Jiggle check (an export's animal ears on springs in Godot)", "tools/godot/jiggle_check.py", {}),
+    ("Checks", "Faces in Godot check (an export's 72 face shapes beside its blink, an expression played on every mesh; needs a Studio export)", "tools/godot/faces_check.py", {}),
     ("Checks", "Wardrobe test (the wardrobe page in a headless browser; the Character Studio's server running)", "node tools/character/wardrobetest.mjs", {}),
     ("Checks", "GPU drape test (the drape on the card against the CPU's, WebGPU; the Character Studio's server running; GPU=1 for the card)", "node tools/character/tailor/gputest.mjs", {}),
     ("Checks", "Play mode test (the Pilot walked, headless browser; the desk running)", "node tools/director/playtest.js", {}),
