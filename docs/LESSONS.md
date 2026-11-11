@@ -75,6 +75,25 @@ the fix.
   sculpt go on, where the head is carried and sized whole; and since that frame was never written down for older bakes,
   a bake takes the head the character opens with when it still sits on it, rather than guessing what it was.
 
+## Tutorial v2 using every system: what took a second try (2026-11-10, `update-tutorialv2`)
+
+- **Putting systems together finds what their own checks can't**: each plugin's check passed alone, and two bugs only
+  showed in one scene. A hidden character's hitboxes still stopped pellets (HSHitReact made them at `_ready`, and
+  hidden isn't absent; the tutorial's hunter waits hidden at her post). And HSHitReact calls `stop()` on what moves
+  her, but the starter's searcher's `stop()` hides her, so the dissolve was never seen. When one system calls another's
+  method, read what that method does to the shared node, and run a scene with both.
+- **`:=` again, on a `Node`-typed parameter**: `var lp := lap.global_position` with `lap: Node` doesn't parse (the
+  property isn't known on Node). Type the parameter as `Node3D`, or the variable (`var lp: Vector3 = ...`). The same
+  for `var x := await f()`: give it its type.
+- **One long `_initialize` is one scope**: the pictures script walks the whole night in one function, and a new shot's
+  `var gfrom` clashed with the glimpse's further up (a parse error that stops every picture). Name a later part's
+  variables apart, or put the part in its own function.
+- **A walk of pictures keeps every state it set**: the hiding picture opened the linen closet's door, and the new
+  pictures after it looked into the back of that door. Shut, hide and switch back what a picture changed before the next
+  part uses the place.
+- **A HUD's defaults are the runtime's**: HSHud writes the studio runtime's key chips when it's made (E inventory, G put
+  down), so the by-hand `keys` added to them made 11 chips. A setting that replaces a default must clear it first.
+
 ## The laptop in Godot (HSLaptop, HSTerminal): what took a second try (2026-11-10)
 
 - **`set_anchors_preset` keeps a control's size; `set_anchors_and_offsets_preset` fills**: in Godot 4 the first moves

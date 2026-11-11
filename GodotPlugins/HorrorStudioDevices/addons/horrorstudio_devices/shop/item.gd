@@ -11,6 +11,8 @@ extends Resource
 ## Whether it's in the shop at all is its `for_sale` (and a laptop's own `sells` list); whether it can be ordered yet is
 ## its `needs` (the DECISIONS of 2026-11-10, last: "make the items unlockable by quests that are done (flags) ... do a ?
 ## for non unlocked items"): until they hold it's a ? in the shop.
+## A gun or its shells go into the hands instead (In the hands: the weapons plugin's gun under the player is given it, or
+## the shells, as its pickup does), and any thing can tick off a task of the starter Story's when it comes (`tick`).
 
 @export var id := ""                          ## the pocket's name for it: what a door, a script or Story.has() asks for ("batteries")
 @export var title := ""                       ## its name on the screen and in the pocket ("Batteries, AA x2")
@@ -27,6 +29,12 @@ extends Resource
 @export var needs := ""                       ## what must have happened before it can be ordered, in the starter Story's words: "task:<id>" that task done, a fact set ("cellar_open"), "item:<id>" carried, "!" in front for not, several apart by commas (all of them). Empty: always. A game without that Story: the laptop's unlock(id)
 @export var show_locked := true               ## until it's unlocked: a ? in the shop (on), or not there at all (off: a surprise)
 @export_multiline var locked_text := ""       ## what the terminal says when its ? is picked ("FINISH THE CELLAR FIRST."); LOCKED. when empty
+@export_group("In the hands")
+@export var gun := false                      ## a gun, not a thing for the pocket: the weapons plugin's gun under the player (HSDoubleBarrel, its Owned off till then) is given it and drawn up into the view, as the plugin's pickup gives it
+@export var shells := 0                       ## shells for that gun each one brings (a box of five: 5; with `gun`, those it comes with), into the gun's own pocket rather than the Story's
+@export var shell: Resource                   ## their kind: an HSShellType (the weapons plugin's shells/buckshot.tres, shells/explosive.tres); empty: the gun's normal kind
+@export_group("")
+@export var tick := ""                        ## a task of the starter Story's it ticks off when it comes (as a pickup's tick: "gun")
 
 
 ## its name on the screen: the title, else its id
@@ -36,10 +44,17 @@ func name_of() -> String:
 
 ## into the pocket: `count` of it to the Story (`give(id, title, model, count)`: the HUD's row shows a copy of its
 ## model), an older Story's one argument once each; batteries are also the starter flashlight's spares (`add_spare`, as
-## its pickup.gd does)
+## its pickup.gd does); a gun or shells into the hands instead (`gun`, `shells`: the weapons plugin's gun given them,
+## when the scene has one); then its `tick`
 func give_to(tree: SceneTree, n: int, player: Node = null) -> void:
 	var st := tree.get_first_node_in_group("hs_story")
-	if st != null and st.has_method("give"):
+	var g := gun_in(tree) if (gun or shells > 0) else null
+	if g != null:
+		if gun:
+			g.give(shells * n, shell)
+		else:
+			g.add_shells(shells * n, shell)
+	elif st != null and st.has_method("give"):
 		if st.get_method_argument_count("give") >= 4:
 			st.give(id, name_of(), HSModelSlot.of_scene(model) if model != null else null, n)
 		else:
@@ -51,3 +66,17 @@ func give_to(tree: SceneTree, n: int, player: Node = null) -> void:
 		if fl != null and fl.has_method("add_spare"):
 			for i in n:
 				fl.add_spare()
+	if tick != "" and st != null and st.has_method("tick"):
+		st.tick(tick)
+
+
+## the gun it goes to (the weapons plugin's: the group hs_weapon): a gun the first there is, shells one that's carried
+## (else the first); null when the scene has none (then it's a thing for the pocket after all)
+func gun_in(tree: SceneTree) -> Node:
+	var w: Node = null
+	for g in tree.get_nodes_in_group("hs_weapon"):
+		if g.has_method("give") and g.has_method("add_shells") and (w == null or bool(g.get("owned"))):
+			w = g
+			if gun:
+				break
+	return w

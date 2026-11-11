@@ -65,6 +65,7 @@ var _flinch: HSFlinch
 var _roles := {}                                  # role -> bone (head, neck, pelvis, spine: Array, uparm_l...)
 var _fwd := Vector3.BACK                          # where she faces (the skeleton's space)
 var _boxes: Array = []
+var _boxes_on := true                             # her hitboxes solid (only while she's seen)
 var _attach := {}
 var _guns: Array = []
 var _t := 0.0
@@ -628,6 +629,7 @@ func _physics_process(dt: float) -> void:
 	if Engine.is_editor_hint():
 		return
 	var her := _her()
+	_sync_boxes(her)
 	if her != null and _now() < _hold_until and _hold_at != Vector3.INF:
 		var k := clampf((_now() - _knock_t0) / 0.22, 0.0, 1.0)
 		her.global_position = _hold_at + _knock * (1.0 - (1.0 - k) * (1.0 - k))
@@ -1003,6 +1005,20 @@ func _gone() -> void:
 		var hit := space.intersect_ray(q)
 		if not hit.is_empty():
 			_mark("pool", _lk.pool_m, hit["position"], hit["normal"], Vector3.FORWARD, _root)
+
+
+# her hitboxes solid only while she's seen: hidden (a figure not come yet, a searcher at her post, one a scare hid) she
+# stops no pellet and no blast; down, _gone() and restore() keep them
+func _sync_boxes(her: Node3D) -> void:
+	if is_down or _boxes.is_empty():
+		return
+	var on := her != null and her.is_visible_in_tree()
+	if on == _boxes_on:
+		return
+	_boxes_on = on
+	for b in _boxes:
+		if is_instance_valid(b):
+			(b as CollisionObject3D).collision_layer = HITBOX_LAYER if on else 0
 
 
 ## Back as she was before she was shot: shown, solid, whole (her char, her fade and her wounds gone), her health full.

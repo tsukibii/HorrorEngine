@@ -19,8 +19,10 @@ bedding, curtains, tables and chairs, the props' kept pictures, real wood in the
 systems that open, hold, move and are read; 2026-11-05, night, on `gameplay-enhancements`: the kit's stairs, the scene
 builder's floors, the street's steel stair, climbing in Godot and on the desk; 2026-11-08 on
 `claude/friendly-newton-9o2xey`, from the user's `retro-enhance`: the retro pack in the prop generator; 2026-11-09 and
-10 the weapons and the laptop, merged; 2026-11-10, night, on `claude/nifty-tesla-dc904q`: children, Cutify, monster
-mode, horns and animal ears in the Character Studio). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
+10 the weapons and the laptop, merged; 2026-11-10 on `update-tutorialv2`: tutorial v2 using every system, merged;
+2026-11-10, night, and 11 on `claude/nifty-tesla-dc904q`: children, Cutify, monster mode, horns and animal ears in the
+Character Studio, then the creature presets and a Studio character's face in Godot). Read this after CLAUDE.md's start
+list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
 ## Where it stopped last (2026-11-10, night, `claude/nifty-tesla-dc904q`): children, Cutify, monster mode, horns and ears that flop
@@ -103,7 +105,33 @@ head: what lay on the shoulders needs Hair, Bake); the outfits' pictures on a ch
 desk's stand-in bodies by age; the salon's own frame on a child's short face (it sizes the hair by the face's height,
 chin to crown, which an age shortens by a twentieth: presets may want a little more volume there).
 
-## Where it stopped last (2026-11-10, `laptop`): a laptop to sit at, a green terminal, a shop that fills the pocket, parcels at the door
+## Before that (2026-11-10, `update-tutorialv2`): tutorial v2 uses every system, and says what's missing
+
+The branch `update-tutorialv2`, made from main with `laptop` merged (PR #20). The user: "make a new branch called
+update-tutorialv2, that implements (gets the user to imeplmenet) every feature we've created so far so we can see whats
+missing, the gameplay itself doesnt need to be long, just needs to use every system to make sure verything works as
+expected (I will follow the tutorial and give feeedback in the pr)" (DECISIONS 2026-11-10, after that). Built:
+
+- **guides/tutorial_v2**, six new sections after the cues (§24 to §29): the UI plugin's HUD and quest markers (by the
+  to-do list), money and the laptop (the game's own catalog: the plugin's six and three files in `shop/items`; the
+  shotgun a ? till the knocks, the explosive shells till the gun's come), a parcel at 304's door, the shotgun, things that
+  break and glow (the kettle's LED and steam, the mug's tea, a candle, the entry's bulb), shooting her who hunts; §32
+  **every system in it**, a table of each and where, and **what a game by hand can't do yet** (parts that open, a book,
+  faces, moves, the HUD's words, E's prompt, the pause menu, the runtime's interactables, a street). Ten new pictures.
+- **TUTORIAL2** plays all of it after the jump scare (`every_system()` in `tutorial_v2_test.gd`), and the markers at the
+  start and at the note.
+- **The glue the tutorial needed**: HSShopItem's In the hands (`gun`, `shells`, `shell`) and `tick` (the shop gives the
+  weapons plugin's gun its gun and shells); HSQuestMarker's `needs` (the Story's words) and `shown()`; HSHud's `keys` (the
+  game's key chips in place of the runtime's); a quest marker over each parcel (`mark_parcels`, HSPackage `marker`).
+- **Two bugs the tutorial found**: a hidden character's hitboxes stopped pellets (her waiting at 308's door: now off while
+  she's hidden, HSHitReact `_sync_boxes`); shot down, the starter's searcher hid her at once so her dissolve was never
+  seen (searcher.gd's `stop()` leaves one `hs_down` to HSHitReact).
+- Checks: CHECKS, TUTORIAL2, GDUI, LAPTOP, WEAPONS ok.
+
+**Next**: the user follows the tutorial by hand and answers in the PR. Then, by their answers, the missing list (§32):
+likely the HUD's words fed by the Story and E's prompt first (small), then parts that open and books in the starter kit.
+
+## Before that (2026-11-10, `laptop`): a laptop to sit at, a green terminal, a shop that fills the pocket, parcels at the door
 
 The branch `laptop`, made from `weapon-system` (its pull request, PR #19, not merged yet: this one stacks on it). The
 user: "Make a new branch called laptop, similar to what we did for the retro props analyze and enhance the laptop and

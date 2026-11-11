@@ -6,7 +6,9 @@
 <title>Tutorial v2</title>
 <!-- Tutorial v2 (the user, 2026-11-07: "a tutorial that goes from modelling an interior for a floor in a hotel to building
      out the story from scratch in godot using our plugin (not director), should make use of every aspect we've added so
-     far"). Nothing loads from outside: the pictures in img/ are that game drawn by Godot and the scene builder showing
+     far"; 2026-11-10: "implements every feature we've created so far ... so we can see whats missing": the HUD and quest
+     markers, the laptop's shop and its parcels, the shotgun, things that break and glow, her shot down, and a table of
+     every system with what a game by hand can't do yet). Nothing loads from outside: the pictures in img/ are that game drawn by Godot and the scene builder showing
      its floor (python tools/godot/tutorial_v2.py --pictures); TUTORIAL2 builds the game as these steps say and plays it
      through. -->
 <style>
@@ -92,8 +94,17 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#jump">The jump scare and the hush</a></li>
     <li><a href="#intense">Making it intense</a></li>
     <li><a href="#cues">Cues: when everything is so</a></li>
+    <li class="part">Every system since</li>
+    <li><a href="#hud">The HUD and quest markers</a></li>
+    <li><a href="#laptop">Money and a laptop</a></li>
+    <li><a href="#parcel">A parcel at the door</a></li>
+    <li><a href="#gun">The shotgun</a></li>
+    <li><a href="#breaks">Things that break and glow</a></li>
+    <li><a href="#shoot">Shooting her</a></li>
+    <li class="part">The end</li>
     <li><a href="#ending">The way out</a></li>
     <li><a href="#play">Play it</a></li>
+    <li><a href="#coverage">Every system in it</a></li>
     <li><a href="#next">Where to go next</a></li>
   </ol>
   <a class="back" href="../first_game/index.html">← Your first game (v1)</a>
@@ -107,9 +118,11 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   reader is broken, the master key is in the linen closet, the corridor's lights won't stay on, and your flashlight is
   dying. Someone is standing at the end of the corridor, and she doesn't like the light. You'll model the floor in the
   <b>scene builder</b>, then build the whole game in Godot by hand: the <b>Look plugin</b> for the light, the weather and
-  the surfaces, and the <b>starter scripts</b> for the story, the sound and the scares. No Director.</p>
+  the surfaces, and the <b>starter scripts</b> for the story, the sound and the scares; then the <b>UI plugin</b>'s HUD and
+  quest markers, the <b>devices plugin</b>'s laptop to order things on (they come in a parcel to your door), the
+  <b>weapons plugin</b>'s double barrel, and made props that glow, steam and break. No Director.</p>
   <div class="chips"><span class="chip">about two hours</span><span class="chip">Godot 4.7</span><span class="chip">the scene builder</span>
-  <span class="chip">the HorrorStudio Look plugin</span><span class="chip">29 starter scripts</span><span class="chip">the sound shelf and the four moods</span></div>
+  <span class="chip">the HorrorStudio Look plugin</span><span class="chip">the UI, Devices and Weapons plugins</span><span class="chip">36 starter scripts</span><span class="chip">the sound shelf and the four moods</span></div>
 </header>
 
 <section id="what">
@@ -131,6 +144,14 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   a knock behind a door is muffled), footsteps, your body under fear (a heartbeat, breathing, the world going dull,
   the beam shaking), steps behind you, and her hunting by ear once it's dark (a corner to hide in, your breath held,
   a chase if she sees you).</li>
+  <li><b>The UI plugin:</b> the HUD's reticle, its keys and the pocket as a row of the things themselves, and quest
+  markers that come and go with the to-do list.</li>
+  <li><b>The devices plugin:</b> a laptop whose green terminal is a shop, things for sale as files, a ? until they're
+  earned, and parcels left at your door that burst open into your hands.</li>
+  <li><b>The weapons plugin:</b> the double barrel, two kinds of shell, a bulb shot out, a kettle and a mug of tea shot
+  to pieces, and her shot down into black ichor and smoke.</li>
+  <li><b>Made props:</b> the prop generator's kettle with its LED and steam, a mug whose tea stays level, a candle's flame.
+  <a href="#coverage">Every system in it</a> lists them all, with what a game by hand can't do yet.</li>
 </ul>
 <p>Every picture here is that game, drawn by Godot or the scene builder. <code>python tools/godot/tutorial_v2.py --keep ~/Games/Room304_done</code>
 builds it exactly as these steps do, so you can open the finished one beside yours. It goes in a folder of its own,
@@ -260,14 +281,17 @@ builder opens it like any set.</div>
 
 <section id="project">
 <h2><span class="n">9</span>The project</h2>
-<p>Make the project. It comes with the Look plugin, HumanShaders, the starter scripts, the studio's sound shelf and
-the four moods:</p>
+<p>Make the project. It comes with the Look, UI, Weapons and Devices plugins, HumanShaders, the starter scripts, the
+studio's sound shelf and the four moods:</p>
 <pre>python tools/godot_byhand.py new ~/Games/Room304 --name "Room 304"
 python tools/godot_byhand.py exports ~/Games/Room304 --link</pre>
 <p>Open it in Godot (Project Manager, <span class="ui">Import</span>). The second command links the studio's
 <code>Exports/</code> in, so a new export from the scene builder shows up at once. You can drag the folders in instead.</p>
 <div class="tree">res://
   addons/horrorstudio_look/     <i>the Look plugin (on)</i>
+  addons/horrorstudio_ui/       <i>the HUD and quest markers (on)</i>
+  addons/horrorstudio_devices/  <i>the laptop and its parcels (on)</i>
+  addons/horrorstudio_weapons/  <i>the double barrel, things that break (on)</i>
   HumanShaders/                 <i>skin and eyes</i>
   starter/                      <i>the starter kit: player, flashlight, story, sound, areas, pickups, notes, doors...</i>
   sfx/                          <i>the sound shelf: 240 CC0 sounds (ambience/, stings/, doors/, house/...)</i>
@@ -880,8 +904,177 @@ Stand by the bed with her place in a corner of your view and nothing happens eit
 </table>
 </section>
 
+<section id="hud">
+<h2><span class="n">24</span>The HUD and quest markers</h2>
+<p>From here on the night uses everything else the studio has made: the UI plugin's HUD, the devices plugin's laptop,
+the weapons plugin's shotgun and the made props' effects. They're already in your project (<code>godot_byhand.py</code>
+copies and turns on every plugin). First the HUD.</p>
+<p>The Story still draws its own objective, list, lines and cards. The UI plugin's HUD adds the rest: a reticle in the
+middle, the keys at the foot, the pocket as a row of the things themselves (<kbd>Tab</kbd>), and quest markers. Add a
+<span class="node">CanvasLayer</span> <code>HUD</code> to <code>Main</code> and drag
+<code>addons/horrorstudio_ui/hud.gd</code> onto it (HSHud). Leave <b>Standalone</b> on. Give it <b>Keys</b>, one per
+line, each "keys:what they do":</p>
+<pre>W A S D:walk
+E:use
+F:flashlight
+Tab:pocket</pre>
+<p>Without Keys it shows the studio runtime's keys (Click to play, E inventory, G put down...), which aren't this game's.</p>
+<p>A quest marker is a <span class="node">Node3D</span> with <code>addons/horrorstudio_ui/quest_marker.gd</code>
+(HSQuestMarker) under what it marks. Its <b>Needs</b>, in the Story's words, says when it's there:
+<code>on:find304</code> while that task is on the list and not done. Ticked, it goes by itself. Add a
+<span class="node">Node3D</span> <code>Markers</code> to <code>Main</code> for the ones that mark a place, then five
+markers:</p>
+<table class="vals">
+<tr><th>Marker</th><th>Label, Height, Needs</th></tr>
+<tr><td><code>Markers/Room304</code></td><td>at 304's door in the corridor: "Room 304", 2.1, <code>on:find304</code></td></tr>
+<tr><td><code>Markers/FireExit</code></td><td>by the fire door: "Fire exit", 2.1, <code>on:out</code></td></tr>
+<tr><td><code>Things/Key/Marker</code></td><td>"The master key", 0.05, <code>on:key</code>. It shows once the note has added the task, and goes with the key.</td></tr>
+<tr><td><code>Things/Batteries/Marker</code></td><td>"Batteries", 0.05, <code>on:batteries</code> (the flashlight's low task)</td></tr>
+<tr><td><code>Things/Laptop/Marker</code></td><td>"The laptop", 0.3, <code>on:gun</code>. Add this one once the laptop's in (next section).</td></tr>
+</table>
+<p>A marker is clearer the nearer you are, about half as strong through a wall, and shows its name once you're close.
+When it's out of view, a small pointer at the screen's edge shows the way. Project Settings &gt;
+<code>horrorstudio/ui/quest_marker</code> picks <i>Off</i>, <i>Subtle</i> or <i>Clear</i>.</p>
+<figure><img src="img/markers.jpg" width="1600" height="900" alt="The corridor from 304's door: the fire exit's quest marker at the far end, the keys at the foot of the screen"><figcaption>From 304's door: the fire exit's marker down the corridor, the HUD's keys at the foot.</figcaption></figure>
+</section>
+
+<section id="laptop">
+<h2><span class="n">25</span>Money and a laptop</h2>
+<p><b>Money:</b> add a <span class="node">Node3D</span> <code>Cash</code> to <code>Things</code> on 304's desk with
+<code>starter/pickup.gd</code>: <b>Item</b> empty, <b>Cash</b> 20, <b>Label</b> "$20.00", and a thin green
+<span class="node">BoxMesh</span> under it (0.155 × 0.004 × 0.066). E on it and the Story's <b>Cash</b> is 20.</p>
+<p><b>The laptop:</b> drag <code>addons/horrorstudio_devices/laptop/laptop.tscn</code> into <code>Things</code>, on the
+north half of 304's desk, turned −90° so its screen faces the room. E on it and the view goes in close to its
+screen. The mouse works its green terminal; <kbd>Esc</kbd> or <kbd>E</kbd> brings you back. Set its <b>User</b> to
+"room 304" and its <b>Clock</b> to 03:13.</p>
+<p><b>Its shop</b> sells what a catalog lists. The plugin has six things of its own. Make the game's own as files:</p>
+<ol class="steps">
+  <li>In the FileSystem dock make a folder <code>shop/items</code>. Right-click it, <span class="ui">Create New</span> &gt;
+  <span class="ui">Resource…</span> &gt; HSShopItem, three times:</li>
+</ol>
+<table class="vals">
+<tr><th>File</th><th>Fields</th></tr>
+<tr><td><code>shotgun.tres</code></td><td><b>Id</b> shotgun, <b>Title</b> "Double barrel", <b>About</b> "A double-barrel shotgun, second hand.
+Both barrels clean. No questions asked.", <b>Price</b> 12, <b>Category</b> DEFENCE, <b>Model</b>
+<code>addons/horrorstudio_weapons/models/shotgun_double.glb</code>, <b>Max Per Order</b> 1; For sale: <b>Needs</b> <code>knocked_304</code>, <b>Locked Text</b> "NOT YET.
+WAIT FOR THE KNOCK."; In the hands: <b>Gun</b> on; <b>Tick</b> gun</td></tr>
+<tr><td><code>shells.tres</code></td><td><b>Id</b> shells, <b>Title</b> "Buckshot, box of 5", <b>Price</b> 4, DEFENCE, <b>Model</b>
+<code>models/shells_box_5.glb</code> (the weapons plugin's), <b>Model Turn</b> (25, 0, 0); <b>Needs</b> <code>knocked_304</code>;
+In the hands: <b>Shells</b> 5</td></tr>
+<tr><td><code>explosive.tres</code></td><td><b>Id</b> explosive, <b>Title</b> "Explosive shells, 2", <b>About</b> "Two shells that burst where
+they land. Not for indoors.", <b>Price</b> 4, DEFENCE, <b>Model</b> <code>models/shells_box_5_explosive.glb</code>; <b>Needs</b>
+<code>task:gun</code>, <b>Locked Text</b> "GET THE GUN FIRST."; In the hands: <b>Shells</b> 2, <b>Shell</b>
+<code>addons/horrorstudio_weapons/shells/explosive.tres</code></td></tr>
+</table>
+<ol class="steps" start="2">
+  <li>Make <code>shop/hotel_shop.tres</code>, an HSShopCatalog: <b>Store</b> NIGHT-MART, <b>Items</b> the plugin's six
+  (<code>addons/horrorstudio_devices/shop/items/</code>: batteries, candle, painkillers, water, soda, burger), and
+  <b>Folder</b> <code>res://shop/items</code>. Every item saved in that folder is for sale too: to add a thing later,
+  save a new file there.</li>
+  <li>Set the laptop's <b>Catalog</b> to <code>hotel_shop.tres</code>.</li>
+  <li>On <code>Events/DeskKnock</code>, add a task to <b>Add Tasks</b>: <code>gun: Something to defend yourself with (the
+  laptop on the desk)</code>.</li>
+</ol>
+<p>The Order tab shows a page per category, <code>&lt; PREV 1 2 [3] NEXT &gt;</code>, with each thing's own model on its
+card. A thing whose <b>Needs</b> don't hold yet is a <b>?</b>: no model, no name, LOCKED, and its Locked Text when
+picked. The shotgun and the shells open once the knocks have come (the desk cue's fact). The explosive shells open once
+the gun is in your hands (its Tick). A thing just unlocked says NEW. What's bought is paid from the Story's Cash: the gun
+and a box of shells come to $16, and the explosive shells take the last $4.</p>
+<div class="pair">
+  <figure><img src="img/laptop.jpg" width="1600" height="900" alt="304's desk: the laptop with its screen raining green, the $20 note beside it, a kettle and a mug at the far end"><figcaption>The laptop on 304's desk, the $20 note, the kettle and the mug of tea.</figcaption></figure>
+  <figure><img src="img/shop.jpg" width="1600" height="900" alt="The laptop's green terminal on its DEFENCE page: the shotgun, the shells, and a ? for the explosive shells"><figcaption>DEFENCE, page 3 of 3: the explosive shells a ? until the gun's come.</figcaption></figure>
+</div>
+</section>
+
+<section id="parcel">
+<h2><span class="n">26</span>A parcel at the door</h2>
+<p>Bought things can come in a parcel instead of straight into the pocket. Add a <span class="node">Marker3D</span>
+<code>Doorstep</code> to <code>Things</code> on the corridor's floor beside 304's door (0.65 m west of it, 0.55 m
+out), turned 180° so its −Z points at the door, where you'll come from. On the laptop's Delivery group:</p>
+<table class="vals">
+<tr><td><b>Deliver To</b> <code>../Doorstep</code>, <b>Deliver Place</b> "304's door"</td><td>where it's left, and what the terminal calls the place</td></tr>
+<tr><td><b>Delivery Secs</b> 6</td><td>how long it takes</td></tr>
+<tr><td><b>When Unseen</b> on, <b>Knock</b> on</td><td>left only while you can't see the place, with a knock</td></tr>
+<tr><td><b>Mark Parcels</b> on</td><td>a quest marker over each one until it's opened</td></tr>
+</table>
+<p>Each order is its own parcel, left side by side. E on one: the tape tears, the box is gone in a puff, and each thing in
+it comes out of the puff at its own size and is pulled into you. Nothing is ever fitted into the box, so a shotgun can
+come out of a shoebox.</p>
+<div class="pair">
+  <figure><img src="img/parcels.jpg" width="1600" height="900" alt="Two parcels in the corridor beside 304's door, a quest marker over each"><figcaption>Two orders, two parcels, a marker over each.</figcaption></figure>
+  <figure><img src="img/unbox.jpg" width="1600" height="900" alt="The parcel gone in a puff of card dust, the double-barrel shotgun hanging in the air where it was"><figcaption>E: the box gone, the double out of it at its own size.</figcaption></figure>
+</div>
+</section>
+
+<section id="gun">
+<h2><span class="n">27</span>The shotgun</h2>
+<p>The gun has to be under your eye before a parcel (or the plugin's pickup) can give it to you. With
+<code>Player</code>'s Editable Children on, add a <span class="node">Node3D</span> <code>Shotgun</code> under
+<code>Player/Eye</code> and drag <code>addons/horrorstudio_weapons/double.gd</code> onto it (HSDoubleBarrel):</p>
+<table class="vals">
+<tr><td><b>Owned</b> off</td><td>not yours yet: hidden, deaf to the mouse</td></tr>
+<tr><td><b>Spare</b> 0</td><td>no shells in your pocket yet (it comes with its two barrels loaded)</td></tr>
+<tr><td><b>Light</b> <code>../Flashlight</code></td><td>the flashlight carried under its barrels while it's up</td></tr>
+</table>
+<p>The shop's shotgun has <b>Gun</b> on, so it goes to that gun, not the pocket, and the gun is drawn up into view. The
+shells' <b>Shells</b> go into the gun's own pocket (its marks low on the right), and their kind is the item's
+<b>Shell</b>. Its <b>Tick</b> ticks the task <code>gun</code>, which opens the explosive shells.</p>
+<table class="keys">
+<tr><td>left click</td><td>the right barrel, then the left</td></tr>
+<tr><td>right button</td><td>held to the eye</td></tr>
+<tr><td><kbd>R</kbd></td><td>reload: broken open, the hulls flicked out, a shell into each empty chamber</td></tr>
+<tr><td><kbd>T</kbd></td><td>the kind of shell R loads next: buckshot, explosive</td></tr>
+<tr><td><kbd>Q</kbd></td><td>lower it, raise it</td></tr>
+</table>
+<figure><img src="img/gun.jpg" width="1600" height="900" alt="The double-barrel shotgun low in the view in room 304, the kettle and the mug on the desk ahead"><figcaption>Yours: the double in 304, the tea things ahead.</figcaption></figure>
+</section>
+
+<section id="breaks">
+<h2><span class="n">28</span>Things that break, things that glow</h2>
+<p>The kettle and the mug are the weapons plugin's own made props (<code>models/electric_kettle.glb</code>,
+<code>models/mug_stoneware.glb</code>). Put them on the desk's south end, by the TV.</p>
+<table class="vals">
+<tr><td><code>Kettle/FX</code></td><td>a <span class="node">Node3D</span> with <code>addons/horrorstudio_look/nodes/prop_fx.gd</code> (HSPropFX):
+the effects the prop generator gave it, each a switch. Its LED glows; turn <b>Steam</b> on and its spout steams.</td></tr>
+<tr><td><code>Kettle/BlowUp</code></td><td>a <span class="node">Node3D</span> with <code>addons/horrorstudio_weapons/blowup/blow_up.gd</code> (HSBlowUp):
+it's cut into its own pieces as it loads. Shot hard enough it breaks into them, small ones near the hit, its own
+materials on every piece, its kind (metal, ceramic...) guessed. A weak shot only dents it.</td></tr>
+<tr><td><code>Mug</code></td><td>Editable Children on. Under its <code>mug_stoneware_liquid</code> a <span class="node">Node</span> <code>Tea</code> with
+<code>nodes/liquid_fill.gd</code> (HSLiquidFill): the tea stays level and sloshes. A <code>BlowUp</code> too: broken,
+its tea is a pool.</td></tr>
+<tr><td><code>Candle</code></td><td>the shop's own model, <code>addons/horrorstudio_devices/shop/models/candle_votive.glb</code>, on the bath's
+floor past the blood, with an <code>FX</code> (HSPropFX): its flame and a flickering light. Someone left it burning.</td></tr>
+</table>
+<p><b>A bulb to shoot out:</b> in <code>Zones/Entry304</code>, swap the <code>Light</code> for a
+<span class="node">Node3D</span> <code>Bulb</code> 0.25 m under the ceiling: a small glowing sphere mesh, a
+<span class="node">StaticBody3D</span> with a 7 cm sphere, the <span class="node">OmniLight3D</span> <code>Light</code>
+under it, and a <span class="node">Node</span> <code>Shootable</code> with <code>addons/horrorstudio_weapons/shootable.gd</code>
+(HSShootable): <b>Lights Out</b> on, <b>Say</b> "The bulb bursts. Dark." One shot and the entry's dark.</p>
+<div class="pair">
+  <figure><img src="img/blown.jpg" width="1600" height="900" alt="The desk after both barrels: the kettle and the mug in pieces, the tea spilled"><figcaption>Both barrels: the kettle and the mug in pieces.</figcaption></figure>
+  <figure><img src="img/candle.jpg" width="1600" height="900" alt="A candle burning on the bath's floor in the dark"><figcaption>The candle's flame and its light (HSPropFX).</figcaption></figure>
+</div>
+</section>
+
+<section id="shoot">
+<h2><span class="n">29</span>Shooting her</h2>
+<p>The one who hunts can be shot. Add a <span class="node">Node3D</span> <code>HitReact</code> under
+<code>Events/Hunter</code> with <code>addons/horrorstudio_weapons/react/hit_react.gd</code> (HSHitReact). It puts
+hitboxes on her bones (a capsule round a stand-in) on a layer of their own that only shots see. While she's hidden
+they stop nothing. Shot, she flinches and staggers, with no blood: black ichor and dark smoke. At <b>Health</b> 12
+(a pellet does 1, the head twice that) she's down: she chars, crumbles into the smoke, leaves a pool where she stood,
+and her Searcher and Chase stop.</p>
+<p>Its <b>Target</b>: add an <span class="node">Area3D</span> <code>ShotDown</code> to <code>Events</code> with
+<code>starter/event_area.gd</code> and no room (it's only fired): <b>Say</b> "Whatever she was, she's smoke now.",
+<b>Fact</b> <code>shot_her</code>, <b>Music</b> <i>uneasy</i>.</p>
+<div class="pair">
+  <figure><img src="img/her_shot.jpg" width="1600" height="900" alt="Her coming down the dark corridor in the flashlight's beam, hit: black ichor and smoke"><figcaption>The right barrel: black ichor, and smoke out of the wound.</figcaption></figure>
+  <figure><img src="img/her_smoke.jpg" width="1600" height="900" alt="Her charring and crumbling into black smoke in the corridor"><figcaption>The left: down, charring into the smoke.</figcaption></figure>
+</div>
+</section>
+
 <section id="ending">
-<h2><span class="n">24</span>The way out</h2>
+<h2><span class="n">30</span>The way out</h2>
 <p>With <code>Hotel</code>'s Editable Children on, select <code>hotel_floor/doors/door_corridor_e_door</code> (the fire
 door) and drag <code>starter/door.gd</code> onto it. Set its <b>Tick</b> to <code>out</code>. In the
 <span class="ui">Node</span> tab connect its <b>opened</b> signal to <code>Story</code> → <code>end</code>. Opening the
@@ -890,13 +1083,16 @@ fire door ends the night: the screen goes black and the ending's title comes up.
 </section>
 
 <section id="play">
-<h2><span class="n">25</span>Play it</h2>
+<h2><span class="n">31</span>Play it</h2>
 <p>Press <kbd>F5</kbd>.</p>
 <table class="keys">
 <tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>walk (up the stairs too), <kbd>Shift</kbd> runs</td></tr>
 <tr><td>mouse</td><td>look</td></tr>
 <tr><td><kbd>E</kbd></td><td>open a door, pick a thing up, read a note, sit down, lie down; E again puts the note away or gets you up</td></tr>
 <tr><td><kbd>F</kbd></td><td>the flashlight</td></tr>
+<tr><td><kbd>Tab</kbd></td><td>the pocket: the things you carry, as themselves, in a row</td></tr>
+<tr><td>at the laptop</td><td>the mouse on its screen; <kbd>Esc</kbd> or <kbd>E</kbd> back</td></tr>
+<tr><td>the gun</td><td>left click fires, right button aims, <kbd>R</kbd> reloads, <kbd>T</kbd> the kind of shell, <kbd>Q</kbd> lowers it</td></tr>
 <tr><td><kbd>Esc</kbd></td><td>let the mouse go</td></tr>
 </table>
 <ol class="steps">
@@ -904,20 +1100,60 @@ fire door ends the night: the screen goes black and the ending's title comes up.
   <li>304 is locked. Read the note on the carpet. Was someone at 308's door just then?</li>
   <li>The linen closet is dark: <kbd>F</kbd>. Take the key and the corridor goes out behind you, one tube at a time, then comes back.</li>
   <li>Open 304 with the key. The TV's on. The music turns to dread. Look at the window, then back at the bath's door. And again. Then wash your face, and stand by the bath's wall with the lamp behind you. Lie on the bed and look up at the ceiling. Sit at the desk and watch the static.</li>
+  <li>Three knocks. Pick up the $20 by the laptop and look at its shop: something's for sale now. Order the shotgun and a
+  box of shells, close the laptop and wait. A knock: two parcels at 304's door. Open them. Order the explosive shells
+  too. Try the gun on the kettle. Shoot out the entry's bulb, if you'd rather the dark.</li>
   <li>The flashlight dies. Batteries in the vending corner, where the radio's hissing. Walk back out and listen behind you.</li>
   <li>On the way out she's at the end of the corridor, the tubes stuttering round her, her head on one side. Walk, and she walks. Your heart picks up as you near her. Shine the light on her and she backs off. Do it twice and the corridor goes dark.</li>
+  <li>When she hunts you in the dark she can be stopped now: both barrels.</li>
   <li>Walk to the fire exit. Don't look under 308's door.</li>
 </ol>
 </section>
 
+<section id="coverage">
+<h2><span class="n">32</span>Every system in it</h2>
+<p>This night is meant to use every system the studio has made for a game built by hand, so that a missing or broken
+one shows up. Here's each one and where it is. <code>python tools/godot/tutorial_v2.py</code> (TUTORIAL2) builds the
+game as these steps say and plays all of it.</p>
+<table class="vals">
+<tr><th>System</th><th>In this game</th></tr>
+<tr><td><b>Scene builder</b></td><td>rooms on two floors, a dog-leg stair, doors locked by a key, windows, furniture, lamps, paint, the export: <a href="#plan">§3</a> to <a href="#export">§8</a></td></tr>
+<tr><td><b>Character Studio</b></td><td>her, a Studio export with its skin wet (a stand-in when you have none): <a href="#scene">§10</a>, <a href="#her">§20</a></td></tr>
+<tr><td><b>Look plugin</b></td><td>the look and the grade, light zones, the tube and dying bulb presets: <a href="#light">§11</a>; rain on glass, a car's lights, a CRT, a real mirror, a wet floor, blood, a light shaft, a leak and a puddle, leaves' shadows, the tape: <a href="#dress">§12</a>; the air, its dust and the beam: <a href="#air">§13</a>; lightning, breath and frost, steam writing: <a href="#intense">§22</a>; made props' effects (HSPropFX) and a liquid's level (HSLiquidFill): <a href="#breaks">§28</a></td></tr>
+<tr><td><b>Starter kit</b> (36 scripts)</td><td>the player, flashlight, story, pocket and cash, sound and its physics, room tones, footsteps, notes, pickups, doors and locks, event and scare areas, lights: <a href="#story">§15</a> to <a href="#jump">§21</a>; fear, the steps behind you, her signs, the glimpse, the one closer each time, the mirror figure, the shadow, the feet, the uncanny, the night's director and its moments, her menace, the searcher, the chase, the cold, the steam: <a href="#intense">§22</a>; cues and seats: <a href="#cues">§23</a></td></tr>
+<tr><td><b>Sound shelf and moods</b></td><td>the four moods, a tone for each room, every sound placed and traced through the rooms: <a href="#sound">§14</a>, <a href="#body">§22</a></td></tr>
+<tr><td><b>UI plugin</b></td><td>HSHud (the reticle, the keys, the pocket as a row of the things themselves), HSQuestMarker coming and going with the to-do list: <a href="#hud">§24</a>; HSModelSlot in the pocket's row and the shop's cards</td></tr>
+<tr><td><b>Devices plugin</b></td><td>the laptop, its terminal, the Order tab a page per category, things as files in a catalog's folder, locks shown as a ?, NEW: <a href="#laptop">§25</a>; delivery, parcels with a marker each, unboxing into the hands: <a href="#parcel">§26</a></td></tr>
+<tr><td><b>Weapons plugin</b></td><td>the double barrel from a parcel, its reload, aim and the two kinds of shell: <a href="#gun">§27</a>; its pellets' holes in the walls, a bulb shot out (HSShootable), the kettle and the mug broken (HSBlowUp): <a href="#breaks">§28</a>; her shot down into black ichor and smoke (HSHitReact, HSOoze): <a href="#shoot">§29</a></td></tr>
+<tr><td><b>Prop generator</b></td><td>the laptop and its mouse, the parcel, the shotgun, the shells' boxes, the kettle, the mug, the candle and the shop's things are all its made props</td></tr>
+</table>
+<h3 id="missing">Not in it yet: what a game by hand can't do</h3>
+<p>The studio has these, but they only run in the desk's exports or the Director's projects. The starter kit has no
+way to use them yet:</p>
+<table class="vals">
+<tr><td><b>Parts that open</b></td><td>a made prop's lids, doors and drawers (a suitcase, a wardrobe to hide in, a box), things put in and taken out, things shoved and carried: the runtime's <code>parts.gd</code></td></tr>
+<tr><td><b>A book in the hands</b></td><td>a journal whose pages are written in a hand, turned with the arrows: the runtime's <code>book.gd</code> (here a note is a card)</td></tr>
+<tr><td><b>Faces</b></td><td>expressions from the Face page played on her face: the runtime's <code>face.gd</code> (here only <code>uncanny.gd</code>'s smile and stare)</td></tr>
+<tr><td><b>Her moves</b></td><td>Kimodo's motions and an animation library: the Director's Animate tab (here she stands, and walks as a whole)</td></tr>
+<tr><td><b>The HUD's words</b></td><td>the starter Story draws its objective, list, lines and cards itself, so the HUD's corners, its serif lines and its cards go unused</td></tr>
+<tr><td><b>E's prompt</b></td><td>the reticle doesn't say what E will do ("Take: the master key"). The runtime feeds it, the starter player doesn't.</td></tr>
+<tr><td><b>Pause menu, saves</b></td><td>the HUD's menu (Save, Settings, Quit) is the runtime's, with Standalone off</td></tr>
+<tr><td><b>The peephole, the latch, cleaning, board games, nights as chapters</b></td><td>the runtime's interactables</td></tr>
+<tr><td><b>A street</b></td><td>the hotel has none. <a href="../first_game/index.html">Your first game</a> puts its house on a street.</td></tr>
+</table>
+<p>Tell us which of these you missed while building it.</p>
+</section>
+
 <section id="next">
-<h2><span class="n">26</span>Where to go next</h2>
+<h2><span class="n">33</span>Where to go next</h2>
 <ul>
   <li><b>Another floor</b>: in the scene builder, <span class="ui">copy ↑</span> copies a floor up with everything on it;
   export again, and the export's link puts it in your project at once.</li>
   <li><b>The hotel from the street</b>: put the set in a building on a street in the street builder, as <a href="../first_game/index.html">your first game</a> does with its house.</li>
-  <li><b>Made props</b>: the prop generator's props come with a Godot scene each (<code>Saved/Props/&lt;name&gt;/&lt;name&gt;.tscn</code>): a
-  suitcase that opens, a journal, cans with your own labels. Drop one in and give it <code>pickup.gd</code> or <code>note.gd</code>.</li>
+  <li><b>Made props</b>: the prop generator's props come with a Godot scene each (<code>Saved/Props/&lt;name&gt;/&lt;name&gt;.tscn</code>):
+  cans with your own labels, a candle, a kettle. Drop one in and give it <code>pickup.gd</code> or <code>note.gd</code>, an
+  HSPropFX for what it glows with, an HSBlowUp to break it. A suitcase's lid and a journal's pages don't open in a game by
+  hand yet (<a href="#missing">not in it yet</a>).</li>
   <li><b>Her face and her moves</b>: an <span class="node">AnimationPlayer</span> on her blend shapes, or the face clips the studio's Face page makes.</li>
   <li><b>The whole look</b>: the plugin's other nodes and its 40 presets, in <a href="../look_plugin/index.html">its guide</a>.</li>
   <li><b>Quests, conversations, branching endings</b>: what the Director does, in <a href="../director/index.html">its guide</a>.</li>
@@ -926,9 +1162,10 @@ fire door ends the night: the screen goes black and the ending's title comes up.
 </section>
 
 <footer>Tutorial v2: the hotel floor set from the scene builder, built into a game by hand in Godot 4.7 with the
-HorrorStudio Look plugin and the starter kit. <code>python tools/godot/tutorial_v2.py</code> (TUTORIAL2) builds it as
-these steps do and plays it through: the stairs, the dim, the locked door, the note, the key and the lights out one by one,
-304, the flashlight's batteries, her in the beam, the hush and the jump, the ending. <code>--pictures</code> draws the
+HorrorStudio Look, UI, Devices and Weapons plugins and the starter kit. <code>python tools/godot/tutorial_v2.py</code>
+(TUTORIAL2) builds it as these steps do and plays it through: the stairs, the dim, the locked door, the note, the key and
+the lights out one by one, 304, the flashlight's batteries, her in the beam, the hush and the jump; the HUD's markers,
+the $20, the laptop's shop and its parcels, the gun, the kettle, the mug and the bulb shot, her shot down; the ending. <code>--pictures</code> draws the
 pictures here again.</footer>
 </main>
 </div>
