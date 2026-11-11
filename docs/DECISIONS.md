@@ -2,6 +2,22 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-11 (the user: Cloth2Tex as a second clothing system, a CloV2 tab; then what's newer and free)
+
+- **"Evaluate and determine whether we could upgrade our clothing system with the following option instead
+  https://github.com/HumanAIGC/Cloth2Tex , instead of replacing it we'd simple add a new cloV2 tab , if we could use this
+  how much vram etc would it require to run the repo , U know the repo doesnt give us phase 2 (fine textures) but im ok
+  using our exiting textrues + pbrs"**. Read at source (docs/research/clothing_v2/cloth2tex.md): **no**. It makes no
+  garments: it ships nine fixed meshes (GPL-3.0: they can't ship in a game, and they fit no body) and its whole output is
+  a 512 px texture for one of them from a front and a back photo, with holes down every seam, which its phase 2, never
+  released, was to repair. So its garments with our textures keep nothing of it but those meshes. Every photo needs its
+  landmarks clicked by hand (the detector was held back); one commit, 2023-12, and nothing since. **About 2 GB of VRAM**
+  (worked out from the code's tensors, not measured: no graphics card in the session). The idea worth keeping is a
+  garment's look from photos, which our own flat panels make a 2D warp (a print the size of a panel), no renderer and no
+  GPU. Nothing built.
+- **"I notice that repo is 3 years old, have there been any better advacnes for easier clothing for 3d game models ?
+  research into any free alternatives"**. Read as: research only, then the user picks.
+
 ## 2026-11-10, after that (the user: tutorial v2 to use every system)
 
 - **"make a new branch called update-tutorialv2, that implements (gets the user to imeplmenet) every feature we've
