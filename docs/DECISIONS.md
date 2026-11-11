@@ -2,6 +2,20 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-11, the go (the user: build the hair editor v2.0, all of it, until it looks really good in Godot)
+
+- **The answer to the plan's questions**: **"v2 should be in the character creator studio tab, let it reach the chest
+  (might be ok for some clothing, we can adjust always with a slider the length), 3 sure, 4 sure. Start working on
+  everything and dont stop until it looks really good inside godot and runs well."** So:
+  - **It's a tab of the Character Studio** (Hair editor v2.0, beside the salon's Hair tab), as planned.
+  - **Hair may reach the chest**: the length is a slider, and its end is the chest (loose hair and tails both), not the
+    collarbones the plan had. The first rule ("not too much longer than shoulder height") is now the styles' default
+    lengths, not a wall.
+  - **About 20,000 triangles of hair** by default: yes. **Braids, beards, hair under hats**: later, yes.
+  - **No stops for review**: the plan's "stop for the user's answer" after each sheet is lifted by the user. Build
+    every step; judge it in Godot's own pictures until it looks really good there; measure that it runs well (the
+    Studio's regeneration time, the triangles and the frame's cost in Godot).
+
 ## 2026-11-11, after the very last (the user: a hair editor v2.0, planned before it's built)
 
 - **The ask**, with five reference pictures (a sleek middle-part bob, low twin tails with a swept fringe,

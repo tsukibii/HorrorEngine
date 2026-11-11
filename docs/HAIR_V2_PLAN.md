@@ -178,9 +178,10 @@ is the answer to clipping beyond the length cap, and the hair is made again when
   sides).
 - **Ends**: Blunt to Wispy (a blunt end stops before the atlas's strands thin out; a wispy one runs through them),
   Thin out (some hairs cut shorter), Uneven.
-- **The cap** (the user's rule): loose hair goes no lower than the collarbones (measured on MHR's base body: the
-  shoulders' tops are about 25 cm under the crown, 3 to 4 cm under the chin's height). A tail's length is its own
-  slider with its own cap (§5, question 2).
+- **The cap** (the user's answer, DECISIONS 2026-11-11, the go: "let it reach the chest ... we can adjust always with a
+  slider the length"): the length sliders end at the chest, for loose hair and tails alike; the styles' own lengths
+  stay about the shoulders (measured on MHR's base body: the shoulders' tops are about 25 cm under the crown, 3 to
+  4 cm under the chin's height).
 
 ### 3.6 Shape and volume
 
@@ -316,7 +317,11 @@ A likeness is the user's to judge, part by part (LESSONS, 2026-11-11: don't fini
 - **What 1:1 can mean here**: the same cut, parting, fringe, lengths, outline and texture in our look. The pictures
   are strand grooms of 50,000 hairs and more in Unreal; ours are cards under HSHair. The sheets show how close that
   gets, and the first sheet comes before anything is built on it (§7, step 1).
-- **Questions for the user** (my defaults in brackets, so "go" is enough):
+- **The user's answers** (DECISIONS 2026-11-11, the go): a tab of the Character Studio, yes; hair may reach the chest
+  (the length is a slider); 20,000 triangles, yes; braids, beards and hats later, yes; and **no stops**: "start
+  working on everything and dont stop until it looks really good inside godot and runs well", so §7's stops for the
+  user's answer are lifted and each step is judged in Godot's pictures instead. The questions as they were asked (my
+  defaults in brackets):
   1. v2 beside the salon, a switch on each character choosing which is worn [yes].
   2. Picture 2's tails reach the chest, past "not much longer than the shoulders". Loose hair to the collarbones at
      most, tails up to about 25 cm from the tie since they swing on their own bones [yes]; or tails capped at the

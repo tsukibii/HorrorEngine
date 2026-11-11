@@ -126,6 +126,21 @@ static func scalp_material(colour := Color(1, 1, 1)) -> StandardMaterial3D:
 	return m
 
 
+## short hair as shells (hair_shell.gdshader): the tile the file carries, the look's root and tip colours
+static func shell_material(tile: Texture2D, rec: Dictionary = {}) -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = load("res://addons/horrorstudio_look/hair_shell.gdshader")
+	if tile != null:
+		m.set_shader_parameter("texture_tile", tile)
+	var k = rec.get("look")
+	if k is Dictionary:
+		if k.has("root"):
+			m.set_shader_parameter("root_color", Color.html(str(k["root"])))
+		if k.has("tip"):
+			m.set_shader_parameter("tip_color", Color.html(str(k["tip"])))
+	return m
+
+
 ## is a mesh's or material's name hair: hair, lash or brow in it, and not the scalp
 static func is_hair(names: String) -> bool:
 	var n := names.to_lower()
@@ -151,10 +166,20 @@ static func wear(node: Node, look: Dictionary = {}, glb_path: String = "") -> Ar
 			var old = mi.get_active_material(s)
 			var names: String = mi.name + " " + (mi.mesh.surface_get_name(s) if mi.mesh is ArrayMesh else "") + " " + (old.resource_name if old != null else "")
 			if names.to_lower().contains("scalp") or names.to_lower().contains("brow_fill"):   # the darkened scalp, the brows' see-through fill: colour by vertex
+				if old is BaseMaterial3D and old.albedo_texture != null:   # a painted scalp (the hair editor v2.0's: a dot a pore, docs/HAIR_V2.md): its own texture, matt
+					old.roughness = 1.0
+					old.metallic_specular = 0.0
+					old.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+					continue
 				if not (old is StandardMaterial3D and old.vertex_color_use_as_albedo):
 					mi.set_surface_override_material(s, scalp_material(old.albedo_color if old is BaseMaterial3D else Color(1, 1, 1)))
 				continue
 			if not is_hair(names):
+				continue
+			if names.to_lower().contains("shell"):       # short hair as shells (the hair editor v2.0's: hair_shell.gdshader)
+				if not (old is ShaderMaterial):
+					var rec_s = recs.get(old.resource_name if old != null else "")
+					mi.set_surface_override_material(s, shell_material(old.albedo_texture if old is BaseMaterial3D else null, rec_s if rec_s is Dictionary else {}))
 				continue
 			if old is ShaderMaterial and (old.shader == shader() or old.shader == fine_shader()):
 				set_look(old, look)
