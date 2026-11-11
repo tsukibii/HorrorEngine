@@ -2,6 +2,32 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-11, after the very last (the user: a hair editor v2.0, planned before it's built)
+
+- **The ask**, with five reference pictures (a sleek middle-part bob, low twin tails with a swept fringe,
+  shoulder-length waves from a side parting, a short cut with a long swept fringe, a chin bob with see-through bangs):
+  **"Analyse our character studio hair creator, I really love how I can make the hair and it looks really good in
+  godot but there are often small gaps etc, can you make a new tab called hair editor v2.0, instead of me having to
+  create the strands, add pre defined hair pores all around the head and sliders I can adjust to change the shape.
+  Aim to be able to re-create all the hair styles in the images provided. Maybe vary the hair line pore shape so we
+  can get slight variations (this should be a dropdown), your goal is to be able to recreate each hair in the image
+  1:1 and preview it in godot to make sure it looks good."**
+- **A new tab, not the Hair tab**: "the hair maker shouldn't exist in the current hair tab, should be a full on new
+  tab like clothes etc". The salon stays as it is.
+- **What it must reach**: "pigtails, tied up hair, curly long hair etc ... replicate/simulate each of the hairstyles
+  in the images + more (more traditional male ones, balding, long)".
+- **A length cap**: "don't make the hair too much longer than shoulder height as this may cause clipping with clothing
+  later".
+- **Plan first**: "Come up with the detailed plan first on how you will achieve this new hair creator, then ask me to
+  start on implementation." So nothing is built: **docs/HAIR_V2_PLAN.md** is the plan (the salon analysed, the
+  pictures taken apart, the design, the tab's controls, the build in steps with a stop for the user's answer after
+  the first sheet, the checks, the limits).
+- **Claude's calls in the plan, the user's to overturn** (its §5): v2 beside the salon with a switch on each character
+  for which hair is worn; loose hair to the collarbones at most, tails up to about 25 cm from their tie (picture 2's
+  reach the chest); the first sheet is picture 1's bob, picture 4's short cut, a man's side parting and a thinning
+  crown, with the hairline shapes as dots on the head; about 20,000 triangles of hair by default; braids, beards and
+  hair under hats later. The pictures stay on the user's side, not in git (other people's renders).
+
 ## 2026-11-11, the very last (the user: fix the library garments' limits)
 
 - **"fix all the limits"**, each with its answer:

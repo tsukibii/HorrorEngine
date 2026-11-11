@@ -24,11 +24,37 @@ builder's floors, the street's steel stair, climbing in Godot and on the desk; 2
 Character Studio, then the creature presets and a Studio character's face in Godot, then the Anime switch and the red
 knit dress; then on `claude/beautiful-cray-a622xx`: tutorial v2's floor ready-made; 2026-11-11 on
 `claude/compassionate-babbage-3bnfqx`: the clothing research (Cloth2Tex, ready-made garments, the fit test, the
-clothing library). Read this after CLAUDE.md's start
+clothing library), merged; then on `claude/ecstatic-dijkstra-6ixk71`: the hair editor v2.0, planned and not built.
+Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-11, `claude/compassionate-babbage-3bnfqx`): ready-made clothing fitted to our bodies, researched and tested, then worn in layers
+## Where it stopped last (2026-11-11, `claude/ecstatic-dijkstra-6ixk71`): the hair editor v2.0, planned; waiting on the user's yes
+
+From main (PR #24 merged). **Nothing built: a plan, as the user asked** (DECISIONS 2026-11-11, after the very last):
+"come up with the detailed plan first ... then ask me to start on implementation". With five reference pictures (a
+sleek middle-part bob, low twin tails with a swept fringe, shoulder-length waves from a side parting, a short cut
+with a long swept fringe, a chin bob with see-through bangs; kept on the user's side, not in git).
+
+- **docs/HAIR_V2_PLAN.md** is the plan: the salon analysed (where its gaps come from: roots only where locks were
+  put, cards see-through toward their tips, strands that scale with a card's width, cures that are patches by hand, a
+  fall that undoes the shape, a head of rays, nothing swinging in Godot), the five pictures taken apart, and the
+  design: **a new Studio tab, Hair editor v2.0**, hair grown from a fixed set of pores on MHR's scalp (the hairline a
+  dropdown, thinning for balding), combed by a parting, the crown, the fringe and ties, each hair traced (comb, lie,
+  fall: layers in order by construction, no simulation after), cut by length or to a line, textured (clumps, waves,
+  curls, strays), ties with tails on HSJiggle's bones, out as cards through the salon's own bake so Godot's HSHair
+  wears it unchanged; coverage counted and filled; a Preview in Godot button; the checks HAIR2, HAIR2PAGE, GDHAIR2.
+- **The next step, on the user's yes**: the plan's step 1 (§7): the engine in node and the first sheet from Godot
+  (the hairline shapes as dots on the head; picture 1's bob, picture 4's short cut, a man's side parting, a thinning
+  crown, from five sides, beside the pictures). **Stop there for the user's answer** before the tab (LESSONS: a
+  look-alike is the user's to judge, part by part). The plan's §5 has five questions with defaults; their answers
+  override them.
+- **Measured for it** (a scratch script, nothing kept): MHR's scalp by the salon's outline is 679 cm² over 1,838
+  triangles; pores 6 mm apart are about 1,800, 7 mm about 1,300; the shoulders' tops are about 25 cm under the crown.
+  Godot 4.7 installed in the cloud session by `tools/godot_setup.sh`, GODOT ok.
+- The salon, its files and every baked hair are untouched.
+
+## Before that (2026-11-11, `claude/compassionate-babbage-3bnfqx`, merged in PR #24): ready-made clothing fitted to our bodies, researched and tested, then worn in layers
 
 Research and a prototype, from main (PR #21, then PR #22 merged in); nothing in the Studio changed. The user asked
 five things (DECISIONS 2026-11-11, both sections): whether Cloth2Tex could be a second clothing system, a CloV2 tab;
