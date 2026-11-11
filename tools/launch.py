@@ -230,6 +230,9 @@ TOOLS = [
 
     ("Look", "Clothes: an outfit's contact sheet (Saved/tailor_sheet.png)", "node tools/character/tailor/sheet.mjs --outfit {ask:Outfit (e.g. work uniform)} {opt:Body (feminine, masculine, average)|--body} --out Saved/tailor_sheet.png", {}),
     ("Look", "Clothes: pictures of every outfit and design on the default model, for the Studio's picker (Content/Studio/Clothes/thumbs)", "node tools/character/tailor/thumbs.mjs", {}),
+    ("Look", "Creatures: each creature preset as a character of its own (creature_goblin ...), saved; the Character Studio's server running", "node tools/character/creatures.mjs make {opt:Only these (e.g. goblin,ogre)|--only}", {}),
+    ("Look", "Creatures: the same, and each exported for Godot (Exports/characters/creature_<id>)", "node tools/character/creatures.mjs make --export {opt:Only these (e.g. goblin,ogre)|--only}", {}),
+    ("Look", "Creatures: the cards' pictures made again (Content/Studio/Creatures/thumbs; the Character Studio's server running)", "node tools/character/creatures.mjs thumbs", {}),
     ("Look", "Clothes in motion: an outfit walked, sat and crouched on several bodies (Saved/tailor_motion.png)", "node tools/character/tailor/motion.mjs --outfit {ask:Outfit (e.g. work uniform)} {opt:Bodies (e.g. feminine,full_masculine)|--bodies} --out Saved/tailor_motion.png", {}),
     ("Look", "Face mesh from photos or a video (for Blender)", "tools/face_mesh.py make {ask:Photo, video or folder}", {}),
     ("Look", "An expression from a video of a face (the desk's Expressions tab does this with Import)", "tools/face_capture.py solve {ask:Video} --out {ask:Folder}", {}),

@@ -2,6 +2,22 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-11 (the user: the creatures as presets, and Godot's side of them)
+
+- **"can you add presets for the monster-ish shapes you made so I can use them, fix anything that needs fixed for
+  godot too"**. Read as: the seven creatures were chips that only showed with Monster mode on and only set a shape, so
+  they weren't something to pick up and use; make them presets in the Studio's own sense (pictures, one click, a whole
+  creature) and make sure what comes out of them works in Godot.
+  - **The creatures are cards** (Body, under Monster mode, there whether it's on or not): Goblin, Ghoul, Ogre, Grey
+    alien, Demon, Hag, Imp, each a picture of it. A click makes the character that creature and switches Monster mode
+    on: its shape, height, build and teeth as before, and now **its look**: a skin colour on the procedural skin, its
+    eyes, lips, stained teeth, and the demon's and the imp's horns. Everything it sets is a slider that's still yours.
+    **With its look** off gives the shape alone on the character's own skin; **Face only** gives its head on the
+    character's own body. The card worn is marked and kept with the character. (docs/CHARACTER_STUDIO.md §2d.)
+  - **As characters, and for Godot**: `node tools/character/creatures.mjs make` makes each a character of its own
+    (`creature_goblin` ... in the Studio's list), `--export` also exports each for Godot. The cards' pictures are
+    kept in the project (`Content/Studio/Creatures/thumbs/`, `creatures.mjs thumbs` makes them again).
+
 ## 2026-11-10, night (the user: younger characters, Cutify, monster mode, more horns and animal ears)
 
 - **"Currently we are restricted to making older characters in the studio creator, I want you to add compatibility to

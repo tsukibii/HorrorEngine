@@ -155,21 +155,79 @@ try {
   say(!bald.hair && !/baked on another head/.test(bald.hud), "its hair taken away: bald again, nothing said");
   await age(18); await tog("#cuteOn", false); await B(() => { document.querySelector("#handlesOn").checked = false; window.__body.setPose("rest"); });
 
-  // ---- monster mode
-  await tog("#monsterOn", true); await page.waitForTimeout(800);
-  const mon = await B(() => ({ max: +document.querySelector("#sculptRows input").max, creature: [...document.querySelectorAll("#sculptRows details")].find(d => d.querySelector("summary").textContent === "Creature")?.hidden,
-    hi: +document.querySelector("#baseRows .row:last-child input").max, lo: +document.querySelector("#baseRows .row:last-child input").min, chips: document.querySelectorAll("#monsterChips button").length, rows: !document.querySelector("#monsterRows").hidden }));
-  say(mon.max === 3 && mon.creature === false && mon.hi === 3.5 && mon.lo === 0.4 && mon.chips >= 7 && mon.rows, `monster mode: the sculpt's sliders to ±3, the Creature controls shown, the height ${mon.lo} to ${mon.hi} m, ${mon.chips} creatures to start from`);
+  // ---- the creatures: cards that are always there (DECISIONS 2026-11-11), a click makes the character that creature
+  const cards = await B(async () => { const cs = [...document.querySelectorAll("#creatureCards .card[data-creature]")], out = [];
+    for (const c of cs) { const r = await fetch(`api/creatures/thumbs/${c.dataset.creature}.jpg`), n = r.ok ? (await r.arrayBuffer()).byteLength : 0; out.push({ k: c.dataset.creature, label: c.querySelector("span").textContent, pic: r.ok && /jpeg/.test(r.headers.get("content-type") || "") && n > 2000 }); }
+    return { out, shown: !!cs.length && cs[0].offsetParent !== null, monster: window.__body.st.monster, keys: Object.keys(window.__body.GW.MONSTERS) }; });
+  say(cards.out.length >= 7 && cards.shown && !cards.monster && cards.out.every(c => c.pic && c.label) && cards.keys.every(k => cards.out.some(c => c.k === k)),
+    `the creatures as ${cards.out.length} cards, shown with Monster mode off, each with its picture: ${cards.out.map(c => c.label + (c.pic ? "" : " (NO PICTURE)")).join(", ")}`);
+  const card = async (k, look = true, face = false) => {   // (the two switches are read when a card is clicked)
+    await B(([k, look, face]) => { document.querySelector("#creatureLook").checked = look; document.querySelector("#creatureFace").checked = face; document.querySelector(`#creatureCards .card[data-creature="${k}"]`).click(); }, [k, look, face]);
+    await page.waitForTimeout(2500); };
+  const worn = () => B(() => { const b = window.__body, s = b.st; return { monster: s.monster, creature: s.creature, on: [...document.querySelectorAll("#creatureCards .card.on")].map(c => c.dataset.creature), box: document.querySelector("#monsterOn").checked,
+    tone: s.skin.tone, proc: !!s.skin.proc.on, sclera: s.eyes.sclera, pupilShape: s.eyes.pupilShape, lips: s.lips.on ? s.lips.color : null, horns: s.accessories.filter(a => a.kind === "horns").map(a => a.style),
+    height: s.height, base: s.base, sculpt: { ...s.sculpt }, shape: [...s.shape].filter(Boolean).length, fangs: s.teeth.fangs, age: s.age.age }; });
+  const M = await B(() => window.__body.GW.MONSTERS), plain = await worn();
+  await age(10); await card("demon");                    // on a ten-year-old, Monster mode off: the whole creature, an adult again
+  const demon = await worn(), dm = M.demon;
+  say(demon.monster && demon.box && demon.creature === "demon" && demon.on.join() === "demon" && demon.age === 18 && demon.height === dm.height && demon.sculpt.horn_brow === dm.sculpt.horn_brow,
+    `a card clicked with Monster mode off switches it on and makes the character that creature (the demon: ${demon.height} m, an adult again from ten, its card marked)`);
+  say(demon.tone === dm.look.tone && demon.proc && demon.sclera === dm.look.eyes.set.sclera && demon.pupilShape === "slit" && demon.horns.join() === dm.look.horns.style && demon.fangs === dm.teeth.fangs,
+    `with its look: the skin ${demon.tone}, drawn by the procedural skin, a slit pupil in a dark eye, ${demon.horns.join()} horns, its fangs`);
+  await card("goblin");
+  const gob = await worn();
+  say(gob.creature === "goblin" && gob.on.join() === "goblin" && gob.tone === M.goblin.look.tone && !gob.horns.length && gob.height === M.goblin.height, `another card takes its place whole: the goblin's skin ${gob.tone}, the demon's horns gone, ${gob.height} m`);
+  await card("ogre", false);
+  const ogre = await worn();
+  say(ogre.creature === "ogre" && ogre.height === M.ogre.height && ogre.tone === gob.tone && ogre.sclera === gob.sclera && ogre.fangs === (M.ogre.teeth?.fangs || 0), `"With its look" off: the ogre's shape and teeth (${ogre.height} m) on the skin and eyes the character had`);
+  await card("alien", true, true);
+  const head = await worn(), isHead = await B(() => { const b = window.__body; return Object.fromEntries(b.SCULPT.controls.map(c => [c.id, b.GW.onHead(c)])); });
+  const bodyKept = Object.keys({ ...ogre.sculpt, ...head.sculpt }).filter(id => !isHead[id]).every(id => (head.sculpt[id] || 0) === (ogre.sculpt[id] || 0));
+  const headSet = Object.entries(M.alien.sculpt).filter(([id]) => isHead[id]).every(([id, v]) => head.sculpt[id] === v) && Object.keys(head.sculpt).filter(id => isHead[id]).every(id => id in M.alien.sculpt);
+  say(head.creature === "alien" && head.height === ogre.height && head.base === ogre.base && head.shape === ogre.shape && bodyKept && headSet && head.tone === M.alien.look.tone,
+    `"Face only": the grey alien's head and look on the ogre's body (${head.height} m still, its build and its body's sliders as they were, the face's ${Object.keys(M.alien.sculpt).filter(id => isHead[id]).length} the alien's)`);
+  // every creature whole: a body at its own height, its feet on the floor, its fangs when it has them, its look's names real
+  const names = await B(() => { const b = window.__body, bad = [];
+    for (const [k, m] of Object.entries(b.GW.MONSTERS)) { const L = m.look || {};
+      if (L.skin?.preset && !b.SKINSH.SKIN_PRESETS[L.skin.preset]) bad.push(`${k}: no skin preset "${L.skin.preset}"`);
+      for (const id of Object.keys(L.skin?.tweak || {})) if (!(id in b.st.skin.proc)) bad.push(`${k}: the skin has no "${id}"`);
+      if (L.eyes?.style && !b.EYEPAINT.EYE_STYLES.some(x => x[0] === L.eyes.style)) bad.push(`${k}: no eye style "${L.eyes.style}"`);
+      for (const id of Object.keys(L.eyes?.set || {})) if (!(id in b.st.eyes)) bad.push(`${k}: the eyes have no "${id}"`);
+      for (const id of Object.keys(L.lips || {})) if (!(id in b.st.lips)) bad.push(`${k}: the lips have no "${id}"`);
+      for (const id of Object.keys({ ...(L.teeth || {}), ...(m.teeth || {}) })) if (!(id in b.st.teeth)) bad.push(`${k}: the teeth have no "${id}"`);
+      if (L.horns && !b.ACCS.HN.HORNS[L.horns.style]) bad.push(`${k}: no horns "${L.horns.style}"`);
+    } return bad; });
+  say(!names.length, names.length ? `a look names what isn't there: ${names.join("; ")}` : "every look's names are the page's own (its skin preset and sliders, its eye style and settings, its lips, teeth and horns)");
   const creatures = [];
-  for (const name of await B(() => [...document.querySelectorAll("#monsterChips button")].map(b => b.textContent))) {
-    await B(n => [...document.querySelectorAll("#monsterChips button")].find(b => b.textContent === n).click(), name); await page.waitForTimeout(2500);
-    const r = await body(), t = await B(() => { const b = window.__body, g = b.MOUTH.parts["upper-teeth"].geometry.attributes.position.array; let lo = 1e9; for (let i = 1; i < g.length; i += 3) lo = Math.min(lo, g[i]); return { fang: lo, teeth: b.st.teeth.fangs, moved: Object.keys(b.st.sculpt).length }; });
-    creatures.push({ name, ok: !r.nan && Math.abs(r.hi - r.height) < 0.01 && Math.abs(r.lo) < 0.002 && t.moved > 8 && (t.teeth ? t.fang < -2 : t.fang > -1), h: r.height, heads: 1 / r.head });
+  for (const { k, label } of cards.out) {
+    await card(k);
+    const r = await body(), t = await B(() => { const b = window.__body, g = b.MOUTH.parts["upper-teeth"].geometry.attributes.position.array; let lo = 1e9; for (let i = 1; i < g.length; i += 3) lo = Math.min(lo, g[i]); return { fang: lo, teeth: b.st.teeth.fangs, moved: Object.keys(b.st.sculpt).length, creature: b.st.creature, tone: b.st.skin.tone }; });
+    creatures.push({ name: label, ok: !r.nan && Math.abs(r.hi - r.height) < 0.01 && Math.abs(r.lo) < 0.002 && t.moved > 8 && (t.teeth ? t.fang < -2 : t.fang > -1) && t.creature === k && t.tone === M[k].look.tone, h: r.height, heads: 1 / r.head });
   }
-  say(creatures.every(c => c.ok), `each a whole body at its own height, its feet on the floor, its fangs when it has them: ${creatures.map(c => `${c.name} ${c.h} m, ${c.heads.toFixed(1)} heads${c.ok ? "" : " (BAD)"}`).join("; ")}`);
+  say(creatures.every(c => c.ok), `each a whole body at its own height, its feet on the floor, its fangs when it has them, in its own skin: ${creatures.map(c => `${c.name} ${c.h} m, ${c.heads.toFixed(1)} heads${c.ok ? "" : " (BAD)"}`).join("; ")}`);
+  // saved with the character and marked when it's opened again
+  await card("imp");
+  await B(() => { document.querySelector("#status").textContent = ""; }); await page.click("#save");
+  await page.waitForFunction(() => /saved/.test(document.querySelector("#status").textContent), null, { timeout: 60000 });
+  const kept = await B(async n => (await fetch(`api/people/${n}`)).json(), NAME);
+  await page.reload(); await page.waitForFunction(() => window.__body && window.__body.SCULPT, null, { timeout: 180000 });
+  await page.selectOption("#who", NAME);
+  await page.waitForFunction(n => window.__body.who === n && /points/.test(document.querySelector("#hud").textContent), NAME, { timeout: 180000 }); await page.waitForTimeout(4000);
+  await B(() => { const b = window.__body; b.setPose("rest"); document.querySelector("#handlesOn").checked = false; });
+  const imp = await worn();
+  say(kept.creature === "imp" && kept.monster === true && imp.creature === "imp" && imp.on.join() === "imp" && imp.tone === M.imp.look.tone && imp.horns.join() === M.imp.look.horns.style && imp.height === M.imp.height,
+    `saved with the character and opened again: the imp (${imp.height} m, its skin, its ${imp.horns.join()} horns), its card marked`);
+
+  // ---- monster mode's reach
+  const mon = await B(() => ({ max: +document.querySelector("#sculptRows input").max, creature: [...document.querySelectorAll("#sculptRows details")].find(d => d.querySelector("summary").textContent === "Creature")?.hidden,
+    hi: +document.querySelector("#baseRows .row:last-child input").max, lo: +document.querySelector("#baseRows .row:last-child input").min }));
+  say(mon.max === 3 && mon.creature === false && mon.hi === 3.5 && mon.lo === 0.4, `monster mode: the sculpt's sliders to ±3, the Creature controls shown, the height ${mon.lo} to ${mon.hi} m`);
   await tog("#monsterOn", false); await page.waitForTimeout(1500);
-  const person = await B(() => { const b = window.__body, s = b.st; return { monster: s.monster, most: Math.max(0, ...Object.values(s.sculpt).map(Math.abs)), creature: ["eye_tilt", "ears_point", "snout", "skull_back", "hunch"].map(k => s.sculpt[k] || 0).some(Boolean), h: s.height, max: +document.querySelector("#sculptRows input").max }; });
-  say(!person.monster && person.most <= 1 && !person.creature && person.h >= 1.1 && person.h <= 2.1 && person.max === 1, `leaving monster mode: every slider back within a person's range (the most ${person.most}), the creature's own at 0, ${person.h} m`);
+  const person = await B(() => { const b = window.__body, s = b.st; return { monster: s.monster, most: Math.max(0, ...Object.values(s.sculpt).map(Math.abs)), creature: ["eye_tilt", "ears_point", "snout", "skull_back", "hunch"].map(k => s.sculpt[k] || 0).some(Boolean), h: s.height, max: +document.querySelector("#sculptRows input").max,
+    was: s.creature, on: document.querySelectorAll("#creatureCards .card.on").length }; });
+  say(!person.monster && person.most <= 1 && !person.creature && person.h >= 1.1 && person.h <= 2.1 && person.max === 1 && !person.was && !person.on, `leaving monster mode: every slider back within a person's range (the most ${person.most}), the creature's own at 0, ${person.h} m, no card marked`);
+  // (a person again for what follows: the look the cards put on taken off as New would have it)
+  await B(plain => { const b = window.__body; b.st.accessories = b.st.accessories.filter(a => a.kind !== "horns"); b.creatureLook({ tone: plain.tone, teeth: { fangs: 0, points: 0 } }); }, plain);
   await B(() => { const b = window.__body; b.st.sculpt = {}; b.st.shape.fill(0); document.querySelector("#resetShape").click(); document.querySelector("#resetSculpt").click(); Object.assign(b.st.teeth, { fangs: 0, points: 0 }); document.querySelector('.bases button[data-base="-1"]').click(); });
   await age(18); await page.waitForTimeout(1500);
 

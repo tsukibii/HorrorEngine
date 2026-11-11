@@ -155,6 +155,14 @@ const span = X => { let lo = Infinity, hi = -Infinity; for (let i = 1; i < X.len
   say(!lost.length, `the ages, Cutify, the limits and ${Object.keys(GW.MONSTERS).length} creatures name only controls that exist` + (lost.length ? ` (missing: ${lost.join(", ")})` : ""));
   const reach = Object.values(GW.MONSTERS).every(m => Object.values(m.sculpt).every(v => Math.abs(v) <= 3) && Object.entries(m.shape || {}).every(([i, v]) => +i >= 0 && +i < H.shapes && Math.abs(v) <= 3) && m.height >= 0.4 && m.height <= 3.5 && Math.abs(m.base ?? 0) <= 1);
   say(reach, "each creature within monster mode's reach (sliders to ±3, MHR's shapes to ±3, 0.4 to 3.5 m)");
+  // a creature as a preset (the Body tab's cards): its name, a word about it, a look whose colours are colours and whose
+  // horns are a kind horns.js makes (the look's other names are the page's own: GROWPAGE checks them there)
+  const src = fs.readFileSync(path.join(HERE, "horns.js"), "utf8"), kinds = new Set([...src.slice(src.indexOf("export const HORNS"), src.indexOf("export const EARS")).matchAll(/^  (\w+): \{/gm)].map(m => m[1]));
+  const hex = c => /^#[0-9a-f]{6}$/i.test(c || ""), colours = o => Object.entries(o || {}).filter(([k]) => /color$|^tone$|^iris2?$|^sclera$|^corner$|^accent$/i.test(k)).every(([, v]) => hex(v));
+  const odd = Object.entries(GW.MONSTERS).filter(([, m]) => !(m.label && m.about && m.look && hex(m.look.tone) && colours(m.look.skin?.tweak) && colours(m.look.eyes?.set) && colours(m.look.lips) && (!m.look.horns || kinds.has(m.look.horns.style)))).map(([k]) => k);
+  say(!odd.length && kinds.size >= 13, `each creature a preset with its name, a word about it and a look (a skin colour, its eyes, lips, teeth; horns of a kind there is)` + (odd.length ? `: not ${odd.join(", ")}` : ""));
+  const heads = byId.size && [...byId.values()].filter(c => GW.onHead(c)), body = [...byId.values()].filter(c => !GW.onHead(c));
+  say(heads.length > 20 && body.some(c => c.id === "hunch") && body.some(c => c.group === "Body") && !heads.some(c => c.group === "Body" || c.prop), `"Face only" is the head's ${heads.length} controls: the Face group and the Creature group but the hunch; nothing of the body's or the proportions'`);
   const hs = G.handles.every(h => h.at[0] >= 0 && h.controls.every(id => byId.has(id))) && S.handles.every(h => h.controls.every(id => byId.has(id)));
   say(hs && G.handles.length >= 6, `${S.handles.length + G.handles.length} circles on the body, each on a point and dragging controls that exist`);
 }

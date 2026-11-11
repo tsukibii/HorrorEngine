@@ -66,6 +66,11 @@
   #outfitGrid .card img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; display: block; background: #2a2d34; }
   #outfitGrid .card span { display: block; font-size: 10.5px; padding: 3px 4px; line-height: 1.25; color: var(--ink); }
   #outfitGrid .card.on { border-color: var(--gold); } #outfitGrid .card.on span { color: var(--gold); }
+  #creatureCards { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; margin: 6px 0; }   /* the creatures as pictures (creatures.mjs thumbs) */
+  #creatureCards .card { padding: 0; overflow: hidden; text-align: center; display: flex; flex-direction: column; background: #151619; }
+  #creatureCards .card img, #creatureCards .card i { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; display: block; background: #2a2d34; }
+  #creatureCards .card span { display: block; font-size: 10.5px; padding: 3px 4px; line-height: 1.25; color: var(--ink); }
+  #creatureCards .card.on { border-color: var(--gold); } #creatureCards .card.on span { color: var(--gold); }
 </style></head>
 <body>
 <header>
@@ -102,7 +107,13 @@
       <div id="cuteRows"></div>
       <h3>Sculpt <button id="resetSculpt" title="Every sculpt slider back to 0">Reset</button></h3>
       <label class="tog"><input type="checkbox" id="monsterOn"><span>Monster mode<small>For creatures: every sculpt slider and circle goes three times as far, the height from 0.4 to 3.5 m, and the Creature controls show (pointed ears, slanted eyes, a snout, a long skull, a hunch). Off, a slider past a person's range comes back into it.</small></span></label>
-      <div id="monsterRows" hidden><div class="chips" id="monsterChips"></div><p class="note">A creature to start from: it sets the sliders (and the height), every one still yours to move. Horns, ears and fangs: Accessories, and Face, Mouth.</p></div>
+      <div id="creatureBox">
+        <h4>Creatures</h4>
+        <div id="creatureCards"></div>
+        <label class="tog"><input type="checkbox" id="creatureLook" checked><span>With its look<small>Its skin colour, eyes, lips and horns as well as its shape and teeth. Off: the shape and the teeth alone, on this character's own skin and eyes.</small></span></label>
+        <label class="tog"><input type="checkbox" id="creatureFace"><span>Face only<small>Its head on this character's own body: the face's and the head's controls and the teeth (and the look), not the height, the build or the proportions.</small></span></label>
+        <p class="note">A click makes this character that creature and switches Monster mode on. It only sets sliders: every one is still yours to move. More horns, ears and fangs: Accessories, and Face, Mouth.</p>
+      </div>
       <label class="tog"><input type="checkbox" id="handlesOn" checked><span>Handles on the body<small>Drag a circle to shape what's under it, both sides at once (Body shows the body's circles, Head the face's); the sliders it moves light up green while you hold it.</small></span></label>
       <div id="sculptRows"></div>
       <h3>Shape <button id="resetShape" title="Every shape slider back to the base">Reset</button></h3>
@@ -2117,10 +2128,11 @@ function monsterUI() {
   for (const id in sculptRow) { const inp = sculptRow[id].querySelector("input"); inp.min = -r; inp.max = r; }
   heightIn.min = lo; heightIn.max = hi;
   if (sculptGroup.Creature) sculptGroup.Creature.hidden = !st.monster;
-  $("#monsterOn").checked = st.monster; $("#monsterRows").hidden = !st.monster;
+  $("#monsterOn").checked = st.monster; creatureMark();
   sculptAll(); set.height(st.height);
 }
 function setMonster(on, ask = true) {
+  if (!on) delete st.creature;
   if (!on) {
     const [lo, hi] = HEIGHTS.person, creature = id => SCULPT?.controls.find(c => c.id === id)?.group === "Creature";
     const past = Object.entries(st.sculpt).filter(([id, v]) => Math.abs(v) > 1 || (v && creature(id)));
@@ -2131,16 +2143,58 @@ function setMonster(on, ask = true) {
   st.monster = !!on; monsterUI(); UNSAVED = true; compose(); hud();
 }
 $("#monsterOn").onchange = () => setMonster($("#monsterOn").checked);
-function useMonster(key) {                             // a creature to start from: its sculpt and its height
-  const m = GW.MONSTERS[key]; if (!m) return;
-  st.monster = true; st.sculpt = { ...m.sculpt }; if (m.height) st.height = m.height;
-  if (m.base !== undefined) { st.base = m.base; set.base(st.base); }
-  st.shape.fill(0); for (const [i, v] of Object.entries(m.shape || {})) st.shape[+i] = v;   // its build from MHR's own shapes
-  Object.assign(st.teeth, { fangs: 0, points: 0 }, m.teeth || {}); teethSet.all();          // and its teeth
-  st.shape.forEach((v, i) => shapeSet[i](v)); document.querySelectorAll("#shapeRows .row").forEach((r, i) => r.classList.toggle("moved", st.shape[i] !== 0));
-  monsterUI(); UNSAVED = true; changed("body"); hud(); status(`${m.label}: a start, every slider still yours`, "ok");
+// ---- the creatures: monster mode's presets as cards (grow.js MONSTERS; DECISIONS 2026-11-11: "add presets for the
+// monster-ish shapes you made so I can use them"). A card makes the character that creature: its sculpt, its height,
+// its base and build, its teeth, and with "With its look" its skin, eyes, lips and horns; "Face only" gives its head
+// (the Face group's controls and the Creature group's but the hunch, the teeth, the look) on the character's own body.
+// It only sets what the sliders show. The card worn is marked (st.creature, kept with the character: what it started as)
+function creatureLook(L) {                             // a creature's look (grow.js): plain settings on the skin, the eyes, the lips, the teeth and the accessories
+  if (!L) return;
+  if (L.tone) { st.skin.tone = L.tone; toneIn.value = L.tone; }
+  if (L.skin) {
+    if (L.skin.preset) skinPreset(SKINSH.SKIN_PRESETS[L.skin.preset], ["Skin", "Age"], SKINSH.SKIN_COLOURS);
+    skinPreset(SKINSH.MAKEUP_PRESETS.none, ["Makeup"], SKINSH.MAKEUP_COLOURS);   // (a creature wears none: the new character's blush and liner go)
+    if (L.skin.tweak) { Object.assign(st.skin.proc, L.skin.tweak); procSet.all(); }
+  }
+  if (L.eyes) { const s = EYEPAINT.EYE_STYLES.find(x => x[0] === L.eyes.style); Object.assign(st.eyes, s ? s[3] : {}, L.eyes.set || {}); eyeSet.all(); paintEyes(); }
+  if (L.lips) { Object.assign(st.lips, L.lips); lipSet.all(); }
+  if (L.teeth) { Object.assign(st.teeth, L.teeth); teethSet.all(); }
+  st.accessories = st.accessories.filter(a => a.kind !== "horns");   // its horns, or none
+  if (L.horns) st.accessories.push(Object.assign(ACCS.fresh("horns", L.horns.style), L.horns.set || {}));
+  ACCSEL = ACCPLACE = null; WEAR.set(st.accessories); drawAcc();
+  skinLook();
 }
-$("#monsterChips").append(...Object.entries(GW.MONSTERS).map(([k, m]) => { const b = el("button", { textContent: m.label, title: "Start from this creature: its sliders and its height" }); b.onclick = () => useMonster(k); return b; }));
+function useCreature(key, o = {}) {                    // o.look (true): with its look; o.face: its head only
+  const m = GW.MONSTERS[key]; if (!m) return;
+  const head = id => { const c = SCULPT.controls.find(c => c.id === id); return !!c && GW.onHead(c); };
+  st.monster = true; st.creature = key;
+  if (o.face) {                                         // the head's controls replaced, the body's left as they are
+    for (const id of Object.keys(st.sculpt)) if (head(id)) delete st.sculpt[id];
+    for (const [id, v] of Object.entries(m.sculpt)) if (head(id)) st.sculpt[id] = v;
+  } else {
+    st.sculpt = { ...m.sculpt }; if (m.height) st.height = m.height;
+    if (st.age.age < GW.AGE_ADULT) { st.age.age = GW.AGE_ADULT; ageSet.age(st.age.age); ageUI(); }   // (a creature is shaped from the adult: an imp is small, not a child; the age is still yours after)
+    if (m.base !== undefined) { st.base = m.base; set.base(st.base); }
+    st.shape.fill(0); for (const [i, v] of Object.entries(m.shape || {})) st.shape[+i] = v;   // its build from MHR's own shapes
+    st.shape.forEach((v, i) => shapeSet[i](v)); document.querySelectorAll("#shapeRows .row").forEach((r, i) => r.classList.toggle("moved", st.shape[i] !== 0));
+  }
+  Object.assign(st.teeth, { fangs: 0, points: 0 }, m.teeth || {}); teethSet.all();            // and its teeth
+  if (o.look !== false) creatureLook(m.look);
+  monsterUI(); UNSAVED = true; changed("body"); hud();
+  status(`${m.label}${o.face ? "'s head" : ""}${o.look !== false && m.look ? ", with its look" : ""}: a start, every slider still yours`, "ok");
+}
+function creatureMark() { for (const c of document.querySelectorAll("#creatureCards .card")) c.classList.toggle("on", st.monster && c.dataset.creature === st.creature); }
+$("#creatureCards").append(...Object.entries(GW.MONSTERS).map(([k, m]) => {
+  const pic = el("img", { src: `api/creatures/thumbs/${k}.jpg`, alt: m.label, loading: "lazy" }), b = el("button", { className: "card", title: m.about || m.label }, pic, el("span", { textContent: m.label }));
+  pic.onerror = () => { const i = el("i"); i.style.background = m.look?.tone || "#2a2d34"; pic.replaceWith(i); };   // (no picture yet: its skin's colour; node tools/character/creatures.mjs thumbs makes them)
+  b.dataset.creature = k;
+  b.onclick = () => {
+    const face = $("#creatureFace").checked, mine = Object.values(st.sculpt).some(Boolean) || st.shape.some(Boolean) || !!DELTA;
+    if (mine && st.creature !== k && !confirm(`Make ${WHO || "this character"} ${/^[aeiou]/i.test(m.label) ? "an" : "a"} ${m.label.toLowerCase()}${face ? " (the head only)" : ""}? ${face ? "Its face's sliders" : "Its sliders, its height and its build"} are replaced${$("#creatureLook").checked ? ", and its skin, eyes, lips and horns with the look" : ""}.`)) return;
+    useCreature(k, { look: $("#creatureLook").checked, face });
+  };
+  return b;
+}));
 // ---- the age (grow.js, DECISIONS 2026-11-10, night): 8 to 17, or the adult; a child's proportions (the head's share of
 // the height, the legs, a narrow straight build, a short soft face), the height set to the age's average when it's moved
 const ageSet = {};
@@ -3268,6 +3322,7 @@ async function open(name) {
   document.querySelectorAll("#shapeRows .row").forEach((r, i) => r.classList.toggle("moved", st.shape[i] !== 0));
   st.sculpt = { ...(c.sculpt || {}) };
   st.age = { age: GW.AGE_ADULT, face: 1, ...(c.age || {}) }; st.cute = { on: false, amount: 0.6, ...(c.cute || {}) }; st.monster = !!c.monster;   // (a character from before them: an adult, as it was)
+  if (c.creature && GW.MONSTERS[c.creature]) st.creature = c.creature; else delete st.creature;   // the creature it started as (its card marked)
   st.hairHead = c.hairHead?.base?.C ? c.hairHead : null; HAIRINFO = null;   // the head its hair was baked on (placeHair)
   grownUI();
   Object.assign(st.skin, { tone: "#c9b3a2", rough: 0.62, photo: false, size: 2048 }, c.skin || {});
@@ -3295,7 +3350,7 @@ async function open(name) {
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
   if (me === OPENING && WHO) detect();
 }
-const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), age: st.age, cute: st.cute, monster: st.monster, hairHead: st.hairHead || undefined, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, drape: st.drape, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, groom: st.groom, accessories: st.accessories,
+const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), age: st.age, cute: st.cute, monster: st.monster, creature: st.monster && st.creature ? st.creature : undefined, hairHead: st.hairHead || undefined, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, drape: st.drape, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, groom: st.groom, accessories: st.accessories,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
@@ -4002,7 +4057,7 @@ $("#poseSel").onchange = () => { POSE = $("#poseSel").value; try { localStorage.
 $("#povShot").onchange = () => { orbit.focus = "pov"; repose(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, on: graftOn() }), EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, get headBase() { return HEADBASE; }, get hairStale() { return HAIRSTALE; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, on: graftOn() }), EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, useCreature, creatureLook, GW, SKINSH, loadSalon, get salonHair() { return SALONH; }, get headBase() { return HEADBASE; }, get hairStale() { return HAIRSTALE; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

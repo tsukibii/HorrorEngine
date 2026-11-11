@@ -210,25 +210,64 @@ export function ageOf(age, base, G, face = 1) {
 export const CUTE = { eye_size: 0.8, eye_spacing: 0.3, face_height: -0.45, jaw_width: -0.5, chin_length: -0.25, chin_width: -0.2, nose_size: -0.45, nose_projection: -0.25, nose_length: -0.35,
                       nose_bridge: -0.25, cheeks: 0.2, face_round: 0.45, cheekbones: -0.25, mouth_width: -0.25, lips: 0.15, brow_ridge: -0.2, forehead_slope: 0.5 };   // (no Forehead height: it lifts the whole crown, under the hair and the hats; the face shortened under the eyes gives the high forehead)
 
-// ---- monster mode's starting points: a sculpt each (what the sliders show: every one can be moved on from there), the
-// base, its teeth (fangs, points: teeth.js), and the build from MHR's own shapes (0 heavier, 1 wider hips and waist, 3 belly out, 8 thicker thighs, 10 a
-// slimmer neck: a big body made of them is one body, where the sculpt's bumps stacked up read as rolls) ------------------
+// ---- the creatures (monster mode's presets: the Body tab's cards, DECISIONS 2026-11-11: "add presets for the monster-ish
+// shapes you made so I can use them"). Each is a sculpt (what the sliders show: every one can be moved on from there),
+// the base, its teeth (fangs, points: teeth.js), the build from MHR's own shapes (0 heavier, 1 wider hips and waist,
+// 3 belly out, 8 thicker thighs, 10 a slimmer neck: a big body made of them is one body, where the sculpt's bumps
+// stacked up read as rolls), and its look, so a click gives a creature and not a pink person in its shape: the skin's
+// tone and layers (skinshader.js: a preset, what's changed on it, no makeup), the eyes (a style of tools/shared/eye.js
+// and what's changed on it), the lips, the teeth's shade and its horns (horns.js). The look is plain settings the page
+// applies (index.html useCreature); GROW checks every name in it exists
 export const MONSTERS = {
-  goblin: { label: "Goblin", height: 1.15, base: 0.3, shape: { 3: 1.2, 0: -1 }, teeth: { points: 0.7, fangs: 0.2 }, sculpt: { head_size: 1.3, ears_point: 2.6, ears_size: 1.6, ears_out: 1.4, nose_size: 1.8, nose_length: 2.2, nose_tip: 1.5, eye_size: 1.2, eye_spacing: 0.8, jaw_width: -1.2, chin_length: 1.4, chin_width: -1.5,
-                                                    mouth_width: 2.4, brow_ridge: 1.6, cheeks: -1.5, hunch: 1, arms_length: 1.6, legs_length: -1.6, hands: 1.4, fingers: 1.4, shoulders: -1, belly: 1, neck: -1 } },
-  ghoul: { label: "Ghoul", height: 1.9, base: 0.4, shape: { 0: -2.6, 1: -1.6, 8: -1.5 }, teeth: { points: 0.5, fangs: 0.35 }, sculpt: { cheeks: -3, temples: -2.6, eye_depth: 2.4, eye_size: -0.6, brow_ridge: 1.4, jaw_width: -1, chin_length: 1.8, face_height: 1.2, nose_size: -1.4, nose_projection: -0.8, mouth_width: 1.8, lips: -1.3,
-                                                  neck: -1, neck_length: 1.4, hunch: 1.5, arms_length: 2.4, fingers: 2.6, hands: 0.8, upper_arms: -1.2, forearms: -1, thighs: -1.2, calves: -1, torso_length: 0.6, bust: -1.5, shoulders: -0.5 } },
-  ogre: { label: "Ogre", height: 2.6, base: 1, shape: { 0: 3, 1: 2.2, 3: 2.4, 8: 2, 10: -3 }, teeth: { fangs: 0.6 }, sculpt: { head_size: -0.9, jaw_width: 3, chin_width: 2.4, chin_forward: 2.2, brow_ridge: 3, forehead_height: -1.6, forehead_slope: -2, nose_size: 1.6, nose_width: 2, mouth_width: 2, eye_size: -1, eye_depth: 1.6, ears_size: 1.2,
-                                                neck: 1, shoulders: 2.2, upper_arms: 1.6, forearms: 1.8, calves: 1, hands: 2.2, arms_length: 1.2, legs_length: -1.4, hunch: 0.7 } },
-  alien: { label: "Grey alien", height: 1.25, base: 0, shape: { 0: -2.6, 1: -2, 8: -1.5, 10: 3 }, sculpt: { head_size: 1.9, skull_back: 1.8, forehead_height: 2.6, forehead_width: 2.4, temples: 1.6, eye_size: 3, eye_spacing: 2, eye_tilt: 2.2, nose_size: -2.1, nose_projection: -0.4, mouth_width: -2, lips: -1.2, jaw_width: -3, chin_width: -2.6,
-                                                        chin_length: -1, cheekbones: 1, cheeks: -1.6, ears_size: -1.6, neck: -1.2, neck_length: 1.2, shoulders: -1.6, upper_arms: -1.2, forearms: -1, thighs: -1.2, calves: -1, arms_length: 1.6, fingers: 2.4, bust: -2 } },
-  demon: { label: "Demon", height: 2.05, base: 1, shape: { 0: 1, 10: -1.5 }, teeth: { fangs: 0.8 }, sculpt: { brow_ridge: 2.6, eye_depth: 1.4, eye_tilt: 1.8, cheekbones: 1.5, cheeks: -1.8, jaw_width: 1.4, chin_length: 1.6, chin_width: -1.6, chin_forward: 1, nose_bridge: 1.6, nose_length: 1, ears_point: 2.2, ears_size: 0.8, mouth_width: 1.4,
-                                                   forehead_slope: -1, shoulders: 1.8, chest: 1.2, waist: -0.6, upper_arms: 1.4, forearms: 1.2, neck: 0.8, fingers: 1.6, hands: 0.6 } },
-  hag: { label: "Hag", height: 1.5, base: -1, shape: { 0: -1.2 }, teeth: { points: 0.3 }, sculpt: { hooded_lids: 1, nose_size: 1.6, nose_length: 3, nose_tip: 1.6, nose_bridge: 2.4, chin_length: 2.6, chin_forward: 2.6, chin_width: -1.8, jaw_width: -1.4, cheeks: -2.6, cheekbones: 1.4, lips: -1.3, mouth_width: 1, temples: -1.8, eye_depth: 1.6,
-                                              brow_ridge: 1, ears_size: 1.4, hunch: 2.2, neck: -1, shoulders: -1.2, bust: -1.2, upper_arms: -1.2, forearms: -1, fingers: 1.8, thighs: -1, calves: -1, belly: 0.8 } },
-  imp: { label: "Imp", height: 0.9, base: 0, shape: { 3: 1.4 }, teeth: { points: 0.6, fangs: 0.4 }, sculpt: { head_size: 1.7, eye_size: 2.2, eye_spacing: 0.6, eye_tilt: 1.2, ears_point: 3, ears_size: 2, ears_out: 2, nose_size: -1.2, nose_length: -1, nose_tip: 1, mouth_width: 3, cheeks: 0.8, chin_width: -2, chin_length: -0.6, jaw_width: -0.8, brow_ridge: 0.8,
-                                              shoulders: -1.4, belly: 1.2, arms_length: 1, legs_length: -1.2, hands: 1.2, feet: 1.6, fingers: 1.2, neck: -1, hunch: 0.6 } },
+  goblin: { label: "Goblin", about: "Small, big-eared and long-nosed, a pot belly on bow legs, pointed teeth; olive green, yellow eyes with a slit.",
+    height: 1.15, base: 0.3, shape: { 3: 1.2, 0: -1 }, teeth: { points: 0.7, fangs: 0.2 },
+    sculpt: { head_size: 1.3, ears_point: 2.6, ears_size: 1.6, ears_out: 1.4, nose_size: 1.8, nose_length: 2.2, nose_tip: 1.5, eye_size: 1.2, eye_spacing: 0.8, jaw_width: -1.2, chin_length: 1.4, chin_width: -1.5,
+              mouth_width: 2.4, brow_ridge: 1.6, cheeks: -1.5, hunch: 1, arms_length: 1.6, legs_length: -1.6, hands: 1.4, fingers: 1.4, shoulders: -1, belly: 1, neck: -1 },
+    look: { tone: "#7d8f4e", skin: { preset: "adult", tweak: { flush: 0.12, flushColor: "#56703a", translucency: 0.18, veins: 0.25, spots: 0.5, freckleColor: "#4e5a2c", dewy: 0.05, evenness: 0.1 } },
+            eyes: { style: "serpent", set: { sclera: "#e2daa6", corner: "#8a7a3c", irisSize: 34 } }, lips: { on: true, colour: "#566030", amount: 0.7, gradient: 0.1, soft: 0.5, gloss: 0.1, lines: 0.4 }, teeth: { shade: 0.7 } } },
+  ghoul: { label: "Ghoul", about: "Tall and starved, long arms and fingers, sunken cheeks and temples; corpse grey, milky eyes with no pupil.",
+    height: 1.9, base: 0.4, shape: { 0: -2.6, 1: -1.6, 8: -1.5 }, teeth: { points: 0.5, fangs: 0.35 },
+    sculpt: { cheeks: -3, temples: -2.6, eye_depth: 2.4, eye_size: -0.6, brow_ridge: 1.4, jaw_width: -1, chin_length: 1.8, face_height: 1.2, nose_size: -1.4, nose_projection: -0.8, mouth_width: 1.8, lips: -1.3,
+              neck: -1, neck_length: 1.4, hunch: 1.5, arms_length: 2.4, fingers: 2.6, hands: 0.8, upper_arms: -1.2, forearms: -1, thighs: -1.2, calves: -1, torso_length: 0.6, bust: -1.5, shoulders: -0.5 },
+    look: { tone: "#a2a79b", skin: { preset: "50 and over", tweak: { flush: 0.06, flushColor: "#6a6f7c", translucency: 0.1, veins: 0.75, spots: 0.3, freckleColor: "#5a5f58", dewy: 0, evenness: 0 } },
+            eyes: { style: "possessed", set: { sclera: "#d6d6cc", corner: "#8a7f86", veins: 0.6 } }, lips: { on: true, colour: "#4c4852", amount: 0.6, gradient: 0.2, soft: 0.5, gloss: 0.05, lines: 0.5 }, teeth: { shade: 0.75 } } },
+  ogre: { label: "Ogre", about: "Huge and heavy, a small low-browed head on a barrel of a body, a wide jaw with tusks; khaki, small dark eyes.",
+    height: 2.6, base: 1, shape: { 0: 3, 1: 2.2, 3: 2.4, 8: 2, 10: -3 }, teeth: { fangs: 0.6 },
+    sculpt: { head_size: -0.9, jaw_width: 3, chin_width: 2.4, chin_forward: 2.2, brow_ridge: 3, forehead_height: -1.6, forehead_slope: -2, nose_size: 1.6, nose_width: 2, mouth_width: 2, eye_size: -1, eye_depth: 1.6, ears_size: 1.2,
+              neck: 1, shoulders: 2.2, upper_arms: 1.6, forearms: 1.8, calves: 1, hands: 2.2, arms_length: 1.2, legs_length: -1.4, hunch: 0.7 },
+    look: { tone: "#8c8a62", skin: { preset: "adult", tweak: { pores: 0.7, poreSize: 2.2, mottle: 0.6, flush: 0.15, flushColor: "#6a5a3a", translucency: 0.15, veins: 0.2, spots: 0.5, freckleColor: "#5a4e30", dewy: 0, evenness: 0 } },
+            eyes: { style: "natural", set: { iris: "#1c120a", iris2: "#4a3018", sclera: "#ded6b8", corner: "#8a6a4a", pupil: 0.26, irisSize: 30 } }, lips: { on: true, colour: "#5c4a38", amount: 0.6, gradient: 0.1, soft: 0.5, gloss: 0.05, lines: 0.5 }, teeth: { shade: 0.8 } } },
+  alien: { label: "Grey alien", about: "Small and thin under a great domed skull, long fingers, a slit of a mouth; grey, with large all-black eyes.",
+    height: 1.25, base: 0, shape: { 0: -2.6, 1: -2, 8: -1.5, 10: 3 },
+    sculpt: { head_size: 1.9, skull_back: 1.8, forehead_height: 2.6, forehead_width: 2.4, temples: 1.6, eye_size: 3, eye_spacing: 2, eye_tilt: 2.2, nose_size: -2.1, nose_projection: -0.4, mouth_width: -2, lips: -1.2, jaw_width: -3, chin_width: -2.6,
+              chin_length: -1, cheekbones: 1, cheeks: -1.6, ears_size: -1.6, neck: -1.2, neck_length: 1.2, shoulders: -1.6, upper_arms: -1.2, forearms: -1, thighs: -1.2, calves: -1, arms_length: 1.6, fingers: 2.4, bust: -2 },
+    look: { tone: "#a0a4a8", skin: { preset: "young glass", tweak: { flush: 0, translucency: 0.2, veins: 0.15, mottle: 0.2, dewy: 0.3, evenness: 0.5 } },
+            eyes: { style: "natural", set: { iris: "#050506", iris2: "#0a0a0c", accent: "#101014", pupilColor: "#000000", sclera: "#08080a", corner: "#141416", fibres: 0, limbal: 0, patternAmt: 0, pupil: 0.5, irisSize: 44, veins: 0, scleraShade: 0, cornerPink: 0 } },
+            lips: { on: true, colour: "#7b7f86", amount: 0.5, gradient: 0, soft: 0.6, gloss: 0, lines: 0.1 }, teeth: { shade: 0.4 } } },
+  demon: { label: "Demon", about: "Tall and broad, a heavy brow over slanted eyes, a long chin, pointed ears and fangs; dark red, yellow slit eyes in black, great horns.",
+    height: 2.05, base: 1, shape: { 0: 1, 10: -1.5 }, teeth: { fangs: 0.8 },
+    sculpt: { brow_ridge: 2.6, eye_depth: 1.4, eye_tilt: 1.8, cheekbones: 1.5, cheeks: -1.8, jaw_width: 1.4, chin_length: 1.6, chin_width: -1.6, chin_forward: 1, nose_bridge: 1.6, nose_length: 1, ears_point: 2.2, ears_size: 0.8, mouth_width: 1.4,
+              forehead_slope: -1, shoulders: 1.8, chest: 1.2, waist: -0.6, upper_arms: 1.4, forearms: 1.2, neck: 0.8, fingers: 1.6, hands: 0.6 },
+    look: { tone: "#8a2d23", skin: { preset: "adult", tweak: { flush: 0.2, flushColor: "#4a0c0a", translucency: 0.25, veins: 0.3, spots: 0.1, freckleColor: "#3a0a08", mottle: 0.5, dewy: 0.1, evenness: 0.1 } },
+            eyes: { style: "amber", set: { pupilShape: "slit", pupil: 0.3, sclera: "#140807", corner: "#3a0a08", veins: 0, scleraShade: 0 } }, lips: { on: true, colour: "#3a0c0c", amount: 0.7, gradient: 0.1, soft: 0.5, gloss: 0.15, lines: 0.4 }, teeth: { shade: 0.5 },
+            horns: { style: "demon" } } },
+  hag: { label: "Hag", about: "Bent double, a hooked nose over a jutting chin, hollow cheeks, thin lips; sallow and deeply lined, pale grey eyes.",
+    height: 1.5, base: -1, shape: { 0: -1.2 }, teeth: { points: 0.3 },
+    sculpt: { hooded_lids: 1, nose_size: 1.6, nose_length: 3, nose_tip: 1.6, nose_bridge: 2.4, chin_length: 2.6, chin_forward: 2.6, chin_width: -1.8, jaw_width: -1.4, cheeks: -2.6, cheekbones: 1.4, lips: -1.3, mouth_width: 1, temples: -1.8, eye_depth: 1.6,
+              brow_ridge: 1, ears_size: 1.4, hunch: 2.2, neck: -1, shoulders: -1.2, bust: -1.2, upper_arms: -1.2, forearms: -1, fingers: 1.8, thighs: -1, calves: -1, belly: 0.8 },
+    look: { tone: "#b3a787", skin: { preset: "70 and over", tweak: { flush: 0.2, flushColor: "#8a6a5a", veins: 0.5, dewy: 0, evenness: 0 } },
+            eyes: { style: "steel", set: { sclera: "#dcd4c0", corner: "#a07a70", veins: 0.5, pupil: 0.22 } }, lips: { on: true, colour: "#6a4a4c", amount: 0.5, gradient: 0.2, soft: 0.5, gloss: 0, lines: 0.6 }, teeth: { shade: 0.85 } } },
+  imp: { label: "Imp", about: "Knee high, a big head with huge pointed ears and eyes, a wide mouth of little fangs, a round belly on big feet; crimson, gold slit eyes, budding horns.",
+    height: 0.9, base: 0, shape: { 3: 1.4 }, teeth: { points: 0.6, fangs: 0.4 },
+    sculpt: { head_size: 1.7, eye_size: 2.2, eye_spacing: 0.6, eye_tilt: 1.2, ears_point: 3, ears_size: 2, ears_out: 2, nose_size: -1.2, nose_length: -1, nose_tip: 1, mouth_width: 3, cheeks: 0.8, chin_width: -2, chin_length: -0.6, jaw_width: -0.8, brow_ridge: 0.8,
+              shoulders: -1.4, belly: 1.2, arms_length: 1, legs_length: -1.2, hands: 1.2, feet: 1.6, fingers: 1.2, neck: -1, hunch: 0.6 },
+    look: { tone: "#a23a30", skin: { preset: "natural young", tweak: { flush: 0.2, flushColor: "#6a1410", translucency: 0.3, veins: 0.15, spots: 0, freckleColor: "#5a1410", dewy: 0.15, evenness: 0.3 } },
+            eyes: { style: "amber", set: { pupilShape: "slit", pupil: 0.32, sclera: "#e8d8a8", corner: "#8a3a2a", irisSize: 36 } }, lips: { on: true, colour: "#4a1210", amount: 0.7, gradient: 0.1, soft: 0.5, gloss: 0.2, lines: 0.3 }, teeth: { shade: 0.5 },
+            horns: { style: "stubs" } } },
 };
+// the sculpt's controls on the head (a creature's face alone on the character's own body: useCreature's Face only): the
+// Face group and the Creature group's but the hunch
+export const onHead = c => c.group === "Face" || (c.group === "Creature" && c.id !== "hunch");
 // how far a control's whole value may go whatever the sliders say (past it the field turns the skin inside out: a nose
 // narrowed to nothing, lips pushed through the teeth, an arm pinched to a thread): [least, most]
 export const REACH = { nose_size: [-2.3, 9], nose_projection: [-1.7, 9], lips: [-1.6, 9], ears_size: [-1.6, 9], upper_arms: [-2.2, 9], forearms: [-2.2, 9], eye_size: [-2.4, 9], face_height: [-3, 3.4],

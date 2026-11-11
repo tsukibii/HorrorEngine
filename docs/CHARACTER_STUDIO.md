@@ -240,12 +240,37 @@ bigger or smaller against the rest, on MHR's own rig (a point belongs to an arm,
   instead of 1, the height runs 0.4 to 3.5 m, and the **Creature** group shows: Eye slant, Pointed ears, Snout, Long
   skull, Hunch (the back bent forward from the waist, the head brought back up to look ahead). New controls a person
   can use too: **Proportions** (Head size, Neck length, Torso length, Leg length, Arm length, Hands, Feet, Fingers),
-  Face (Face length, Round face, Eye size, Eye spacing, Deep-set eyes, Ear size, Ears out), Body (Bust, Seat). Seven
-  creatures to start from as chips (`MONSTERS`: goblin, ghoul, ogre, grey alien, demon, hag, imp): each a sculpt, a
-  height, a base, a build from MHR's own identity shapes (a big body made of them is one body; the sculpt's bumps
-  stacked up read as rolls) and its teeth. **Fangs** and **Pointed teeth** (Face, Mouth; teeth.js). Off, every slider
-  comes back into a person's range and the creature's own go to 0 (asked first). The head's view follows a head a
-  hunch or a long neck has carried (`HEADOFF`), and small and giant bodies are framed to fill the view.
+  Face (Face length, Round face, Eye size, Eye spacing, Deep-set eyes, Ear size, Ears out), Body (Bust, Seat).
+  **Fangs** and **Pointed teeth** (Face, Mouth; teeth.js). Off, every slider comes back into a person's range and the
+  creature's own go to 0 (asked first). The head's view follows a head a hunch or a long neck has carried (`HEADOFF`),
+  and small and giant bodies are framed to fill the view.
+- **The creatures as presets** (DECISIONS 2026-11-11: "add presets for the monster-ish shapes you made so I can use
+  them"). Body, under Monster mode: seven **cards**, each a picture of the creature (`MONSTERS` in grow.js: goblin,
+  ghoul, ogre, grey alien, demon, hag, imp), there whether Monster mode is on or not. A click makes the character that
+  creature and switches Monster mode on: its sculpt, its height, its base, its build from MHR's own identity shapes
+  (a big body made of them is one body; the sculpt's bumps stacked up read as rolls), its teeth, and **its look**: a
+  skin colour on the procedural skin (a skin preset and what's changed on it: the goblin's green with dark freckles,
+  the ghoul's grey with veins, the hag's seventy years), its eyes (an eye style and what's changed on it: the goblin's
+  yellow slit, the ghoul's milky white, the alien's all black), its lips, how stained its teeth are and, for the demon
+  and the imp, horns off the Accessories. All of it is plain settings: every slider it sets is still the character's
+  to move, and Skin, Face and Accessories show what it chose. Two switches under the cards: **With its look** (off:
+  the shape and the teeth alone, on the character's own skin and eyes) and **Face only** (its head on the character's
+  own body: the Face group's controls and the Creature group's but the hunch, `onHead`; the height, the build and the
+  body's sliders stay). A whole creature starts from the adult (an imp is small, not a child; the age is still there
+  after). The card worn is marked and kept with the character (`creature`), until Monster mode goes off. A character
+  with a shape of its own is asked before a card replaces it.
+  - **The pictures** are kept in the project, `Content/Studio/Creatures/thumbs/<id>.jpg` (as the outfits' are), made by
+    the page itself: `node tools/character/creatures.mjs thumbs` (each creature with its look on a scratch character,
+    its head and what it wears fitted into the card through the view's own camera). A card with no picture yet shows
+    its skin's colour.
+  - **As characters of their own**: `node tools/character/creatures.mjs make [--only goblin,ogre] [--export]` makes
+    each creature a character (`creature_goblin` ...) from its preset and saves it; `--export` also runs Export for
+    Godot on each (`Exports/characters/creature_goblin/creature_goblin.glb`, its face shapes baked: ready to drop into
+    a Godot project). One that's there already is left as it is (it may be yours by now) unless `--again`.
+  - A new creature is an entry in `MONSTERS` (its `label`, `about`, `height`, `base`, `shape`, `teeth`, `sculpt` and
+    `look`: `tone`, `skin` {`preset`, `tweak`}, `eyes` {`style`, `set`}, `lips`, `teeth`, `horns` {`style`, `set`});
+    GROW checks its controls exist, GROWPAGE that every name its look uses is the page's own, then `creatures.mjs
+    thumbs --only <id>` for its picture.
 - **The ears as a sheet** (LESSONS): an ear's weight is a harmonic blend over the mesh (1 where it stands clear of the
   head, 0 on the skull, each point between the mean of its neighbours), so its front and back faces are ear alike; its
   fields grow with how far a point stands off the head, so nothing moves at its root.
