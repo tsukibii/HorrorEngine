@@ -854,6 +854,16 @@
       "label": "Micro pleated skirt (just under the crotch)", "slot": "bottom", "color": "#2a2a40", "thickness": 0.0018, "surface": "wool",
       "piece": {"kind": "skirt", "waist": {"at": "waist-0.02"}, "length": "crotch-0.025", "ease": 0.004, "flare": 0.4, "pleats": {"n": 20, "depth": 0.016, "stitched": 0.04}, "drape": {"density": 0.3, "bend": 4e-05, "memory": 1}},
       "details": [{"kind": "band", "from": "waist-0.02", "to": "waist-0.05", "lift": 0.002}]
+    },
+    "sweater-dress": {
+      "label": "Sweater dress, turtleneck (the sweater)", "slot": "top", "color": "#a3152d", "thickness": 0.0032, "surface": "chunky",
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.0, "width": 0.064, "rise": 0.05, "open": 0.004}, "sleeve": "wrist+0.01", "hem": {"at": "crotch+0.02"}, "ease": {"body": 0.016, "sleeve": 0.014, "shoulder": 0.006}, "tension": 40, "drape": {"density": 0.42, "bend": 2.5e-05, "slack": 0.03}},
+      "details": [{"kind": "neckband", "width": 0.06, "lift": 0.003, "surface": "rib"}, {"kind": "cuff", "length": 0.06, "lift": 0.002, "surface": "rib"}]
+    },
+    "sweater-dress-skirt": {
+      "label": "Sweater dress (its skirt, worn under the sweater)", "slot": "bottom", "color": "#a3152d", "thickness": 0.0032, "surface": "chunky",
+      "piece": {"kind": "skirt", "waist": {"at": "crotch+0.16"}, "length": "knee+0.2", "ease": 0.004, "flare": 0.0, "straight": true, "drape": {"density": 0.42, "bend": 2.5e-05, "memory": 0.2}},
+      "details": [{"kind": "band", "from": "knee+0.25", "to": "knee+0.2", "lift": 0.0015, "surface": "rib"}]
     }
   }
 }

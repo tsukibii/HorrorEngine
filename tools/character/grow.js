@@ -268,13 +268,15 @@ export const MONSTERS = {
 // the sculpt's controls on the head (a creature's face alone on the character's own body: useCreature's Face only): the
 // Face group and the Creature group's but the hunch
 export const onHead = c => c.group === "Face" || (c.group === "Creature" && c.id !== "hunch");
-// a slider that runs further than the rest for a person ([least, most]; the others -1 to 1, a monster's -3 to 3): the
-// Bust, flat at -2, small at -1, the body's own at 0, then past 1 a full bust to 3 (sculpt.js bustShape; DECISIONS 2026-11-11)
+// Anime (the Body tab's switch; DECISIONS 2026-11-11: "keep the new bust slider as an 'anime' toggleable"): with it on a
+// slider named here runs further than the rest ([least, most]; the others -1 to 1, a monster's -3 to 3): the Bust, flat
+// at -2, small at -1, the body's own at 0, then past 1 a full bust to 3 (sculpt.js bustShape). Off, the Bust is the
+// plain slider it always was
 export const SPAN = { bust: [-2, 3] };
 // a control's sum kept within reach: as it is up to the first, easing into the second past it (soften). A person's
-// sliders run to 1, a monster's to 3, a control with a longer slider to its own end
-export function limits(id, monster) {
-  const [lin, lim] = monster ? [3, 3.4] : [1.75, 2.3], far = SPAN[id] ? Math.max(Math.abs(SPAN[id][0]), Math.abs(SPAN[id][1])) : 0;
+// sliders run to 1, a monster's to 3, and with Anime on a control with a longer slider to its own end
+export function limits(id, monster, anime = false) {
+  const [lin, lim] = monster ? [3, 3.4] : [1.75, 2.3], far = anime && SPAN[id] ? Math.max(Math.abs(SPAN[id][0]), Math.abs(SPAN[id][1])) : 0;
   return far > lin ? [far, far + 0.4] : [lin, lim];
 }
 // how far a control's whole value may go whatever the sliders say (past it the field turns the skin inside out: a nose

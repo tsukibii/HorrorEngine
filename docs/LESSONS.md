@@ -3,6 +3,39 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## A full bust, a dress over it and a look-alike: what took a second try (2026-11-11, latest)
+
+- **Bumps stacked on one spot are a cone.** The first full bust was a field like the sculpt's other controls: a bigger
+  bump added onto the body, which already has a small breast there and the Bust's own bump on it. From the front it
+  read; from the side it came to a point (the user: "unnaturally pointy ... it should feel more how a waterballoon would
+  sit"). An offset field can only exaggerate the shape that's under it. A shape with a geometry of its own (a ball that
+  hangs, a flat chest) is made on the body as it stands: take what's there back to a base (the chest wall, a membrane
+  across the breast's root) and build the shape on that.
+- **Judged from one view isn't judged.** The first bust was looked at from the front, where it was fine. A body sheet
+  is front, three quarter and side before it's shown; the side is where volume reads.
+- **Count the mesh's rows before choosing where they go.** MHR has four rows of points from a breast's middle to the
+  fold under it and many more above. The first ball spread the skin evenly round it: the lower rows went to the
+  underside nobody sees and the ball's bottom was one row, a blade. The skin's middle now lands below the ball's front
+  (as skin slides down a heavy breast), so the dense upper rows make the front.
+- **Taking a bump off isn't flat.** Bust −2 as "the bump, twice, the other way" left dents on a breast of another
+  shape. Flat is a place (the chest's own wall), not a negative amount.
+- **Cloth cut from skin that doubles back is three layers.** Under a hanging breast the skin runs down, back up and
+  down again; garments cut from it lay in each other and tore. Pushing layers apart afterwards was the wrong end: the
+  skin a garment isn't made from is taken out of the tailor's body (a dress form, its hollow gathered onto single
+  points, made one). And gathered onto the first row *at* the ball's widest ring, not the last row before it: that
+  cut the ball's bottom off and skin showed through the sweater.
+- **Two garments that read as one hang, they don't tuck.** The sweater dress is a sweater and a skirt (a shell can't
+  pass the crotch). Tucked in, the sweater bunched at the hips and the join showed; hanging free over the skirt its hem
+  hides the join.
+- **New behaviour on an existing control goes behind a switch.** The new bust first replaced the Bust slider's range
+  for everyone. The user kept it "as an 'anime' toggleable": off, the slider is to the bit what it was. Cutify and
+  Monster mode were already built that way; the next addition to a control starts there.
+- **A look-alike is the user's to judge, part by part.** A whole character after a picture (a figure preset, a face
+  look, face controls, a hair preset) was built on first guesses, each part on the one before, and the user kept the
+  two parts they had seen and answered (the bust, after their review; the dress) and disliked the rest. Measuring a
+  picture's angles doesn't make a likeness. Show a rough of each part and wait for the answer before building on it;
+  a preset isn't the deliverable until its parts are liked.
+
 ## A Studio character's face in Godot: what took a second try (2026-11-11)
 
 - **"Done already" must name what it means.** The face bake skipped any mesh that had morph targets at all, as "baked

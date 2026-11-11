@@ -25,7 +25,7 @@ export function loadMhr(path = join(ROOT, "Content", "Studio", "Bodies", "MHR_lo
 
 /** the body for weights (45 numbers) and a sculpt ({control: value}, sculpt.js's body controls: the belly, the waist,
     the limbs...), scaled to height, feet on the floor: as the Character Studio makes it */
-export function mhrBody(m, weights = [], height = 1.7, sculpt = null, form = false) {   // form: the dress form (what the tailor cuts on: a full bust with no hollow under it, sculpt.js bustShape)
+export function mhrBody(m, weights = [], height = 1.7, sculpt = null, { anime = false, form = false } = {}) {   // anime: the Bust past -1 and 1 as the Studio's Anime switch makes it (sculpt.js bustShape; off: the bump alone, as it was); form: its dress form (what the tailor cuts on: a full bust with no hollow under it)
   const P = new Float32Array(m.P);
   for (let k = 0; k < Math.min(weights.length, m.k); k++) {
     const w = weights[k]; if (!w) continue;
@@ -37,12 +37,13 @@ export function mhrBody(m, weights = [], height = 1.7, sculpt = null, form = fal
   if (sculpt) {
     const value = id => sculpt[id] || 0;
     for (const c of bodyControls(m)) {                               // after the scale, scaled with it: as the Studio adds it
-      const v = SC.fieldValue(c, value) * k; if (!v) continue;
+      const v = SC.fieldValue(c, value, anime) * k; if (!v) continue;
       for (let q = 0; q < c.idx.length; q++) { const i = c.idx[q] * 3; P[i] += v * c.d[q * 3]; P[i + 1] += v * c.d[q * 3 + 1]; P[i + 2] += v * c.d[q * 3 + 2]; }
     }
-    if (Math.abs(value("bust")) > 1) {                               // a full bust, or a flat chest: made on the body as it now is (sculpt.js bustShape)
+    if (anime && Math.abs(value("bust")) > 1) {                               // a full bust, or a flat chest: made on the body as it now is (sculpt.js bustShape)
       const r = SC.bustShape(bodySculpt0(m), i => [P[i * 3] / k, P[i * 3 + 1] / k, P[i * 3 + 2] / k], value("bust"), 1, form);
       for (let q = 0; q < r.idx.length; q++) { const i = r.idx[q] * 3; P[i] += k * r.d[q * 3]; P[i + 1] += k * r.d[q * 3 + 1]; P[i + 2] += k * r.d[q * 3 + 2]; }
+      for (let g = 0; g < r.gather.length; g += 2) { const i = r.gather[g] * 3, a = r.gather[g + 1] * 3; P[i] = P[a]; P[i + 1] = P[a + 1]; P[i + 2] = P[a + 2]; }   // (a form's gathered points exactly on the points they lie on)
     }
   }
   return { P, T: m.T };
@@ -51,27 +52,30 @@ export function mhrBody(m, weights = [], height = 1.7, sculpt = null, form = fal
 /** a body as the Character Studio makes a child or a creature (grow.js, DECISIONS 2026-11-10, night): `age` 8 to 17
     (or none: the adult) on a base (-1 feminine .. 1 masculine), `sculpt` on top ({control: value}), scaled to `height`
     (an age's average when not given), feet on the floor. Returns { P, T, scale, F: each point's own scale (the joints'),
-    weights, age: grow.js's ageOf } */
-export function grownBody(m, { age = 18, base = 0, height = null, sculpt = {}, monster = false, form = false } = {}) {
+    weights, age: grow.js's ageOf, gather: a dress form's gathered points (pairs: a point, the point it lies on) } */
+export function grownBody(m, { age = 18, base = 0, height = null, sculpt = {}, monster = false, anime = false, form = false } = {}) {   // anime, form: as mhrBody's
   const G = grow(m), A = GW.ageOf(age, base, G.grow), pre = presetsFile().presets, f = pre.feminine || [], ms = pre.masculine || [], t = base * A.sexed, hk = Math.abs(base) * (0.4 + 0.6 * A.sexed);
   const weights = Array.from({ length: m.k }, (_, i) => i < 20 ? (f[i] || 0) * (1 - t) / 2 + (ms[i] || 0) * (1 + t) / 2 : hk * ((base < 0 ? f : ms)[i] || 0));
   const carried = id => ((presetsFile().sculpt?.feminine || {})[id] || 0) * (1 - base) / 2 + ((presetsFile().sculpt?.masculine || {})[id] || 0) * (1 + base) / 2;
-  const value = id => { const v = (sculpt[id] || 0) + carried(id) + (A.sculpt[id] || 0); if (!v) return 0; const R = GW.REACH[id], [lin, lim] = GW.limits(id, monster); let o = GW.soften(v, lin, lim); if (R) o = Math.min(R[1], Math.max(R[0], o)); return o; };
+  const value = id => { const v = (sculpt[id] || 0) + carried(id) + (A.sculpt[id] || 0); if (!v) return 0; const R = GW.REACH[id], [lin, lim] = GW.limits(id, monster, anime); let o = GW.soften(v, lin, lim); if (R) o = Math.min(R[1], Math.max(R[0], o)); return o; };
   const X = new Float32Array(m.P), F = new Float32Array(m.n).fill(1);
   for (let k = 0; k < m.k; k++) { const w = weights[k]; if (!w) continue; const o = k * m.n * 3; for (let i = 0; i < X.length; i++) X[i] += w * m.shapes[o + i]; }
   GW.applyProps(G.grow, value, X, m.P, F);
   let lo = 1e9, hi = -1e9; for (let i = 1; i < X.length; i += 3) { lo = Math.min(lo, X[i]); hi = Math.max(hi, X[i]); }
   const h = height ?? A.height ?? 1.7, k = h / (hi - lo), P = new Float32Array(X.length);
   for (let i = 0; i < X.length; i += 3) { P[i] = X[i] * k; P[i + 1] = (X[i + 1] - lo) * k; P[i + 2] = X[i + 2] * k; }
-  for (const c of G.sculpt.controls) { const v = SC.fieldValue(c, value); if (!v) continue; for (let q = 0; q < c.idx.length; q++) { const i = c.idx[q] * 3, s = v * k * F[c.idx[q]]; P[i] += s * c.d[q * 3]; P[i + 1] += s * c.d[q * 3 + 1]; P[i + 2] += s * c.d[q * 3 + 2]; } }
-  if (Math.abs(value("bust")) > 1) {                                 // a full bust, or a flat chest: made on the body as it now is, at its chest's own size (sculpt.js bustShape)
+  for (const c of G.sculpt.controls) { const v = SC.fieldValue(c, value, anime); if (!v) continue; for (let q = 0; q < c.idx.length; q++) { const i = c.idx[q] * 3, s = v * k * F[c.idx[q]]; P[i] += s * c.d[q * 3]; P[i + 1] += s * c.d[q * 3 + 1]; P[i + 2] += s * c.d[q * 3 + 2]; } }
+  let gather = [];
+  if (anime && Math.abs(value("bust")) > 1) {                        // Anime: a full bust, or a flat chest: made on the body as it now is, at its chest's own size (sculpt.js bustShape)
     const B = G.sculpt.bust[0], size = B.idx.reduce((a, i) => a + F[i], 0) / B.idx.length;
     const r = SC.bustShape(G.sculpt, i => [P[i * 3] / k, P[i * 3 + 1] / k, P[i * 3 + 2] / k], value("bust"), size, form);
     for (let q = 0; q < r.idx.length; q++) { const i = r.idx[q] * 3; P[i] += k * r.d[q * 3]; P[i + 1] += k * r.d[q * 3 + 1]; P[i + 2] += k * r.d[q * 3 + 2]; }
+    for (let g = 0; g < r.gather.length; g += 2) { const i = r.gather[g] * 3, a = r.gather[g + 1] * 3; P[i] = P[a]; P[i + 1] = P[a + 1]; P[i + 2] = P[a + 2]; }   // (a form's gathered points exactly on the points they lie on)
+    gather = r.gather;
   }
   let a = 1e9, b = -1e9; for (let i = 1; i < P.length; i += 3) { a = Math.min(a, P[i]); b = Math.max(b, P[i]); }   // exactly as tall as its height says, after everything (index.html exactHeight)
   const e = h / (b - a); for (let i = 0; i < P.length; i += 3) { P[i] *= e; P[i + 1] = (P[i + 1] - a) * e; P[i + 2] *= e; }
-  return { P, T: m.T, scale: k * e, F, weights, age: A, height: h };
+  return { P, T: m.T, scale: k * e, F, weights, age: A, height: h, gather };
 }
 // the whole sculpt and the proportions on MHR's base, once: the face's fields by MediaPipe's points on it (the Studio's
 // server's, kept in Bodies/MHR_landmarks.json), the proportions on MHR's rig

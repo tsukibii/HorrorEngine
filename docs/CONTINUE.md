@@ -21,11 +21,49 @@ builder's floors, the street's steel stair, climbing in Godot and on the desk; 2
 `claude/friendly-newton-9o2xey`, from the user's `retro-enhance`: the retro pack in the prop generator; 2026-11-09 and
 10 the weapons and the laptop, merged; 2026-11-10 on `update-tutorialv2`: tutorial v2 using every system, merged;
 2026-11-10, night, and 11 on `claude/nifty-tesla-dc904q`: children, Cutify, monster mode, horns and animal ears in the
-Character Studio, then the creature presets and a Studio character's face in Godot). Read this after CLAUDE.md's start
+Character Studio, then the creature presets and a Studio character's face in Godot, then the Anime switch and the red
+knit dress). Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-11, `claude/nifty-tesla-dc904q`): the creatures as presets, a face that moves in Godot, creature skins
+## Where it stopped last (2026-11-11, latest, `claude/nifty-tesla-dc904q`): Anime (the Bust from flat to very full) and the red knit dress
+
+The user asked for a look-alike of a Daz3D character (proportions, the red ribbed turtleneck dress, the face and
+makeup, the hair, "as 1:1 as possible"), reviewed the first bust ("unnaturally pointy ... how a waterballoon would
+sit"), and then stopped it: **"I dislike everything we've done aside from the new red clothing fabric and the new bust
+slider, keep the new bust slider as an 'anime' toggleable, and the clothing, don't worry about creating a preset for
+the 1:1 character anymore"** (DECISIONS 2026-11-11, latest). So two things are in the project and nothing else of it:
+
+- **Anime** (Character Studio, Body, under Cutify): a switch. On, a **Bust** slider under it runs −2 to 3 (the same
+  value as Sculpt, Body, Bust): −2 a flat chest, 0 the body's own, past 1 a full bust that hangs (a ball in the skin
+  from the breast's root, its weight low; 2 large, 3 about the picture's). **Off, the default, the Bust is the plain
+  −1 to 1 slider, to the bit what it was.** CHARACTER_STUDIO §2e; `sculpt.js` `bustShape`.
+- **Clothes over a full bust** are cut on a **dress form** (the hollow under the bust closed; TAILOR §1j). The body
+  shown, saved and exported is the hanging one.
+- **The red knit**: the fabric **Rib knit, chunky** (`chunky`) and the outfit **"casual: red sweater dress"** in
+  Casual (a long turtleneck sweater over a straight skirt of the same knit: `sweater-dress`, `sweater-dress-skirt`).
+- **Taken out**: the figure preset and its cards, the face look, the face controls made for it, the hair preset, the
+  figures tool. **No 1:1 preset**: don't pick it up again unless the user asks.
+
+**The picture**: `docs/studio_sheets/2026-11-11_anime_bust.jpg` (the switch and its slider; the body with Anime off at
+Bust 1, on at −2, 2 and 3; the red sweater dress on the plain body and on Bust 2).
+
+**For the user's eye, on the card** (drawn on the CPU here):
+- the Anime Bust at 2, 2.2 and 3 from the side and three quarter, bare and under the red dress and a t-shirt;
+- the knit under a full bust: the cloth creases hard where it turns in under the bust (LATER: a tent in the form's
+  place would smooth it; say if it should cling less or more);
+- the flat end (−2) on the feminine base.
+
+**Run here** (the cloud, on the CPU): CHECKS, GROW, POSE, TAILOR (with its new full-bust case), GROWPAGE (QUICK),
+WARDROBE, and the Anime switch driven in the page by hand (off and on, its slider and the sculpt's moving each other,
+no clothes cut again while the Bust is plain, the dress worn, saved, opened again). **Not run here: STUDIO** (50
+minutes on the CPU): the page's script changed (the switch, the body's form for the tailor), so it wants a run on the
+card (docs/RUN_LOCALLY.md).
+
+**Not done** (LATER, "A full bust, further"): it doesn't move in play (no bones, where the ears have chains); nothing
+lifts it (a bra sits on the form); the cloth under it is cut from little; MHR's chest is coarse at the slider's top.
+
+## Before that (2026-11-11, `claude/nifty-tesla-dc904q`): the creatures as presets, a face that moves in Godot, creature skins
 
 Two asks from the user on the same branch, after the ages and monster mode below (DECISIONS 2026-11-11, both entries).
 

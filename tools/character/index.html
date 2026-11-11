@@ -105,6 +105,8 @@
       <p class="note" id="ageNote"></p>
       <label class="tog"><input type="checkbox" id="cuteOn"><span>Cutify<small>A cuter, softer face at any age: bigger eyes, a shorter, rounder face, fuller cheeks, a smaller nose, mouth and chin. It goes on over a face fitted to a picture, like the sculpt, and the sliders below still shape it.</small></span></label>
       <div id="cuteRows"></div>
+      <label class="tog"><input type="checkbox" id="animeOn"><span>Anime<small>A Bust slider that runs further, from a flat chest to a very full bust that hangs like a water balloon instead of standing to a point. Clothes are cut again to go over it. Off, the Bust (Sculpt, Body) is the plain slider, −1 to 1.</small></span></label>
+      <div id="animeRows"></div>
       <h3>Sculpt <button id="resetSculpt" title="Every sculpt slider back to 0">Reset</button></h3>
       <label class="tog"><input type="checkbox" id="monsterOn"><span>Monster mode<small>For creatures: every sculpt slider and circle goes three times as far, the height from 0.4 to 3.5 m, and the Creature controls show (pointed ears, slanted eyes, a snout, a long skull, a hunch). Off, a slider past a person's range comes back into it.</small></span></label>
       <div id="creatureBox">
@@ -285,7 +287,7 @@ const FACE = [   // face_mesh.py's settings (its DEFAULTS), plus how much of the
 ];
 const st = { base: 0, height: 1.7, shape: new Array(H.shapes).fill(0), face: Object.fromEntries(FACE.map(f => [f[0], f[5]])),
              expr: new Float32Array(ENAMES.length), exprAmt: 1, sculpt: {},   // sculpt: the named controls' values (sculpt.js, grow.js)
-             age: { age: GW.AGE_ADULT, face: 1 }, cute: { on: false, amount: 0.6 }, monster: false };   // grow.js: the age (18: the adult), Cutify, monster mode
+             age: { age: GW.AGE_ADULT, face: 1 }, cute: { on: false, amount: 0.6 }, monster: false, anime: false };   // grow.js: the age (18: the adult), Cutify, monster mode, Anime (the Bust's long slider)
 let WHO = null, DELTA = null, PICS = [], REPORT = null, FACEBAKE = null, LAY = null, WEAR = null, NAILAT = null;   // LAY: the paint layers (layersui.js); WEAR: the accessories (accessories.js); NAILAT: the fingernails' places (nails.js)
 
 const fmt = (v, step) => (+v).toFixed(step < 0.01 ? 3 : step < 1 ? 2 : 0);
@@ -334,10 +336,10 @@ const baseSculpt = id => (BASE_SCULPT.feminine?.[id] || 0) * (1 - st.base) / 2 +
 // a control's whole value: the character's own slider, its base's, its age's and Cutify's, kept within reach (a person's
 // sliders run to 1, a monster's to 3: their sums ease into a limit a little past that, so a small nose made smaller by
 // an age and by Cutify never turns inside out). Sums a character could have before (a base's and a slider's) are as they were
-// (grow.js limits: a slider with a longer run of its own, the Bust's, eases in past its own end)
+// (grow.js limits: with Anime on, a slider with a longer run of its own, the Bust's, eases in past its own end)
 function sculptValue(id) {
   const v = (st.sculpt[id] || 0) + baseSculpt(id) + (AGE.sculpt[id] || 0) + (st.cute.on ? st.cute.amount * (GW.CUTE[id] || 0) : 0);
-  if (!v) return 0; const [lin, lim] = GW.limits(id, st.monster), R = GW.REACH[id];
+  if (!v) return 0; const [lin, lim] = GW.limits(id, st.monster, st.anime), R = GW.REACH[id];
   let out = GW.soften(v, lin, lim);
   if (R) out = Math.min(R[1], Math.max(R[0], out));    // (never past where its field turns the skin inside out)
   // the nose's size and its projection both take the nose's height off the face (0.35 and 0.5 of it a slider): never
@@ -652,7 +654,8 @@ Promise.all([api("api/clothes/designs.json"), api("api/clothes/outfits.json"), a
   designSel.onchange = () => { gColor.value = DESIGNS[designSel.value]?.color || gColor.value; }; designSel.onchange();
   drawWorn(); if (st.clothes.length) refresh();
 }).catch(e => status("no designs: " + e.message, "bad"));
-const grownKey = () => { const a = st.age.age < GW.AGE_ADULT ? [st.age.age, st.age.face] : 0, c = st.cute.on && st.cute.amount ? st.cute.amount : 0; return a || c || st.monster ? [[a, c, st.monster ? 1 : 0]] : []; };
+const grownKey = () => { const a = st.age.age < GW.AGE_ADULT ? [st.age.age, st.age.face] : 0, c = st.cute.on && st.cute.amount ? st.cute.amount : 0, an = st.anime && Math.abs(sculptValue("bust")) > 1;   // (Anime only where it changes the body: the Bust past the plain slider's ends)
+  return a || c || st.monster || an ? [[a, c, st.monster ? 1 : 0, ...(an ? ["anime"] : [])]] : []; };
 const bodyKey = () => JSON.stringify([weights().map(v => +v.toFixed(4)), st.height, DELTA ? DELTA.idx.length : 0, st.face?.strength, st.sculpt, ...grownKey()]);   // (the sculpt too: neutralBody carries it; the age, Cutify and monster mode when set)
 function dress() {                                     // the worker makes every garment worn, on the body as it is now
   if (!Object.keys(DESIGNS).length) return;
@@ -1137,6 +1140,7 @@ function neutralBody(form = false) {                   // the body as saved for 
   for (let i = 0; i < X.length; i += 3) { P[i] = X[i] * SCALE; P[i + 1] = (X[i + 1] - lo) * SCALE; P[i + 2] = X[i + 2] * SCALE; }
   if (fitOffsets(X, form)) for (let i = 0; i < N * 3; i++) P[i] += SCALE * PARTK[(i / 3) | 0] * FIT[i];   // the face and the sculpt
   if (exactHeight()) { let a = Infinity; for (let i = 1; i < P.length; i += 3) a = Math.min(a, P[i]); for (let i = 1; i < P.length; i += 3) P[i] -= a; }   // (SCALE is compose's, the exact one: only the floor is left to find)
+  for (let g = 0; g < GATHER.length; g += 2) { const i = GATHER[g] * 3, a = GATHER[g + 1] * 3; P[i] = P[a]; P[i + 1] = P[a + 1]; P[i + 2] = P[a + 2]; }   // (a dress form's gathered points exactly on the points they lie on: the tailor makes them one)
   return P;
 }
 // the height's rule. A body from before the ages is as tall as its height says before its sculpt and its picture's fit
@@ -1158,21 +1162,23 @@ function proportioned() {
 // what's added to the body before it's scaled: the face's fit (by its strength), the sculpt (sculpt.js) and the lower
 // lip's curl, in MHR's metres. The fit is made on the body without the sculpt, so the sculpt stays as set over any picture
 const FIT = new Float32Array(N * 3);
+let GATHER = [];
 function fitOffsets(X = null, form = false) {          // true if anything is added. X: the body it's added to (proportioned(), MHR's units); form: a full bust as the tailor's dress form
-  FIT.fill(0); let on = false;
+  FIT.fill(0); GATHER = []; let on = false;
   if (DELTA) { const k = st.face.strength; for (let j = 0; j < DELTA.idx.length; j++) { const i = DELTA.idx[j] * 3; FIT[i] += k * DELTA.d[j * 3]; FIT[i + 1] += k * DELTA.d[j * 3 + 1]; FIT[i + 2] += k * DELTA.d[j * 3 + 2]; } on = true; }
   if (SCULPT) for (const c of SCULPT.controls) {
     if (c.prop) continue;                               // (a proportion: proportioned(), before the scale)
-    const v = SC.fieldValue(c, sculptValue); if (!v) continue; on = true;
+    const v = SC.fieldValue(c, sculptValue, st.anime); if (!v) continue; on = true;
     for (let q = 0; q < c.idx.length; q++) { const i = c.idx[q] * 3; FIT[i] += v * c.d[q * 3]; FIT[i + 1] += v * c.d[q * 3 + 1]; FIT[i + 2] += v * c.d[q * 3 + 2]; }
   }
-  // the Bust past its bump's ends (over 1 a full bust, under -1 toward a flat chest): not a field, a shape made on the
-  // body as it now stands with the fields on it (sculpt.js bustShape), at its chest's own size (a child's, a goblin's)
-  const bust = SCULPT && X ? sculptValue("bust") : 0;
+  // Anime: the Bust past its bump's ends (over 1 a full bust, under -1 toward a flat chest): not a field, a shape made on
+  // the body as it now stands with the fields on it (sculpt.js bustShape), at its chest's own size (a child's, a goblin's)
+  const bust = st.anime && SCULPT && X ? sculptValue("bust") : 0;
   if (Math.abs(bust) > 1) {
     const K = GROWN ? PARTK : null, foot = SCULPT.bust[0].idx; let size = 1;
     if (K) { size = 0; for (const i of foot) size += K[i]; size /= foot.length; }
     const r = SC.bustShape(SCULPT, i => { const k = K ? K[i] : 1; return [X[i * 3] + k * FIT[i * 3], X[i * 3 + 1] + k * FIT[i * 3 + 1], X[i * 3 + 2] + k * FIT[i * 3 + 2]]; }, bust, size, form);
+    GATHER = r.gather;                                    // (a dress form's: the points gathered onto others; neutralBody puts them exactly there)
     for (let q = 0; q < r.idx.length; q++) { const i = r.idx[q], k = K ? K[i] : 1; FIT[i * 3] += r.d[q * 3] / k; FIT[i * 3 + 1] += r.d[q * 3 + 1] / k; FIT[i * 3 + 2] += r.d[q * 3 + 2] / k; }
     on = on || r.idx.length > 0;
   }
@@ -2119,16 +2125,20 @@ if (LMK) {
 }
 const SCULPT_GROUPS = [...SC.GROUPS, ...GW.GROUPS];
 const reach = () => st.monster ? 3 : 1;                // how far a sculpt slider goes: a person's, or a creature's
-const sliderSpan = id => { const r = reach(), sp = GW.SPAN[id]; return sp ? [Math.min(-r, sp[0]), Math.max(r, sp[1])] : [-r, r]; };   // (one with a longer run of its own: the Bust, flat to very full)
+const sliderSpan = id => { const r = reach(), sp = st.anime ? GW.SPAN[id] : null; return sp ? [Math.min(-r, sp[0]), Math.max(r, sp[1])] : [-r, r]; };   // (with Anime on, one with a longer run of its own: the Bust, flat to very full)
 const sculptSet = {}, sculptRow = {}, sculptGroup = {};
 if (SCULPT) for (const g of SCULPT_GROUPS) {
   const d = el("details", { open: g === "Forehead" }, el("summary", { textContent: g })); sculptGroup[g] = d;
   for (const c of SCULPT.controls.filter(c => c.group === g)) {
-    sculptSet[c.id] = slider(d, c.id, c.label, -1, 1, 0.01, 0, "", (v, row) => { st.sculpt[c.id] = v; row.classList.toggle("moved", v !== 0); changed("sculpt"); }, c.help);
+    sculptSet[c.id] = slider(d, c.id, c.label, -1, 1, 0.01, 0, "", (v, row) => { st.sculpt[c.id] = v; row.classList.toggle("moved", v !== 0); if (c.id === "bust") animeBust(v); changed("sculpt"); }, c.help);
     sculptRow[c.id] = d.lastElementChild;
   }
   $("#sculptRows").append(d);
 }
+// Anime's own Bust row, under its switch: the same value as Sculpt, Body, Bust (each moves the other), there to be found
+const animeBust = slider($("#animeRows"), "animeBust", "Bust", GW.SPAN.bust[0], GW.SPAN.bust[1], 0.01, 0, "−2 a flat chest, 0 the body's own, 1 the plain slider's top; past it a full, heavy bust, its weight low (2: large, 3: very large).", v => { st.sculpt.bust = v; sculptSet.bust?.(v); sculptRow.bust?.classList.toggle("moved", v !== 0); changed("sculpt"); });
+const animeIn = $("#animeRows").lastElementChild.querySelector("input");
+if (sculptSet.bust) { const plain = sculptSet.bust; sculptSet.bust = v => { plain(v); animeBust(v); }; }   // (whatever sets the sculpt's slider sets this one: a circle dragged, Reset, a character opened)
 function sculptAll() { for (const id in sculptSet) { const v = st.sculpt[id] || 0; sculptSet[id](v); sculptRow[id].classList.toggle("moved", v !== 0); } }
 $("#resetSculpt").onclick = () => { st.sculpt = {}; sculptAll(); compose(); };
 // ---- monster mode (DECISIONS 2026-11-10, night): the sliders' and the circles' reach three times a person's, the height
@@ -2137,6 +2147,7 @@ $("#resetSculpt").onclick = () => { st.sculpt = {}; sculptAll(); compose(); };
 function monsterUI() {
   const r = reach(), [lo, hi] = HEIGHTS[st.monster ? "monster" : "person"];
   for (const id in sculptRow) { const inp = sculptRow[id].querySelector("input"), [a, b] = sliderSpan(id); inp.min = a; inp.max = b; }
+  { const [a, b] = sliderSpan("bust"); animeIn.min = a; animeIn.max = b; $("#animeRows").hidden = !st.anime; }   // Anime's own Bust row
   heightIn.min = lo; heightIn.max = hi;
   if (sculptGroup.Creature) sculptGroup.Creature.hidden = !st.monster;
   $("#monsterOn").checked = st.monster; creatureMark();
@@ -2146,7 +2157,7 @@ function setMonster(on, ask = true) {
   if (!on) delete st.creature;
   if (!on) {
     const [lo, hi] = HEIGHTS.person, creature = id => SCULPT?.controls.find(c => c.id === id)?.group === "Creature";
-    const span = id => GW.SPAN[id] || [-1, 1], past = Object.entries(st.sculpt).filter(([id, v]) => v < span(id)[0] || v > span(id)[1] || (v && creature(id)));
+    const span = id => (st.anime && GW.SPAN[id]) || [-1, 1], past = Object.entries(st.sculpt).filter(([id, v]) => v < span(id)[0] || v > span(id)[1] || (v && creature(id)));
     if (ask && (past.length || st.height < lo || st.height > hi) && !confirm("Leaving monster mode brings every slider back into a person's range (and the creature's own controls to 0). Leave it?")) { $("#monsterOn").checked = true; return; }
     for (const [id, v] of past) st.sculpt[id] = creature(id) ? 0 : Math.min(span(id)[1], Math.max(span(id)[0], v));
     st.height = Math.min(hi, Math.max(lo, st.height));
@@ -2154,6 +2165,15 @@ function setMonster(on, ask = true) {
   st.monster = !!on; monsterUI(); UNSAVED = true; compose(); hud();
 }
 $("#monsterOn").onchange = () => setMonster($("#monsterOn").checked);
+// ---- Anime (DECISIONS 2026-11-11: "keep the new bust slider as an 'anime' toggleable"): a switch; on, the Bust slider runs
+// -2 to 3 and past its bump's ends the breast is made on the body (sculpt.js bustShape: flat at -2, a full hanging bust
+// past 1; the tailor cuts on its dress form). Off, the Bust is the plain slider and a value past its range comes back in
+function setAnime(on) {
+  st.anime = !!on; $("#animeOn").checked = st.anime;
+  if (!st.anime && st.sculpt.bust) { const r = reach(), v = Math.min(r, Math.max(-r, st.sculpt.bust)); if (v !== st.sculpt.bust) { st.sculpt.bust = v; status(`Anime off: the Bust back within the plain slider's range (${v})`, "ok"); } }
+  monsterUI(); UNSAVED = true; compose(); hud();           // (compose's refit cuts the clothes again when the body under them changed)
+}
+$("#animeOn").onchange = () => setAnime($("#animeOn").checked);
 // ---- the creatures: monster mode's presets as cards (grow.js MONSTERS; DECISIONS 2026-11-11: "add presets for the
 // monster-ish shapes you made so I can use them"). A card makes the character that creature: its sculpt, its height,
 // its base and build, its teeth, and with "With its look" its skin, eyes, lips and horns; "Face only" gives its head
@@ -2229,7 +2249,7 @@ function ageUI() {
 $("#cuteOn").onchange = () => { st.cute.on = $("#cuteOn").checked; cuteUI(); UNSAVED = true; changed("sculpt"); };
 const cuteSet = slider($("#cuteRows"), "cuteAmount", "Cuteness", 0, 1.5, 0.05, 0.6, "How much: 0.6 soft and young-looking, 1 a doll's face, past it a cartoon's.", v => { st.cute.amount = v; UNSAVED = true; changed("sculpt"); });
 function cuteUI() { $("#cuteOn").checked = !!st.cute.on; $("#cuteRows").hidden = !st.cute.on; cuteSet(st.cute.amount); }
-function grownUI() { ageSet.age(st.age.age); ageSet.face(st.age.face); ageUI(); cuteUI(); monsterUI(); }
+function grownUI() { ageSet.age(st.age.age); ageSet.face(st.age.face); ageUI(); cuteUI(); $("#animeOn").checked = !!st.anime; monsterUI(); }
 grownUI();
 const HANDLES = { box: el("div", { id: "handles" }), list: [], drag: null };
 view.append(HANDLES.box);
@@ -3331,7 +3351,7 @@ async function open(name) {
   st.shape.forEach((v, i) => { shapeSet[i](v); });
   document.querySelectorAll("#shapeRows .row").forEach((r, i) => r.classList.toggle("moved", st.shape[i] !== 0));
   st.sculpt = { ...(c.sculpt || {}) };
-  st.age = { age: GW.AGE_ADULT, face: 1, ...(c.age || {}) }; st.cute = { on: false, amount: 0.6, ...(c.cute || {}) }; st.monster = !!c.monster;   // (a character from before them: an adult, as it was)
+  st.age = { age: GW.AGE_ADULT, face: 1, ...(c.age || {}) }; st.cute = { on: false, amount: 0.6, ...(c.cute || {}) }; st.monster = !!c.monster; st.anime = !!c.anime;   // (a character from before them: an adult, as it was)
   if (c.creature && GW.MONSTERS[c.creature]) st.creature = c.creature; else delete st.creature;   // the creature it started as (its card marked)
   st.hairHead = c.hairHead?.base?.C ? c.hairHead : null; HAIRINFO = null;   // the head its hair was baked on (placeHair)
   grownUI();
@@ -3360,7 +3380,7 @@ async function open(name) {
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
   if (me === OPENING && WHO) detect();
 }
-const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), age: st.age, cute: st.cute, monster: st.monster, creature: st.monster && st.creature ? st.creature : undefined, hairHead: st.hairHead || undefined, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, drape: st.drape, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, groom: st.groom, accessories: st.accessories,
+const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), age: st.age, cute: st.cute, monster: st.monster, anime: st.anime || undefined, creature: st.monster && st.creature ? st.creature : undefined, hairHead: st.hairHead || undefined, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, drape: st.drape, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, groom: st.groom, accessories: st.accessories,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
@@ -4067,7 +4087,7 @@ $("#poseSel").onchange = () => { POSE = $("#poseSel").value; try { localStorage.
 $("#povShot").onchange = () => { orbit.focus = "pov"; repose(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, on: graftOn() }), EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, useCreature, creatureLook, GW, SKINSH, loadSalon, get salonHair() { return SALONH; }, get headBase() { return HEADBASE; }, get hairStale() { return HAIRSTALE; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, on: graftOn() }), EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, useCreature, creatureLook, setAnime, GW, SKINSH, loadSalon, get salonHair() { return SALONH; }, get headBase() { return HEADBASE; }, get hairStale() { return HAIRSTALE; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

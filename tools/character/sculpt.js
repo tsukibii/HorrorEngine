@@ -255,7 +255,7 @@ export function buildSculpt({ P, T, lm, lid = null }) {
       p => { const w = armW(p[0], p[1]); return w ? [0.03 * w, 0, 0] : null; }],
     ["chest", "Chest", "Body", "A deeper or a flatter chest.",
       p => { const w = bump(Math.abs(p[1] - 1.28), 0.09) * bump(p[0], 0.17) * sm(0.02, 0.09, p[2]) * (1 - armW(p[0], p[1])); return w ? [0, 0, 0.012 * w] : null; }],
-    ["bust", "Bust", "Body", "A fuller bust or a flatter chest: −2 flat, −1 small (a child's), 0 the body's own, past 1 a full, heavy bust (3: very large).",
+    ["bust", "Bust", "Body", "A fuller bust or a flatter chest (a child's: −1). With Anime on (above) it runs further: −2 flat, past 1 a full, heavy bust (3: very large).",
       (p, m) => { if (p[2] < 0.03 || p[1] < 1.18 || p[1] > 1.39) return null;
         const w = bump(Math.hypot((p[0] - 0.072) / 0.078, (p[1] - 1.285) / 0.09), 1) * sm(0.1, 0.6, m[2]) * (1 - armW(p[0], p[1])); return w > 1e-6 ? [0.2 * 0.016 * w * sm(0, 0.02, p[0]), -0.15 * 0.016 * w, 0.016 * w] : null; }, { cap: 1 }],
     ["waist", "Waist", "Body", "A wider or a slimmer waist.",
@@ -378,17 +378,21 @@ export function buildSculpt({ P, T, lm, lid = null }) {
     const apron = [];
     for (let i = 0; i < N; i++) { const px = sg * P[i * 3], py = P[i * 3 + 1]; if (slot[i] >= 0 || px < 0.004 || P[i * 3 + 2] < 0.02 || n[i * 3 + 2] < 0.2) continue;
       if (Math.hypot(px - B.cx, py - B.cy) < 0.24 && !(px > 0.165 && py > 1.26)) apron.push(i); }
-    return { sg, idx: Uint32Array.from(idx), g: Float32Array.from(g), ring: Uint32Array.from(ring), W, cw, share, nrm, out, apron: Uint32Array.from(apron) };
+    const own = new Set([...idx, ...apron]), adj = new Map();           // who is next to whom among them (the form gathers along it)
+    for (const i of own) adj.set(i, [...nbr[i]].filter(j => own.has(j)));
+    return { sg, idx: Uint32Array.from(idx), g: Float32Array.from(g), ring: Uint32Array.from(ring), W, cw, share, nrm, out, apron: Uint32Array.from(apron), adj };
   });
   return { controls, handles, normals: n, bust };
 }
 const unit3 = v => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
 
-// what a control's field is multiplied by, from the sliders' whole values (value(id)): its own, but never past its `cap`
-// either way (the Bust's bump stops at 1 and at -1: past them the bust is bustShape's, below)
-export const fieldValue = (c, value) => { const v = value(c.id); return c.cap !== undefined ? Math.max(-c.cap, Math.min(v, c.cap)) : v; };
+// what a control's field is multiplied by, from the sliders' whole values (value(id)): its own; with Anime on (grow.js
+// SPAN: the Bust's long slider) never past its `cap` either way (the Bust's bump stops at 1 and at -1: past them the
+// bust is bustShape's, below). Off, the bump is the whole of it, as it always was
+export const fieldValue = (c, value, anime = false) => { const v = value(c.id); return anime && c.cap !== undefined ? Math.max(-c.cap, Math.min(v, c.cap)) : v; };
 
-// ---- the bust past the bump's ends: a full bust (the Bust slider past 1; DECISIONS 2026-11-11: "we should be able to make the woman more flat too
+// ---- Anime: the bust past the bump's ends (the Body tab's Anime switch: "keep the new bust slider as an 'anime'
+// toggleable"; only with it on does anything here run): a full bust (the Bust slider past 1; DECISIONS 2026-11-11: "we should be able to make the woman more flat too
 // but also more busty like the image", then, of the first try: "from the front angle it looks perfect, but as you go
 // towards a side view it looks unnaturally pointy, it should feel more how a water balloon would sit"). The first try
 // was a field like the others, added to the body: a bigger bump on the small breast the body already has, on the Bust's
@@ -408,15 +412,19 @@ export const fieldValue = (c, value) => { const v = value(c.id); return c.cap !=
 // The dress form (`form`): what the tailor cuts and hangs clothes on. A hanging ball has a hollow under it (its underside,
 // the fold, the ribs below): skin that runs down the ball's front, back up under it and down again. Cloth is cut from
 // the skin, so cloth cut there is three layers where a garment has one; pushed out to hang as a garment does they lie
-// in each other (the first turtleneck on a full bust: torn under it). On the form the hollow is closed: where the ball
-// hangs out past the foot's edge the skin goes round the ball only to where it's widest, then straight back to the
-// ribs (a ball in a cup, no underside), and the ribs' own skin under the ball is moved out from under it. The form
-// holds the whole ball, so what's cut on it clears the real one; the body shown and exported stays the hanging one.
+// in each other (the first turtleneck on a full bust: torn under it). On the form the hollow is closed: the skin goes
+// round the ball only to where it's widest over the wall (or to the middle of the chest, where the two balls meet), and
+// all the skin past that, the ball's underside and the ribs' own skin under the ball, is gathered onto the first points
+// to reach it: each onto the one it's joined to through the gathered skin (`gather`: pairs of a point and the point it
+// lies on; the callers put the one exactly on the other, and the tailor makes points that lie on one another one:
+// tailor/mesh.js welded). So no cloth is cut from the hollow at all: the cloth goes from the ball's widest ring
+// straight to the ribs beyond it, as a garment does. The form holds the whole ball, so what's cut on it clears the
+// real one; the body shown and exported stays the hanging one.
 //   v: the Bust slider's whole value (past 1: the ball, 3 the picture's; under -1: flatter, -2 flat; between: nothing)
 //   scale: the body's own size there (a child's, a goblin's)
 //   at(i): the body's point i as it is (MHR's metres, the sculpt's fields on it), -> { idx, d }: what to add to each
 export function bustShape(S, at, v, scale = 1, form = false) {
-  const idx = [], d = [], k = v - 1, flat = Math.min(1, -1 - v); if (!(k > 0 || flat > 0) || !S.bust) return { idx: new Uint32Array(0), d: new Float32Array(0) };
+  const idx = [], d = [], gather = [], k = v - 1, flat = Math.min(1, -1 - v); if (!(k > 0 || flat > 0) || !S.bust) return { idx: new Uint32Array(0), d: new Float32Array(0), gather };
   const p = (0.06 + 0.055 * k) * scale, R = (0.055 + 0.45 * 0.055 * k) * scale, drop = (0.015 + 0.33 * 0.055 * k) * scale, lean = (0.005 + 0.15 * 0.055 * k) * scale;
   const depth = p - R, gap = 0.004 * scale, tau = sm(0, 0.6, k);            // how far the ball's front stands off the wall, its radius, how far its middle is below and outside the foot's; tau: how much of the shape is the ball's (the body's own breast the rest)
   const tilt = (15 + 12.5 * k) * Math.PI / 180, ct = Math.cos(tilt), st = Math.sin(tilt);   // where the foot's middle lands on the ball: below its front, more the bigger (the skin slides down a heavy breast; and the body's mesh has most of its points above the middle: they're what the ball's front is made of)
@@ -431,22 +439,23 @@ export function bustShape(S, at, v, scale = 1, form = false) {
       continue;
     }
     // in the chest's own frame at the foot's middle: (across it, outward; up it; off it)
-    const C = [lean, -drop, depth], pole = [0, -st, ct];
+    const C = [lean, -drop, depth], pole = [0, -st, ct], G = new Map(), anchors = new Map(), first = idx.length;   // (the form: the points past the ball's widest, and the last before it, each with where it now is)
     for (let q = 0; q < nf; q++) {
       const r = [wall[q * 3] - mid[0], wall[q * 3 + 1] - mid[1], wall[q * 3 + 2] - mid[2]], a = r[0] * o[0] + r[2] * o[2], b = r[1], h = r[0] * nz[0] + r[2] * nz[2], s = F.share[q];
       const Q = s > 0.02 ? [a / s, b / s, 0] : [0, 0, 0];                   // its own place on the foot's edge
-      const ease = sm(0, 0.7, s > 0.02 ? b / (Math.hypot(a, b) || 1) : 0), lim = 0.004 * scale;
-      const place = t => { const T = hung(C, pole, R, Q, gap, t, ease, form); T[2] += h;   // (the wall isn't flat: its own height there)
+      const ease = sm(0, 0.7, s > 0.02 ? b / (Math.hypot(a, b) || 1) : 0), lim = 0.004 * scale, past = [false];
+      const place = t => { const T = hung(C, pole, R, Q, gap, t, ease, form, past); T[2] += h;   // (the wall isn't flat: its own height there)
         return [mid[0] + T[0] * o[0] + T[2] * nz[0], mid[1] + T[1], mid[2] + T[0] * o[2] + T[2] * nz[2]]; };
-      let W = place(s);
+      let W = place(s), gone = past[0];
       if (F.sg * W[0] < lim) {                                             // the two never through each other: pressed together at the middle
-        if (form) {                                                        // (the form: no wall between them either, a slot cloth would be cut down into: what's past the middle gathered where the skin first reaches it)
+        if (form) {                                                        // (the form: no wall between them either, a slot cloth would be cut down into: what's past the middle is gathered where the skin first reaches it)
           let lo = 0, hi = s; for (let it = 0; it < 18; it++) { const m = (lo + hi) / 2; if (F.sg * place(m)[0] < lim) hi = m; else lo = m; }
-          W = place(lo + 0.03 * (s - lo));
+          W = place(lo); gone = true;
         }
         if (F.sg * W[0] < lim) W[0] = F.sg * lim;
       }
       const y = at(F.idx[q]), w = tau * F.g[q];
+      if (form) { (gone ? G : anchors).set(F.idx[q], [y[0] + w * (W[0] - y[0]), y[1] + w * (W[1] - y[1]), y[2] + w * (W[2] - y[2])]); }
       idx.push(F.idx[q]); d.push(w * (W[0] - y[0]), w * (W[1] - y[1]), w * (W[2] - y[2]));
     }
     if (form) for (const j of F.apron) {                                    // the skin under the ball: out from under it, to just past where the ball is widest, in the order it lay
@@ -457,10 +466,22 @@ export function bustShape(S, at, v, scale = 1, form = false) {
       const am = (F.sg * 0.004 * scale - mid[0] - h * nz[0]) / o[0];       // the middle of the chest, across this frame
       if (na < am) { const e = am - C[0]; if (Math.abs(e) >= to) continue; na = am; nb = C[1] + (db < 0 ? -1 : 1) * Math.sqrt(to * to - e * e); }   // (never across the middle: along it instead, down from under the ball or up)
       const W = [mid[0] + na * o[0] + h * nz[0], mid[1] + nb, mid[2] + na * o[2] + h * nz[2]];
+      G.set(j, [y[0] + tau * (W[0] - y[0]), y[1] + tau * (W[1] - y[1]), y[2] + tau * (W[2] - y[2])]);
       idx.push(j); d.push(tau * (W[0] - y[0]), tau * (W[1] - y[1]), tau * (W[2] - y[2]));
     }
+    if (form && tau > 0.999 && G.size) {
+      // gathered: the first points past the widest stay where the skin reaches it (the ball's widest ring, the middle
+      // of the chest: the cloth's last row on the ball); every point further on lies on the one of them it's joined
+      // to (breadth first from them, through the gathered skin). Onto the last row *before* the widest, the cloth
+      // cut the ball's bottom off (the ball showed through it)
+      const on = new Map(), queue = [...G.keys()].filter(i => F.adj.get(i).some(j => anchors.has(j)));
+      for (const a of queue) on.set(a, a);
+      for (let h = 0; h < queue.length; h++) { const v = queue[h]; for (const j of F.adj.get(v)) if (G.has(j) && !on.has(j)) { on.set(j, on.get(v)); queue.push(j); } }
+      for (let q = first; q < idx.length; q++) { const i = idx[q], a = on.get(i); if (a === undefined || a === i) continue;
+        const y = at(i), to = G.get(a); d[q * 3] = to[0] - y[0]; d[q * 3 + 1] = to[1] - y[1]; d[q * 3 + 2] = to[2] - y[2]; gather.push(i, a); }
+    }
   }
-  return { idx: Uint32Array.from(idx), d: Float32Array.from(d) };
+  return { idx: Uint32Array.from(idx), d: Float32Array.from(d), gather };
 }
 // the skin from the ball's pole (where the foot's middle lands: C + R * pole) to a point Q of the foot's edge (on the
 // wall, z = 0), at a share t of its length: a point [across, up, off the wall]. The ball: its middle C, radius R. Where
@@ -469,9 +490,9 @@ export function bustShape(S, at, v, scale = 1, form = false) {
 // on round the ball to the wall, `gap` off it: every point of the foot on the ball itself, and the skin from there back
 // along the ribs to the edge is what lies between the last of them and the edge's own points (the body's mesh has four
 // rows from a breast's middle to its fold: spent on the way back, the ball's bottom was one row, a blade)
-// (the dress form, `form`: where the ball hangs out past Q, round the ball only to where it's widest over the wall, then
-// straight back to the wall: no underside)
-function hung(C, pole, R, Q, gap, t, ease, form = false) {
+// (the dress form, `form`: where the ball hangs out past Q, round the ball only to where it's widest over the wall and no
+// further: no underside; `past[0]` set when the point would be past it)
+function hung(C, pole, R, Q, gap, t, ease, form = false, past = null) {
   const r = [Q[0] - C[0], Q[1] - C[1], Q[2] - C[2]], aq = r[0] * pole[0] + r[1] * pole[1] + r[2] * pole[2];
   const e = [r[0] - aq * pole[0], r[1] - aq * pole[1], r[2] - aq * pole[2]], rq = Math.hypot(e[0], e[1], e[2]) || 1e-9, D = Math.hypot(rq, aq);
   for (let k = 0; k < 3; k++) e[k] /= rq;
@@ -480,7 +501,8 @@ function hung(C, pole, R, Q, gap, t, ease, form = false) {
     let th = Math.atan2(pole[2], -e[2]); if (th <= 0) th += Math.PI;      // where the ball is widest over the wall on this way round: cos q pole.z + sin q e.z = 0
     const down = Math.max(0, C[2] - gap), a = t * (R * th + down);
     if (a <= R * th) return on(a / R);
-    const S = on(th); return [S[0], S[1], C[2] - (a - R * th)];
+    if (past) past[0] = true;                                              // (past the widest: the form gathers it there)
+    return on(th);
   }
   if (D > R) {
     const th = Math.max(0, Math.atan2(rq, aq) - Math.acos(R / D)), line = Math.sqrt(D * D - R * R), a = t * (R * th + line);

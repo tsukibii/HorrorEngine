@@ -20,6 +20,7 @@ export const SURFACES = {
   twill: ["Twill (trousers)", 0.025, 0.08, 0.15, false],
   knit: ["Knit", 0.04, 0, 0.35, false],
   rib: ["Rib knit", 0.025, 0.02, 0.4, false],
+  chunky: ["Rib knit, chunky (a sweater's wide ribs)", 0.048, 0, 0.8, false],
   wool: ["Wool (felt)", 0.06, 0, 0.25, false],
   tweed: ["Tweed", 0.05, 0, 0.25, false],
   silk: ["Silk sheen", 0.12, 0.5, 0, false],
@@ -116,6 +117,13 @@ export function surfaceTile(kind) {
   } else if (kind === "rib") {                                        // ribs down the piece (cuffs, socks, a sweater's hem)
     for (let xx = 0; xx < n; xx += 4) { x.fillStyle = "rgba(255,255,255,0.12)"; x.fillRect(xx, 0, 2, n); x.fillStyle = "rgba(0,0,0,0.14)"; x.fillRect(xx + 2.5, 0, 1.2, n); }
     for (let yy = 0; yy < n; yy += 3) { x.fillStyle = "rgba(0,0,0,0.05)"; x.fillRect(0, yy, n, 0.6); }
+  } else if (kind === "chunky") {                                     // a chunky rib (DECISIONS 2026-11-11, the red sweater dress): eight ribs a tile, 6 mm each, a rounded ridge of knit stitches with a dark furrow between
+    const w = n / 8;
+    for (let k = 0; k < 8; k++) { const x0 = k * w;
+      for (let i = 0; i < w; i++) { const sn = Math.sin((i + 0.5) / w * Math.PI); x.fillStyle = sn > 0.55 ? `rgba(255,255,255,${0.3 * (sn - 0.55) / 0.45})` : `rgba(0,0,0,${0.55 * (0.55 - sn) / 0.55})`; x.fillRect(x0 + i, 0, 1.02, n); }
+      x.strokeStyle = "rgba(0,0,0,0.15)"; x.lineWidth = 1.1;          // its stitches: little Vs down it
+      for (let yy = 0; yy < n; yy += 8) { x.beginPath(); x.moveTo(x0 + w * 0.22, yy); x.lineTo(x0 + w * 0.5, yy + 6); x.lineTo(x0 + w * 0.78, yy); x.stroke(); }
+    }
   } else if (kind === "silk" || kind === "satin") {                  // a faint slub along the weave, not streaks (they read as creases on a long skirt)
     wrap(() => { for (let i = 0; i < 18; i++) { x.fillStyle = `rgba(255,255,255,${0.012 + rnd() * 0.02})`; x.save(); x.translate(rnd() * n, 0); x.rotate(0.08); x.fillRect(0, -n, 1.5 + rnd() * 4, n * 3); x.restore(); } });
     if (kind === "satin") sheen(16, 2, (u, v) => u + v * 0.3);     // a gentle band of light (a strong one tiles into blocks on a long skirt)

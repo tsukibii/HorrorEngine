@@ -5,7 +5,7 @@
 // a slider or a drag moves a line at once; Bake cuts and hangs the cloth. The film rides the body as it's shown (the
 // view's pose, a sculpt, an expression): its points are the shown body's own, lifted along its normals by the ease.
 import * as THREE from "three";
-import { frame } from "./tailor/frame.js";
+import { bodyFrame } from "./tailor/frame.js";
 import { normals } from "./tailor/mesh.js";
 import { guide, KINDS } from "./tailor/guides.js";
 import * as WEIGHTS from "./tailor/weights.js";
@@ -44,7 +44,7 @@ export class CutEditor {
   /** the frame (the heights, the arms) of the body as it is, measured once per body */
   measure(P, key) {
     if (key === this.frameKey && this.F) return;
-    this.frameKey = key; this.P = P; this.F = frame(P, this.c.T); this.N = normals(P, this.c.T);
+    this.frameKey = key; this.P = P; this.F = bodyFrame(P, this.c.T).F; this.N = normals(P, this.c.T);   // (a dress form's as the tailor takes it: its gathered points made one)
     this.skin = this.c.RIG ? WEIGHTS.skinOf(P, this.c.RIG.BI, this.c.RIG.BW) : null;
     this.made.clear();                                             // every guide was on the old body
   }

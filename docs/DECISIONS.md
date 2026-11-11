@@ -2,6 +2,38 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-11, latest (the user: the new Bust slider kept as an Anime switch, the red knit dress kept; no look-alike preset)
+
+- **The ask** (with a Daz3D screenshot of a character in a red ribbed turtleneck dress): **"could we make a 'korean
+  anime' proportion preset, that's vaguely like the character shown in the screenshot (can we also recreate the same
+  dress), try get it as 1:1 as possible and make it so it's easily adjustable (we should be able to make the woman more
+  flat too but also more busty like the image ... maybe make it about 60% as busty as the image given that being too
+  busty might cause clipping issues), try re-create that kind of face and makeup look too and create a hair preset
+  that matches my image"**.
+- **On the first bust** (an annotated screenshot, ticks on the front view, red lines on the side views): **"from the
+  front angle it looks perfect, but as you go towards a side view it looks unnaturally pointy, it should feel more how
+  a waterballoon would sit rather than a fine point"**. The bust was rebuilt from that: not a bigger bump but a ball
+  hung in the skin from the breast's root, resting on the ribs, its weight low (CHARACTER_STUDIO §2e).
+- **Then the stop: "for the latest work on recreating the korean character I dislike everything we've done aside from
+  the new red clothing fabric and the new bust slider, keep the new bust slider as an 'anime' toggleable, and the
+  clothing, don't worry about creating a preset for the 1:1 character anymore"**. So:
+  - **Kept, as a switch: Anime** (Character Studio, Body, under Cutify). On, a **Bust** slider under it runs from −2
+    to 3: −2 a flat chest, 0 the body's own, 1 the plain slider's top, and past 1 a full, heavy bust that hangs like a
+    water balloon (2 large; 3 about the picture's, so 2 to 2.2 is the "60% as busty" asked for). Clothes are cut on a
+    dress form of it, so they go over a full bust without tearing or showing skin (TAILOR §1j). **Off (the default),
+    the Bust is the plain slider it always was, −1 to 1**: every character made before is the same, and a character
+    saved with Anime on that's switched off has its Bust brought back into that range.
+  - **Kept: the red knit.** A new fabric, **Rib knit, chunky** (`chunky`: a sweater's wide ribs, eight 6 mm ribs a
+    tile), and the dress as an outfit in Casual, **"casual: red sweater dress"**: a long turtleneck sweater
+    (`sweater-dress`: a folded rib neck, rib cuffs) hanging free over a straight skirt of the same knit
+    (`sweater-dress-skirt`), both designs usable alone and in any colour.
+  - **Taken out, all of it**: the figure preset and its cards, the face look and makeup made after the picture, the
+    face controls made for it (face size, jawline), the hair preset and its hairstyle, the figures tool. **No preset
+    of the 1:1 character**: not to be picked up again unless the user asks.
+- **Read as, for next time**: a look-alike of a picture is the user's to judge, part by part. Show a rough of each part
+  (a body sheet, a face sheet, the hair) before building the next on it, and don't finish a whole character on a
+  first guess (LESSONS).
+
 ## 2026-11-11, later (the user: weird skins for the monsters, in Godot)
 
 - **"once your done with this could we create some more weird skin shaders/textures for the monster characters that we

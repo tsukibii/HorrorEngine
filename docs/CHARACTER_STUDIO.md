@@ -322,6 +322,62 @@ bigger or smaller against the rest, on MHR's own rig (a point belongs to an arm,
   the outfits' pictures are an adult's; the growth table's numbers and each creature are first passes to look at on
   the card; younger than eight (the head's share and the limbs change faster there) isn't offered.
 
+## 2e. Anime: a bust from flat to very full (DECISIONS 2026-11-11, latest)
+
+The user asked for a figure after a Daz3D picture ("we should be able to make the woman more flat too but also more
+busty like the image"), said of the first try "from the front angle it looks perfect, but as you go towards a side view
+it looks unnaturally pointy, it should feel more how a waterballoon would sit rather than a fine point", and then kept
+only this of the whole look-alike: "keep the new bust slider as an 'anime' toggleable". So it's a switch, as Cutify and
+Monster mode are.
+
+- **The switch** (Body, under Cutify; saved with the character as `anime`). On, a **Bust** slider shows under it and
+  runs from −2 to 3; it is the same value as Sculpt, Body, Bust (each moves the other, and that slider and its circle
+  on the body run as far). **Off, the Bust is the plain slider it always was**, −1 to 1 (a creature's ±3), one small
+  bump added to the body: nothing below runs, and every character made before is the same to the bit. Switched off
+  on a character whose Bust is past the plain range, the value comes back into it (the status line says so).
+- **Between −1 and 1 it is that same bump**, Anime or not: switching Anime on changes nothing until the slider leaves
+  the plain range (no clothes cut again, a clothes bake keeps its key).
+- **Past 1: a ball hung from the breast's root** (`sculpt.js` `bustShape`). The first try was a field like the other
+  controls, a bigger bump added onto the body. But the body already has a small breast, and the Bust's own bump sits
+  on it: three bumps on one spot are a cone, whatever their profiles. So this is not a field: it makes the shape
+  itself, on the body as it stands (its base, shape sliders, age and other sculpt already on it).
+  - **The foot**: on each side the points of the breast's root, an oval on the chest from under the collarbone to the
+    fold under the breast, found once on MHR's base (104 points a side), and the ring of points round it.
+  - **The chest wall under the breast** is the body's own: a membrane across the foot's ring (each foot point a fixed
+    blend of the ring's points, weights solved once), so the breast the body has is taken up into the ball instead of
+    standing on it.
+  - **The ball**: its middle below the foot's middle and a little outward, more the bigger it is (the weight low);
+    each foot point goes its own share of the way along the skin from the ball's front to its place on the foot's
+    edge: round the ball, then straight to the edge where the skin leaves the ball (the long slope down from the
+    collarbone, eased into the chest at the top: no crease), or, where the ball hangs out past the edge (below the
+    fold, and at the sides when it's big), on round the ball back to the ribs (the fold stays where it is). The spot
+    of skin that was the breast's middle lands below the ball's front, more the bigger (skin slides down a heavy
+    breast). The two never pass through each other: they press together 4 mm either side of the chest's middle.
+  - **Its size**, at the slider's value v, k = v − 1, on an adult's chest: the front stands 6 + 5.5k cm off the chest
+    wall, the ball's radius is 5.5 + 2.5k cm, its middle 1.5 + 1.8k cm below the foot's. The body's own breast blends
+    into the ball over the first 0.6 (all ball from 1.6). Measured on the feminine base at 1.62 m: the front 2.1 cm
+    further out at 1.3, 4.2 at 1.6, 6.2 at 2, 10.9 at 3; a sphere of 9.7 cm fits the front at 3 within 2 mm, where the
+    plain bump pushed to 3 stood 11 mm proud of its best sphere. **3 is about the picture's size**, 2 to 2.2 the "60% as
+    busty" the user asked for; it is scaled to the chest it's on (a child's, a goblin's: the part's own scale).
+- **Under −1: flatter.** The breast is taken back toward that same wall, at −2 a flat chest with 4 mm of a chest's own
+  swell left on it (taking the bump off a breast of another shape left dents: the first −2).
+- **A control's whole value** with Anime on: the Bust's bump stops at −1 and 1 (`fieldValue`, the control's `cap`), its
+  slider's run is `grow.js` `SPAN.bust`, and its sum (the slider, the base's, the age's) eases into a limit past 3
+  instead of past 1.75 (`limits`).
+- **Clothes** are cut on a **dress form** of a full bust, not on the hanging shape itself (TAILOR §1j): the same ball
+  with the hollow under it closed. The body shown, saved for the salon and exported is always the hanging one.
+- **Outside the page**: `tailor/node.mjs` `mhrBody(m, weights, height, sculpt, { anime, form })` and
+  `grownBody(m, { ..., anime, form })`; `node tools/character/tailor/sheet.mjs --anime --sculpt '{"bust": 2}'` pictures
+  clothes on one. The wardrobe's dummy and the outfits' pictures are plain bodies.
+- **Checks**: GROW. Anime off: the bump alone at any value, as it was. On: only the breasts' own points move (the
+  fold, the ribs and the arms stay), the two sides alike, fuller at every step, the front a ball and not a point, its
+  weight low, flat at −2, the dress form with no underside and its gathered points exactly on the points they lie on.
+- **Pictures** (drawn on the CPU here): `docs/studio_sheets/2026-11-11_anime_bust.jpg` (the switch and its slider; the
+  feminine base with Anime off at Bust 1, on at −2, 2 and 3; the red sweater dress on the plain body and on Bust 2).
+- **Not yet**: MHR's chest is coarse (104 points a breast), so the very top of the slider is faceted close up; nothing
+  lifts or holds a full bust (a bra is cut on the form and sits on it, the breast under it the hanging one); it
+  doesn't move in play (the ears have bone chains for HSJiggle, the bust none: LATER).
+
 ## 3. Each stage against the rule (as of this branch)
 
 | Stage | Sources kept | Bakes | Gaps |
