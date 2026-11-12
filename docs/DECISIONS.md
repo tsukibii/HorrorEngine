@@ -2,6 +2,24 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, after the pull request (the user: being hunted, as a hidden quest)
+
+- **"Can you consider how we could make an interesting horror sequence of being hunted ... a 'hidden' quest called
+  survive the hunt ... select an npc that is hunting you ... behaviours (animations), jump scaring events, paths,
+  hidden hunt event boxes around the map ... goes invisible ... 'kill' the player if it touches them ... designed in a
+  way where the player can survive them too ... we don't want the creatures just running up to you, maybe if it's dark
+  they would ... run past you very quickly into another room ... 'hunts' that basically act like haunting events,
+  maybe you need to complete a task to get them to stop e.g. turn the power back on."**
+- **A plan, not built: docs/HUNT_PLAN.md.** One `Hunt` node that owns it (who hunts, the kind: haunting, stalking,
+  lethal; hidden or revealed; what starts and ends it; stages), **hunt spots** round the map picked at the director's
+  pace (watch, dart across ahead of you, peek, ambush, follow, a cloaked pass, a door, a decoy, wait), **rush rules**
+  (she keeps her distance; she rushes only in the dark, at your back, when you run or make noise, and always after a
+  tell), **death and checkpoints for a game by hand** with the ways to live listed and checked, **hauntings** that end
+  on a task (the power cut), **the cloak as a state** with what gives her away (a water shell among them), what's
+  under it (navigation or marks, her moves) and a build order.
+- **It waits on four answers** (HUNT_PLAN §9): the haunting first or the lethal hunt, what death is in a game by
+  hand, which game it's first for, and whether there are clips for a hunter yet.
+
 ## 2026-11-12, the very last (the user: the shells merged in, a quest for being shot with one, a pull request)
 
 - **"create a pr, merge in more-shotgun-shells into this branch"**. `more-shotgun-shells` (the love heart and water
