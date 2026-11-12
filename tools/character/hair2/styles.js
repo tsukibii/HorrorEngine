@@ -20,7 +20,7 @@ export const DEFAULTS = {
   cut: { mode: "line", line: -0.09, tilt: 0, round: 0, layers: 0, uneven: 0.25, thin: 0.1, wispy: 0.3,   // mode: line (every hair cut where it crosses a height) or length
     tiers: "one", front: -0.07, frontTo: 112, frontSoft: 0.2, overFrom: -0.005 },   // two lengths: "front" (the front and sides cut at `front`, as far round as frontTo degrees, the back at the line) or "over" (a bob at `front` all round over a long nape that keeps the line)
   under: { height: null, length: 0.012, fade: 0.02 },    // an undercut: below this height (base head) the hair is clipped to `length`
-  shape: { lift: 22, volume: { top: 0.007, sides: 0.007, back: 0.009 }, turn: 0.35, turnRadius: 0.035, stiff: 0.2, quiff: 0, ahoge: 0, ahogeSide: -0.5 },   // ahoge: a lock standing up out of the top (its size; to her right or left)
+  shape: { lift: 22, volume: { top: 0.007, sides: 0.007, back: 0.009 }, turn: 0.35, turnRadius: 0.035, tuck: 0, stiff: 0.2, quiff: 0, ahoge: 0, ahogeSide: -0.5 },   // ahoge: a lock standing up out of the top (its size; to her right or left)
   texture: { clump: 0.3, clumpSize: 0.018, wave: 0, waveLength: 0.09, waveStart: 0.3, together: 0.5, curl: 0, curlRadius: 0.012, frizz: 0.15, messy: 0.1, wet: 0, strays: 24 },
   fringe: { kind: "none", line: MARKS.brow + 0.004, width: 46, amount: 0.7, sweep: 0, split: 0.6, curve: 0.4, arch: 0.3, hold: 0.5, uneven: 0.3, wispy: 0.75, choppy: 0, centre: 0, slant: 0, frame: 0, frameLine: MARKS.jaw, frameWispy: 0.85, frameCurl: 0,
     frameLocks: 0, frameStagger: 0.5, frameWave: 0, frameEars: 0, frameHang: 0, closed: 0 },   // choppy: each lock its own length; centre: a longer lock between the eyes; slant: longer toward her left (+) or right (-); frameCurl: the face-framing strands wound into a ringlet a side
@@ -137,6 +137,11 @@ export const STYLES = {
       ties: { kind: "twin", height: 0, side: 0.85, tight: 0, drape: 1, full: 0.33, puff: 0.12, drop: 0.033,
         tail: { length: 0.2, thick: 0.0105, spread: 2, fan: 0.6, bloom: 0.8, flat: 1, out: 0.5, taper: 0.9, strands: 2.5, stiff: 0.8, fall: "front", sway: 0.8 }, tie: { kind: "elastic", colour: "#17120f" } },
       length: { fringe: 0.17 }, fringe: { kind: "blunt", line: 0.034, amount: 1.5, width: 52, hold: 0.7, wispy: 0.15, uneven: 0.1, choppy: 0.12, closed: 1, frame: 0.9, frameLine: -0.17, frameLocks: 1, frameStagger: 0, frameWispy: 0.6, frameHang: 1 }, texture: { clump: 0.3, strays: 20 }, look: "gloss_black" } },
+  // (the user's T-pose reference, DECISIONS 2026-11-12, a T-pose reference: a short rounded bob, fullest at the temples and
+  // tucked in at the jaw, a fringe swept from her left over her right eye. Held to the picture's head: docs/HAIR_V2.md §10b)
+  daz_bob: { label: "Rounded short bob, the fringe swept over one eye", group: "daz",
+    set: { parting: { kind: "none" }, cut: { mode: "line", line: -0.052, layers: 0.6, thin: 0.3, uneven: 0.4, wispy: 0.5 }, length: { fringe: 0.2 }, shape: { lift: 40, volume: { top: 0.055, sides: 0.045, back: 0.04 }, turn: 0.95, turnRadius: 0.06, tuck: 0.8 },
+      fringe: { kind: "swept", sweep: 36, slant: -0.8, line: 0.02, amount: 0.7, width: 50, hold: 0.85, curve: 0.5, wispy: 0.8, uneven: 0.3, choppy: 0.3 }, texture: { clump: 0.4, clumpSize: 0.03, strays: 10 }, look: "gloss_black" } },
   curls_shoulder: { label: "Shoulder-length curls", group: "women",
     set: { parting: { kind: "left", offset: 0.03, length: 0.5, width: 0.001 }, cut: { mode: "line", line: -0.14, layers: 0.4, uneven: 0.8, wispy: 0.6 }, length: { top: 0.3, sides: 0.28, back: 0.28, nape: 0.18 },
       shape: { lift: 45, volume: { top: 0.016, sides: 0.024, back: 0.024 }, turn: 0 }, texture: { clump: 0.8, clumpSize: 0.03, curl: 0.9, curlRadius: 0.011, waveStart: 0.18, frizz: 0.45, messy: 0.2, strays: 80 }, look: "deep_brown" } },
@@ -388,11 +393,12 @@ export const CONTROLS = [
   ] },
   { id: "shape", label: "Shape and volume", help: "How the hair lifts and how full it lies.", rows: [
     ["shape.lift", "Root lift", "slide", 0, 80, 1, 1, "How steeply hair leaves the head (degrees): flat to standing."],
-    ["shape.volume.top", "Volume, top", "slide", 1, 35, 1, mm, "How thick the hair lies (mm)."],
-    ["shape.volume.sides", "Volume, sides", "slide", 1, 35, 1, mm, ""],
-    ["shape.volume.back", "Volume, back", "slide", 1, 35, 1, mm, ""],
+    ["shape.volume.top", "Volume, top", "slide", 1, 60, 1, mm, "How thick the hair lies (mm). Past 35: big hair, a full bob."],
+    ["shape.volume.sides", "Volume, sides", "slide", 1, 60, 1, mm, ""],
+    ["shape.volume.back", "Volume, back", "slide", 1, 60, 1, mm, ""],
     ["shape.turn", "Ends turn", "slide", -1, 1, 0.05, 1, "Out (flipped) to in (curled under)."],
     ["shape.turnRadius", "Turn radius", "slide", 1, 7, 0.1, cm, "cm"],
+    ["shape.tuck", "Tuck under", "slide", 0, 1, 0.05, 1, "A bob's rounded line: hair cut to a line lies closer in toward its ends (its thickness falls away from the eyes' line down to the cut), so the ends' turn brings it in to the jaw."],
     ["shape.stiff", "Stiffness", "slide", 0, 1, 0.05, 1, "How slowly a hair bends: soft to stiff (short hair stands)."],
     ["shape.quiff", "Quiff", "slide", 0, 1, 0.05, 1, "The front stands up and goes back."],
     ["shape.ahoge", "Ahoge", "slide", 0, 1, 0.05, 1, "A lock standing up out of the top of the head and curving over."],

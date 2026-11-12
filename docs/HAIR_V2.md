@@ -111,6 +111,14 @@ And the rules live in the trace, not in a simulation after (LESSONS: a simulatio
 A length for the top, the sides, the back and the nape (blended by where a pore is), Layers between a line cut and
 the lengths, Thin out, Uneven, an **undercut** (below a height the hair is clipped to a length, with a fade).
 
+**Tuck under** (`shape.tuck`, 2026-11-12, the bob of the user's T-pose reference). Loose hair cut to a line lies
+closer in toward its ends: its thickness (the Volume of where it is) falls away from the eyes' line down to the cut,
+by as much as the slider says. The ends' turn can then bring it in to the jaw: a bob's rounded line, fullest at the
+temples. Without it the sides' Volume held the hair out all the way down, and a bob hung as a bell however far its
+ends turned (2 to 3 cm too wide at the jaw against the picture). Measured: 13.4 cm from the head's middle a
+centimetre over the cut at 0, 10.6 at 0.8, and the same above the eyes. The **Volume** sliders go to 60 mm (from 35):
+a full bob stands 4.5 to 5.5 cm off the head.
+
 ### 3.6 Texture
 
 `texture.js`: locks (neighbouring hairs drawn together, while they travel together: a hair whose guide went another
@@ -136,7 +144,7 @@ than 2 mm sideways from where it passes the jaw). **And the ends' turn is at the
 `ownLine`): the turn (Shape, *Ends turn*) was read against the cut's line alone, so a face-framing strand that goes on
 below it (a tied style's tendrils and sidelocks: the cut is left at the chin) began to turn in at the chin and stayed
 turned all the way down, drawn in under the chin to the pit of the neck. It now turns at the lower of the two lines,
-and one that hangs free doesn't turn. Four of the 66 styles had such strands (the twin tails and three of the
+and one that hangs free doesn't turn. Four of the 66 styles there were then had such strands (the twin tails and three of the
 Advanced ones: space buns, the messy bun, the high ponytail); the other 62 are the same hair by hair.
 
 Since the Advanced styles (DECISIONS 2026-11-12, the very last): a fringe's **Amount** goes past 1 (a heavy fringe,
@@ -496,6 +504,42 @@ the ties, hers 9.3: the base), the tie 0.7 cm too low (this style), and her head
 on the measured side (her pose: nothing to fix). *Fullness at the back* (`ties.back`) stays built and unused.
 
 **Not checked here:** the Studio's own tab draws the same hair, but a look's `bake` numbers are Godot's only.
+
+## 10b. The bob of the T-pose reference, held to its picture
+
+DECISIONS 2026-11-12, a T-pose reference: "as a goal try recreate this exact hairstyle too so you can see if it's
+possible to get a 1:1". The style is `daz_bob` (the group *From your Daz3D pictures*): a short rounded bob, fullest
+at the temples and tucked in at the jaw, a fringe swept from her left over her right eye. It is held on **bodyv2**
+(docs/CHARACTER_STUDIO.md §2g: `make.mjs --body bodyv2`).
+
+- **The rig** (scratch): the picture is the whole body, so her head is 160 px tall in it: 6.9 px a head-local
+  centimetre. One view, the front, level (`v:0:0:1.05:22:0:-0.07:-0.02`); her picture laid into our render by a
+  similarity from five points (her eyes, the mouth's corners, the chin: times 4.5, turned -1.7 degrees, the points
+  2.3 of her pixels off at the most). The measure is §10's: the hair's outer edge by height from the eyes' line, on
+  both sides.
+- **What is matched**, ours against hers in centimetres (minus where ours is narrower; half a centimetre is three of
+  her pixels):
+
+  | under the eyes' line | her right | her left |
+  |---|---|---|
+  | 10 to 1 cm above | +0.3 to +0.7 | -1.5 to -0.1 |
+  | 0 to 3 | +0.9 to +1.3 | +0.2 to +0.5 |
+  | 4 to 6 (the jaw) | +1.0 to +0.3 | +0.3 to -0.5 |
+  | 7 (the tips) | -0.5 | |
+
+  Her hair sits half a centimetre to her left of ours all the way down (her head turned a little, or the hair's own
+  lean); with that taken off the outline is within about half a centimetre from the crown to the tips. The length
+  (the tips at the lips' height), the rounded line, the fringe's side and its fall over her right brow.
+- **What had to be made**: **Tuck under** (§3.5: the first versions hung as a bell, 2 to 3 cm wide at the jaw), and
+  the Volume sliders' longer run. No side parting on top (with one the side it lies toward came out fuller; hers is
+  even), layers (the upper hair shorter: the bottom thinner).
+- **What is not**, and what the picture cannot say: her fringe is a few fine locks over the eye with skin between
+  them, ours a fuller sweep; her tips are points toward the mouth, ours a rounded end; pale slivers of skin show
+  at her temples between the fringe and the sides, ours is closed there; her top is fuller on her left than her
+  right by a centimetre; the look (hers smooth and black, ours streaked under a front light: §10's first item).
+  The back and the sides' depth are in no picture.
+- **Can it be 1:1?** The outline, yes, to what a 160 px head can show (half a centimetre). The locks, not from this
+  picture: it does not resolve them. A close-up of the head would.
 
 ## 11. Files
 

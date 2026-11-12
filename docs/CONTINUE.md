@@ -77,9 +77,11 @@ for it ("lets create a v2female base").
   left at 0. The fit's scripts as they were run: `docs/research/bodyfit/`. **Found and fixed on the way:** the
   elbow and the ankle never followed Arm length and Leg length (pose.js `along`). GROW, GROWPAGE (`QUICK=1`), POSE
   hold it. Nobody has looked at an outfit on it, or at it in the Studio's own view.
-- **Its hairstyle** (the short bob with a fringe swept over her right eye) is next: start from the closest bob
-  style, `make.mjs --body bodyv2`, hold it to the picture's head (the head there is 160 px tall: half a centimetre
-  is the best it can say).
+- **Its hairstyle is built**: `daz_bob` (HAIR_V2 §10b), a rounded short bob with the fringe swept over one eye,
+  held to the T-pose picture's head on bodyv2: the outline within about half a centimetre from the crown to the
+  tips once half a centimetre of sideways lean is taken off (her head is 160 px tall in the picture: that is what
+  it can say). For it: **Tuck under** (a bob's sides lie in toward their ends) and Volume sliders to 60 mm. Not
+  matched: the fringe's fine locks, the pointed tips, the look. A close-up of her head would say more.
 - **It is held to two of her pictures** (the scratch `rig2/joint.mjs`: MediaPipe's points on the body and the ear
   as the sculpt finds it against the same points in each picture, a camera fitted for each): the front one from
   9.5 degrees to her right and 5 above, rolled 7.9, the points 3.4 mm off; the other from 32 to her left and 14.5

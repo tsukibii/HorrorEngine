@@ -43,7 +43,10 @@ The user's answers, newest first. They override the plan, the research and the d
      her fingers do and stand inside her shoes; their sliders are left at 0.
 - **Found on the way and fixed for everyone:** the elbow and the ankle never followed an arm or a leg made longer or
   shorter (their skin is on twist bones, so the rig found them no ring). They do now, along the limb's own line.
-- **Its hairstyle** (the short bob): next.
+- **Its hairstyle** (docs/HAIR_V2.md §10b): `daz_bob`, on bodyv2. The outline is within about half a centimetre of
+  hers from the crown to the tips, which is all a head 160 px tall can say; the fringe's locks and the tips are not
+  hers. So: the shape, yes; a 1:1 of the locks needs a close-up of the head. It needed one new slider, *Tuck under*
+  (a bob's sides lying in toward the jaw), and the Volume sliders to go to 60 mm.
 
 ## 2026-11-12, necks: a slider to make them shorter (the user)
 

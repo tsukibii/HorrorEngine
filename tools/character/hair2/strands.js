@@ -57,7 +57,7 @@ export function trace(ctx) {
   // under it (below its widest, behind the ear, down to the neck) it leaves the skin and hangs free, a curtain, drawn
   // in to the tie at the end, with some slack (it sags on the way). 0: it lies on the head all the way to its tie
   const tieBack = clamp((s.ties && s.ties.back) || 0, 0, 1) * 0.025;
-  const frHang = clamp(+fr.frameHang || 0, 0, 1);
+  const frHang = clamp(+fr.frameHang || 0, 0, 1), tuck = clamp(+sh.tuck || 0, 0, 1), azOf = (x, z) => Math.atan2(x, z - C[2]) / D;
   const drape = clamp((s.ties && s.ties.drape) || 0, 0, 1), puff = clamp((s.ties && s.ties.puff) || 0, 0, 1) * 0.035, EBACK = EAR.az + EAR.da * 1.15, GATHER = clamp((s.ties && s.ties.gather) ?? 0.075, 0.03, 0.2);
   for (let i = 0; i < n; i++) {
     let L = len[i]; if (!(L > 0.0015)) continue;
@@ -190,6 +190,10 @@ export function trace(ctx) {
         const ex = qx - C[0], ey = qy - C[1], ez = qz - C[2], el = Math.asin(clamp(ey / (Math.hypot(ex, ey, ez) || 1), -1, 1)) / D, aq = Math.abs(Math.atan2(ex, ez)) / D;
         Vq = V + tieBack * (1 - smooth(36, 54, el)) * smooth(112, 136, aq);   // (from well behind the ear on: nearer the side it widens the head as the face is seen)
       }
+      // Tuck under: a bob's rounded line. Loose hair cut to a line lies closer in toward its ends: its thickness falls
+      // away from the eyes' line down to the cut, so the ends' turn can bring it in to the jaw (held out at the sides'
+      // whole Volume all the way down, it hung as a bell however far its ends turned)
+      if (tuck > 0 && gr === LOOSE && byLine) { const cl = cutLine(cut, azOf(qx, qz)); if (cl < MARKS.eye) Vq *= 1 - tuck * smooth(MARKS.eye, cl, qy); }
       const h = GAP + Vq * (1 - Math.exp(-sAt / reach)) * jit + (draped ? 0.014 * hash(u[i], 18) : 0);   // (hair brought forward over a shoulder hangs as a lock with some body, not a sheet on the chest)
       for (let pass = 0; pass < 2; pass++) {
         const dq = dist(S, qx, qy, qz); if (!grad(S, qx, qy, qz, g)) break;

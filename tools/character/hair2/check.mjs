@@ -184,6 +184,12 @@ if (!only.length) {
     { const st = settings("odango", { fringe: { frame: 0.9, frameLine: -0.125, frameLocks: 1, frameStagger: 0 } }), G = grow(base, pores, st, prep, { draft: true }).guides, e = [];
       for (let i = 0; i < G.n; i++) if (G.group[i] === 2 && G.len[i] > 0.03 && Math.abs(Math.atan2(G.pos[i * 3] - base.C[0], G.pos[i * 3 + 2] - base.C[2])) * 180 / Math.PI < 64) e.push(G.pts[(i * K + K - 1) * 3 + 1]);
       say(st.cut.line > -0.1 && e.length > 4 && e.every(v => Math.abs(v + 0.125) < 0.003), `tendrils on tied hair end at their own line (-12.5 cm), not the cut's (${(st.cut.line * 100).toFixed(0)} cm): ${e.length} strands, the shortest at ${(Math.max(...e) * 100).toFixed(1)} cm`); }
+    // (Tuck under, a bob's rounded line: the hair's thickness falls away toward the cut, so the ends' turn brings it in to
+    // the jaw. How far out the loose hair reaches near its ends and above the eyes, with it and without)
+    { const reach = tuck => { const G = grow(base, pores, settings("daz_bob", { shape: { tuck } }), prep, { draft: true }).guides; let low = 0, high = 0;
+        for (let i = 0; i < G.n; i++) { if (G.group[i] !== 0 || !(G.len[i] > 0.03)) continue; for (let k = 0; k < K; k++) { const o = (i * K + k) * 3, x = Math.abs(G.pts[o] - base.C[0]), y = G.pts[o + 1]; if (y > -0.046 && y < -0.034) low = Math.max(low, x); if (y > 0.03 && y < 0.045) high = Math.max(high, x); } } return [low, high]; };
+      const t0 = reach(0), t1 = reach(0.8);
+      say(t0[0] - t1[0] > 0.012 && Math.abs(t0[1] - t1[1]) < 0.004, `Tuck under: a bob's sides come in toward their ends (${(t0[0] * 100).toFixed(1)} cm from the head's middle a centimetre over the cut at 0, ${(t1[0] * 100).toFixed(1)} at 0.8) and stay as full above the eyes (${(t0[1] * 100).toFixed(1)} and ${(t1[1] * 100).toFixed(1)} cm)`); }
     // (a face-framing strand that goes on below the cut's line: the ends' turn is at its own end, not the cut's. Read
     // against the cut's line alone, a tied style's tendrils and long sidelocks began to turn in at the chin and stayed
     // turned, drawn in under the chin to the pit of the neck. Each strand's nearest to the head's middle line, sideways,
