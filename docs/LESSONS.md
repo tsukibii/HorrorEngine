@@ -3,6 +3,31 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The bodyv2 base: what took a second try (2026-11-12)
+
+- **A picture's scale is an unknown when both ends of the ruler are hidden.** Her height in the picture runs from a
+  sole inside a sneaker to a skull under a bob: both guessed. With the scale fixed at the guess, the fit bent the
+  torso and the leg sliders by a tenth each to make up a centimetre at the eyes. Give the fit the picture's scale
+  and floor as unknowns of its own, held near the guess, and look at what it does with them.
+- **A raised arm takes the shoulder with it: don't read the neck off the arm's line.** In her T-pose the arms' line
+  sits 2.5 cm higher over the pit of the neck than in ours (the Studio's T-pose turns the arm alone). Read as the
+  body's, it became a neck 0.8 shorter. Measure a length between points the pose doesn't move: the chin and the pit
+  of the neck.
+- **A fit will cancel one unknown with another if two of them do the same thing.** MHR's fat shapes also lengthen
+  the trunk; the torso slider took it back, at -1.1. Thicker thighs came as one shape at -1.4 and a sculpt slider
+  at +1.3. Free only the shapes that say something, hold the sliders with a ridge that says which should move
+  first, and read the values, not only the cost: a base carries them, and the user's own slider starts on top.
+- **From the front alone there is no depth: say what was put there.** The fit with nothing said about depth made a
+  belly of 109 cm; the same widths with a medium build's depths, 103. Neither is hers. Write the assumption in the
+  document and the decisions, as a number, so one side picture can replace it.
+- **"Where the skin bends" has to know the rig's twist bones.** The rule that finds a joint by the points weighted
+  to it and to its parent found the elbow nothing: a limb's skin is on its twist bones. It rode the shoulder, and
+  nothing showed until an arm was made a sixth shorter (the Studio's slider stops at a tenth). When a rule is
+  written about a rig, list what it finds for every bone once.
+- **And when the mean moved the joint for the wrong reason, the middle one didn't.** The elbow's ring is heavier on
+  one side, so an arm made thicker dragged the mean 10 mm along the arm. The weighted median of the ring's votes
+  moves 2 mm: a limb made longer moves every point alike, a limb made thicker moves the two sides opposite ways.
+
 ## The v2female base: what took a second try (2026-11-12)
 
 - **When one part is made shorter, say where the length went.** The base's lower face was made short (Face length:

@@ -8,7 +8,7 @@
 // below the head moves forward under it, level, the neck part of the way). The head and everything on it (the face, the
 // eyes, the teeth) stays exactly where it was. Plain JS, no three.js (posetest.mjs checks it).
 //
-//   const R = readRig(buffer)             {N, bones: [{name, parent, at}], BI, BW, rings, owns}
+//   const R = readRig(buffer)             {N, bones: [{name, parent, at}], BI, BW, rings, owns, along (the joints inside a limb: their family ring and the limb's line)}
 //   const J = joints(R, P, P0, scale, F)  each bone's place on body P (P0: the rest body the rig was made on, `scale` P's scale to it, F: each point's own scale or null)
 //   const X = pose(R, J, "t" | "rest")    each bone's turn and pivots (null for "rest": nothing moves)
 //   skin(R, X, P, out)                    the posed points; at(R, X, i, p) where point i's skinning takes p; turn(R, X, i, d) a direction
@@ -39,15 +39,35 @@ export function readRig(buf) {
     const par = bones[b].parent; if (par < 0) continue;
     for (let j = 0; j < 4; j++) if (BI[p * 4 + j] === par && BW[p * 4 + j] > 0) ring[b].set(p, w * BW[p * 4 + j]);
   }
+  const sum = m => { let a = 0; for (const w of m.values()) a += w; return a; };
   const rings = bones.map((_, b) => {
-    const use = [...ring[b].values()].reduce((a, w) => a + w, 0) > 1 ? ring[b] : [...own[b].values()].reduce((a, w) => a + w, 0) > 1 ? own[b] : null;
+    const use = sum(ring[b]) > 1 ? ring[b] : sum(own[b]) > 1 ? own[b] : null;
     if (!use) return null;
     const s = [...use.values()].reduce((a, w) => a + w, 0);
     return { idx: Uint32Array.from(use.keys()), w: Float32Array.from([...use.values()].map(w => w / s)) };
   });
+  // The joints inside a limb, the elbow and the ankle. A limb's skin is not on its own bones but on their twist bones
+  // (the bone's children): the elbow's points are weighted to the upper arm's last twist and the forearm's first, never
+  // to the two bones themselves, so the rule above finds the elbow no ring and it rides the shoulder; the ankle's skin
+  // is on the bone under the foot's, and it rides the knee. Neither followed an arm or a leg made longer or shorter
+  // (grow.js Arm length, Leg length: the skin's elbow moved, the joint stayed where it was). `along[b]`: such a joint's
+  // family ring (the points weighted to it or its twists, or to its one child with skin, and to its parent or its
+  // parent's twists) and the limb's own line there (from its parent's joint to it): joints() moves it along that line
+  // only, as far as the ring went. Sideways it stays on its parent: an arm made thicker is not an elbow moved
+  const fam = bones.map((bn, b) => bn.parent >= 0 && /_twist(\d+)?(_proc)?$/.test(bn.name) ? bn.parent : b), wf = Array.from({ length: nb }, () => new Map());
+  for (let p = 0; p < N; p++) for (let k = 0; k < 4; k++) { const w = BW[p * 4 + k]; if (!(w > 0)) continue; const f = fam[BI[p * 4 + k]]; wf[f].set(p, (wf[f].get(p) || 0) + w); }
+  const famRing = (mine, par) => { const m = new Map(); if (par < 0) return m; const pf = wf[fam[par]]; for (const [p, w] of wf[mine]) { const q = pf.get(p); if (q > 0) m.set(p, w * q); } return m; };
+  const along = bones.map((bn, b) => {
+    if (rings[b] || !/^[lr]_(lowarm|foot)$/.test(bn.name)) return null;
+    let use = famRing(b, bn.parent);
+    if (!(sum(use) > 1)) { const kids = bones.map((c, i) => c.parent === b && fam[i] === i && sum(own[i]) > 1 ? i : -1).filter(i => i >= 0); use = kids.length === 1 ? famRing(kids[0], bn.parent) : new Map(); }
+    if (!(sum(use) > 1)) return null;
+    const t = sum(use), pa = bones[bn.parent].at, ax = [bn.at[0] - pa[0], bn.at[1] - pa[1], bn.at[2] - pa[2]], al = Math.hypot(ax[0], ax[1], ax[2]) || 1;
+    return { idx: Uint32Array.from(use.keys()), w: Float32Array.from([...use.values()].map(w => w / t)), axis: ax.map(v => v / al) };
+  });
   // each bone's own points (what's weighted to it), for a body whose parts were sized apart (joints' F): the bone's own scale
   const owns = bones.map((_, b) => { const s = [...own[b].values()].reduce((a, w) => a + w, 0); return s > 0 ? { idx: Uint32Array.from(own[b].keys()), w: Float32Array.from([...own[b].values()].map(w => w / s)) } : null; });
-  return { N, bones, byName, order, BI, BW, rings, owns };
+  return { N, bones, byName, order, BI, BW, rings, owns, along };
 }
 
 // the joints on a body: each the ring's middle on P plus the ring's middle's offset from the joint on P0, scaled.
@@ -63,6 +83,17 @@ export function joints(R, P, P0, scale = 1, F = null) {
     if (!g) {                                                             // no skin of its own: it keeps its place on its parent
       const k = K && par >= 0 ? K[par] : 1;
       for (let a = 0; a < 3; a++) J[b * 3 + a] = par < 0 ? at[a] * scale : J[par * 3 + a] + (at[a] - R.bones[par].at[a]) * scale * k;
+      const A = R.along && R.along[b];                                    // (inside a limb: along the limb's line it goes as far as the skin round it went: readRig)
+      if (A && par >= 0) {
+        // (each ring point says where the joint would be had it kept its place by that point; how far that is along the
+        // limb from where it rides its parent. The middle one of them, by weight, not their mean: a limb made thicker
+        // moves the points of one side one way along a line that isn't quite the limb's and the other side's the other,
+        // and the ring's weights are not the same all round; a limb made longer moves them all alike)
+        const v = new Array(A.idx.length);
+        for (let q = 0; q < A.idx.length; q++) { const i = A.idx[q] * 3; let d = 0; for (let a = 0; a < 3; a++) d += (P[i + a] - (P0[i + a] - at[a]) * scale * k - J[b * 3 + a]) * A.axis[a]; v[q] = [d, A.w[q]]; }
+        v.sort((p, q) => p[0] - q[0]); let acc = 0, d = 0; for (const [x, w] of v) { acc += w; if (acc >= 0.5) { d = x; break; } }
+        for (let a = 0; a < 3; a++) J[b * 3 + a] += d * A.axis[a];
+      }
       continue;
     }
     let k = 1; if (F) { k = 0; for (let q = 0; q < g.idx.length; q++) k += g.w[q] * F[g.idx[q]]; }

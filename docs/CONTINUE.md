@@ -67,13 +67,19 @@ for it ("lets create a v2female base").
   chin 7.5 cm over the pit of the neck against the feminine base's 6.6: the short lower face had left its
   centimetre on the neck); the base carries **Neck length -0.35** now (6.7 cm), which is also where her collar puts
   her shoulders. GROW and GROWPAGE (`QUICK=1`) hold it.
-- **Next after the hair and the face: base `bodyv2`** (DECISIONS 2026-11-12, a T-pose reference; task: the
-  picture is `Saved/Body/ref/t1.jpg`, not in git, ask for it again in a new session): the whole body's proportions
-  1:1 from the user's Daz3D T-pose picture (the head against the body, neck, shoulders, arms, torso, hips, **thighs
-  and legs, hands and feet**), the cardigan and the sneakers taken off the measures, the leggings counted as skin;
-  the picture's build (medium, slightly chubby) is the base's middle, Bust and waist at about 0; and its hairstyle
-  (a short bob, a side-swept fringe over her right eye) as a style held to the picture. Not started: fit a camera to
-  the picture first (is it a perspective from hip height or an orthographic front?), then measure, then build.
+- **The bodyv2 base is built** (DECISIONS 2026-11-12, a T-pose reference; docs/CHARACTER_STUDIO.md §2g; the
+  picture is `Saved/Body/ref/t1.jpg`, not in git: ask for it again in a new session): a fifth base button and a
+  second switch, *what the feminine end's body becomes*: MHR weights of its own and nine sliders, fitted to the
+  user's Daz3D T-pose picture (legs within 0.3 cm by height, trunk under the cardigan 0.8, wrists, eyes, chin, knee
+  within a centimetre). Round it 101, 82, 113 cm on 163. **Three things to ask the user about** (all in DECISIONS):
+  her arms are a sixth shorter than a real person's and the base carries that (Arm length -1.75); front to back is
+  a medium build's, mine, since the picture is from the front (a side picture would replace it); hands and feet
+  left at 0. The fit's scripts as they were run: `docs/research/bodyfit/`. **Found and fixed on the way:** the
+  elbow and the ankle never followed Arm length and Leg length (pose.js `along`). GROW, GROWPAGE (`QUICK=1`), POSE
+  hold it. Nobody has looked at an outfit on it, or at it in the Studio's own view.
+- **Its hairstyle** (the short bob with a fringe swept over her right eye) is next: start from the closest bob
+  style, `make.mjs --body bodyv2`, hold it to the picture's head (the head there is 160 px tall: half a centimetre
+  is the best it can say).
 - **It is held to two of her pictures** (the scratch `rig2/joint.mjs`: MediaPipe's points on the body and the ear
   as the sculpt finds it against the same points in each picture, a camera fitted for each): the front one from
   9.5 degrees to her right and 5 above, rolled 7.9, the points 3.4 mm off; the other from 32 to her left and 14.5

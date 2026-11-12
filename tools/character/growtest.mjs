@@ -336,5 +336,55 @@ const span = X => { let lo = Infinity, hi = -Infinity; for (let i = 1; i < X.len
       `v2female's neck: the chin ${gap(v2).toFixed(1)} cm over the pit of the neck, the feminine base's ${g0.toFixed(1)} (${(gap(v2) / head(v2)).toFixed(2)} and ${(g0 / head(fem)).toFixed(2)} of the head's height); without the Neck length it carries (${PF.sculpt.v2female.neck_length}) ${gap(raw).toFixed(1)} cm, ${(gap(raw) / head(raw)).toFixed(2)} of its head`); }
 }
 
+// ---- the joints inside a limb (pose.js readRig `along`, joints): an arm or a leg made shorter takes its elbow and its
+// ankle with it. Their skin is on twist bones, so they had no ring and rode the shoulder and the knee: the upper arm's
+// bone kept its length whatever Arm length said. And an arm made thicker is not an elbow moved
+{
+  const J = o => { const g = grownBody(M, { base: -1, ...o }), j = PO.joints(rig, g.P, M.P, g.scale, g.F), at = n => { const b = rig.byName.get(n); return [j[b * 3], j[b * 3 + 1], j[b * 3 + 2]]; }, d = (a, b) => Math.hypot(at(a)[0] - at(b)[0], at(a)[1] - at(b)[1], at(a)[2] - at(b)[2]) * 100;
+    return { upper: d("l_uparm", "l_lowarm"), fore: d("l_lowarm", "l_wrist"), thigh: d("l_upleg", "l_lowleg"), shin: d("l_lowleg", "l_foot"), elbow: at("l_lowarm"), right: d("r_uparm", "r_lowarm") }; };
+  const a0 = J({}), a1 = J({ sculpt: { arms_length: -1 } }), l1 = J({ sculpt: { legs_length: -1 } }), fat = J({ sculpt: { upper_arms: 1, forearms: 1 } });
+  const pct = (x, y) => (1 - x / y) * 100, moved = Math.hypot(fat.elbow[0] - a0.elbow[0], fat.elbow[1] - a0.elbow[1], fat.elbow[2] - a0.elbow[2]) * 1000;
+  say(rig.along && rig.along[rig.byName.get("l_lowarm")] && rig.along[rig.byName.get("r_foot")] && !rig.along[rig.byName.get("l_uparm")] && pct(a1.upper, a0.upper) > 7 && pct(a1.upper, a0.upper) < 13 && pct(a1.fore, a0.fore) > 7 && pct(a1.fore, a0.fore) < 13 && Math.abs(a1.right - a1.upper) < 0.05,
+    `Arm length -1: the elbow goes with the arm, the upper arm ${pct(a1.upper, a0.upper).toFixed(1)}% shorter and the forearm ${pct(a1.fore, a0.fore).toFixed(1)}% (${a0.upper.toFixed(1)} and ${a0.fore.toFixed(1)} cm to ${a1.upper.toFixed(1)} and ${a1.fore.toFixed(1)}), both sides alike`);
+  say(pct(l1.thigh, a0.thigh) > 3 && pct(l1.shin, a0.shin) > 3 && Math.abs(pct(l1.thigh, a0.thigh) - pct(l1.shin, a0.shin)) < 2.5, `Leg length -1: the ankle goes with the leg, the thigh ${pct(l1.thigh, a0.thigh).toFixed(1)}% shorter and the shin ${pct(l1.shin, a0.shin).toFixed(1)}% on a body made as tall again (the shin's bone kept its length before, and came out longer)`);
+  say(moved < 13, `an arm made thicker (Upper arms 1, Forearms 1) is not an elbow moved: ${moved.toFixed(0)} mm along it`);
+}
+
+// ---- the bodyv2 base (MHR_presets.json presets.bodyv2, sculpt.bodyv2; DECISIONS 2026-11-12, a T-pose reference: "these
+// exact proportions, 1:1 ... thighs and legs too and hands and feet"). What the feminine end's body becomes when it's
+// picked. Held here to the picture's own numbers (shares of the bare height, said in centimetres on a 163 cm body; the
+// picture stays out of git): the body in the Studio's T-pose, cut across by height and by how far out
+{
+  const PF = JSON.parse(fs.readFileSync(path.join(B, "MHR_presets.json"), "utf8")), W = PF.presets.bodyv2, SB = PF.sculpt.bodyv2, ids = new Set(byId.keys());
+  const HEADY = /^(eye|nose|mouth|lips|brow|forehead|chin|jaw|cheek|face|ear|temple|hooded|skull|snout|head_size)/;
+  say(W && W.length === PF.presets.feminine.length && W.slice(20).every((v, i) => v === PF.presets.feminine[20 + i]) && W.slice(0, 20).every(v => Math.abs(v) <= 3) && SB && Object.keys(SB).every(id => ids.has(id) && !HEADY.test(id)),
+    `the bodyv2 base is in the file: ${W ? W.length : 0} weights (the head's and the hands' the feminine base's, the body's own within MHR's reach), and ${SB ? Object.keys(SB).length : 0} sliders it carries, all the body's (${SB ? Object.keys(SB).join(", ") : ""})`);
+  const cm = 163, pose = o => { const g = grownBody(M, { base: -1, ...o }), X = PO.pose(rig, PO.joints(rig, g.P, M.P, g.scale, g.F), "t"), S = PO.skin(rig, X, g.P); let lo = 1e9, hi = -1e9; for (let i = 1; i < S.length; i += 3) { lo = Math.min(lo, S[i]); hi = Math.max(hi, S[i]); } return { S, lo, H: hi - lo, X, g }; };
+  const off = grownBody(M, { base: -1, v2: 1 }).P, same = grownBody(M, { base: -1, v2: 1, body2: 0 }).P; let dm = 0; for (let i = 0; i < off.length; i++) dm = Math.max(dm, Math.abs(off[i] - same[i]));
+  say(dm === 0, "with bodyv2 off the body is v2female's to the bit");
+  const under = name => { const root = rig.byName.get(name), set = new Uint8Array(rig.bones.length); for (const b of rig.order) { const p = rig.bones[b].parent; set[b] = b === root || (p >= 0 && set[p]) ? 1 : 0; } return set; }, LL = under("l_upleg"), LA = under("l_uparm");
+  const on = (set, i) => { let w = 0; for (let k = 0; k < 4; k++) if (set[rig.BI[i * 4 + k]]) w += rig.BW[i * 4 + k]; return w > 0.5; };
+  // her left leg's width at a share of the height (its triangles cut by the plane), the trunk's half width, the wrist's reach
+  const legW = (B2, t) => { const y = B2.lo + t * B2.H; let a = 9, b = -9; for (let q = 0; q < T.length; q += 3) { let n = 0; for (let k = 0; k < 3; k++) if (on(LL, T[q + k])) n++; if (n < 2) continue; for (let e = 0; e < 3; e++) { const i = T[q + e] * 3, j = T[q + (e + 1) % 3] * 3, u = B2.S[i + 1] - y, v = B2.S[j + 1] - y; if (u * v > 0 || u === v) continue; const x = B2.S[i] + (B2.S[j] - B2.S[i]) * u / (u - v); a = Math.min(a, x); b = Math.max(b, x); } } return [(b - a) / B2.H * cm, b / B2.H * cm]; };
+  const half = (B2, t) => { const y = B2.lo + t * B2.H; let b = 0; for (let i = 0; i < B2.S.length; i += 3) if (Math.abs(B2.S[i + 1] - y) < 0.006 && !on(LA, i / 3) && B2.S[i] > b) b = B2.S[i]; return b / B2.H * cm; };
+  const jt = (B2, n) => { const b = rig.byName.get(n); return [B2.X.J2[b * 3] / B2.H * cm, (B2.X.J2[b * 3 + 1] - B2.lo) / B2.H * cm]; };
+  const mark = (B2, i) => (landmark(M, B2.S, i)[1] - B2.lo) / B2.H * cm, eyesOf = B2 => (mark(B2, 33) + mark(B2, 133) + mark(B2, 263) + mark(B2, 362)) / 4;
+  const b2 = pose({ v2: 1, body2: 1 }), fem = pose({ v2: 1 });
+  // (the picture's: the leg's width at five heights, the ankle, the calf, under the knee, the thigh, its top)
+  const WANT = [[0.08, 5.3], [0.20, 11.2], [0.26, 10.4], [0.35, 14.2], [0.44, 19.7]], got = WANT.map(([t]) => legW(b2, t)[0]), was = WANT.map(([t]) => legW(fem, t)[0]), worst = Math.max(...WANT.map(([, w], k) => Math.abs(got[k] - w)));
+  say(worst < 0.9 && got[4] - was[4] > 4 && got[1] - was[1] > 1.2, `bodyv2's legs in the T-pose: ${WANT.map(([t, w], k) => `${got[k].toFixed(1)} cm wide at ${t} of the height (her picture ${w}, the feminine body ${was[k].toFixed(1)})`).join(", ")}: ${worst.toFixed(1)} cm off at the most`);
+  const hipO = legW(b2, 0.44)[1], waist = half(b2, 0.65), hips = half(b2, 0.51), wrist = jt(b2, "l_wrist")[0], wristF = jt(fem, "l_wrist")[0];
+  say(Math.abs(hipO - 20.4) < 1 && Math.abs(waist - 14.9) < 1.3 && Math.abs(hips - 20.7) < 1.3 && half(fem, 0.65) < waist - 2.5, `its trunk: ${(2 * hips).toFixed(1)} cm across the hips (her cardigan's hem less its knit: 41.4), ${(2 * waist).toFixed(1)} at the waist (29.8; the feminine body ${(2 * half(fem, 0.65)).toFixed(1)}), the thigh's outside ${hipO.toFixed(1)} cm out at its top (20.4)`);
+  say(Math.abs(wrist - 58.3) < 1.5 && wristF - wrist > 5, `its arms: the wrist ${wrist.toFixed(1)} cm from the middle (her cuff's edge less the hand in it: 58.3; the feminine body's ${wristF.toFixed(1)})`);
+  const eyes = eyesOf(b2), chin = mark(b2, 152), knee = jt(b2, "l_lowleg")[1];
+  say(Math.abs(eyes - 152.4) < 0.9 && Math.abs(chin - 143.3) < 0.9 && Math.abs(knee - 46.6) < 1.2, `its heights: the eyes ${eyes.toFixed(1)} cm up (her picture 152.4), the chin ${chin.toFixed(1)} (143.3), the knee's joint ${knee.toFixed(1)} (46.6)`);
+  // round the trunk at rest (a tape: the hull's length), front to back held to a medium build's: there is no side picture
+  const tape = (P2, Hh, t, xmax) => { const pts = []; for (let i = 0; i < P2.length; i += 3) if (Math.abs(P2[i + 1] - t * Hh) < 0.006 && Math.abs(P2[i]) < xmax) pts.push([P2[i], P2[i + 2]]); const p = pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]), cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], hi = [];
+    for (const q of p) { while (lo.length >= 2 && cr(lo.at(-2), lo.at(-1), q) <= 0) lo.pop(); lo.push(q); } for (const q of p.slice().reverse()) { while (hi.length >= 2 && cr(hi.at(-2), hi.at(-1), q) <= 0) hi.pop(); hi.push(q); }
+    const h = [...lo.slice(0, -1), ...hi.slice(0, -1)]; let len = 0; for (let i = 0; i < h.length; i++) len += Math.hypot(h[i][0] - h[(i + 1) % h.length][0], h[i][1] - h[(i + 1) % h.length][1]); return len / Hh * cm; };
+  const R2 = b2.g, bust = tape(R2.P, R2.height, 0.735, 0.17), wst = tape(R2.P, R2.height, 0.645, 0.2), hp = tape(R2.P, R2.height, 0.52, 0.26);
+  say(bust > 95 && bust < 107 && wst > 77 && wst < 88 && hp > 108 && hp < 118, `round it at rest: the bust ${bust.toFixed(0)} cm, the waist ${wst.toFixed(0)}, the hips ${hp.toFixed(0)} (a medium, fuller build; front to back is a medium build's for these widths, not her picture's: it shows the front alone)`);
+}
+
 if (bad) { console.log(`GROW FAIL: ${bad}`); process.exit(1); }
 console.log("GROW ok");

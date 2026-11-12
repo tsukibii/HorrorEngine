@@ -219,6 +219,10 @@ export const CUTE = { eye_size: 0.8, eye_spacing: 0.3, face_height: -0.45, jaw_w
 // of the base slider becomes, and every slider still moves from it. This is only what the hair editor's test body
 // adds to it (hair2/node.mjs bodyByName "v2female": her height, and a full bust for tails to rest on)
 export const V2FEMALE = { v2: 1, height: 1.62, anime: true, sculpt: { bust: 2 } };
+// the bodyv2 base (DECISIONS 2026-11-12, a T-pose reference; docs/CHARACTER_STUDIO.md §2g): what the feminine end's BODY
+// becomes when it's picked: MHR weights of its own and the sliders it carries (MHR_presets.json presets.bodyv2,
+// sculpt.bodyv2), fitted to the user's Daz3D T-pose picture. With v2female's head, as a body for the node tools
+export const BODYV2 = { v2: 1, body2: 1, height: 1.63 };
 
 // ---- the creatures (monster mode's presets: the Body tab's cards, DECISIONS 2026-11-11: "add presets for the monster-ish
 // shapes you made so I can use them"). Each is a sculpt (what the sliders show: every one can be moved on from there),

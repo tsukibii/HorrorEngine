@@ -181,11 +181,23 @@ SCULPT = {"feminine": {"belly": -0.7},
                        # centimetre: 6.7. By her pictures: her collar's top edge in the front one is 1 cm above where
                        # our bare shoulder was (the skin is under it: -0.25 or so), her bare shoulder in the other is
                        # higher than ours at -0.4 (her arm may be up); -0.35 is between them
-                       "neck_length": -0.35}}
+                       "neck_length": -0.35},
+          # bodyv2: the sliders its body carries on top of its weights (only what it lists: the head's and the neck's stay
+          # v2female's or the feminine base's). Arm length is the picture's: her wrists are 58 cm from her middle on a
+          # 163 cm body, MHR's 66
+          "bodyv2": {"legs_length": -0.33, "torso_length": -0.47, "arms_length": -1.75, "neck_length": -0.1, "thighs": 0.8,
+                     "calves": -0.09, "waist": -0.15, "upper_arms": -0.11, "shoulders": -0.27}}
 # a base that is another's body with a sculpt of its own: its MHR weights are that base's (clothes cut for one fit the other)
 # (written into the file by hand, 2026-11-12: `presets` fits the bodies again and no longer lands on the committed weights
 # (feminine up to 0.9 off, masculine 1.6), which every character made on a base depends on. Don't run it to add a base.)
 SAME_BODY = {"v2female": "feminine"}
+# a base whose weights were fitted to a picture and are kept as the file has them. bodyv2 (DECISIONS 2026-11-12, a T-pose
+# reference; docs/CHARACTER_STUDIO.md §2g): what the feminine end's body becomes when it's picked. Its first twenty
+# weights (the body's shapes) and the sliders it carries were fitted to the user's Daz3D T-pose picture: the legs'
+# widths by height, the trunk's under the cardigan, the arms' reach, the heights of the eyes, the chin, the pit of the
+# neck and the knee, with the trunk's depths held to a medium build's (there is no side picture). The head's and the
+# hands' weights are the feminine base's
+FITTED = ("bodyv2",)
 # a base's head (changes from MHR's average, cm), fitted only for a base the file doesn't have yet
 HEADS = {"feminine": dict(head_w=-0.6, skull=-0.4, jaw=-1.2, brow=-0.3, nose=-0.2, chin=-0.2),
          "masculine": dict(head_w=0.4, jaw=0.8, brow=0.3, chin=0.2)}
@@ -206,10 +218,14 @@ def make_presets(path=PRESETS_FILE):
         w[a:b] = f[a:b]
         out[name] = [round(float(x), 4) for x in w]
     for name, of in SAME_BODY.items(): out[name] = list(out[of])
+    for name in FITTED:                                                               # a base fitted elsewhere: its weights as they are in the file
+        if name in old: out[name] = old[name]
     path.write_text(json.dumps({"about": "MHR identity weights for the Character Studio's bases (tools/character/mhr.py presets), "
                                          "and the sculpt each base carries (sculpt.js's controls); v2female is the feminine "
                                          "base's body with a sculpt of its own for the head, the neck and the shoulders: what the feminine "
-                                         "end becomes when it is picked (DECISIONS 2026-11-12, v2female)",
+                                         "end becomes when it is picked (DECISIONS 2026-11-12, v2female); bodyv2 is a body of its own (its weights fitted to "
+                                         "the user's T-pose picture, DECISIONS 2026-11-12, a T-pose reference) with the sliders it carries: what the "
+                                         "feminine end's body becomes when it is picked",
                                 "presets": out, "sculpt": SCULPT}, indent=1), encoding="utf-8")
     return out
 

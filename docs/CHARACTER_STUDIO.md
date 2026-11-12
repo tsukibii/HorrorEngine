@@ -549,6 +549,104 @@ ties could not be judged closer than 2 cm while the head and the neck under it w
   nobody has looked); the wardrobe's dummy and the outfits' cards are the plain bodies; seen in the Studio's own
   T-pose view only by the user.
 
+## 2g. The bodyv2 base (DECISIONS 2026-11-12, a T-pose reference)
+
+The user sent a Daz3D character from the front in a T-pose ("this t pose reference for what the body should look
+like ... create a base bodyv2 that aims to get these exact proportions, 1:1 but don't calculate the clothing (mostly
+the cardigan and sneakers) ... this mesh is the medium size (slightly chubbier side) so imagine the bust and waist
+width sliders around mid", and: "I mean thighs and legs too and hands and feet"). The picture stays out of git
+(`Saved/Body/ref/t1.jpg`).
+
+- **What it is.** *What the feminine end's body becomes*, as v2female is what its head becomes; the two are separate
+  switches and are meant together. `MHR_presets.json` holds `presets.bodyv2` (MHR's identity weights: the body's
+  twenty its own, the head's and the hands' the feminine base's) and `sculpt.bodyv2`, the sliders it carries, which
+  change only what they list (the head's and the neck's stay v2female's or the feminine base's):
+
+  | slider | value | | slider | value |
+  |---|---|---|---|---|
+  | Arm length | -1.75 | | Thighs | 0.8 |
+  | Torso length | -0.47 | | Shoulders | -0.27 |
+  | Leg length | -0.33 | | Waist | -0.15 |
+  | Neck length | -0.1 (on v2female's -0.35) | | Upper arms | -0.11 |
+  | Calves | -0.09 | | | |
+
+  A character on it has every slider at 0 and moves from there, so this build is the middle: a slimmer and a fuller
+  one are each a slider's half away, as asked.
+- **In the page.** Body, Base: a fifth button, **bodyv2** (the feminine base with both switches on), and a second
+  switch under v2female's, **bodyv2**. Kept with the character as `b2: 1`; in the body's cache key; a creature's
+  card turns it off; new characters start without it; toward masculine it fades out as the base's sculpt does.
+  Outside the page: `grownBody(m, { base: -1, v2: 1, body2: 1 })`, `grow.js` `BODYV2`, `hair2/node.mjs`
+  `bodyByName("bodyv2")`, `make.mjs --body bodyv2`. (`trial: { weights, sculpt }` puts a body being fitted in its
+  place.)
+- **How the picture was read.** The figure cut from its backdrop (a mask), then by height: the two legs' edges, the
+  trunk's width, the arms' top and bottom by how far out; and the face's marks off enlargements (the eyes' line, the
+  mouth, the chin, the pit of the neck in the cardigan's V, the cuffs' edges, the fingertips). Everything is a share
+  of her bare height: from the sole in the shoe (taken 2.5 cm over the shoe's bottom) to the skull's top under the
+  hair (taken 3 cm under the hair's), 1311 px, said below in centimetres on a 163 cm body. That height is a guess
+  at both ends, so the fit has the picture's scale and floor as unknowns of its own, held near it: they came out
+  1.004 and -0.4 cm. The picture is not stretched (its round buttons are 12 by 12 px).
+- **What was taken off for the clothes** (the user: "don't calculate the clothing"). The cardigan's knit: 1 cm a
+  side on the bust and the hips, 2 where it hangs clear of the waist. Its sleeves: 0.8 cm above and below the arm,
+  1.5 toward the cuff, where it bunches; the cuff itself not used. The cuff's edge is taken 2.5 cm past the wrist
+  (the thumb leaves the cuff there). The leggings count as skin. The sneakers: only their soles.
+- **The fit** (scratch scripts, kept as they were run in `docs/research/bodyfit/`): the body is the feminine base
+  with v2female's head, in the Studio's own T-pose (`pose.js`), cut by planes as the picture was. Unknowns: twelve
+  of MHR's body shapes (the ones that say something: hips, waist, bust, seat, belly, thighs; the subtle ones and
+  the neck's stay the feminine base's), the length sliders, the limbs' and the trunk's sculpt sliders, the picture's
+  scale and floor. Gauss-Newton with a ridge toward the feminine base and toward no slider at all (MHR's own shapes
+  before the sculpt's bumps: Thighs is capped at 0.8, past which it left a ledge across the back of the thigh).
+
+  | cm on a 163 cm body, T-pose | her picture | bodyv2 | the feminine body |
+  |---|---|---|---|
+  | the leg's width at the ankle (0.08 of the height) | 5.3 | 5.3 | 4.6 |
+  | at the calf (0.20) | 11.2 | 11.0 | 9.1 |
+  | under the knee (0.26) | 10.4 | 10.9 | 8.6 |
+  | the thigh (0.35) | 14.2 | 14.5 | 10.4 |
+  | the thigh's top (0.44) | 19.7 | 19.6 | 14.2 |
+  | across the hips | 41.4 (the hem less its knit) | 41.5 | 34.5 |
+  | across the waist | 29.8 (less the cardigan) | 30.7 | 21.4 |
+  | the wrist from the middle | 58.3 | 59.2 | 66.2 |
+  | the eyes' height | 152.4 | 152.8 | 153.2 |
+  | the chin's | 143.3 | 143.1 | 143.8 |
+  | the knee's joint | 46.6 | 47.0 | 46.9 |
+
+  Over all 42 heights of the legs the width is 0.28 cm off (rms), 0.6 at the most; the trunk under the cardigan
+  0.84 cm.
+- **What the picture cannot say, and what was done.**
+  - *Front to back.* It is from the front alone. The trunk's depths are held to a medium build's for these widths
+    (mine, not hers): 26.5 cm at the bust, 20.5 under it, 21.5 at the waist, 24.5 at the belly and the hips. Round
+    it at rest: bust 101 cm, waist 82, hips 113. A side picture would replace them.
+  - *The arms.* Her wrists are 58 cm from her middle where MHR's and a real person's of her height are 66 to 68:
+    arms about a sixth shorter. The cuffs' ends are straight in the picture, so the arms lie in its plane, and it is
+    not stretched: the base carries it (Arm length -1.75). If it is the pose or the camera after all, it is that one
+    slider.
+  - *The shoulders.* In her T-pose the arms' line is 2.5 cm higher over the pit of the neck than ours: a raised arm
+    takes the shoulder up with it, and the Studio's T-pose turns the arm alone. Read as the body's it came out as a
+    neck 0.8 shorter still; the neck is measured from the chin to the pit of the neck instead (hers 6.3 cm, ours
+    6.7 before: Neck length -0.1).
+  - *The hands and the feet.* Her hands are half closed (the fingers show 6 cm past the cuff); ours end where hers
+    do, and the Hands slider is left. Her sneakers are 8.5 cm across; our bare feet stand inside them with a shoe's
+    margin; a foot's length cannot be seen from the front. Feet left.
+  - *The head's size* is left v2female's: her eyes are 6% further apart than ours and her eyes-to-chin 3% shorter,
+    which point opposite ways.
+- **The joints inside a limb** (`pose.js` `readRig` `along`, `joints`), found on the way. An arm a sixth shorter
+  showed that the elbow never followed Arm length: a limb's skin is weighted to its twist bones, not to its own
+  bones, so the rule that finds a joint where the skin bends found the elbow no ring and it rode the shoulder (the
+  ankle the same, under the knee): the upper arm's bone kept its length and the forearm's took all of it, 5 cm off
+  the skin's elbow. Now the elbow and the ankle go along their limb's own line as far as the skin round them went
+  (the middle one of their ring's votes, not their mean; sideways they stay on their parent). Arm length -1: the
+  upper arm 9.7% shorter and the forearm 9.9%; an arm made thicker moves its elbow 2 mm. On the bodies there were,
+  the elbow and the ankle are within 5 mm of where they were (a child of twelve's ankle 18 mm: it had not followed
+  her legs).
+- **Checks**: GROW (the base in the file; off, v2female's body to the bit; the legs at five heights, the trunk, the
+  wrist, the heights, the tape, against the picture's numbers; the joints' three lines), GROWPAGE (the button and the
+  switch: the hips wider, the hands nearer, as tall as set; off again; saved and opened again with it on), POSE.
+- **Picture**: `docs/studio_sheets/2026-11-12_bodyv2.jpg` (the body from four sides beside v2female's on the
+  feminine body; Godot's, bare, no skin).
+- **Not yet**: no outfit has been looked at on it (the tailor cuts on any body; nobody has looked); the wardrobe's
+  dummy and the outfits' cards are the plain bodies; the Studio's own view of it has been seen by nobody but the
+  page check.
+
 ## 3. Each stage against the rule (as of this branch)
 
 | Stage | Sources kept | Bakes | Gaps |

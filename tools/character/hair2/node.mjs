@@ -3,7 +3,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import { loadMhr, mhrBody, grownBody, namedBody, ROOT } from "../tailor/node.mjs";
-import { MONSTERS, V2FEMALE } from "../grow.js";
+import { MONSTERS, V2FEMALE, BODYV2 } from "../grow.js";
 import { localBody } from "./body.js";
 import { readPores } from "./pores.js";
 
@@ -21,6 +21,7 @@ export function bodyByName(name = "base") {
     : name === "fem" ? grownBody(m, { base: -1 })
     : name === "masc" ? grownBody(m, { base: 1 })
     : name === "v2female" || name === "doll" ? grownBody(m, { base: -1, ...V2FEMALE })
+    : name === "bodyv2" ? grownBody(m, { base: -1, ...BODYV2 })                                              // (v2female's head on the bodyv2 body: the user's T-pose reference)
     : /^child(\d+)$/.test(name) ? grownBody(m, { age: +name.slice(5), base: -0.3 })
     : /^teen(\d+)$/.test(name) ? grownBody(m, { age: +name.slice(4), base: 0.3 })
     : MONSTERS[name] ? grownBody(m, { base: MONSTERS[name].base, height: MONSTERS[name].height, monster: true, sculpt: MONSTERS[name].sculpt })   // a creature (grow.js: goblin, ogre...)

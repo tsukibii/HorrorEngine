@@ -1,5 +1,5 @@
 {
- "about": "MHR identity weights for the Character Studio's bases (tools/character/mhr.py presets), and the sculpt each base carries (sculpt.js's controls); v2female is the feminine base's body with a sculpt of its own for the head, the neck and the shoulders: what the feminine end becomes when it is picked (DECISIONS 2026-11-12, v2female)",
+ "about": "MHR identity weights for the Character Studio's bases (tools/character/mhr.py presets), and the sculpt each base carries (sculpt.js's controls); v2female is the feminine base's body with a sculpt of its own for the head, the neck and the shoulders: what the feminine end becomes when it is picked (DECISIONS 2026-11-12, v2female); bodyv2 is a body of its own (its weights fitted to the user's T-pose picture, DECISIONS 2026-11-12, a T-pose reference) with the sliders it carries: what the feminine end's body becomes when it is picked",
  "presets": {
   "average": [
    0.0,
@@ -188,6 +188,53 @@
    0.0,
    0.0,
    0.0
+  ],
+  "bodyv2": [
+   -0.2676,
+   1.3001,
+   -0.3143,
+   0.0151,
+   0.4641,
+   1.8013,
+   3.0,
+   1.0503,
+   -1.5985,
+   0.6258,
+   -2.2545,
+   3.0,
+   3.0,
+   -3.0,
+   -1.5118,
+   0.3709,
+   0.8019,
+   3.0,
+   0.5101,
+   -2.7279,
+   -0.3012,
+   -0.1376,
+   -0.1733,
+   0.2034,
+   0.1614,
+   0.1367,
+   0.1665,
+   0.1078,
+   -0.0319,
+   0.0676,
+   -0.0804,
+   -0.0184,
+   0.0071,
+   0.0409,
+   0.002,
+   0.0183,
+   0.0189,
+   0.0136,
+   -0.0861,
+   -0.0613,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
   ]
  },
  "sculpt": {
@@ -215,6 +262,17 @@
    "face_taper": -1.0,
    "neck_base": -0.3,
    "neck_length": -0.35
+  },
+  "bodyv2": {
+   "legs_length": -0.33,
+   "torso_length": -0.47,
+   "arms_length": -1.75,
+   "neck_length": -0.1,
+   "thighs": 0.8,
+   "calves": -0.09,
+   "waist": -0.15,
+   "upper_arms": -0.11,
+   "shoulders": -0.27
   }
  }
 }

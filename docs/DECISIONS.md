@@ -28,6 +28,22 @@ The user's answers, newest first. They override the plan, the research and the d
   sneakers: their length from the shoe's, less the shoe).
 - **Not decided here (my reading, to be checked with the user if it matters):** whether bodyv2 replaces v2female's
   body or stands beside it. Built as its own base beside the others, v2female's head on it, nothing removed.
+- **Built the same day** (docs/CHARACTER_STUDIO.md §2g): a fifth base button and a switch, *what the feminine end's
+  body becomes*. MHR's body shapes and the Studio's sliders fitted to the picture's own measures (the legs' widths
+  at 42 heights within 0.28 cm, the trunk under the cardigan within 0.84, the wrists, the eyes, the chin, the knee
+  within a centimetre). Round it: bust 101 cm, waist 82, hips 113 on a 163 cm body.
+- **Three things the picture cannot settle, said so the user can overrule them:**
+  1. **Her arms are about a sixth shorter than a real person's of her height** (the wrists 58 cm from her middle;
+     MHR's 66). The cuffs' ends are straight, so the arms lie in the picture's plane, and its round buttons are
+     round, so it is not stretched: I took the picture at its word (Arm length -1.75). If that is the pose or the
+     camera, it is one slider.
+  2. **Front to back.** There is no side picture. The belly's, the bust's and the seat's depths are a medium
+     build's for these widths, chosen by me.
+  3. **The hands and the feet.** Her hands are half closed in long cuffs and her feet are in sneakers: ours end where
+     her fingers do and stand inside her shoes; their sliders are left at 0.
+- **Found on the way and fixed for everyone:** the elbow and the ankle never followed an arm or a leg made longer or
+  shorter (their skin is on twist bones, so the rig found them no ring). They do now, along the limb's own line.
+- **Its hairstyle** (the short bob): next.
 
 ## 2026-11-12, necks: a slider to make them shorter (the user)
 
