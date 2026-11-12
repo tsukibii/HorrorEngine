@@ -43,8 +43,10 @@ aesthetic hair and apply that later to the rest of our styles", and offered a ba
   2.16, the roll 8.5, eye-middle on eye-middle, the outline by height).
 - **Matched:** the side from above the ear to 3 cm over the tie within 0.3 cm, the ears out, the tie's place, the
   tails' kind and length, the fringe's line, the sidelocks' length.
-- **Not matched, in order** (§10's list): the look (ours lights every strand alike; hers is black with a few bright
-  strands: a per-strand first highlight in `hair.gdshaderinc`, then LOOKPLUGIN and GDHAIR2), the tails' flare under
+- **The look** went in after (the hair shader's `streak`: the first highlight lock by lock; `gloss_black` asks for
+  it): black with bright streak bundles in the rig. Left of it: ours is striped evenly, hers has larger dark areas
+  and a faint teal; the Studio's own shader has no `streak`.
+- **Not matched, in order** (§10's list): the tails' flare under
   the ties, the last 3 cm over the tie, the fringe's pieces, the sidelocks as ribbons and the plait, the red
   streaks, strands across the ear, her first picture's view (a fuller bulb behind the ear), the back.
 - **Then:** v2female as a base in the Studio's Body tab (GROW, GROWPAGE, STUDIO); the other six Daz hairstyles; the

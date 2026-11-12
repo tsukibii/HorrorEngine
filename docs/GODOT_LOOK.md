@@ -1312,6 +1312,18 @@ three things are its own:
   alpha the shade) is kept as it is: matt, no specular, blended. The salon's (a flat cap, coloured by vertex) is still
   given the plugin's own scalp material.
 
+  **A look's own word for its bake**, and **`streak`** (DECISIONS 2026-11-12, the 1:1). A look of the hair editor
+  can carry `bake`: numbers for the settings above, written into the bake's record with the rest (`hair2/bake.js`
+  `record`); HSHair applies them as it applies `root_fade` (numbers only, and only settings it knows). The one
+  setting added for it is `streak`, 0 by default: the **first highlight lock by lock**. A sheet of hair whose
+  strands all run square to the half vector lights up whole under Kajiya-Kay: every strand takes the same
+  highlight and black hair draws as an even grey (seen on a fringe under a light from the front; with the
+  highlights off it was black, with the rim, the scatter and the light through off it was the same grey). With
+  `streak` a lock takes the highlight by its own number, cubed (most locks little, a few several times over), each
+  strand in it a little more or less, the mean over the hair kept near 1 (`hair.gdshaderinc` `v_streak`). The look
+  `gloss_black` asks for 0.9 with a stronger highlight: black hair with bright streak bundles. The brows' and
+  lashes' shader includes the same file and leaves it at 0.
+
 A tail (`hair_tail…`) is skinned to a chain of bones of its own under the head, `jiggle_hair_tail…_0` … `_tip`:
 HSJiggle (§5n) springs it, soft by the tail's Sway.
 

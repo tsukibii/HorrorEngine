@@ -413,9 +413,13 @@ over ours, and the hair's solid outer edge by height on her right side, hers aga
 - A long thin sidelock a side, to the chest.
 
 **What is not** (the list to work from, the biggest first):
-1. **The look.** Under a light from the front every strand of ours lights up alike: a grey sheet. Hers is black with
-   a few bright strands. That needs the first highlight's strength strand by strand in the hair shader; not built.
-   The look `gloss_black` is set moderate until then.
+1. **The look**, in part. Under a light from the front every strand of ours lit up alike: a grey sheet, where hers
+   is black with bright strands. One term off at a time showed it was the highlight itself. The hair shader now has
+   **`streak`** (GODOT_LOOK §5p): the first highlight lock by lock, most locks dark and a few several times over,
+   about the same light in all; 0 for every other hair, 0.9 in the look `gloss_black` through its `bake`. Seen in
+   the rig: black with bright streak bundles, as hers. Still different: ours is striped evenly across the fringe
+   where hers has larger dark areas (her light is from one side; the rig's is from the front), and hers has a faint
+   teal tint in its highlights. The Studio's own shader has no `streak`: its tab shows the old sheen.
 2. **The tails right under the ties** flare 0.9 to 2 cm wider than hers; hers differ left and right (her head is
    tilted and the tails hang by gravity), ours are a pair.
 3. **The last 3 cm over the tie**: 0.4 to 0.7 cm too wide, and the tie 0.6 to 0.8 cm further from the neck.

@@ -41,7 +41,7 @@ export const DEFAULTS = {
 export const LOOKS2 = {
   // (the user's Daz3D hair: jet black, a white highlight in fine streaks, strand by strand, and little else; `bake`: what its bake asks of Godot's hair over HSHair's own settings)
   gloss_black: { label: "Glossy black", root: "#020203", tip: "#07070a", inner: "#07070a", innerAmount: 0, spec1: "#e8ecf4", spec2: "#0b0d12", shine: 1, gloss1: 150, gloss2: 40, shift1: -0.08, shift2: 0.12, shiftNoise: 0.6, rim: "#2a2f3a", rimAmount: 0.05, rootLength: 0.3,
-    bake: { spec_gain: 1.3, glints: 0.4, soft: 0.4, side_fade: 0.3 } },
+    bake: { streak: 0.9, spec_gain: 3, spec_cap: 1.4, glints: 0.4, soft: 0.4, side_fade: 0.3 } },
   soft_black: { label: "Soft black", root: "#050506", tip: "#0e0e11", inner: "#0e0e11", innerAmount: 0, spec1: "#c8ccd6", spec2: "#2a303c", shine: 0.9, gloss1: 200, gloss2: 40, shift1: -0.06, shift2: 0.1, shiftNoise: 0.25, rim: "#353b48", rimAmount: 0.1, rootLength: 0.3 },
   off_black: { label: "Off black, brown in the light", root: "#060504", tip: "#15100d", inner: "#15100d", innerAmount: 0, spec1: "#d8d0c6", spec2: "#3a2d25", shine: 0.85, gloss1: 200, gloss2: 42, shift1: -0.06, shift2: 0.1, shiftNoise: 0.25, rim: "#3d332d", rimAmount: 0.1, rootLength: 0.3 },
   deep_brown: { label: "Deep brown", root: "#0a0605", tip: "#2b1b13", inner: "#2b1b13", innerAmount: 0, spec1: "#e2d2c0", spec2: "#5a3a28", shine: 0.8, gloss1: 190, gloss2: 44, shift1: -0.05, shift2: 0.1, shiftNoise: 0.25, rim: "#4a3628", rimAmount: 0.1, rootLength: 0.3 },
