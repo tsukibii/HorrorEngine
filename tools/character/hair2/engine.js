@@ -11,9 +11,9 @@ import { buildSDF, dist, grad, withLumps } from "./sdf.js";
 import { earLumps } from "./body.js";
 import { patch, paint } from "./scalp.js";
 import { build as shells, SHELL_MAX } from "./shell.js";
-import { place, alive, hairline } from "./pores.js";
+import { place, alive, hairline, EAR } from "./pores.js";
 import { parts, comb, ease, fieldOf, partingSide, partingShare, sagittal, LOOSE, FRINGE, FRAME, TIE } from "./flow.js";
-import { trace, hash } from "./strands.js";
+import { trace, hash, cutLine, K } from "./strands.js";
 import { build, coverage, join } from "./cards.js";
 import { clumpsOf, texture } from "./texture.js";
 import { tiesOf, tail, band } from "./ties.js";
@@ -27,7 +27,17 @@ export const BUDGET = { light: 9000, medium: 20000, high: 40000 };       // tria
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
 // S: the skin itself; Sc: the same with the ears covered over (hair that falls over them)
-export function prepare(body, o = {}) { const t = now(), S = buildSDF(body.L, body.T, { normals: body.VN, ...o }); return { S, Sc: withLumps(S, earLumps(body)), ms: now() - t }; }
+export function prepare(body, o = {}) { const t = now(), S = buildSDF(body.L, body.T, { normals: body.VN, ...o }), lumps = earLumps(body); return { S, Sc: withLumps(S, lumps), lumps, ms: now() - t }; }
+// the body's surface for a way of wearing the ears: covered (both under the hair: Sc), clear and tucked (the ears as they
+// are: the hair is cut round them, or goes behind them), tucked on one side (the other ear covered)
+function surfaceFor(prep, ears) {
+  if (ears === "covered" || !ears) return prep.Sc;
+  if (ears === "tucked_left" || ears === "tucked_right") {
+    const keep = ears === "tucked_left" ? -1 : 1, k = `S${keep}`;         // the lump of the ear that stays covered
+    return prep[k] || (prep[k] = withLumps(prep.S, prep.lumps.filter(l => Math.sign(l.c[0]) === keep)));
+  }
+  return prep.S;
+}
 // the scalp's own patch of the skin (once a body and a pore set)
 const patchOf = (prep, body, pores) => prep.patch || (prep.patch = patch(body, pores));
 
@@ -39,7 +49,7 @@ function skinAlong(S, C, d) {
 }
 
 export function grow(body, pores, s, prep, o = {}) {
-  const S = s.ears === "covered" ? prep.Sc : prep.S, C = body.C, t0 = now(), ms = {}; let tl = t0; const lap = k => { const t = now(); ms[k] = +(t - tl).toFixed(1); tl = t; };
+  const S = surfaceFor(prep, s.ears), C = body.C, t0 = now(), ms = {}; let tl = t0; const lap = k => { const t = now(); ms[k] = +(t - tl).toFixed(1); tl = t; };
   // ---- the pores that grow: the first `density` of them, inside the hairline, not thinned away, not on the parting's skin, not under an ear
   // a card on wavy or curly hair needs many more points than one on straight hair: fewer, wider cards keep it within the detail's budget (never under 700 pores: the scalp stays covered)
   const tx0 = s.texture || {}, wavy0 = (tx0.wave || 0) > 0.002 || (tx0.curl || 0) > 0, budget = o.budget ?? BUDGET[s.detail || "medium"] ?? 20000;
@@ -89,8 +99,8 @@ export function grow(body, pores, s, prep, o = {}) {
   lap("comb");
   // ---- how long and how thick each lies
   const P = ctx.parts, Lp = s.length, cut = s.cut || {}, byLine = cut.mode === "line", fr = s.fringe || {}, V = (s.shape && s.shape.volume) || {}, un = s.under || {};
-  const len = new Float32Array(n), vol = new Float32Array(n), raise = new Float32Array(n), width = new Float32Array(n), taper = new Float32Array(n), roll = new Float32Array(n);
-  const w0 = (s.card.width ?? 2.3) * spacing, soft = s.hairline.soft ?? 0.5;
+  const len = new Float32Array(n), vol = new Float32Array(n), raise = new Float32Array(n), width = new Float32Array(n), taper = new Float32Array(n), roll = new Float32Array(n), rootT = new Float32Array(n);
+  const w0 = (s.card.width ?? 2.3) * spacing, soft = s.hairline.soft ?? 0.5, tuckL = s.ears === "tucked" || s.ears === "tucked_left", tuckR = s.ears === "tucked" || s.ears === "tucked_right";
   // how long the hair is at a place, by its part: (the length, whether it's clipped short there: an undercut's)
   const lengthAt = (top, sides, back, nape, y) => {
     const part = top * Lp.top + sides * Lp.sides + back * Lp.back + nape * Lp.nape;
@@ -99,7 +109,8 @@ export function grow(body, pores, s, prep, o = {}) {
     return [lerp(un.length ?? 0.012, part, k), k < 0.5];
   };
   for (let i = 0; i < n; i++) {
-    const [part, clipped] = lengthAt(P.top[i], P.sides[i], P.back[i], P.nape[i], by[i]), fine = soft > 0 && edge[i] < 0.3 && cmb.group[i] === LOOSE;
+    // the soft edge's baby hairs: the loose hair's last few millimetres, and every other one of a tied-back hairline's (they're too short to reach the tie)
+    const [part, clipped] = lengthAt(P.top[i], P.sides[i], P.back[i], P.nape[i], by[i]), fine = soft > 0 && (cmb.group[i] === LOOSE ? edge[i] < 0.3 : cmb.group[i] >= TIE && edge[i] < 0.45 && hash(u[i], 9) < 0.5 * soft + 0.2);
     let L = byLine && !clipped ? lerp(0.62, part, cut.layers || 0) : part * (1 - 0.3 * (cut.uneven ?? 0.25) * hash(u[i], 1));
     if (cmb.group[i] === FRINGE) L = Lp.fringe * (fr.line !== undefined ? 1.5 : 1) * (1 - 0.15 * (fr.uneven ?? 0.3) * hash(u[i], 1));
     else if (cmb.group[i] >= TIE) L = 0.56;                                                                 // tied: as far as its tie
@@ -107,32 +118,50 @@ export function grow(body, pores, s, prep, o = {}) {
     else if ((!byLine || clipped) && part <= SHELL_MAX) L = 0;                                            // short hair is shells, not a card (shell.js)
     if (hash(u[i], 2) < (cut.thin || 0)) { if (byLine && !clipped) raise[i] = 0.01 + 0.035 * hash(u[i], 4); else L *= 0.6 + 0.3 * hash(u[i], 4); }
     if (fine && L > 0) L = Math.min(L, 0.008 + 0.022 * hash(u[i], 8));                                     // the soft edge's baby hairs: short and fine
+    // tucked behind the ear: the hair in front of the ear and below its top can't go over it; it stays as short wisps there
+    const wisp = cmb.group[i] === LOOSE && L > 0 && (pos[i * 3] >= 0 ? tuckL : tuckR) && Math.abs(az[i]) > 36 && Math.abs(az[i]) < 86 && by[i] < EAR.y + EAR.dy + 0.008;
+    if (wisp) L = hash(u[i], 17) < 0.5 ? Math.min(L, 0.012 + 0.03 * hash(u[i], 16)) : 0;                   // (every other one: a few wisps, not a patch of stubble)
     len[i] = L;
     vol[i] = cmb.group[i] >= TIE ? 0.0015 + 0.008 * (1 - (ctx.ties[cmb.group[i] - TIE].tight ?? 0.6)) : cmb.group[i] === FRINGE ? 0.003 + 0.012 * (fr.curve ?? 0.4) : P.top[i] * (V.top ?? 0.007) + P.sides[i] * (V.sides ?? 0.007) + (P.back[i] + P.nape[i]) * (V.back ?? 0.009);
-    width[i] = w0 * (fine ? 0.35 : cmb.group[i] === FRINGE ? 0.6 + 0.4 * (fr.amount ?? 0.7) : cmb.group[i] === FRAME ? 0.55 : 1);
+    width[i] = w0 * (fine ? 0.35 : wisp ? 0.4 : cmb.group[i] === FRINGE ? 0.6 + 0.4 * (fr.amount ?? 0.7) : cmb.group[i] === FRAME ? 0.75 : 1);
     taper[i] = L < 0.06 ? 0.65 : (s.card.taper ?? 0.3);
     roll[i] = L < 0.05 && cmb.lift[i] > 34 * D ? (hash(u[i], 7) - 0.5) * Math.PI * smooth(34 * D, 60 * D, cmb.lift[i]) : 0;
+    rootT[i] = 0.97 * (1 - smooth(0.15, 0.95, edge[i]));                                                    // at the hairline's edge a lock starts as a point
   }
   // ---- each hair traced
-  const tr = trace({ n, pos: root, nrm: rootN, dir: cmb.dir, lift: cmb.lift, group: cmb.group, u, len, vol, raise, S, field, C, s, ties: ctx.ties });
+  const tr = trace({ n, pos: root, nrm: rootN, dir: cmb.dir, lift: cmb.lift, group: cmb.group, u, len, vol, raise, S, field, C, s, ties: ctx.ties, limit: lim });
   lap("trace");
   // ---- texture: clumps, waves, curls, frizz, strays
-  const tex = texture({ n, pts: tr.pts, len: tr.len, u, group: cmb.group, clump, S, C, s, spacing });
+  // (hair tucked behind an ear: no stray wisps off it, and after the waves and the locks have moved it, back out of the ear's outline)
+  let held = null;
+  if (tuckL || tuckR) { held = new Uint8Array(n); for (let i = 0; i < n; i++) held[i] = cmb.group[i] === LOOSE && (pos[i * 3] >= C[0] ? tuckL : tuckR) && Math.abs(az[i]) < 126 ? 1 : 0; }
+  const tex = texture({ n, pts: tr.pts, len: tr.len, u, group: cmb.group, clump, S, C, s, spacing, held });
+  if (held) for (let i = 0; i < n; i++) {
+    if (cmb.group[i] !== LOOSE || !(tr.len[i] > 0) || !(pos[i * 3] >= C[0] ? tuckL : tuckR)) continue;
+    for (let k = 1; k < K; k++) {
+      const o = (i * K + k) * 3, x = tr.pts[o], y = tr.pts[o + 1], z = tr.pts[o + 2]; if (y < EAR.y - 0.012 || y > EAR.y + EAR.dy * 1.1) continue;
+      const aq = Math.abs(Math.atan2(x - C[0], z - C[2])) / D, da = Math.abs((aq - EAR.az) / EAR.da); if (da >= 1.08) continue;
+      const top = EAR.y + EAR.dy * Math.pow(Math.max(0, Math.pow(1.08, EAR.n) - Math.pow(da, EAR.n)), 1 / EAR.n);
+      if (y < top && dist(prep.S, x, y, z) < 0.05) tr.pts[o + 1] = top;
+    }
+  }
   lap("texture");
   // ---- cards, and their finish
   const wavy = (tx.wave || 0) > 0.002 || (tx.curl || 0) > 0;
   // a card keeps points only where it bends; if that's over the detail's budget of triangles, a looser fit until it isn't
-  let tol = wavy ? 0.0006 : 0.0008, most = wavy ? 22 : 14, geo = null;
+  let tol = wavy ? 0.0006 : 0.0008, most = wavy ? 22 : 14, geo = null, stray = null;
   const wisp = new Float32Array(n); for (let i = 0; i < n; i++) wisp[i] = cmb.group[i] === FRINGE ? (fr.wispy ?? 0.75) : cmb.group[i] === FRAME ? (fr.frameWispy ?? 0.85) : (cut.wispy ?? 0.3);
-  for (let pass = 0; pass < 6; pass++) {
-    geo = build({ n, pts: tr.pts, len: tr.len, u, width, taper, roll, wispy: wisp, S, C, axis: tex.axis, most, tol });
-    if (geo.triangles <= budget * (wavy ? 1.35 : 1) || tol > (wavy ? 0.0013 : 0.003)) break;
-    tol *= 1.5;
-  }
   if (tex.strays.n) {
     const sw = new Float32Array(tex.strays.n); for (let i = 0; i < sw.length; i++) sw[i] = 0.0014 + 0.002 * hash(tex.strays.u[i], 61);
-    geo = join(geo, build({ n: tex.strays.n, pts: tex.strays.pts, len: tex.strays.len, u: tex.strays.u, width: sw, taper: 0.7, wispy: 1, S, C, most: 16, tol: 0.0005 }));
+    stray = build({ n: tex.strays.n, pts: tex.strays.pts, len: tex.strays.len, u: tex.strays.u, width: sw, taper: 0.7, wispy: 1, S, C, most: 12, tol: 0.0007 });
   }
+  const room = budget * (wavy ? 1.35 : 1) - (stray ? stray.triangles : 0);   // (first a looser fit, then fewer points a card at the most: messy, frizzy hair bends at every point)
+  for (let pass = 0; pass < 14; pass++) {
+    geo = build({ n, pts: tr.pts, len: tr.len, u, width, taper, rootTaper: rootT, roll, wispy: wisp, S, C, axis: tex.axis, most, tol });
+    if (geo.triangles <= room) break;
+    if (tol <= (wavy ? 0.0013 : 0.003)) tol *= 1.5; else if (most > 8) most -= 2; else break;
+  }
+  if (stray) geo = join(geo, stray);
   lap("cards");
   const fin = finish(geo, S, { draft: !!o.draft });
   lap("finish");
@@ -155,9 +184,23 @@ export function grow(body, pores, s, prep, o = {}) {
   }
   // ---- the scalp under it: its patch, painted with a dot a pore
   const pt = patchOf(prep, body, pores);
-  const Aall = alive(pores, s.hairline, pores.n), gp = []; for (let i = 0; i < pores.n; i++) if (Aall.on[i]) gp.push(all.pos[i * 3], all.pos[i * 3 + 1], all.pos[i * 3 + 2]);
+  // (a pore's dot is fainter at the hairline's soft edge, where the hairs are short and fine, and gone under a cut's line: a bob's or a bowl cut's line leaves the nape below it bare, not shaded)
+  const Aall = alive(pores, s.hairline, pores.n), gp = [], gw = [], tied = ctx.ties.length > 0;
+  for (let i = 0; i < pores.n; i++) if (Aall.on[i]) {
+    const x = all.pos[i * 3], y = all.pos[i * 3 + 1], z = all.pos[i * 3 + 2];
+    let w = soft > 0 ? lerp(1 - 0.75 * Math.min(1, soft * 1.6), 1, smooth(0.05, 0.75, Aall.edge[i])) : 1;
+    if (byLine && !tied && un.height == null) w *= smooth(-0.002, 0.008, y - cutLine(cut, Math.atan2(x - C[0], z - C[2]) / D));
+    if (w > 0.01) { gp.push(x, y, z); gw.push(w); }
+  }
   const fine = Math.sqrt((pores.header.area_cm2 * 1e-4) / (0.866 * pores.n));
-  const scalp = s.scalp && s.scalp.shade > 0 ? { position: pt.position, normal: pt.normal, uv: pt.uv, index: pt.index, size: o.scalpSize || 512, rgba: paint(body, { n: gp.length / 3, pos: gp }, s, fine, o.rootColour || [10, 9, 9], o.scalpSize || 512) } : null;
+  // (painted again only when what it's made of changed: the hairline, the parting, the cut's line, the colour; a slider that only shapes the hair keeps the picture)
+  let scalp = null;
+  if (s.scalp && s.scalp.shade > 0) {
+    const size = o.scalpSize || 512, colour = o.rootColour || [10, 9, 9], key = JSON.stringify([s.hairline, s.parting, s.scalp, byLine && !tied && un.height == null ? [cut.line, cut.tilt, cut.round] : 0, colour, size]);
+    const fresh = !prep.paint || prep.paint.key !== key;
+    if (fresh) prep.paint = { key, rgba: paint(body, { n: gp.length / 3, pos: gp, weight: gw }, s, fine, colour, size) };
+    scalp = { position: pt.position, normal: pt.normal, uv: pt.uv, index: pt.index, size, rgba: prep.paint.rgba, fresh };
+  }
   lap("scalp");
   // ---- short hair: shells over the scalp's patch. How long the hair is at each of its points (nothing where a card
   // grows instead, but an undercoat under a short cut's cards), how much hair is left there (the growing share of all

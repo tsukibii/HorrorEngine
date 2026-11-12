@@ -42,7 +42,7 @@ export function masterLimit(az) {
 // the ear on the chart (MHR's base head: its flap from 85 to 112 degrees round, 3.3 cm under the ears' line to 2 cm
 // over it) with half a centimetre round it: no pore there. earIn: under 1 inside it, 1 on its edge; earGap: metres
 // outside it (about)
-const EAR = { az: 98, y: -0.0125, da: 18, dy: 0.0395, n: 3 };
+export const EAR = { az: 98, y: -0.0125, da: 18, dy: 0.0395, n: 3 };
 export const earIn = (az, y) => Math.pow(Math.pow(Math.abs((Math.abs(az) - EAR.az) / EAR.da), EAR.n) + Math.pow(Math.abs((y - EAR.y) / EAR.dy), EAR.n), 1 / EAR.n);
 export const onEar = (az, y) => earIn(az, y) < 1;
 export const earGap = (az, y) => Math.max(0, earIn(az, y) - 1) * 0.03;

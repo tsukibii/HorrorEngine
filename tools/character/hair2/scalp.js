@@ -5,11 +5,13 @@
 // salon's flat darkened cap, which reads as painted on at a hairline. Plain arrays.
 //
 //   patch(body, pores)                 -> { position, normal, uv, index, vert }   the scalp's triangles (where pores are), on the chart below
-//   paint(body, grown, s, spacing, colour, size) -> RGBA bytes (size x size): the colour the roots', the alpha the shade; grown: every pore that grows (all of the fixed set inside the hairline: the shade is as fine as the pores)
+//   paint(body, grown, s, spacing, colour, size) -> RGBA bytes (size x size): the colour the roots', the alpha the shade; grown: every pore that grows (all of the fixed set inside the hairline: the shade is as fine as the pores),
+//                                                  { n, pos, weight (a pore's share of a full dot: less at the hairline's soft edge, where the hairs are short and fine) }
 //
 // The chart for the texture: the scalp unrolled from the top of the head, the front up: a point's angle from straight
 // up is its distance from the picture's middle, its angle round the head its direction (135 degrees down is the edge).
 import { partingSide, partingShare, sagittal } from "./flow.js";
+import { earIn } from "./pores.js";
 
 const REACH = 135 * Math.PI / 180;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -23,6 +25,14 @@ export function chartUV(x, y, z, C) {
 export function patch(body, pores, lift = 0.0004) {
   const { L, T, VN, C } = body, on = new Uint8Array(L.length / 3);
   for (let i = 0; i < pores.n; i++) { const t = pores.tri[i] * 3; on[T[t]] = on[T[t + 1]] = on[T[t + 2]] = 1; }
+  // and two rings of triangles round them (never an ear's flap, which lies over the same place on the chart): no holes
+  // where a small triangle holds no pore, and the paint fades out inside the patch, not at its jagged edge
+  const D = 180 / Math.PI, ear = v => earIn(Math.atan2(L[v * 3] - C[0], L[v * 3 + 2] - C[2]) * D, L[v * 3 + 1]) < 1 && Math.hypot(L[v * 3] - C[0], L[v * 3 + 2] - C[2]) > 0.079;
+  for (let ring = 0; ring < 2; ring++) {
+    const add = [];
+    for (let t = 0; t < T.length; t += 3) { const a = T[t], b = T[t + 1], c = T[t + 2]; if ((on[a] || on[b] || on[c]) && !(on[a] && on[b] && on[c])) for (const v of [a, b, c]) if (!on[v] && !ear(v)) add.push(v); }
+    for (const v of add) on[v] = 1;
+  }
   const map = new Int32Array(L.length / 3).fill(-1), pos = [], nrm = [], uv = [], idx = [], vert = [];
   for (let t = 0; t < T.length; t += 3) {
     if (!on[T[t]] || !on[T[t + 1]] || !on[T[t + 2]]) continue;
@@ -41,14 +51,14 @@ export function paint(body, grown, s, spacing, colour = [10, 9, 9], size = 512) 
   const R = 0.094, kr = 0.5 / REACH / R * size;                           // pixels a metre, along a line down from the top
   const sig = Math.max(1.2, spacing * 0.95 * kr), reach = Math.ceil(sig * 2.6);   // dots wide enough to run together: a shade, not a pattern (short hair's own dots are the shells')
   for (let i = 0; i < grown.n; i++) {
-    const [u, v] = chartUV(grown.pos[i * 3], grown.pos[i * 3 + 1], grown.pos[i * 3 + 2], C), cx = u * size, cy = v * size;
+    const [u, v] = chartUV(grown.pos[i * 3], grown.pos[i * 3 + 1], grown.pos[i * 3 + 2], C), cx = u * size, cy = v * size, wt = grown.weight ? grown.weight[i] : 1;
     // round the head a dot is wider in the picture than down it, more so toward the edge: squeezed back to round on the skin
     const dxc = cx - size / 2, dyc = cy - size / 2, rho = Math.hypot(dxc, dyc) / size, th = rho / 0.5 * REACH, kt = th > 0.05 ? (rho * size) / (R * Math.sin(Math.min(th, 2.2))) : kr, q = clamp(kt / kr, 1, 2.2);
     const rl = Math.hypot(dxc, dyc) || 1, rx = dxc / rl, ry = dyc / rl;
     const x0 = Math.max(0, Math.floor(cx - reach * q)), x1 = Math.min(size - 1, Math.ceil(cx + reach * q)), y0 = Math.max(0, Math.floor(cy - reach * q)), y1 = Math.min(size - 1, Math.ceil(cy + reach * q));
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       const ex = x + 0.5 - cx, ey = y + 0.5 - cy, a = ex * rx + ey * ry, b = (-ex * ry + ey * rx) / q, d2 = (a * a + b * b) / (sig * sig);
-      if (d2 < 7) A[y * size + x] += Math.exp(-d2) * q;                  // (as much shade from a dot wherever it is on the chart)
+      if (d2 < 7) A[y * size + x] += Math.exp(-d2) * q * wt;             // (as much shade from a dot wherever it is on the chart)
     }
   }
   const out = new Uint8ClampedArray(size * size * 4), shade = clamp(sc.shade ?? 0.85, 0, 1), pw = (s.parting && s.parting.kind !== "none" ? s.parting.width || 0 : 0) / 2;

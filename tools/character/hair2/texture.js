@@ -94,7 +94,7 @@ export function texture(ctx) {
     st.pts = new Float32Array(want * K * 3); st.len = new Float32Array(want); st.u = new Float32Array(want);
     let made = 0;
     for (let q = 0; q < want * 6 && made < want; q++) {
-      const i = Math.floor(hash(q * 0.6180339 % 1, 41) * n), L = len[i]; if (!(L > 0.05) || ctx.group[i] !== 0) continue;
+      const i = Math.floor(hash(q * 0.6180339 % 1, 41) * n), L = len[i]; if (!(L > 0.05) || ctx.group[i] !== 0 || (ctx.held && ctx.held[i])) continue;   // (held: hair tucked behind an ear lies tight; no wisp stands off it)
       const r1 = hash(u[i] + q * 0.013, 42), r2 = hash(u[i] + q * 0.017, 43), r3 = hash(u[i] + q * 0.019, 44), from = 0.05 + 0.4 * r1, lift = 0.004 + 0.02 * r3 * r3, side = (r2 - 0.5) * 0.02;
       let to = Math.min(1, from + 0.2 + 0.45 * r2);
       // a stray stands off hair in the air, never off hair lying on the neck, the shoulders or the chest: it ends where its hair comes to rest

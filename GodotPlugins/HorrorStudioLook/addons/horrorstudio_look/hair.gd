@@ -101,6 +101,11 @@ static func set_bake(m: ShaderMaterial, rec: Dictionary, strands: Texture2D = nu
 		if shell:                                      # the head's hair (the salon's volume bake); brows and lashes keep the soft cut (a lash a pixel wide dithers away)
 			for k in BAKED:
 				m.set_shader_parameter(k, BAKED[k])
+			var own = sh.get("settings")               # the bake's own word over them (the hair editor v2.0: every lock starts at its own root, so its roots fade over millimetres, not the salon's 6% of a lock)
+			if own is Dictionary:
+				for k in own:
+					if BAKED.has(k) and (own[k] is float or own[k] is int):
+						m.set_shader_parameter(k, float(own[k]))
 	var k = rec.get("look")
 	if k is Dictionary:
 		for pair in [["spec1", "spec_color"], ["spec2", "spec2_color"]]:

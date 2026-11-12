@@ -14,7 +14,7 @@
 //   trace(ctx) -> { pts (K points a hair, 3 each), len (each hair's length, 0: none), t (where each kept point is along its hair, 0..1) }
 import { dist, grad } from "./sdf.js";
 import { LOOSE, FRINGE, FRAME, TIE } from "./flow.js";
-import { MARKS, earIn } from "./pores.js";
+import { MARKS, earIn, EAR } from "./pores.js";
 
 export const K = 24;                                                     // points a hair keeps
 export const GAP = 0.0022;                                               // hair this far off the skin, at the least
@@ -32,7 +32,7 @@ export function cutLine(c, az) {
 }
 
 // ctx: { n, pos, nrm, dir, lift, group, u, len (the length each may reach), vol (how thick the hair lies there), S (the
-//        distance grid), field(x, y, z, out), C, s (the settings), ties }
+//        distance grid), field(x, y, z, out), C, s (the settings), ties, limit (the hairline: its height at an angle round the head) }
 export function trace(ctx) {
   const { n, pos, nrm, dir, lift, group, u, len, vol, S, field, C, s } = ctx;
   const cut = s.cut || {}, sh = s.shape || {}, fr = s.fringe || {}, byLine = cut.mode === "line", hasFringe = !!fr.kind && fr.kind !== "none";
@@ -40,6 +40,11 @@ export function trace(ctx) {
   const turnAmt = clamp(sh.turn ?? 0, -1, 1), turnR = Math.max(0.008, sh.turnRadius ?? 0.03), turnLen = turnR * Math.PI / 2 * Math.abs(turnAmt);
   const bendLen = 0.004 + 0.05 * clamp(sh.stiff ?? 0.2, 0, 1), ears = s.ears || "covered", cap = MARKS.chest - 0.04;
   const out = new Float32Array(n * K * 3), got = new Float32Array(n), poly = new Float32Array((MAXS + 2) * 3), g = [0, 0, 0], c = [0, 0, 0];
+  const vv = sh.volume, VOL = vv ? [vv.top ?? 0.007, vv.sides ?? 0.007, vv.back ?? 0.009] : null;
+  // tucked behind the ears (the ears show): the hair that comes down the side of the head turns back over the ear's top
+  // and falls behind it, on both sides or one
+  const tuckL = ears === "tucked" || ears === "tucked_left", tuckR = ears === "tucked" || ears === "tucked_right", ETOP = EAR.y + EAR.dy, EBOT = EAR.y - EAR.dy - 0.004, EOUT = 1.08;
+  const FRONT = (tuckL || tuckR) && (s.tuckFall || "front") === "front";
   for (let i = 0; i < n; i++) {
     let L = len[i]; if (!(L > 0.0015)) continue;
     const gr = group[i], steps = clamp(Math.ceil(L / 0.008), 5, MAXS), dl = L / steps, al = 1 - Math.exp(-dl / bendLen);
@@ -49,7 +54,7 @@ export function trace(ctx) {
     const V = vol[i], reach = V / Math.max(sl, 0.1), jit = 0.88 + 0.24 * hash(u[i], 3);
     const tie = gr >= TIE ? ctx.ties[gr - TIE] : null, own = gr === FRINGE || gr === FRAME, ownHold = own ? (gr === FRINGE ? (fr.hold ?? 0.5) : 0.25) * L : 0;
     poly[0] = px; poly[1] = py; poly[2] = pz;
-    let m = 1, sAt = 0, rest = 0.03, done = false;
+    let m = 1, sAt = 0, rest = 0.03, done = false, draped = false;
     for (let k = 1; k <= steps && !done; k++) {
       sAt = k * dl;
       const d0 = dist(S, px, py, pz), ok = grad(S, px, py, pz, g), near = ok && d0 < GAP + V + 0.014;
@@ -64,6 +69,26 @@ export function trace(ctx) {
       else if (near && field(px, py, pz, c)) { cx = c[0]; cy = c[1]; cz = c[2]; wc = Math.max(smooth(0.12, 0.5, g[1]), hold * (1 - smooth(holdLen * 0.5, holdLen, sAt))); }
       else if (near && py > MARKS.brow + 0.01 && pz > C[2] && Math.abs(Math.atan2(px, pz - C[2])) < 54 * D && Math.abs(tx) > 0.25) {   // combed to the side over the forehead's corner: it carries on to the temple before it falls (never down over the face)
         cx = tx; cy = ty - 0.25; cz = tz; wc = 0.9;
+      }
+      if (gr === LOOSE && ok && d0 < 0.045 && (px >= C[0] ? tuckL : tuckR)) {   // tucked: in front of and over the ear the hair goes back along the head, coming down only as far as its own pass over the ear's top
+        const ex = px - C[0], ez = pz - C[2], ap = Math.abs(Math.atan2(ex, ez)) / D;
+        const tk = smooth(16, 32, ap) * (1 - smooth(EAR.az + EAR.da * 1.1, EAR.az + EAR.da * 1.4, ap)) * smooth(ETOP - 0.002, ETOP + 0.006, py) * (1 - smooth(ETOP + 0.05, ETOP + 0.085, py));   // (from the forehead's corner on: no strands left hanging in front of the ear)
+        if (tk > 0) {
+          // its pass: over the ear's top; in front of that along the hairline (never down across the forehead: the hair is swept to the side along its edge)
+          const sgn = ex >= 0 ? 1 : -1, r = Math.hypot(ex, ez) || 1, h15 = hash(u[i], 15), a = wc * (1 - tk);
+          const pass = Math.max(ETOP + 0.007 + 0.016 * h15, ctx.limit && ap < 62 ? (Math.min(0.09, ctx.limit(sgn * ap)) + 0.002 + 0.012 * h15) * (1 - smooth(46, 62, ap)) : 0);
+          cx = cx * a + sgn * ez / r * tk; cy = cy * a - 0.9 * smooth(0, 0.035, py - pass) * tk; cz = cz * a - sgn * ex / r * tk; wc += (1 - wc) * tk;
+        }
+      }
+      let draping = false;
+      if (gr === LOOSE && FRONT && ok && d0 < 0.06 && py < EBOT && py > MARKS.shoulder && (px >= C[0] ? tuckL : tuckR)) {   // and, tucked, it comes forward under the ear to hang in front of the shoulder (Over the shoulders): long hair seen from the front, the ears out above it
+        const ex = px - C[0], ez = pz - C[2], ap = Math.abs(Math.atan2(ex, ez)) / D, to = 46 + 15 * hash(u[i], 17);   // (to in front of the shoulder's ridge: over the collarbone, each to its own place there)
+        const k = ap < 152 ? smooth(to, to + 12, ap) * (1 - smooth(EBOT - 0.004, EBOT + 0.004, py)) * smooth(MARKS.shoulder, MARKS.shoulder + 0.02, py) : 0;
+        if (k > 0) {
+          const sgn = ex >= 0 ? 1 : -1, r = Math.hypot(ex, ez) || 1, a = wc * (1 - k);
+          cx = cx * a - sgn * ez / r * k; cy = cy * a - 0.7 * k; cz = cz * a + sgn * ex / r * k; wc += (1 - wc) * k; draping = k > 0.15;
+          if (draping) { rest = Math.max(rest, 0.16); draped = true; }       // (and it may lie on down the chest to its cut: it came there to hang, not to gather)
+        }
       }
       if (wc > 0 && ok && !free) { const kk = cx * g[0] + cy * g[1] + cz * g[2]; cx -= g[0] * kk; cy -= g[1] * kk; cz -= g[2] * kk; }   // along the skin
       const cn = Math.hypot(cx, cy, cz); if (cn < 1e-6) wc = 0; else { cx /= cn; cy /= cn; cz /= cn; }
@@ -80,8 +105,15 @@ export function trace(ctx) {
       tx += (dx - tx) * al; ty += (dy - ty) * al; tz += (dz - tz) * al;
       const tn = Math.hypot(tx, ty, tz) || 1; tx /= tn; ty /= tn; tz /= tn;
       let qx = px + tx * dl, qy = py + ty * dl, qz = pz + tz * dl;
-      // lie: out of the body and the hair below, down onto it while it's combed
-      const h = GAP + V * (1 - Math.exp(-sAt / reach)) * jit;
+      // lie: out of the body and the hair below, down onto it while it's combed. How thick the hair lies is the
+      // Volume of where it is, not of where it grew: hair from the top that hangs past the sides stands as far off
+      // the head there as the sides' Volume says
+      let Vq = V;
+      if (gr === LOOSE && VOL) {
+        const ex = qx - C[0], ey = qy - C[1], ez = qz - C[2], el = Math.asin(clamp(ey / (Math.hypot(ex, ey, ez) || 1), -1, 1)) / D, aq = Math.abs(Math.atan2(ex, ez)) / D, t = smooth(36, 54, el), b = smooth(104, 128, aq);
+        Vq = t * VOL[0] + (1 - t) * ((1 - b) * VOL[1] + b * VOL[2]);
+      }
+      const h = GAP + Vq * (1 - Math.exp(-sAt / reach)) * jit + (draped ? 0.014 * hash(u[i], 18) : 0);   // (hair brought forward over a shoulder hangs as a lock with some body, not a sheet on the chest)
       for (let pass = 0; pass < 2; pass++) {
         const dq = dist(S, qx, qy, qz); if (!grad(S, qx, qy, qz, g)) break;
         if (dq < h) { qx += g[0] * (h - dq); qy += g[1] * (h - dq); qz += g[2] * (h - dq); }
@@ -96,10 +128,18 @@ export function trace(ctx) {
         const want = Math.sign(qx || 1) * Math.tan((44 + 12 * hash(u[i], 9)) * D) * (qz - C[2]); qx += (want - qx) * 0.6;   // (each to its own place there, in with the hair beside the face: not all down one line)
       }
       if (ears === "clear" && !own && earIn(azq, qy) < 1.12 && dist(S, qx, qy, qz) < 0.03) done = true;   // the ear left clear: the hair is cut where it would cover it
+      if (gr === LOOSE && (qx >= C[0] ? tuckL : tuckR) && qy > EAR.y - 0.012 && earIn(azq, qy) < EOUT && dist(S, qx, qy, qz) < 0.045) {   // tucked: never across the ear; lifted back onto its outline (over the top, down behind)
+        const da = Math.abs((Math.abs(azq) - EAR.az) / EAR.da);
+        qy = Math.max(qy, EAR.y + EAR.dy * Math.pow(Math.max(0, Math.pow(EOUT, EAR.n) - Math.pow(da, EAR.n)), 1 / EAR.n));
+        if (Math.abs(azq) > EAR.az - EAR.da * 0.6) {                      // and on round the head to the back while it's over the ear: it comes down behind it, never in front or over its rim
+          const ex = qx - C[0], ez = qz - C[2], r = Math.hypot(ex, ez), a2 = Math.atan2(ex, ez) + Math.sign(ex || 1) * 2.5 * D;
+          qx = C[0] + r * Math.sin(a2); qz = C[2] + r * Math.cos(a2);
+        }
+      }
       if (qy < cap) done = true;                                          // (never below the chest)
-      if (!tie && qy < MARKS.chin && dist(S, qx, qy, qz) < h + 0.004) {            // lying on the neck, a shoulder, the chest: it gathers there; it may hang on down, it never runs along the body sideways
+      if (!tie && !draping && qy < MARKS.chin && dist(S, qx, qy, qz) < h + 0.004) {            // lying on the neck, a shoulder, the chest: it gathers there; it may hang on down, it never runs along the body sideways (but round the neck to the front, when it's tucked and falls over the shoulders)
         const side = Math.hypot(qx - px, qz - pz), downs = Math.max(0, py - qy);
-        rest -= g[1] > 0.72 ? dl : dl * (0.25 + 1.5 * side / (side + downs + 1e-6)); if (rest <= 0) done = true;
+        rest -= g[1] > 0.6 ? dl * 2.5 : dl * (0.25 + 1.5 * side / (side + downs + 1e-6)); if (rest <= 0) done = true;   // (on a shoulder's top it ends within a centimetre: no brim of hair spread along the shoulders)
       }
       if (byLine && gr !== FRINGE && !tie) {                              // cut to the line
         const line = cutLine(cut, azq) + (hash(u[i], 5) - 0.5) * 0.012 * (cut.uneven ?? 0.15) + (ctx.raise ? ctx.raise[i] : 0);

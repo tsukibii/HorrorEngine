@@ -44,7 +44,7 @@ export function build(ctx) {
   const { patch, height, left, dir } = ctx, n = patch.position.length / 3, lean = clamp(ctx.lean ?? 0.45, 0, 0.9), X = patch.position, NR = patch.normal;
   let top = 0; for (let i = 0; i < n; i++) top = Math.max(top, height[i]);
   if (top < 0.0008) return null;
-  const layers = clamp(Math.round(top / 0.0017), 4, 14), at = new Map(), base = [], tris = [];
+  const layers = clamp(Math.round(top / 0.0022), 4, 10), at = new Map(), base = [], tris = [];
   for (let t = 0; t < patch.index.length; t += 3) {
     const a = patch.index[t], b = patch.index[t + 1], c = patch.index[t + 2];
     if (!((height[a] > 0.0005 && left[a] > 0.02) || (height[b] > 0.0005 && left[b] > 0.02) || (height[c] > 0.0005 && left[c] > 0.02))) continue;

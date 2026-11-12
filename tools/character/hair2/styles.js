@@ -14,7 +14,8 @@ export const DEFAULTS = {
   parting: { kind: "middle", offset: 0.035, length: 0.6, angle: 0, width: 0.0018 },   // none, middle, left, right; how far to the side; how far back it runs (0..1); the skin showing (m)
   crown: { x: 0.012, phi: -38, swirl: 0.4 },             // the whorl: to her left (m), round the head from straight over (degrees), how much it turns
   comb: { top: "natural", sides: "down", hold: 0.3 },    // top: natural, back, forward; sides: down, back, forward; hold: how far the comb reaches before gravity (0..1)
-  ears: "covered",                                       // covered (hair falls over them), clear (cut round them)
+  ears: "covered",                                       // covered (hair falls over them), tucked (it goes behind them: the ears show), tucked_left, tucked_right (one ear), clear (cut round them)
+  tuckFall: "front",                                     // tucked hair: front (it comes forward under the ear and hangs over the shoulders), back (it stays behind them)
   length: { fringe: 0.09, top: 0.30, sides: 0.26, back: 0.26, nape: 0.16 },
   cut: { mode: "line", line: -0.09, tilt: 0, round: 0, layers: 0, uneven: 0.25, thin: 0.1, wispy: 0.3 },   // mode: line (every hair cut where it crosses a height) or length
   under: { height: null, length: 0.012, fade: 0.02 },    // an undercut: below this height (base head) the hair is clipped to `length`
@@ -24,17 +25,17 @@ export const DEFAULTS = {
   ties: { kind: "none", height: 0.5, side: 0.7, tight: 0.6, loose: 0, tail: { length: 0.2, thick: 0.013, spread: 0.5, fall: "back", taper: 0.6, stiff: 0.4, sway: 0.5, bun: 0.035 }, tie: { kind: "elastic", colour: "#101010" } },
   look: "soft_black",
   card: { width: 2.3, taper: 0.3 },                      // a card's width in pore spacings; how much it narrows to its tip
-  scalp: { shade: 0.85, stubble: 0 },
+  scalp: { shade: 0.95, stubble: 0 },
 };
 
 // the hair's colours (hairtex.js's looks, and these): black with a cool, quiet sheen and the browns and greys the
 // styles use; root and tip the strands' colours, spec1 the sharp highlight, spec2 the broad one
 export const LOOKS2 = {
-  soft_black: { label: "Soft black", root: "#040405", tip: "#141418", inner: "#141418", innerAmount: 0, spec1: "#c8ccd6", spec2: "#2a303c", shine: 0.9, gloss1: 200, gloss2: 40, shift1: -0.06, shift2: 0.1, shiftNoise: 0.25, rim: "#353b48", rimAmount: 0.1, rootLength: 0.3 },
-  off_black: { label: "Off black, brown in the light", root: "#060504", tip: "#1c1613", inner: "#1c1613", innerAmount: 0, spec1: "#d8d0c6", spec2: "#3a2d25", shine: 0.85, gloss1: 200, gloss2: 42, shift1: -0.06, shift2: 0.1, shiftNoise: 0.25, rim: "#3d332d", rimAmount: 0.1, rootLength: 0.3 },
+  soft_black: { label: "Soft black", root: "#050506", tip: "#0e0e11", inner: "#0e0e11", innerAmount: 0, spec1: "#c8ccd6", spec2: "#2a303c", shine: 0.9, gloss1: 200, gloss2: 40, shift1: -0.06, shift2: 0.1, shiftNoise: 0.25, rim: "#353b48", rimAmount: 0.1, rootLength: 0.3 },
+  off_black: { label: "Off black, brown in the light", root: "#060504", tip: "#15100d", inner: "#15100d", innerAmount: 0, spec1: "#d8d0c6", spec2: "#3a2d25", shine: 0.85, gloss1: 200, gloss2: 42, shift1: -0.06, shift2: 0.1, shiftNoise: 0.25, rim: "#3d332d", rimAmount: 0.1, rootLength: 0.3 },
   deep_brown: { label: "Deep brown", root: "#0a0605", tip: "#2b1b13", inner: "#2b1b13", innerAmount: 0, spec1: "#e2d2c0", spec2: "#5a3a28", shine: 0.8, gloss1: 190, gloss2: 44, shift1: -0.05, shift2: 0.1, shiftNoise: 0.25, rim: "#4a3628", rimAmount: 0.1, rootLength: 0.3 },
   brown_on_black: { label: "Brown lengths, black roots", root: "#050404", tip: "#4a3021", inner: "#5a3a26", innerAmount: 0.05, spec1: "#ecdcc8", spec2: "#7a5236", shine: 0.8, gloss1: 180, gloss2: 44, shift1: -0.05, shift2: 0.1, shiftNoise: 0.25, rim: "#5a4030", rimAmount: 0.1, rootLength: 0.42 },
-  chestnut_soft: { label: "Chestnut", root: "#140805", tip: "#5a2a16", inner: "#74381c", innerAmount: 0.04, spec1: "#f0d6bc", spec2: "#96522e", shine: 0.8, gloss1: 190, gloss2: 44, shift1: -0.05, shift2: 0.1, shiftNoise: 0.25, rim: "#6a3a24", rimAmount: 0.1, rootLength: 0.3 },
+  chestnut_soft: { label: "Chestnut", root: "#100705", tip: "#3a1c10", inner: "#4a2414", innerAmount: 0.04, spec1: "#f0d6bc", spec2: "#6a3a22", shine: 0.8, gloss1: 190, gloss2: 44, shift1: -0.05, shift2: 0.1, shiftNoise: 0.25, rim: "#4a2a1a", rimAmount: 0.1, rootLength: 0.3 },
   blonde: { label: "Dark blonde", root: "#2a1d12", tip: "#9a7a4e", inner: "#c8a870", innerAmount: 0.15, spec1: "#fff0d8", spec2: "#c09a60", shine: 0.6, gloss1: 150, gloss2: 38, shift1: -0.05, shift2: 0.1, shiftNoise: 0.25, rim: "#b09060", rimAmount: 0.1, rootLength: 0.35 },
   red: { label: "Dyed red", root: "#1a0606", tip: "#7a1414", inner: "#a02020", innerAmount: 0.1, spec1: "#ffd0c8", spec2: "#b03030", shine: 0.8, gloss1: 190, gloss2: 44, shift1: -0.05, shift2: 0.1, shiftNoise: 0.25, rim: "#8a2a2a", rimAmount: 0.1, rootLength: 0.25 },
   grey: { label: "Grey", root: "#3a3a3c", tip: "#8a8a8e", inner: "#c8c8cc", innerAmount: 0.2, spec1: "#f2f2f4", spec2: "#9a9aa0", shine: 0.6, gloss1: 150, gloss2: 40, shift1: -0.05, shift2: 0.1, shiftNoise: 0.25, rim: "#8a8a90", rimAmount: 0.1, rootLength: 0.25 },
@@ -105,6 +106,23 @@ export const STYLES = {
   shaggy: { label: "Shaggy layers, curtain bangs", group: "women",
     set: { parting: { kind: "middle", length: 0.4, width: 0.0008 }, cut: { mode: "line", line: -0.15, layers: 0.75, uneven: 0.9, thin: 0.3, wispy: 0.95 }, length: { top: 0.16, sides: 0.2, back: 0.22, nape: 0.2 },
       shape: { lift: 38, volume: { top: 0.014, sides: 0.014, back: 0.014 }, turn: -0.3, turnRadius: 0.03 }, fringe: { kind: "curtain", amount: 0.6 }, texture: { clump: 0.6, clumpSize: 0.025, wave: 0.006, waveLength: 0.09, together: 0.3, frizz: 0.3, messy: 0.45, strays: 60 }, look: "chestnut_soft" } },
+  // ---- long hair with the ears out (DECISIONS 2026-11-12: "the ears aren't covered but the hair is still long (so the ears poke out cutely)")
+  ears_long: { label: "Long and straight, tucked behind the ears", group: "ears",
+    set: { parting: { kind: "middle", length: 0.7, width: 0.0012 }, ears: "tucked", cut: { mode: "line", line: -0.24, uneven: 0.45, wispy: 0.4, thin: 0.15 }, shape: { lift: 16, volume: { top: 0.005, sides: 0.006, back: 0.01 }, turn: 0.1 },
+      hairline: { sideburns: 0.25 }, texture: { clump: 0.3, strays: 30 } } },
+  ears_bangs: { label: "Long, see-through bangs and sidelocks, ears out", group: "ears",
+    set: { parting: { kind: "middle", length: 0.4, width: 0.0006 }, ears: "tucked", cut: { mode: "line", line: -0.22, uneven: 0.5, wispy: 0.45, thin: 0.15 }, shape: { lift: 22, volume: { top: 0.008, sides: 0.007, back: 0.011 }, turn: 0.2 },
+      fringe: { kind: "seethrough", line: 0.038, amount: 0.3, width: 44, curve: 0.5, frame: 0.75, frameLine: P.jaw + 0.004, frameWispy: 0.7 }, hairline: { sideburns: 0.2 }, texture: { clump: 0.35, strays: 30 }, look: "deep_brown" } },
+  ears_side: { label: "Side parting, one ear out", group: "ears",
+    set: { parting: { kind: "left", offset: 0.034, length: 0.55, width: 0.001 }, ears: "tucked_left", cut: { mode: "line", line: -0.2, layers: 0.2, uneven: 0.6, wispy: 0.5, thin: 0.15 }, length: { top: 0.34, sides: 0.3, back: 0.3, nape: 0.2 },
+      shape: { lift: 30, volume: { top: 0.01, sides: 0.011, back: 0.013 }, turn: 0.2, turnRadius: 0.04 }, hairline: { sideburns: 0.25 }, texture: { clump: 0.4, clumpSize: 0.03, wave: 0.006, waveLength: 0.12, waveStart: 0.35, together: 0.7, frizz: 0.2, strays: 40 }, look: "off_black" } },
+  ears_waves: { label: "Loose waves, tucked behind the ears", group: "ears",
+    set: { parting: { kind: "middle", length: 0.55, width: 0.001 }, ears: "tucked", cut: { mode: "line", line: -0.2, layers: 0.25, uneven: 0.7, wispy: 0.55, thin: 0.2 }, length: { top: 0.34, sides: 0.3, back: 0.3, nape: 0.2 },
+      shape: { lift: 30, volume: { top: 0.009, sides: 0.009, back: 0.016 }, turn: 0 }, fringe: { frame: 0.35, frameLine: P.jaw - 0.01, frameWispy: 0.9 }, hairline: { sideburns: 0.2 },
+      texture: { clump: 0.5, clumpSize: 0.04, wave: 0.013, waveLength: 0.11, waveStart: 0.3, together: 0.75, frizz: 0.25, strays: 50 }, look: "chestnut_soft" } },
+  ears_half_up: { label: "Half-up, ears out", group: "ears",
+    set: { parting: { kind: "none" }, comb: { top: "back", hold: 0.9 }, ears: "tucked", tuckFall: "back", cut: { mode: "line", line: -0.21, uneven: 0.4, wispy: 0.4 }, ties: { kind: "half", height: 0.6, tight: 0.6, tail: { length: 0.18, thick: 0.011, spread: 0.5, taper: 0.7 }, tie: { kind: "scrunchie", colour: "#d8c8b0" } },
+      shape: { lift: 18, volume: { top: 0.006, sides: 0.007, back: 0.012 }, turn: 0.15 }, fringe: { kind: "wispy", amount: 0.35, frame: 0.4, frameLine: P.jaw }, hairline: { sideburns: 0.2 }, texture: { clump: 0.3, strays: 30 } } },
   // ---- men's
   m_side_part: { label: "Side parting, short back and sides", group: "men",
     set: { parting: { kind: "left", offset: 0.045, length: 0.55, width: 0.001 }, cut: { mode: "length", wispy: 0.6, uneven: 0.3 }, length: { fringe: 0.07, top: 0.065, sides: 0.02, back: 0.022, nape: 0.01 },
@@ -159,7 +177,7 @@ export const STYLES = {
     set: { parting: { kind: "none" }, comb: { top: "forward" }, cut: { mode: "line", line: -0.055, uneven: 0.2, wispy: 0.2 }, shape: { lift: 24, volume: { top: 0.009, sides: 0.011, back: 0.012 }, turn: 0.6, turnRadius: 0.025 },
       fringe: { kind: "blunt", line: P.brow + 0.004, amount: 0.9, width: 46 }, texture: { clump: 0.25, strays: 15 } } },
 };
-export const GROUPS = { pictures: "From the pictures", women: "Women's", men: "Men's", balding: "Balding", horror: "For our games", children: "Children's" };
+export const GROUPS = { pictures: "From the pictures", women: "Women's", ears: "Women's, long with the ears out", men: "Men's", balding: "Balding", horror: "For our games", children: "Children's" };
 
 // a style's settings: the defaults, the style it's from, its own, then what the character changed. A fringe's kind
 // brings its own numbers in under whatever is set by name
@@ -207,7 +225,8 @@ export const CONTROLS = [
     ["crown.swirl", "Swirl", "slide", -1, 1, 0.05, 1, "How much the hair turns round the whorl, either way."],
     ["comb.top", "The top", "pick", [["natural", "Falls naturally"], ["back", "Combed back"], ["forward", "Combed forward"]]],
     ["comb.sides", "The sides", "pick", [["down", "Down"], ["back", "Back"], ["forward", "Forward"]]],
-    ["ears", "The ears", "pick", [["covered", "Covered"], ["clear", "Clear (cut round them)"]]],
+    ["ears", "The ears", "pick", [["covered", "Covered"], ["tucked", "Out: the hair tucked behind them"], ["tucked_left", "Out on her left only"], ["tucked_right", "Out on her right only"], ["clear", "Clear (cut round them)"]]],
+    ["tuckFall", "Tucked hair falls", "pick", [["front", "Over the shoulders, in front"], ["back", "Behind the shoulders"]]],
     ["comb.hold", "Hold", "slide", 0, 1, 0.05, 1, "How far the comb reaches before gravity takes over: natural to gelled."],
   ] },
   { id: "length", label: "Length and cut", help: "How long each part is, and how the ends are cut.", rows: [
@@ -216,9 +235,9 @@ export const CONTROLS = [
     ["cut.tilt", "Tilt", "slide", -1, 1, 0.05, 1, "Longer in front (an A-line), or behind."],
     ["cut.round", "Round", "slide", -1, 1, 0.05, 1, "The back's middle lower (a U) or higher."],
     ["cut.layers", "Layers", "slide", 0, 1, 0.05, 1, "From one length to the lengths below."],
-    ["length.top", "Top", "slide", 0.2, 45, 0.2, cm, "cm"],
-    ["length.sides", "Sides", "slide", 0.2, 45, 0.2, cm, "cm"],
-    ["length.back", "Back", "slide", 0.2, 45, 0.2, cm, "cm"],
+    ["length.top", "Top", "slide", 0.1, 45, 0.1, cm, "cm"],
+    ["length.sides", "Sides", "slide", 0.1, 45, 0.1, cm, "cm"],
+    ["length.back", "Back", "slide", 0.1, 45, 0.1, cm, "cm"],
     ["length.nape", "Nape", "slide", 0.1, 30, 0.1, cm, "cm"],
     ["under.height", "Undercut up to", "slide", -5, 9, 0.5, cm, "Clipped short below this height (cm over the ears' line); all the way down: none.", { none: -5 }],
     ["under.length", "Undercut length", "slide", 1, 25, 1, mm, "mm"],
@@ -253,7 +272,7 @@ export const CONTROLS = [
   ] },
   { id: "fringe", label: "Fringe", help: "The hair over the forehead, and the strands that frame the face.", rows: [
     ["fringe.kind", "Kind", "pick", opt(FRINGES)],
-    ["fringe.line", "Length", "slide", -12, 7, 0.2, cm, "Where it ends: the brows (3.7), the eyes (1.5), the nose (-2), the chin (-9.6)."],
+    ["fringe.line", "Length", "slide", -14, 7, 0.2, cm, "Where it ends: the brows (3.7), the eyes (1.5), the nose (-2), the chin (-9.6)."],
     ["fringe.amount", "Amount", "slide", 0.05, 1, 0.05, 1, "A few hairs (see-through) to a full fringe."],
     ["fringe.width", "Width", "slide", 20, 64, 1, 1, "How far round to the temples (degrees)."],
     ["fringe.sweep", "Sweep", "slide", -70, 70, 1, 1, "To her right or left (degrees)."],
@@ -262,7 +281,7 @@ export const CONTROLS = [
     ["fringe.arch", "Arch", "slide", 0, 1, 0.05, 1, "Longer toward the temples."],
     ["fringe.wispy", "Ends", "slide", 0, 1, 0.05, 1, "Blunt to wispy."],
     ["fringe.uneven", "Uneven", "slide", 0, 1, 0.05, 1, ""],
-    ["length.fringe", "Longest", "slide", 2, 40, 0.5, cm, "A swept fringe's length (cm)."],
+    ["length.fringe", "Longest", "slide", 0.1, 40, 0.1, cm, "A swept fringe's length (cm)."],
     ["fringe.frame", "Face-framing strands", "slide", 0, 1, 0.05, 1, "Strands left hanging in front of the ears."],
     ["fringe.frameLine", "Their length", "slide", -20, 3, 0.5, cm, "The cheek (-2), the jaw (-6.6), the chin (-9.6)."],
   ] },

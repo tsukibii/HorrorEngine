@@ -3,6 +3,27 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The hair editor v2.0: what took a second try (2026-11-12)
+
+- **A shader's setting made for one kind of mesh is wrong for another, silently.** Godot's HSHair fades the first 6% of
+  every strand in ("the roots grow out of the scalp"): right for the salon's hand-laid locks, whose roots are under
+  other locks. Grown hair starts every lock at its own pore: on 20 cm hair pulled back to a bun that 6% is two bare
+  centimetres at the temple, and every parting was twice as wide as its slider said. I chased it as missing cards, as
+  the scalp's paint and as a shadow before measuring that the hairs were there. A bake now carries its own settings
+  (`studioHair.settings`), and the plugin reads them. When a mesh is there in the numbers and not in the picture, read
+  the shader's fades before the generator.
+- **A patch cut from "the triangles that hold a pore" has holes and a jagged edge.** Small triangles hold no pore. Grow
+  the patch two rings past them and let the paint fade inside it.
+- **A slider has to act where the user looks.** Volume, sides followed each hair's root: on long hair the outer layer at
+  the sides is the top's hair, so the slider did almost nothing (the check measured 1 cm for 2.4 cm asked). The Volume
+  is now the Volume of where the hair is.
+- **A rule for hair has to start at the root.** Tucking hair behind the ear as a steer on the falling hair left every
+  hair rooted just over the ear dropping onto it first (it turns only as fast as its stiffness lets it), and out over
+  the rim as "handles". The roots there are combed back themselves, and what's over the ear is carried on round to the
+  back. And a wisp grown off a tucked hair stands off it by centimetres: none are grown from held hair.
+- **A background job that starts while a patch script is writing the file it runs reads half a file.** The sheet job
+  died of a syntax error that wasn't in the file a second later. Finish the edit, then start the job.
+
 ## Skin through clothes, measured in Godot: what took a second try (2026-11-11, the very last)
 
 - **Godot's triangles face you clockwise.** A normal from (b - a) x (c - a) points into the body there: the first probe

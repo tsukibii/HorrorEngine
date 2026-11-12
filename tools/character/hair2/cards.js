@@ -34,7 +34,7 @@ function keep(pts, o, tol, least, most) {
   return kept;
 }
 
-// ctx: { n, pts, len, u, width (each hair's card width, m), taper, wispy (0 blunt .. 1 wispy ends: one number, or one a hair), roll (each hair's turn about itself, radians: standing short hair),
+// ctx: { n, pts, len, u, width (each hair's card width, m), taper, rootTaper (0..1 a hair: how much narrower it starts), wispy (0 blunt .. 1 wispy ends: one number, or one a hair), roll (each hair's turn about itself, radians: standing short hair),
 //        tint (3 a hair, or none), S, C, tol, least, most, twist (K a hair: a card's own turn, or none), axis (3 a kept point: a curl's middle line), out (3 a kept point: the way out, for a tail) }
 export function build(ctx) {
   const { n, pts, len, u, width, S, C } = ctx, tol = ctx.tol ?? 0.0008, least = ctx.least ?? 4, most = ctx.most ?? 14;
@@ -74,7 +74,8 @@ export function build(ctx) {
     let rows = 0;
     for (let k = 0; k < K; k++) {
       if (!kept[k]) continue;
-      const t = TS[k], w = w0 * (1 - taper * Math.pow(t, 1.5)) * 0.5, x = pts[o + k * 3], y = pts[o + k * 3 + 1], z = pts[o + k * 3 + 2];
+      const t = TS[k], rt = ctx.rootTaper ? ctx.rootTaper[i] : 0, sr = t * len[i] / 0.022, x = pts[o + k * 3], y = pts[o + k * 3 + 1], z = pts[o + k * 3 + 2];
+      const w = w0 * (1 - taper * Math.pow(t, 1.5)) * (rt > 0 && sr < 1 ? 1 - rt * (1 - sr * sr * (3 - 2 * sr)) : 1) * 0.5;   // (a lock at the hairline's edge leaves the skin as a point and widens over two centimetres: an edge of hairs, not of planks' ends)
       P.push(x - ac[k * 3] * w, y - ac[k * 3 + 1] * w, z - ac[k * 3 + 2] * w, x + ac[k * 3] * w, y + ac[k * 3 + 1] * w, z + ac[k * 3 + 2] * w);
       for (let e = 0; e < 2; e++) { N.push(nr[k * 3], nr[k * 3 + 1], nr[k * 3 + 2]); T.push(tn[k * 3], tn[k * 3 + 1], tn[k * 3 + 2], 1); CARD.push(i); if (tint) COL.push(tint[i * 3], tint[i * 3 + 1], tint[i * 3 + 2]); else COL.push(1, 1, 1); }
       UV.push(u0, t * vEnd, u0 + span, t * vEnd);

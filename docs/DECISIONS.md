@@ -2,6 +2,19 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12 (the user, while the hair editor v2.0 was being built: long hair with the ears out)
+
+- **"Could you do some female hairstyles where the ears aren't covered but the hair is still long (so the ears poke out
+  cutely), a couple of variations."** So the ears have a third way to be worn beside *covered* and *clear*:
+  **tucked** (`ears: "tucked"`, or one ear: `tucked_left`, `tucked_right`): the hair that comes down the side of the
+  head turns back along the hairline, passes over the ear's top and falls behind it, never across it; what grows in
+  front of the ear below its top stays as a few short wisps. And where the tucked hair goes then is a choice
+  (`tuckFall`): **over the shoulders, in front** (it comes forward under the ear and hangs in front of the shoulder to
+  its cut: long hair seen from the front, the ears out above it) or **behind the shoulders**.
+- **Five styles** in a group of their own (*Women's, long with the ears out*): long and straight; see-through bangs
+  with sidelocks (the ear between the sidelock and the lengths); a side parting with one ear out; loose waves; half-up.
+  Judged in Godot's pictures as the rest are (`Saved/Hair2/t3.jpg` while they were made).
+
 ## 2026-11-11, the go (the user: build the hair editor v2.0, all of it, until it looks really good in Godot)
 
 - **The answer to the plan's questions**: **"v2 should be in the character creator studio tab, let it reach the chest

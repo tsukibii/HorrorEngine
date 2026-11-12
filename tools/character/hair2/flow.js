@@ -10,7 +10,9 @@
 const D = Math.PI / 180;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+import { EAR } from "./pores.js";
 export const LOOSE = 0, FRINGE = 1, FRAME = 2, TIE = 3;
+const ETOP = EAR.y + EAR.dy;                                             // the ear's top on the chart
 
 // the angle of a point round the head's side-to-side axis (degrees): 0 straight over the skull's middle, + toward the
 // face, - toward the back (the crown about -35, the nape about -125)
@@ -74,6 +76,11 @@ export function comb(ctx) {
     }
     // below the top the hair simply hangs: toward straight down as the skin steepens
     { const k = (1 - P.top[i]) * (cb.sides === "back" || cb.sides === "forward" ? 0.3 : 0.75) * (1 - flat); d = unit([d[0] * (1 - k) + down[0] * k, d[1] * (1 - k) + down[1] * k, d[2] * (1 - k) + down[2] * k]) || d; }
+    // tucked behind the ear: over the temple and above the ear the roots themselves are combed back along the head (they pass over the ear's top and fall behind it: strands.js)
+    if (s.ears === "tucked" || (p[0] >= C[0] ? s.ears === "tucked_left" : s.ears === "tucked_right")) {
+      const ap = Math.abs(a), k = smooth(16, 32, ap) * (1 - smooth(EAR.az + EAR.da * 1.1, EAR.az + EAR.da * 1.4, ap)) * smooth(ETOP - 0.004, ETOP + 0.004, by[i]) * (1 - smooth(ETOP + 0.05, ETOP + 0.085, by[i]));
+      if (k > 0) { const sg = p[0] >= C[0] ? 1 : -1, ex = p[0] - C[0], ez = p[2] - C[2], r = Math.hypot(ex, ez) || 1, b = unit(along([sg * ez / r, 0.1, -sg * ex / r], nn)) || down; d = unit([d[0] * (1 - k) + b[0] * k, d[1] * (1 - k) + b[1] * k, d[2] * (1 - k) + b[2] * k]) || d; }
+    }
     let lf = (sh.lift ?? 20) * D * (0.55 + 0.45 * P.top[i]);
     // the fringe: the front band's pores (some of them: Density), forward and down over the forehead, swept or split
     if (hasFringe && lim) {
@@ -87,8 +94,8 @@ export function comb(ctx) {
     }
     // face-framing strands: some of the hairline's own pores beside the fringe (or beside the parting), straight down in front of the ears
     if (!group[i] && (fr.frame || 0) > 0 && lim) {
-      const depth = by[i] - lim(a), a0 = hasFringe ? (fr.width ?? 46) - 8 : 14;
-      if (depth < 0.014 && Math.abs(a) > a0 && Math.abs(a) < 60 && u[i] < fr.frame) { d = turn(down, nn, (p[0] >= 0 ? -1 : 1) * 12 * D); group[i] = FRAME; lf = 22 * D; }
+      const depth = by[i] - lim(a), a0 = hasFringe ? Math.max(34, (fr.width ?? 46) - 8) : 36;   // (the temples' pores: in front of the ears, never over the eyes)
+      if (depth < 0.014 && Math.abs(a) > a0 && Math.abs(a) < 64 && u[i] < fr.frame) { d = turn(down, nn, (p[0] >= 0 ? -1 : 1) * 12 * D); group[i] = FRAME; lf = 22 * D; }
     }
     // a quiff: the front stands up and goes back
     if (!group[i] && (sh.quiff || 0) > 0) { const k = smooth(8, 40, phi) * sh.quiff * P.top[i]; if (k > 0) { const b = unit(along([0, 0.3, -1], nn)) || down; d = unit([d[0] * (1 - k) + b[0] * k, d[1] * (1 - k) + b[1] * k, d[2] * (1 - k) + b[2] * k]) || d; lf = lf * (1 - k) + 78 * D * k; } }

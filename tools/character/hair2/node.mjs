@@ -24,6 +24,12 @@ export function bodyByName(name = "base") {
     : namedBody(m, name, 1.7);
   return Object.assign(localBody(made.P, m.T), { name, P: made.P });
 }
+// a character's own body (People/<name>/body.bin: the Studio's neutral body, 3 floats a point)
+export function bodyFromFile(file) {
+  const b = readFileSync(file), P = new Float32Array(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength));
+  if (P.length !== mhr().T.reduce((a, v) => Math.max(a, v), 0) * 3 + 3) throw new Error(`${file} isn't a body of MHR's (${P.length / 3} points)`);
+  return Object.assign(localBody(P, mhr().T), { name: file, P });
+}
 export function loadPores(file = PORES_FILE) { const b = readFileSync(file); return readPores(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength)); }
 
 // the head, neck, shoulders and chest of a body as a mesh of its own (local metres): what a picture shows under the hair

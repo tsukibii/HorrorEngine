@@ -4,12 +4,14 @@
 // that's the Studio's Export for Godot.
 //
 //   node tools/character/hair2/make.mjs --style NAME [--set key=value ...] [--body base|fem|masc|child8|ogre|...] --out FILE.glb
+//   node tools/character/hair2/make.mjs --bodybin People/NAME/body.bin --settings FILE.json --out FILE.glb      a character's own body and its { style, set }
 //   node tools/character/hair2/make.mjs --pores [--set hairline.shape=m_shape ...] --out FILE.glb      the pores as dots (Show the pores)
 import { Glb } from "./glb.mjs";
-import { bodyByName, loadPores, headSkin } from "./node.mjs";
+import { readFileSync } from "fs";
+import { bodyByName, bodyFromFile, loadPores, headSkin } from "./node.mjs";
 import { place, alive } from "./pores.js";
 import { prepare, grow } from "./engine.js";
-import { settings, lookOf } from "./styles.js";
+import { settings, lookOf, STYLES } from "./styles.js";
 import { textures, record } from "./bake.js";
 import { linear } from "../hairtex.js";
 import { tile } from "./shell.js";
@@ -35,7 +37,8 @@ export function poreDots(body, pores, on, edge, size = 0.0022) {
 }
 
 if (process.argv[1] && process.argv[1].endsWith("make.mjs")) {
-  const body = bodyByName(arg("--body", "base")), pores = loadPores(), S = sets(), out = arg("--out"), G = new Glb();
+  const body = arg("--bodybin") ? bodyFromFile(arg("--bodybin")) : bodyByName(arg("--body", "base")), pores = loadPores(), S = sets(), out = arg("--out"), G = new Glb();
+  const kept = arg("--settings") ? JSON.parse(readFileSync(arg("--settings"), "utf8")) : null;   // { style, set }: a character's own (the Studio's Preview in Godot)
   const skin = headSkin(body);
   G.node({ name: "head_skin", mesh: G.mesh({ name: "head_skin", ...skin, material: G.material({ name: "skin", color: [0.8, 0.63, 0.54, 1], roughness: 0.6 }) }) });
   if (flag("--pores")) {
@@ -43,13 +46,13 @@ if (process.argv[1] && process.argv[1].endsWith("make.mjs")) {
     G.node({ name: "pores", mesh: G.mesh({ name: "pores", ...dots, material: G.material({ name: "pores", roughness: 1 }) }) });
     console.log(`${A.n} pores growing of ${Math.min(pores.n, +arg("--count", pores.n))}`);
   }
-  const style = arg("--style");
+  const style = kept ? (STYLES[kept.style] ? kept.style : "bob_middle") : arg("--style");
   if (style) {
-    const s = settings(style, S), prep = prepare(body), look = lookOf(s), rootC = linear(look.root).map(v => Math.round(255 * Math.pow(v, 1 / 2.2)));
+    const s = settings(style, kept ? kept.set || {} : S), prep = prepare(body), look = lookOf(s), rootC = linear(look.root).map(v => Math.round(255 * Math.pow(v, 1 / 2.2)));
     const r = grow(body, pores, s, prep, { rootColour: rootC }), tex = textures(look);
     const mat = G.material({ name: "hair_cards", texture: G.texture(tex.albedo, tex.W, tex.H, { repeatS: true }), occlusion: G.texture(tex.strands, tex.W, tex.H, { repeatS: true }), alphaCutoff: 0.4, doubleSided: true, roughness: 0.55, extras: record(tex.look) });
     const h = r.hair;
-    G.node({ name: "hair_static", mesh: G.mesh({ name: "hair_static", position: h.position, normal: h.normal, tangent: h.tangent, uv: h.uv, uv1: h.uv1, color: h.color, index: h.index, material: mat }) });
+    if (h.index.length) G.node({ name: "hair_static", mesh: G.mesh({ name: "hair_static", position: h.position, normal: h.normal, tangent: h.tangent, uv: h.uv, uv1: h.uv1, color: h.color, index: h.index, material: mat }) });   // (a cut that's all shells has no cards)
     if (r.scalp) G.node({ name: "hair_scalp", mesh: G.mesh({ name: "hair_scalp", position: r.scalp.position, normal: r.scalp.normal, uv: r.scalp.uv, index: r.scalp.index,
       material: G.material({ name: "hair_scalp", texture: G.texture(r.scalp.rgba, r.scalp.size, r.scalp.size), blend: true, roughness: 1 }) }) });
     for (const t of r.tails) G.node({ name: `hair_${t.name}`, mesh: G.mesh({ name: `hair_${t.name}`, position: t.geo.position, normal: t.geo.normal, tangent: t.geo.tangent, uv: t.geo.uv, uv1: t.geo.uv1, color: t.geo.color, index: t.geo.index, material: mat }) });

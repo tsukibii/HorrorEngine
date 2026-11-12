@@ -14,7 +14,9 @@ import { dist } from "./sdf.js";
 // (the same words as hairshader.js's STUDIO_HAIR, which HSHair reads: hair.gd set_bake)
 export const STUDIO_HAIR = { version: 1, strands: "occlusionTexture (R a faint shade per strand, 0.8 to 1; G each strand's random number; B its clump's)",
   tangent: "along the strand, root to tip", normal: "the hair volume's shell normal (tools/character/hairvolume.js), both faces lit by it",
-  uv1: "x across the card (0 one edge, 1 the other), y the occlusion (1 open)", uv: "v from the root (0) to the tip (1)", by: "the hair editor v2.0 (tools/character/hair2)" };
+  uv1: "x across the card (0 one edge, 1 the other), y the occlusion (1 open)", uv: "v from the root (0) to the tip (1)", by: "the hair editor v2.0 (tools/character/hair2)",
+  // (every lock starts at its own pore: HSHair's root fade, 6% of a lock for the salon's hand-laid ones, would bare two centimetres of scalp at a pulled-back hairline and widen every parting)
+  settings: { root_fade: 0.012 } };
 
 export function finish(geo, S, o = {}) {
   const P = geo.position; if (!P.length) { geo.uv1 = new Float32Array(0); return { cells: 0, open: 1 }; }

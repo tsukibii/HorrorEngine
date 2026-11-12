@@ -172,6 +172,35 @@ def cmd_sheets(a):
     return 0
 
 
+THUMBS = ROOT / "Content" / "Studio" / "Hair2" / "thumbs"
+
+
+def cmd_thumbs(a):
+    """the styles' cards: each style on MHR's base, pictured by Godot from three quarters, kept small in
+    Content/Studio/Hair2/thumbs/<style>.jpg (the Character Studio's tab shows them)"""
+    from PIL import Image
+    out = Path(a.out) if a.out else ROOT / "Saved" / "Hair2" / "thumbs"
+    out.mkdir(parents=True, exist_ok=True)
+    THUMBS.mkdir(parents=True, exist_ok=True)
+    r = subprocess.run(["node", "-e", f"import('{(MAKE.parent / 'styles.js').as_posix()}').then(m => console.log(Object.keys(m.STYLES).join(',')))"], capture_output=True, text=True)
+    names = [s for s in (a.styles.split(",") if a.styles else r.stdout.strip().split(",")) if s]
+    view = "v:26:5:0.93:28:0:-0.065:0"
+    for st in names:
+        glb = out / f"{st}.glb"
+        stats, err = make(st, glb)
+        if stats is None:
+            print(err)
+            return 1
+        rep, err = shoot(glb, out, st, [view], "512x512", 16, "reel", False, "0,0,0", None, "balanced", "head")
+        if rep is None:
+            print(err)
+            return 1
+        Image.open(out / f"{st}_{view.replace(':', '_')}.png").convert("RGB").resize((200, 200), Image.LANCZOS).save(THUMBS / f"{st}.jpg", quality=86)
+        print(f"  {st}")
+    print(f"  {len(names)} pictures in {THUMBS.relative_to(ROOT)}")
+    return 0
+
+
 def cmd_shots(a):
     out = Path(a.out) if a.out else KEEP
     rep, err = shoot(a.glb, out, a.tag, a.shots.split(",") if a.shots else None, a.size, a.frames, a.light, a.marker, a.origin, a.hair, a.look, a.frame)
@@ -181,7 +210,7 @@ def cmd_shots(a):
         return 1
     names = [s.replace(":", "_") for s in (a.shots.split(",") if a.shots else VIEWS)]
     if a.sheet:
-        sheet([out / f"{a.tag}_{s}.png" for s in names], a.sheet, label=a.label)
+        sheet([out / f"{a.tag}_{s}.png" for s in names], a.sheet, label=a.label, height=a.height)
         print(f"  sheet {a.sheet}")
     print(json.dumps(rep))
     return 0
@@ -205,6 +234,7 @@ def main():
     s.add_argument("--hair")
     s.add_argument("--sheet")
     s.add_argument("--label")
+    s.add_argument("--height", type=int, default=360)
     t = sub.add_parser("sheets")
     t.add_argument("--styles", required=True)
     t.add_argument("--body", default="base")
@@ -219,6 +249,9 @@ def main():
     t.add_argument("--hair")
     t.add_argument("--sheet")
     t.add_argument("--height", type=int, default=300)
+    th = sub.add_parser("thumbs")
+    th.add_argument("--styles")
+    th.add_argument("--out")
     p.add_argument("--styles")
     p.add_argument("--quick", action="store_true")
     p.add_argument("--keep")
@@ -227,6 +260,8 @@ def main():
         return cmd_shots(a)
     if a.cmd == "sheets":
         return cmd_sheets(a)
+    if a.cmd == "thumbs":
+        return cmd_thumbs(a)
     print("GDHAIR2 FAIL: the check isn't written yet (use `shots`)")
     return 1
 
