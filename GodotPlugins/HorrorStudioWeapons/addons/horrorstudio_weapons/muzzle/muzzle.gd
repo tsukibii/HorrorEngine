@@ -54,6 +54,7 @@ var puffs: CPUParticles3D
 var trail: MeshInstance3D
 
 var _mm: MultiMesh
+var _spark_meshes := {}                                 # the sparks' mesh by its look's picture (none: the streak)
 var _layout: Array = []                                 # the last flash's spheres: [transform, custom]
 var _mat: ShaderMaterial                                # the look's: one of the two below
 var _mats: Array[ShaderMaterial] = []                   # [solid, added]
@@ -257,6 +258,19 @@ static func spark_mesh() -> QuadMesh:
 	return q
 
 
+## A quad for particles that are a picture turned to the eye (muzzle/sprite.gdshader): the love-heart shell's hearts
+## (the muzzle's, an impact's, someone smitten's). The particle's colour tints it; `energy` how bright (unlit: it
+## shows in the dark, as the sparks do).
+static func sprite_mesh(tex_: Texture2D, energy := 1.0) -> QuadMesh:
+	var q := QuadMesh.new()
+	var m := ShaderMaterial.new()
+	m.shader = load(DIR + "muzzle/sprite.gdshader")
+	m.set_shader_parameter("sprite_tex", tex_)
+	m.set_shader_parameter("energy", energy)
+	q.material = m
+	return q
+
+
 # a texture of the plugin's: imported, or read from its file (a project that hasn't imported it yet)
 func _tex(path: String) -> Texture2D:
 	return tex(path)
@@ -402,12 +416,33 @@ func _set_sparks(lk: HSMuzzleFlash) -> void:
 	sparks.scale_amount_min = lk.spark_length_m * 0.6
 	sparks.scale_amount_max = lk.spark_length_m * 1.2
 	var sc := Curve.new()
-	sc.add_point(Vector2(0, 1.0))
-	sc.add_point(Vector2(1, 0.3))
-	sparks.scale_amount_curve = sc
 	var g := Gradient.new()
 	g.set_color(0, Color(lk.spark_color, 1.0))
-	g.set_color(1, Color(lk.spark_color.r * 0.8, lk.spark_color.g * 0.25, lk.spark_color.b * 0.1, 0.0))
+	# a streak along its way (hot, burning out red), or the look's picture turned to the eye (hearts: they pop out
+	# small, keep their colour and fade)
+	var pic := lk.spark_sprite
+	if not _spark_meshes.has(pic):
+		_spark_meshes[pic] = sprite_mesh(pic) if pic != null else spark_mesh()
+	sparks.mesh = _spark_meshes[pic]
+	sparks.particle_flag_align_y = pic == null
+	sparks.angle_min = -25.0 if pic != null else 0.0
+	sparks.angle_max = 25.0 if pic != null else 0.0
+	((sparks.mesh as QuadMesh).material as ShaderMaterial).set_shader_parameter("energy", lk.spark_energy)
+	if pic == null:
+		((sparks.mesh as QuadMesh).material as ShaderMaterial).set_shader_parameter("width", lk.spark_width_m)
+	if pic != null:
+		sc.max_value = 1.2
+		sc.add_point(Vector2(0, 0.25))
+		sc.add_point(Vector2(0.12, 1.2))
+		sc.add_point(Vector2(0.3, 1.0))
+		sc.add_point(Vector2(1, 0.7))
+		g.set_color(1, Color(lk.spark_color, 0.0))
+		g.add_point(0.7, Color(lk.spark_color, 1.0))
+	else:
+		sc.add_point(Vector2(0, 1.0))
+		sc.add_point(Vector2(1, 0.3))
+		g.set_color(1, Color(lk.spark_color.r * 0.8, lk.spark_color.g * 0.25, lk.spark_color.b * 0.1, 0.0))
+	sparks.scale_amount_curve = sc
 	sparks.color_ramp = g
 
 

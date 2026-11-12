@@ -7,14 +7,15 @@ there and shows it on the prop's own picture before it's made (§25).
   groove, the primer, the headstamp pressed round it), the plastic hull (`hull`, a colour) with its moulding streaks
   and its print along it on the side that faces you, the six-point star crimp; `spent` opens the crimp into a mouth,
   dark inside, the brass a little tarnished, the primer struck. Its print is the design `shell_print` (`art`: brand,
-  load, ink, mark) and the headstamp `stamp` ([the top's words, the bottom's]). Its own pictures: `hull.brand`,
+  load, ink, mark (a letter, `heart`, `drop`), motif (`heart`, `drop`: little ones all round the hull)), `crimp` the
+  colour in the star crimp's folds, and the headstamp `stamp` ([the top's words, the bottom's]). Its own pictures: `hull.brand`,
   `hull.load`, `hull.mark`, `base.stamp`. Sockets `front`, `back`.
 - **`box`**: a card box of shells: `count` of them (5, 10, 25...), `arrange` `lie` (side by side in rows of five, the
   print up, the brass toward the front, in layers: a box of five is 116 x 69 x 25 mm) or `stand` (heads up in a grid
   of five by five: 117 x 117 x 70 mm); its lid hinged along the back with a tuck flap (a part that opens, PROPGEN §26:
   `open` the degrees it's made open, 0 shut; Godot's parts.gd swings it), the shells inside as the `shells` keys say
   (a shell recipe's: hull, brass_mm, art, stamp). Its print is the design `shell_box` on each face (`art`: brand,
-  gauge, length, load, pellets, speed, count, colors [ground, band, ink], gold, picture: shell | target | none). Its own
+  gauge, length, load, pellets, speed, count, colors [ground, band, ink], gold, picture: shell | target | heart | drop | none). Its own
   pictures: `lid.brand`, `lid.gauge`, `lid.load`, `lid.specs`, `lid.count`, `lid.art`, `front.brand`, `front.load`,
   `back.brand`, `back.warning`, `left.gauge`, `right.gauge`, `bottom.lot`, `flap.words`, and the shells' own. Its inside
   is a container's (`inside`).
@@ -130,7 +131,7 @@ def paint_shell(fr, sp, seed, spent, hb):
         a = np.arctan2(Y - f.H / 2, X - f.W / 2)
         rr = np.hypot(X - f.W / 2, Y - f.H / 2)
         fold = np.abs(np.sin(3 * a)) ** 8 * np.clip(rr / 8.5, 0, 1)                         # the six folds of the star
-        f.lay_island(np.clip(fold, 0, 1).astype(np.float32), height=-0.12, add_height=True, color="#5a1410")
+        f.lay_island(np.clip(fold, 0, 1).astype(np.float32), height=-0.12, add_height=True, color=sp.get("crimp", "#5a1410"))
 
 
 def _shell(spec, th):

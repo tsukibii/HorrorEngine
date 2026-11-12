@@ -27,6 +27,15 @@ the plugin reads whatever is there:
                       drop landed, its crown of droplets; a pool scaled up). Black and glossy (the flashlight's highlight
                       is what shows it), a dark oxblood in its thin film, raised like a liquid, a few ember flecks in
                       the emission (faded in play)
+- `heart.png`         a heart (white, shaded as a puffy one, alpha): the love-heart shell's particles, tinted in play
+                      (the muzzle's and each landing's: DECISIONS 2026-11-11, the easter egg shells)
+- `heart_<n>_albedo/normal/orm/emission.png` (n 0..1): what a love-heart shell leaves where it lands instead of a
+                      hole: a pink heart printed on the wall like a kiss, little ones round it, raised a little and
+                      glossy, glowing a moment (the emission, faded in play); nothing of the wall is missing
+- `wet_<n>_albedo/normal/orm.png` (n 0..2) and `wet_drip_<n>_*` (n 0..1): what a water shell leaves: a wet patch (a
+                      splash with its crown of drops; on a wall, runs down the texture's bottom), dark only as much as
+                      water darkens (its albedo near black, mixed in lightly in play), domed and glossy so the
+                      flashlight finds it; it dries (faded in play)
 
     python tools/weapon_fx.py [--out DIR]       make them
     python tools/weapon_fx.py check             WEAPONFX: every map there and well formed, the noise tiling, each
@@ -450,6 +459,95 @@ def smear(seed, n=128):
     return rgba, nrm, orm, h
 
 
+# ---- the easter egg shells: hearts and water (DECISIONS 2026-11-11) -------------------------------------------------------
+
+HEARTS = 2
+WETS = {"wet": 3, "wet_drip": 2}
+
+
+def heart_cover(n, cx=0.0, cy=0.0, r=0.6, rot=0.0, soft=1.5):
+    """A heart's cover on an n x n square (its coordinates -1..1, v down the image): its middle at (cx, cy), `r` its
+    half height, turned `rot` radians; its edge `soft` pixels wide. The curve is the usual one (16 sin^3 t, 13 cos t -
+    5 cos 2t - 2 cos 3t - cos 4t), inside by the crossing rule, the edge by the distance to its outline."""
+    t = np.linspace(0.0, 2.0 * np.pi, 72, endpoint=False)
+    hx = 16.0 * np.sin(t) ** 3 / 15.0
+    hy = -(13.0 * np.cos(t) - 5.0 * np.cos(2 * t) - 2.0 * np.cos(3 * t) - np.cos(4 * t) + 2.5) / 15.0   # (v down: its lobes up the image)
+    ca, sa = np.cos(rot), np.sin(rot)
+    px_ = cx + r * (hx * ca - hy * sa)
+    py_ = cy + r * (hx * sa + hy * ca)
+    yy, xx = np.mgrid[0:n, 0:n]
+    u = (xx + 0.5) / n * 2 - 1
+    v = (yy + 0.5) / n * 2 - 1
+    inside = np.zeros((n, n), dtype=bool)
+    dist = np.full((n, n), 1e9)
+    m = len(px_)
+    for i in range(m):
+        ax_, ay_, bx_, by_ = px_[i], py_[i], px_[(i + 1) % m], py_[(i + 1) % m]
+        d, _ = seg_dist(u, v, ax_, ay_, bx_, by_)
+        dist = np.minimum(dist, d)
+        cross = ((ay_ > v) != (by_ > v)) & (u < (bx_ - ax_) * (v - ay_) / (by_ - ay_ + 1e-12) + ax_)
+        inside ^= cross
+    sd = np.where(inside, dist, -dist)
+    return np.clip(sd / (soft * 2.0 / n) + 0.5, 0.0, 1.0)
+
+
+def heart_sprite(n=128):
+    """The heart the love-heart shell's particles are: white (tinted in play), a little darker toward its rim and its
+    lower right, a soft highlight on its upper left lobe, so it reads as puffy."""
+    cov = heart_cover(n, 0.0, -0.02, 0.78)
+    yy, xx = np.mgrid[0:n, 0:n]
+    u = (xx + 0.5) / n * 2 - 1
+    v = (yy + 0.5) / n * 2 - 1
+    body = np.clip(blur(cov, n / 14.0), 0.0, 1.0)
+    shade = 0.74 + 0.26 * body - 0.08 * np.clip(u + v, -1.0, 1.0)
+    hi = np.exp(-(((u + 0.36) / 0.16) ** 2 + ((v + 0.34) / 0.1) ** 2))
+    val = np.clip(shade + 0.3 * hi, 0.0, 1.0)
+    return np.stack([val, val, val, cov], -1)
+
+
+def heart_mark(seed, n=256):
+    """What a love-heart shell leaves: a heart printed on the wall, a few little ones round it. Returns (rgba, normal,
+    orm, emission, cover)."""
+    rng = np.random.default_rng(seed + 1300)
+    cov = heart_cover(n, 0.0, 0.0, 0.5 * rng.uniform(0.92, 1.05), rot=rng.uniform(-0.12, 0.12), soft=2.0)
+    for _ in range(int(rng.integers(5, 9))):
+        a = rng.uniform(-np.pi, np.pi)
+        d = rng.uniform(0.62, 0.86)
+        cov = np.maximum(cov, heart_cover(n, np.cos(a) * d, np.sin(a) * d, rng.uniform(0.045, 0.1), rot=rng.uniform(-0.5, 0.5), soft=1.5))
+    worn = np.clip(0.93 + 0.07 * np.tanh(spectral(n, 2.2, seed * 5 + 1301, lo=3.0, hi=n / 8.0)), 0.0, 1.0)   # (printed: a little uneven)
+    yy, xx = np.mgrid[0:n, 0:n]
+    u = (xx + 0.5) / n * 2 - 1
+    v = (yy + 0.5) / n * 2 - 1
+    body = np.clip(blur(cov, n / 40.0), 0.0, 1.0)
+    hi = np.exp(-(((u + 0.2) / 0.12) ** 2 + ((v + 0.2) / 0.07) ** 2)) * cov
+    pink = np.array([0.95, 0.3, 0.55])
+    pale = np.array([1.0, 0.72, 0.84])
+    k = np.clip(0.25 * (1.0 - body) + 0.5 * hi, 0.0, 1.0)[..., None]
+    col = pink[None, None, :] * (1.0 - k) + pale[None, None, :] * k
+    rgba = np.concatenate([col, (cov * worn)[..., None]], -1)
+    h = np.sqrt(body) * cov * 0.6
+    nrm = normals(h, n / 60.0)
+    rough = np.clip(0.3 - 0.12 * hi + 0.1 * (1.0 - worn), 0.12, 0.6)
+    orm = np.stack([np.ones_like(rough), rough, np.zeros_like(rough)], -1)
+    glow = np.clip(blur(cov, n / 60.0), 0.0, 1.0) * (0.7 + 0.3 * body)
+    em = np.stack([glow * 1.0, glow * 0.32, glow * 0.6], -1)
+    return rgba, nrm, orm, em, cov
+
+
+def wet(kind, seed):
+    """What a water shell leaves: the ichor's shapes (a drop landed with its crown of droplets; on a wall, runs down)
+    as water: rounder (its thin spikes and specks soaked in), near black where it covers (mixed in lightly in play: wet
+    only darkens), domed, glossy, nothing glowing. Returns (rgba, normal, orm, cover)."""
+    _, _, _, _, cov = ichor({"wet": "drop", "wet_drip": "drip"}[kind], seed + 70, 256)
+    cov = np.clip((blur(cov, 1.6) - 0.3) / 0.35, 0.0, 1.0)
+    thick = np.clip(blur(cov, 4.0), 0.0, 1.0)
+    col = np.array([0.045, 0.05, 0.06])
+    out = np.concatenate([np.broadcast_to(col, cov.shape + (3,)), (cov * (0.5 + 0.4 * thick))[..., None]], -1)
+    h = np.sqrt(thick) * cov
+    rough = np.clip(0.04 + 0.1 * (1.0 - thick), 0.03, 0.2)
+    return out, normals(h, 256 / 50.0), np.stack([np.ones_like(rough), rough, np.zeros_like(rough)], -1), cov
+
+
 ICHOR = {"splat": 3, "drip": 2, "wound": 2, "drop": 2}
 ICHOR_N = {"splat": 512, "drip": 512, "wound": 256, "drop": 256}
 
@@ -592,7 +690,20 @@ def make(out):
             save(out / f"ichor_{kind}_{i}_normal.png", nrm * 0.5 + 0.5, "RGB")
             save(out / f"ichor_{kind}_{i}_orm.png", orm, "RGB")
             save(out / f"ichor_{kind}_{i}_emission.png", em, "RGB")
-    print(f"  {2 + 3 * CRATERS + 4 * SCORCHES + 3 * BLASTS + 3 * SMEARS + 5 + 4 * sum(ICHOR.values())} maps into {out}")
+    save(out / "heart.png", heart_sprite(), "RGBA")
+    for i in range(HEARTS):
+        rgba, nrm, orm, em, _ = heart_mark(i)
+        save(out / f"heart_{i}_albedo.png", rgba, "RGBA")
+        save(out / f"heart_{i}_normal.png", nrm * 0.5 + 0.5, "RGB")
+        save(out / f"heart_{i}_orm.png", orm, "RGB")
+        save(out / f"heart_{i}_emission.png", em, "RGB")
+    for kind, count in WETS.items():
+        for i in range(count):
+            rgba, nrm, orm, _ = wet(kind, i)
+            save(out / f"{kind}_{i}_albedo.png", rgba, "RGBA")
+            save(out / f"{kind}_{i}_normal.png", nrm * 0.5 + 0.5, "RGB")
+            save(out / f"{kind}_{i}_orm.png", orm, "RGB")
+    print(f"  {2 + 3 * CRATERS + 4 * SCORCHES + 3 * BLASTS + 3 * SMEARS + 5 + 4 * sum(ICHOR.values()) + 1 + 4 * HEARTS + 3 * sum(WETS.values())} maps into {out}")
 
 
 def check(out):
@@ -715,12 +826,67 @@ def check(out):
                     errs.append(f"{pre}: not thrown toward its right ({ahead} covered ahead of the blob, {behind} behind it)")
             if kind == "drip" and (on & (yy > nn * 0.7)).sum() < 40:
                 errs.append(f"{pre}: no runs down its bottom")
+    # the easter egg shells: a heart that is one (two lobes over a point, the same on both sides), pink marks that
+    # glow and leave the wall whole, water that's dark, glossy and running down a wall
+    hs = img("heart.png", "RGBA", 128)
+    if hs is not None:
+        a = hs[..., 3]
+        if not (a[70, 64] > 0.95 and a[2, 2] < 0.02 and a[125, 2] < 0.02):
+            errs.append("heart.png: not a heart in the middle of a clear square")
+        if not (a[30, 40] > 0.9 and a[30, 88] > 0.9 and a[16, 64] < 0.1):
+            errs.append(f"heart.png: no two lobes with a cleft between them (lobes {a[30, 40]:.2f} {a[30, 88]:.2f}, cleft {a[16, 64]:.2f})")
+        if not (a[104, 64] > 0.5 and a[104, 30] < 0.05 and a[104, 98] < 0.05 and a[118, 64] < 0.05):
+            errs.append("heart.png: no point at its bottom")
+        if np.abs(a - a[:, ::-1]).mean() > 0.01:
+            errs.append(f"heart.png: its two sides differ ({np.abs(a - a[:, ::-1]).mean():.3f})")
+    for i in range(HEARTS):
+        pre = f"heart_{i}"
+        al = img(f"{pre}_albedo.png", "RGBA", 256)
+        nm = img(f"{pre}_normal.png", "RGB", 256)
+        om = img(f"{pre}_orm.png", "RGB", 256)
+        em = img(f"{pre}_emission.png", "RGB", 256)
+        if al is None or nm is None or om is None or em is None:
+            continue
+        on = al[..., 3] > 0.6
+        if not (0.08 < on.mean() < 0.45 and al[128, 128, 3] > 0.6 and al[2, 2, 3] < 0.02):
+            errs.append(f"{pre}: its cover isn't a heart with clear corners ({on.mean():.2f} of it)")
+            continue
+        r_, g_, b_ = (al[..., k][on].mean() for k in range(3))
+        if not (r_ > 0.8 and r_ > b_ + 0.15 and b_ > g_ + 0.1):
+            errs.append(f"{pre}: not pink where it covers ({r_:.2f} {g_:.2f} {b_:.2f})")
+        if (nm[..., 2] * 2 - 1)[on].mean() < 0.9:
+            errs.append(f"{pre}: its normals don't face out of the wall (a print, not a hole)")
+        if om[..., 0].min() < 0.98:
+            errs.append(f"{pre}: its occlusion darkens the wall (nothing is missing from it)")
+        if em[..., 0][on].mean() < 0.4 or em[..., 0][al[..., 3] < 0.01].mean() > 0.1:
+            errs.append(f"{pre}: its glow isn't the heart's")
+    for kind, count in WETS.items():
+        for i in range(count):
+            pre = f"{kind}_{i}"
+            al = img(f"{pre}_albedo.png", "RGBA", 256)
+            nm = img(f"{pre}_normal.png", "RGB", 256)
+            om = img(f"{pre}_orm.png", "RGB", 256)
+            if al is None or nm is None or om is None:
+                continue
+            on = al[..., 3] > 0.5
+            if not (0.03 < on.mean() < 0.6 and al[2, 2, 3] < 0.02):
+                errs.append(f"{pre}: covers {on.mean():.2f} of its square (a splash, not a blot or nothing)")
+                continue
+            if al[..., :3][on].mean() > 0.1:
+                errs.append(f"{pre}: not dark where it covers ({al[..., :3][on].mean():.3f})")
+            if om[..., 1][on].mean() > 0.15 or om[..., 2].max() > 0.02:
+                errs.append(f"{pre}: not glossy water where it covers (roughness {om[..., 1][on].mean():.2f}, metal {om[..., 2].max():.2f})")
+            if (nm[..., 2] * 2 - 1)[on].mean() < 0.75:
+                errs.append(f"{pre}: its normals don't face out of the surface")
+            yy, xx = np.mgrid[0:256, 0:256]
+            if kind == "wet_drip" and (on & (yy > 256 * 0.7)).sum() < 20:
+                errs.append(f"{pre}: no runs down its bottom")
     for e in errs:
         print("ERROR " + e)
     if errs:
         print("WEAPONFX FAILED")
         return 1
-    print(f"WEAPONFX ok ({CRATERS} craters leaning in {min(leans):.2f}..{max(leans):.2f}, {SCORCHES} scorches, {BLASTS} torn holes, {SMEARS} lead smears, a wad's dent, the powder's soot and grains, {sum(ICHOR.values())} ichor splatters, the noise tiling)")
+    print(f"WEAPONFX ok ({CRATERS} craters leaning in {min(leans):.2f}..{max(leans):.2f}, {SCORCHES} scorches, {BLASTS} torn holes, {SMEARS} lead smears, a wad's dent, the powder's soot and grains, {sum(ICHOR.values())} ichor splatters, a heart and {HEARTS} heart prints, {sum(WETS.values())} wet patches, the noise tiling)")
     return 0
 
 

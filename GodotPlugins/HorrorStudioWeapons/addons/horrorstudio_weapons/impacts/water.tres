@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="HSImpact" format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_weapons/impacts/impact.gd" id="1_impact"]
+[ext_resource type="AudioStream" path="res://addons/horrorstudio_weapons/sounds/water_splash.ogg" id="2_sound"]
+
+[resource]
+script = ExtResource("1_impact")
+title = "Water"
+mark = "wet"
+mark_size_m = 0.24
+mark_jitter = 0.35
+keep = 60
+embers_s = 0.0
+fade_s = 24.0
+merge_m = 0.0
+soot_m = 0.0
+powder_m = 0.0
+wad_m = Vector2(0, 0)
+dust = 0
+chips = 0
+sparks = 0
+debris_speed = 1.6
+debris_scale = 1.0
+debris_max = 16
+droplets = 12
+mist = 5
+spray_color = Color(0.78, 0.89, 1, 1)
+douse_m = 0.4
+radius_m = 0.0
+sound = ExtResource("2_sound")
