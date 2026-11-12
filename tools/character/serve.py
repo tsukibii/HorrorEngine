@@ -69,6 +69,40 @@ HAIR = ROOT / "Content" / "Studio" / "Hair"                     # hairstyles to 
 SALON_FILES = {"salon.json", "salon_bake.json", "salon.glb", "salon_base.glb"}   # the salon's hair: People/<name>/salon/ or Hair/<style>/
 HAIR_FILES = SALON_FILES
 REFS = HAIR / "References"                                       # the salon's locked references (tools/gshair.py reference)
+HAIR2 = ROOT / "Content" / "Studio" / "Hair2"                   # the hair editor v2.0 (tools/character/hair2, docs/HAIR_V2.md): the fixed pores, the styles' pictures, your own styles
+HAIR2_PREVIEW = ROOT / "Saved" / "Hair2" / "preview"            # Godot's pictures of a character's hair (Preview in Godot)
+
+
+def my_hair2():
+    """your own hair editor styles (Content/Studio/Hair2/my_styles.json): {id: {label, style, set}}"""
+    f = HAIR2 / "my_styles.json"
+    d = json.loads(f.read_text(encoding="utf-8")) if f.is_file() else {}
+    return {"about": "styles saved from the Character Studio's Hair editor v2.0: the style each started from and what differs", "styles": d.get("styles", {})}
+
+
+def hair2_godot(name, req):
+    """Preview in Godot: the character's head and its hair editor hair made by node (hair2/make.mjs, the engine the page
+    runs) and pictured by Godot as a game wears it (tools/godot/hair2_check.py shots) -> (the sheet's file, what to say)"""
+    body = PEOPLE / name / "body.bin"
+    if not body.is_file():
+        raise ValueError("save the character first (its body.bin)")
+    HAIR2_PREVIEW.mkdir(parents=True, exist_ok=True)
+    sets, glb, sheet = HAIR2_PREVIEW / f"{name}.json", HAIR2_PREVIEW / f"{name}.glb", HAIR2_PREVIEW / f"{name}.jpg"
+    sets.write_text(json.dumps({"style": req.get("style"), "set": req.get("set") or {}}), encoding="utf-8")
+    r = subprocess.run(["node", str(HERE / "hair2" / "make.mjs"), "--bodybin", str(body), "--settings", str(sets), "--out", str(glb)], capture_output=True, text=True, timeout=300)
+    if r.returncode != 0 or not glb.is_file():
+        raise ValueError("the hair couldn't be made: " + (r.stderr or r.stdout).strip().splitlines()[-1][:300] if (r.stderr or r.stdout).strip() else "the hair couldn't be made")
+    made = next((l for l in r.stdout.splitlines() if "{" in l), "")
+    r = subprocess.run([sys.executable, str(ROOT / "tools" / "godot" / "hair2_check.py"), "shots", "--glb", str(glb), "--out", str(HAIR2_PREVIEW / name), "--tag", name,
+                        "--shots", "front,q,side,back", "--frame", str(req.get("frame") or "bust"), "--origin", "0,0,0", "--sheet", str(sheet), "--height", "540"], capture_output=True, text=True, timeout=1800)
+    if r.returncode != 0 or not sheet.is_file():
+        raise ValueError("Godot couldn't picture it: " + ((r.stdout + r.stderr).strip().splitlines() or ["no output"])[-1][:300])
+    try:
+        st = json.loads(made[made.index("{"):])
+        said = f"{st.get('cards')} locks, {st.get('triangles', 0) + st.get('shellTriangles', 0) + st.get('tailTriangles', 0):,} triangles"
+    except (ValueError, TypeError):
+        said = "pictured"
+    return sheet, said
 REF_RUNS = {}
 def ref_status(name):
     d = REFS / name; p = REF_RUNS.get(name)
@@ -238,6 +272,17 @@ class Handler(BaseHTTPRequestHandler):
             f = (ROOT / "tools" / "shared" if parts[0] == "shared" else ROOT / "Content" / "Studio" / "Env") / parts[1]
             if f.is_file():
                 return self.send(200, f.read_bytes(), "text/javascript" if f.suffix == ".js" else "application/octet-stream")
+        if parts == ["hair2", "pores.bin"]:                                      # the hair editor v2.0's fixed pores (tools/character/hair2/pores.mjs make)
+            f = HAIR2 / "pores.bin"
+            return self.send(200, f.read_bytes(), TYPES[".bin"]) if f.is_file() else self.send(404, {"error": "no pores yet: node tools/character/hair2/pores.mjs make"})
+        if parts[:3] == ["api", "hair2", "thumbs"] and len(parts) == 4 and clean(parts[3]) and parts[3].endswith(".jpg"):   # a style's picture (tools/godot/hair2_check.py thumbs), or one of your own
+            f = HAIR2 / "thumbs" / clean(parts[3])
+            return self.send(200, f.read_bytes(), "image/jpeg") if f.is_file() else self.send(404, {"error": "no picture yet: python tools/godot/hair2_check.py thumbs"})
+        if parts == ["api", "hair2", "styles"]:                                  # your own styles
+            return self.send(200, my_hair2())
+        if parts[:3] == ["api", "hair2", "preview"] and len(parts) == 4 and clean(parts[3]) and parts[3].endswith(".jpg"):   # Godot's picture of a character's hair
+            f = HAIR2_PREVIEW / clean(parts[3])
+            return self.send(200, f.read_bytes(), "image/jpeg") if f.is_file() else self.send(404, {"error": "not pictured yet"})
         if parts[0] == "bodies" and len(parts) == 2 and Path(parts[1]).suffix in (".bin", ".json"):
             f = BODIES / parts[1]
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.is_file() else self.send(404, {"error": "no body"})
@@ -359,6 +404,32 @@ class Handler(BaseHTTPRequestHandler):
                     (CLOTHES / "thumbs" / (outfit_slug(n) + ".jpg")).write_bytes(base64.b64decode(th.split(",", 1)[1]))
             (CLOTHES / "my_outfits.json").write_text(json.dumps(data, indent=1, ensure_ascii=False), encoding="utf-8")
             return self.send(200, data)
+        if parts == ["api", "hair2", "styles"]:                                  # {name, style, set, thumb: a JPEG data URL} kept, or {delete: id}
+            req, data = json.loads(self.body().decode("utf-8")), my_hair2()
+            if req.get("delete"):
+                i = str(req["delete"]); data["styles"].pop(i, None)
+                t = HAIR2 / "thumbs" / f"my_{i}.jpg"
+                if clean(i) and t.is_file(): t.unlink()
+            else:
+                label = str(req.get("name", "")).strip()[:60]
+                i = outfit_slug(label)
+                if not i or not isinstance(req.get("set"), dict):
+                    return self.send(400, {"error": "a name, the style it started from and what differs"})
+                data["styles"][i] = {"label": label, "style": str(req.get("style", "")), "set": req["set"]}
+                th = str(req.get("thumb") or "")
+                if th.startswith("data:image/jpeg;base64,"):
+                    (HAIR2 / "thumbs").mkdir(parents=True, exist_ok=True)
+                    (HAIR2 / "thumbs" / f"my_{i}.jpg").write_bytes(base64.b64decode(th.split(",", 1)[1]))
+            HAIR2.mkdir(parents=True, exist_ok=True)
+            (HAIR2 / "my_styles.json").write_text(json.dumps(data, indent=1, ensure_ascii=False), encoding="utf-8")
+            return self.send(200, data)
+        if parts[:3] == ["api", "hair2", "godot"] and len(parts) == 4 and clean(parts[3]):   # Preview in Godot: {style, set} -> Godot's own pictures of this character's head and hair
+            who = clean(parts[3])
+            try:
+                sheet, said = hair2_godot(who, json.loads(self.body().decode("utf-8") or "{}"))
+            except (ValueError, OSError, subprocess.SubprocessError) as e:
+                return self.send(400, {"error": str(e)})
+            return self.send(200, {"ok": True, "sheet": f"api/hair2/preview/{sheet.name}", "said": said})
         if parts == ["api", "defaults"]:                                         # merged into People/defaults.json, key by key
             f = PEOPLE / "defaults.json"
             PEOPLE.mkdir(parents=True, exist_ok=True)

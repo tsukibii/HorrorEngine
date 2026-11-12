@@ -88,7 +88,9 @@ export function buildGrow({ P, rig, chin, eyes = null }) {            // eyes: t
     ["legs_length", "Leg length", "Proportions", "Longer or shorter legs, hip to ankle, against the torso.", v => 0.1 * v,
       both(s => [limb(`${s}_upleg`, `${s}_upleg`, `${s}_foot`)])],
     ["torso_length", "Torso length", "Proportions", "A longer or a shorter torso, hips to shoulders.", v => 0.1 * v, [{ kind: "shift", d: torso }]],
-    ["neck_length", "Neck length", "Proportions", "A longer or a shorter neck.", v => 0.3 * v, [{ kind: "shift", d: neck }]],
+    // (listed with the neck's other sliders, in Body, after Neck width: the user looked for it there. -1 is about 2.4 cm
+    // off an adult's neck: the head comes down whole and the neck's skin with it by its height, the shoulders stay)
+    ["neck_length", "Neck length", "Body", "A shorter or a longer neck: the head sits lower on the shoulders or higher (-1 about 2.5 cm shorter, a short neck; +1 as much longer).", v => 0.3 * v, [{ kind: "shift", d: neck }], { after: "neck_width" }],
     ["hunch", "Hunch", "Creature", "The back bent forward from the waist to the shoulders, the head still looking ahead (−1: leaning back).", v => 0.26 * v,
       [{ kind: "bend", ...upper, joint: joint("c_spine1"), k: 1 }, { kind: "bend", ...headUp, joint: joint("c_head"), k: -0.72 }]],
     ["hands", "Hands", "Proportions", "Bigger or smaller hands.", v => 0.15 * v, both(s => [scaled(`${s}_wrist`, `${s}_wrist`)])],
@@ -96,7 +98,7 @@ export function buildGrow({ P, rig, chin, eyes = null }) {            // eyes: t
     ["head_size", "Head size", "Proportions", "The head against the body: +1 a head a quarter bigger for the height (a child's; the body under it is made smaller, the height stays as set), −1 smaller.", v => Math.pow(0.8, v) - 1,
       [{ kind: "scale", ...body, joint: joint("c_head") }]],
   ];
-  const controls = C.map(([id, label, group, help, gain, parts]) => {
+  const controls = C.map(([id, label, group, help, gain, parts, more]) => {   // (more: { after }: listed after that control in its group, index.html)
     // what it moves on the base at 1 (the handles' pull, the check): each part's move there
     const D = new Float32Array(N * 3), g1 = gain(1);
     for (const p of parts) {
@@ -110,7 +112,7 @@ export function buildGrow({ P, rig, chin, eyes = null }) {            // eyes: t
     const d = new Float32Array(idx.length * 3); idx.forEach((i, q) => { d[q * 3] = D[i * 3]; d[q * 3 + 1] = D[i * 3 + 1]; d[q * 3 + 2] = D[i * 3 + 2]; });
     for (const p of parts) if (p.kind === "shift") Object.assign(p, (() => { const s = []; for (let i = 0; i < N; i++) if (Math.abs(p.d[i * 3]) + Math.abs(p.d[i * 3 + 1]) + Math.abs(p.d[i * 3 + 2]) > 1e-7) s.push(i);
       const dd = new Float32Array(s.length * 3); s.forEach((i, q) => { dd[q * 3] = p.d[i * 3]; dd[q * 3 + 1] = p.d[i * 3 + 1]; dd[q * 3 + 2] = p.d[i * 3 + 2]; }); return { idx: Uint32Array.from(s), d: dd }; })());
-    return { id, label, group, help, idx: Uint32Array.from(idx), d, prop: true, gain, parts };
+    return { id, label, group, help, idx: Uint32Array.from(idx), d, prop: true, gain, parts, ...(more || {}) };
   });
 
   // the circles on the body: where each is held (a point of the base, its twin across the middle), and what it drags
@@ -210,6 +212,18 @@ export function ageOf(age, base, G, face = 1) {
 export const CUTE = { eye_size: 0.8, eye_spacing: 0.3, face_height: -0.45, jaw_width: -0.5, chin_length: -0.25, chin_width: -0.2, nose_size: -0.45, nose_projection: -0.25, nose_length: -0.35,
                       nose_bridge: -0.25, cheeks: 0.2, face_round: 0.45, cheekbones: -0.25, mouth_width: -0.25, lips: 0.15, brow_ridge: -0.2, forehead_slope: 0.5 };   // (no Forehead height: it lifts the whole crown, under the hair and the hats; the face shortened under the eyes gives the high forehead)
 
+// ---- v2female: a base after the proportions of the user's own Daz3D characters (DECISIONS 2026-11-12, the 1:1: "feel
+// free to create a better preset base head shape called v2female (which still allows face sculpting etc)"). The base
+// itself is in Content/Studio/Bodies/MHR_presets.json (its weights and the sculpt it carries: a slender neck, sculpt.js
+// Neck width, a short narrow lower face, larger eyes, a smaller nose and mouth); picked, it is what the feminine end
+// of the base slider becomes, and every slider still moves from it. This is only what the hair editor's test body
+// adds to it (hair2/node.mjs bodyByName "v2female": her height, and a full bust for tails to rest on)
+export const V2FEMALE = { v2: 1, height: 1.62, anime: true, sculpt: { bust: 2 } };
+// the bodyv2 base (DECISIONS 2026-11-12, a T-pose reference; docs/CHARACTER_STUDIO.md §2g): what the feminine end's BODY
+// becomes when it's picked: MHR weights of its own and the sliders it carries (MHR_presets.json presets.bodyv2,
+// sculpt.bodyv2), fitted to the user's Daz3D T-pose picture. With v2female's head, as a body for the node tools
+export const BODYV2 = { v2: 1, body2: 1, height: 1.63 };
+
 // ---- the creatures (monster mode's presets: the Body tab's cards, DECISIONS 2026-11-11: "add presets for the monster-ish
 // shapes you made so I can use them"). Each is a sculpt (what the sliders show: every one can be moved on from there),
 // the base, its teeth (fangs, points: teeth.js), the build from MHR's own shapes (0 heavier, 1 wider hips and waist,
@@ -282,4 +296,4 @@ export function limits(id, monster, anime = false) {
 // how far a control's whole value may go whatever the sliders say (past it the field turns the skin inside out: a nose
 // narrowed to nothing, lips pushed through the teeth, an arm pinched to a thread): [least, most]
 export const REACH = { nose_size: [-2.3, 9], nose_projection: [-1.7, 9], lips: [-1.6, 9], ears_size: [-1.6, 9], upper_arms: [-2.2, 9], forearms: [-2.2, 9], eye_size: [-2.4, 9], face_height: [-3, 3.4],
-                       skull_back: [-1.2, 9], neck_length: [-1.6, 9], fingers: [-2.4, 9], torso_length: [-2.4, 9], ears_out: [-1.1, 9], ears_point: [-0.5, 9] };
+                       skull_back: [-1.2, 9], neck_length: [-1.6, 9], neck_width: [-1.4, 9], neck_base: [-2.3, 1.9], shoulder_slope: [-3.4, 1.8], fingers: [-2.4, 9], torso_length: [-2.4, 9], ears_out: [-1.1, 9], ears_point: [-0.5, 9] };

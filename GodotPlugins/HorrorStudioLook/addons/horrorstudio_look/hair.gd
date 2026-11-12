@@ -26,7 +26,7 @@ class_name HSHair
 const FINE_GAIN := {"lash_line": 2.2, "lashes": 1.4, "brows": 1.3}
 
 const BAKED := {"hashed": true, "density": 1.15, "root_fade": 0.06, "edge_fade": 0.85, "side_fade": 0.45, "soft": 0.6, "glints": 0.6, "transmission": 1.0, "scatter": 0.35,
-	"kajiya": 0.3, "occlusion": 1.0, "spec_gain": 2.5, "spec_cap": 0.8}
+	"kajiya": 0.3, "occlusion": 1.0, "spec_gain": 2.5, "spec_cap": 0.8, "spec2_own": 0.0, "streak": 0.0}
 
 
 static func shader() -> Shader:
@@ -101,6 +101,11 @@ static func set_bake(m: ShaderMaterial, rec: Dictionary, strands: Texture2D = nu
 		if shell:                                      # the head's hair (the salon's volume bake); brows and lashes keep the soft cut (a lash a pixel wide dithers away)
 			for k in BAKED:
 				m.set_shader_parameter(k, BAKED[k])
+			var own = sh.get("settings")               # the bake's own word over them (the hair editor v2.0: every lock starts at its own root, so its roots fade over millimetres, not the salon's 6% of a lock)
+			if own is Dictionary:
+				for k in own:
+					if BAKED.has(k) and (own[k] is float or own[k] is int):
+						m.set_shader_parameter(k, float(own[k]))
 	var k = rec.get("look")
 	if k is Dictionary:
 		for pair in [["spec1", "spec_color"], ["spec2", "spec2_color"]]:
@@ -123,6 +128,21 @@ static func scalp_material(colour := Color(1, 1, 1)) -> StandardMaterial3D:
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.roughness = 1.0
 	m.metallic_specular = 0.0
+	return m
+
+
+## short hair as shells (hair_shell.gdshader): the tile the file carries, the look's root and tip colours
+static func shell_material(tile: Texture2D, rec: Dictionary = {}) -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = load("res://addons/horrorstudio_look/hair_shell.gdshader")
+	if tile != null:
+		m.set_shader_parameter("texture_tile", tile)
+	var k = rec.get("look")
+	if k is Dictionary:
+		if k.has("root"):
+			m.set_shader_parameter("root_color", Color.html(str(k["root"])))
+		if k.has("tip"):
+			m.set_shader_parameter("tip_color", Color.html(str(k["tip"])))
 	return m
 
 
@@ -151,10 +171,20 @@ static func wear(node: Node, look: Dictionary = {}, glb_path: String = "") -> Ar
 			var old = mi.get_active_material(s)
 			var names: String = mi.name + " " + (mi.mesh.surface_get_name(s) if mi.mesh is ArrayMesh else "") + " " + (old.resource_name if old != null else "")
 			if names.to_lower().contains("scalp") or names.to_lower().contains("brow_fill"):   # the darkened scalp, the brows' see-through fill: colour by vertex
+				if old is BaseMaterial3D and old.albedo_texture != null:   # a painted scalp (the hair editor v2.0's: a dot a pore, docs/HAIR_V2.md): its own texture, matt
+					old.roughness = 1.0
+					old.metallic_specular = 0.0
+					old.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+					continue
 				if not (old is StandardMaterial3D and old.vertex_color_use_as_albedo):
 					mi.set_surface_override_material(s, scalp_material(old.albedo_color if old is BaseMaterial3D else Color(1, 1, 1)))
 				continue
 			if not is_hair(names):
+				continue
+			if names.to_lower().contains("shell"):       # short hair as shells (the hair editor v2.0's: hair_shell.gdshader)
+				if not (old is ShaderMaterial):
+					var rec_s = recs.get(old.resource_name if old != null else "")
+					mi.set_surface_override_material(s, shell_material(old.albedo_texture if old is BaseMaterial3D else null, rec_s if rec_s is Dictionary else {}))
 				continue
 			if old is ShaderMaterial and (old.shader == shader() or old.shader == fine_shader()):
 				set_look(old, look)

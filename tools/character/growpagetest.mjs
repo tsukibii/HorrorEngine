@@ -133,14 +133,18 @@ try {
 
   // ---- saved and opened again
   await age(10); await tog("#cuteOn", true); await page.waitForTimeout(1000);
+  await tog("#v2On", true); await tog("#b2On", true); await page.waitForTimeout(800);            // (the v2female and the bodyv2 bases on, so the save and the reopening below carry them too)
   await B(() => { document.querySelector("#status").textContent = ""; }); await page.click("#save");
   await page.waitForFunction(() => /saved/.test(document.querySelector("#status").textContent), null, { timeout: 60000 });
   const saved = await B(async n => (await fetch(`api/people/${n}`)).json(), NAME);
+  say(saved.v2 === 1, "and the v2female base saved with it");
   say(saved.age?.age === 10 && saved.cute?.on === true && saved.monster === false && saved.height === 1.39, `saved with the character: age ${saved.age?.age}, Cutify ${saved.cute?.on ? "on" : "off"} at ${saved.cute?.amount}, ${saved.height} m`);
   await page.reload(); await page.waitForFunction(() => window.__body && window.__body.SCULPT, null, { timeout: 180000 });
   await page.selectOption("#who", NAME);
   await page.waitForFunction(n => window.__body.who === n && /points/.test(document.querySelector("#hud").textContent), NAME, { timeout: 180000 }); await page.waitForTimeout(4000);
   const again = await B(() => ({ st: window.__body.st.age, cute: window.__body.st.cute, out: document.querySelector("#ageRows output").textContent, on: document.querySelector("#cuteOn").checked, h: window.__body.st.height }));
+  { const v = await B(() => ({ v2: window.__body.st.v2, on: document.querySelector("#v2On").checked })); say(v.v2 === 1 && v.on, "opened again with the v2female base on, its switch set"); await tog("#v2On", false);
+    const w = await B(() => ({ b2: window.__body.st.b2, on: document.querySelector("#b2On").checked })); say(w.b2 === 1 && w.on, "and with the bodyv2 base on, its switch set"); await tog("#b2On", false); await page.waitForTimeout(800); }
   say(again.st.age === 10 && again.cute.on && again.out === "10" && again.on && again.h === 1.39, "opened again the same (age 10, Cutify on)");
   await page.waitForFunction(() => window.__body.salonHair, null, { timeout: 120000 }).catch(() => null);
   const hair10 = await hairOff(baked.ids);
@@ -154,6 +158,46 @@ try {
   const bald = await B(async () => { const b = window.__body; await b.loadSalon().catch(() => null); return { hair: !!b.salonHair, hud: document.querySelector("#hud").textContent }; });
   say(!bald.hair && !/baked on another head/.test(bald.hud), "its hair taken away: bald again, nothing said");
   await age(18); await tog("#cuteOn", false); await B(() => { document.querySelector("#handlesOn").checked = false; window.__body.setPose("rest"); });
+
+  // ---- the v2female base (MHR_presets.json; DECISIONS 2026-11-12, the 1:1): its button makes the feminine end it, the
+  // neck slender; its switch off, the feminine base again
+  { const meas = () => B(() => { const b = window.__body, P = b.neutralBody(); let lo = Infinity, hi = -Infinity; for (let i = 1; i < P.length; i += 3) { lo = Math.min(lo, P[i]); hi = Math.max(hi, P[i]); }
+      let best = 9; for (let f = 0.8; f < 0.885; f += 0.004) { const y = lo + (hi - lo) * f; let w = 0; for (let i = 0; i < P.length; i += 3) if (Math.abs(P[i + 1] - y) < 0.004 && Math.abs(P[i]) < 0.14 && Math.abs(P[i]) > w) w = Math.abs(P[i]); if (w > 0.01) best = Math.min(best, w); }   // (the neck from the front at its narrowest)
+      return { neck: best * 200, v2: b.st.v2, on: document.querySelector("#v2On").checked, base: b.st.base }; });
+    await B(() => document.querySelector('.bases button[data-base="-1"]').click()); await page.waitForTimeout(2000); const fem = await meas();
+    await B(() => document.querySelector('.bases button[data-v2="1"]').click()); await page.waitForTimeout(2000); const v2 = await meas();
+    say(!fem.v2 && !fem.on && v2.v2 === 1 && v2.on && v2.base === -1 && v2.neck < fem.neck - 0.8 && v2.neck > 6, `the v2female button: the neck ${fem.neck.toFixed(1)} cm at its narrowest on the feminine base, ${v2.neck.toFixed(1)} on v2female, its switch on`);
+    await tog("#v2On", false); await page.waitForTimeout(2000); const off = await meas();
+    say(!off.v2 && Math.abs(off.neck - fem.neck) < 0.05, `its switch off: the feminine base again (${off.neck.toFixed(1)} cm)`);
+    // the neck's length (grow.js Neck length; DECISIONS 2026-11-12, necks: "a modifier / slider in general to make necks
+    // shorter"): its row with the neck's other sliders in Body, right after Neck width, saying what it does; dragged to
+    // -1 the head comes down toward the shoulders (the top of the head over the top of the shoulder 9 cm out), and
+    // back at 0 the body is as it was
+    const rows = await B(() => { const d = [...document.querySelectorAll("#sculptRows details")].find(d => d.querySelector("summary").textContent === "Body"), p = [...document.querySelectorAll("#sculptRows details")].find(d => d.querySelector("summary").textContent === "Proportions");
+      const names = e => [...e.querySelectorAll(".row > span")].map(x => x.textContent); return { body: names(d), props: names(p), help: window.__body.sculptRow.neck_length.title || "" }; });   // (a sculpt row's help is its tooltip)
+    const at = rows.body.indexOf("Neck length");
+    say(at > 0 && rows.body[at - 1] === "Neck width" && rows.body.filter(n => n === "Neck length").length === 1 && !rows.props.includes("Neck length") && /shorter/.test(rows.help) && /cm/.test(rows.help),
+      `Neck length is in Body right after ${rows.body[at - 1]} (${rows.body.slice(Math.max(0, at - 2), at + 2).join(", ")}), not in Proportions, and says "${rows.help}"`);
+    const lift = () => B(() => { const b = window.__body, P = b.neutralBody(); let lo = Infinity, hi = -Infinity; for (let i = 1; i < P.length; i += 3) { lo = Math.min(lo, P[i]); hi = Math.max(hi, P[i]); }
+      let top = -9; for (let i = 0; i < P.length; i += 3) if (Math.abs(Math.abs(P[i]) - 0.09) < 0.005 && P[i + 1] - lo < 0.89 * (hi - lo) && P[i + 1] > top) top = P[i + 1];   // (under the ears: the shoulder's top 9 cm out)
+      return { gap: (hi - top) * 100, h: hi - lo }; });
+    const setNeck = v => B(v => { const r = window.__body.sculptRow.neck_length.querySelector("input"); r.value = v; r.oninput(); }, v);
+    const n0 = await lift(); await setNeck(-1); await page.waitForTimeout(1500); const n1 = await lift(); await setNeck(0); await page.waitForTimeout(1500); const n2 = await lift();
+    say(n0.gap - n1.gap > 1.8 && n0.gap - n1.gap < 3 && Math.abs(n2.gap - n0.gap) < 0.05 && Math.abs(n1.h - n0.h) < 0.002,
+      `the Neck length slider at -1: the head ${(n0.gap - n1.gap).toFixed(1)} cm nearer the shoulder's top (its top ${n0.gap.toFixed(1)} cm over it, then ${n1.gap.toFixed(1)}), the height as set; back at 0 as it was`);
+    // the bodyv2 base (MHR_presets.json presets.bodyv2; DECISIONS 2026-11-12, a T-pose reference): its button makes the
+    // feminine end's body it, with v2female's head; wide hips, short arms; its switch off, v2female's body again
+    const build = () => B(() => { const b = window.__body, P = b.neutralBody(); let lo = Infinity, hi = -Infinity; for (let i = 1; i < P.length; i += 3) { lo = Math.min(lo, P[i]); hi = Math.max(hi, P[i]); }
+      let hips = 0, reach = 0; const y = lo + 0.51 * (hi - lo); for (let i = 0; i < P.length; i += 3) { const x = Math.abs(P[i]); if (Math.abs(P[i + 1] - y) < 0.006 && x < 0.26 && x > hips) hips = x; if (x > reach) reach = x; }
+      return { hips: hips * 200, reach: reach * 100, h: hi - lo, b2: b.st.b2, v2: b.st.v2, on: document.querySelector("#b2On").checked, von: document.querySelector("#v2On").checked }; });
+    await B(() => document.querySelector('.bases button[data-v2="1"]').click()); await page.waitForTimeout(2000); const v2b = await build();
+    await B(() => document.querySelector('.bases button[data-b2="1"]').click()); await page.waitForTimeout(2500); const b2b = await build();
+    say(!v2b.b2 && !v2b.on && b2b.b2 === 1 && b2b.on && b2b.v2 === 1 && b2b.von && b2b.hips > v2b.hips + 4 && b2b.reach < v2b.reach - 2 && Math.abs(b2b.h - v2b.h) < 0.003,
+      `the bodyv2 button: the hips ${v2b.hips.toFixed(1)} cm across on v2female, ${b2b.hips.toFixed(1)} on bodyv2, the hands ${(v2b.reach - b2b.reach).toFixed(1)} cm nearer the body, as tall as set, both switches on`);
+    await tog("#b2On", false); await page.waitForTimeout(2000); const offb = await build();
+    say(!offb.b2 && offb.v2 === 1 && Math.abs(offb.hips - v2b.hips) < 0.05, `its switch off: v2female's body again (${offb.hips.toFixed(1)} cm)`);
+    await tog("#v2On", false);
+    await B(() => document.querySelector('.bases button[data-base="0"]').click()); await page.waitForTimeout(1000); }
 
   // ---- the creatures: cards that are always there (DECISIONS 2026-11-11), a click makes the character that creature
   const cards = await B(async () => { const cs = [...document.querySelectorAll("#creatureCards .card[data-creature]")], out = [];

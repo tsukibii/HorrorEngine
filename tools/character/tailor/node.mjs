@@ -53,10 +53,11 @@ export function mhrBody(m, weights = [], height = 1.7, sculpt = null, { anime = 
     (or none: the adult) on a base (-1 feminine .. 1 masculine), `sculpt` on top ({control: value}), scaled to `height`
     (an age's average when not given), feet on the floor. Returns { P, T, scale, F: each point's own scale (the joints'),
     weights, age: grow.js's ageOf, gather: a dress form's gathered points (pairs: a point, the point it lies on) } */
-export function grownBody(m, { age = 18, base = 0, height = null, sculpt = {}, monster = false, anime = false, form = false } = {}) {   // anime, form: as mhrBody's
-  const G = grow(m), A = GW.ageOf(age, base, G.grow), pre = presetsFile().presets, f = pre.feminine || [], ms = pre.masculine || [], t = base * A.sexed, hk = Math.abs(base) * (0.4 + 0.6 * A.sexed);
+export function grownBody(m, { age = 18, base = 0, v2 = 0, body2 = 0, trial = null, height = null, sculpt = {}, monster = false, anime = false, form = false } = {}) {   // anime, form: as mhrBody's; v2: how much the feminine end is the v2female base (0, or 1: index.html's switch); body2: how much its body is the bodyv2 base's (its weights and the sculpt it carries); trial: { weights, sculpt } in bodyv2's place (a base being fitted)
+  const PF = presetsFile(), G = grow(m), A = GW.ageOf(age, base, G.grow), pre = PF.presets, f0 = pre.feminine || [], f2 = pre.v2female || f0, f3 = trial?.weights || pre.bodyv2 || f0, f = f0.map((v, i) => v + ((f2[i] ?? v) - v) * v2 + ((f3[i] ?? v) - v) * body2), ms = pre.masculine || [], t = base * A.sexed, hk = Math.abs(base) * (0.4 + 0.6 * A.sexed);
   const weights = Array.from({ length: m.k }, (_, i) => i < 20 ? (f[i] || 0) * (1 - t) / 2 + (ms[i] || 0) * (1 + t) / 2 : hk * ((base < 0 ? f : ms)[i] || 0));
-  const carried = id => ((presetsFile().sculpt?.feminine || {})[id] || 0) * (1 - base) / 2 + ((presetsFile().sculpt?.masculine || {})[id] || 0) * (1 + base) / 2;
+  const SF = PF.sculpt || {}, B2 = trial?.sculpt || SF.bodyv2 || {}, fem = id => { const a = (SF.feminine || {})[id] || 0; return a + (((SF.v2female || {})[id] || 0) - a) * v2 + (body2 && id in B2 ? (B2[id] - a) * body2 : 0); };   // (bodyv2 changes only what it lists: the head's and the neck's are v2female's or the feminine base's)
+  const carried = id => fem(id) * (1 - base) / 2 + ((SF.masculine || {})[id] || 0) * (1 + base) / 2;
   const value = id => { const v = (sculpt[id] || 0) + carried(id) + (A.sculpt[id] || 0); if (!v) return 0; const R = GW.REACH[id], [lin, lim] = GW.limits(id, monster, anime); let o = GW.soften(v, lin, lim); if (R) o = Math.min(R[1], Math.max(R[0], o)); return o; };
   const X = new Float32Array(m.P), F = new Float32Array(m.n).fill(1);
   for (let k = 0; k < m.k; k++) { const w = weights[k]; if (!w) continue; const o = k * m.n * 3; for (let i = 0; i < X.length; i++) X[i] += w * m.shapes[o + i]; }

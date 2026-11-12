@@ -80,7 +80,7 @@
 <body>
 <header>
   <b>CHARACTER STUDIO</b>
-  <nav id="tabs"><button data-tab="body" class="on">Body</button><button data-tab="face">Face</button><button data-tab="expr">Expressions</button><button data-tab="skin">Skin</button><button data-tab="layers">Layers</button><button data-tab="brows">Brows &amp; lashes</button><button data-tab="hair">Hair</button><button data-tab="clothes">Clothes</button><button data-tab="acc">Accessories</button></nav>
+  <nav id="tabs"><button data-tab="body" class="on">Body</button><button data-tab="face">Face</button><button data-tab="expr">Expressions</button><button data-tab="skin">Skin</button><button data-tab="layers">Layers</button><button data-tab="brows">Brows &amp; lashes</button><button data-tab="hair">Hair</button><button data-tab="hair2" title="Hair grown from fixed pores on the scalp, shaped by sliders (docs/HAIR_V2.md)">Hair editor v2.0</button><button data-tab="clothes">Clothes</button><button data-tab="acc">Accessories</button></nav>
   <select id="who" title="Each character keeps its pictures and settings in Content/Studio/People/&lt;name&gt;/ (git-ignored)"></select>
   <input id="newName" placeholder="new character" style="width:120px"> <button id="make">New</button>
   <button id="save" title="The settings into Content/Studio/People/&lt;name&gt;/character.json">Save</button>
@@ -103,8 +103,10 @@
       <h3>View</h3>
       <div id="studioRows"></div>
       <h3>Base</h3>
-      <div class="bases"><button data-base="-1">Feminine</button><button data-base="0">Average</button><button data-base="1">Masculine</button></div>
+      <div class="bases"><button data-base="-1">Feminine</button><button data-base="0">Average</button><button data-base="1">Masculine</button><button data-base="-1" data-v2="1" title="The feminine base with v2female's head and neck">v2female</button><button data-base="-1" data-v2="1" data-b2="1" title="v2female's head on the bodyv2 body: a medium, fuller build after the T-pose reference">bodyv2</button></div>
       <div id="baseRows"></div>
+      <label class="tog"><input type="checkbox" id="v2On"><span>v2female<small>What the feminine end of the base becomes: a slender, straight neck, a short, narrow lower face, larger eyes, a smaller nose and mouth. Every slider still moves from it; toward masculine it fades out.</small></span></label>
+      <label class="tog"><input type="checkbox" id="b2On"><span>bodyv2<small>What the feminine end's body becomes: a medium, fuller build after the T-pose reference (wide hips, full thighs, a soft waist, short arms), with the Bust and the waist at their middle. Every slider still moves from it; toward masculine it fades out.</small></span></label>
       <h3>Age</h3>
       <div id="ageRows"></div>
       <p class="note" id="ageNote"></p>
@@ -189,6 +191,10 @@
       <p class="note">Made here, no models (tools/character/accessories.js): glasses from the eyes and the face's own points; a piercing, a sticker or the eyepatch held to the skin where it sits, so it follows every expression (put it on a spot from the list, or Place by clicking on the body); a choker round the neck as it is. Saved with the character as plain settings: change any of it later.</p>
     </section>
 
+    <section data-tab="hair2" hidden>
+      <div id="hair2Rows"></div>
+    </section>
+
     <section data-tab="clothes" hidden>
       <h3>Clothes</h3>
       <div id="clothesRows"></div>
@@ -219,6 +225,7 @@ import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import * as SKINSH from "./skinshader.js";
 import { TouchUp, BRUSHES, hit as touchHit } from "./touchup.js";
 import { mountLayers } from "./layersui.js";
+import { mountHair2 } from "./hair2/ui.js";
 import * as EYEPAINT from "/shared/eye.js";
 import * as SC from "./sculpt.js";
 import * as GW from "./grow.js";
@@ -293,7 +300,7 @@ const FACE = [   // face_mesh.py's settings (its DEFAULTS), plus how much of the
 ];
 const st = { base: 0, height: 1.7, shape: new Array(H.shapes).fill(0), face: Object.fromEntries(FACE.map(f => [f[0], f[5]])),
              expr: new Float32Array(ENAMES.length), exprAmt: 1, sculpt: {},   // sculpt: the named controls' values (sculpt.js, grow.js)
-             age: { age: GW.AGE_ADULT, face: 1 }, cute: { on: false, amount: 0.6 }, monster: false, anime: false };   // grow.js: the age (18: the adult), Cutify, monster mode, Anime (the Bust's long slider)
+             age: { age: GW.AGE_ADULT, face: 1 }, cute: { on: false, amount: 0.6 }, monster: false, anime: false, v2: 0, b2: 0 };   // grow.js: the age (18: the adult), Cutify, monster mode, Anime (the Bust's long slider); v2: the v2female base (1: the feminine end is it); b2: the bodyv2 base (1: the feminine end's body is it)
 let WHO = null, DELTA = null, PICS = [], REPORT = null, FACEBAKE = null, LAY = null, WEAR = null, NAILAT = null;   // LAY: the paint layers (layersui.js); WEAR: the accessories (accessories.js); NAILAT: the fingernails' places (nails.js)
 
 const fmt = (v, step) => (+v).toFixed(step < 0.01 ? 3 : step < 1 ? 2 : 0);
@@ -322,7 +329,9 @@ for (const [g, [a, b]] of Object.entries(INFO.groups)) {
     shapeSet[i] = slider(d, i, `${i}: ${INFO.labels[i] || ""}`, -3, 3, 0.05, 0, "", (v, row) => { st.shape[i] = v; row.classList.toggle("moved", v !== 0); changed("body"); }, INFO.labels[i]);
   $("#shapeRows").append(d);
 }
-for (const b of document.querySelectorAll(".bases button")) b.onclick = () => { st.base = +b.dataset.base; set.base(st.base); changed("body"); };
+for (const b of document.querySelectorAll(".bases button")) b.onclick = () => { st.base = +b.dataset.base; st.v2 = b.dataset.v2 ? 1 : 0; st.b2 = b.dataset.b2 ? 1 : 0; $("#v2On").checked = !!st.v2; $("#b2On").checked = !!st.b2; set.base(st.base); changed("body"); };
+$("#b2On").onchange = () => { st.b2 = $("#b2On").checked ? 1 : 0; changed("body"); };   // the bodyv2 base (MHR_presets.json: weights of its own and the sliders it carries): what the feminine end's body is
+$("#v2On").onchange = () => { st.v2 = $("#v2On").checked ? 1 : 0; changed("body"); };   // the v2female base (MHR_presets.json: its weights and the sculpt it carries): what the feminine end is
 $("#resetShape").onclick = () => { st.shape.fill(0); shapeSet.forEach(f => f(0)); document.querySelectorAll(".row.moved").forEach(r => r.classList.remove("moved")); changed("body"); };
 
 function weights() {                                   // the base blended in, the sliders on top
@@ -330,7 +339,7 @@ function weights() {                                   // the base blended in, t
   // one picked, MHR's own at 0, as they always were (faces, photo fits and hair made on them stay)
   // (a child's: the two builds part at puberty, grow.js: at eight the body is halfway between them whichever base is
   // picked, the head and the hands most of the way to MHR's own)
-  const sx = AGE.sexed, t = st.base * sx, f = PRESETS.feminine || [], m = PRESETS.masculine || [], [a, b] = (INFO.groups || H.groups || {}).body || [0, 0], hk = Math.abs(st.base) * (0.4 + 0.6 * sx);
+  const sx = AGE.sexed, t = st.base * sx, f0 = PRESETS.feminine || [], f2 = st.v2 && PRESETS.v2female ? PRESETS.v2female : f0, f3 = st.b2 && PRESETS.bodyv2 ? PRESETS.bodyv2 : f0, f = f0.map((v, i) => v + ((f2[i] ?? v) - v) * (st.v2 || 0) + ((f3[i] ?? v) - v) * (st.b2 || 0)), m = PRESETS.masculine || [], [a, b] = (INFO.groups || H.groups || {}).body || [0, 0], hk = Math.abs(st.base) * (0.4 + 0.6 * sx);
   return st.shape.map((v, i) => v + (i >= a && i < b ? (f[i] || 0) * (1 - t) / 2 + (m[i] || 0) * (1 + t) / 2 : hk * ((st.base < 0 ? f : m)[i] || 0)));
 }
 // the age's build (grow.js ageOf: what a child's body and face add to the sculpt, how far the builds have parted), worked
@@ -338,7 +347,8 @@ function weights() {                                   // the base blended in, t
 let AGE = { sculpt: {}, young: 0, sexed: 1 }, GROW = null;
 function agedNow() { AGE = GROW && st.age.age < GW.AGE_ADULT ? GW.ageOf(st.age.age, st.base, GROW, st.age.face) : { sculpt: {}, young: 0, sexed: 1 }; }
 // the sculpt a base carries, blended as its body is; the character's own sculpt (the sliders, the circles) goes on top
-const baseSculpt = id => (BASE_SCULPT.feminine?.[id] || 0) * (1 - st.base) / 2 + (BASE_SCULPT.masculine?.[id] || 0) * (1 + st.base) / 2;
+const femSculpt = id => { const a = BASE_SCULPT.feminine?.[id] || 0, B2 = BASE_SCULPT.bodyv2; return a + ((BASE_SCULPT.v2female?.[id] || 0) - a) * (st.v2 || 0) + (st.b2 && B2 && id in B2 ? (B2[id] - a) * st.b2 : 0); };   // (the feminine end's: v2female's when that base is picked; bodyv2 changes only what it lists, the body's)
+const baseSculpt = id => femSculpt(id) * (1 - st.base) / 2 + (BASE_SCULPT.masculine?.[id] || 0) * (1 + st.base) / 2;
 // a control's whole value: the character's own slider, its base's, its age's and Cutify's, kept within reach (a person's
 // sliders run to 1, a monster's to 3: their sums ease into a limit a little past that, so a small nose made smaller by
 // an age and by Cutify never turns inside out). Sums a character could have before (a base's and a slider's) are as they were
@@ -365,7 +375,7 @@ function tab(name) {
   if (salon) { try { localStorage.setItem("studio:tab", name); } catch (e) { } return; }
   document.querySelectorAll("aside section").forEach(x => { x.hidden = x.dataset.tab !== name; });
   if (typeof showGarmentHandles === "function") showGarmentHandles();
-  if (["face", "brows", "expr", "skin", "layers", "hair", "acc"].includes(name) && orbit.focus !== "head") $('#views button[data-v="head"]').click();
+  if (["face", "brows", "expr", "skin", "layers", "hair", "hair2", "acc"].includes(name) && orbit.focus !== "head") $('#views button[data-v="head"]').click();
   try { localStorage.setItem("studio:tab", name); } catch (e) { }
 }
 for (const b of document.querySelectorAll("#tabs button")) b.onclick = () => tab(b.dataset.tab);
@@ -780,7 +790,7 @@ function libRows(c) {                                  // a worn library garment
 }
 const grownKey = () => { const a = st.age.age < GW.AGE_ADULT ? [st.age.age, st.age.face] : 0, c = st.cute.on && st.cute.amount ? st.cute.amount : 0, an = st.anime && Math.abs(sculptValue("bust")) > 1;   // (Anime only where it changes the body: the Bust past the plain slider's ends)
   return a || c || st.monster || an ? [[a, c, st.monster ? 1 : 0, ...(an ? ["anime"] : [])]] : []; };
-const bodyKey = () => JSON.stringify([weights().map(v => +v.toFixed(4)), st.height, DELTA ? DELTA.idx.length : 0, st.face?.strength, st.sculpt, ...grownKey()]);   // (the sculpt too: neutralBody carries it; the age, Cutify and monster mode when set)
+const bodyKey = () => JSON.stringify([weights().map(v => +v.toFixed(4)), st.height, DELTA ? DELTA.idx.length : 0, st.face?.strength, st.sculpt, st.v2 || 0, st.b2 || 0, ...grownKey()]);   // (the sculpt too: neutralBody carries it; the age, Cutify and monster mode when set; the v2female base: its weights are the feminine base's, only the sculpt it carries differs)
 function dress() {                                     // the worker makes every garment worn, on the body as it is now
   if (!Object.keys(DESIGNS).length) return;
   const list = st.clothes.filter(c => DESIGNS[c.design]).map(c => [c.design, c.color, lookOf(c), c.edit]), id = ++TAILOR_JOB, key = bodyKey();
@@ -1410,6 +1420,7 @@ function compose() {                                   // POS: RAW in its propor
   if (typeof refit === "function") refit();           // the clothes cut again once the body holds still
   poseGarments();                                       // and shown in the body's pose meanwhile
   thinLater();
+  HAIR2?.bodyChanged();                                 // the hair editor v2.0's hair grows again on a body that changed
 }
 // the grafted eyes drawn: their points as placed (the Studio's space, unposed: the procedural skin's), moved with the view's
 // pose by their triangles' moves (the head holds still in it), their normals MHR's where they meet it
@@ -1448,13 +1459,18 @@ function showPose() {
 // the baked hair in the view's pose: the T-pose stands the neck up, the body below the head moving forward under it
 // (pose.js); the hair hangs from the head, so whatever of it lies lower (down the back, over the shoulders) goes with
 // the body, by the same share at each height (pose.js shiftAt). Done again only when that shift or the hair changes
-let HAIRPOSE = "";
+let HAIRPOSE = "", HAIR2POSE = "";
 function poseHair() {
-  const S = POSED?.shift, key = SALONH ? `${SALONH.uuid}|${S ? [S.dz, S.yH, S.yC].map(v => v.toFixed(5)).join() : "-"}` : "";
+  const S = POSED?.shift, at = S ? [S.dz, S.yH, S.yC].map(v => v.toFixed(5)).join() : "-", key = SALONH ? `${SALONH.uuid}|${at}` : "";
+  const G2 = HAIR2?.group, key2 = G2 ? `${G2.userData.rev}|${at}|${G2.matrix.elements.map(v => v.toFixed(5)).join()}` : "";   // (the hair editor v2.0's hair the same way: made again, its count goes up)
+  if (G2 && key2 !== HAIR2POSE) { HAIR2POSE = key2; shiftHair(G2); }
   if (!SALONH || key === HAIRPOSE) return; HAIRPOSE = key;
-  rig.updateMatrixWorld(true);
+  shiftHair(SALONH);
+}
+function shiftHair(G) {
+  rig.updateMatrixWorld(true); G.updateMatrixWorld(true);
   const toRig = new THREE.Matrix4().copy(rig.matrixWorld).invert(), M = new THREE.Matrix4(), Mi = new THREE.Matrix4(), v = new THREE.Vector3();
-  SALONH.traverse(o => {
+  G.traverse(o => {
     if (!o.isMesh) return;
     const a = o.geometry.attributes.position, R0 = o.userData.rest || (o.userData.rest = Float32Array.from(a.array));
     M.multiplyMatrices(toRig, o.matrixWorld); Mi.copy(M).invert();
@@ -2261,7 +2277,9 @@ const sliderSpan = id => { const r = reach(), sp = st.anime ? GW.SPAN[id] : null
 const sculptSet = {}, sculptRow = {}, sculptGroup = {};
 if (SCULPT) for (const g of SCULPT_GROUPS) {
   const d = el("details", { open: g === "Forehead" }, el("summary", { textContent: g })); sculptGroup[g] = d;
-  for (const c of SCULPT.controls.filter(c => c.group === g)) {
+  const rows = SCULPT.controls.filter(c => c.group === g && !c.after);   // (a control that names one to come after is listed there: Neck length, a proportion, with the neck's other sliders)
+  for (const c of SCULPT.controls.filter(c => c.group === g && c.after)) { const i = rows.findIndex(x => x.id === c.after); rows.splice(i < 0 ? rows.length : i + 1, 0, c); }
+  for (const c of rows) {
     sculptSet[c.id] = slider(d, c.id, c.label, -1, 1, 0.01, 0, "", (v, row) => { st.sculpt[c.id] = v; row.classList.toggle("moved", v !== 0); if (c.id === "bust") animeBust(v); changed("sculpt"); }, c.help);
     sculptRow[c.id] = d.lastElementChild;
   }
@@ -2337,7 +2355,7 @@ function useCreature(key, o = {}) {                    // o.look (true): with it
   } else {
     st.sculpt = { ...m.sculpt }; if (m.height) st.height = m.height;
     if (st.age.age < GW.AGE_ADULT) { st.age.age = GW.AGE_ADULT; ageSet.age(st.age.age); ageUI(); }   // (a creature is shaped from the adult: an imp is small, not a child; the age is still yours after)
-    if (m.base !== undefined) { st.base = m.base; set.base(st.base); }
+    if (m.base !== undefined) { st.base = m.base; set.base(st.base); st.v2 = 0; $("#v2On").checked = false; st.b2 = 0; $("#b2On").checked = false; }
     st.shape.fill(0); for (const [i, v] of Object.entries(m.shape || {})) st.shape[+i] = v;   // its build from MHR's own shapes
     st.shape.forEach((v, i) => shapeSet[i](v)); document.querySelectorAll("#shapeRows .row").forEach((r, i) => r.classList.toggle("moved", st.shape[i] !== 0));
   }
@@ -2464,6 +2482,7 @@ let LAST = performance.now() / 1000, ACC = 0;
 renderer.setAnimationLoop(() => {
   if (!EYES_IN) { rig.add(EYES.L, EYES.R, HOLES, ...Object.values(LIDVIEW.line), ...Object.values(LIDVIEW.dots)); EYES_IN = true; }
   if (BL_READY) lightBrowLash();
+  HAIR2?.light();
   const now = performance.now() / 1000, dt = Math.min(0.1, now - LAST); LAST = now;
   place(); STUDIO.tick();
   const sz = renderer.getSize(new THREE.Vector2()), R = viewRect(sz.x, sz.y), aspect = R.w / R.h;
@@ -3029,6 +3048,15 @@ function lightBrowLash() {                             // the hair shader's ligh
 // on no head we know is left where it was baked and the view says so. It's only placed again: hair that lay on the
 // shoulders was shaped on the body it had (Hair, Bake makes it again)
 var SALONH = null, HAIRINFO = null, HAIRSTALE = false;
+// the hair editor v2.0 (hair2/ui.js, docs/HAIR_V2.md): hair grown from fixed pores, in its own tab; worn in the salon's place
+var HAIR2 = mountHair2({ el, $, status, api, rig, key, who: () => WHO, body: () => neutralBody(), tris: TRIS, changed: () => { UNSAVED = true; },
+  onWear: on => { if (SALONH) SALONH.visible = !on; }, reposed: () => { HAIR2POSE = ""; poseHair(); },
+  snapshot: () => {                                     // the view as a small square picture (a style of your own's card)
+    renderer.render(scene, camera); const c = renderer.domElement, R = viewRect(c.clientWidth, c.clientHeight), k = c.width / c.clientWidth, side = Math.min(R.w, R.h) * k;
+    const o = document.createElement("canvas"); o.width = o.height = 256;
+    o.getContext("2d").drawImage(c, (R.x + R.w / 2) * k - side / 2, (c.clientHeight - R.y - R.h / 2) * k - side / 2, side, side, 0, 0, 256, 256);
+    return o.toDataURL("image/jpeg", 0.85);
+  } });
 const frameMat = hf => new THREE.Matrix4().set(hf.B[0][0] * hf.S, hf.B[0][1] * hf.S, hf.B[0][2] * hf.S, hf.C[0], hf.B[1][0] * hf.S, hf.B[1][1] * hf.S, hf.B[1][2] * hf.S, hf.C[1], hf.B[2][0] * hf.S, hf.B[2][1] * hf.S, hf.B[2][2] * hf.S, hf.C[2], 0, 0, 0, 1);
 const bakeSig = h => [...h.C, h.S].map(v => +(+v).toFixed(6));
 const sameSig = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) < 2e-6);
@@ -3073,7 +3101,7 @@ async function loadSalon(justBaked = false) {         // justBaked: the salon ha
   const { C, B, S } = info.head, g = new THREE.Group(); g.name = "salon hair"; g.matrixAutoUpdate = false;
   g.matrix.set(B[0][0] * S, B[0][1] * S, B[0][2] * S, C[0], B[1][0] * S, B[1][1] * S, B[1][2] * S, C[1], B[2][0] * S, B[2][1] * S, B[2][2] * S, C[2], 0, 0, 0, 1);
   let meshes = 0, swinging = 0; gltf.scene.traverse(o => { if (o.isMesh) { meshes++; o.frustumCulled = false; soften(o); } if (o.isSkinnedMesh) swinging++; });
-  g.add(gltf.scene); rig.add(g); SALONH = g; HAIRINFO = info;
+  g.add(gltf.scene); rig.add(g); SALONH = g; HAIRINFO = info; g.visible = !HAIR2?.worn();   // (hidden, and so out of an export, while the hair editor v2.0's hair is worn)
   hairRecord(justBaked); placeHair(); HAIRPOSE = ""; poseHair(); if (HAIRSTALE) hud();
   return { meshes, swinging, head: info.head };
 }
@@ -3475,7 +3503,7 @@ async function open(name) {
   FACEBAKE = null; const baked = WHO ? await loadFaceBake(WHO) : null;
   if (me !== OPENING) return;
   if (baked) { FACEBAKE = baked.head; DELTA = baked.delta; }   // its face baked: kept, its pictures not needed
-  st.base = c.base ?? 0; st.height = c.height ?? 1.7;
+  st.base = c.base ?? 0; st.height = c.height ?? 1.7; st.v2 = c.v2 ? 1 : 0; $("#v2On").checked = !!st.v2; st.b2 = c.b2 ? 1 : 0; $("#b2On").checked = !!st.b2;
   st.shape = (c.shape || []).concat(new Array(H.shapes).fill(0)).slice(0, H.shapes).map(Number);
   Object.assign(st.face, Object.fromEntries(FACE.map(f => [f[0], f[5]])), c.face || {});
   $("#relative").checked = c.relative !== false;
@@ -3507,12 +3535,13 @@ async function open(name) {
   computeBody(); compose(); hud();
   WEAR.set(st.accessories); drawAcc();                  // on the face as it is now
   dress();                                             // the clothes on this body (or none)
+  HAIR2?.open(c.hair2);                                // the hair editor v2.0's hair, if it wears one (the salon's bake is hidden then)
   await loadSalon().catch(() => null);
   if (me !== OPENING) return;
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
   if (me === OPENING && WHO) detect();
 }
-const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), age: st.age, cute: st.cute, monster: st.monster, anime: st.anime || undefined, creature: st.monster && st.creature ? st.creature : undefined, hairHead: st.hairHead || undefined, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, drape: st.drape, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, groom: st.groom, accessories: st.accessories,
+const character = () => ({ base: st.base, v2: st.v2 || undefined, b2: st.b2 || undefined, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), age: st.age, cute: st.cute, monster: st.monster, anime: st.anime || undefined, creature: st.monster && st.creature ? st.creature : undefined, hairHead: st.hairHead || undefined, hair2: HAIR2?.record(), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, drape: st.drape, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, groom: st.groom, accessories: st.accessories,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
@@ -3607,6 +3636,7 @@ const ownLayout = a => {                              // a garment's own UVs int
 };
 function fileLook(x, g) {
   const L = x.material, U = L && L.userData.uniforms;
+  if (L && L.userData.fileMaterial) return L.userData.fileMaterial(x, g);   // a material that knows its own file form (the hair editor v2.0's cards and shells: hair2/ui.js)
   if (U && U.uColor) {
     const fab = g.attributes.uvm || g.attributes.uv, part = g.attributes.part, see = !!(L.transparent || U.uPbrAlphaOn.value > 0.5);
     const creased = !!(U.uCrAmt && U.uCrAmt.value > 0 && g.attributes.crz);   // its creases (tailor/crease.js) baked as its normal map, a little finer
@@ -4168,6 +4198,7 @@ async function exportPackage() {
   if (EDITING) setEditing(false);                      // the clothes as cut and hung, never as lines
   if (/^(cutting|cut|hanging)$/.test(DRAPING.stage)) { status("waiting for the clothes to hang…"); await hung(); }   // exported as they hang
   status("exporting for Godot and the desk…");
+  if (HAIR2?.worn() && !(await HAIR2.ready())) return status("the hair editor's hair isn't made yet (its tab says why)", "bad");
   await api(`api/people/${encodeURIComponent(WHO)}`, character()); await LAY.save();
   await api(`api/people/${encodeURIComponent(WHO)}/body.bin`, new Blob([neutralBody()])); await saveDrape();
   const rec = await api(`api/recipe/${encodeURIComponent(WHO)}`), was = st.expr.slice(), pose = POSE;
@@ -4228,7 +4259,7 @@ $("#poseSel").onchange = () => { POSE = $("#poseSel").value; try { localStorage.
 $("#povShot").onchange = () => { orbit.focus = "pov"; repose(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, on: graftOn() }), EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, useCreature, creatureLook, setAnime, GW, SKINSH, loadSalon, get salonHair() { return SALONH; }, get headBase() { return HEADBASE; }, get hairStale() { return HAIRSTALE; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, on: graftOn() }), EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, useCreature, creatureLook, setAnime, GW, SKINSH, loadSalon, get salonHair() { return SALONH; }, get hair2() { return HAIR2; }, get headBase() { return HEADBASE; }, get hairStale() { return HAIRSTALE; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

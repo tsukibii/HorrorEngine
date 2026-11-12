@@ -139,7 +139,7 @@ const span = X => { let lo = Infinity, hi = -Infinity; for (let i = 1; i < X.len
     const hit = new Uint8Array(N); for (const i of c.idx) hit[i] = 1; let n = 0;
     for (let t = 0; t < T.length; t += 3) { if (!hit[T[t]] && !hit[T[t + 1]] && !hit[T[t + 2]]) continue; const a = nrm(P, t), b = nrm(X, t); if (a[0] * b[0] + a[1] * b[1] + a[2] * b[2] < 0) n++; } return n; };
   const at = id => { const R = GW.REACH[id] || [-3.4, 3.4]; return [Math.max(-3, R[0]), Math.min(3, R[1])]; };
-  const NEW = ["face_height", "face_round", "eye_size", "eye_spacing", "eye_depth", "eye_tilt", "snout", "skull_back", "bust", "seat", "head_size", "neck_length", "torso_length", "legs_length", "arms_length", "hands", "feet", "fingers"];
+  const NEW = ["neck_base", "shoulder_slope", "face_taper", "face_height", "face_round", "eye_size", "eye_spacing", "eye_depth", "eye_tilt", "snout", "skull_back", "bust", "seat", "head_size", "neck_length", "torso_length", "legs_length", "arms_length", "hands", "feet", "fingers"];
   const rows = NEW.map(id => [id, Math.max(...at(id).map(v => flips(id, v)))]), worst = rows.filter(r => r[1] > 0);
   say(!worst.length, `at their furthest in monster mode, ${NEW.length} of the new fields turn no triangle over` + (worst.length ? `: ${worst.map(r => r.join(" ")).join(", ")}` : ""));
   const ears = ["ears_size", "ears_out", "ears_point"].map(id => [id, Math.max(...at(id).map(v => flips(id, v)))]), hunch = flips("hunch", 3);
@@ -254,6 +254,136 @@ const span = X => { let lo = Infinity, hi = -Infinity; for (let i = 1; i < X.len
       `the dress form has no underside: of the breast's skin ${aF2.toFixed(1)} cm2 faces away from the chest's front at 2 and ${aF3.toFixed(1)} at 3, where the hanging one's underside is ${aR2.toFixed(0)} cm2 at 2 and ${aR3.toFixed(0)} at 3; the hollow's skin is gathered onto the ball's widest ring (${G2.length / 2} points at 2, ${G3.length / 2} at 3, each exactly on the point it lies on: the tailor makes them one); it moves the breasts and ${movedA} points of the skin under them out from under the ball, nothing else (${strayF}); under 1 it's the body itself`); }
   const f0 = proud(0), f1 = proud(-1), f2 = proud(-2);
   say(f2 < 0.02 && f2 < f1 - 0.008 && f1 < f0, `flatter under -1: the breast ${(f0 * 100).toFixed(1)} cm in front of the plane through its root at 0, ${(f1 * 100).toFixed(1)} at -1, ${(f2 * 100).toFixed(1)} at -2 (the chest's own wall)`);
+}
+
+// ---- the v2female base (MHR_presets.json), and the Neck width it is made with
+{
+  const PF = JSON.parse(fs.readFileSync(path.join(B, "MHR_presets.json"), "utf8")), ids = Object.keys((PF.sculpt || {}).v2female || {});
+  say(!!PF.presets.v2female && PF.presets.v2female.length === M.k && ids.length > 5 && ids.every(id => byId.has(id)), `the v2female base: ${M.k} weights and a sculpt of ${ids.length} controls, every one a control that exists`);
+  // the neck from the front at its narrowest: the least, over the heights from the chin down 7 cm, of the body's width there
+  const chinY = X => landmark(M, X, 152)[1];
+  const neck = X => { let best = 9; const c = chinY(X); for (let y = c; y > c - 0.07; y -= 0.004) { let w = 0; for (let i = 0; i < X.length; i += 3) if (Math.abs(X[i + 1] - y) < 0.004 && Math.abs(X[i]) < 0.14 && Math.abs(X[i]) > w) w = Math.abs(X[i]); if (w > 0.01) best = Math.min(best, w); } return best * 200; };
+  const fem = grownBody(M, { base: -1 }).P, v2 = grownBody(M, { base: -1, v2: 1 }).P, slim = grownBody(M, { base: -1, sculpt: { neck_width: -1 } }).P;
+  const nF = neck(fem), nV = neck(v2), nS = neck(slim);
+  say(nF > 10 && nS < nF - 2.5 && nS > 6 && nV < nF - 0.8 && nV > nS + 0.5, `Neck width -1: the neck at its narrowest from the front ${nF.toFixed(1)} cm on the feminine base, ${nS.toFixed(1)} with it; v2female, which carries it at ${PF.sculpt.v2female.neck_width}, ${nV.toFixed(1)}`);
+  // the face stays: its own points (the chin, the nose's tip, the mouth's and the eyes' corners, the face's sides by the ears, the forehead's top), and the jaw's angles hardly
+  const mv = i => Math.hypot(...landmark(M, slim, i).map((v, k) => v - landmark(M, fem, i)[k])) * 1000, face = Math.max(...[152, 1, 61, 291, 33, 263, 234, 454, 10].map(mv)), jawA = mv(172), underEar = mv(397);   // (172: on the jaw's line by the mouth's height; 397, its opposite number in the table, lies 4.5 cm further back: under the ear, behind the jaw, where the neck is meant to come in)
+  let most = 0; for (let i = 0; i < fem.length; i += 3) most = Math.max(most, Math.hypot(slim[i] - fem[i], slim[i + 1] - fem[i + 1], slim[i + 2] - fem[i + 2]));
+  say(face < 0.3 && jawA < 2 && underEar > 3 && underEar < 12 && most > 0.012 && most < 0.03, `it leaves the face where it was (its chin, nose, mouth, eyes, sides and forehead ${face.toFixed(2)} mm at the most, the jaw's line ${jawA.toFixed(1)}); under the ear, behind the jaw, the neck comes in ${underEar.toFixed(1)} mm; the neck's own points move ${(most * 1000).toFixed(0)} mm at the most`);
+  // every triangle of the neck still faces the way it did, at its furthest (a column pulled in too far turns its skin over under the chin: 2 triangles at -1.6, none at -1.4, its limit)
+  let flipped = 0, seen = 0; const nrm = (X, t) => { const a = T[t] * 3, b = T[t + 1] * 3, c = T[t + 2] * 3, u = [X[b] - X[a], X[b + 1] - X[a + 1], X[b + 2] - X[a + 2]], v = [X[c] - X[a], X[c + 1] - X[a + 1], X[c + 2] - X[a + 2]]; return [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]; };
+  const deep = grownBody(M, { base: -1, sculpt: { neck_width: -3 } }).P;                                     // (asked for far past it: held at its limit)
+  for (let t = 0; t < T.length; t += 3) { const a = T[t] * 3; if (Math.hypot(deep[a] - fem[a], deep[a + 2] - fem[a + 2]) < 0.002) continue; seen++; const n0 = nrm(fem, t), n1 = nrm(deep, t); if (n0[0] * n1[0] + n0[1] * n1[1] + n0[2] * n1[2] <= 0) flipped++; }
+  say(seen > 300 && !flipped && GW.REACH.neck_width[0] === -1.4, `asked for -3 it is held at ${GW.REACH.neck_width[0]}: none of the ${seen} triangles it moves is turned past a right angle (the neck then ${neck(deep).toFixed(1)} cm)`);
+  const m0 = grownBody(M, { base: 1 }).P, m1 = grownBody(M, { base: 1, v2: 1 }).P, h0 = grownBody(M, { base: 0 }).P, h1 = grownBody(M, { base: 0, v2: 1 }).P; let dm = 0, dh = 0;
+  for (let i = 0; i < m0.length; i++) { dm = Math.max(dm, Math.abs(m1[i] - m0[i])); dh = Math.max(dh, Math.abs(h1[i] - h0[i])); }
+  const nH = neck(h1), nH0 = neck(h0);
+  say(dm === 0 && dh > 0.003 && nH < nH0 - 0.3 && nH > nV, `it is the feminine end's: the masculine base is the same with it to the bit, halfway the neck is ${nH0.toFixed(1)} cm without it and ${nH.toFixed(1)} with`);
+  // its face, against the feminine base's: the eyes much further apart and larger, a small lower face (shorter from the eyes to the chin, narrower at the jaw's angles and by the chin), a smaller mouth
+  const mid = (a, c) => a.map((v, k) => (v + c[k]) / 2), eyeY = X => (landmark(M, X, 145)[1] + landmark(M, X, 374)[1]) / 2, jawW = X => Math.abs(landmark(M, X, 172)[0] - landmark(M, X, 397)[0]) * 100;
+  const eyeW = X => Math.abs(landmark(M, X, 33)[0] - landmark(M, X, 133)[0]) * 1000, apart = X => Math.abs(mid(landmark(M, X, 33), landmark(M, X, 133))[0] - mid(landmark(M, X, 263), landmark(M, X, 362))[0]) * 100, long = X => (eyeY(X) - chinY(X)) * 100;
+  const across = (X, a, c) => Math.abs(landmark(M, X, a)[0] - landmark(M, X, c)[0]) * 100;
+  say(apart(v2) > apart(fem) + 0.7 && apart(v2) < 7.6 && eyeW(v2) > eyeW(fem) + 1 && jawW(v2) < jawW(fem) - 0.8 && long(v2) < long(fem) - 0.5 && long(v2) > long(fem) - 1.5 && across(v2, 150, 379) < across(fem, 150, 379) - 0.9 && across(v2, 61, 291) < across(fem, 61, 291) - 0.5,
+    `its face: the eyes ${apart(v2).toFixed(1)} cm apart (the feminine base's ${apart(fem).toFixed(1)}), each ${eyeW(v2).toFixed(1)} mm corner to corner (${eyeW(fem).toFixed(1)}), ${long(v2).toFixed(1)} cm from the eyes' line to the chin (${long(fem).toFixed(1)}), ${jawW(v2).toFixed(1)} cm between the jaw's angles (${jawW(fem).toFixed(1)}), ${across(v2, 150, 379).toFixed(1)} across the jaw by the chin (${across(fem, 150, 379).toFixed(1)}), the mouth ${across(v2, 61, 291).toFixed(1)} (${across(fem, 61, 291).toFixed(1)})`);
+  // ---- Face taper (sculpt.js): the face narrowing from the eyes down to the chin. -1: a fifth narrower at the chin, less
+  // the higher (the mouth's corners a few percent), nothing at the eyes and the ears; and no ledge: at one height every
+  // point moves in the same proportion of how far out it is, so the cheek is never left standing over the jaw
+  const c = byId.get("face_taper"), tap = grownBody(M, { base: -1, sculpt: { face_taper: -1 } }).P, mvT = i => landmark(M, tap, i).map((v, k) => (v - landmark(M, fem, i)[k]) * 1000);
+  const share = i => -mvT(i)[0] / (landmark(M, fem, i)[0] * 1000), still = Math.max(...[33, 133, 263, 362, 234, 454, 10, 168].map(i => Math.hypot(...mvT(i)))), updown = Math.max(...[150, 379, 61, 291, 172, 397].map(i => Math.hypot(mvT(i)[1], mvT(i)[2])));
+  say(!!c && share(379) > 0.14 && share(379) < 0.2 && share(291) > 0.03 && share(291) < 0.1 && share(172) > share(291) && share(172) < share(379) && Math.abs(share(150) - share(379)) < 0.01 && still < 0.5 && updown < 0.05,
+    `Face taper -1: the jaw by the chin ${(share(379) * 100).toFixed(0)}% nearer the middle, the jaw at the mouth's height ${(share(172) * 100).toFixed(0)}%, the mouth's corners ${(share(291) * 100).toFixed(0)}%, the two sides alike; the eyes, the face's sides by the ears, the forehead and the nose's root ${still.toFixed(2)} mm, nothing up, down, forward or back (${updown.toFixed(2)} mm)`);
+  { const y0 = landmark(M, P, 152)[1] + 0.012, pts = []; for (let q = 0; q < c.idx.length; q++) { const i = c.idx[q] * 3; if (Math.abs(P[i + 1] - y0) < 0.004 && Math.abs(P[i]) > 0.012 && P[i + 2] > landmark(M, P, 172)[2]) pts.push(c.d[q * 3] / P[i]); }
+    const lo = Math.min(...pts), hi = Math.max(...pts);
+    say(pts.length > 8 && hi - lo < 0.03, `no ledge: across the face's front 1.2 cm over the chin, ${pts.length} points move in between ${(lo * 100).toFixed(1)} and ${(hi * 100).toFixed(1)}% of how far out they are for each unit`); }
+  // ---- the shoulders and the neck's base (sculpt.js Shoulder slope, Neck base; the user on v2female, 2026-11-12: "looks a
+  // bit uncanny when it should look more feminine"). Each control alone on MHR's base: where it moves and where it doesn't
+  const span = (id, pick) => { const k = byId.get(id); let lo = Infinity, hi = -Infinity, side = 0, n = 0; for (let q = 0; q < k.idx.length; q++) { const i = k.idx[q] * 3; if (!pick(Math.abs(P[i]), P[i + 1], P[i + 2])) continue; n++; lo = Math.min(lo, k.d[q * 3 + 1]); hi = Math.max(hi, k.d[q * 3 + 1]); side = Math.max(side, Math.abs(k.d[q * 3]), Math.abs(k.d[q * 3 + 2])); } return { n, lo: lo * 1000, hi: hi * 1000, side: side * 1000 }; };
+  const moved = (id, pick) => { const k = byId.get(id); let most = 0; for (let q = 0; q < k.idx.length; q++) { const i = k.idx[q] * 3; if (pick(Math.abs(P[i]), P[i + 1], P[i + 2])) most = Math.max(most, Math.hypot(k.d[q * 3], k.d[q * 3 + 1], k.d[q * 3 + 2])); } return most * 1000; };
+  { const arm = span("shoulder_slope", (x, y) => x > 0.25), still = Math.max(moved("shoulder_slope", (x, y) => x < 0.069), moved("shoulder_slope", (x, y) => y > 1.535), moved("shoulder_slope", (x, y) => x < 0.2 && y < 1.23)), mid = span("shoulder_slope", (x, y) => Math.abs(x - 0.13) < 0.006 && y > 1.4);
+    say(arm.n > 500 && Math.abs(arm.lo + 30) < 0.01 && Math.abs(arm.hi + 30) < 0.01 && arm.side === 0 && still === 0 && mid.lo < -10 && mid.hi > -20,
+      `Shoulder slope 1: the arm comes down whole, ${(-arm.lo).toFixed(0)} mm, and nothing sideways; halfway out the shoulder's top ${(-mid.hi).toFixed(0)} to ${(-mid.lo).toFixed(0)} mm; within 7 cm of the middle, from the chin up and on the trunk under the armpits ${still.toFixed(2)} mm`); }
+  { const top = span("neck_base", (x, y) => Math.abs(x - 0.09) < 0.008 && y > 1.47), still = Math.max(moved("neck_base", (x, y) => x < 0.045), moved("neck_base", (x, y) => x > 0.175), moved("neck_base", (x, y) => y > 1.535), moved("neck_base", (x, y) => y < 1.40));
+    say(top.n > 3 && top.hi > 22 && top.hi <= 25.01 && top.side === 0 && still === 0,
+      `Neck base 1: the top of the shoulder 9 cm out ${top.hi.toFixed(0)} mm higher (-1: that much lower), nothing sideways; within 4.5 cm of the middle, from the shoulder's point out, from the chin up and under 1.40 m ${still.toFixed(2)} mm`); }
+  // v2female carries the Neck base at -0.3 and nothing of the slope: her pictures have the shoulders where MHR's are and
+  // the rise up to the neck lower. The top of the body 9 cm out from the middle, and at the shoulder's point (17 cm), each
+  // by its height over the pit of the neck (the body under the head moves whole with a neck's length: heights alone say nothing)
+  const topAt = (X, x) => { let y = -9; const c = chinY(X); for (let i = 0; i < X.length; i += 3) if (Math.abs(Math.abs(X[i]) - x) < 0.005 && X[i + 1] < c - 0.015 && X[i + 1] > y) y = X[i + 1]; return y * 100; };
+  // the pit of the neck: down the front's middle from the chin, the point furthest back before the chest comes forward; the chin's own lowest point (within 1.2 cm of its front)
+  const front = X => { const c = landmark(M, X, 152), mid = []; for (let i = 0; i < X.length; i += 3) if (Math.abs(X[i]) < 0.004 && X[i + 2] > 0 && X[i + 1] < c[1] + 0.01 && X[i + 1] > c[1] - 0.14) mid.push([X[i + 1], X[i + 2]]);
+    let chin = c[1]; for (const m of mid) if (m[1] > c[2] - 0.012) chin = Math.min(chin, m[0]);
+    let pit = null; for (const m of mid) if (m[0] < chin - 0.02 && (!pit || m[1] < pit[1])) pit = m; return { chin: chin * 100, pit: pit[0] * 100 }; };
+  const over = (X, x) => topAt(X, x) - front(X).pit, rise = X => topAt(X, 0.09) - topAt(X, 0.17);
+  say(rise(fem) - rise(v2) > 0.4 && rise(fem) - rise(v2) < 1.5 && Math.abs(over(fem, 0.17) - over(v2, 0.17)) < 0.3 && PF.sculpt.v2female.shoulder_slope === undefined && PF.sculpt.v2female.shoulders === undefined,
+    `v2female's neck base: the top of the shoulder 9 cm out ${(rise(fem) - rise(v2)).toFixed(1)} cm lower against the shoulder's point than the feminine base's, the shoulder's point as high over the pit of the neck as it was (${Math.abs(over(fem, 0.17) - over(v2, 0.17)).toFixed(1)} cm); the base carries no slope and no narrowing`);
+
+  // ---- the neck's length (grow.js Neck length; the user, 2026-11-12: "a modifier / slider in general to make necks
+  // shorter ... unrealistic turtle length necks"). The chin over the pit of the neck, on bodies of one height
+  const gap = X => { const f = front(X); return f.chin - f.pit; }, head = X => { let t = -9; for (let i = 1; i < X.length; i += 3) t = Math.max(t, X[i]); return t * 100 - front(X).chin; };
+  const nl = v => grownBody(M, { base: -1, sculpt: { neck_length: v } }).P, nShort = nl(-1), nLong = nl(1), g0 = gap(fem);
+  const NL = byId.get("neck_length");
+  say(NL && NL.group === "Body" && NL.after === "neck_width" && NL.prop, "Neck length is listed with the neck's other sliders (Body, after Neck width) and is still a proportion");
+  say(g0 - gap(nShort) > 2 && g0 - gap(nShort) < 2.9 && gap(nLong) - g0 > 2 && gap(nLong) - g0 < 2.9 && Math.abs(head(nShort) / head(fem) - 1) < 0.03 && Math.abs(over(nShort, 0.17) - over(fem, 0.17)) < 0.3,
+    `Neck length on the feminine base: the chin ${g0.toFixed(1)} cm over the pit of the neck; at -1 ${gap(nShort).toFixed(1)} (${(g0 - gap(nShort)).toFixed(1)} shorter), at 1 ${gap(nLong).toFixed(1)}; the head's height ${head(fem).toFixed(1)} and ${head(nShort).toFixed(1)} cm (the body is made as tall again), the shoulder's point as high over the pit of the neck (${Math.abs(over(nShort, 0.17) - over(fem, 0.17)).toFixed(1)} cm)`);
+  { const tri = X => { let flipped = 0; const T = M.T; for (let t = 0; t < T.length; t += 3) { const a = T[t] * 3, b = T[t + 1] * 3, c = T[t + 2] * 3; if (fem[a + 1] < 1.30 || fem[a + 1] > 1.52) continue;
+      const n = Q => { const ux = Q[b] - Q[a], uy = Q[b + 1] - Q[a + 1], uz = Q[b + 2] - Q[a + 2], vx = Q[c] - Q[a], vy = Q[c + 1] - Q[a + 1], vz = Q[c + 2] - Q[a + 2]; return [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx]; }, n0 = n(fem), n1 = n(X);
+      if (n0[0] * n1[0] + n0[1] * n1[1] + n0[2] * n1[2] < 0) flipped++; } return flipped; };
+    say(tri(nShort) === 0 && tri(nLong) === 0, `Neck length at -1 and at 1: no triangle of the neck and the shoulders turned over (${tri(nShort)}, ${tri(nLong)})`); }
+  // v2female: its short lower face had raised the chin a centimetre and left it on the neck; the base carries the head
+  // down by it, the chin as far over the pit of the neck as on the feminine base (where her two pictures have her shoulders)
+  { const raw = grownBody(M, { base: -1, v2: 1, sculpt: { neck_length: -PF.sculpt.v2female.neck_length } }).P;
+    say(PF.sculpt.v2female.neck_length < 0 && Math.abs(gap(v2) - g0) < 0.3 && gap(raw) - gap(v2) > 0.7 && gap(raw) - gap(v2) < 1.3 && gap(v2) / head(v2) < 0.35,
+      `v2female's neck: the chin ${gap(v2).toFixed(1)} cm over the pit of the neck, the feminine base's ${g0.toFixed(1)} (${(gap(v2) / head(v2)).toFixed(2)} and ${(g0 / head(fem)).toFixed(2)} of the head's height); without the Neck length it carries (${PF.sculpt.v2female.neck_length}) ${gap(raw).toFixed(1)} cm, ${(gap(raw) / head(raw)).toFixed(2)} of its head`); }
+}
+
+// ---- the joints inside a limb (pose.js readRig `along`, joints): an arm or a leg made shorter takes its elbow and its
+// ankle with it. Their skin is on twist bones, so they had no ring and rode the shoulder and the knee: the upper arm's
+// bone kept its length whatever Arm length said. And an arm made thicker is not an elbow moved
+{
+  const J = o => { const g = grownBody(M, { base: -1, ...o }), j = PO.joints(rig, g.P, M.P, g.scale, g.F), at = n => { const b = rig.byName.get(n); return [j[b * 3], j[b * 3 + 1], j[b * 3 + 2]]; }, d = (a, b) => Math.hypot(at(a)[0] - at(b)[0], at(a)[1] - at(b)[1], at(a)[2] - at(b)[2]) * 100;
+    return { upper: d("l_uparm", "l_lowarm"), fore: d("l_lowarm", "l_wrist"), thigh: d("l_upleg", "l_lowleg"), shin: d("l_lowleg", "l_foot"), elbow: at("l_lowarm"), right: d("r_uparm", "r_lowarm") }; };
+  const a0 = J({}), a1 = J({ sculpt: { arms_length: -1 } }), l1 = J({ sculpt: { legs_length: -1 } }), fat = J({ sculpt: { upper_arms: 1, forearms: 1 } });
+  const pct = (x, y) => (1 - x / y) * 100, moved = Math.hypot(fat.elbow[0] - a0.elbow[0], fat.elbow[1] - a0.elbow[1], fat.elbow[2] - a0.elbow[2]) * 1000;
+  say(rig.along && rig.along[rig.byName.get("l_lowarm")] && rig.along[rig.byName.get("r_foot")] && !rig.along[rig.byName.get("l_uparm")] && pct(a1.upper, a0.upper) > 7 && pct(a1.upper, a0.upper) < 13 && pct(a1.fore, a0.fore) > 7 && pct(a1.fore, a0.fore) < 13 && Math.abs(a1.right - a1.upper) < 0.05,
+    `Arm length -1: the elbow goes with the arm, the upper arm ${pct(a1.upper, a0.upper).toFixed(1)}% shorter and the forearm ${pct(a1.fore, a0.fore).toFixed(1)}% (${a0.upper.toFixed(1)} and ${a0.fore.toFixed(1)} cm to ${a1.upper.toFixed(1)} and ${a1.fore.toFixed(1)}), both sides alike`);
+  say(pct(l1.thigh, a0.thigh) > 3 && pct(l1.shin, a0.shin) > 3 && Math.abs(pct(l1.thigh, a0.thigh) - pct(l1.shin, a0.shin)) < 2.5, `Leg length -1: the ankle goes with the leg, the thigh ${pct(l1.thigh, a0.thigh).toFixed(1)}% shorter and the shin ${pct(l1.shin, a0.shin).toFixed(1)}% on a body made as tall again (the shin's bone kept its length before, and came out longer)`);
+  say(moved < 13, `an arm made thicker (Upper arms 1, Forearms 1) is not an elbow moved: ${moved.toFixed(0)} mm along it`);
+}
+
+// ---- the bodyv2 base (MHR_presets.json presets.bodyv2, sculpt.bodyv2; DECISIONS 2026-11-12, a T-pose reference: "these
+// exact proportions, 1:1 ... thighs and legs too and hands and feet"). What the feminine end's body becomes when it's
+// picked. Held here to the picture's own numbers (shares of the bare height, said in centimetres on a 163 cm body; the
+// picture stays out of git): the body in the Studio's T-pose, cut across by height and by how far out
+{
+  const PF = JSON.parse(fs.readFileSync(path.join(B, "MHR_presets.json"), "utf8")), W = PF.presets.bodyv2, SB = PF.sculpt.bodyv2, ids = new Set(byId.keys());
+  const HEADY = /^(eye|nose|mouth|lips|brow|forehead|chin|jaw|cheek|face|ear|temple|hooded|skull|snout|head_size)/;
+  say(W && W.length === PF.presets.feminine.length && W.slice(20).every((v, i) => v === PF.presets.feminine[20 + i]) && W.slice(0, 20).every(v => Math.abs(v) <= 3) && SB && Object.keys(SB).every(id => ids.has(id) && !HEADY.test(id)),
+    `the bodyv2 base is in the file: ${W ? W.length : 0} weights (the head's and the hands' the feminine base's, the body's own within MHR's reach), and ${SB ? Object.keys(SB).length : 0} sliders it carries, all the body's (${SB ? Object.keys(SB).join(", ") : ""})`);
+  const cm = 163, pose = o => { const g = grownBody(M, { base: -1, ...o }), X = PO.pose(rig, PO.joints(rig, g.P, M.P, g.scale, g.F), "t"), S = PO.skin(rig, X, g.P); let lo = 1e9, hi = -1e9; for (let i = 1; i < S.length; i += 3) { lo = Math.min(lo, S[i]); hi = Math.max(hi, S[i]); } return { S, lo, H: hi - lo, X, g }; };
+  const off = grownBody(M, { base: -1, v2: 1 }).P, same = grownBody(M, { base: -1, v2: 1, body2: 0 }).P; let dm = 0; for (let i = 0; i < off.length; i++) dm = Math.max(dm, Math.abs(off[i] - same[i]));
+  say(dm === 0, "with bodyv2 off the body is v2female's to the bit");
+  const under = name => { const root = rig.byName.get(name), set = new Uint8Array(rig.bones.length); for (const b of rig.order) { const p = rig.bones[b].parent; set[b] = b === root || (p >= 0 && set[p]) ? 1 : 0; } return set; }, LL = under("l_upleg"), LA = under("l_uparm");
+  const on = (set, i) => { let w = 0; for (let k = 0; k < 4; k++) if (set[rig.BI[i * 4 + k]]) w += rig.BW[i * 4 + k]; return w > 0.5; };
+  // her left leg's width at a share of the height (its triangles cut by the plane), the trunk's half width, the wrist's reach
+  const legW = (B2, t) => { const y = B2.lo + t * B2.H; let a = 9, b = -9; for (let q = 0; q < T.length; q += 3) { let n = 0; for (let k = 0; k < 3; k++) if (on(LL, T[q + k])) n++; if (n < 2) continue; for (let e = 0; e < 3; e++) { const i = T[q + e] * 3, j = T[q + (e + 1) % 3] * 3, u = B2.S[i + 1] - y, v = B2.S[j + 1] - y; if (u * v > 0 || u === v) continue; const x = B2.S[i] + (B2.S[j] - B2.S[i]) * u / (u - v); a = Math.min(a, x); b = Math.max(b, x); } } return [(b - a) / B2.H * cm, b / B2.H * cm]; };
+  const half = (B2, t) => { const y = B2.lo + t * B2.H; let b = 0; for (let i = 0; i < B2.S.length; i += 3) if (Math.abs(B2.S[i + 1] - y) < 0.006 && !on(LA, i / 3) && B2.S[i] > b) b = B2.S[i]; return b / B2.H * cm; };
+  const jt = (B2, n) => { const b = rig.byName.get(n); return [B2.X.J2[b * 3] / B2.H * cm, (B2.X.J2[b * 3 + 1] - B2.lo) / B2.H * cm]; };
+  const mark = (B2, i) => (landmark(M, B2.S, i)[1] - B2.lo) / B2.H * cm, eyesOf = B2 => (mark(B2, 33) + mark(B2, 133) + mark(B2, 263) + mark(B2, 362)) / 4;
+  const b2 = pose({ v2: 1, body2: 1 }), fem = pose({ v2: 1 });
+  // (the picture's: the leg's width at five heights, the ankle, the calf, under the knee, the thigh, its top)
+  const WANT = [[0.08, 5.3], [0.20, 11.2], [0.26, 10.4], [0.35, 14.2], [0.44, 19.7]], got = WANT.map(([t]) => legW(b2, t)[0]), was = WANT.map(([t]) => legW(fem, t)[0]), worst = Math.max(...WANT.map(([, w], k) => Math.abs(got[k] - w)));
+  say(worst < 0.9 && got[4] - was[4] > 4 && got[1] - was[1] > 1.2, `bodyv2's legs in the T-pose: ${WANT.map(([t, w], k) => `${got[k].toFixed(1)} cm wide at ${t} of the height (her picture ${w}, the feminine body ${was[k].toFixed(1)})`).join(", ")}: ${worst.toFixed(1)} cm off at the most`);
+  const hipO = legW(b2, 0.44)[1], waist = half(b2, 0.65), hips = half(b2, 0.51), wrist = jt(b2, "l_wrist")[0], wristF = jt(fem, "l_wrist")[0];
+  say(Math.abs(hipO - 20.4) < 1 && Math.abs(waist - 14.9) < 1.3 && Math.abs(hips - 20.7) < 1.3 && half(fem, 0.65) < waist - 2.5, `its trunk: ${(2 * hips).toFixed(1)} cm across the hips (her cardigan's hem less its knit: 41.4), ${(2 * waist).toFixed(1)} at the waist (29.8; the feminine body ${(2 * half(fem, 0.65)).toFixed(1)}), the thigh's outside ${hipO.toFixed(1)} cm out at its top (20.4)`);
+  say(Math.abs(wrist - 58.3) < 1.5 && wristF - wrist > 5, `its arms: the wrist ${wrist.toFixed(1)} cm from the middle (her cuff's edge less the hand in it: 58.3; the feminine body's ${wristF.toFixed(1)})`);
+  const eyes = eyesOf(b2), chin = mark(b2, 152), knee = jt(b2, "l_lowleg")[1];
+  say(Math.abs(eyes - 152.4) < 0.9 && Math.abs(chin - 143.3) < 0.9 && Math.abs(knee - 46.6) < 1.2, `its heights: the eyes ${eyes.toFixed(1)} cm up (her picture 152.4), the chin ${chin.toFixed(1)} (143.3), the knee's joint ${knee.toFixed(1)} (46.6)`);
+  // round the trunk at rest (a tape: the hull's length), front to back held to a medium build's: there is no side picture
+  const tape = (P2, Hh, t, xmax) => { const pts = []; for (let i = 0; i < P2.length; i += 3) if (Math.abs(P2[i + 1] - t * Hh) < 0.006 && Math.abs(P2[i]) < xmax) pts.push([P2[i], P2[i + 2]]); const p = pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]), cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], hi = [];
+    for (const q of p) { while (lo.length >= 2 && cr(lo.at(-2), lo.at(-1), q) <= 0) lo.pop(); lo.push(q); } for (const q of p.slice().reverse()) { while (hi.length >= 2 && cr(hi.at(-2), hi.at(-1), q) <= 0) hi.pop(); hi.push(q); }
+    const h = [...lo.slice(0, -1), ...hi.slice(0, -1)]; let len = 0; for (let i = 0; i < h.length; i++) len += Math.hypot(h[i][0] - h[(i + 1) % h.length][0], h[i][1] - h[(i + 1) % h.length][1]); return len / Hh * cm; };
+  const R2 = b2.g, bust = tape(R2.P, R2.height, 0.735, 0.17), wst = tape(R2.P, R2.height, 0.645, 0.2), hp = tape(R2.P, R2.height, 0.52, 0.26);
+  say(bust > 95 && bust < 107 && wst > 77 && wst < 88 && hp > 108 && hp < 118, `round it at rest: the bust ${bust.toFixed(0)} cm, the waist ${wst.toFixed(0)}, the hips ${hp.toFixed(0)} (a medium, fuller build; front to back is a medium build's for these widths, not her picture's: it shows the front alone)`);
 }
 
 if (bad) { console.log(`GROW FAIL: ${bad}`); process.exit(1); }

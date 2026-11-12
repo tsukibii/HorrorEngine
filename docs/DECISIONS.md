@@ -2,6 +2,327 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, the ringlets (the user, with a screenshot, while the styles were being gone through)
+
+- **"Not sure if you caught it but the curls look like they float rather than come from the head/hair"**, with the
+  side view of *Long, with ringlets in front* before and after the look's change: the ringlet in front of the cheek,
+  its top a blunt coil at the nose's height, no hair leading into it.
+- I had not caught it. **What this sets:** a ringlet has to read as hair that comes from the head: a lock from the
+  hairline, wound up. Not a coil hung beside the face.
+- **Done the same day** (docs/HAIR_V2.md §3.7): each side's face-framing strands are one gathered lock that ends in
+  a point, the ringlet begins at that point as thin as the lock and opens into the coil over three centimetres, it
+  is kept off the body by its own width at each height (no step sideways at its top), and its colour goes on from
+  the lock's, not from the roots' shade. On *Long, with ringlets in front* the lock hangs free from the temple, so
+  the ringlet hangs in front of the ear at the edge of the side hair. HAIR2 holds it (two lines).
+
+## 2026-11-12, the lessons into every style (the user)
+
+- **"Can you take everything you've learnt from the last hairstyles and enhance improve v2 hairstyles"**
+- **What this sets:** what the two Daz3D hairstyles taught (`daz_twin_tails`, `daz_bob`: docs/HAIR_V2.md §10, §10b)
+  goes into the hair editor v2.0's other styles, not only into the two that were matched. The hairstyles named are
+  the same ones; none is removed or renamed.
+- **My reading of "everything you've learnt"** (to be overruled if it's wrong): the settings those two needed and no
+  older style uses (tied hair that hangs and has body, tails as brushes, sidelocks that hang free, a fringe closed
+  at its middle, a bob tucked under, the fuller Volume), and the way of working (a style judged by its pictures
+  from four sides before and after, not by its numbers).
+
+## 2026-11-12, a T-pose reference: base bodyv2, and its hairstyle (the user, with a picture)
+
+- **"I just made this t pose reference for what the body should look like (I added clothes to keep it appropriate
+  since daz3d does show nudity), once you're done with hair and face feel free to create a base bodyv2 that aims to
+  get these exact proportions, 1:1 but don't calculate the clothing (mostly the cardigan and sneakers), as a goal try
+  recreate this exact hairstyle too so you can see if it's possible to get a 1:1, for reference this mesh is the
+  medium size (slightly chubbier side) so imagine the bust and waist width sliders around mid for this basebodyv2."**
+- **The picture:** a Daz3D character from the front in a T-pose, the whole body: a short black bob with a side-swept
+  fringe over her right eye, glasses, a brown knit cardigan to the hips, black leggings, white sneakers. Kept out of
+  git (`Saved/Body/ref/t1.jpg`: it has to be sent again in a new session).
+- **What this sets:**
+  - **A base `bodyv2`** in the Character Studio: a body base whose proportions are this picture's, measured, 1:1
+    (the head against the body, the neck, the shoulders' width and height, the arms, the torso, the hips, the legs).
+    The clothes are not the body: the cardigan's thickness and looseness and the sneakers' soles are taken off the
+    measures; the leggings are skin tight and count as the body.
+  - **Where its sliders sit:** this body is the medium size, slightly on the chubbier side. On bodyv2 that build is
+    the middle: the Bust and the waist's width at about 0 are this body, so a slimmer and a fuller character are
+    each a slider's half away.
+  - **Its hairstyle** as a hair editor v2.0 style, held to the picture the way the twin tails are: can it be 1:1.
+  - **When:** after the hair and the face in hand.
+- **And, a moment later: "Note when I say proportions for v2 I mean thighs and legs too and hands and feet."** So
+  bodyv2 is the whole body's proportions, not the torso's alone: the thighs' and the calves' widths and lengths (the
+  leggings are skin tight: what the picture shows is the leg), the hands' and the feet's size (the feet under the
+  sneakers: their length from the shoe's, less the shoe).
+- **Not decided here (my reading, to be checked with the user if it matters):** whether bodyv2 replaces v2female's
+  body or stands beside it. Built as its own base beside the others, v2female's head on it, nothing removed.
+- **Built the same day** (docs/CHARACTER_STUDIO.md §2g): a fifth base button and a switch, *what the feminine end's
+  body becomes*. MHR's body shapes and the Studio's sliders fitted to the picture's own measures (the legs' widths
+  at 42 heights within 0.28 cm, the trunk under the cardigan within 0.84, the wrists, the eyes, the chin, the knee
+  within a centimetre). Round it: bust 101 cm, waist 82, hips 113 on a 163 cm body.
+- **Three things the picture cannot settle, said so the user can overrule them:**
+  1. **Her arms are about a sixth shorter than a real person's of her height** (the wrists 58 cm from her middle;
+     MHR's 66). The cuffs' ends are straight, so the arms lie in the picture's plane, and its round buttons are
+     round, so it is not stretched: I took the picture at its word (Arm length -1.75). If that is the pose or the
+     camera, it is one slider.
+  2. **Front to back.** There is no side picture. The belly's, the bust's and the seat's depths are a medium
+     build's for these widths, chosen by me.
+  3. **The hands and the feet.** Her hands are half closed in long cuffs and her feet are in sneakers: ours end where
+     her fingers do and stand inside her shoes; their sliders are left at 0.
+- **Found on the way and fixed for everyone:** the elbow and the ankle never followed an arm or a leg made longer or
+  shorter (their skin is on twist bones, so the rig found them no ring). They do now, along the limb's own line.
+- **Its hairstyle** (docs/HAIR_V2.md §10b): `daz_bob`, on bodyv2. The outline is within about half a centimetre of
+  hers from the crown to the tips, which is all a head 160 px tall can say; the fringe's locks and the tips are not
+  hers. So: the shape, yes; a 1:1 of the locks needs a close-up of the head. It needed one new slider, *Tuck under*
+  (a bob's sides lying in toward the jaw), and the Volume sliders to go to 60 mm.
+
+## 2026-11-12, necks: a slider to make them shorter (the user)
+
+- **"If we don't already have a modifier make sure we add a modifier / slider in general to make necks shorter, I've
+  noticed most of the models look like they have unrealistic turtle length necks, which is fine since some people
+  have long necks but a lot of Asian people don't."**
+- **There was one:** *Neck length* (grow.js, a proportion: the head comes down whole and the neck's skin with it, the
+  shoulders stay). It was filed under Proportions, away from the neck's other sliders, with a help text of five
+  words. **Now:** it is listed in **Body**, right after Neck and Neck width, and says what it does: -1 is about
+  2.5 cm off an adult's neck (the chin 4.2 cm over the pit of the neck where the feminine base has 6.6), +1 as much
+  longer. Its circle on the neck's front is as it was.
+- **Measured, the chin over the pit of the neck** (bodies at their own heights): feminine 6.6 cm (0.32 of the head's
+  height), average 6.2 (0.29), masculine 5.3 (0.23), **v2female 7.5 (0.39)**. So the long one was the base I made:
+  its short lower face had raised the chin a centimetre and left that centimetre on the neck, and its neck is slim,
+  which reads longer still.
+- **v2female carries Neck length -0.35 now:** the head 0.8 cm lower, the chin 6.7 cm over the pit of the neck
+  (0.34 of its head; the feminine base 6.6). Held to the pictures, not to taste. In the front picture, by the fitted
+  camera, her collar's top edge on her left shoulder is at 316 px (columns 880 to 960); our bare shoulder was at 330,
+  a centimetre under it, and is at 316 now. The skin has to be under the cloth, so that picture alone says -0.25 or
+  so; in the three-quarter picture her bare shoulder is higher than ours even at -0.4 (her arm may be up there: it
+  says -0.4 to -0.6, or a pose). -0.35 is between the two. The T-pose reference of the same day, read roughly, has
+  the chin about 6.8 cm over the pit of the neck.
+- **The other bases are left as they are:** by these numbers they are not long, and the user's "which is fine".
+- **A rule for me from this:** when one part is made shorter, say where the length went. The lower face got shorter
+  by lifting the chin; the neck took it up and nobody asked it to.
+
+## 2026-11-12, v2female's neck and shoulders (the user, on seeing the base, twice)
+
+- **"Could you modify the shoulders and base of neck to match that shape of the head and thinner neck, looks a bit
+  uncanny when it should look more feminine."** I answered it from my own idea of feminine: a longer neck, the
+  shoulders sloped and narrowed, and showed that.
+- **"Instead of doing the long neck in a similar way you're matching the face and hair to the original, try match the
+  neck shape to the shoulders in a same way."**
+- **What this sets:** the neck and its join to the shoulders are held to the user's pictures, as the face and the hair
+  are: measured in the fitted frames, not styled. The long neck and the sloped, narrowed shoulders are taken out.
+- **What the pictures say** (the front one and the three-quarter one; docs/CHARACTER_STUDIO.md §2f): her neck is a
+  straight column from under the ears to the collar, about 9.3 cm across where ours was 10.2 to 11 and flared at its
+  top; her shoulders' line is where MHR's already was, within the thickness of her collar (her head sits close on
+  her shoulders: nothing like a long neck); the rise from shoulder to neck is a little lower beside the neck.
+- **What the base carries now:** Neck width -0.7, reaching up under the ears and behind the jaw; Neck base -0.3;
+  the shoulders as the feminine base's. From the chin's level to 2.5 cm under it the neck is within about half a
+  centimetre of hers.
+- **Left in as sliders, not used by the base:** Shoulder slope (made for the first answer). Neck base is used.
+- **A rule for me from this:** when the user says a part looks wrong and there is an original, the original is
+  measured before anything is designed. "More feminine" was a description of the fault, not a brief.
+
+## 2026-11-12, v2female (the user: "lets create a v2female base")
+
+- **"lets create a v2female base."** After the finding below (the 1:1): the error left by the twin tails' ties is the
+  head's and the neck's, not the hair's.
+- **What this sets:** v2female is a base in the Character Studio's Body tab now, beside Feminine, Average and
+  Masculine (docs/CHARACTER_STUDIO.md §2f). It is *what the feminine end becomes*: the feminine base's body, and a
+  sculpt of its own for the head and the neck (a slender neck, a short narrow lower face, eyes larger and further
+  apart, a smaller nose and mouth), after the proportions of the user's Daz3D characters. A button picks it; a switch
+  under the buttons turns it on or off for a character already made. As asked ("which still allows face sculpting
+  etc"), it is a starting point and nothing is locked: every identity slider, every sculpt control, the ages, Cutify,
+  Monster mode, Anime, a face fitted to a picture all go on top of it, as on any base.
+- **What had to be made for it:** two controls the sculpt lacked, both for anyone. MHR's neck could not be slimmed
+  (the sculpt's *Neck* is the throat under the jaw alone; the feminine base's neck is 10.3 cm across at its
+  narrowest): **Neck width** (Body) makes the whole neck slimmer or thicker about its own axis, from the shoulders
+  to under the jaw and the skull. And nothing narrowed a face toward its chin without leaving a ledge: **Face taper**
+  (Face) narrows the face from the eyes down, every height in the same proportion.
+- **Corrected the same day, and why it matters:** the first version carried Neck width at -1 (a neck of 7.4 cm), from
+  a width I had read off her picture by eye as "about 7.5". Laid against two of her pictures with fitted cameras, both
+  edges of her neck are there and it is 1.27 times as wide as her eyes are apart; ours at -1 was 1.10, and dented at
+  the nape from the side. The base carries **-0.4** (9.0 cm on the 1.63 m body GROW measures, 1.34) now, a face 1 cm shorter under the eyes and narrower with it, a
+  smaller mouth. The landmarks land 3.4 and 2.8 mm off in the two pictures (4.7 and 3.7 before).
+- **Mine, not the user's:** it is **off for new characters**, which start where they always did (halfway between the
+  bases). Nobody asked for the default to change; say so if every new character should start on it. Characters saved
+  before are untouched (the base is kept with the character as `v2`, absent when off).
+- **Not judged yet:** the look of it. It is held to two pictures by the places of the eyes, the nose, the mouth, the
+  chin and the ears and by the jaw's and the neck's outlines, bald and unlit as she never is; her eyes are far larger
+  than the base's, her right ear leans more, her shoulders begin lower. The user's eye is the judge.
+
+## 2026-11-12, the 1:1 (the user, on the first matched comparisons of the Daz twin tails: be a perfectionist; a v2female base)
+
+- **"I need you to be even more of a perfectionist, for this image your goal is to re-create a 1:1 of that hairstyle
+  meaning including the volume, curvatures etc, this is so you can figure out the system for aesthetic hair and apply
+  that later to the rest of our styles, I really need you to be a perfectionist for the above style."** The image: the
+  fifth Daz picture (the blunt fringe, low twin tails, long sidelocks; the same hair in the first and in the second's
+  right half).
+- **What this sets:** that one hairstyle is the target, every part of it, and it is held to its picture, not to my
+  description of it. The work goes: a rig that puts her picture and ours in one frame (the same camera, the same
+  scale, her outline over ours, numbers by height), a written list of what differs, the biggest first; where the
+  system can't make a part, the system is changed. What is learnt is then carried to the other styles; that part is
+  not done yet. docs/HAIR_V2.md §10 is the state: what is matched, by how much, and what isn't.
+- **"If required to make these hairstyles work feel free to create a better preset base head shape called v2female
+  (which still allows face sculpting etc)."**
+- **What this sets:** a base called v2female may be made. So far the hair engine has not needed one: hair grows on any
+  body. What it is used for now is the comparison: the pictures are matched on a body with the proportions of the
+  user's Daz characters, kept as plain sculpt values under that name (`tools/character/grow.js` `V2FEMALE`: the
+  feminine base, a shorter rounder face, a full bust; `bodyByName("v2female")` in node). As a base to pick in the
+  Character Studio's Body tab it is **not built yet**; it is the next step there, with every slider still moving
+  from it. *(Built since: the entry above.)*
+- **Found since, and it meets the user's condition ("if required"):** it is required. The error left by the tie in
+  both pictures is the head's: at the tie's height her head is about 9.1 cm wide and her neck 7.5, the test body
+  13.0 and 12.0, and the sculpt's jaw and neck at their furthest move that by 2 mm (HAIR_V2 §10, item 8). A base
+  with a lower face and a neck of that kind is the next piece of work; the hair by the tie is not judged closer
+  than 2 cm until it exists.
+
+## 2026-11-12, the sides (the user, on the first whole pictures of the Daz baseline: the sides' curve and volume)
+
+- **"You're making the bangs really good but note that I really want you to be able to emulate the curvature of the
+  sides, look at the first image screenshot you made and compare it to the curve and volume of her sides, we really
+  want to have a system that can emulate that daz3d hair look as 1:1 as possible."** Said of the baseline of the
+  fifth picture (blunt fringe, low twin tails), as it is and drawn crisply.
+- **What this sets:** the fringe's direction is right to carry on with; the sides come first now. Her hair comes down
+  from the crown round the side of the head in a curve and tucks in to a low tie; ours beside it is a wide flat
+  shape with a corner at ear level. The system has to be able to make her sides, not only this one style: a setting
+  that only happens to fit one picture isn't it.
+- **Where it stands:** nothing built for it yet; this much found. Her side, traced on her picture: out gently from
+  the top, widest at eye level, in by about a centimetre and a half to a small tie under the ear. Ours as first
+  made (a hood, widest at the tie) was my settings: a thick tail, the tie far back, pulled tight. With the sliders
+  there are (ears covered, the tie right at the ear and at its lowest, a thin tail, the hair left loose) the side
+  comes close to hers from the front and from three quarters. What it can't do: show her ear below the side hair
+  (with the ears out, the tied hair goes round the ear in a kinked detour), and shape the volume (one handle, loose
+  to tight). Those two are the work for this.
+
+## 2026-11-12, after the very last (the user: exact replicas of their Daz3D hairstyles; be extremely critical)
+
+- **"Can you create these hairstyles. Be extremely critical, unlike the other hair styles if something is preventing
+  you from getting a 1:1 of these ones you need to update the v2 hair system so they can be achieved (or even make a
+  new v2B system), I want an exact replica of these hairstyles I made in daz3d, you can see they look similar to the
+  particle system we already use so its up to you to figure out how to actually get each of these hairstyles, they
+  should be modifiable (strands length, etc)."** Five pictures, seven hairstyles (kept in `Saved/Hair2/daz/ref/`,
+  never in git): piecey blunt bangs with a red streak, long thin sidelocks and low twin tails; long straight hair
+  with long wispy bangs and sidelocks; full blunt bangs with low twin tails and red ties; long straight hair with
+  see-through bangs and the ears out; blunt bangs with the hair gathered at the sides under red ornaments with
+  tassels, and sidelocks (that picture is small and soft: whether there are buns under the ornaments can't be seen
+  in it); a short rounded bob with full bangs; full blunt bangs with red streaks, long low twin tails in front of
+  the shoulders and thin sidelocks. Read at full size they are four kinds: the blunt fringe with low twin tails and
+  long thin sidelocks (three of them: hair from the crown with no parting, the fringe dense above and in separate
+  locks below, small ties); long loose straight hair with a see-through fringe (two); the bob; the ornaments.
+- **What this sets:** these are held to their pictures, side by side, with what still differs written down each
+  round; a likeness that is "recognisable" is not enough here. Where the system is what stands in the way, the system
+  changes. Every style stays a style of the editor: its lengths and the rest on sliders.
+- **Where it stands (not built):** a first baseline of the last picture beside the picture. The shape is roughly
+  there; it is far from a replica. Tested, not assumed: the editor pushed to its limits (high detail, 2600 pores,
+  narrow cards, 120 loose strands: twice the triangles) barely changes how the hair reads. That showed only that more
+  cards don't help; I first wrote here that real strands over the cards were therefore needed, which it didn't show.
+  Tried since: the same cards drawn crisply (no dithered coverage, no side fade, no softness) turn the fringe from a
+  see-through haze into a dark mass whose edge breaks into separate tips, by eye, in one still picture, not yet at
+  the reference's own scale. So how the cards are drawn matters more than how many there are, and whether real
+  strands are needed at all (for the sidelocks, the tails' edges, flyaways) is not decided. Also needed, and these
+  stand: a way to dye one chosen lock
+  (the red streak: the streaks there are put red on the sides and tails instead); a fringe that is dense above and
+  parts into strands below. The choice between changing v2 and a v2B was left to Claude; this is its finding, the
+  user hasn't seen the pictures yet. The pictures here are 960 x 720 on a CPU: some of the softness is the renderer.
+
+## 2026-11-12, the very last (the user: an Advanced category, about five intricate, aesthetic women's styles)
+
+- **"Can you experiment with more intricate/advanced pores and curves like the references (for the same hair) to get
+  more advanced hairstyles as shown in the images, have this under an advanced category. Try create maybe 5 very
+  aesthetic female hairstyles (you dont need to do the spikes but a few strands might add some realism)."** And, of
+  the four pictures: **"note the images I passed you is just 1 reference image with different in-progress angles."**
+  One hairstyle, then: its guide curves over the scalp sweeping into a bun, its long strands in front of the ear, the
+  strands standing out of a bun, and the render (violet over black, a heavy blunt fringe, two buns, long tendrils).
+- **What it asks of the editor**, each a setting with its slider: tied hair that leaves its roots the way it's combed
+  and bends round to its tie (Sweep), or winds in to it (Swirl); strands standing out of a bun, soft to spiky; the
+  face-framing strands gathered into pointed tendrils, each its own length, with an S along them; thin wisps left out
+  by the ears; a heavier fringe that can round down at its sides; and a second colour: all of it, streaks, the
+  underside, the top, the front pieces, the fringe, one half, the ends, with the roots or the ends left natural.
+- **Where it stands (in the tree, not finished, not committed as done):** six styles under *Advanced*. The second
+  colour is drawn in Godot and in the Studio's tab. By Godot's pictures two are right (half-up buns with blonde front
+  pieces; a dip-dyed ponytail), and four have faults left: both bun styles' streaks still show card-shaped flecks
+  close up, the underside colour fans out at the nape, a platinum half is flat and chalky. Spikes were not asked for;
+  the strands are.
+
+## 2026-11-12, last (the user: long hair ends with just its tips on the shoulders)
+
+- **"Can you modify the long hairs so they're just barely on the shoulders (just the tips)."** So every long style's
+  cut is at the shoulders (`cut.line: -0.14`; the shoulders' tops are -0.135): twenty-four styles brought up, the
+  tails of the tied ones shortened to match (their tips at the shoulders), the ringlets to the shoulder. This is the
+  styles' own lengths, not a wall: the sliders still go down to the chest (the go, 2026-11-11). It also brings the
+  first rule back ("dont make the hair too much longer than shoulder height as this may cause clipping with clothing
+  later").
+
+## 2026-11-12, later (the user, while the hair editor v2.0 was being built: Japanese and Korean styles, and a chart of twelve drawn hairstyles)
+
+- **"Can you do some more Asian variations where the girls front and side hair is above shoulders slightly below ears
+  but then back is longer and other Asian variations."** So a cut can have **two lengths** (`cut.tiers`): *the front
+  and sides shorter, the back long* (the shorter line as far round the head as `frontTo`, a step or a slope) or *a bob
+  over a long nape* (the jellyfish cut: everything cut at the shorter line but the hair that grows on the low back of
+  the head). And a tie can take **the top's hair only** (`ties.part`, and the kind *Two side up*). Eight styles in a
+  group of their own (*Japanese and Korean styles*): sides just under the ears with a long back; hime with sidelocks to
+  the jaw; the jellyfish cut; a wolf cut; two side up; odango; long with C-curl ends and see-through bangs; a lob with
+  the ends flipped out.
+- **"Can you try recreate as close as possible a preset for each of these more animals hairstyles"** (read as *anime*:
+  the picture is a drawing chart of twelve hairstyles, three by four; it stays on the user's side, not in git). A
+  preset for each, in a group of their own (*Drawn hair: the chart's twelve*), row by row: long and straight with
+  bangs to the eyes; shoulder length with the ends flicked out; hime; long and tousled with an ahoge; a side ponytail
+  with straight bangs; a bob with the fringe over one eye; pigtails; a short bob with parted bangs; long with ringlets
+  in front; twin buns with the hair down; short and spiky; short with two small low tails. What they needed that the
+  engine didn't have, all sliders now: a **choppy** fringe (each lock its own length) with a longer **centre lock**; a
+  fringe's **slant** (longer toward one side: hair over one eye); a tail **to one side** (`ties.offset`: a side
+  ponytail); **ringlets** (`fringe.frameCurl`: the face-framing strands wound into a drill a side); an **ahoge**.
+  A look-alike is the user's to judge, part by part (LESSONS): Godot's pictures of the twelve are in
+  `Saved/Hair2/t5*.jpg` while they were made; the cards' pictures are the thumbs.
+
+## 2026-11-12 (the user, while the hair editor v2.0 was being built: long hair with the ears out)
+
+- **"Could you do some female hairstyles where the ears aren't covered but the hair is still long (so the ears poke out
+  cutely), a couple of variations."** So the ears have a third way to be worn beside *covered* and *clear*:
+  **tucked** (`ears: "tucked"`, or one ear: `tucked_left`, `tucked_right`): the hair that comes down the side of the
+  head turns back along the hairline, passes over the ear's top and falls behind it, never across it; what grows in
+  front of the ear below its top stays as a few short wisps. And where the tucked hair goes then is a choice
+  (`tuckFall`): **over the shoulders, in front** (it comes forward under the ear and hangs in front of the shoulder to
+  its cut: long hair seen from the front, the ears out above it) or **behind the shoulders**.
+- **Five styles** in a group of their own (*Women's, long with the ears out*): long and straight; see-through bangs
+  with sidelocks (the ear between the sidelock and the lengths); a side parting with one ear out; loose waves; half-up.
+  Judged in Godot's pictures as the rest are (`Saved/Hair2/t3.jpg` while they were made).
+
+## 2026-11-11, the go (the user: build the hair editor v2.0, all of it, until it looks really good in Godot)
+
+- **The answer to the plan's questions**: **"v2 should be in the character creator studio tab, let it reach the chest
+  (might be ok for some clothing, we can adjust always with a slider the length), 3 sure, 4 sure. Start working on
+  everything and dont stop until it looks really good inside godot and runs well."** So:
+  - **It's a tab of the Character Studio** (Hair editor v2.0, beside the salon's Hair tab), as planned.
+  - **Hair may reach the chest**: the length is a slider, and its end is the chest (loose hair and tails both), not the
+    collarbones the plan had. The first rule ("not too much longer than shoulder height") is now the styles' default
+    lengths, not a wall.
+  - **About 20,000 triangles of hair** by default: yes. **Braids, beards, hair under hats**: later, yes.
+  - **No stops for review**: the plan's "stop for the user's answer" after each sheet is lifted by the user. Build
+    every step; judge it in Godot's own pictures until it looks really good there; measure that it runs well (the
+    Studio's regeneration time, the triangles and the frame's cost in Godot).
+
+## 2026-11-11, after the very last (the user: a hair editor v2.0, planned before it's built)
+
+- **The ask**, with five reference pictures (a sleek middle-part bob, low twin tails with a swept fringe,
+  shoulder-length waves from a side parting, a short cut with a long swept fringe, a chin bob with see-through bangs):
+  **"Analyse our character studio hair creator, I really love how I can make the hair and it looks really good in
+  godot but there are often small gaps etc, can you make a new tab called hair editor v2.0, instead of me having to
+  create the strands, add pre defined hair pores all around the head and sliders I can adjust to change the shape.
+  Aim to be able to re-create all the hair styles in the images provided. Maybe vary the hair line pore shape so we
+  can get slight variations (this should be a dropdown), your goal is to be able to recreate each hair in the image
+  1:1 and preview it in godot to make sure it looks good."**
+- **A new tab, not the Hair tab**: "the hair maker shouldn't exist in the current hair tab, should be a full on new
+  tab like clothes etc". The salon stays as it is.
+- **What it must reach**: "pigtails, tied up hair, curly long hair etc ... replicate/simulate each of the hairstyles
+  in the images + more (more traditional male ones, balding, long)".
+- **A length cap**: "don't make the hair too much longer than shoulder height as this may cause clipping with clothing
+  later".
+- **Plan first**: "Come up with the detailed plan first on how you will achieve this new hair creator, then ask me to
+  start on implementation." So nothing is built: **docs/HAIR_V2_PLAN.md** is the plan (the salon analysed, the
+  pictures taken apart, the design, the tab's controls, the build in steps with a stop for the user's answer after
+  the first sheet, the checks, the limits).
+- **Claude's calls in the plan, the user's to overturn** (its §5): v2 beside the salon with a switch on each character
+  for which hair is worn; loose hair to the collarbones at most, tails up to about 25 cm from their tie (picture 2's
+  reach the chest); the first sheet is picture 1's bob, picture 4's short cut, a man's side parting and a thinning
+  crown, with the hairline shapes as dots on the head; about 20,000 triangles of hair by default; braids, beards and
+  hair under hats later. The pictures stay on the user's side, not in git (other people's renders).
+
 ## 2026-11-12, the bed (the user: "Why does the blanket and pillows float above the bed")
 
 - **Why**: the kit's bed (`tools/director/kit.js` `bedGen`), not the seats. Measured in the hotel's export: the duvet

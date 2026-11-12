@@ -64,6 +64,8 @@ export function buildSculpt({ P, T, lm, lid = null }) {
 
   // the limbs' middles: the arm by slices across x, the leg by slices up y (the left side)
   const armW = (x, y) => y < 0.98 || y > 1.5 ? 0 : sm(0.205, 0.235, x) + (sm(0.10, 0.21, x) - sm(0.205, 0.235, x)) * sm(1.24, 1.32, y);   // how much a point is arm (and shoulder)
+  // how much a point comes down with the shoulder's point (Shoulder slope): as armW, but from the neck's root (7 cm out) to the shoulder's point (19), so the whole line slopes; nothing over the shoulders (the jaw, the ears)
+  const slopeW = (x, y) => y < 0.98 || y > 1.53 ? 0 : (sm(0.205, 0.235, x) + (sm(0.07, 0.19, x) - sm(0.205, 0.235, x)) * sm(1.24, 1.32, y)) * sm(1.53, 1.505, y);
   const slices = (key, lo, hi, step, pick, get) => { const out = []; for (let s = lo; s <= hi + 1e-9; s += step) { let a = 0, b = 0, c = 0;
     for (let i = 0; i < N; i++) { const p = at(i); if (Math.abs(p[key] - s) < step / 2 && pick(p)) { const g = get(p); a += g[0]; b += g[1]; c++; } }
     out.push(c ? [a / c, b / c] : null); } return { lo, step, v: out }; };
@@ -223,6 +225,17 @@ export function buildSculpt({ P, T, lm, lid = null }) {
     // the eyes: the skin round each (its lids, the socket's rim) bigger or smaller about the eye's own middle; the eyeball
     // and the opening follow the skin (the grafted eyes grow with it). The move's slope stays well inside 1 at any
     // slider, so the lids never fold
+    // the face narrowing from the eyes down to the chin, or widening: every point of the face's front sideways in
+    // proportion to how far out it is, more the lower it is (nothing at the eyes' line, a third of it at the mouth,
+    // all of it at the chin, easing out under it), so each height keeps its own shape and nothing is left standing
+    // over what moved. (Jaw width is a spot at the jaw's angle and Chin width a spot at the chin: pulled in far, the
+    // cheek above them is left as a ledge. A band along the jaw's own line was tried first and did the same.) With
+    // Face length it makes a small lower face, shorter and narrower together: the v2female base's. The eyes and the
+    // ears stay, as Face length's
+    ["face_taper", "Face taper", "Face", "The face narrowing from the eyes down to a small chin (a V: -1 a fifth narrower at the chin), or widening to a broad jaw. The eyes and the ears stay.",
+      p => { if (p[1] > yFace || p[1] < chin[1] - 0.05 || p[2] < 0.03) return null;
+        const t = p[1] >= chin[1] ? (yFace - p[1]) / (yFace - chin[1]) : sm(chin[1] - 0.05, chin[1], p[1]), w = 0.2 * t * t * faceFront(p[2]);
+        return w > 1e-7 ? [p[0] * w, 0, 0] : null; }],
     ["eye_size", "Eye size", "Face", "Bigger or smaller eyes: the lids and the socket round each eye about its middle (the eyeball follows).",
       p => { const w = bump(dist(p, eyeC), 0.036) * midOff(p); return w ? [0.15 * w * (p[0] - eyeC[0]), 0.15 * w * (p[1] - eyeC[1]), 0.15 * w * (p[2] - eyeC[2])] : null; }],
     ["eye_spacing", "Eye spacing", "Face", "The eyes further apart or closer together.",
@@ -251,8 +264,41 @@ export function buildSculpt({ P, T, lm, lid = null }) {
     ["neck", "Neck", "Body", "A thicker or a slimmer neck.",
       p => { if (p[1] < 1.44 || p[1] > 1.6) return null; const c = along(NECK, p[1]); if (!c) return null; const r = Math.hypot(p[0], p[2] - c[1]);
         const w = bump(Math.abs(p[1] - 1.5), 0.05) * sm(0.075, 0.06, r); return w ? [0.18 * p[0] * w, 0, 0.18 * (p[2] - c[1]) * w] : null; }],   // under the jaw
+    // the whole neck, as a column: every point of it in toward its own axis (or out), from under the skull and the jaw
+    // down to where it runs into the shoulders; out toward the shoulders it fades with the distance from the axis. (Neck, above, is the throat under the jaw alone: it stops 7 cm from the
+    // axis, and the widest of MHR's neck is its back and sides, further out. The v2female base's slender neck is this.)
+    ["neck_width", "Neck width", "Body", "The whole neck slimmer or thicker, from under the skull and the jaw down to the shoulders (Neck is the throat under the jaw alone).",
+      p => { if (p[1] < 1.4 || p[1] > 1.6) return null;
+        // (its axis: the neck's own middle, front to back, at two heights of the neck proper, and the line through them
+        // above and below: over the chin the slices' middles are the face's, far in front, and the jaw's angles would
+        // count as the neck's back)
+        const y1 = 1.45, y2 = chin[1] - 0.012, a1 = along(NECK, y1), a2 = along(NECK, y2); if (!a1 || !a2) return null;
+        const dz = p[2] - (a1[1] + (a2[1] - a1[1]) * (p[1] - y1) / (y2 - y1)), r = Math.hypot(p[0], dz); if (r < 1e-6) return null;
+        // (where it ends above, by the bearing from the axis: 0 straight in front, 90 to the side, 180 behind. Under the
+        // chin in front, rising to under the jaw's line at the side, then from just behind the jaw up to under the ear
+        // and the skull's base, and so round the nape. Nothing at that height itself: the jaw's line and the chin
+        // don't move. It first stayed at the jaw's height to behind the ear: the neck then kept its full width under
+        // the ears, a column that flared at its top, where the user's Daz characters' is straight up to the ear)
+        const th = Math.atan2(Math.abs(p[0]), dz) * 180 / Math.PI, t0 = chin[1] - 0.006, t1 = jaw[1] - 0.004, tj = t0 + (t1 - t0) * sm(30, 85, th), top = tj + (1.565 - tj) * sm(95, 140, th);
+        // (how fast it comes in under that height: within 3 cm under the jaw, which overhangs the neck anyway; over
+        // 5 cm at the back, where the skull runs down into the nape: in 3 cm there it left a step under the skull)
+        const w = sm(1.405, 1.46, p[1]) * sm(top + 0.004, top - 0.026 - 0.024 * sm(110, 150, th), p[1]) * sm(0.125, 0.08, r);
+        return w > 1e-4 ? [0.3 * p[0] * w, 0, 0.3 * dz * w, sm(100, 125, th)] : null; }, { smooth: 3 }],   // (smoothed behind the jaw only: the jaw's own line keeps the field's edge as it is)
     ["shoulders", "Shoulders", "Body", "Broader or narrower shoulders (the arms move with them).",
       p => { const w = armW(p[0], p[1]); return w ? [0.03 * w, 0, 0] : null; }],
+    // sloping shoulders: the line from the neck out to the shoulder's point comes down, more the further out (nothing
+    // at the neck's root, all of it from the shoulder's point on: the arm goes down whole with it), as Shoulders moves
+    // them sideways. MHR's shoulder line runs out almost level from 4 cm under the chin: with a slender neck on it, a
+    // pole on a shelf. Sloped, the neck's line carries on down into the shoulder. -1 squarer, higher at the points
+    ["shoulder_slope", "Shoulder slope", "Body", "Sloping shoulders: the shoulders' points and the arms lower, the line from the neck coming down to them (a long neck's line), or square, level ones.",
+      p => { const w = slopeW(p[0], p[1]); return w ? [0, -0.03 * w, 0] : null; }],
+    // the neck's base: the rise from the shoulders up to the neck (the trapezius' top edge). On MHR it is a straight
+    // ramp from a third of the way down the neck out to the shoulder's point: a tent, which a slender neck stands in
+    // like a pole. Hollowed (-1), the top of the shoulder between the neck's root and its point comes down, most 9 cm
+    // out and nothing at either end, so the ramp becomes a curve: steep beside the neck, then level; the neck reads
+    // long and stands clear. Only the top (from 1.47 m up on the base, easing out over 7 cm below it, front and back)
+    ["neck_base", "Neck base", "Body", "The rise from the shoulders up to the neck: hollowed and lower (a long, slender neck standing clear of the shoulders), or fuller and higher (strong shoulders, a short neck).",
+      p => { const w = sm(0.045, 0.085, p[0]) * sm(0.175, 0.11, p[0]) * sm(1.40, 1.47, p[1]) * sm(1.535, 1.515, p[1]); return w > 1e-4 ? [0, 0.025 * w, 0] : null; }],
     ["chest", "Chest", "Body", "A deeper or a flatter chest.",
       p => { const w = bump(Math.abs(p[1] - 1.28), 0.09) * bump(p[0], 0.17) * sm(0.02, 0.09, p[2]) * (1 - armW(p[0], p[1])); return w ? [0, 0, 0.012 * w] : null; }],
     ["bust", "Bust", "Body", "A fuller bust or a flatter chest (a child's: −1). With Anime on (above) it runs further: −2 flat, past 1 a full, heavy bust (3: very large).",
@@ -282,13 +328,21 @@ export function buildSculpt({ P, T, lm, lid = null }) {
       p => { if (p[1] > 0.6) return null; const c = along(LEG, p[1]); if (!c) return null;
         const w = bump(Math.abs(p[1] - 0.36), 0.13) * (1 + 0.6 * sm(0, -0.03, p[2] - c[1])); return w ? [0.22 * (p[0] - c[0]) * w, 0, 0.22 * (p[2] - c[1]) * w] : null; }],
   ];
+  const NBR = Array.from({ length: N }, () => new Set());                  // each point's neighbours on the mesh
+  for (let t = 0; t < T.length; t += 3) for (let k = 0; k < 3; k++) { NBR[T[t + k]].add(T[t + (k + 1) % 3]); NBR[T[t + k]].add(T[t + (k + 2) % 3]); }
   const controls = C.map(([id, label, group, help, f, more]) => {
-    const idx = [], d = [];
+    const idx = [], d = [], how = [];
     for (let i = 0; i < N; i++) {
       const s = P[i * 3] < 0 ? -1 : 1, p = [s * P[i * 3], P[i * 3 + 1], P[i * 3 + 2]], m = [s * n[i * 3], n[i * 3 + 1], n[i * 3 + 2]];
       const o = f(p, m, i); if (!o || !(Math.abs(o[0]) + Math.abs(o[1]) + Math.abs(o[2]) > 1e-7)) continue;
-      idx.push(i); d.push(s * o[0], o[1], o[2]);
+      idx.push(i); d.push(s * o[0], o[1], o[2]); how.push(o.length > 3 ? o[3] : 1);
     }
+    // (smooth: n rounds of each moved point taking the mean of its own offset and its neighbours' on the mesh, the
+    // points the field left alone staying at nothing: a field whose edge runs slantwise across the mesh, the neck's
+    // under the ear, otherwise leaves a crease along that edge)
+    if (more && more.smooth) { const slot = new Int32Array(N).fill(-1), raw = d.slice(); idx.forEach((i, q) => { slot[i] = q; });
+      for (let r = 0; r < more.smooth; r++) { const e = d.slice(); idx.forEach((i, q) => { let sx = e[q * 3], sy = e[q * 3 + 1], sz = e[q * 3 + 2], c = 1; for (const j of NBR[i]) { const k = slot[j]; c++; if (k >= 0) { sx += e[k * 3]; sy += e[k * 3 + 1]; sz += e[k * 3 + 2]; } } d[q * 3] = sx / c; d[q * 3 + 1] = sy / c; d[q * 3 + 2] = sz / c; }); }
+      for (let q = 0; q < idx.length; q++) { const k = how[q]; for (let a = 0; a < 3; a++) d[q * 3 + a] = raw[q * 3 + a] + (d[q * 3 + a] - raw[q * 3 + a]) * k; } }   // (how: the field's fourth number, how much of the smoothing a point takes, all of it when it gives none)
     return { id, label, group, help, idx: Uint32Array.from(idx), d: Float32Array.from(d), ...(more || {}) };
   });
 
@@ -314,12 +368,14 @@ export function buildSculpt({ P, T, lm, lid = null }) {
     ["mouth", "Mouth corner", ["mouth_width"], corner, true],
     ["lips", "Lips", ["lips"], L(0), false],
     ["face", "Face length", ["face_height"], [0.03, chin[1] + 0.012, chin[2] - 0.016], true],
+    ["face_side", "Face taper", ["face_taper"], pair(150, 379), true],
     ["eye", "Eye size", ["eye_size"], [eyeC[0], yFace - 0.006, eyeC[2] - 0.004], true],
     ["ear", "Ear", ["ears_size", "ears_out"], [0.087, 1.6, 0.012], true],
     ["ear_top", "Pointed ear", ["ears_point"], earTop, true],
     ["snout", "Snout", ["snout"], [0, subn[1] - 0.004, subn[2]], false],
     ["neck", "Neck", ["neck"], "out", true],
-    ["shoulder", "Shoulder", ["shoulders"], extreme(p => p[0] > 0.17 && p[0] < 0.22 && p[1] < 1.5, p => p[1]), true],
+    ["shoulder", "Shoulder", ["shoulders", "shoulder_slope"], extreme(p => p[0] > 0.17 && p[0] < 0.22 && p[1] < 1.5, p => p[1]), true],
+    ["neck_root", "Neck base", ["neck_base"], extreme(p => Math.abs(p[0] - 0.09) < 0.006 && p[1] < 1.51 && p[1] > 1.4, p => p[1]), true],
     ["chest", "Chest", ["chest"], extreme(p => Math.abs(p[0] - 0.08) < 0.01 && Math.abs(p[1] - 1.28) < 0.01, p => p[2]), true],
     ["bust", "Bust", ["bust"], extreme(p => Math.abs(p[0] - 0.075) < 0.008 && Math.abs(p[1] - 1.24) < 0.008, p => p[2]), true],
     ["waist", "Waist", ["waist"], extreme(p => Math.abs(p[1] - 1.12) < 0.006 && p[0] < 0.2, p => p[0]), true],

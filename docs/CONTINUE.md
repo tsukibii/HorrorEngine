@@ -24,12 +24,227 @@ builder's floors, the street's steel stair, climbing in Godot and on the desk; 2
 Character Studio, then the creature presets and a Studio character's face in Godot, then the Anime switch and the red
 knit dress; then on `claude/beautiful-cray-a622xx`: tutorial v2's floor ready-made; 2026-11-11 on
 `claude/compassionate-babbage-3bnfqx`: the clothing research (Cloth2Tex, ready-made garments, the fit test, the
-clothing library); then on `more-shotgun-shells`: two easter egg shells for the shotgun; 2026-11-12 on
-`claude/jolly-darwin-9t8hkc`: the ghost events plan, the cloak and creepy eyes, with `more-shotgun-shells` merged in. Read this after CLAUDE.md's start
+clothing library), merged; then on `claude/ecstatic-dijkstra-6ixk71`: the hair editor v2.0, planned, then built (2026-11-12),
+two of the user's Daz hairstyles held to their pictures, the v2female and bodyv2 bases, and the styles gone through;
+beside it on `more-shotgun-shells`: two easter egg shells for the shotgun; and 2026-11-12 on
+`claude/jolly-darwin-9t8hkc` (merged first, PR #25): the ghost events plan, the cloak and creepy eyes, the hunt, sanity
+and the kit's bed, with `more-shotgun-shells` merged in. Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-12, `claude/jolly-darwin-9t8hkc`): the ghost events plan, the cloak, creepy eyes
+## Where it stopped last (2026-11-12, the styles gone through, `claude/ecstatic-dijkstra-6ixk71`): what the two matched hairstyles taught, in all 67
+
+Read DECISIONS 2026-11-12, "the lessons into every style" and "the ringlets", first. The user: "take everything
+you've learnt from the last hairstyles and enhance improve v2 hairstyles"; and, with a screenshot while it was being
+done, "the curls look like they float rather than come from the head/hair".
+
+- **How it was done** (docs/HAIR_V2.md §10c): every style pictured from four sides on the body it is for (the women's
+  on v2female, the men's on the masculine base, the children's on a child), before and after: 67 pairs, each looked
+  at. The pictures are scratch (`Saved/Hair2/imp`).
+- **In the engine**: the scalp's shade as it's seen (it was a brown under black hair, showing as patches at every
+  pulled-back hairline: §3.10); a closed fringe's lock on the middle (the older fringes split into a bare V: the
+  locks, not the comb: §3.7; blunt, choppy and micro fringes are closed by their kind); a tucked ear's wisps as fine
+  hairs over a light shade; **ringlets as their lock wound up** (the user's catch: §3.7); Tuck under by a hair's own
+  line; every look of the editor's own with highlights lock by lock, the light ones with more light inside (§5).
+- **In the styles**: 44 of 67 have hair that moved (the table in §10c): tied hair with body, low ties that hang
+  behind the ears, tails with more hairs, fringes closed and to the lash line, bobs rounder, a fuller crown on long
+  hair, the hime's sidelocks as a step, ears-out hair behind the shoulders, tendrils that hang free, two dyes that
+  read. The other 23 are the same hair by hair (the men's, the balding cuts, the three for our games and six more).
+- **The cards** are made again, each on the body its style is for (`hair2_check.py` `card_body`; the women's on
+  `v2base`: v2female's head on the feminine base's plain body).
+- **Checked here**: HAIR2 (with two lines for the ringlets; its slider lines no longer lean on a style's own
+  settings), GDHAIR2 (nine styles in Godot: the scalp through the hair 0.0 to 3.3% of its outline), CHECKS, and,
+  after the push, HAIR2PAGE (269 s on the cloud's CPU, without `EXPORT=1`). **Not run here: STUDIO, and HAIR2PAGE's
+  export** (the tab draws the same engine; its own shader has no `streak`, so its picture of a fringe is the older
+  sheen): ask the user for a local run (docs/RUN_LOCALLY.md, which now lists HAIR2PAGE).
+- **Left, and seen** (§10c, the end): see-through fringes begin as a row of card ends; light hair is better and
+  still striped (the atlas is the salon's); the peekaboo's rose fans a little on the shoulders; nothing was looked
+  at in motion. Tasks still open from before: the other Daz hairstyles (d2 to d4), the twin tails' own list (§10).
+
+## Where it stopped before that (2026-11-12, the 1:1 and v2female, `claude/ecstatic-dijkstra-6ixk71`): one Daz hairstyle held to its picture; the v2female base
+
+Read DECISIONS 2026-11-12, "the 1:1", first: the user wants **one** hairstyle (the fifth Daz picture: blunt fringe,
+low twin tails behind the ears, long sidelocks) re-created 1:1, volume and curves, "to figure out the system for
+aesthetic hair and apply that later to the rest of our styles", and offered a base head **v2female**, then asked
+for it ("lets create a v2female base").
+
+- **Built for the hair** (docs/HAIR_V2.md §3.7, §3.8, §10): tied hair that hangs to its tie (Drape, Gather, Puff,
+  Fullness, Tie lower), a route for it round an ear that's out, tails as brushes (Fan, Flat, lean out, Strands), a
+  fringe closed at its middle, a look that can ask more of its bake (`streak`), the style `daz_twin_tails` in a
+  group of its own, HAIR2's assertions for each. The older 65 styles are the same hair by hair.
+- **Where the hairstyle stands, on the new head** (HAIR_V2 §10: the rig, the table): from two fitted cameras its
+  edge is within about half a centimetre of hers from the crown to nine centimetres down the tails (Fullness 0.33,
+  the tie 3.3 cm lower, the tails as flat brushes), and its sidelocks hang free from the fringe's corners (*Hang
+  free*; they had been drawn in under the chin: the ends' turn was read against the cut's line, fixed for every
+  style, which changed three Advanced ones for the better). Not matched, in order: the look's evenness and teal
+  (`streak` in the Studio's own shader), the loose hair on the tails' outside, 0.7 to 0.9 cm behind the ear's top
+  in the second view, the fringe's pieces, the sidelocks as ribbons and the plait, the red streaks.
+- **The rig is scratch** (`rig2/`: her pictures stay out of git); §10 has what rebuilds it: the two views, the
+  scales and turns, how the landmarks are taken, what her head's tilt does to the comparison.
+- **The v2female base is built** (DECISIONS 2026-11-12, v2female; docs/CHARACTER_STUDIO.md §2f): a fourth base
+  button and a switch in the Body tab, *what the feminine end becomes*: the feminine body, with twenty plain
+  sculpt values for the head, the neck and the shoulders (`MHR_presets.json` `sculpt.v2female`), every slider still
+  moving from it; and the controls it needed, **Neck width** (the whole neck about its own axis) and **Face taper**
+  (the face narrowing from the eyes down, no ledge). Off for new characters (nobody asked for the default to change).
+  GROW and GROWPAGE (`QUICK=1`) hold it. **Ask the user for a local STUDIO and GROWPAGE** (docs/RUN_LOCALLY.md).
+- **Its neck and shoulders** (DECISIONS 2026-11-12, v2female's neck and shoulders): the user found the slim neck
+  on MHR's shoulders uncanny; my first answer (a long neck, sloped and narrowed shoulders) was wrong and the user
+  said so: match the original. Measured in the fitted frames: her shoulders are where MHR's are, her neck is a
+  straight column of about 9.3 cm. The base carries Neck width -0.7 (the field now reaches up under the ears, with
+  a longer run-in at the nape) and Neck base -0.3; nothing else. Shoulder slope stays as a slider, unused by the
+  base. The picture: `docs/studio_sheets/2026-11-12_v2female.jpg`.
+- **Necks** (DECISIONS 2026-11-12, necks): the user: most of the models have "turtle length necks", make sure
+  there is a slider to shorten them. There was one, Neck length, filed under Proportions: it is listed in **Body**
+  now, after Neck width, and says what it does (-1 about 2.5 cm off). Measured, the long neck was v2female's (the
+  chin 7.5 cm over the pit of the neck against the feminine base's 6.6: the short lower face had left its
+  centimetre on the neck); the base carries **Neck length -0.35** now (6.7 cm), which is also where her collar puts
+  her shoulders. GROW and GROWPAGE (`QUICK=1`) hold it.
+- **The bodyv2 base is built** (DECISIONS 2026-11-12, a T-pose reference; docs/CHARACTER_STUDIO.md §2g; the
+  picture is `Saved/Body/ref/t1.jpg`, not in git: ask for it again in a new session): a fifth base button and a
+  second switch, *what the feminine end's body becomes*: MHR weights of its own and nine sliders, fitted to the
+  user's Daz3D T-pose picture (legs within 0.3 cm by height, trunk under the cardigan 0.8, wrists, eyes, chin, knee
+  within a centimetre). Round it 101, 82, 113 cm on 163. **Three things to ask the user about** (all in DECISIONS):
+  her arms are a sixth shorter than a real person's and the base carries that (Arm length -1.75); front to back is
+  a medium build's, mine, since the picture is from the front (a side picture would replace it); hands and feet
+  left at 0. The fit's scripts as they were run: `docs/research/bodyfit/`. **Found and fixed on the way:** the
+  elbow and the ankle never followed Arm length and Leg length (pose.js `along`). GROW, GROWPAGE (`QUICK=1`), POSE
+  hold it. Nobody has looked at an outfit on it, or at it in the Studio's own view.
+- **Its hairstyle is built**: `daz_bob` (HAIR_V2 §10b), a rounded short bob with the fringe swept over one eye,
+  held to the T-pose picture's head on bodyv2: the outline within about half a centimetre from the crown to the
+  tips once half a centimetre of sideways lean is taken off (her head is 160 px tall in the picture: that is what
+  it can say). For it: **Tuck under** (a bob's sides lie in toward their ends) and Volume sliders to 60 mm. Not
+  matched: the fringe's fine locks, the pointed tips, the look. A close-up of her head would say more.
+- **It is held to two of her pictures** (the scratch `rig2/joint.mjs`: MediaPipe's points on the body and the ear
+  as the sculpt finds it against the same points in each picture, a camera fitted for each): the front one from
+  9.5 degrees to her right and 5 above, rolled 7.9, the points 3.4 mm off; the other from 32 to her left and 14.5
+  below, 2.8 mm. The first version's neck (-1, from a width read by eye) was too thin and the second (-0.4) too
+  wide and flared at its top; it is -0.7 now. Not matched: her right ear's lean, her larger eyes.
+- **What her head's roll means for the hair** (found while fitting, not yet used): in the front picture her head is
+  rolled 8 degrees and her hair hangs by the picture's own vertical, so against her head her right tail hangs
+  inward and her left outward. Ours hangs down the head's axis. Compare both sides and take the middle, or give
+  the engine a gravity direction; the old rig compared her right side alone.
+- **A side effect**: the hair tools size a head from its top to its chin (`salonref.js` `headFrame`); v2female's
+  chin is 1 cm higher, so its frame is 6.6% smaller than the feminine base's on the same skull and hair from the
+  same numbers is that much smaller on it. Know it before carrying numbers tuned on v2female to other bodies.
+- **Next for the hair:** the tails on the new head (fuller lower down, their tips), then §10's list. For the
+  body: ask the user what they see in the Studio (the base's neck and shoulders were judged here on bald busts
+  from Godot, in MHR's own pose; the Studio shows a T-pose with the neck stood up, skin, eyes and hair).
+- **Then:** the other six Daz hairstyles; the
+  new settings carried to the older styles (their cards made again).
+
+## Before that (2026-11-12, later, `claude/ecstatic-dijkstra-6ixk71`): two asks in progress, neither finished
+
+Read DECISIONS 2026-11-12, "the very last", "after the very last" and "the sides", first. All three are the user's;
+the second is the one they stressed ("be extremely critical ... an exact replica"), and the third is where they
+pointed next: the fringe is going the right way, the **sides' curve and volume** come first now (part 3 below).
+
+**1. The Advanced category (in the tree; faults left).** Six styles (`adv_*`, group `advanced`) after the user's one
+reference (four pictures of one hairstyle at stages). New in the engine, each a setting with a slider: a second colour
+(`dye`; HAIR_V2 §3.11), tied hair's Sweep and Swirl, a bun as a coil with loose strands, tendrils, wisps by the ears,
+a heavier fringe and its Arch both ways (HAIR_V2 §3.7, §3.8).
+- *Checked*: HAIR2 (65 styles, with lines for all of the above; `HAIR2_VERBOSE=1` shows what each measured),
+  HAIR2PAGE (with a split dye in the tab), GDHAIR2 (the nine key styles' figures the same as before the change: no
+  dyed style is among them), LOOKPLUGIN (after a new uniform in the look plugin's hair shader, `spec2_own`, 0 unless a
+  bake's record asks: a dyed lock's broad highlight in its own colour; its hair stage passes). The brows' and lashes'
+  shader includes the same file and no check draws it without a Studio export: drawn once by hand on a quad beside
+  the head's hair shader and one broken on purpose (it compiled and drew; the broken one was reported).
+- Before the push: CHECKS ok and GDPLAY ok, and HAIR2PAGE again on the tree as pushed. GDTESTROOM not run (it doesn't
+  pass in a cloud container: no recorded bodies there).
+- *Wrong, known* (HAIR_V2 §9): card-shaped flecks in the streaks of both bun styles close up (one cause found by
+  measuring and fixed, the rest unexplained); the long waves' underside colour fans out at the nape; a platinum half
+  chalky in Godot; scalp showing at a pulled-back hairline. The Studio's own shader has no own-colour highlight.
+
+**2. The user's Daz3D hairstyles, exact (not built).** Five pictures, seven hairstyles, in `Saved/Hair2/daz/ref/`
+(not in git, and `Saved/` doesn't survive a session: ask the user for them again). What's known:
+- A baseline of the last picture beside it (`Saved/Hair2/daz/r0`, `r1_strandtest.jpg`): the shape roughly, far from a
+  replica. Eight differences listed in DECISIONS and HAIR_V2 §9.
+- **Tested: more cards don't help** (the editor at its limits, twice the triangles: hardly a change). **Tested
+  after: how they're drawn does** (`--hair '{"hashed":false,"side_fade":0.0,"soft":0.0}'` at 1600 x 1200,
+  `Saved/Hair2/daz/x1/fringe_drawn.jpg`): the fringe a dark mass with separate tips where it was a haze. By eye, one
+  still, not at the reference's scale, nothing known in motion. Whether real thin strands are needed as well is not
+  decided (I first wrote that they were: the first test didn't show it). If they are, `hair_fine.gdshader` (the
+  brows' and lashes': blended at true coverage) is where to look first. A crisp setting belongs in a bake's own
+  `settings`, not in the plugin's defaults: those are every character's.
+- Also missing: a way to dye one chosen lock (a red streak in a fringe); a fringe dense above that parts into strands
+  below; a tendril that hangs on past where it meets the body (it stops on the shoulder now).
+- The tails were my setting, not the system: with `texture.wave` 0 they hang as the picture's do.
+- The order meant: the same comparison at the reference's own scale and in black with its sheen, then decide on
+  strands; the fringe in locks; the one-lock dye; the sidelocks; then each hairstyle against its picture,
+  side by side, with what still differs written down each round.
+
+**3. The sides (the user's direction; nothing built, this much found).** Her side hair (the fifth picture) comes
+out gently from the top, is widest at eye level and curves in by about a centimetre and a half to a small tie under
+the ear, a rounded lit surface, the ear's lower half showing. Found, with pictures from the front and three quarters
+beside hers (`Saved/Hair2/daz/s1/`): *ears covered*, `ties.side` 1, `ties.height` 0, a tail 8 mm thick and
+`ties.tight` 0 come close to it; a thick tail and a tie further back made the first baseline's flat-sided hood (a
+tie stands a centimetre and the tail's thickness off the skin). The two things it can't do are the work: show the
+ear (with *ears out* and a tie under the ear the tied hair is **broken in the engine as pushed**: the rule that
+keeps hair off a tucked ear, extended to tied hair in this session, lifts points straight up onto the ear's
+outline, and strands bound for a tie on its far side shuttle along the outline and never arrive: HAIR_V2 §9; high
+ties aren't caught; not fixed; the fix meant is to push a point out of the outline the way it lies from the ear's
+middle, and for her look to keep clear only the ear's lower half) and shape
+the side's volume (on tied hair only Tightness thickens it, a centimetre at the most, evenly; the Volume sliders
+and Sweep do nothing to it). Judge by pictures from both views; the outline's numbers were once met by a wrong
+shape.
+
+**4. A zigzag in the tendrils (found in the pushed Advanced styles; fixed).** Strands from far down the temple's
+edge were gathered into a lock and jogged across to it. Now a strand joins the nearest lock's guide within reach,
+or stays plain (HAIR_V2 §3.7; HAIR2 holds it; 61 of the 65 styles the same hair by hair, four with three or four
+face-framing strands moved). Left: the messy bun's waved tendrils still turn sharply near their tips; the space buns
+have no gathered tendrils (two strands a side under their wide fringe).
+
+**In the tools, not yet used for a conclusion**: `hair2_check.py shots --drift DEG:N` (after a shot, N frames with
+the camera turned DEG a frame, each kept: for seeing whether hair drawn crisply shimmers in motion). Frames were
+made once for the baseline as it is and crisp; they were not analysed (the sides came first).
+
+**5. The styles' cards were distorted (found, fixed, made again).** `hair2_check.py` drew every picture 960 x 720
+whatever `--size` said (its scratch project's window isn't resizable), and `thumbs` squeezed that into a square: the
+59 cards committed before were a quarter too narrow. Now a project per picture size and an error when a picture
+isn't the size asked for (tried at 512 x 512, 960 x 720 and 1600 x 1200). All 65 cards in
+`Content/Studio/Hair2/thumbs/` made again and looked at: none cropped. Two of the new ones (the messy bun, the high
+ponytail) hide their bun and tail behind the head from the card's view.
+
+**Tools, as found**: `thumbs --out` still writes the tracked thumbnails. Run LOOKPLUGIN in the background with a long
+limit and no pipe: it takes over half an hour on a CPU (thirty minutes in, it was still on its first stage here and
+had given no verdict; that stage's own hair pictures gave lit 1.143 times dull at the crown, over the 1.05 it asks:
+my sum from its pictures, not its line).
+
+## Where it stopped last (2026-11-12, `claude/ecstatic-dijkstra-6ixk71`): the hair editor v2.0, built
+
+From main (PR #24 merged). The user's go (DECISIONS 2026-11-11, the go): "v2 should be in the character creator studio
+tab, let it reach the chest ... Start working on everything and dont stop until it looks really good inside godot and
+runs well"; and while it was built (DECISIONS 2026-11-12): long women's styles with the ears out.
+
+- **docs/HAIR_V2.md** is what's built (docs/HAIR_V2_PLAN.md the plan it came from). In short: the Character Studio has
+  a **Hair editor v2.0** tab beside the salon's Hair tab (untouched). Hair is **grown** from 4096 fixed, ranked pores
+  on MHR's scalp (`Content/Studio/Hair2/pores.bin`) by an engine of plain arrays (`tools/character/hair2/`): a
+  hairline from a dropdown, thinning, each hair traced (comb, lie, fall; the rules in the trace), cut, textured, tied;
+  out as cards with the salon bake's finish, short hair as shells, the scalp painted from the pores. A character keeps
+  `hair2: { on, style, set }`; the hair is made again on any body. 59 styles as cards; nine sections of sliders.
+- **In Godot**: Export for Godot carries it (HSHair wears the locks by their record, `hair_shell.gdshader` the shells,
+  HSJiggle the tails' chains; GODOT_LOOK §5u). *Preview in Godot* in the tab pictures the head and hair with Godot
+  without exporting the character.
+- **The ears out** (2026-11-12): `ears: "tucked"` (both or one ear) and `tuckFall` (over the shoulders in front, or
+  behind them); five styles in their own group.
+- **Japanese and Korean styles, and the chart's twelve drawn ones** (2026-11-12, later): a cut of two lengths
+  (`cut.tiers`), ties of the top's hair only and to one side, a choppy fringe with a centre lock, a fringe's slant,
+  ringlets, an ahoge; eight and twelve styles in two more groups (59 styles in all). The chart and the user's five
+  pictures are on the user's side, not in git.
+- **Long hair ends with just its tips on the shoulders** in every style (2026-11-12, last): the sliders still go to
+  the chest.
+- **Checks**: HAIR2 (in check_all), HAIR2PAGE (the Studio's server running; `EXPORT=1` for the export), GDHAIR2
+  (`python tools/godot/hair2_check.py`; `sheets`, `shots`, `thumbs` for looking).
+- **What it found on the way** (LESSONS 2026-11-12): HSHair's root fade bared the scalp on grown hair (a bake now
+  carries its own settings); Volume has to act where the hair is; a rule for hair has to start at the root.
+- **Not there** (HAIR_V2 §9): braids, beards, hair under hats (the user: later); clothes in the distance grid; a
+  tail's chain colliding with the body in Godot.
+- **What could come next**: the user's own look at the five picture styles beside their pictures (a look-alike is
+  theirs to judge, part by part: LESSONS), in the Studio and with Preview in Godot; a local run of HAIR2PAGE and
+  GDHAIR2 on their 3090 (docs/RUN_LOCALLY.md: the browser draws on the CPU here); braids.
+- The salon, its files and every baked hair are untouched. GDTESTROOM still stops at station 6 in this container (no
+  bake bodies here: below), GDPLAY ok.
+
+## On main meanwhile (2026-11-12, `claude/jolly-darwin-9t8hkc`, merged in PR #25): the ghost events plan, the cloak, creepy eyes
 
 The user asked for ideas (ghost events on flags, things flung that stay in the room, a door in time with a hand, what
 a babysitting game with a grey alien needs) and for two things built (the Predator's cloak, creepy eyes).
@@ -129,7 +344,7 @@ the laptop's shop selling them as a ? till something's done; a blush on a smitte
 flush); puddles on the floor that stay a while and reflect; more kinds the same way (confetti, bubbles): a kind is three
 resources and a word.
 
-## Before that (2026-11-11, `claude/compassionate-babbage-3bnfqx`): ready-made clothing fitted to our bodies, researched and tested, then worn in layers
+## Before that (2026-11-11, `claude/compassionate-babbage-3bnfqx`, merged in PR #24): ready-made clothing fitted to our bodies, researched and tested, then worn in layers
 
 Research and a prototype, from main (PR #21, then PR #22 merged in); nothing in the Studio changed. The user asked
 five things (DECISIONS 2026-11-11, both sections): whether Cloth2Tex could be a second clothing system, a CloV2 tab;

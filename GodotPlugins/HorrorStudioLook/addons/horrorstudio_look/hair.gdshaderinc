@@ -43,7 +43,9 @@ uniform float shift2 : hint_range(-0.5, 0.5) = 0.1;
 uniform float shift_noise : hint_range(0.0, 1.0) = 0.4;   // each strand's highlight shifted its own way (a flat card otherwise lights up whole)
 uniform vec4 spec_color : source_color = vec4(1.0, 0.97, 0.92, 1.0);
 uniform vec4 spec2_color : source_color = vec4(0.0);     // the second highlight's colour (the salon look's); none: the hair's own
+uniform float spec2_own : hint_range(0.0, 1.0) = 0.0;   // dyed hair (the hair editor v2.0: each lock's colour is its vertex colour): a lock's second highlight in its own colour where that's the brighter
 uniform float glints : hint_range(0.0, 2.0) = 0.0;       // some strands catch the second highlight brighter
+uniform float streak : hint_range(0.0, 1.0) = 0.0;       // the first highlight strand by strand: most strands stay dark and a few catch it several times over, about the same light in all (0: every strand alike, a lit sheet of hair is one grey)
 uniform float transmission : hint_range(0.0, 3.0) = 0.0; // a light behind the hair through its outer strands, in the hair's colour
 uniform float scatter : hint_range(0.0, 1.0) = 0.0;      // light wandering through the hair: its own colour again, soft (light hair glows, dark hair barely)
 uniform float kajiya : hint_range(0.0, 1.0) = 0.0;       // the diffuse by how square the light is to the strand (Kajiya's), over the wrapped one
@@ -63,6 +65,7 @@ varying vec3 v_strand_dir;                     // the mesh's tangent in view spa
 varying float v_along;
 varying float v_shift;                         // this strand's own shift
 varying float v_glint;                         // this strand's glint
+varying float v_streak;                        // how much of the first highlight this strand takes (its mean over the strands near 1)
 varying float v_occ;                           // the occlusion here (1 open)
 
 float bayer4(vec2 p) {
@@ -101,6 +104,8 @@ void fragment() {
 	v_along = along;
 	v_shift = (sd.g - 0.5) * shift_noise + (sd.b - 0.5) * shift_noise * 0.6;
 	v_glint = pow(fract(sd.g * 7.31 + sd.b * 3.17), 8.0);   // one strand in a few catches the light
+	// (by the lock first: a lock catches the light whole or not at all, its strands each a little more or less; u^3 has a mean of a quarter and the strands' part a mean of one, so the hair as a whole takes about the light it did)
+	v_streak = pow(fract(sd.b * 7.13), 3.0) * 4.0 * (0.4 + 1.2 * fract(sd.g * 5.71));
 	vec3 N = FRONT_FACING ? NORMAL : -NORMAL;
 	if (shell_normals) {
 		N = normalize(v_shell);                             // the volume's: the same from either face
@@ -167,8 +172,8 @@ void light() {
 		DIFFUSE_LIGHT += scatter * ALBEDO * clamp(ndl * 0.5 + 0.5, 0.0, 1.0) * v_occ * ATTENUATION * LIGHT_COLOR / PI;   // light wandering through the hair
 		vec3 H = normalize(LIGHT + VIEW);
 		vec3 T1 = normalize(T + NORMAL * (shift1 + v_shift)), T2 = normalize(T + NORMAL * (shift2 + v_shift));
-		float s1 = kk(T1, H, gloss1), s2 = kk(T2, H, gloss2) * (1.0 + glints * (v_glint * 3.0 - 0.3));
-		vec3 c2 = spec2_color.a > 0.5 ? spec2_color.rgb * 3.0 : ALBEDO * 1.6;
+		float s1 = kk(T1, H, gloss1) * mix(1.0, v_streak, streak), s2 = kk(T2, H, gloss2) * (1.0 + glints * (v_glint * 3.0 - 0.3));
+		vec3 c2 = spec2_color.a > 0.5 ? max(spec2_color.rgb * 3.0, ALBEDO * 1.6 * spec2_own) : ALBEDO * 1.6;
 		vec3 spec = (spec_color.rgb * s1 * 0.6 + c2 * s2 * 0.3) * 0.12 * shine * spec_gain * mix(0.25, 1.0, smoothstep(0.0, 0.3, v_along)) * mix(0.35, 1.0, v_occ);   // the roots and the inner layers in the strands' shade
 		SPECULAR_LIGHT += min(spec * vis * ATTENUATION * LIGHT_COLOR / PI, vec3(spec_cap));   // a strong lamp never bleaches a card white (Kajiya-Kay lights a whole flat card whose strands run square to the half vector: the crown's ring)
 		float back = pow(clamp(dot(-LIGHT, VIEW), 0.0, 1.0), 5.0) * smoothstep(0.35, -0.25, ndl);   // the light behind the hair, toward the eye

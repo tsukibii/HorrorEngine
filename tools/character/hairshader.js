@@ -19,7 +19,13 @@ attribute vec3 aTangent;
 attribute vec4 aTint;
 attribute float aDepth;
 varying vec3 vN; varying vec3 vT; varying vec3 vW; varying vec2 vUv; varying vec4 vTint; varying float vOcc;
+#ifdef USE_SHADE
+attribute vec3 color; varying vec3 vShade;                        // a card's own shade by vertex (the hair editor v2.0's cards: hair2/cards.js), what a file's vertex colour carries
+#endif
 void main() {
+#ifdef USE_SHADE
+  vShade = color;                                                   // (all three: dyed hair's cards carry each lock's own colour over a flat atlas; plain hair's the one shade three times)
+#endif
   vOcc = 0.42 + 0.58 * smoothstep(0.002, 0.028, aDepth);          // inner layers (near the skin) in the outer ones' shade
   vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz;
   vN = normalize(mat3(modelMatrix) * normal); vT = normalize(mat3(modelMatrix) * aTangent);
@@ -33,6 +39,9 @@ uniform float innerAmt, shine, gloss1, gloss2, shift1, shift2, shiftNoise, rimAm
 uniform float uFlat, uFlatGain, uSteps, uDither;                   // the retro look: unlit, colour steps, the PSX's ordered dither
 float bayer4(vec2 p) { int i = int(mod(p.x, 4.0)) + 4 * int(mod(p.y, 4.0)); const float m[16] = float[16](0., 8., 2., 10., 12., 4., 14., 6., 3., 11., 1., 9., 15., 7., 13., 5.); return (m[i] + 0.5) / 16.0; }
 varying vec3 vN; varying vec3 vT; varying vec3 vW; varying vec2 vUv; varying vec4 vTint; varying float vOcc;
+#ifdef USE_SHADE
+varying vec3 vShade;
+#endif
 float kk(vec3 T, vec3 H, float g) { float th = dot(T, H); return pow(sqrt(max(0.0, 1.0 - th * th)), g); }
 void main() {
   vec4 at = texture2D(atlas, vUv); float v = vUv.y;
@@ -45,6 +54,9 @@ void main() {
   float inner = step(1.0 - innerAmt, at.g) * step(0.001, innerAmt);
   base = mix(base, innerC * (0.7 + 0.3 * at.r) * mix(0.4, 1.0, root), inner);
   base = mix(base, vTint.rgb * (0.45 + 0.55 * at.r) * mix(0.45, 1.0, root), vTint.a);   // a lock's own colour, or the debug colours
+#ifdef USE_SHADE
+  base *= vShade;
+#endif
   float sh = (at.g - 0.5) * shiftNoise + (at.b - 0.5) * shiftNoise * 0.6;
   vec3 T1 = normalize(T + N * (shift1 + sh)), T2 = normalize(T + N * (shift2 + sh));
   vec3 col = ambientC * base;
@@ -101,7 +113,7 @@ export function lightHair(U, keyDir, keyColour, fillDir, fillColour) {
   if (keyColour) U.keyC.value.copy(keyColour); if (fillColour) U.fillC.value.copy(fillColour);
 }
 export function hairMaterial(U, o = {}) {
-  const m = new THREE.ShaderMaterial({ uniforms: Object.assign({}, U), vertexShader: VERT, fragmentShader: FRAG,
+  const m = new THREE.ShaderMaterial({ uniforms: Object.assign({}, U), vertexShader: VERT, fragmentShader: FRAG, defines: o.shade ? { USE_SHADE: "" } : {},   // (shade: the geometry carries a `color` to multiply in)
     side: THREE.DoubleSide, alphaToCoverage: true, transparent: !!o.transparent, opacity: o.opacity ?? 1 });
   m.userData.hair = true;
   return m;

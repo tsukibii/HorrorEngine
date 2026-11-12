@@ -3,6 +3,297 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The ringlets: the user's catch (2026-11-12)
+
+- **Look at every part from the side; the user did.** The ringlets were looked at from the front and three
+  quarters, where a coil beside the face reads as a ringlet. From the side it floated over the cheek with nothing
+  leading into it: the user's screenshot, not mine. A thing hung beside a thing is not attached to it: what is
+  wound from a lock has to begin where the lock ends, and a check should say so (it does now: HAIR2's two lines).
+
+## The hair styles gone through: what took a second try (2026-11-12)
+
+- **A setting that changes nothing in the picture isn't the cause: print where the hair ends.** Every older fringe
+  split into a bare V on the forehead. *Closed* (which straightens the comb beside the middle) was switched on, the
+  styles were pictured again, and the V was the same. Printed hair by hair: no tip within two centimetres of the
+  middle, hairs rooted 3 mm from it ending 2.5 cm out. Not the comb at all: the locks. Each hair is drawn to its
+  lock's guide, no guide sat on the middle, and the middle's hair went to the locks at either side. Before a second
+  slider is tried, ask the hairs.
+- **Judge a thing on the body it is for.** The first before pictures were on MHR's own body: the long styles ended
+  in ledges on its broad shoulders, which a slender neck doesn't have, and the women's styles sat on a man's jaw.
+  Half an hour of pictures was thrown away to make them again on the bodies the styles are worn on.
+- **Blending is in linear light.** A scalp painted at 0.95 of the roots' black leaves a twentieth of the skin in,
+  and a twentieth in linear light reads a fifth as bright: brown, not black. It had looked like "the skin showing"
+  for days. When a dark thing over a light one reads lighter than its number, convert before blaming the number.
+- **A check that measures a slider has to set what it measures against.** HAIR2's Fullness and tail lines were built
+  on a style's own settings; the day that style was given Fullness and more strands, they failed. The slider was
+  as it had been.
+- **Stopping a job stops only what you stop.** Killing the Python that was picturing styles left its Godot and its
+  X server running, and a second Godot it had already started; they were found by listing processes after.
+  And a removal by a shell variable is refused here (rightly: an empty variable is the root): give the path whole.
+
+## The bodyv2 base: what took a second try (2026-11-12)
+
+- **A picture's scale is an unknown when both ends of the ruler are hidden.** Her height in the picture runs from a
+  sole inside a sneaker to a skull under a bob: both guessed. With the scale fixed at the guess, the fit bent the
+  torso and the leg sliders by a tenth each to make up a centimetre at the eyes. Give the fit the picture's scale
+  and floor as unknowns of its own, held near the guess, and look at what it does with them.
+- **A raised arm takes the shoulder with it: don't read the neck off the arm's line.** In her T-pose the arms' line
+  sits 2.5 cm higher over the pit of the neck than in ours (the Studio's T-pose turns the arm alone). Read as the
+  body's, it became a neck 0.8 shorter. Measure a length between points the pose doesn't move: the chin and the pit
+  of the neck.
+- **A fit will cancel one unknown with another if two of them do the same thing.** MHR's fat shapes also lengthen
+  the trunk; the torso slider took it back, at -1.1. Thicker thighs came as one shape at -1.4 and a sculpt slider
+  at +1.3. Free only the shapes that say something, hold the sliders with a ridge that says which should move
+  first, and read the values, not only the cost: a base carries them, and the user's own slider starts on top.
+- **From the front alone there is no depth: say what was put there.** The fit with nothing said about depth made a
+  belly of 109 cm; the same widths with a medium build's depths, 103. Neither is hers. Write the assumption in the
+  document and the decisions, as a number, so one side picture can replace it.
+- **"Where the skin bends" has to know the rig's twist bones.** The rule that finds a joint by the points weighted
+  to it and to its parent found the elbow nothing: a limb's skin is on its twist bones. It rode the shoulder, and
+  nothing showed until an arm was made a sixth shorter (the Studio's slider stops at a tenth). When a rule is
+  written about a rig, list what it finds for every bone once.
+- **And when the mean moved the joint for the wrong reason, the middle one didn't.** The elbow's ring is heavier on
+  one side, so an arm made thicker dragged the mean 10 mm along the arm. The weighted median of the ring's votes
+  moves 2 mm: a limb made longer moves every point alike, a limb made thicker moves the two sides opposite ways.
+
+## The v2female base: what took a second try (2026-11-12)
+
+- **When one part is made shorter, say where the length went.** The base's lower face was made short (Face length:
+  the chin up a centimetre). Nothing said what that centimetre became: the head stayed where it was, so the neck took
+  it up, 7.5 cm from the chin to the pit of the neck where the feminine base has 6.6, on a neck just made slim. The
+  user saw it as "turtle length necks". And the picture had said so: her collar lay a centimetre over our shoulder
+  line, which I wrote off as the cloth's thickness and reported as "her shoulders are where MHR's are" (true, and
+  her head sat a centimetre lower on them). A residual that has one sign in every picture is not noise: give it a
+  cause before calling it nothing.
+- **Before adding a control, look for it where the user would look, not where it was filed.** The user asked for a
+  slider to shorten necks "if we don't already have" one. There was one, a proportion among the lengths, with the
+  help text "A longer or a shorter neck."; the neck's other three sliders were in another group. A control the user
+  can't find is half a control: it is listed with them now, and says how much it does.
+- **"It should look more feminine" is the fault described, not the brief: when there is an original, measure it
+  before designing anything.** The user said the base's shoulders and neck base looked uncanny. I answered from my
+  own idea of feminine (a long neck, shoulders sloped and narrowed), built two controls for it, tested and
+  pictured it. The user: match it to the original, as the face and the hair are. Her pictures had been in the
+  fitted frames the whole time, and they say the opposite: her head sits close on shoulders that are where MHR's
+  are, and what differs is the neck (a straight slim column; ours flared at its top). An hour of careful work on
+  the wrong target, which one overlay would have prevented.
+- **A base is the whole bust: look at what the user will look at, not at the part being fitted.** The head was held
+  to her pictures in frames that end at the chin, and "her shoulders begin lower" was written down from an outline
+  read before her head's tilt was taken off. A frame that ends at the chin cannot say whether a head suits its
+  body; and a tilted head raises one shoulder and lowers the other in the head's own frame (1.9 cm at 14 cm out
+  for 8 degrees): measure both sides and take the tilt off before saying where the shoulders are.
+- **A bald silhouette hides what stands in front of it.** From the front the shoulders' line crosses the neck's side
+  high up, because the trapezius rises behind the neck: the outline's corner is not where the neck ends. Her
+  neck's skin is visible in front of her collar far below that corner. Compare the neck as a column (its two
+  edges by height), and the shoulder line as a line, separately.
+- **A field's edge that runs slantwise across the mesh leaves a crease; where a narrow thing meets a wide one, the
+  run-in has to be as long as the join is in life.** Neck width reaching up under the ears first left a step under
+  the skull (12.5 cm to 9.5 within 2 cm) and notches behind the jaw. Under the jaw 3 cm is right (the jaw
+  overhangs); at the nape it needs 5, and the offsets behind the jaw are smoothed over the mesh.
+- **A width read off a picture by eye went into a base; fitted, it was 2 cm out.** "Her neck is about 7.5 cm" set
+  Neck width to -1 and was committed. It came from the skin showing between two strands at one height, at a scale
+  set by eye. With a camera fitted from landmarks, both edges of the neck are in the picture and it is a quarter
+  wider than her eyes are apart, where ours had been made a tenth wider (its middle is not under the chin because
+  the head is turned on it, which is what hid the second edge the first time). The same rule as the hair's: when a number will be built on, fit the frame first and find both ends of
+  what is measured.
+- **A bald head's outline and a picture's skin are different things below the cheek.** "Ours is 1.3 cm a side wider
+  at the jaw" compared our bald silhouette (the neck and the skull behind the jaw) with her skin's edge against her
+  hair (her jaw itself). The jaw has to be compared as a jaw: the face's own oval on our mesh against her skin's
+  edge. Like for like, the upper jaw agreed within 3 mm and the whole difference was that her chin is 1 cm higher.
+- **Points can land while the face goes wrong: fit by numbers, then look.** Left to the landmarks, the fit took
+  the mouth to -1.27 and squeezed the lower face; every point was within 3 mm and the face was pinched. A fit says
+  which way and roughly how far; each value it proposes is looked at on the head before it is kept, and the worth
+  of each is measured by taking it out (three of the seven carried all the gain).
+- **A spot pulled in leaves what is above it as a ledge.** Two tries at a narrower jaw (the bottom band of the face,
+  then a band along the jaw's own line with a soft edge) both left the cheek standing over a pulled-in jaw: a shelf
+  with a shadow under it. What works is to move every point at one height in the same proportion of how far out
+  it is, growing with the depth below the eyes: each slice keeps its shape, so there is nothing to overhang.
+- **Shortening a face without narrowing it makes a heavy jaw.** Face length alone put the chin where hers is and
+  the head read as square: the same width in less height. Hers is small both ways.
+- **A face guessed from a style goes the wrong way; measure the picture in its own unit.** The first sculpt for the
+  Daz characters' head was "anime": a shorter, rounder face, bigger eyes (Cutify's values). It made the lower face
+  *wider*, and the hair by the ties sat 2 cm out. Her picture has no known size in it, so it was measured in eye
+  spacings: the eyes' line to the chin 1.45, the face at the lips 1.62, the neck 1.05. Against that the feminine
+  base's face is the right length already; what differs is that her eyes are further apart and her lower face and
+  neck far narrower. The recipe that came out has no shortening in it at all.
+- **A column's axis found slice by slice wanders where a slice stops being the column.** Neck width pulls the
+  neck's points toward its axis. The axis was the middle of each height's own slice; above the chin that slice is
+  the face, its middle far forward, and the jaw's angles counted as the neck's back: 16 mm moved, on a control that
+  must not touch the face. Second try: a line through the neck at two heights of the neck proper. Still 7 mm, from
+  the nape's high cut-off reaching round the side. Third: where it ends depends on the bearing round the axis
+  (under the chin in front, the jaw's line at the side, the skull at the back): 1.3 mm.
+- **Say where a part is by what it is, not by coordinates that happen to hold on one body.** GROW's first lines for
+  it read "points with z over 3 cm" as the face (they took in the front of the neck) and "the width 3 cm under the
+  chin" as the neck (the trapezius). They passed and failed for reasons that had nothing to do with the control.
+  The face is its landmarks; the neck is the narrowest the body gets, seen from the front, between the shoulders
+  and the jaw.
+- **How far a field may go is found by turning it up until the skin folds, then written down as its reach.** At
+  -1.6 and -1.8 the triangles where the neck meets the shoulders turned over. The reach is -1.4 (`REACH`), and GROW
+  asks for -3 and counts the turned triangles: a base that carries -1 and a user who drags the slider to -1 on top
+  land on the limit, not past it.
+- **A page test that times out at its first wait says nothing: load the page and read its status line.** GROWPAGE
+  sat three minutes and failed with no line printed. The page's own status said "MediaPipe isn't set up": a fresh
+  container (the lesson was already here twice, under the Studio's exports and STUDIO). The whole list for a cloud
+  session: `python tools/face_mesh.py setup`, then `apt-get install -y libegl1 libgles2` (MediaPipe's import asks
+  for the second once the first is there), then start the Studio's server again (its worker keeps the first
+  failure).
+
+## The hair editor v2.0: what took a second try (2026-11-12)
+
+- **A comparison from an assumed camera is an opinion; fit the camera.** Her second picture was laid beside ours
+  "from 38 degrees", turned level by her eye line, and read with the ear as the ruler: hers 3.4 cm beyond the ear,
+  ours 2. A setting was built on it and nearly tuned to it. Fitted from seven landmarks the camera is at 28 degrees
+  and the picture had been over-turned by 9: the gap is 0.4 to 0.8 cm, half of what was "seen", and the tuning
+  would have cost more near the tie than it gained. What gave the doubt was two numbers that could not both be
+  true (the front outline within 0.3 cm, the side short by 1.4). When two measures disagree, the one made by eye
+  is the one to redo.
+- **Print the inputs of a fit before its answer.** The first camera fit said 53 degrees with the points 74 px off.
+  The landmark printout beside it showed why at a glance: the "chin" was 67 cm down (the search had no lower
+  bound and found the belly), the "ear" was the skull behind it. With only the best turn printed it would have
+  read as a result.
+- **A model with two parts in the wrong order fits one row and breaks the next.** The tail was given a strong turn
+  out at its tie and a weaker lean after. Right under the tie it was 2 cm too wide; with less of both it was too
+  plumb lower down. Hers is the other way round: almost plumb at the tie, the lean building below, as hair
+  resting on the chest slides. Swapped, it lies inside her outline at both ends. Two rows that pull a slider
+  opposite ways are saying the shape is wrong, not the amount.
+- **One outline can be met by the wrong shape: look from a second side before calling it matched.** The side of the
+  Daz twin tails was within 0.3 cm of her picture's outline at every height, from the front. Beside her other
+  picture, from her left front, ours was a flat band 1.5 cm beyond the ear where hers is a round bulb of 3.4: the
+  front view only sees the hair's widest reach to the side, and behind the ear ours had none, because only hair
+  near the tie hung. The fix (the back hair hangs and is swept round the head) left the front outline where it was,
+  which is the point: two views hold a shape, one holds a line.
+- **A refinement that doesn't show goes back out, with what it did.** A longer gather for hair from further round
+  the head was meant to round off the corner where it turns for the tie. From the side it was no rounder; from the
+  front the side came in 0.3 to 0.5 cm too early. It is out again, and the line where it was says so.
+- **A before-and-after that changed two things credits the wrong one.** The line of skin down the fringe's middle was
+  gone in the picture after *Closed* went in; the same render had also switched the light from the front to the
+  reel's. A number then said Closed did nothing (the strands' spacing at the middle: 7.6 mm, 6.5 Closed) and for a
+  moment both were believable. Rendered again with only the setting changed, under one light: the line is there
+  without it and gone with it. The number had measured the wrong thing (how far apart the two sides' nearest strands
+  are, which is the pores' spacing either way); what Closed changes is that they stop fanning apart (12.5 mm of
+  drift to their own side, 5.1 Closed), and that is what the check asserts now. One factor a render; and when a
+  number and a picture disagree, find which of the two is measuring something else before believing either.
+- **"The older styles can't be touched by this" is a claim to run, not to reason.** The fringe's forward combing was
+  written to start 3.6 cm above the hairline, "past where the default fringes reach". The hair-by-hair comparison
+  with the committed engine (the scratch `regress3.mjs` over `git archive HEAD`) showed 12 committed styles moved, one
+  by 4 cm. It went behind its own setting. The comparison takes two minutes; run it after every engine change, before
+  looking at anything else.
+- **Read the reference enlarged before describing it.** The note written a day earlier said her ear's top was covered
+  and its lower half showed, and a whole plan followed from it (an ear mode in between). At seven times the size
+  the whole ear is out with the hair behind it. Her tie was "2.5 cm under the lobe" by eye; on a grid it is 5. Her
+  hair stood "1.3 cm beyond the ear"; its solid edge, found row by row from the pixels, is 0.8, the rest is wisps.
+  Each of these moved a design. Enlarge it, put a grid on it, take the number off the pixels.
+- **One scale from several landmarks, or none.** The picture's scale from the eyes' spacing alone was 17.8 px a
+  centimetre (her eyes are set wide: wrong), from the eyes to the chin 13 to 15, from the ear 12.5 to 14, from the
+  head's width with the ears 14. Three that agree are a scale; one is a guess with decimals.
+- **Slopes added up don't arrive; a curve that is aimed at does.** The first Puff added an outward slope and an
+  inward one to the hanging hair's direction, each right on paper and summing to zero over the fall. Through the
+  bend smoothing and a blend they came out late and weak: the hair tucked in with a hook in its last centimetre, 27
+  strands doubling back. Planned as a curve where the hair leaves the head and steered at that curve's next point,
+  every step, it arrives whatever puts it off on the way.
+- **A rule with no edge finds one.** The line that sends the sideburn's hair up over the ear ("in front of the ear's
+  back edge") had no lower limit. Hair that had come down behind the ear and swung forward under it for the tie was
+  in front of the ear's back edge too: sent back up, down again, up: 583 of 984 reached their tie, one strand 58 cm
+  long. The kept points of a few strands printed (height, distance from the axis, bearing) showed it in a minute.
+- **A flat thing has a face; say which way it looks.** The tail's flat section took the body's own way out as its
+  thin direction. On the chest that is forward, right; beside the neck it is sideways, so from the front the fan
+  under the tie was edge-on: a tube that widened only where it met the chest.
+- **Tied hair was glued to the head.** Not a second try, the finding under the user's "the curvature of the sides":
+  every step pulled tied hair onto the skin and there was no gravity in it, so it could only ever follow the skull.
+  The volume sliders, Tightness, a thinner tail: none could make a curtain. When a shape can't be reached by any
+  slider, read the stepper for what it can't do, before tuning.
+
+- **Two guesses by eye, then a measurement: measure first.** Dyed streaks on hair tied into a bun came out as
+  card-shaped flecks. First guess (the hair's sweep and swirl): rendered with both off, the same. Second (stray wisps,
+  the hairline's baby hairs, the locks' pull): rendered without each, the same. Three renders spent, and one change made on the first guess that wasn't the cause.
+  Then twenty lines in node compared, for every tied hair, the bearing of its root round the tie with the bearing its
+  own path arrives on: a median 9 degrees apart on a low bun, where a streak's lane is 10 wide. A hair was dyed by a
+  lane it doesn't lie in. The guides (`grow(...).guides`) answer this kind of question in seconds; a picture only says
+  that something is wrong. And it was one cause, not all of it: flecks are left, still unexplained.
+- **A difference seen across two different crops is not a difference.** After that fix the second bun style looked
+  worse than an earlier sheet of it. Rendered like for like (the same three views, the one change switched), it was
+  the same or a little better. Before judging a change, the before and the after from the same camera.
+- **`hair2_check.py thumbs --out` still writes the tracked thumbnails.** `--out` moves only its working files; the
+  200 px picture always goes to `Content/Studio/Hair2/thumbs/`. To compare a style with its committed card, use
+  `sheets` with the thumbnail's view (`v:26:5:0.93:28:0:-0.065:0`, `--size 512x512`) into `Saved/`, and read the
+  command before trusting an option's name.
+- **A picture that comes out the wrong size says nothing. Check the size.** Every picture `hair2_check.py` made was
+  960 x 720 whatever `--size` said: its scratch project's window isn't resizable and the script's `root.size` doesn't
+  change it. Nothing failed, so nothing was noticed, and `thumbs` (512 x 512 asked, then 200 x 200 with no crop)
+  committed 59 cards a quarter too narrow. Found only because another check's pictures on the same machine were
+  1280 wide. Now a project per size, and the render fails when a picture isn't the size asked for. What a tool writes
+  should be checked for the plain things first: its size, that it isn't empty.
+- **A cause guessed and written down is still a guess.** I wrote "a window can't be larger than xvfb's screen" into
+  the tool's own error and two documents before trying it. Tried, 1600 x 1200 came out 1600 x 1200. The same hour I
+  wrote in the handover that a running check "was stopped before its verdict": it finished, and passed. Write what
+  was seen; mark the rest as expected, or leave it out.
+- **A check's exit code through a pipe is the pipe's.** `check.py | tail` exits 0 whatever the check did, and shows
+  nothing until it ends. Read the check's own last line (`<NAME> ok`); run a long one in the background unpiped.
+- **A process list cut short looks like a process gone.** `ps ... | cut -c1-90 | head -2` showed two shells and I
+  read the check as having exited. Listed whole, it was running. Don't truncate what is being counted.
+- **"Nothing existing changes" is a thing to measure, not to argue.** I listed the styles a rule's change could
+  reach, saw each one's line clear of it, and said none was affected. The rule also raises its line for thinned
+  hairs, which I hadn't looked at: six styles had a few strands change. The engine before (`git archive HEAD` into a
+  scratch folder) and after, every style grown by both and compared, took two minutes and said exactly which hairs.
+  Compare hair by hair (`guides`), not point by index: one card with another point shifts every index after it, and
+  a strand a centimetre longer reads as half the head moved 19 cm.
+- **A summary number is a claim about every item in it. Look at the items.** Five times in one afternoon a number
+  of mine said something other than its name. "The sharpest turn in a strand" was the root's lift off the skin, in
+  the first millimetre. "Where the outline is widest, how far it pinches" was met by a side that was a kinked detour
+  round an ear. "Strands left plain" counted the wisps by the ears with them. "The tips' spread" took in a strand the
+  lock had let go. "Three strands" came from a run with other settings. Each time, printing the strands one by one
+  (where each grows, how far from its guide, where it ends) or looking at the whole picture set it right in a
+  minute. Before a number goes to the user: what are its items, and do a few of them, looked at, say the same?
+- **Three stories for one fault, each plausible; the fourth was found by changing one thing at a time.** A zigzag in
+  a tendril: the wave (a guess), the wisps by the ears (a true measurement of something else), then a metric that
+  couldn't see it. Six pictures of the same close view, one setting off in each, showed it in a quarter of an hour:
+  only "not gathered into locks" was clean. When a fault can be seen, the picture with one factor changed is the
+  instrument; reach for it first.
+- **A rule described one way and coded another.** "A strand joins a lock only if it grows near the lock's guide" was
+  coded as near the guide of the lock its angle put it in: a strand 1.4 cm from the other lock's guide was left out.
+  Found only because the strands were printed with their distance to the nearest guide. Say the rule, then check
+  the code against the sentence on a case where the two would differ.
+- **A fix for one fault can be read as breaking the feature when the check measures the wrong set.** After the fix
+  "one tendril is drawn to a point" failed: 8.1 mm where it had been 0.8. The lock was as pointed as ever (0.7 mm
+  over its own strands); the check was measuring every face-framing strand, one of which the lock had rightly let
+  go. Neither loosen a failing check nor believe it until what it measures is looked at.
+- **One thing tested is one thing known.** Against a strand render (the user's Daz3D hair), twice the cards and
+  triangles, narrow cards and 120 loose wisps changed the picture hardly at all. From that I wrote, in four documents
+  and to the user, that real strands were needed. All it showed was that more cards don't help. How the cards are
+  drawn I hadn't touched, and that was the one that mattered: three settings on the material (no dither, no side
+  fade, no softness) changed the fringe more than doubling the geometry. Before a conclusion goes in a document,
+  name what was varied; what wasn't varied is still unknown, and the cheapest untried thing is tried first.
+- **A setting of my own can be the whole of a fault I put down to the system.** The first twin tails beside the
+  reference were kinked ropes: the wave I had set. With it off they hung as the picture's do. Take one's own numbers
+  out of a comparison before reading it.
+- **A shader's setting made for one kind of mesh is wrong for another, silently.** Godot's HSHair fades the first 6% of
+  every strand in ("the roots grow out of the scalp"): right for the salon's hand-laid locks, whose roots are under
+  other locks. Grown hair starts every lock at its own pore: on 20 cm hair pulled back to a bun that 6% is two bare
+  centimetres at the temple, and every parting was twice as wide as its slider said. I chased it as missing cards, as
+  the scalp's paint and as a shadow before measuring that the hairs were there. A bake now carries its own settings
+  (`studioHair.settings`), and the plugin reads them. When a mesh is there in the numbers and not in the picture, read
+  the shader's fades before the generator.
+- **A patch cut from "the triangles that hold a pore" has holes and a jagged edge.** Small triangles hold no pore. Grow
+  the patch two rings past them and let the paint fade inside it.
+- **A slider has to act where the user looks.** Volume, sides followed each hair's root: on long hair the outer layer at
+  the sides is the top's hair, so the slider did almost nothing (the check measured 1 cm for 2.4 cm asked). The Volume
+  is now the Volume of where the hair is.
+- **A rule for hair has to start at the root.** Tucking hair behind the ear as a steer on the falling hair left every
+  hair rooted just over the ear dropping onto it first (it turns only as fast as its stiffness lets it), and out over
+  the rim as "handles". The roots there are combed back themselves, and what's over the ear is carried on round to the
+  back. And a wisp grown off a tucked hair stands off it by centimetres: none are grown from held hair.
+- **Pulling a hair toward its lock's guide is only right while they travel together.** At the whorl, and by a tie,
+  neighbours go different ways round the head: a hair whose guide went the other way was dragged across the head and
+  down over an eye (one thin strand on the face in three of the drawn styles). The pull now fades with the distance
+  between them, and HAIR2 counts loose hairs across the face.
+- **A rule that ends hair "lying on the body" ends long hair at the shoulders.** The rest rule (no brim of hair spread
+  along the shoulders) also stopped hair that hangs down the back or the chest: every "long" style was shoulder
+  length from behind. What ends a hair is running level along the body or sliding out over a shoulder, not lying on it.
+- **A marker colour isn't its value after the look's curve.** The gap measure counted pure green and magenta pixels;
+  AgX takes a flat (0, 1, 0) to about (0.53, 0.85, 0.31), so it counted none and every style "failed" with 0 px of hair.
+  Tell a marker by its hue, and look at a marker picture before trusting a count of zero.
+- **A background job that starts while a patch script is writing the file it runs reads half a file.** The sheet job
+  died of a syntax error that wasn't in the file a second later. Finish the edit, then start the job.
+
 ## Skin through clothes, measured in Godot: what took a second try (2026-11-11, the very last)
 
 - **Godot's triangles face you clockwise.** A normal from (b - a) x (c - a) points into the body there: the first probe
@@ -734,7 +1025,7 @@ the fix.
   (`api/face/landmarks`: "MediaPipe isn't set up", then a missing libEGL), and an export said "wrote ... 12.0 MB"
   carrying only the skin: no eyes, no blink, no lashes, no lips or make-up, its paint one flat tone (found on both
   `eye-enhancements` and `subsurace-scattering-exp` the same day). Second try: `python tools/face_mesh.py setup` and
-  `apt-get install libegl1` before the Studio's server makes an export to check (the eyes and lashes come once
+  `apt-get install libegl1 libgles2` before the Studio's server makes an export to check (the eyes and lashes come once
   `graft().on`; about two minutes).
 - **GDTESTROOM on a fresh checkout needs the desk's bake first:** without `Content/Games/TestRoom001/Previs/` (git-ignored)
   Aoi's stand-in has no body to wear HSSkin, and station 6 fails on "her skin ... on 0 materials", which reads like a

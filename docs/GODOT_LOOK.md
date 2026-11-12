@@ -1492,6 +1492,63 @@ The user: *"things that make the player think, am I going crazy."*
 - **Measured** (MIND, a wall of stripes): at 0 the plain picture; with all of it a corner at an eighth of its
   brightness and the middle unchanged, its colour a fifth paler; the edge moved fifty times more than the middle.
 
+## 5u. Grown hair: the hair editor v2.0's locks, shells and scalp (`hair_shell.gdshader`; DECISIONS 2026-11-11, the go)
+
+The Character Studio's Hair editor v2.0 (docs/HAIR_V2.md) grows hair from fixed pores instead of laying locks by hand.
+What it puts in an export is the salon's bake's kind of thing (§5e), so `HSHair.wear` wears it with nothing to set up;
+three things are its own:
+
+- **A bake's own settings.** Its locks carry the same record as the salon's (`studioHair`: shell normals, strand
+  tangents, the occlusion on the second UV, the strands' numbers), and beside it `settings`: numbers `set_bake` puts
+  over the plugin's own (`BAKED`) for that material. It sets `root_fade: 0.012`: the 6% of a lock that fades the
+  salon's roots in is right for hand-laid locks, whose roots lie under other locks; grown hair starts every lock at
+  its own pore, and on 20 cm hair pulled back to a bun that 6% bared two centimetres of scalp at the temple and made
+  every parting twice as wide as it was set. Only keys `BAKED` has are taken.
+  **Dyed hair** (HAIR_V2 §3.11) sets one more, `spec2_own: 1`. Its atlas is one flat colour and each lock's own
+  colour is in the vertex colour, which the shader already multiplies in (`use_vertex_color`); so that a dyed lock's
+  broad highlight is in its own colour too, the second highlight is the look's or the lock's, whichever is brighter
+  (`hair.gdshaderinc`: `max(spec2_color * 3, ALBEDO * 1.6 * spec2_own)`). It is 0 for every other bake, where the
+  line is what it was (GDHAIR2's nine styles drew the same to the figure; LOOKPLUGIN's hair stage passes). The brows'
+  and lashes' shader includes the same file: it was drawn once by hand beside the head's and one broken on purpose,
+  no check draws it without a Studio export.
+- **Short hair as shells** (`hair_shell.gdshader`): hair under 3 cm (a buzz cut, stubble, clipped sides and napes, the
+  undercoat of a short cut) is a mesh named `hair_shell`: four to ten copies of the scalp lifted off the skin a
+  couple of millimetres apart, leaning the way the hair is combed (the fur technique: a card standing on end can't be
+  seen from above). Each layer is drawn with a tile of hairs' cross-sections (R each hair's own height, G its number
+  for thinning, B its shade, A its profile), 2.8 cm of scalp a repeat: a hair is drawn on a layer while it's tall
+  enough to reach it, narrower the higher the layer, and only where hair is left (the mesh's colour: r the layer, g
+  how much hair is left there, so a hairline's edge and a thinning crown thin the shells too). The coverage is
+  dithered frame by frame for the TAA as the locks' is. `HSHair.shell_material(tile, record)` takes the look's root
+  and tip colours; uniforms `amount`, `thick`, `density`, `shine`, `roughness`.
+- **A painted scalp.** A mesh named `hair_scalp` whose material has a texture (a dot a pore in the roots' colour, its
+  alpha the shade) is kept as it is: matt, no specular, blended. The salon's (a flat cap, coloured by vertex) is still
+  given the plugin's own scalp material.
+
+  **A look's own word for its bake**, and **`streak`** (DECISIONS 2026-11-12, the 1:1). A look of the hair editor
+  can carry `bake`: numbers for the settings above, written into the bake's record with the rest (`hair2/bake.js`
+  `record`); HSHair applies them as it applies `root_fade` (numbers only, and only settings it knows). The one
+  setting added for it is `streak`, 0 by default: the **first highlight lock by lock**. A sheet of hair whose
+  strands all run square to the half vector lights up whole under Kajiya-Kay: every strand takes the same
+  highlight and black hair draws as an even grey (seen on a fringe under a light from the front; with the
+  highlights off it was black, with the rim, the scatter and the light through off it was the same grey). With
+  `streak` a lock takes the highlight by its own number, cubed (most locks little, a few several times over), each
+  strand in it a little more or less, the mean over the hair kept near 1 (`hair.gdshaderinc` `v_streak`). The look
+  `gloss_black` asks for 0.9 with a stronger highlight: black hair with bright streak bundles. The brows' and
+  lashes' shader includes the same file and leaves it at 0. **Every look of the editor's own asks for it since the
+  styles were gone through** (DECISIONS 2026-11-12, the lessons into every style; docs/HAIR_V2.md §5): 0.7 on the
+  other dark looks (soft black, off black, the browns, chestnut), where a fringe under a front light was the same
+  grey sheet; 0.5 to 0.6 on dark blonde, grey, white and dyed red, with `scatter` 0.6 and `occlusion` 0.55 on the
+  first three (light hair read as yarn: dark between its strands, where light wanders through real light hair).
+  The salt and pepper of the balding cuts, the salon's own looks and its bakes are as they were.
+
+A tail (`hair_tail…`) is skinned to a chain of bones of its own under the head, `jiggle_hair_tail…_0` … `_tip`:
+HSJiggle (§5n) springs it, soft by the tail's Sway.
+
+GDHAIR2 (`python tools/godot/hair2_check.py`): nine styles made by node, worn in a scratch project and pictured from
+every side: every lock material on the bake's look, the scalp seen through the hair as a share of the hair's own
+outline (a second picture with the hair a flat green and the painted scalp, where it's at its full shade, a flat
+magenta: under 3%, 5% for tied hair, which is pulled up off its hairline), the hair neither black nor bleached.
+
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 
 A street baked in Blender (`tools/street.py bake`, docs/STREET_TEXTURING.md) comes as plain glTF:

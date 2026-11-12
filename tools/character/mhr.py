@@ -160,7 +160,44 @@ BODIES = {
     "feminine": dict(shoulders=46.3, chest=21.6, bust=14.6, waist=31.3, belly=12.6, hips=37.2, seat=-12.0, thighs=14.1, neck=12.2),
     "masculine": dict(shoulders=53.2, chest=25.8, bust=14.6, waist=30.8, belly=12.2, hips=34.4, seat=-11.0, thighs=14.9, neck=15.6),
 }
-SCULPT = {"feminine": {"belly": -0.7}}
+SCULPT = {"feminine": {"belly": -0.7},
+          # v2female (DECISIONS 2026-11-12, v2female; docs/CHARACTER_STUDIO.md §2f): what the feminine end becomes when
+          # it's picked. The head and the neck after the proportions of the user's Daz3D characters, as plain values on
+          # the sculpt's own controls (every slider still moves from it): a slender neck (Neck width: MHR's shapes
+          # can't slim it), a small lower face (Face length and Face taper: shorter and narrower together), eyes larger
+          # and further apart, a smaller nose and mouth. Held to two of her pictures by their landmarks and outlines
+          "v2female": {"belly": -0.7, "neck_width": -0.7, "eye_spacing": 1.6, "eye_size": 0.7, "nose_size": -0.4,
+                       "nose_projection": -0.22, "nose_length": 0.35, "nose_bridge": -0.22, "mouth_width": -0.72,
+                       "lips": 0.13, "brow_ridge": -0.18, "forehead_slope": 0.45, "chin_length": -0.15,
+                       "chin_width": -0.8, "jaw_width": -0.5, "cheekbones": -0.2, "face_height": -0.8,
+                       "face_taper": -1.0,
+                       # the neck's base, as her pictures have it (the user, 2026-11-12: match the neck's shape to the
+                       # shoulders as the face and the hair are matched): the rise from shoulder to neck a little lower
+                       # beside the neck. Her shoulders themselves are where MHR's are: nothing else moves
+                       "neck_base": -0.3,
+                       # the neck's length (the user, 2026-11-12: "unrealistic turtle length necks"): the short lower face
+                       # had raised the chin a centimetre and left it on the neck, 7.5 cm over the pit of the neck where
+                       # the feminine base has 6.6 (0.39 of the head against 0.32). The head comes down most of that
+                       # centimetre: 6.7. By her pictures: her collar's top edge in the front one is 1 cm above where
+                       # our bare shoulder was (the skin is under it: -0.25 or so), her bare shoulder in the other is
+                       # higher than ours at -0.4 (her arm may be up); -0.35 is between them
+                       "neck_length": -0.35},
+          # bodyv2: the sliders its body carries on top of its weights (only what it lists: the head's and the neck's stay
+          # v2female's or the feminine base's). Arm length is the picture's: her wrists are 58 cm from her middle on a
+          # 163 cm body, MHR's 66
+          "bodyv2": {"legs_length": -0.33, "torso_length": -0.47, "arms_length": -1.75, "neck_length": -0.1, "thighs": 0.8,
+                     "calves": -0.09, "waist": -0.15, "upper_arms": -0.11, "shoulders": -0.27}}
+# a base that is another's body with a sculpt of its own: its MHR weights are that base's (clothes cut for one fit the other)
+# (written into the file by hand, 2026-11-12: `presets` fits the bodies again and no longer lands on the committed weights
+# (feminine up to 0.9 off, masculine 1.6), which every character made on a base depends on. Don't run it to add a base.)
+SAME_BODY = {"v2female": "feminine"}
+# a base whose weights were fitted to a picture and are kept as the file has them. bodyv2 (DECISIONS 2026-11-12, a T-pose
+# reference; docs/CHARACTER_STUDIO.md §2g): what the feminine end's body becomes when it's picked. Its first twenty
+# weights (the body's shapes) and the sliders it carries were fitted to the user's Daz3D T-pose picture: the legs'
+# widths by height, the trunk's under the cardigan, the arms' reach, the heights of the eyes, the chin, the pit of the
+# neck and the knee, with the trunk's depths held to a medium build's (there is no side picture). The head's and the
+# hands' weights are the feminine base's
+FITTED = ("bodyv2",)
 # a base's head (changes from MHR's average, cm), fitted only for a base the file doesn't have yet
 HEADS = {"feminine": dict(head_w=-0.6, skull=-0.4, jaw=-1.2, brow=-0.3, nose=-0.2, chin=-0.2),
          "masculine": dict(head_w=0.4, jaw=0.8, brow=0.3, chin=0.2)}
@@ -180,8 +217,15 @@ def make_presets(path=PRESETS_FILE):
         f = fit_measures({**bdy, **hold}, start=w, keep=0.01, groups=("body",), steps=60, mhr=mhr)
         w[a:b] = f[a:b]
         out[name] = [round(float(x), 4) for x in w]
+    for name, of in SAME_BODY.items(): out[name] = list(out[of])
+    for name in FITTED:                                                               # a base fitted elsewhere: its weights as they are in the file
+        if name in old: out[name] = old[name]
     path.write_text(json.dumps({"about": "MHR identity weights for the Character Studio's bases (tools/character/mhr.py presets), "
-                                         "and the sculpt each base carries (sculpt.js's controls)",
+                                         "and the sculpt each base carries (sculpt.js's controls); v2female is the feminine "
+                                         "base's body with a sculpt of its own for the head, the neck and the shoulders: what the feminine "
+                                         "end becomes when it is picked (DECISIONS 2026-11-12, v2female); bodyv2 is a body of its own (its weights fitted to "
+                                         "the user's T-pose picture, DECISIONS 2026-11-12, a T-pose reference) with the sliders it carries: what the "
+                                         "feminine end's body becomes when it is picked",
                                 "presets": out, "sculpt": SCULPT}, indent=1), encoding="utf-8")
     return out
 

@@ -12,7 +12,7 @@ character on disk in `Content/Studio/People/<name>/` (git-ignored: real faces st
 
 | Tab | What it does | Its code |
 |---|---|---|
-| Body | MHR: a base (feminine to masculine: slim and young after the user's references, 2026-10-26, the body between the two bases, new characters halfway, the heads kept as they were; a base carries a sculpt, the feminine one's flat stomach), 45 identity sliders, a height; the **sculpt** (2026-10-23): 30 named controls MHR's shapes don't give (Forehead: height, width, slope, brow ridge, temples; Face: hooded lids, cheekbones, cheeks, jaw width, chin length, width and forward, nose size and projection, nose length, tip, width and bridge, mouth width, lips; Body: neck, shoulders, chest, waist, **belly**, hips, upper arms, forearms, thighs, calves; the belly 2026-10-25: MHR's average stomach stands 3 cm proud of a straight line from the pubic bone to the lower ribs and its identity shapes take back only 1 cm of it, so Belly at -1 takes it back to that line (bowed 4 mm: a flat stomach, not a board), a smooth field whole across the middle 12 cm and easing out by the flanks, +1 rounder; **hooded lids** 2026-10-26, after the second lash reference's old man: the skin between the lid's crease and the brow comes down over the upper lid and a little forward, most at the outer corner and on past it, nothing within 2.8 mm of the line the eye is cut along moving (the sculpt is built with the model's own lid line: MediaPipe's ring sits 2 mm below it), so the opening, the lid's rim and the lashes' roots stay; the height over the line measured from an envelope that never falls faster than 0.6 (so the field changes slowly round the corners) and the drop's slope kept under 0.85, so the skin gathers into a fold and never turns over itself (STUDIO counts the triangles turned over at 1 and -1: none; the opening moves 0.000 mm), -1 lifting the crease instead; **the nose's size and projection** 2026-10-28, the user: no way to make a small nose, everything dragged low still left a fat nose standing out in profile (MHR's average nose has its alae 37 mm across and stands 16 mm out of the line from its root to the subnasale; the tip's and the bridge's controls move a spot each, the tip 5 mm, and leave the rest standing): the nose as a height over the face under it (that line down the middle, falling across to the skin at the nose's border), **Nose size** -1 its width 30% in (the alar crease too, the cheek beside it eased along over 16 mm: a nose narrowed alone would stand on its old, wide foot) and its height 35% down, **Nose projection** -1 its height halved, a circle each (the nose's side, its bridge's middle); nothing within 6 mm of the eye's inner corner moves, STUDIO checks the lids' lines, the eyes' corners and the lips stay put and no skin turns over), each a smooth offset field over MHR's base body, mirrored (the face's placed by MediaPipe's points on it, each pair averaged across the middle; the limbs' by their cross-sections), -1 to 1, added after a photo's fit (so a picture never undoes it) and before the expressions (a blink still shuts); **circles on the body** (the Body view shows the body's, the Head view the face's, both sides of each): a circle dragged moves its sliders as far as follows the pointer (120 px a whole slider; what moves towards you from this view stays, a chest seen from the front goes up for more), its rows green while it's held | `index.html`, `sculpt.js`, `mhr.py`, `MHR_lod1.bin` |
+| Body | MHR: a base (feminine to masculine: slim and young after the user's references, 2026-10-26, the body between the two bases, new characters halfway, the heads kept as they were; a base carries a sculpt, the feminine one's flat stomach; **v2female**, 2026-11-12: what the feminine end becomes when it's picked, a head and a neck after the user's Daz3D characters, §2f, with the sculpt's new **Neck width** and **Face taper**), 45 identity sliders, a height; the **sculpt** (2026-10-23): 30 named controls MHR's shapes don't give (Forehead: height, width, slope, brow ridge, temples; Face: hooded lids, cheekbones, cheeks, jaw width, chin length, width and forward, nose size and projection, nose length, tip, width and bridge, mouth width, lips; Body: neck, shoulders, chest, waist, **belly**, hips, upper arms, forearms, thighs, calves; the belly 2026-10-25: MHR's average stomach stands 3 cm proud of a straight line from the pubic bone to the lower ribs and its identity shapes take back only 1 cm of it, so Belly at -1 takes it back to that line (bowed 4 mm: a flat stomach, not a board), a smooth field whole across the middle 12 cm and easing out by the flanks, +1 rounder; **hooded lids** 2026-10-26, after the second lash reference's old man: the skin between the lid's crease and the brow comes down over the upper lid and a little forward, most at the outer corner and on past it, nothing within 2.8 mm of the line the eye is cut along moving (the sculpt is built with the model's own lid line: MediaPipe's ring sits 2 mm below it), so the opening, the lid's rim and the lashes' roots stay; the height over the line measured from an envelope that never falls faster than 0.6 (so the field changes slowly round the corners) and the drop's slope kept under 0.85, so the skin gathers into a fold and never turns over itself (STUDIO counts the triangles turned over at 1 and -1: none; the opening moves 0.000 mm), -1 lifting the crease instead; **the nose's size and projection** 2026-10-28, the user: no way to make a small nose, everything dragged low still left a fat nose standing out in profile (MHR's average nose has its alae 37 mm across and stands 16 mm out of the line from its root to the subnasale; the tip's and the bridge's controls move a spot each, the tip 5 mm, and leave the rest standing): the nose as a height over the face under it (that line down the middle, falling across to the skin at the nose's border), **Nose size** -1 its width 30% in (the alar crease too, the cheek beside it eased along over 16 mm: a nose narrowed alone would stand on its old, wide foot) and its height 35% down, **Nose projection** -1 its height halved, a circle each (the nose's side, its bridge's middle); nothing within 6 mm of the eye's inner corner moves, STUDIO checks the lids' lines, the eyes' corners and the lips stay put and no skin turns over), each a smooth offset field over MHR's base body, mirrored (the face's placed by MediaPipe's points on it, each pair averaged across the middle; the limbs' by their cross-sections), -1 to 1, added after a photo's fit (so a picture never undoes it) and before the expressions (a blink still shuts); **circles on the body** (the Body view shows the body's, the Head view the face's, both sides of each): a circle dragged moves its sliders as far as follows the pointer (120 px a whole slider; what moves towards you from this view stays, a chest seen from the front goes up for more), its rows green while it's held | `index.html`, `sculpt.js`, `mhr.py`, `MHR_lod1.bin` |
 | The view's pose | the body is **shown in a T-pose** (2026-10-25, DECISIONS: modelling wants a modeller's pose, the user's reference: the arms level out to the sides, the elbows and wrists straight, the legs straight down, the feet flat), or in MHR's own A-pose (the view bar's pose picker, kept per browser). Only what's shown: the character is shaped, fitted, dressed, saved and **exported in MHR's own pose** (the desk and Unreal expect it: an export and the clothes' OBJ switch to it while they write; `body.bin` and the body's OBJ are made from it anyway). Laid over the body by MHR's own skinning (`Content/Studio/Bodies/MHR_lod1_rig.bin`: its 127 bones and each point's four, from `MHR_lod1.fbx` by `rig_mhr.mjs`), the joints refitted to the body as it is (each moves with the skin round it, as the desk's `bodies.js` does); only the arms and the legs turn, and the neck stands up (2026-10-26, DECISIONS: MHR's rest pose carries the head 6 to 7.5 cm ahead of the shoulders, the neck leaning far forward, which the user found uncanny next to a real profile; the body under the head moves forward, level, the neck's joints part of the way by their height, until the head's joint is `NECK_AHEAD`, 0.12 of the neck's height (about 2.2 cm), ahead of the shoulders' and the ear over the shoulder's top: as upright as the user's reference: the neck's front, under the jaw, leaning about 14° from upright in the side view where MHR's leans 29° and the reference's about 8°), so the head and all on it (eyes, teeth, lids, brows, lashes, glasses) are the rest pose's own to the last bit; the salon's baked hair moves with the body below the head, by the same share at each height (`shiftAt`). What's drawn on the body goes with it: the sculpt's circles and their pull, the clothes (each garment skinned by the body's weights round it, `tailor/weights.js`) and their handles, the accessories, the nails' close-up, the layers' picking; the procedural skin sits on the unposed body (`objPos`), so a turned arm keeps its pattern. The POV view shows MHR's own pose (the arms down, as a body stands in a game: the face under the game's lights is what it checks); the salon still shows MHR's own pose too (it shapes the hair on the head). POSE (`node tools/character/posetest.mjs`): every base and the tailor's slim and full bodies posed, the arms level, the neck stood up (the head's joint where `NECK_AHEAD` puts it, the trunk's joints only forward, the ear over the shoulder's top), the head's own points untouched, no skin torn (under the chin squeezed to no less than 40%); the Belly control | `pose.js`, `rig_mhr.mjs`, `index.html` |
 | Face | front and side pictures bend the head (MediaPipe's landmarks); **Bake the face** (2026-10-28, the user: done with image to face, remove the reference pictures) keeps the fit as it is in `face.bin` (a header saying when, from which pictures, with what settings and on what body, then the points and their offsets before Face strength), opened with the character from then on, pictures or none: the fit's settings wait while it's baked (Face strength still works) and **Unbake** fits the face to its pictures again (with none left, the base's face, asked first); **brows and lashes** on the salon's hair shader: lashes on the lids' edges that lie over the lid's rounded rim to its front edge before they lift (2026-10-26: MHR's lid line is the rim's back edge, where the lid meets the eye, and the rim is 2.4 mm deep in the upper lid's middle; rooted on the line and sent straight out, the lashes ran under the rim's skin and a band of bare skin showed between the eye and the lashes. `rimOf` in `index.html` finds the front edge from each point of the line and the way over the rim's skin by rays, the lash line's band lies along it, and the way fades as the eye shuts), turn with the lid and squash as it shuts, brows as fine hairs flat on the skin with a fill, shapes and looks (off until asked for); **every lash one fine hair** (2026-10-26, night, after the user's anime lash set: the first spiky lashes were a few dozen wedge cards and read as solid triangles; a real lash set is hundreds of fine hairs): each hair a thin card (two, crossed) with one strand of the lashes' own atlas on it (`lashAtlas`: one soft-cored strand to a cell, thinning to a point), about a tenth of a millimetre wide, hundreds an eye; the upper lid's hairs in clusters that draw together to a point (Clumping: three to eight a cluster), their roots spread evenly or gathered with a gap to the next cluster (Spiky clumps), the clusters long, medium and short in turn (Long and short), each leaning its own way along the lid so neighbours cross (Criss-cross), short hairs along the whole lid under them (Under-lashes), longer and swept up and out toward the outer corner (Outer flare; the way off the lid tilts toward up there); the lower lid's one hair each (a real lower lash is a single fibre; two or three side by side read as a comb), rooted at the margin's front edge with the waterline showing between the eye and the lashes as in a real eye and the reference (a stretch across the margin ran toward the viewer and kinked down: an L), leaving the way the skin goes over the edge and easing into their own direction over their first half (no corner), at most 57° down so they clear the skin under the eye, pointing out or down the skin (Lower lashes down), longest from the middle outward; the lash atlas's strand is a solid core thinning to the tip and black to the end (a soft core mipped down to a few pixels went grey over the whole card and a fading tip dissolved into the skin: the user's find, 2026-10-26, night); **the rim at the corners** (the user's find, 2026-10-26, night: skin showing at both corners of the upper lid where the lashes came out from under it, and the lower roots jumping up to the eye's edge there): `rimOf` searches for the margin's front edge square to the lid's own line (the way from the eye's middle points along the eye at the corners, where the margin still runs across the lid), drops a pick far deeper than the lid's own rim (at the inner corner the lower lid's search reached the nose's flank, 3 mm forward, where the margin is under 1 mm) and fills a corner that found nothing from its nearest neighbour, shallower, instead of fading the rim to nothing; the lashes grow square to the lid's line too, and the innermost 7% of the upper lid and 3% of the lower carry none (a real lid has none beside the tear duct); the lower roots run as one smooth line along the margin's front edge, corner to corner; **the lash line** is its own mesh with a fringe atlas of its own (`lineAtlas`: the roots as a dense fringe, opaque along the eye's edge and ragged where it ends), over the whole rim from the eye's edge to the lid's front edge and on up the lid's skin as far as Lash line takes it (`rimOf`'s fourth point), so no skin shows between the roots (the user's ask, 2026-10-26, night); **a blink** (the user: the lashes shouldn't disappear, they should angle toward the viewer): each hair's frame is set on the lid as it is open (the lid's line, its rim path and the eyeball's middle, kept from the last compose with the eye open) and turned about the lid's own line by how far its root has swung round the eyeball's middle since, so the rim the lashes lie over turns with the margin (the roots stay on the upper lid's own edge, level with the seam and forward of it when shut: a droop on the rim put them below the seam, on the lower lid, the user's find), and the hairs' direction turns the same plus a droop as the lid shuts (MHR's blink brings the lids together halfway; a real lid comes all the way down): shut, the upper lashes point at the viewer and a little down (from 50° up to 15° down on the anime style), still rooted on their rim, a bendy bone a lash in effect; the painted liner's lines come from the same open lid swung the same way (`lidFrame`, `OPENLID`), so on a shut lid it stays a line along the lashes' roots (found by rays on the shut lid's bulge it was a dark patch up the lid); **lash styles** after the user's references (an anime lash set photographed on an eye, drawn eyes): anime (spikes), drawn (long wisps) and anime doll (short spikes all round) beside natural, defined, short and doll, grouped in the picker, a style setting every slider (`styleOf`); **the three eye shapes the user drew** (2026-10-26, night: a drawing of three pairs of eyes; the user: the openings stay as the image-to-face scan gives them, only the lashes' shape and direction), as lash styles in their own group: **fox almond** (a fan swept out to a wing at the outer corner, long there and short at the inner, sparse short lower lashes), **half-lidded** (dense lashes lying down over the top of the eye as a dark band, no lower lashes) and **round doll** (short spikes radiating all round, the lower lid in spikes too), with three controls added for them: **Sweep** (where the lashes lean along the lid, growing toward the outer corner), **Inner length** (the inner corner's lashes against the outer ones) and **Lift below zero** (the lashes down over the eye, to 28° at -0.6); each shape is also a whole look (Face, Look) with the liner the drawing gives it (`skinshader.js`'s `fox liner`: a bold liner to a long wing with the inner corner drawn to a long point and tinted pink; `half-lidded liner`: a broad band, a long inner point, a short flick, the under-eye bulge lit; `doll pink`: a thin liner with small points both ends and pink all round the eye); STUDIO measures the fox's sweep against the natural style's, the half-lidded's elevation and the doll's spikes; **the five lash sets of the user's second reference** (2026-10-26, docs/research/lash_reference.md: five rendered pairs of eyes, "thin ones for men etc"), in a group of their own: **sparse, thin (men, older)** (about fifty short, thin, nearly straight hairs, a few lower ones), **glam volume** (long and dense, fanned into soft wispy spikes, dense long lower lashes), **fluffy mink** (the fullest: about two hundred, soft, neighbours crossing, long fluffy lower lashes), **doll volume** (very long, swept up and out together, the longest lower lashes) and **natural medium** (medium, lightly curled, separated, the lower ones thin and short), each also a whole look (older man (sparse lashes): the skin seventy and over, full ash brows, red veins, no makeup; glam smoky plum; fluffy mink on bare skin; doll volume with the bold doll liner; natural medium with the tinted waterline; the irises stay the character's own); lash looks **brown**, **greying** (dark hairs with pale tips and about a third grey all along: the hair shader's inner colour on a share of the strands) and **grey**; the upper lashes' slider runs to 240; STUDIO measures each set against the natural style (the sparse the fewest and shortest, the glam's spikes, the mink the fullest with its neighbours crossing most, the doll's lift and its lower lashes the longest, the natural medium separated) and that each look sets its set and its makeup; STUDIO measures the gap between clusters against the roots' spacing inside one (13× anime, 1× natural), the clusters' lengths' spread (16% anime, 3% natural) and the lower lashes' angle (61° anime, 33° natural); **teeth and a tongue** (2026-10-24; MHR has none): an adult's average arches, sized to the neutral mouth's width and set behind the lips, wet (a clear coat), the biting edges translucent blue-grey, darker gaps, dimmer when the mouth is barely open, the upper with the skull, the lower and the tongue on the jaw (a rigid motion fitted once to each of MHR's jaw shapes, so lip shapes never move them); the opening is cut out of the skin along the mouth's own lip line (the seal's points, the upper lip's lowest edge and the lower's highest, corner to corner, smoothed: no wedges at the corners, no jagged edge), with a dark bag behind it marking the stencil, so the mouth shows only through the opening and never through the lips or cheeks; a pucker and a funnel together are limited (past 1.1 between them the funnel gives way: MHR folds the lower lip out over itself); the opening counts from the mouth at rest (MHR's lips overlap there); the **lower lip's curl** (Mouth, 0.5 by default) rolls the top of the lower lip down into the mouth, as a real lip curls: MHR's runs straight up to a hard edge and, at rest, a millimetre up inside the upper lip; **whole looks** (`looks.js`, Face, Look): the eyes, the lips, the teeth and the skin set together, new characters starting from "soft cinematic" (after the user's reference, docs/research/look_reference.md), "MHR plain" taking it off; **lipstick** (`lips.js`): painted by the skin's shader inside the lips' outline (MediaPipe's outer lip ring, riding the face), over the photo skin or the procedural one, soft at its border, a gradient, gloss, lip lines; Show the guide draws the outline, shaped by five sliders (shade, size, forward, up; Open the mouth) | `teeth.js`, `face_mesh.py` (worker), `browlash.js` |
 | Expressions | MHR's 72 shapes, presets written as ARKit-52 curves (the mocap's map) | `arkit_mhr.json` |
@@ -239,7 +239,8 @@ bigger or smaller against the rest, on MHR's own rig (a point belongs to an arm,
 - **Monster mode** (the switch over the sculpt, saved with the character): the sliders' and the circles' reach is 3
   instead of 1, the height runs 0.4 to 3.5 m, and the **Creature** group shows: Eye slant, Pointed ears, Snout, Long
   skull, Hunch (the back bent forward from the waist, the head brought back up to look ahead). New controls a person
-  can use too: **Proportions** (Head size, Neck length, Torso length, Leg length, Arm length, Hands, Feet, Fingers),
+  can use too: **Proportions** (Head size, Torso length, Leg length, Arm length, Hands, Feet, Fingers; **Neck length**
+  is one of them and is listed in Body, with the neck's other sliders, since 2026-11-12),
   Face (Face length, Round face, Eye size, Eye spacing, Deep-set eyes, Ear size, Ears out), Body (Bust, Seat).
   **Fangs** and **Pointed teeth** (Face, Mouth; teeth.js). Off, every slider comes back into a person's range and the
   creature's own go to 0 (asked first). The head's view follows a head a hunch or a long neck has carried (`HEADOFF`),
@@ -377,6 +378,274 @@ Monster mode are.
 - **Not yet**: MHR's chest is coarse (104 points a breast), so the very top of the slider is faceted close up; nothing
   lifts or holds a full bust (a bra is cut on the form and sits on it, the breast under it the hanging one); it
   doesn't move in play (the ears have bone chains for HSJiggle, the bust none: LATER).
+
+## 2f. The v2female base (DECISIONS 2026-11-12, v2female)
+
+The user, while a Daz3D hairstyle was being matched 1:1 (docs/HAIR_V2.md §10): "If required to make these hairstyles
+work feel free to create a better preset base head shape called v2female (which still allows face sculpting etc)", and
+once it was found to be required, "lets create a v2female base". It was required because the hair by the twin tails'
+ties could not be judged closer than 2 cm while the head and the neck under it were MHR's.
+
+- **What it is.** Not a third body: *what the feminine end of the base becomes*. `Content/Studio/Bodies/MHR_presets.json`
+  holds `presets.v2female` (MHR's identity weights: the feminine base's own, so the body is the feminine base's and
+  clothes cut for it fit as they did) and `sculpt.v2female` (the sculpt it carries in place of the feminine base's):
+
+  | control | value | | control | value |
+  |---|---|---|---|---|
+  | Belly | -0.7 (the feminine base's) | | Neck width | -0.7 |
+  | Face length | -0.8 | | Face taper | -1 |
+  | Eye spacing | 1.6 | | Eye size | 0.7 |
+  | Nose size | -0.4 | | Nose projection | -0.22 |
+  | Nose length | 0.35 | | Nose bridge | -0.22 |
+  | Mouth width | -0.72 | | Lips | 0.13 |
+  | Brow ridge | -0.18 | | Forehead slope | 0.45 |
+  | Chin length | -0.15 | | Chin width | -0.8 |
+  | Jaw width | -0.5 | | Cheekbones | -0.2 |
+  | Neck base | -0.3 | | Neck length | -0.35 |
+
+  Twenty plain values on the Sculpt's own controls (Neck length is a proportion, `grow.js`; a base carries it the
+  same way): a base is a starting point, and nothing in it is locked. The
+  character's own sliders and circles add to them (`sculptValue`: its own, its base's, its age's and Cutify's, eased
+  into the control's limit), so the user's "which still allows face sculpting" holds by construction: a character on
+  v2female with Eye size at -0.7 has the feminine base's eyes again.
+- **In the page.** Body, Base: a fourth button, **v2female** (the feminine base with the switch on), and under the
+  base's slider a switch, **v2female**, to turn it on or off for a character already made without touching its
+  base. Toward masculine it fades out as the feminine base's own sculpt does (at Average half of it is there, at
+  Masculine none: `baseSculpt`). Kept with the character as `v2: 1`, absent when off, so characters saved before are
+  as they were. The body's cache key carries it (`bodyKey`: its weights are the feminine base's, so nothing else
+  would tell the two apart and the clothes cut for one would be kept for the other). A creature's card turns it off
+  (a creature is its own whole shape). New characters start without it.
+- **Controls made for it** (`sculpt.js`), all for anyone (Shoulder slope was made for the first answer about the
+  shoulders and is not used by the base):
+  - **Neck width** (Body). MHR's neck could not be slimmed: the sculpt's *Neck* is the throat under the jaw alone
+    (it stops 7.5 cm from the neck's axis; the widest of the neck is its back and sides, further out), and MHR's
+    identity shapes make a whole body heavier or lighter. Neck width moves every point of the neck toward its own
+    axis or away from it, 30% at -1. *Its axis* is the line through the neck's middle (front to back) at two heights
+    of the neck proper, 1.45 m and 1.2 cm under the chin. *Where it ends above* goes by the bearing round that axis:
+    at the front just under the chin, round the side along the jaw's line, then from just behind the jaw up to under
+    the ear and the skull's base and so round the nape; it comes in over 3 cm under that line at the front and sides
+    (the jaw overhangs the neck anyway) and over 5 cm at the back, where the skull runs down into the nape, and
+    behind the jaw its offsets are smoothed over the mesh (three rounds), so the jaw, the chin and the skull stay
+    and no step or crease is left under the skull. *Below* it fades in
+    from 1.405 to 1.46 m, and out from 8 to 12.5 cm off the axis (the shoulders are not the neck). *Its reach* is
+    -1.4 (`grow.js` `REACH`): past it the triangles where the neck runs into the shoulders turn over.
+  - **Face taper** (Face, with a circle of its own on the jaw). The face narrowing from the eyes down to the chin,
+    or widening: every point of the face's front moves sideways in proportion to how far out it is, more the lower
+    it is (nothing at the eyes' line, a third of it at the mouth, all of it at the chin: a fifth narrower there at
+    -1), easing out under the chin and toward the ears. Because every point at one height moves in the same
+    proportion, each height keeps its shape and nothing is left standing over what moved. With *Face length* it
+    makes a small lower face, shorter and narrower together. (Jaw width is a spot at the jaw's angle and Chin width
+    a spot at the chin: pulled in far, they leave the cheek above them as a ledge. A band along the jaw's own line
+    was tried first and did the same.)
+  - **Shoulder slope** (Body; the Shoulder circle moves it up and down as it moves Shoulders sideways). The
+    shoulders' points and the arms lower (or higher), the line from the neck coming down to them: nothing within
+    7 cm of the middle, all of it (3 cm at 1) from 19 cm out, the arm whole. Its reach is 1.8 (past it the armpit
+    folds).
+  - **Neck base** (Body, with a circle of its own on the shoulder's top). The rise from the shoulders up to the neck,
+    the trapezius' top edge: hollowed and lower, or fuller and higher. Only the top of the shoulder between the
+    neck's root and the shoulder's point, most 9 cm out (2.5 cm at 1), nothing at either end. Its reach is -2.3 to
+    1.9.
+- **The neck and the shoulders** (the user, on seeing the base: "the shoulders and base of neck ... looks a bit
+  uncanny when it should look more feminine"; then, on my first answer, a long neck on sloped, narrowed shoulders:
+  "instead of doing the long neck ... try match the neck shape to the shoulders in a same way" as the face and the
+  hair are matched). Measured in the fitted frames of her front and three-quarter pictures:
+  - **her shoulders are where MHR's are.** Her collar's line lies 0.75 cm over our shoulder line at 14 cm out
+    once the 8 degrees her head is tilted on her body are taken off (they raise one side and lower the other by
+    1.9 cm there, which is what the two sides showed), and a collar is about that thick. Her head sits close on
+    her shoulders. Nothing is dropped, sloped or narrowed.
+  - **her neck is a straight column**, about 9.3 cm across from under the ears to the collar (the head's own
+    units). Ours was 10.2 to 11 from the chin's level down and wider still under the ears, because Neck width
+    stopped at the jaw's height all the way round to behind the ear: a neck that flared at its top. The field now
+    climbs to under the ear just behind the jaw, and the base carries -0.7: **9.2 to 9.9 cm against her 9.1 to 9.4
+    from the chin's level to 2.5 cm under it.**
+  - **the rise from her shoulders to her neck is a little lower beside the neck**: Neck base -0.3 (the collar's
+    line is all there is to go on; -0.6 put our skin under where hers can be).
+  - The first answer's picture is not kept; the one in the repo is the base as it is.
+- **The neck's length** (the user, later the same day: "make sure we add a modifier / slider in general to make necks
+  shorter ... unrealistic turtle length necks ... a lot of Asian people don't"). There was a slider, **Neck length**
+  (`grow.js`, a proportion: the head comes down whole, the neck's skin with it by its height, the shoulders stay),
+  filed under Proportions. It is listed in **Body** now, right after Neck and Neck width (a control can name the one
+  it comes after: `after`), and its help says what it does: -1 is about 2.5 cm off an adult's neck, +1 as much
+  longer. The chin over the pit of the neck (the front's middle, where the throat meets the chest), bodies at their
+  own heights:
+
+  | | the chin over the pit of the neck | of the head's height |
+  |---|---|---|
+  | feminine | 6.6 cm | 0.32 |
+  | average | 6.2 | 0.29 |
+  | masculine | 5.3 | 0.23 |
+  | v2female as it was | 7.5 | 0.39 |
+  | **v2female now** (Neck length -0.35) | **6.7** | **0.34** |
+  | feminine, Neck length -1 / +1 | 4.2 / 8.9 | 0.20 / 0.44 |
+
+  So the long neck was this base's: *Face length* had made the lower face short by lifting the chin, and the neck
+  took up that centimetre; slim, it read longer still. By her pictures: in the front one (the fitted camera, her
+  head's tilt taken off the body) her collar's top edge on her left shoulder is at 316 px over columns 880 to 960;
+  our bare shoulder was at 330, a centimetre under it, and is at 316. The skin has to be under the cloth, so that
+  picture alone says -0.25 or so; in the three-quarter one her bare shoulder is higher than ours even at -0.4 (her
+  arm may be up: -0.4 to -0.6, or a pose). -0.35 is between them. ("Her shoulders are where MHR's are", above, was
+  read off the same collar and let the centimetre go as the cloth's thickness: the shoulders are MHR's, and the head
+  sat a centimetre high on them.) The other bases are not long by these numbers and are left as they are.
+- **Held to her pictures.** The first version (the same day) was made from proportions read off one picture by eye
+  and carried Neck width at -1. Then the head was laid against two of her pictures properly (the scratch
+  `rig2/joint.mjs`: landmarks on the body, MediaPipe's points through `MHR_landmarks.json` and the ear as the sculpt
+  finds it, against the same points in each picture; each picture's camera fitted, the misses in millimetres), and:
+  - **her neck is 1.22 to 1.27 times as wide as her eyes are apart** (124 to 129 px against 101.9), and both of
+    its edges are in the picture (the head is turned 10 degrees on it, which is why its middle is not under the
+    chin and why one edge was missed the first time). At -1 ours was 1.10 (7.4 cm against eyes 6.7 apart) and,
+    from the side, dented at the nape. At -0.4, the second try, 1.34. At **-0.7**, with the field reaching under
+    the ears, 1.19 (8.0 cm at its narrowest).
+  - **her lower face is short**: the chin 1 cm higher than ours, the mouth 3 mm, the nose's tip 3 mm *lower*; and
+    with the chins aligned her jaw's outline is ours on the side where it is clear of hair. So the face is shorter
+    under the eyes (Face length -0.8, with the nose let down again by Nose length) and narrower in step with it
+    (Face taper -1): shortened alone, the same width in less height reads as a heavy jaw.
+  - **her mouth is 16% narrower**: Mouth width -0.72 (past -1 it pinches).
+  - What a fit by points alone asked for and was **not** taken: a mouth at -1.27 and a face squeezed further (the
+    points landed, the face looked wrong), the chin back by 8 mm (her mouth is open in that picture).
+  The landmarks now land 3.4 mm off in the front picture and 2.8 in the other (4.7 and 3.7 on the first version):
+  the eyes, nose, mouth and far ear within 2.5 mm.
+- **Measured** (GROW: bodies at the feminine adult's own height, 1.63 m): the neck at its narrowest from the front 10.3 cm on the feminine
+  base, 7.2 with Neck width at -1, **8.0 on v2female**. Neck width alone moves the chin, the nose, the mouth, the
+  eyes, the head's sides and the forehead 0.00 mm, the jaw's line by the mouth 0.0 mm, and under the ear behind
+  the jaw it comes in 6.6 mm (meant); held at its reach none of the 1306 triangles it moves is turned past a right
+  angle. The masculine base is the same with v2female on to the bit. The
+  face: the eyes 6.7 cm apart (the feminine base's 5.7), each 27.1 mm corner to corner (24.7), 9.1 cm from the
+  eyes' line to the chin (10.1), 9.7 cm between the jaw's angles (10.7), 6.3 across the jaw by the chin (7.5), the
+  mouth 3.8 (4.8). Face taper at -1 alone: the jaw by the chin 16% nearer the middle, at the mouth's height 10%, the
+  mouth's corners 7%, the eyes and the ears 0.2 mm; at one height every point within 2.4% of the same proportion;
+  no triangle turned at 3 either way. Shoulder slope at 1 alone: the arm down whole by 30 mm and nothing sideways,
+  13 to 17 mm halfway out, 0.00 mm within 7 cm of the middle, from the chin up and on the trunk under the armpits.
+  Neck base at 1 alone: 25 mm at 9 cm out, 0.00 mm within 4.5 cm of the middle, from the shoulder's point out and
+  from the chin up. **v2female's neck base**: the top of the shoulder 9 cm out 0.7 cm lower against the
+  shoulder's point than the feminine base's, the shoulder's point as high over the pit of the neck as it was.
+  **Neck length**: at -1 and at 1 on the feminine base the chin 2.4 cm nearer the pit of the neck or further, the
+  head's own height within 3% (the body is made as tall again), the shoulder's point where it was against the pit,
+  no triangle of the neck or the shoulders turned over; **v2female's neck**: the chin 6.7 cm over the pit of the neck
+  against the feminine base's 6.6, and 7.5 without the Neck length it carries.
+- **Outside the page**: `tailor/node.mjs` `grownBody(m, { base: -1, v2: 1, ... })`; `grow.js` `V2FEMALE` is what the
+  hair editor's test body adds to it (`hair2/node.mjs` `bodyByName("v2female")`: 1.62 m and a full bust, for tails to
+  lie on), `node tools/character/hair2/make.mjs --body v2female`.
+- **The file and its tool**: `tools/character/mhr.py` knows the base (`SCULPT["v2female"]`, `SAME_BODY`: a base that
+  is another's body with a sculpt of its own), but the file was written by hand in the tool's layout. `mhr.py
+  presets` fits the bodies again and no longer lands on the committed weights (feminine up to 0.9 off, masculine
+  1.6: found by running it into a scratch copy), and every character made on a base depends on those. Don't run it
+  to add a base.
+- **Checks**: GROW (the lines above), GROWPAGE (the button and the switch in the page: the neck narrower on
+  v2female, the feminine base again with the switch off, saved and opened again with it on).
+- **Not matched, and known**: her right ear in the front picture leans more than ours (its top 5 mm further out,
+  its lobe 7 mm further in; her left ear in the other picture fits within 2 mm: no control was made for one ear in
+  one picture). Her shoulders begin lower under the chin than MHR's (a longer neck, or sloping shoulders, or her
+  pose: this was read off too early. Measured with her head's tilt taken off, they are where MHR's are: above). Her eyes are far
+  larger than Eye size makes them.
+- **Known in Neck width**: its first form dented the nape under the ears past about -0.7. The longer run-in at the
+  back and the smoothing behind the jaw were made for that and looked at on v2female's -0.7 (from the side, behind
+  and three quarters: a smooth taper); further down the slider nobody has looked.
+- **A side effect to know**: the hair tools size a head by its height from the top to the chin (`salonref.js`
+  `headFrame`). v2female's chin is 1 cm higher, so its frame is 6.6% smaller than the feminine base's (0.868
+  against 0.929) on the same skull, and hair grown from the same numbers is that much smaller on it.
+- **Picture** (Godot's, of the hair tool's bare head and shoulders: no skin, no eyes): `docs/studio_sheets/2026-11-12_v2female.jpg`
+  (the feminine base and v2female; from the front, three quarters, the side and behind).
+- **Not yet**: no outfit has been looked at on its neck and shoulders (clothes are cut on the body, so they follow;
+  nobody has looked); the wardrobe's dummy and the outfits' cards are the plain bodies; seen in the Studio's own
+  T-pose view only by the user.
+
+## 2g. The bodyv2 base (DECISIONS 2026-11-12, a T-pose reference)
+
+The user sent a Daz3D character from the front in a T-pose ("this t pose reference for what the body should look
+like ... create a base bodyv2 that aims to get these exact proportions, 1:1 but don't calculate the clothing (mostly
+the cardigan and sneakers) ... this mesh is the medium size (slightly chubbier side) so imagine the bust and waist
+width sliders around mid", and: "I mean thighs and legs too and hands and feet"). The picture stays out of git
+(`Saved/Body/ref/t1.jpg`).
+
+- **What it is.** *What the feminine end's body becomes*, as v2female is what its head becomes; the two are separate
+  switches and are meant together. `MHR_presets.json` holds `presets.bodyv2` (MHR's identity weights: the body's
+  twenty its own, the head's and the hands' the feminine base's) and `sculpt.bodyv2`, the sliders it carries, which
+  change only what they list (the head's and the neck's stay v2female's or the feminine base's):
+
+  | slider | value | | slider | value |
+  |---|---|---|---|---|
+  | Arm length | -1.75 | | Thighs | 0.8 |
+  | Torso length | -0.47 | | Shoulders | -0.27 |
+  | Leg length | -0.33 | | Waist | -0.15 |
+  | Neck length | -0.1 (on v2female's -0.35) | | Upper arms | -0.11 |
+  | Calves | -0.09 | | | |
+
+  A character on it has every slider at 0 and moves from there, so this build is the middle: a slimmer and a fuller
+  one are each a slider's half away, as asked.
+- **In the page.** Body, Base: a fifth button, **bodyv2** (the feminine base with both switches on), and a second
+  switch under v2female's, **bodyv2**. Kept with the character as `b2: 1`; in the body's cache key; a creature's
+  card turns it off; new characters start without it; toward masculine it fades out as the base's sculpt does.
+  Outside the page: `grownBody(m, { base: -1, v2: 1, body2: 1 })`, `grow.js` `BODYV2`, `hair2/node.mjs`
+  `bodyByName("bodyv2")`, `make.mjs --body bodyv2`. (`trial: { weights, sculpt }` puts a body being fitted in its
+  place.)
+- **How the picture was read.** The figure cut from its backdrop (a mask), then by height: the two legs' edges, the
+  trunk's width, the arms' top and bottom by how far out; and the face's marks off enlargements (the eyes' line, the
+  mouth, the chin, the pit of the neck in the cardigan's V, the cuffs' edges, the fingertips). Everything is a share
+  of her bare height: from the sole in the shoe (taken 2.5 cm over the shoe's bottom) to the skull's top under the
+  hair (taken 3 cm under the hair's), 1311 px, said below in centimetres on a 163 cm body. That height is a guess
+  at both ends, so the fit has the picture's scale and floor as unknowns of its own, held near it: they came out
+  1.004 and -0.4 cm. The picture is not stretched (its round buttons are 12 by 12 px).
+- **What was taken off for the clothes** (the user: "don't calculate the clothing"). The cardigan's knit: 1 cm a
+  side on the bust and the hips, 2 where it hangs clear of the waist. Its sleeves: 0.8 cm above and below the arm,
+  1.5 toward the cuff, where it bunches; the cuff itself not used. The cuff's edge is taken 2.5 cm past the wrist
+  (the thumb leaves the cuff there). The leggings count as skin. The sneakers: only their soles.
+- **The fit** (scratch scripts, kept as they were run in `docs/research/bodyfit/`): the body is the feminine base
+  with v2female's head, in the Studio's own T-pose (`pose.js`), cut by planes as the picture was. Unknowns: twelve
+  of MHR's body shapes (the ones that say something: hips, waist, bust, seat, belly, thighs; the subtle ones and
+  the neck's stay the feminine base's), the length sliders, the limbs' and the trunk's sculpt sliders, the picture's
+  scale and floor. Gauss-Newton with a ridge toward the feminine base and toward no slider at all (MHR's own shapes
+  before the sculpt's bumps: Thighs is capped at 0.8, past which it left a ledge across the back of the thigh).
+
+  | cm on a 163 cm body, T-pose | her picture | bodyv2 | the feminine body |
+  |---|---|---|---|
+  | the leg's width at the ankle (0.08 of the height) | 5.3 | 5.3 | 4.6 |
+  | at the calf (0.20) | 11.2 | 11.0 | 9.1 |
+  | under the knee (0.26) | 10.4 | 10.9 | 8.6 |
+  | the thigh (0.35) | 14.2 | 14.5 | 10.4 |
+  | the thigh's top (0.44) | 19.7 | 19.6 | 14.2 |
+  | across the hips | 41.4 (the hem less its knit) | 41.5 | 34.5 |
+  | across the waist | 29.8 (less the cardigan) | 30.7 | 21.4 |
+  | the wrist from the middle | 58.3 | 59.2 | 66.2 |
+  | the eyes' height | 152.4 | 152.8 | 153.2 |
+  | the chin's | 143.3 | 143.1 | 143.8 |
+  | the knee's joint | 46.6 | 47.0 | 46.9 |
+
+  Over all 42 heights of the legs the width is 0.28 cm off (rms), 0.6 at the most; the trunk under the cardigan
+  0.84 cm.
+- **What the picture cannot say, and what was done.**
+  - *Front to back.* It is from the front alone. The trunk's depths are held to a medium build's for these widths
+    (mine, not hers): 26.5 cm at the bust, 20.5 under it, 21.5 at the waist, 24.5 at the belly and the hips. Round
+    it at rest: bust 101 cm, waist 82, hips 113. A side picture would replace them.
+  - *The arms.* Her wrists are 58 cm from her middle where MHR's and a real person's of her height are 66 to 68:
+    arms about a sixth shorter. The cuffs' ends are straight in the picture, so the arms lie in its plane, and it is
+    not stretched: the base carries it (Arm length -1.75). If it is the pose or the camera after all, it is that one
+    slider.
+  - *The shoulders.* In her T-pose the arms' line is 2.5 cm higher over the pit of the neck than ours: a raised arm
+    takes the shoulder up with it, and the Studio's T-pose turns the arm alone. Read as the body's it came out as a
+    neck 0.8 shorter still; the neck is measured from the chin to the pit of the neck instead (hers 6.3 cm, ours
+    6.7 before: Neck length -0.1).
+  - *The hands and the feet.* Her hands are half closed (the fingers show 6 cm past the cuff); ours end where hers
+    do, and the Hands slider is left. Her sneakers are 8.5 cm across; our bare feet stand inside them with a shoe's
+    margin; a foot's length cannot be seen from the front. Feet left.
+  - *The head's size* is left v2female's: her eyes are 6% further apart than ours and her eyes-to-chin 3% shorter,
+    which point opposite ways.
+- **The joints inside a limb** (`pose.js` `readRig` `along`, `joints`), found on the way. An arm a sixth shorter
+  showed that the elbow never followed Arm length: a limb's skin is weighted to its twist bones, not to its own
+  bones, so the rule that finds a joint where the skin bends found the elbow no ring and it rode the shoulder (the
+  ankle the same, under the knee): the upper arm's bone kept its length and the forearm's took all of it, 5 cm off
+  the skin's elbow. Now the elbow and the ankle go along their limb's own line as far as the skin round them went
+  (the middle one of their ring's votes, not their mean; sideways they stay on their parent). Arm length -1: the
+  upper arm 9.7% shorter and the forearm 9.9%; an arm made thicker moves its elbow 2 mm. On the bodies there were,
+  the elbow and the ankle are within 5 mm of where they were (a child of twelve's ankle 18 mm: it had not followed
+  her legs).
+- **Checks**: GROW (the base in the file; off, v2female's body to the bit; the legs at five heights, the trunk, the
+  wrist, the heights, the tape, against the picture's numbers; the joints' three lines), GROWPAGE (the button and the
+  switch: the hips wider, the hands nearer, as tall as set; off again; saved and opened again with it on), POSE.
+- **Picture**: `docs/studio_sheets/2026-11-12_bodyv2.jpg` (the body from four sides beside v2female's on the
+  feminine body; Godot's, bare, no skin).
+- **Not yet**: no outfit has been looked at on it (the tailor cuts on any body; nobody has looked); the wardrobe's
+  dummy and the outfits' cards are the plain bodies; the Studio's own view of it has been seen by nobody but the
+  page check.
 
 ## 3. Each stage against the rule (as of this branch)
 
