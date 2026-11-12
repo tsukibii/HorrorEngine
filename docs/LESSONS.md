@@ -2936,3 +2936,23 @@ pale one shows.
   rounder than a thrown liquid's (the thin spikes soaked in).
 - **A muzzle flash's light at a few metres' range tints the whole corridor**: the hearts' pink light at 0.3 of the
   gun's made one frame of the picture all pink. A coloured flash wants a tenth.
+
+## Heads from a picture's landmarks (2026-11-12, `make-up-enhanced`: three head presets after the Daz faces)
+
+- **A face detector draws every outline toward an average face.** Sliders fitted to MediaPipe's points alone, on
+  v2female's own picture, found her eyes, nose, mouth and face length and left her narrow jaw out (Face taper -0.27
+  where the hand-made head has -1.0, Chin width +0.18 for -0.8): the detector's face oval is a guess it smooths. The
+  first values for the new heads came out with broad jaws for that reason. **Measure a new face against a known one
+  with the same fit on both, and add the difference to the known head**: the detector's habits cancel.
+- **The same girl from two angles gave two different fits** (her picture turned 32 degrees: Face length -0.27; from
+  the front: -0.92). One picture's depth is a guess; a turned view reads lengths wrong. Trust the frontal picture,
+  take differences by half for what a front view can't read, and say how far the result is from a 1:1.
+- **Draw the head over the picture before believing the numbers.** The outline, eye rings, nose base and lips from
+  the fitted camera, over the crop: it showed in one look that all three faces' jaws already sit on v2female's
+  outline, which the residuals (3 mm, mostly the detector's own outline) could not.
+- **A waist fitted by measures and then pulled in by a slider was pulled in twice**: the first hourglass came out at
+  49 cm (0.41 of the hips). Measure the body as the Studio makes it (weights, sliders, height), not the weights alone.
+- **A preset's card needs a neutral dress.** The tailor's sports bra stood off bodyv2's shoulders, a high bun's
+  face-framing strands crossed the cheek, a ponytail's fringe hid the forehead a head preset is about. A cropped tee,
+  leggings and a buzz cut show the shape and nothing else.
+

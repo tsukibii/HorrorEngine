@@ -647,6 +647,102 @@ width sliders around mid", and: "I mean thighs and legs too and hands and feet")
   dummy and the outfits' cards are the plain bodies; the Studio's own view of it has been seen by nobody but the
   page check.
 
+## 2h. Heads and bodies as preset cards (DECISIONS 2026-11-12, make-up enhanced)
+
+The user: "is there any reason we dont have the new face shape as a preset thumbnail similar to the monster presets?
+If w can have it as a thumbnail preset that we default to just do that, same with the body (body preset shouldnt
+override the face), maybe create some thumbnail categories for, monster as we have now (untouched), heads, and
+bodies." There was no good reason: v2female and bodyv2 had been built as two more Base buttons with a switch each
+(§2f, §2g), off for new characters, because nobody had asked for the default to change.
+
+- **What it is.** The Body tab has **Presets** under Base, in three categories picked by chips: **Heads**,
+  **Bodies**, **Monsters**. Monsters are the creature cards of §2d, moved under their chip and otherwise untouched
+  (their two switches, their note, `useCreature`). A head card and a body card are each *what a part of the feminine
+  end of the base becomes*, as v2female and bodyv2 always were; the two older Base buttons and the two switches are
+  gone. Each category starts with **Plain** (MHR's own feminine head; the slim feminine base's body).
+- **A head changes the head and the neck only, a body the body only.** `grow.js` `femEnd` puts the feminine end
+  together: MHR's identity weights of the *head* group from the head preset, of the *body* group from the body
+  preset, the rest the feminine base's; the sculpt a preset carries only for the controls it lists. A head preset
+  may list the Face and Forehead groups' controls, the Creature group's but the hunch, and the neck's (`headOwns`); a
+  body preset everything else, and **Neck length**: how high the body carries the head is the body's word, and
+  bodyv2 has it from its picture. GROW holds every preset to that and measures it: a head preset moves nothing under
+  the shoulders; a body preset leaves the face's 468 points and the skull within half a millimetre against the crown
+  (0.42 mm at the jaw's edge, where the neck's skin that Neck length stretches begins; the face itself 0.001 mm).
+  Neither sets a slider of the character's own: every slider still moves from it.
+- **A new character starts on v2female's head and bodyv2's body**, on the feminine base at 1.63 m (`grow.js`
+  `NEW_START`, the page's `newStart`). A character saved before keeps what it had: a file with the two switches'
+  `v2: 1` and `b2: 1` opens on the same two presets (`presetOf`); a file with neither opens plain. A character
+  saves `headPreset` and `bodyPreset`.
+- **Picked on another base**, a card moves the base to Feminine and says so: the presets are made on the feminine
+  end and fade out toward the masculine one, so at Average a card would be half itself. A body card doesn't change
+  the height that's set. A creature card clears both (a creature is shaped from the plain bases), as it cleared the
+  two switches.
+- **The heads** (`sculpt.<name>` in `MHR_presets.json`; `grow.js` `HEADS`): **v2female** (§2f), and three more after
+  the user's other Daz3D faces ("look through our previous daz references ... and make an aligned one for 3 of
+  them"):
+  - **v2 elegant** (`v2elegant`): the Christmas picture's left face. Narrower eyes lifted at the outer corners
+    (Eye size -0.1, Eye slant 0.3, set closer than v2female's: 1.05), a wider mouth with fuller lips (-0.45, 0.4),
+    a firmer jaw (-0.2), a little more nose.
+  - **v2 doll** (`v2doll`): its right face. Big lifted eyes set wide (0.5, 0.5, 1.6), round cheeks (0.3) over a
+    small jaw (-0.9), a short turned-up nose, a small full mouth.
+  - **v2 soft** (`v2soft`): the T-pose reference's own face (bodyv2's picture). A rounder, softer face (Round face
+    0.3, Cheeks 0.2), heavier lids (Hooded lids 0.4), a broader nose, a wider mouth.
+  - All three carry v2female's neck (its width, its base, its length).
+- **How the three were aligned, and how far.** MediaPipe's 468 points on each picture against the same points on
+  the head (`MHR_landmarks.json`), under a camera fitted with the sliders (a turn, a scale, a shift; across and down
+  the picture trusted, depth hardly; the mouth and the brows trusted less where her expression moves them, the
+  forehead under her fringe hardly). On v2female's own picture that fit finds her eyes, nose, mouth and face length
+  in the right direction and **misses how narrow her jaw is** (the detector draws every face's outline toward an
+  average one: 2.1 mm left). So each new face was measured *against hers* with the same fit on both, and what
+  differs was added to the hand-made v2female (the controls a front view reads well in full, the rest by half);
+  then the head's outline, eyes, nose base and lips were drawn over the picture from the fitted camera and looked
+  at. All three faces' jaws and chins sit on v2female's outline already (one artist's style); what separates them
+  is the eyes, the nose, the mouth and the cheeks. **This is not the perfectionist's 1:1 that v2female got** (two
+  pictures, outlines read by hand, many rounds): one picture each, 2.8 to 3.5 mm rms left across the picture, most
+  of it the detector's outline and its eye rings on drawn eyes. The scripts as they were run: `docs/research/headfit/`. A
+  second pass per head, with outlines read off the picture, is what would tighten them.
+  - Not made: the neon picture's face (she is laughing, mouth open: her jaw and cheeks can't be read at rest), and
+    the two small faces of the fourth picture (60 px between the eyes, puckered).
+- **The bodies** (`presets.<name>` and `sculpt.<name>`; `grow.js` `BODIES`): **bodyv2** (§2g), and two alterations
+  of it ("more skinny (sports muscular woman), and more hourglass one"; no male presets: "just focus on feminity").
+  Both keep bodyv2's proportions (the lengths of its legs, torso, arms and neck); their MHR weights are bodyv2's
+  moved to measures of their own (`mhr.py` `fit_measures` from bodyv2's weights; `docs/research/bodyfit/alter/`), with
+  sliders on top. Round each
+  at 1.63 m (a tape: the hull's length, the arms left out):
+
+  | | bust | waist | hips | waist / hips | shoulders across | a thigh |
+  |---|---|---|---|---|---|---|
+  | bodyv2 | 104 | 76 | 113 | 0.68 | 43.2 | 19.6 |
+  | **v2 athletic** (`v2athletic`) | 97 | 63 | 102 | 0.62 | 47.5 | 16.0 |
+  | **v2 hourglass** (`v2hourglass`) | 98 | 65 | 116 | 0.56 | 44.8 | 19.8 |
+
+  - v2 athletic: lean and toned; the shoulders wider, a small waist, narrow hips, firmer arms, calves and seat
+    (Upper arms 0.25, Forearms 0.15, Calves 0.35, Seat 0.4, Shoulders 0.2). **"Muscular" is build, not
+    definition**: MHR's shapes and the sculpt give no muscle relief (no abs, no cut of the deltoid); that would be
+    a normal map on the skin, not built.
+  - v2 hourglass: bodyv2's hips and thighs under a small waist, a fuller bust and seat (Bust 0.6, Hips 0.25, Seat
+    0.35). A first fit pinched the waist to 49 cm (0.41 of the hips), a cartoon's; this one is 0.56.
+- **The cards' pictures**: `node tools/character/presets.mjs thumbs` (the Studio's page driven headless, as the
+  creatures' are: PRESETS) into `Content/Studio/Presets/thumbs/head_<id>.jpg` and `body_<id>.jpg`, served at
+  `api/presets/thumbs/`. A head: a character as the Studio starts one, in a buzz cut (the hair editor's `m_buzz`:
+  the head's shape, forehead and hairline are what the card is for), a little from the side. A body: the whole
+  figure from the front on v2female's head, in a cropped tee and leggings the tailor cuts on that body (the trunk
+  and legs fill the card: the arms, out in MHR's pose, run off it).
+- **Picture**: `docs/studio_sheets/2026-11-12_presets.jpg` (the nine cards: five heads, four bodies).
+- **The checks start plain.** The page checks that make a scratch character (STUDIO, GROWPAGE, HAIR2PAGE,
+  LIBRARYPAGE, SALON, the creatures' and the library's pictures) were written on MHR's halfway base at 1.7 m and
+  say so before they make one (`window.__plainNew`): what they measure is unchanged. GROWPAGE also makes one as the
+  Studio does and holds the start.
+- **Checks**: GROW (every card's numbers in the file, the rule kept and measured, the older words the same bodies
+  to the bit, the start, the two alterations' tapes against bodyv2's), GROWPAGE (the start and its cards marked,
+  saved so; the three categories and each card's picture; a file from before the cards; v2female's card on the
+  halfway base: the base to Feminine, the neck slender, the hips as they were; bodyv2's card: the hips wider, the
+  hands nearer, the head not moved; Plain; the creatures under Monsters).
+- **Not yet**: no outfit has been looked at on the two new bodies beyond the cards' tee and leggings; the sports
+  bra's straps stand off bodyv2's shoulders (seen while the cards were tried: the tailor's, not looked into); the
+  wardrobe's dummy and the outfits' cards are still the plain bodies; hair made on one head is not re-fitted when
+  another head card is picked (the hair editor v2.0 grows again by itself; the salon's bake rides the head).
+
 ## 3. Each stage against the rule (as of this branch)
 
 | Stage | Sources kept | Bakes | Gaps |

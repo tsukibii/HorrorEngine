@@ -223,7 +223,45 @@ export const V2FEMALE = { v2: 1, height: 1.62, anime: true, sculpt: { bust: 2 } 
 // becomes when it's picked: MHR weights of its own and the sliders it carries (MHR_presets.json presets.bodyv2,
 // sculpt.bodyv2), fitted to the user's Daz3D T-pose picture. With v2female's head, as a body for the node tools
 export const BODYV2 = { v2: 1, body2: 1, height: 1.63 };
-
+// ---- heads and bodies as presets (DECISIONS 2026-11-12, make-up enhanced: "is there any reason we dont have the new face
+// shape as a preset thumbnail similar to the monster presets ... same with the body (body preset shouldnt override the
+// face) ... thumbnail categories for, monster as we have now (untouched), heads, and bodies"). A head preset and a body
+// preset are each what a part of the FEMININE END of the base becomes: the numbers are in MHR_presets.json under the
+// preset's name (`sculpt.<name>`: the sliders it carries; `presets.<name>`: MHR identity weights of its own, when it has
+// them), the cards' words here. The Body tab's Presets cards pick one of each (index.html st.head, st.body; "" the
+// plain feminine base); the character's own sliders go on top, and toward the masculine base both fade out.
+// The rule that keeps them apart (GROW holds every preset to it): a head preset lists only the head's and the neck's
+// controls and only the head's weights (MHR's "head" group), a body preset only the body's controls and weights; the
+// one control both may list is Neck length (how high the body carries the head: the body's word wins)
+export const HEADS = {
+  v2female: { label: "v2female", about: "After the twin-tail reference: a slender, straight neck, a short, narrow lower face, larger eyes set wider, a smaller nose and mouth." },
+  v2elegant: { label: "v2 elegant", about: "After the Christmas reference's left face: narrower eyes lifted at the outer corners, a wider mouth with fuller lips, a firmer jaw." },
+  v2doll: { label: "v2 doll", about: "After the Christmas reference's right face: big lifted eyes set wide, round cheeks over a small jaw, a short turned-up nose, a small full mouth." },
+  v2soft: { label: "v2 soft", about: "After the T-pose reference's own face: a rounder, softer face, heavier lids, a broader nose, a wider mouth." },
+};
+export const BODIES = {
+  bodyv2: { label: "bodyv2", about: "After the T-pose reference: a medium, fuller build, wide hips, full thighs, a soft waist, short arms.", height: 1.63 },
+  v2athletic: { label: "v2 athletic", about: "bodyv2's proportions, lean and toned: wider shoulders, a small waist, narrow hips, firm arms, calves and seat.", height: 1.63 },
+  v2hourglass: { label: "v2 hourglass", about: "bodyv2's hips and thighs under a small waist, with a fuller bust and seat.", height: 1.63 },
+};
+// what a new character starts as (the Studio's New; DECISIONS 2026-11-12, make-up enhanced: "a thumbnail preset that we
+// default to"): the feminine base with v2female's head on bodyv2's body, at that body's height
+export const NEW_START = { base: -1, head: "v2female", body: "bodyv2", height: 1.63 };
+// a character's file from before the presets said v2: 1 and b2: 1 (the two switches): the same two presets
+export const presetOf = c => ({ head: c.headPreset ?? (c.v2 ? "v2female" : ""), body: c.bodyPreset ?? (c.b2 ? "bodyv2" : "") });
+// the controls a head preset may list: the Face and the Forehead groups', the Creature group's but the hunch, and the neck's own
+export const NECK_IDS = ["neck", "neck_width", "neck_base", "neck_length"];
+export const headOwns = c => onHead(c) || c.group === "Forehead" || NECK_IDS.includes(c.id);
+/** the feminine end as a head preset and a body preset make it: { weights, sculpt: id => value }.
+    PF: MHR_presets.json ({ presets, sculpt }); groups: MHR's identity groups ({ body: [a, b], head: [a, b] });
+    trial: { weights, sculpt } in the body preset's place (a body being fitted), trialHead the same for a head */
+export function femEnd(PF, { head = "", body = "", groups = { body: [0, 20], head: [20, 40] }, trial = null, trialHead = null } = {}) {
+  const pre = PF.presets || {}, SF = PF.sculpt || {}, f0 = pre.feminine || [], [b0, b1] = groups.body || [0, 0], [h0, h1] = groups.head || [0, 0];
+  const fh = trialHead?.weights || (head && pre[head]) || f0, fb = trial?.weights || (body && pre[body]) || f0;
+  const weights = f0.map((v, i) => i >= b0 && i < b1 ? fb[i] ?? v : i >= h0 && i < h1 ? fh[i] ?? v : v);
+  const F = SF.feminine || {}, H = trialHead?.sculpt || (head && SF[head]) || {}, B = trial?.sculpt || (body && SF[body]) || {};
+  return { weights, sculpt: id => id in B ? B[id] : id in H ? H[id] : F[id] || 0 };
+}
 // ---- the creatures (monster mode's presets: the Body tab's cards, DECISIONS 2026-11-11: "add presets for the monster-ish
 // shapes you made so I can use them"). Each is a sculpt (what the sliders show: every one can be moved on from there),
 // the base, its teeth (fangs, points: teeth.js), the build from MHR's own shapes (0 heavier, 1 wider hips and waist,

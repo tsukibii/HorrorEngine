@@ -78,6 +78,7 @@ const png = rgb => {
   // written for MHR's own cut lids, kept as the fallback when the graft's file is missing: they're measured with the graft
   // held off (__mhrLids), and the graft's own step turns it on
   await page.addInitScript(() => { window.__mhrLids = true; });
+  await page.addInitScript(() => { window.__plainNew = true; });   // (a new character from MHR's plain halfway base, as this was written on: not the Studio's own start, grow.js NEW_START)
   await page.goto(BASE);
 
   await step("MHR loads with its sliders and labels", async () => {

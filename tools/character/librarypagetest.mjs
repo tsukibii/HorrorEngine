@@ -24,6 +24,7 @@ const clip = () => B(() => { const r = document.querySelector("#view canvas").ge
 const shot = async name => { if (!OUT) return; await page.waitForTimeout(1500); await page.screenshot({ path: `${OUT}/${name}.png`, clip: await clip(), timeout: 180000 }); };
 const row = id => page.locator("#worn > div").filter({ hasText: "(library)" }).filter({ has: page.locator(`text=${id}`) }).first();
 try {
+  await page.addInitScript(() => { window.__plainNew = true; });   // (a new character from MHR's plain halfway base, as this was written on: not the Studio's own start, grow.js NEW_START)
   await page.goto(URL);
   await page.waitForFunction(() => window.__body && window.__body.N > 10000, null, { timeout: 180000 });
   const list = await B(async () => (await (await fetch("api/library")).json()));

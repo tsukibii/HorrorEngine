@@ -28,11 +28,27 @@ clothing library), merged; then on `claude/ecstatic-dijkstra-6ixk71`: the hair e
 two of the user's Daz hairstyles held to their pictures, the v2female and bodyv2 bases, and the styles gone through;
 beside it on `more-shotgun-shells`: two easter egg shells for the shotgun; and 2026-11-12 on
 `claude/jolly-darwin-9t8hkc` (merged first, PR #25): the ghost events plan, the cloak and creepy eyes, the hunt, sanity
-and the kit's bed, with `more-shotgun-shells` merged in. Read this after CLAUDE.md's start
+and the kit's bed, with `more-shotgun-shells` merged in; then on `make-up-enhanced` (from main after PR #26): heads and
+bodies as preset cards, three more heads, two more bodies, and the makeup. Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-12, the styles gone through, `claude/ecstatic-dijkstra-6ixk71`): what the two matched hairstyles taught, in all 67
+## Where it stopped last (2026-11-12, `make-up-enhanced`): preset cards for heads and bodies, then the makeup
+
+Read DECISIONS 2026-11-12, "make-up enhanced", first; docs/CHARACTER_STUDIO.md §2h is what's built.
+
+- **Presets as cards** (the Body tab, under Base): Heads, Bodies, Monsters (the creatures, untouched). A head card
+  changes the head and neck only, a body card the body only; new characters start on v2female's head and bodyv2's
+  body. The two Base buttons and switches are gone; old files open the same.
+- **Heads**: v2female, and v2 elegant, v2 doll, v2 soft after the user's other Daz faces (one picture each, measured
+  against v2female's own picture; not the many-round 1:1 v2female got: §2h says how far).
+- **Bodies**: bodyv2, and v2 athletic (97, 63, 102 round at 1.63 m) and v2 hourglass (98, 65, 116).
+- **Run here**: GROW, CHECKS, and the cards' pictures (`presets.mjs thumbs`). **Not run here**: STUDIO (50 minutes on
+  the CPU; its scratch character now says it starts plain, which should leave it as it was: a local run is the proof).
+- **Open**: an outfit on the two new bodies; the sports bra's straps on bodyv2; muscle relief for the athletic body
+  (a normal map: not built); a second pass on each new head with outlines read off its picture.
+
+## Before that (2026-11-12, the styles gone through, `claude/ecstatic-dijkstra-6ixk71`): what the two matched hairstyles taught, in all 67
 
 Read DECISIONS 2026-11-12, "the lessons into every style" and "the ringlets", first. The user: "take everything
 you've learnt from the last hairstyles and enhance improve v2 hairstyles"; and, with a screenshot while it was being

@@ -386,5 +386,70 @@ const span = X => { let lo = Infinity, hi = -Infinity; for (let i = 1; i < X.len
   say(bust > 95 && bust < 107 && wst > 77 && wst < 88 && hp > 108 && hp < 118, `round it at rest: the bust ${bust.toFixed(0)} cm, the waist ${wst.toFixed(0)}, the hips ${hp.toFixed(0)} (a medium, fuller build; front to back is a medium build's for these widths, not her picture's: it shows the front alone)`);
 }
 
+// ---- heads and bodies as presets (grow.js HEADS, BODIES, femEnd; DECISIONS 2026-11-12, make-up enhanced: "body preset
+// shouldnt override the face"): every card's numbers in the file, a head listing only the head's and the neck's
+// controls, a body only the body's (and Neck length); a head preset leaves everything under the shoulders where it was
+// and a body preset leaves the head's own shape alone, measured; the older words for the two first presets the same
+// bodies to the bit; what a new character starts as is there
+{
+  const PF = JSON.parse(fs.readFileSync(path.join(B, "MHR_presets.json"), "utf8")), heads = Object.keys(GW.HEADS), bodies = Object.keys(GW.BODIES), fW = PF.presets.feminine;
+  const wrong = [];
+  for (const k of heads) { const sc = PF.sculpt[k], w = PF.presets[k];
+    if (!sc || !Object.keys(sc).length) { wrong.push(`${k}: no sculpt in the file`); continue; }
+    for (const id of Object.keys(sc)) { const c = byId.get(id); if (!c) wrong.push(`${k}: no control ${id}`); else if (!GW.headOwns(c)) wrong.push(`${k}: ${id} is the body's`); }
+    if (!GW.HEADS[k].label || !GW.HEADS[k].about) wrong.push(`${k}: no words`);
+    if (w && w.length !== M.k) wrong.push(`${k}: ${w.length} weights`); }
+  for (const k of bodies) { const sc = PF.sculpt[k] || {}, w = PF.presets[k];
+    if (!w || w.length !== M.k) { wrong.push(`${k}: no weights in the file`); continue; }
+    for (const id of Object.keys(sc)) { const c = byId.get(id); if (!c) wrong.push(`${k}: no control ${id}`); else if (GW.headOwns(c) && id !== "neck_length") wrong.push(`${k}: ${id} is the head's`); }
+    if (!GW.BODIES[k].label || !GW.BODIES[k].about) wrong.push(`${k}: no words`); }
+  say(heads.length >= 1 && bodies.length >= 1 && !wrong.length, `${heads.length} head presets (${heads.join(", ")}) and ${bodies.length} body presets (${bodies.join(", ")}): each in the file, a head listing only the head's and the neck's controls, a body only the body's (and Neck length)${wrong.length ? ": " + wrong.slice(0, 6).join("; ") : ""}`);
+  // measured: in MHR's own units (a body is scaled to its height after: a shorter face makes the body under it a little bigger)
+  const un = g => { const o = new Float32Array(g.P.length); for (let i = 0; i < o.length; i++) o[i] = g.P[i] / g.scale; return o; };
+  const plain = grownBody(M, { base: -1 }), U0 = un(plain), pit = Math.min(landmark(M, U0, 152)[1] - 0.075, 9), crown = X => { let t = 0; for (let i = 1; i < X.length / 3; i++) if (X[i * 3 + 1] > X[t * 3 + 1]) t = i; return [X[t * 3], X[t * 3 + 1], X[t * 3 + 2]]; };
+  const chin0 = landmark(M, U0, 152)[1], c0 = crown(U0);
+  let worstH = 0, whoH = "", worstB = 0, whoB = "", movedH = 9, movedB = 9;
+  for (const k of heads) { const U = un(grownBody(M, { base: -1, head: k })); let under = 0, over = 0;
+    for (let i = 0; i < U.length; i += 3) { const d = Math.hypot(U[i] - U0[i], U[i + 1] - U0[i + 1], U[i + 2] - U0[i + 2]); if (U0[i + 1] < pit - 0.06) under = Math.max(under, d); else over = Math.max(over, d); }
+    if (under > worstH) { worstH = under; whoH = k; } movedH = Math.min(movedH, over); }
+  // (the head's own shape: MediaPipe's 468 points on the face and every point from the eyes' height up, against the
+  // crown. Lower down inside the head a few points of the throat follow the neck and the body's shapes: not the face)
+  const eyeY = (landmark(M, U0, 145)[1] + landmark(M, U0, 374)[1]) / 2, off = (X, cx, i) => { const a = landmark(M, X, i); return [a[0] - cx[0], a[1] - cx[1], a[2] - cx[2]]; };
+  for (const k of bodies) { const U = un(grownBody(M, { base: -1, body: k })), c = crown(U); let head = 0, rest = 0;
+    for (let i = 0; i < U.length; i += 3) { const d = Math.hypot(U[i] - c[0] - (U0[i] - c0[0]), U[i + 1] - c[1] - (U0[i + 1] - c0[1]), U[i + 2] - c[2] - (U0[i + 2] - c0[2])); if (U0[i + 1] > eyeY) head = Math.max(head, d); else if (U0[i + 1] < pit - 0.06) rest = Math.max(rest, d); }
+    for (let i = 0; i < 468; i++) { const a = off(U, c, i), b = off(U0, c0, i); head = Math.max(head, Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])); }
+    if (head > worstB) { worstB = head; whoB = k; } movedB = Math.min(movedB, rest); }
+  say(worstH < 2e-4 && movedH > 0.002, `a head preset moves nothing under the shoulders (${(worstH * 1000).toFixed(2)} mm at the most, ${whoH}'s; each moves the head or the neck ${(movedH * 1000).toFixed(1)} mm or more)`);
+  say(worstB < 6e-4 && movedB > 0.01, `a body preset leaves the head's own shape as it was (the face's 468 points and the skull from the eyes up, against its crown: ${(worstB * 1000).toFixed(3)} mm at the most, ${whoB}'s, at the jaw's edge where the neck's skin begins; each moves the body ${(movedB * 100).toFixed(1)} cm or more)`);
+  // the two alterations of bodyv2 (v2athletic, v2hourglass): round each at 1.63 m (a tape: the hull's length, the arms left
+  // out), the shoulders and a thigh across, against bodyv2's
+  { const hull = pts => { const p = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]), cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], hi = [];
+      for (const q of p) { while (lo.length >= 2 && cr(lo.at(-2), lo.at(-1), q) <= 0) lo.pop(); lo.push(q); } for (const q of p.slice().reverse()) { while (hi.length >= 2 && cr(hi.at(-2), hi.at(-1), q) <= 0) hi.pop(); hi.push(q); }
+      const h = [...lo.slice(0, -1), ...hi.slice(0, -1)]; let len = 0; for (let i = 0; i < h.length; i++) len += Math.hypot(h[i][0] - h[(i + 1) % h.length][0], h[i][1] - h[(i + 1) % h.length][1]); return len; };
+    const meas = k => { const Hh = 1.63, X = grownBody(M, { base: -1, head: "v2female", body: k, height: Hh }).P;
+      const tape = (t, xmax) => { const pts = []; for (let i = 0; i < X.length; i += 3) if (Math.abs(X[i + 1] - t * Hh) < 0.006 && Math.abs(X[i]) < xmax) pts.push([X[i], X[i + 2]]); return pts.length > 5 ? hull(pts) * 100 : 0; };
+      const wide = (t, xmax) => { let w = 0; for (let i = 0; i < X.length; i += 3) if (Math.abs(X[i + 1] - t * Hh) < 0.006 && Math.abs(X[i]) < xmax) w = Math.max(w, Math.abs(X[i])); return w * 200; };
+      let bust = 0, hips = 0, waist = 1e9, bAt = 0, hAt = 0;
+      for (let t = 0.69; t <= 0.775; t += 0.005) { const v = tape(t, 0.17); if (v > bust) { bust = v; bAt = t; } }
+      for (let t = 0.47; t <= 0.56; t += 0.005) { const v = tape(t, 0.27); if (v > hips) { hips = v; hAt = t; } }
+      for (let t = hAt + 0.05; t <= bAt - 0.03; t += 0.005) { const v = tape(t, 0.2); if (v && v < waist) waist = v; }
+      let t0 = 9, t1 = 0; for (let i = 0; i < X.length; i += 3) if (Math.abs(X[i + 1] - 0.44 * Hh) < 0.006 && X[i] > 0.01) { t0 = Math.min(t0, X[i]); t1 = Math.max(t1, X[i]); }
+      let lo = 1e9, hi = -1e9, nan = 0; for (let i = 0; i < X.length; i++) { if (!Number.isFinite(X[i])) nan++; if (i % 3 === 1) { lo = Math.min(lo, X[i]); hi = Math.max(hi, X[i]); } }
+      return { bust, waist, hips, sh: wide(0.815, 0.3), thigh: (t1 - t0) * 100, tall: hi - lo, nan }; };
+    const b2 = meas("bodyv2"), at = GW.BODIES.v2athletic ? meas("v2athletic") : null, hg = GW.BODIES.v2hourglass ? meas("v2hourglass") : null, f = m => `the bust ${m.bust.toFixed(0)} cm, the waist ${m.waist.toFixed(0)}, the hips ${m.hips.toFixed(0)}`;
+    say(!!at && !at.nan && Math.abs(at.tall - 1.63) < 0.002 && at.waist < b2.waist - 8 && at.hips < b2.hips - 6 && at.sh > b2.sh + 2 && at.thigh < b2.thigh - 2 && at.waist / at.hips > 0.58 && at.waist / at.hips < 0.68,
+      at ? `v2athletic round at 1.63 m: ${f(at)} (bodyv2: ${f(b2)}); the shoulders ${at.sh.toFixed(1)} cm across (bodyv2's ${b2.sh.toFixed(1)}), a thigh ${at.thigh.toFixed(1)} (${b2.thigh.toFixed(1)}): leaner, the shoulders wider than its hips are against bodyv2's` : "no v2athletic body");
+    say(!!hg && !hg.nan && Math.abs(hg.tall - 1.63) < 0.002 && hg.waist < b2.waist - 6 && hg.hips > b2.hips - 2 && hg.waist / hg.hips < 0.6 && hg.waist / hg.hips > 0.5 && hg.thigh > b2.thigh - 1.5,
+      hg ? `v2hourglass: ${f(hg)}: the waist ${(hg.waist / hg.hips).toFixed(2)} of the hips (bodyv2's ${(b2.waist / b2.hips).toFixed(2)}), the hips and a thigh (${hg.thigh.toFixed(1)} cm) bodyv2's` : "no v2hourglass body"); }
+  const same = (a, b) => { let m = 0; for (let i = 0; i < a.length; i++) m = Math.max(m, Math.abs(a[i] - b[i])); return m; };
+  const old = same(grownBody(M, { base: -1, v2: 1, body2: 1 }).P, grownBody(M, { base: -1, head: "v2female", body: "bodyv2" }).P), oldH = same(grownBody(M, { base: -1, v2: 1 }).P, grownBody(M, { base: -1, head: "v2female" }).P);
+  const po = GW.presetOf({ v2: 1, b2: 1 }), pn = GW.presetOf({ headPreset: "", bodyPreset: "bodyv2", v2: 1 }), NS = GW.NEW_START;
+  say(old === 0 && oldH === 0 && po.head === "v2female" && po.body === "bodyv2" && pn.head === "" && pn.body === "bodyv2", "the older words (v2: 1, body2: 1; a file's v2 and b2) are the v2female head and the bodyv2 body, to the bit; a file's own presets come first");
+  say(NS.base === -1 && !!GW.HEADS[NS.head] && !!GW.BODIES[NS.body] && NS.height > 1.5 && NS.height < 1.75, `a new character starts on the feminine base with ${NS.head}'s head on ${NS.body}'s body, ${NS.height} m`);
+  const both = un(grownBody(M, { base: -1, head: NS.head, body: NS.body })), hb = un(grownBody(M, { base: -1, body: NS.body })), cb = crown(both), ch = crown(hb); let face = 0;
+  for (const i of [33, 263, 1, 61, 291, 152, 234, 454]) { const a = landmark(M, both, i), b = landmark(M, un(grownBody(M, { base: -1, head: NS.head })), i), ca = cb, cc = crown(un(grownBody(M, { base: -1, head: NS.head }))); face = Math.max(face, Math.hypot(a[0] - ca[0] - (b[0] - cc[0]), a[1] - ca[1] - (b[1] - cc[1]), a[2] - ca[2] - (b[2] - cc[2]))); }
+  say(face < 2e-5, `${NS.head}'s face on ${NS.body}'s body is ${NS.head}'s face on the plain body: its eyes, nose, mouth, chin and cheeks ${(face * 1000).toFixed(3)} mm apart at the most, against the crown`);
+}
+
 if (bad) { console.log(`GROW FAIL: ${bad}`); process.exit(1); }
 console.log("GROW ok");

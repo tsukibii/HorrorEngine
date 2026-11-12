@@ -36,6 +36,7 @@ const hairOff = ids => B(ids => { const b = window.__body, H = b.salonHair; if (
   const P = m.geometry.attributes.position; ids.forEach((i, k) => { v.fromBufferAttribute(P, k * 3).applyMatrix4(m.matrixWorld).applyMatrix4(toRig); each.push(Math.hypot(v.x - b.POS[i * 3], v.y - b.POS[i * 3 + 1], v.z - b.POS[i * 3 + 2])); });
   return { most: Math.max(...each), each, y: H.matrix.elements[13], k: Math.cbrt(Math.abs(H.matrix.determinant())), record: !!b.st.hairHead, stale: b.hairStale }; }, ids);
 const age = v => B(v => { const i = document.querySelector("#ageRows input"); i.value = v; i.oninput(); }, v);
+const preset = (kind, k) => B(([kind, k]) => document.querySelector(`#${kind}Cards .card[data-preset="${k}"]`).click(), [kind, k]);   // a head's or a body's card clicked ("": Plain)
 const tog = (id, on) => B(([id, on]) => { const c = document.querySelector(id); if (c.checked !== on) { c.checked = on; c.onchange(); } }, [id, on]);
 // the body as it stands: its height, the head's share (the chin to the top), the lowest point, the eyes
 const body = () => B(() => { const b = window.__body, P = b.POS; let lo = 1e9, hi = -1e9, nan = 0; for (let i = 0; i < P.length; i++) { if (!Number.isFinite(P[i])) nan++; if (i % 3 === 1) { lo = Math.min(lo, P[i]); hi = Math.max(hi, P[i]); } }
@@ -44,12 +45,37 @@ const body = () => B(() => { const b = window.__body, P = b.POS; let lo = 1e9, h
            face: ((eL.y + eR.y) / 2 - chin[1]) / b.scale, nose: (nose[2] - brow[2]) / b.scale, scale: b.scale, height: b.st.height, chinY: chin[1] }; });
 try {
   fs.rmSync(SALON, { recursive: true, force: true });
+  await page.addInitScript(() => { window.__plainNew = true; });   // (a new character from MHR's plain halfway base, as this was written on: not the Studio's own start, grow.js NEW_START)
   await page.goto(URL);
   await page.waitForFunction(() => window.__body && window.__body.N > 10000 && window.__body.SCULPT, null, { timeout: 180000 });
   await B(n => Promise.all(["front", "side"].map(s => fetch(`api/picture/${n}/${s}/png`, { method: "POST", body: "" })).concat(fetch(`api/people/${n}/face.bin`, { method: "POST", body: "" }))), NAME);
+  // ---- a new character as the Studio starts it (grow.js NEW_START; DECISIONS 2026-11-12, make-up enhanced): the
+  // feminine base, v2female's head on bodyv2's body, their cards marked; the three categories of cards
+  await B(() => { window.__plainNew = false; });
   await page.fill("#newName", NAME); await page.click("#make");
   await page.waitForFunction(n => window.__body.who === n && /starts from the/.test(document.querySelector("#status").textContent), NAME, { timeout: 180000 });
   await page.waitForTimeout(3000);
+  { const n = await B(async name => { const b = window.__body, s = b.st, P = b.neutralBody(); let lo = 1e9, hi = -1e9; for (let i = 1; i < P.length; i += 3) { lo = Math.min(lo, P[i]); hi = Math.max(hi, P[i]); }
+      const on = id => [...document.querySelectorAll(`${id} .card.on`)].map(c => c.dataset.preset), keys = id => [...document.querySelectorAll(`${id} .card`)].map(c => c.dataset.preset), file = await (await fetch(`api/people/${name}`)).json();
+      const pics = []; for (const [kind, id] of [["head", "#headCards"], ["body", "#bodyCards"]]) for (const k of keys(id)) { const r = await fetch(`api/presets/thumbs/${kind}_${k || "plain"}.jpg`); if (!r.ok || (await r.arrayBuffer()).byteLength < 2000) pics.push(`${kind}_${k || "plain"}`); }
+      return { base: s.base, head: s.headPreset, body: s.bodyPreset, h: s.height, tall: hi - lo, headOn: on("#headCards"), bodyOn: on("#bodyCards"), heads: keys("#headCards"), bodies: keys("#bodyCards"), want: b.GW.NEW_START, H: Object.keys(b.GW.HEADS), B: Object.keys(b.GW.BODIES), file, pics,
+               tabs: [...document.querySelectorAll("#presetTabs button")].map(x => x.textContent), shown: [!document.querySelector("#headBox").hidden, !document.querySelector("#bodyBox").hidden, !document.querySelector("#creatureBox").hidden] }; }, NAME);
+    say(n.base === -1 && n.head === n.want.head && n.body === n.want.body && n.h === n.want.height && Math.abs(n.tall - n.h) < 0.01 && n.headOn.join() === n.head && n.bodyOn.join() === n.body && n.file.headPreset === n.head && n.file.bodyPreset === n.body && n.file.base === -1,
+      `a new character starts on the feminine base with ${n.head}'s head on ${n.body}'s body, ${n.h} m, their cards marked, saved so (base ${n.base}, head ${n.head}, body ${n.body}, ${n.tall.toFixed(3)} m tall)`);
+    say(n.tabs.join() === "Heads,Bodies,Monsters" && n.shown.join() === "true,false,false" && n.heads[0] === "" && n.bodies[0] === "" && n.H.every(k => n.heads.includes(k)) && n.B.every(k => n.bodies.includes(k)) && !n.pics.length,
+      `the presets in three categories (${n.tabs.join(", ")}), the heads shown first: ${n.heads.length} head cards and ${n.bodies.length} body cards, Plain first, each with its picture${n.pics.length ? " (NO PICTURE: " + n.pics.join(", ") + ")" : ""}`);
+    // a file from before the cards (the two switches: v2: 1, b2: 1) opens on the same two presets
+    await B(async name => { const f = await (await fetch(`api/people/${name}`)).json(); delete f.headPreset; delete f.bodyPreset; f.v2 = 1; f.b2 = 1; await fetch(`api/people/${name}`, { method: "POST", body: JSON.stringify(f) }); }, NAME);
+    await page.reload(); await page.waitForFunction(() => window.__body && window.__body.SCULPT, null, { timeout: 180000 });
+    await page.selectOption("#who", NAME); await page.waitForFunction(n => window.__body.who === n && /points/.test(document.querySelector("#hud").textContent), NAME, { timeout: 180000 }); await page.waitForTimeout(2000);
+    const o = await B(() => ({ head: window.__body.st.headPreset, body: window.__body.st.bodyPreset }));
+    say(o.head === "v2female" && o.body === "bodyv2", `a character saved before the cards (v2: 1, b2: 1) opens on ${o.head}'s head and ${o.body}'s body`); }
+  // ---- and from MHR's plain halfway base, as everything below was written on
+  await B(() => { window.__plainNew = true; });
+  await page.fill("#newName", NAME); await page.click("#make");
+  await page.waitForFunction(n => window.__body.who === n && /starts from the/.test(document.querySelector("#status").textContent), NAME, { timeout: 180000 });
+  await page.waitForTimeout(3000);
+  { const p = await B(() => ({ base: window.__body.st.base, head: window.__body.st.headPreset, body: window.__body.st.bodyPreset, h: window.__body.st.height })); if (p.base !== 0 || p.head || p.body || p.h !== 1.7) throw new Error("the plain start: " + JSON.stringify(p)); }
   await B(() => { const b = window.__body; b.setPose("rest"); document.querySelector('.bases button[data-base="0"]').click(); document.querySelector("#handlesOn").checked = false; });
   await page.waitForTimeout(1500);
 
@@ -133,18 +159,19 @@ try {
 
   // ---- saved and opened again
   await age(10); await tog("#cuteOn", true); await page.waitForTimeout(1000);
-  await tog("#v2On", true); await tog("#b2On", true); await page.waitForTimeout(800);            // (the v2female and the bodyv2 bases on, so the save and the reopening below carry them too)
+  await preset("head", "v2female"); await preset("body", "bodyv2"); await page.waitForTimeout(800);   // (v2female's head and bodyv2's body picked, so the save and the reopening below carry them too)
   await B(() => { document.querySelector("#status").textContent = ""; }); await page.click("#save");
   await page.waitForFunction(() => /saved/.test(document.querySelector("#status").textContent), null, { timeout: 60000 });
   const saved = await B(async n => (await fetch(`api/people/${n}`)).json(), NAME);
-  say(saved.v2 === 1, "and the v2female base saved with it");
+  say(saved.headPreset === "v2female" && saved.bodyPreset === "bodyv2" && saved.v2 === undefined, "and its head and body presets saved with it (v2female, bodyv2)");
   say(saved.age?.age === 10 && saved.cute?.on === true && saved.monster === false && saved.height === 1.39, `saved with the character: age ${saved.age?.age}, Cutify ${saved.cute?.on ? "on" : "off"} at ${saved.cute?.amount}, ${saved.height} m`);
   await page.reload(); await page.waitForFunction(() => window.__body && window.__body.SCULPT, null, { timeout: 180000 });
   await page.selectOption("#who", NAME);
   await page.waitForFunction(n => window.__body.who === n && /points/.test(document.querySelector("#hud").textContent), NAME, { timeout: 180000 }); await page.waitForTimeout(4000);
   const again = await B(() => ({ st: window.__body.st.age, cute: window.__body.st.cute, out: document.querySelector("#ageRows output").textContent, on: document.querySelector("#cuteOn").checked, h: window.__body.st.height }));
-  { const v = await B(() => ({ v2: window.__body.st.v2, on: document.querySelector("#v2On").checked })); say(v.v2 === 1 && v.on, "opened again with the v2female base on, its switch set"); await tog("#v2On", false);
-    const w = await B(() => ({ b2: window.__body.st.b2, on: document.querySelector("#b2On").checked })); say(w.b2 === 1 && w.on, "and with the bodyv2 base on, its switch set"); await tog("#b2On", false); await page.waitForTimeout(800); }
+  { const v = await B(() => ({ head: window.__body.st.headPreset, body: window.__body.st.bodyPreset, on: [...document.querySelectorAll("#headCards .card.on, #bodyCards .card.on")].map(c => c.dataset.preset) }));
+    say(v.head === "v2female" && v.body === "bodyv2" && v.on.join() === "v2female,bodyv2", "opened again on v2female's head and bodyv2's body, their cards marked");
+    await preset("head", ""); await preset("body", ""); await B(() => document.querySelector('.bases button[data-base="0"]').click()); await page.waitForTimeout(800); }
   say(again.st.age === 10 && again.cute.on && again.out === "10" && again.on && again.h === 1.39, "opened again the same (age 10, Cutify on)");
   await page.waitForFunction(() => window.__body.salonHair, null, { timeout: 120000 }).catch(() => null);
   const hair10 = await hairOff(baked.ids);
@@ -159,16 +186,18 @@ try {
   say(!bald.hair && !/baked on another head/.test(bald.hud), "its hair taken away: bald again, nothing said");
   await age(18); await tog("#cuteOn", false); await B(() => { document.querySelector("#handlesOn").checked = false; window.__body.setPose("rest"); });
 
-  // ---- the v2female base (MHR_presets.json; DECISIONS 2026-11-12, the 1:1): its button makes the feminine end it, the
-  // neck slender; its switch off, the feminine base again
+  // ---- v2female's head (MHR_presets.json; DECISIONS 2026-11-12, the 1:1; a card since make-up enhanced): its card makes
+  // the feminine end's head and neck it, the neck slender, the body under it as it was; Plain, the feminine base again
   { const meas = () => B(() => { const b = window.__body, P = b.neutralBody(); let lo = Infinity, hi = -Infinity; for (let i = 1; i < P.length; i += 3) { lo = Math.min(lo, P[i]); hi = Math.max(hi, P[i]); }
       let best = 9; for (let f = 0.8; f < 0.885; f += 0.004) { const y = lo + (hi - lo) * f; let w = 0; for (let i = 0; i < P.length; i += 3) if (Math.abs(P[i + 1] - y) < 0.004 && Math.abs(P[i]) < 0.14 && Math.abs(P[i]) > w) w = Math.abs(P[i]); if (w > 0.01) best = Math.min(best, w); }   // (the neck from the front at its narrowest)
-      return { neck: best * 200, v2: b.st.v2, on: document.querySelector("#v2On").checked, base: b.st.base }; });
+      let hips = 0; const yh = lo + 0.51 * (hi - lo); for (let i = 0; i < P.length; i += 3) { const x = Math.abs(P[i]); if (Math.abs(P[i + 1] - yh) < 0.006 && x < 0.26 && x > hips) hips = x; }
+      return { neck: best * 200, hips: hips * 200, hipsU: hips / b.scale, head: b.st.headPreset, body: b.st.bodyPreset, on: [...document.querySelectorAll("#headCards .card.on")].map(c => c.dataset.preset).join(), base: b.st.base }; });
     await B(() => document.querySelector('.bases button[data-base="-1"]').click()); await page.waitForTimeout(2000); const fem = await meas();
-    await B(() => document.querySelector('.bases button[data-v2="1"]').click()); await page.waitForTimeout(2000); const v2 = await meas();
-    say(!fem.v2 && !fem.on && v2.v2 === 1 && v2.on && v2.base === -1 && v2.neck < fem.neck - 0.8 && v2.neck > 6, `the v2female button: the neck ${fem.neck.toFixed(1)} cm at its narrowest on the feminine base, ${v2.neck.toFixed(1)} on v2female, its switch on`);
-    await tog("#v2On", false); await page.waitForTimeout(2000); const off = await meas();
-    say(!off.v2 && Math.abs(off.neck - fem.neck) < 0.05, `its switch off: the feminine base again (${off.neck.toFixed(1)} cm)`);
+    await B(() => document.querySelector('.bases button[data-base="0"]').click()); await preset("head", "v2female"); await page.waitForTimeout(2000); const v2 = await meas();   // (picked on the halfway base: the base goes to Feminine)
+    say(!fem.head && fem.on === "" && v2.head === "v2female" && v2.on === "v2female" && v2.base === -1 && v2.neck < fem.neck - 0.8 && v2.neck > 6 && Math.abs(v2.hipsU / fem.hipsU - 1) < 0.001 && !v2.body,
+      `v2female's card: the neck ${fem.neck.toFixed(1)} cm at its narrowest on the feminine base, ${v2.neck.toFixed(1)} on v2female, its card marked, the base set to Feminine, the hips as they were (${v2.hips.toFixed(1)} cm, ${fem.hips.toFixed(1)} before: the body scaled to the same height under a shorter face, in its own units ${(Math.abs(v2.hipsU / fem.hipsU - 1) * 100).toFixed(3)}% apart)`);
+    await preset("head", ""); await page.waitForTimeout(2000); const off = await meas();
+    say(!off.head && off.on === "" && Math.abs(off.neck - fem.neck) < 0.05, `Plain: the feminine base's head again (${off.neck.toFixed(1)} cm)`);
     // the neck's length (grow.js Neck length; DECISIONS 2026-11-12, necks: "a modifier / slider in general to make necks
     // shorter"): its row with the neck's other sliders in Body, right after Neck width, saying what it does; dragged to
     // -1 the head comes down toward the shoulders (the top of the head over the top of the shoulder 9 cm out), and
@@ -185,26 +214,30 @@ try {
     const n0 = await lift(); await setNeck(-1); await page.waitForTimeout(1500); const n1 = await lift(); await setNeck(0); await page.waitForTimeout(1500); const n2 = await lift();
     say(n0.gap - n1.gap > 1.8 && n0.gap - n1.gap < 3 && Math.abs(n2.gap - n0.gap) < 0.05 && Math.abs(n1.h - n0.h) < 0.002,
       `the Neck length slider at -1: the head ${(n0.gap - n1.gap).toFixed(1)} cm nearer the shoulder's top (its top ${n0.gap.toFixed(1)} cm over it, then ${n1.gap.toFixed(1)}), the height as set; back at 0 as it was`);
-    // the bodyv2 base (MHR_presets.json presets.bodyv2; DECISIONS 2026-11-12, a T-pose reference): its button makes the
-    // feminine end's body it, with v2female's head; wide hips, short arms; its switch off, v2female's body again
+    // bodyv2's body (MHR_presets.json presets.bodyv2; DECISIONS 2026-11-12, a T-pose reference; a card since make-up
+    // enhanced): its card makes the feminine end's body it, wide hips, short arms, and the head is not touched (the
+    // face's width at the eyes and the eyes' height under the crown as they were); Plain, the body before it again
     const build = () => B(() => { const b = window.__body, P = b.neutralBody(); let lo = Infinity, hi = -Infinity; for (let i = 1; i < P.length; i += 3) { lo = Math.min(lo, P[i]); hi = Math.max(hi, P[i]); }
       let hips = 0, reach = 0; const y = lo + 0.51 * (hi - lo); for (let i = 0; i < P.length; i += 3) { const x = Math.abs(P[i]); if (Math.abs(P[i + 1] - y) < 0.006 && x < 0.26 && x > hips) hips = x; if (x > reach) reach = x; }
-      return { hips: hips * 200, reach: reach * 100, h: hi - lo, b2: b.st.b2, v2: b.st.v2, on: document.querySelector("#b2On").checked, von: document.querySelector("#v2On").checked }; });
-    await B(() => document.querySelector('.bases button[data-v2="1"]').click()); await page.waitForTimeout(2000); const v2b = await build();
-    await B(() => document.querySelector('.bases button[data-b2="1"]').click()); await page.waitForTimeout(2500); const b2b = await build();
-    say(!v2b.b2 && !v2b.on && b2b.b2 === 1 && b2b.on && b2b.v2 === 1 && b2b.von && b2b.hips > v2b.hips + 4 && b2b.reach < v2b.reach - 2 && Math.abs(b2b.h - v2b.h) < 0.003,
-      `the bodyv2 button: the hips ${v2b.hips.toFixed(1)} cm across on v2female, ${b2b.hips.toFixed(1)} on bodyv2, the hands ${(v2b.reach - b2b.reach).toFixed(1)} cm nearer the body, as tall as set, both switches on`);
-    await tog("#b2On", false); await page.waitForTimeout(2000); const offb = await build();
-    say(!offb.b2 && offb.v2 === 1 && Math.abs(offb.hips - v2b.hips) < 0.05, `its switch off: v2female's body again (${offb.hips.toFixed(1)} cm)`);
-    await tog("#v2On", false);
-    await B(() => document.querySelector('.bases button[data-base="0"]').click()); await page.waitForTimeout(1000); }
+      const s = b.scale, e0 = b.lmk(33), e1 = b.lmk(263), ch = b.lmk(152), j0 = b.lmk(234), j1 = b.lmk(454);
+      return { hips: hips * 200, reach: reach * 100, h: hi - lo, body: b.st.bodyPreset, head: b.st.headPreset, on: [...document.querySelectorAll("#bodyCards .card.on")].map(c => c.dataset.preset).join(),
+               face: [Math.hypot(e0[0] - e1[0], e0[1] - e1[1], e0[2] - e1[2]) / s, Math.hypot(j0[0] - j1[0], j0[1] - j1[1], j0[2] - j1[2]) / s, ((e0[1] + e1[1]) / 2 - ch[1]) / s] }; });   // (the head's own measures, in MHR's units: the eyes apart, the face across, the eyes over the chin)
+    await preset("head", "v2female"); await page.waitForTimeout(2000); const v2b = await build();
+    await B(() => document.querySelector('#presetTabs button[data-kind="body"]').click()); await preset("body", "bodyv2"); await page.waitForTimeout(2500); const b2b = await build();
+    const faceMoved = Math.max(...b2b.face.map((v, i) => Math.abs(v - v2b.face[i]))) * 1000;
+    say(!v2b.body && v2b.on === "" && b2b.body === "bodyv2" && b2b.on === "bodyv2" && b2b.head === "v2female" && b2b.hips > v2b.hips + 4 && b2b.reach < v2b.reach - 2 && Math.abs(b2b.h - v2b.h) < 0.003 && faceMoved < 0.05,
+      `bodyv2's card: the hips ${v2b.hips.toFixed(1)} cm across before it, ${b2b.hips.toFixed(1)} on bodyv2, the hands ${(v2b.reach - b2b.reach).toFixed(1)} cm nearer the body, as tall as set, the head still v2female's and not moved (${faceMoved.toFixed(3)} mm in its own measures)`);
+    await preset("body", ""); await page.waitForTimeout(2000); const offb = await build();
+    say(!offb.body && offb.head === "v2female" && Math.abs(offb.hips - v2b.hips) < 0.05, `Plain: the feminine base's body under v2female's head again (${offb.hips.toFixed(1)} cm)`);
+    await preset("head", "");
+    await B(() => { document.querySelector('.bases button[data-base="0"]').click(); document.querySelector('#presetTabs button[data-kind="monster"]').click(); }); await page.waitForTimeout(1000); }
 
   // ---- the creatures: cards that are always there (DECISIONS 2026-11-11), a click makes the character that creature
   const cards = await B(async () => { const cs = [...document.querySelectorAll("#creatureCards .card[data-creature]")], out = [];
     for (const c of cs) { const r = await fetch(`api/creatures/thumbs/${c.dataset.creature}.jpg`), n = r.ok ? (await r.arrayBuffer()).byteLength : 0; out.push({ k: c.dataset.creature, label: c.querySelector("span").textContent, pic: r.ok && /jpeg/.test(r.headers.get("content-type") || "") && n > 2000 }); }
     return { out, shown: !!cs.length && cs[0].offsetParent !== null, monster: window.__body.st.monster, keys: Object.keys(window.__body.GW.MONSTERS) }; });
   say(cards.out.length >= 7 && cards.shown && !cards.monster && cards.out.every(c => c.pic && c.label) && cards.keys.every(k => cards.out.some(c => c.k === k)),
-    `the creatures as ${cards.out.length} cards, shown with Monster mode off, each with its picture: ${cards.out.map(c => c.label + (c.pic ? "" : " (NO PICTURE)")).join(", ")}`);
+    `the creatures as ${cards.out.length} cards under Monsters, shown with Monster mode off, each with its picture: ${cards.out.map(c => c.label + (c.pic ? "" : " (NO PICTURE)")).join(", ")}`);
   const card = async (k, look = true, face = false) => {   // (the two switches are read when a card is clicked)
     await B(([k, look, face]) => { document.querySelector("#creatureLook").checked = look; document.querySelector("#creatureFace").checked = face; document.querySelector(`#creatureCards .card[data-creature="${k}"]`).click(); }, [k, look, face]);
     await page.waitForTimeout(2500); };

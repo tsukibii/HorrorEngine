@@ -166,7 +166,7 @@ SCULPT = {"feminine": {"belly": -0.7},
           # the sculpt's own controls (every slider still moves from it): a slender neck (Neck width: MHR's shapes
           # can't slim it), a small lower face (Face length and Face taper: shorter and narrower together), eyes larger
           # and further apart, a smaller nose and mouth. Held to two of her pictures by their landmarks and outlines
-          "v2female": {"belly": -0.7, "neck_width": -0.7, "eye_spacing": 1.6, "eye_size": 0.7, "nose_size": -0.4,
+          "v2female": {"neck_width": -0.7, "eye_spacing": 1.6, "eye_size": 0.7, "nose_size": -0.4,
                        "nose_projection": -0.22, "nose_length": 0.35, "nose_bridge": -0.22, "mouth_width": -0.72,
                        "lips": 0.13, "brow_ridge": -0.18, "forehead_slope": 0.45, "chin_length": -0.15,
                        "chin_width": -0.8, "jaw_width": -0.5, "cheekbones": -0.2, "face_height": -0.8,
@@ -182,11 +182,29 @@ SCULPT = {"feminine": {"belly": -0.7},
                        # our bare shoulder was (the skin is under it: -0.25 or so), her bare shoulder in the other is
                        # higher than ours at -0.4 (her arm may be up); -0.35 is between them
                        "neck_length": -0.35},
+          # three more heads after the user's other Daz3D faces (DECISIONS 2026-11-12, make-up enhanced: "look through our
+          # previous daz references ... and make an aligned one for 3 of them"; docs/CHARACTER_STUDIO.md §2h): each is
+          # v2female's head moved by what its picture's landmarks differ from hers, measured the same way on both
+          # (MediaPipe's points against the same points on the head, the camera fitted with the sliders), then held to
+          # its picture by the head's outline, eyes, nose and mouth drawn over it. The neck is v2female's. v2elegant:
+          # the left face of the Christmas picture (narrower, lifted eyes, a wider mouth, fuller lips, a firmer jaw);
+          # v2doll: its right face (big lifted eyes set wide, a small jaw, round cheeks, a short turned-up nose);
+          # v2soft: the T-pose reference's own face (a rounder, softer face, heavier lids, a broader nose)
+          "v2elegant": {"neck_width": -0.7, "neck_base": -0.3, "neck_length": -0.35, "eye_spacing": 1.05, "eye_size": -0.1, "eye_tilt": 0.3, "nose_size": -0.15, "nose_projection": -0.1, "nose_length": 0.1, "nose_bridge": -0.1, "nose_tip": 0.25, "mouth_width": -0.45, "lips": 0.4, "brow_ridge": -0.18, "forehead_slope": 0.45, "chin_length": -0.1, "chin_width": -0.85, "jaw_width": -0.2, "cheekbones": -0.1, "face_height": -0.8, "face_taper": -1.05, "temples": -0.25, "face_round": 0.1},
+          "v2doll": {"neck_width": -0.7, "neck_base": -0.3, "neck_length": -0.35, "eye_spacing": 1.6, "eye_size": 0.5, "eye_tilt": 0.5, "nose_size": -0.25, "nose_projection": -0.22, "nose_length": 0.3, "nose_bridge": -0.3, "nose_width": -0.3, "nose_tip": 0.5, "mouth_width": -0.6, "lips": 0.4, "brow_ridge": -0.18, "forehead_slope": 0.45, "chin_length": -0.25, "chin_width": -0.9, "jaw_width": -0.9, "cheekbones": -0.2, "cheeks": 0.3, "face_height": -0.7, "face_taper": -0.95, "forehead_width": 0.1},
+          "v2soft": {"neck_width": -0.7, "neck_base": -0.3, "neck_length": -0.35, "eye_spacing": 1.05, "eye_size": 0.3, "eye_tilt": 0.15, "hooded_lids": 0.4, "nose_size": -0.2, "nose_projection": -0.22, "nose_length": 0.5, "nose_bridge": -0.22, "nose_width": 0.3, "mouth_width": -0.35, "lips": 0.1, "brow_ridge": -0.18, "forehead_slope": 0.45, "chin_length": -0.3, "chin_width": -0.7, "jaw_width": -0.4, "cheekbones": -0.2, "cheeks": 0.2, "face_round": 0.3, "face_height": -0.9, "face_taper": -1.0, "temples": -0.15},
           # bodyv2: the sliders its body carries on top of its weights (only what it lists: the head's and the neck's stay
           # v2female's or the feminine base's). Arm length is the picture's: her wrists are 58 cm from her middle on a
           # 163 cm body, MHR's 66
           "bodyv2": {"legs_length": -0.33, "torso_length": -0.47, "arms_length": -1.75, "neck_length": -0.1, "thighs": 0.8,
-                     "calves": -0.09, "waist": -0.15, "upper_arms": -0.11, "shoulders": -0.27}}
+                     "calves": -0.09, "waist": -0.15, "upper_arms": -0.11, "shoulders": -0.27},
+          # two alterations of bodyv2 (DECISIONS 2026-11-12, make-up enhanced: "alterations of the v2 where its more
+          # skinny (sports muscular woman), and more hourglass one"; docs/CHARACTER_STUDIO.md §2h): its proportions
+          # (the lengths of the legs, the torso, the arms, the neck), a build of their own. v2athletic: lean and
+          # toned, the shoulders wider than bodyv2's, a small waist and narrow hips, firm calves, arms and seat.
+          # v2hourglass: bodyv2's hips and thighs under a small waist, a fuller bust and seat
+          "v2athletic": {"legs_length": -0.33, "torso_length": -0.47, "arms_length": -1.75, "neck_length": -0.1, "thighs": 0.3, "calves": 0.35, "waist": -0.2, "upper_arms": 0.25, "forearms": 0.15, "shoulders": 0.2, "seat": 0.4, "bust": -0.3},
+          "v2hourglass": {"legs_length": -0.33, "torso_length": -0.47, "arms_length": -1.75, "neck_length": -0.1, "thighs": 0.7, "calves": -0.09, "waist": -0.3, "upper_arms": -0.11, "shoulders": -0.27, "hips": 0.25, "seat": 0.35, "bust": 0.6}}
 # a base that is another's body with a sculpt of its own: its MHR weights are that base's (clothes cut for one fit the other)
 # (written into the file by hand, 2026-11-12: `presets` fits the bodies again and no longer lands on the committed weights
 # (feminine up to 0.9 off, masculine 1.6), which every character made on a base depends on. Don't run it to add a base.)
@@ -197,10 +215,13 @@ SAME_BODY = {"v2female": "feminine"}
 # widths by height, the trunk's under the cardigan, the arms' reach, the heights of the eyes, the chin, the pit of the
 # neck and the knee, with the trunk's depths held to a medium build's (there is no side picture). The head's and the
 # hands' weights are the feminine base's
-FITTED = ("bodyv2",)
+# (v2athletic and v2hourglass: bodyv2's weights moved to measures of their own, fit_measures from bodyv2's: the shoulders,
+# the chest, the bust, the waist, the belly, the hips, the seat, the thighs and the neck; kept as fitted, as bodyv2's are)
+FITTED = ("bodyv2", "v2athletic", "v2hourglass")
 # a base's head (changes from MHR's average, cm), fitted only for a base the file doesn't have yet
 HEADS = {"feminine": dict(head_w=-0.6, skull=-0.4, jaw=-1.2, brow=-0.3, nose=-0.2, chin=-0.2),
          "masculine": dict(head_w=0.4, jaw=0.8, brow=0.3, chin=0.2)}
+ABOUT = "MHR identity weights for the Character Studio's bases (tools/character/mhr.py presets) and its head and body presets (grow.js HEADS, BODIES: the Body tab's Presets cards), and the sculpt each carries (sculpt.js's controls). A head preset (v2female: DECISIONS 2026-11-12, v2female) is what the feminine end's head and neck become when it is picked: it lists only the head's and the neck's controls, and only the head group's weights count; a body preset (bodyv2: weights fitted to the user's T-pose picture, DECISIONS 2026-11-12, a T-pose reference) is what the feminine end's body becomes: only the body group's weights and the body's controls (and Neck length: how high it carries the head)"
 PRESETS_FILE = ROOT / "Content" / "Studio" / "Bodies" / "MHR_presets.json"
 
 
@@ -220,12 +241,7 @@ def make_presets(path=PRESETS_FILE):
     for name, of in SAME_BODY.items(): out[name] = list(out[of])
     for name in FITTED:                                                               # a base fitted elsewhere: its weights as they are in the file
         if name in old: out[name] = old[name]
-    path.write_text(json.dumps({"about": "MHR identity weights for the Character Studio's bases (tools/character/mhr.py presets), "
-                                         "and the sculpt each base carries (sculpt.js's controls); v2female is the feminine "
-                                         "base's body with a sculpt of its own for the head, the neck and the shoulders: what the feminine "
-                                         "end becomes when it is picked (DECISIONS 2026-11-12, v2female); bodyv2 is a body of its own (its weights fitted to "
-                                         "the user's T-pose picture, DECISIONS 2026-11-12, a T-pose reference) with the sliders it carries: what the "
-                                         "feminine end's body becomes when it is picked",
+    path.write_text(json.dumps({"about": ABOUT,
                                 "presets": out, "sculpt": SCULPT}, indent=1), encoding="utf-8")
     return out
 

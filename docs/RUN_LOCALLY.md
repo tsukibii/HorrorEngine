@@ -36,7 +36,8 @@ One line, for the user to give Claude on their machine, for example:
    | STUDIO | `GPU=1 node tools/character/studiotest.js` | Studio |
    | SALON | `GPU=1 node tools/character/salontest.js` | Studio |
    | HAIR2PAGE | `GPU=1 node tools/character/hair2pagetest.mjs` | Studio (the Hair editor v2.0 tab on a scratch character, `_hair2test`; `EXPORT=1` in front also exports for Godot and reads the file. On the cloud's CPU it takes four and a half minutes: timed 2026-11-12) |
-   | GROWPAGE | `GPU=1 node tools/character/growpagetest.mjs` | Studio (ages, Cutify, monster mode, horns and ears on a scratch character, `_growtest`; it runs JIGGLE on its export when Godot is there) |
+   | GROWPAGE | `GPU=1 node tools/character/growpagetest.mjs` | Studio (a new character's start and the preset cards, ages, Cutify, monster mode, horns and ears on a scratch character, `_growtest`; it runs JIGGLE on its export when Godot is there) |
+   | PRESETS | `GPU=1 node tools/character/presets.mjs thumbs` | Studio (the head and body presets' cards pictured again into `Content/Studio/Presets/thumbs/`; only when a preset changed) |
    | UEEYE | `GPU=1 node tools/character/ueeye.mjs` | none |
    | PLAY | `GPU=1 node tools/director/playtest.js` | desk |
    | TESTROOM | `GPU=1 node tools/director/testroom.mjs` | desk |

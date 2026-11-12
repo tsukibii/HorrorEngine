@@ -2,6 +2,37 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, make-up enhanced: presets as cards, three more heads, two more bodies, then the makeup (the user)
+
+- **"Create a new branch called make-up enhanced. before you research and work on the make up, is there any reason we
+  dont have the new face shape as a preset thumbnail similar to the monster presets ?If w can have it as a thumbnail
+  preset that we default to just do that, same with the body (body preset shouldnt override the face), maybe create
+  some thumbnail categories for, monster as we have now (untouched), heads, and bodies. For heads can you look through
+  our previous daz references (I think there were 4 heads) and make an aligned one for 3 of them . For bodies, keep the
+  new v2, but also create alterations of the v2 where its more skinny (sports muscular woman), and more hourglass one.
+  I dont need any male presets , just focus on feminity. For makeup, I want better makeup, analyze the daz images I
+  shared earlier and re-create those makeup looks 1:1 (the same lip gloss, shines etc, )"**
+- **The branch** is `make-up-enhanced` (a branch's name can't hold a space), from main after pull request 26.
+- **The answer to "is there any reason":** no good one. v2female and bodyv2 were built as two more Base buttons with
+  a switch each, off for new characters, because when they were made nobody had asked for the default to change
+  (DECISIONS 2026-11-12, v2female; a T-pose reference). Nothing technical stood in the way of cards.
+- **What this sets:**
+  - The Body tab has **Presets** in three categories: **Heads**, **Bodies**, **Monsters**. Monsters are the creature
+    cards as they were, nothing about them changed. The two Base buttons and the two switches are gone: their
+    presets are cards.
+  - **A head preset changes the head and the neck only; a body preset changes the body only.** Neither sets a
+    slider of the character's own. Each category has a *Plain* card (MHR's feminine base).
+  - **New characters start on v2female's head and bodyv2's body**, on the feminine base, 1.63 m. Characters saved
+    before keep what they had (a file with the old `v2` and `b2` opens on the same two presets).
+  - **Heads:** three more, each held to one of the other Daz faces as v2female was to hers.
+  - **Bodies:** bodyv2 stays; two alterations of it: slimmer and athletic (a sporty, toned woman), and more
+    hourglass. **No male presets**: femininity only.
+  - **Makeup** after that: the Daz pictures' makeup looks re-created 1:1 (the lip gloss, the shines).
+- **My readings, to be overruled if wrong:** the presets are what the *feminine end* of the base becomes, so picking
+  a card on the Average or Masculine base moves the base to Feminine (and says so); a body card doesn't change the
+  height you set; Neck length is the one slider a body preset may carry (how high it carries the head): bodyv2 has
+  it from its picture.
+
 ## 2026-11-12, the ringlets (the user, with a screenshot, while the styles were being gone through)
 
 - **"Not sure if you caught it but the curls look like they float rather than come from the head/hair"**, with the
