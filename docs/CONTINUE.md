@@ -45,8 +45,12 @@ the guide's section 8):
 - **Made for it**: six prop generator recipes (PROPGEN §31; `designs.py` `shape_pts`: a heart, a drop as a hull's mark
   and motif and a box's picture; `crimp`), `tools/weapon_fx.py`'s heart and wet maps (WEAPONFX holds them),
   `tools/weapon_sounds.py`'s five sounds (`--only`), WEAPONS §8k, `weapons_shots.gd` `egg_shots()`.
-- **Checked here**: WEAPONFX, WEAPONS (with §8k), the check_all's offline set; the guide's eight new pictures are
-  Godot's under xvfb on the CPU. `weapons_check.py` now falls back to the ready-made hotel floor
+- **Checked here**: CHECKS (check_all), WEAPONFX, THUMBS, PROPGEN, WEAPONS (with §8k); the guide's eight new pictures
+  are Godot's under xvfb on the CPU. **TUTORIAL2's playthrough passed every step** (the kettle and mug shot, the bulb,
+  her shot down) **but the check failed on one line that isn't this branch's**: the ready-made floor against this
+  machine's export differs in nine rooms' wall set, `pbr/_made/412ad2f04aeb` kept and `pbr/_made/ef65db5f3357` made
+  here: a made set's hash (`storykit/pbrmix.py`) isn't the same on every machine. Worth a look: the hash should come
+  from the look's recipe, not from what the machine wrote. `weapons_check.py` now falls back to the ready-made hotel floor
   (`Exports/interiors/hotel_floor`) when tutorial v2's export isn't on the machine: no desk server needed.
 
 - **A fault found and fixed on the way**: `HSImpacts._burst` placed its emitter after it had started, so every
