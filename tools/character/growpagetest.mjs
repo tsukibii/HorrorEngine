@@ -133,14 +133,17 @@ try {
 
   // ---- saved and opened again
   await age(10); await tog("#cuteOn", true); await page.waitForTimeout(1000);
+  await tog("#v2On", true); await page.waitForTimeout(800);            // (the v2female base on, so the save and the reopening below carry it too)
   await B(() => { document.querySelector("#status").textContent = ""; }); await page.click("#save");
   await page.waitForFunction(() => /saved/.test(document.querySelector("#status").textContent), null, { timeout: 60000 });
   const saved = await B(async n => (await fetch(`api/people/${n}`)).json(), NAME);
+  say(saved.v2 === 1, "and the v2female base saved with it");
   say(saved.age?.age === 10 && saved.cute?.on === true && saved.monster === false && saved.height === 1.39, `saved with the character: age ${saved.age?.age}, Cutify ${saved.cute?.on ? "on" : "off"} at ${saved.cute?.amount}, ${saved.height} m`);
   await page.reload(); await page.waitForFunction(() => window.__body && window.__body.SCULPT, null, { timeout: 180000 });
   await page.selectOption("#who", NAME);
   await page.waitForFunction(n => window.__body.who === n && /points/.test(document.querySelector("#hud").textContent), NAME, { timeout: 180000 }); await page.waitForTimeout(4000);
   const again = await B(() => ({ st: window.__body.st.age, cute: window.__body.st.cute, out: document.querySelector("#ageRows output").textContent, on: document.querySelector("#cuteOn").checked, h: window.__body.st.height }));
+  { const v = await B(() => ({ v2: window.__body.st.v2, on: document.querySelector("#v2On").checked })); say(v.v2 === 1 && v.on, "opened again with the v2female base on, its switch set"); await tog("#v2On", false); await page.waitForTimeout(800); }
   say(again.st.age === 10 && again.cute.on && again.out === "10" && again.on && again.h === 1.39, "opened again the same (age 10, Cutify on)");
   await page.waitForFunction(() => window.__body.salonHair, null, { timeout: 120000 }).catch(() => null);
   const hair10 = await hairOff(baked.ids);
@@ -154,6 +157,18 @@ try {
   const bald = await B(async () => { const b = window.__body; await b.loadSalon().catch(() => null); return { hair: !!b.salonHair, hud: document.querySelector("#hud").textContent }; });
   say(!bald.hair && !/baked on another head/.test(bald.hud), "its hair taken away: bald again, nothing said");
   await age(18); await tog("#cuteOn", false); await B(() => { document.querySelector("#handlesOn").checked = false; window.__body.setPose("rest"); });
+
+  // ---- the v2female base (MHR_presets.json; DECISIONS 2026-11-12, the 1:1): its button makes the feminine end it, the
+  // neck slender; its switch off, the feminine base again
+  { const meas = () => B(() => { const b = window.__body, P = b.neutralBody(); let lo = Infinity, hi = -Infinity; for (let i = 1; i < P.length; i += 3) { lo = Math.min(lo, P[i]); hi = Math.max(hi, P[i]); }
+      let best = 9; for (let f = 0.8; f < 0.885; f += 0.004) { const y = lo + (hi - lo) * f; let w = 0; for (let i = 0; i < P.length; i += 3) if (Math.abs(P[i + 1] - y) < 0.004 && Math.abs(P[i]) < 0.14 && Math.abs(P[i]) > w) w = Math.abs(P[i]); if (w > 0.01) best = Math.min(best, w); }   // (the neck from the front at its narrowest)
+      return { neck: best * 200, v2: b.st.v2, on: document.querySelector("#v2On").checked, base: b.st.base }; });
+    await B(() => document.querySelector('.bases button[data-base="-1"]').click()); await page.waitForTimeout(2000); const fem = await meas();
+    await B(() => document.querySelector('.bases button[data-v2="1"]').click()); await page.waitForTimeout(2000); const v2 = await meas();
+    say(!fem.v2 && !fem.on && v2.v2 === 1 && v2.on && v2.base === -1 && v2.neck < fem.neck - 2 && v2.neck > 6, `the v2female button: the neck ${fem.neck.toFixed(1)} cm at its narrowest on the feminine base, ${v2.neck.toFixed(1)} on v2female, its switch on`);
+    await tog("#v2On", false); await page.waitForTimeout(2000); const off = await meas();
+    say(!off.v2 && Math.abs(off.neck - fem.neck) < 0.05, `its switch off: the feminine base again (${off.neck.toFixed(1)} cm)`);
+    await B(() => document.querySelector('.bases button[data-base="0"]').click()); await page.waitForTimeout(1000); }
 
   // ---- the creatures: cards that are always there (DECISIONS 2026-11-11), a click makes the character that creature
   const cards = await B(async () => { const cs = [...document.querySelectorAll("#creatureCards .card[data-creature]")], out = [];

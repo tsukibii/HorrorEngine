@@ -103,8 +103,9 @@
       <h3>View</h3>
       <div id="studioRows"></div>
       <h3>Base</h3>
-      <div class="bases"><button data-base="-1">Feminine</button><button data-base="0">Average</button><button data-base="1">Masculine</button></div>
+      <div class="bases"><button data-base="-1">Feminine</button><button data-base="0">Average</button><button data-base="1">Masculine</button><button data-base="-1" data-v2="1" title="The feminine base with v2female's head and neck">v2female</button></div>
       <div id="baseRows"></div>
+      <label class="tog"><input type="checkbox" id="v2On"><span>v2female<small>What the feminine end of the base becomes: a slender neck, a short, narrow lower face, larger eyes, a smaller nose and mouth. Every slider still moves from it; toward masculine it fades out.</small></span></label>
       <h3>Age</h3>
       <div id="ageRows"></div>
       <p class="note" id="ageNote"></p>
@@ -298,7 +299,7 @@ const FACE = [   // face_mesh.py's settings (its DEFAULTS), plus how much of the
 ];
 const st = { base: 0, height: 1.7, shape: new Array(H.shapes).fill(0), face: Object.fromEntries(FACE.map(f => [f[0], f[5]])),
              expr: new Float32Array(ENAMES.length), exprAmt: 1, sculpt: {},   // sculpt: the named controls' values (sculpt.js, grow.js)
-             age: { age: GW.AGE_ADULT, face: 1 }, cute: { on: false, amount: 0.6 }, monster: false, anime: false };   // grow.js: the age (18: the adult), Cutify, monster mode, Anime (the Bust's long slider)
+             age: { age: GW.AGE_ADULT, face: 1 }, cute: { on: false, amount: 0.6 }, monster: false, anime: false, v2: 0 };   // grow.js: the age (18: the adult), Cutify, monster mode, Anime (the Bust's long slider); v2: the v2female base (1: the feminine end is it)
 let WHO = null, DELTA = null, PICS = [], REPORT = null, FACEBAKE = null, LAY = null, WEAR = null, NAILAT = null;   // LAY: the paint layers (layersui.js); WEAR: the accessories (accessories.js); NAILAT: the fingernails' places (nails.js)
 
 const fmt = (v, step) => (+v).toFixed(step < 0.01 ? 3 : step < 1 ? 2 : 0);
@@ -327,7 +328,8 @@ for (const [g, [a, b]] of Object.entries(INFO.groups)) {
     shapeSet[i] = slider(d, i, `${i}: ${INFO.labels[i] || ""}`, -3, 3, 0.05, 0, "", (v, row) => { st.shape[i] = v; row.classList.toggle("moved", v !== 0); changed("body"); }, INFO.labels[i]);
   $("#shapeRows").append(d);
 }
-for (const b of document.querySelectorAll(".bases button")) b.onclick = () => { st.base = +b.dataset.base; set.base(st.base); changed("body"); };
+for (const b of document.querySelectorAll(".bases button")) b.onclick = () => { st.base = +b.dataset.base; st.v2 = b.dataset.v2 ? 1 : 0; $("#v2On").checked = !!st.v2; set.base(st.base); changed("body"); };
+$("#v2On").onchange = () => { st.v2 = $("#v2On").checked ? 1 : 0; changed("body"); };   // the v2female base (MHR_presets.json: its weights and the sculpt it carries): what the feminine end is
 $("#resetShape").onclick = () => { st.shape.fill(0); shapeSet.forEach(f => f(0)); document.querySelectorAll(".row.moved").forEach(r => r.classList.remove("moved")); changed("body"); };
 
 function weights() {                                   // the base blended in, the sliders on top
@@ -335,7 +337,7 @@ function weights() {                                   // the base blended in, t
   // one picked, MHR's own at 0, as they always were (faces, photo fits and hair made on them stay)
   // (a child's: the two builds part at puberty, grow.js: at eight the body is halfway between them whichever base is
   // picked, the head and the hands most of the way to MHR's own)
-  const sx = AGE.sexed, t = st.base * sx, f = PRESETS.feminine || [], m = PRESETS.masculine || [], [a, b] = (INFO.groups || H.groups || {}).body || [0, 0], hk = Math.abs(st.base) * (0.4 + 0.6 * sx);
+  const sx = AGE.sexed, t = st.base * sx, f0 = PRESETS.feminine || [], f2 = st.v2 && PRESETS.v2female ? PRESETS.v2female : f0, f = f0.map((v, i) => v + ((f2[i] ?? v) - v) * (st.v2 || 0)), m = PRESETS.masculine || [], [a, b] = (INFO.groups || H.groups || {}).body || [0, 0], hk = Math.abs(st.base) * (0.4 + 0.6 * sx);
   return st.shape.map((v, i) => v + (i >= a && i < b ? (f[i] || 0) * (1 - t) / 2 + (m[i] || 0) * (1 + t) / 2 : hk * ((st.base < 0 ? f : m)[i] || 0)));
 }
 // the age's build (grow.js ageOf: what a child's body and face add to the sculpt, how far the builds have parted), worked
@@ -343,7 +345,8 @@ function weights() {                                   // the base blended in, t
 let AGE = { sculpt: {}, young: 0, sexed: 1 }, GROW = null;
 function agedNow() { AGE = GROW && st.age.age < GW.AGE_ADULT ? GW.ageOf(st.age.age, st.base, GROW, st.age.face) : { sculpt: {}, young: 0, sexed: 1 }; }
 // the sculpt a base carries, blended as its body is; the character's own sculpt (the sliders, the circles) goes on top
-const baseSculpt = id => (BASE_SCULPT.feminine?.[id] || 0) * (1 - st.base) / 2 + (BASE_SCULPT.masculine?.[id] || 0) * (1 + st.base) / 2;
+const femSculpt = id => { const a = BASE_SCULPT.feminine?.[id] || 0; return a + ((BASE_SCULPT.v2female?.[id] || 0) - a) * (st.v2 || 0); };   // (the feminine end's: v2female's when that base is picked)
+const baseSculpt = id => femSculpt(id) * (1 - st.base) / 2 + (BASE_SCULPT.masculine?.[id] || 0) * (1 + st.base) / 2;
 // a control's whole value: the character's own slider, its base's, its age's and Cutify's, kept within reach (a person's
 // sliders run to 1, a monster's to 3: their sums ease into a limit a little past that, so a small nose made smaller by
 // an age and by Cutify never turns inside out). Sums a character could have before (a base's and a slider's) are as they were
@@ -785,7 +788,7 @@ function libRows(c) {                                  // a worn library garment
 }
 const grownKey = () => { const a = st.age.age < GW.AGE_ADULT ? [st.age.age, st.age.face] : 0, c = st.cute.on && st.cute.amount ? st.cute.amount : 0, an = st.anime && Math.abs(sculptValue("bust")) > 1;   // (Anime only where it changes the body: the Bust past the plain slider's ends)
   return a || c || st.monster || an ? [[a, c, st.monster ? 1 : 0, ...(an ? ["anime"] : [])]] : []; };
-const bodyKey = () => JSON.stringify([weights().map(v => +v.toFixed(4)), st.height, DELTA ? DELTA.idx.length : 0, st.face?.strength, st.sculpt, ...grownKey()]);   // (the sculpt too: neutralBody carries it; the age, Cutify and monster mode when set)
+const bodyKey = () => JSON.stringify([weights().map(v => +v.toFixed(4)), st.height, DELTA ? DELTA.idx.length : 0, st.face?.strength, st.sculpt, st.v2 || 0, ...grownKey()]);   // (the sculpt too: neutralBody carries it; the age, Cutify and monster mode when set; the v2female base: its weights are the feminine base's, only the sculpt it carries differs)
 function dress() {                                     // the worker makes every garment worn, on the body as it is now
   if (!Object.keys(DESIGNS).length) return;
   const list = st.clothes.filter(c => DESIGNS[c.design]).map(c => [c.design, c.color, lookOf(c), c.edit]), id = ++TAILOR_JOB, key = bodyKey();
@@ -2348,7 +2351,7 @@ function useCreature(key, o = {}) {                    // o.look (true): with it
   } else {
     st.sculpt = { ...m.sculpt }; if (m.height) st.height = m.height;
     if (st.age.age < GW.AGE_ADULT) { st.age.age = GW.AGE_ADULT; ageSet.age(st.age.age); ageUI(); }   // (a creature is shaped from the adult: an imp is small, not a child; the age is still yours after)
-    if (m.base !== undefined) { st.base = m.base; set.base(st.base); }
+    if (m.base !== undefined) { st.base = m.base; set.base(st.base); st.v2 = 0; $("#v2On").checked = false; }
     st.shape.fill(0); for (const [i, v] of Object.entries(m.shape || {})) st.shape[+i] = v;   // its build from MHR's own shapes
     st.shape.forEach((v, i) => shapeSet[i](v)); document.querySelectorAll("#shapeRows .row").forEach((r, i) => r.classList.toggle("moved", st.shape[i] !== 0));
   }
@@ -3496,7 +3499,7 @@ async function open(name) {
   FACEBAKE = null; const baked = WHO ? await loadFaceBake(WHO) : null;
   if (me !== OPENING) return;
   if (baked) { FACEBAKE = baked.head; DELTA = baked.delta; }   // its face baked: kept, its pictures not needed
-  st.base = c.base ?? 0; st.height = c.height ?? 1.7;
+  st.base = c.base ?? 0; st.height = c.height ?? 1.7; st.v2 = c.v2 ? 1 : 0; $("#v2On").checked = !!st.v2;
   st.shape = (c.shape || []).concat(new Array(H.shapes).fill(0)).slice(0, H.shapes).map(Number);
   Object.assign(st.face, Object.fromEntries(FACE.map(f => [f[0], f[5]])), c.face || {});
   $("#relative").checked = c.relative !== false;
@@ -3534,7 +3537,7 @@ async function open(name) {
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
   if (me === OPENING && WHO) detect();
 }
-const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), age: st.age, cute: st.cute, monster: st.monster, anime: st.anime || undefined, creature: st.monster && st.creature ? st.creature : undefined, hairHead: st.hairHead || undefined, hair2: HAIR2?.record(), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, drape: st.drape, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, groom: st.groom, accessories: st.accessories,
+const character = () => ({ base: st.base, v2: st.v2 || undefined, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), age: st.age, cute: st.cute, monster: st.monster, anime: st.anime || undefined, creature: st.monster && st.creature ? st.creature : undefined, hairHead: st.hairHead || undefined, hair2: HAIR2?.record(), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, drape: st.drape, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, groom: st.groom, accessories: st.accessories,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {

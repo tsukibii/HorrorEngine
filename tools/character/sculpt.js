@@ -251,6 +251,22 @@ export function buildSculpt({ P, T, lm, lid = null }) {
     ["neck", "Neck", "Body", "A thicker or a slimmer neck.",
       p => { if (p[1] < 1.44 || p[1] > 1.6) return null; const c = along(NECK, p[1]); if (!c) return null; const r = Math.hypot(p[0], p[2] - c[1]);
         const w = bump(Math.abs(p[1] - 1.5), 0.05) * sm(0.075, 0.06, r); return w ? [0.18 * p[0] * w, 0, 0.18 * (p[2] - c[1]) * w] : null; }],   // under the jaw
+    // the whole neck, as a column: every point of it in toward its own axis (or out), from under the skull and the jaw
+    // down to where it runs into the shoulders; out toward the shoulders it fades with the distance from the axis. (Neck, above, is the throat under the jaw alone: it stops 7 cm from the
+    // axis, and the widest of MHR's neck is its back and sides, further out. The v2female base's slender neck is this.)
+    ["neck_width", "Neck width", "Body", "The whole neck slimmer or thicker, from under the skull and the jaw down to the shoulders (Neck is the throat under the jaw alone).",
+      p => { if (p[1] < 1.4 || p[1] > 1.6) return null;
+        // (its axis: the neck's own middle, front to back, at two heights of the neck proper, and the line through them
+        // above and below: over the chin the slices' middles are the face's, far in front, and the jaw's angles would
+        // count as the neck's back)
+        const y1 = 1.45, y2 = chin[1] - 0.012, a1 = along(NECK, y1), a2 = along(NECK, y2); if (!a1 || !a2) return null;
+        const dz = p[2] - (a1[1] + (a2[1] - a1[1]) * (p[1] - y1) / (y2 - y1)), r = Math.hypot(p[0], dz); if (r < 1e-6) return null;
+        // (where it ends above, by the bearing from the axis: 0 straight in front, 90 to the side, 180 behind. Under the
+        // chin in front, rising to under the jaw's angle at the side and staying there to behind the ear, then up to
+        // under the skull's base at the nape. Nothing at that height itself: the jaw's line and the chin don't move)
+        const th = Math.atan2(Math.abs(p[0]), dz) * 180 / Math.PI, t0 = chin[1] - 0.006, t1 = jaw[1] - 0.004, tj = t0 + (t1 - t0) * sm(30, 85, th), top = tj + (1.565 - tj) * sm(125, 165, th);
+        const w = sm(1.405, 1.46, p[1]) * sm(top + 0.004, top - 0.026, p[1]) * sm(0.125, 0.08, r);
+        return w > 1e-4 ? [0.3 * p[0] * w, 0, 0.3 * dz * w] : null; }],
     ["shoulders", "Shoulders", "Body", "Broader or narrower shoulders (the arms move with them).",
       p => { const w = armW(p[0], p[1]); return w ? [0.03 * w, 0, 0] : null; }],
     ["chest", "Chest", "Body", "A deeper or a flatter chest.",

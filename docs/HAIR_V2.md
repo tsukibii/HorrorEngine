@@ -400,7 +400,8 @@ DECISIONS 2026-11-12, the 1:1: one hairstyle matched to its picture, to find wha
 `daz_twin_tails` (the group *From your Daz3D pictures*). The pictures stay out of git (`Saved/Hair2/daz/ref`).
 
 **The rig** (scratch scripts, not in git; the numbers are what matter). The style is grown on the body `v2female`
-(`grow.js` `V2FEMALE`) and pictured by `tools/godot/hair2_check.py shots --origin 0,0,0 --size 1600x1200` from
+(the Studio's v2female base at 1.62 m with a full bust, `grow.js` `V2FEMALE`; until item 8 below was done, the
+feminine base with a rounder face) and pictured by `tools/godot/hair2_check.py shots --origin 0,0,0 --size 1600x1200` from
 `v:-11:12:1.05:22:0:-0.07:-0.02` (11 degrees to her right, 12 above: her picture's camera as far as the ear, the
 eyes and the face's edges say). Her picture is turned level (her head is rolled 8.5 degrees), scaled 2.16 and laid
 eye-middle on eye-middle: at that one scale the ear's size, the ear-to-eye distance and the eyes' spacing agree with
@@ -460,6 +461,10 @@ over ours, and the hair's solid outer edge by height on her right side, hers aga
    the 1:1): a lower face and a neck with far more reach than the sliders have, as a base that every slider still
    moves from. Until it exists the hair by the tie can't be judged closer than about 2 cm, and the two cameras
    have to be fitted again on it. Her ears also sit higher on the face than `v2female`'s.
+   **Built since** (DECISIONS 2026-11-12, v2female; docs/CHARACTER_STUDIO.md §2f): the Studio's v2female base, with
+   a new control for the whole neck. On it the neck is 7.4 cm at its narrowest (the feminine base's 10.3; hers
+   about 7.5), the eyes 6.7 cm apart (5.7), the jaw narrower. `bodyByName("v2female")` is that base now, so
+   **every number above this line was measured on the body before it** and stands until the rig is fitted again.
 
 **Not checked here:** the Studio's own tab draws the same hair, but a look's `bake` numbers are Godot's only.
 

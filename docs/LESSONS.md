@@ -3,6 +3,36 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The v2female base: what took a second try (2026-11-12)
+
+- **A face guessed from a style goes the wrong way; measure the picture in its own unit.** The first sculpt for the
+  Daz characters' head was "anime": a shorter, rounder face, bigger eyes (Cutify's values). It made the lower face
+  *wider*, and the hair by the ties sat 2 cm out. Her picture has no known size in it, so it was measured in eye
+  spacings: the eyes' line to the chin 1.45, the face at the lips 1.62, the neck 1.05. Against that the feminine
+  base's face is the right length already; what differs is that her eyes are further apart and her lower face and
+  neck far narrower. The recipe that came out has no shortening in it at all.
+- **A column's axis found slice by slice wanders where a slice stops being the column.** Neck width pulls the
+  neck's points toward its axis. The axis was the middle of each height's own slice; above the chin that slice is
+  the face, its middle far forward, and the jaw's angles counted as the neck's back: 16 mm moved, on a control that
+  must not touch the face. Second try: a line through the neck at two heights of the neck proper. Still 7 mm, from
+  the nape's high cut-off reaching round the side. Third: where it ends depends on the bearing round the axis
+  (under the chin in front, the jaw's line at the side, the skull at the back): 1.3 mm.
+- **Say where a part is by what it is, not by coordinates that happen to hold on one body.** GROW's first lines for
+  it read "points with z over 3 cm" as the face (they took in the front of the neck) and "the width 3 cm under the
+  chin" as the neck (the trapezius). They passed and failed for reasons that had nothing to do with the control.
+  The face is its landmarks; the neck is the narrowest the body gets, seen from the front, between the shoulders
+  and the jaw.
+- **How far a field may go is found by turning it up until the skin folds, then written down as its reach.** At
+  -1.6 and -1.8 the triangles where the neck meets the shoulders turned over. The reach is -1.4 (`REACH`), and GROW
+  asks for -3 and counts the turned triangles: a base that carries -1 and a user who drags the slider to -1 on top
+  land on the limit, not past it.
+- **A page test that times out at its first wait says nothing: load the page and read its status line.** GROWPAGE
+  sat three minutes and failed with no line printed. The page's own status said "MediaPipe isn't set up": a fresh
+  container (the lesson was already here twice, under the Studio's exports and STUDIO). The whole list for a cloud
+  session: `python tools/face_mesh.py setup`, then `apt-get install -y libegl1 libgles2` (MediaPipe's import asks
+  for the second once the first is there), then start the Studio's server again (its worker keeps the first
+  failure).
+
 ## The hair editor v2.0: what took a second try (2026-11-12)
 
 - **A comparison from an assumed camera is an opinion; fit the camera.** Her second picture was laid beside ours
@@ -891,7 +921,7 @@ the fix.
   (`api/face/landmarks`: "MediaPipe isn't set up", then a missing libEGL), and an export said "wrote ... 12.0 MB"
   carrying only the skin: no eyes, no blink, no lashes, no lips or make-up, its paint one flat tone (found on both
   `eye-enhancements` and `subsurace-scattering-exp` the same day). Second try: `python tools/face_mesh.py setup` and
-  `apt-get install libegl1` before the Studio's server makes an export to check (the eyes and lashes come once
+  `apt-get install libegl1 libgles2` before the Studio's server makes an export to check (the eyes and lashes come once
   `graft().on`; about two minutes).
 - **GDTESTROOM on a fresh checkout needs the desk's bake first:** without `Content/Games/TestRoom001/Previs/` (git-ignored)
   Aoi's stand-in has no body to wear HSSkin, and station 6 fails on "her skin ... on 0 materials", which reads like a

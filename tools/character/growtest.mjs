@@ -256,5 +256,35 @@ const span = X => { let lo = Infinity, hi = -Infinity; for (let i = 1; i < X.len
   say(f2 < 0.02 && f2 < f1 - 0.008 && f1 < f0, `flatter under -1: the breast ${(f0 * 100).toFixed(1)} cm in front of the plane through its root at 0, ${(f1 * 100).toFixed(1)} at -1, ${(f2 * 100).toFixed(1)} at -2 (the chest's own wall)`);
 }
 
+// ---- the v2female base (MHR_presets.json), and the Neck width it is made with
+{
+  const PF = JSON.parse(fs.readFileSync(path.join(B, "MHR_presets.json"), "utf8")), ids = Object.keys((PF.sculpt || {}).v2female || {});
+  say(!!PF.presets.v2female && PF.presets.v2female.length === M.k && ids.length > 5 && ids.every(id => byId.has(id)), `the v2female base: ${M.k} weights and a sculpt of ${ids.length} controls, every one a control that exists`);
+  // the neck from the front at its narrowest: the least, over the heights from the chin down 7 cm, of the body's width there
+  const chinY = X => landmark(M, X, 152)[1];
+  const neck = X => { let best = 9; const c = chinY(X); for (let y = c; y > c - 0.07; y -= 0.004) { let w = 0; for (let i = 0; i < X.length; i += 3) if (Math.abs(X[i + 1] - y) < 0.004 && Math.abs(X[i]) < 0.14 && Math.abs(X[i]) > w) w = Math.abs(X[i]); if (w > 0.01) best = Math.min(best, w); } return best * 200; };
+  const fem = grownBody(M, { base: -1 }).P, v2 = grownBody(M, { base: -1, v2: 1 }).P, slim = grownBody(M, { base: -1, sculpt: { neck_width: -1 } }).P;
+  const nF = neck(fem), nV = neck(v2), nS = neck(slim);
+  say(nF > 10 && nS < nF - 2.5 && nS > 6 && nV < nF - 2.5 && nV > 6, `Neck width -1: the neck at its narrowest from the front ${nF.toFixed(1)} cm on the feminine base, ${nS.toFixed(1)} with it; v2female's ${nV.toFixed(1)}`);
+  // the face stays: its own points (the chin, the nose's tip, the mouth's and the eyes' corners, the face's sides by the ears, the forehead's top), and the jaw's angles hardly
+  const mv = i => Math.hypot(...landmark(M, slim, i).map((v, k) => v - landmark(M, fem, i)[k])) * 1000, face = Math.max(...[152, 1, 61, 291, 33, 263, 234, 454, 10].map(mv)), jawA = Math.max(mv(172), mv(397));
+  let most = 0; for (let i = 0; i < fem.length; i += 3) most = Math.max(most, Math.hypot(slim[i] - fem[i], slim[i + 1] - fem[i + 1], slim[i + 2] - fem[i + 2]));
+  say(face < 0.3 && jawA < 2 && most > 0.012 && most < 0.03, `it leaves the face where it was (its chin, nose, mouth, eyes, sides and forehead ${face.toFixed(2)} mm at the most, the jaw's angles ${jawA.toFixed(1)}); the neck's own points move ${(most * 1000).toFixed(0)} mm at the most`);
+  // every triangle of the neck still faces the way it did, at its furthest (a column pulled in too far turns its skin over under the chin: 2 triangles at -1.6, none at -1.4, its limit)
+  let flipped = 0, seen = 0; const nrm = (X, t) => { const a = T[t] * 3, b = T[t + 1] * 3, c = T[t + 2] * 3, u = [X[b] - X[a], X[b + 1] - X[a + 1], X[b + 2] - X[a + 2]], v = [X[c] - X[a], X[c + 1] - X[a + 1], X[c + 2] - X[a + 2]]; return [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]; };
+  const deep = grownBody(M, { base: -1, sculpt: { neck_width: -3 } }).P;                                     // (asked for far past it: held at its limit)
+  for (let t = 0; t < T.length; t += 3) { const a = T[t] * 3; if (Math.hypot(deep[a] - fem[a], deep[a + 2] - fem[a + 2]) < 0.002) continue; seen++; const n0 = nrm(fem, t), n1 = nrm(deep, t); if (n0[0] * n1[0] + n0[1] * n1[1] + n0[2] * n1[2] <= 0) flipped++; }
+  say(seen > 300 && !flipped && GW.REACH.neck_width[0] === -1.4, `asked for -3 it is held at ${GW.REACH.neck_width[0]}: none of the ${seen} triangles it moves is turned past a right angle (the neck then ${neck(deep).toFixed(1)} cm)`);
+  const m0 = grownBody(M, { base: 1 }).P, m1 = grownBody(M, { base: 1, v2: 1 }).P, h0 = grownBody(M, { base: 0 }).P, h1 = grownBody(M, { base: 0, v2: 1 }).P; let dm = 0, dh = 0;
+  for (let i = 0; i < m0.length; i++) { dm = Math.max(dm, Math.abs(m1[i] - m0[i])); dh = Math.max(dh, Math.abs(h1[i] - h0[i])); }
+  const nH = neck(h1), nH0 = neck(h0);
+  say(dm === 0 && dh > 0.003 && nH < nH0 - 1 && nH > nV, `it is the feminine end's: the masculine base is the same with it to the bit, halfway the neck is ${nH0.toFixed(1)} cm without it and ${nH.toFixed(1)} with`);
+  // its face, against the feminine base's: the eyes much further apart and larger, the jaw and the chin narrower, as long from the eyes to the chin (within 3 mm)
+  const mid = (a, c) => a.map((v, k) => (v + c[k]) / 2), eyeY = X => (landmark(M, X, 145)[1] + landmark(M, X, 374)[1]) / 2, jawW = X => Math.abs(landmark(M, X, 172)[0] - landmark(M, X, 397)[0]) * 100;
+  const eyeW = X => Math.abs(landmark(M, X, 33)[0] - landmark(M, X, 133)[0]) * 1000, apart = X => Math.abs(mid(landmark(M, X, 33), landmark(M, X, 133))[0] - mid(landmark(M, X, 263), landmark(M, X, 362))[0]) * 100, long = X => (eyeY(X) - chinY(X)) * 100;
+  say(apart(v2) > apart(fem) + 0.7 && apart(v2) < 7.6 && eyeW(v2) > eyeW(fem) + 1 && jawW(v2) < jawW(fem) - 0.3 && Math.abs(long(v2) - long(fem)) < 0.3,
+    `its face: the eyes ${apart(v2).toFixed(1)} cm apart (the feminine base's ${apart(fem).toFixed(1)}), each ${eyeW(v2).toFixed(1)} mm corner to corner (${eyeW(fem).toFixed(1)}), ${jawW(v2).toFixed(1)} cm between the jaw's angles (${jawW(fem).toFixed(1)}), ${long(v2).toFixed(1)} cm from the eyes' line to the chin (${long(fem).toFixed(1)})`);
+}
+
 if (bad) { console.log(`GROW FAIL: ${bad}`); process.exit(1); }
 console.log("GROW ok");

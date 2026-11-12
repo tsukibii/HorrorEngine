@@ -1,5 +1,5 @@
 {
- "about": "MHR identity weights for the Character Studio's bases (tools/character/mhr.py presets), and the sculpt each base carries (sculpt.js's controls)",
+ "about": "MHR identity weights for the Character Studio's bases (tools/character/mhr.py presets), and the sculpt each base carries (sculpt.js's controls); v2female is the feminine base's body with a sculpt of its own for the head and the neck: what the feminine end becomes when it is picked (DECISIONS 2026-11-12, v2female)",
  "presets": {
   "average": [
    0.0,
@@ -141,11 +141,76 @@
    0.0,
    0.0,
    0.0
+  ],
+  "v2female": [
+   -1.8618,
+   1.6388,
+   1.5799,
+   1.6919,
+   -0.4952,
+   1.0297,
+   2.4817,
+   1.1326,
+   -0.531,
+   3.0,
+   -2.2545,
+   3.0,
+   3.0,
+   -3.0,
+   -0.2068,
+   -1.5295,
+   0.8019,
+   3.0,
+   0.5101,
+   -2.7279,
+   -0.3012,
+   -0.1376,
+   -0.1733,
+   0.2034,
+   0.1614,
+   0.1367,
+   0.1665,
+   0.1078,
+   -0.0319,
+   0.0676,
+   -0.0804,
+   -0.0184,
+   0.0071,
+   0.0409,
+   0.002,
+   0.0183,
+   0.0189,
+   0.0136,
+   -0.0861,
+   -0.0613,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
   ]
  },
  "sculpt": {
   "feminine": {
    "belly": -0.7
+  },
+  "v2female": {
+   "belly": -0.7,
+   "neck_width": -1.0,
+   "eye_spacing": 1.6,
+   "eye_size": 0.7,
+   "nose_size": -0.4,
+   "nose_projection": -0.22,
+   "nose_length": -0.3,
+   "nose_bridge": -0.22,
+   "mouth_width": -0.22,
+   "lips": 0.13,
+   "brow_ridge": -0.18,
+   "forehead_slope": 0.45,
+   "chin_length": -0.15,
+   "chin_width": -0.8,
+   "jaw_width": -0.5,
+   "cheekbones": -0.2
   }
  }
 }

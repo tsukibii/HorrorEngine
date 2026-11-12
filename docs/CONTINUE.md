@@ -29,11 +29,12 @@ Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-12, the 1:1, `claude/ecstatic-dijkstra-6ixk71`): one Daz hairstyle held to its picture
+## Where it stopped last (2026-11-12, the 1:1 and v2female, `claude/ecstatic-dijkstra-6ixk71`): one Daz hairstyle held to its picture; the v2female base
 
 Read DECISIONS 2026-11-12, "the 1:1", first: the user wants **one** hairstyle (the fifth Daz picture: blunt fringe,
 low twin tails behind the ears, long sidelocks) re-created 1:1, volume and curves, "to figure out the system for
-aesthetic hair and apply that later to the rest of our styles", and offered a base head **v2female**.
+aesthetic hair and apply that later to the rest of our styles", and offered a base head **v2female**, then asked
+for it ("lets create a v2female base").
 
 - **Built** (docs/HAIR_V2.md §3.7, §3.8, §10): tied hair that hangs to its tie (Drape, Gather, Puff, Fullness, Tie
   lower), a route for it round an ear that's out, tails as brushes (Fan, Flat, lean out, Strands), a fringe closed at
@@ -57,13 +58,18 @@ aesthetic hair and apply that later to the rest of our styles", and offered a ba
   0.8 to 0.9 cm wide of hers right under the tie (from 2).
 - **Not matched, in order** (§10's list): the last 3 cm over the tie, the fringe's pieces, the sidelocks as ribbons and the plait, the red
   streaks, strands across the ear, her first picture's view (a fuller bulb behind the ear), the back.
-- **Next, and it is required now:** a real **v2female base**. The error left by the tie (0.4 to 2 cm too wide, in
-  both views) is the head's, not the hair's: at the tie's height her head is about 9.1 cm wide and her neck 7.5;
-  `v2female` (the feminine base and the sculpt) is 13.0 and 12.0, and the sculpt's jaw and neck at -3 move that by
-  2 mm (HAIR_V2 §10, item 8; the scratch `headw.mjs`). It needs a lower face and a neck with real reach (new
-  fields in `sculpt.js`, or MHR's own identity shapes), as a base in the Body tab that every slider still moves
-  from: GROW, GROWPAGE, POSE, TAILOR (clothes are cut on the body), STUDIO. Then fit both cameras again on it and
-  measure again before touching the hair by the tie.
+- **The v2female base is built** (DECISIONS 2026-11-12, v2female; docs/CHARACTER_STUDIO.md §2f): a fourth base
+  button and a switch in the Body tab, *what the feminine end becomes*: the feminine body, with sixteen plain sculpt
+  values for the head and the neck (`MHR_presets.json` `sculpt.v2female`), every slider still moving from it; and
+  the control it needed, **Neck width** (the whole neck about its own axis; the neck 10.3 cm to 7.4). GROW and
+  GROWPAGE (`QUICK=1`) hold it. Off for new characters (nobody asked for the default to change). **Ask the user
+  for a local STUDIO and GROWPAGE** (docs/RUN_LOCALLY.md): here only GROWPAGE's quick half was run.
+- **Next: the rig on the new head.** Everything in HAIR_V2 §10 was measured on the test body before the base (the
+  feminine base with a Cutify-like sculpt). Both cameras have to be fitted again (the scratch `rig2/fit.mjs`: ten
+  landmarks of her front picture, seven of the other, against the body's own: MediaPipe's points through
+  `MHR_landmarks.json`, the ear as `sculpt.js` finds it), then both outlines measured again, then the hair by the
+  tie. A first fit of the front picture on the new head: 14 degrees to her right, 8 above, rolled 7, the points
+  5.5 px off (4 mm): her eyes are still further apart than v2female's and her ear leans out more at its top.
 - **Then:** the other six Daz hairstyles; the
   new settings carried to the older styles (their cards made again).
 

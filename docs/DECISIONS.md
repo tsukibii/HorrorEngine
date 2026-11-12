@@ -2,6 +2,28 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, v2female (the user: "lets create a v2female base")
+
+- **"lets create a v2female base."** After the finding below (the 1:1): the error left by the twin tails' ties is the
+  head's and the neck's, not the hair's.
+- **What this sets:** v2female is a base in the Character Studio's Body tab now, beside Feminine, Average and
+  Masculine (docs/CHARACTER_STUDIO.md §2f). It is *what the feminine end becomes*: the feminine base's body, and a
+  sculpt of its own for the head and the neck (a slender neck, a short narrow lower face, eyes larger and further
+  apart, a smaller nose and mouth), after the proportions of the user's Daz3D characters. A button picks it; a switch
+  under the buttons turns it on or off for a character already made. As asked ("which still allows face sculpting
+  etc"), it is a starting point and nothing is locked: every identity slider, every sculpt control, the ages, Cutify,
+  Monster mode, Anime, a face fitted to a picture all go on top of it, as on any base.
+- **What had to be made for it:** MHR's neck could not be slimmed. The sculpt's *Neck* is the throat under the jaw
+  alone; the neck on the feminine base is 10.3 cm across at its narrowest. A new control, **Neck width** (Body), makes
+  the whole neck slimmer or thicker about its own axis, from the shoulders to under the jaw and the skull. v2female
+  carries it at -1: 7.4 cm (the Daz character's is about 7.5).
+- **Mine, not the user's:** it is **off for new characters**, which start where they always did (halfway between the
+  bases). Nobody asked for the default to change; say so if every new character should start on it. Characters saved
+  before are untouched (the base is kept with the character as `v2`, absent when off).
+- **Not judged yet:** how close its face is to the Daz characters' beyond the measured proportions (eye spacings: the
+  eyes' line to the chin 1.52 of them against her 1.45, the face at the lips 1.72 against 1.62, a sixth up from the
+  chin 1.45 against 1.28, the neck 1.11 against 1.05). It is one picture's proportions; the user's eye is the judge.
+
 ## 2026-11-12, the 1:1 (the user, on the first matched comparisons of the Daz twin tails: be a perfectionist; a v2female base)
 
 - **"I need you to be even more of a perfectionist, for this image your goal is to re-create a 1:1 of that hairstyle
@@ -21,7 +43,7 @@ The user's answers, newest first. They override the plan, the research and the d
   user's Daz characters, kept as plain sculpt values under that name (`tools/character/grow.js` `V2FEMALE`: the
   feminine base, a shorter rounder face, a full bust; `bodyByName("v2female")` in node). As a base to pick in the
   Character Studio's Body tab it is **not built yet**; it is the next step there, with every slider still moving
-  from it.
+  from it. *(Built since: the entry above.)*
 - **Found since, and it meets the user's condition ("if required"):** it is required. The error left by the tie in
   both pictures is the head's: at the tie's height her head is about 9.1 cm wide and her neck 7.5, the test body
   13.0 and 12.0, and the sculpt's jaw and neck at their furthest move that by 2 mm (HAIR_V2 §10, item 8). A base

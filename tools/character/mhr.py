@@ -160,7 +160,19 @@ BODIES = {
     "feminine": dict(shoulders=46.3, chest=21.6, bust=14.6, waist=31.3, belly=12.6, hips=37.2, seat=-12.0, thighs=14.1, neck=12.2),
     "masculine": dict(shoulders=53.2, chest=25.8, bust=14.6, waist=30.8, belly=12.2, hips=34.4, seat=-11.0, thighs=14.9, neck=15.6),
 }
-SCULPT = {"feminine": {"belly": -0.7}}
+SCULPT = {"feminine": {"belly": -0.7},
+          # v2female (DECISIONS 2026-11-12, v2female; docs/CHARACTER_STUDIO.md §2f): what the feminine end becomes when
+          # it's picked. The head and the neck after the proportions of the user's Daz3D characters, as plain values on
+          # the sculpt's own controls (every slider still moves from it): a slender neck (Neck width: MHR's shapes
+          # can't slim it), a narrow lower face, eyes larger and further apart, a smaller nose and mouth
+          "v2female": {"belly": -0.7, "neck_width": -1.0, "eye_spacing": 1.6, "eye_size": 0.7, "nose_size": -0.4,
+                       "nose_projection": -0.22, "nose_length": -0.3, "nose_bridge": -0.22, "mouth_width": -0.22,
+                       "lips": 0.13, "brow_ridge": -0.18, "forehead_slope": 0.45, "chin_length": -0.15,
+                       "chin_width": -0.8, "jaw_width": -0.5, "cheekbones": -0.2}}
+# a base that is another's body with a sculpt of its own: its MHR weights are that base's (clothes cut for one fit the other)
+# (written into the file by hand, 2026-11-12: `presets` fits the bodies again and no longer lands on the committed weights
+# (feminine up to 0.9 off, masculine 1.6), which every character made on a base depends on. Don't run it to add a base.)
+SAME_BODY = {"v2female": "feminine"}
 # a base's head (changes from MHR's average, cm), fitted only for a base the file doesn't have yet
 HEADS = {"feminine": dict(head_w=-0.6, skull=-0.4, jaw=-1.2, brow=-0.3, nose=-0.2, chin=-0.2),
          "masculine": dict(head_w=0.4, jaw=0.8, brow=0.3, chin=0.2)}
@@ -180,8 +192,11 @@ def make_presets(path=PRESETS_FILE):
         f = fit_measures({**bdy, **hold}, start=w, keep=0.01, groups=("body",), steps=60, mhr=mhr)
         w[a:b] = f[a:b]
         out[name] = [round(float(x), 4) for x in w]
+    for name, of in SAME_BODY.items(): out[name] = list(out[of])
     path.write_text(json.dumps({"about": "MHR identity weights for the Character Studio's bases (tools/character/mhr.py presets), "
-                                         "and the sculpt each base carries (sculpt.js's controls)",
+                                         "and the sculpt each base carries (sculpt.js's controls); v2female is the feminine "
+                                         "base's body with a sculpt of its own for the head and the neck: what the feminine "
+                                         "end becomes when it is picked (DECISIONS 2026-11-12, v2female)",
                                 "presets": out, "sculpt": SCULPT}, indent=1), encoding="utf-8")
     return out
 

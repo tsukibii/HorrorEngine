@@ -210,12 +210,13 @@ export function ageOf(age, base, G, face = 1) {
 export const CUTE = { eye_size: 0.8, eye_spacing: 0.3, face_height: -0.45, jaw_width: -0.5, chin_length: -0.25, chin_width: -0.2, nose_size: -0.45, nose_projection: -0.25, nose_length: -0.35,
                       nose_bridge: -0.25, cheeks: 0.2, face_round: 0.45, cheekbones: -0.25, mouth_width: -0.25, lips: 0.15, brow_ridge: -0.2, forehead_slope: 0.5 };   // (no Forehead height: it lifts the whole crown, under the hair and the hats; the face shortened under the eyes gives the high forehead)
 
-// ---- v2female: the proportions of the user's own Daz3D characters (DECISIONS 2026-11-12, the 1:1: "feel free to create
-// a better preset base head shape called v2female (which still allows face sculpting etc)"): the feminine base with a
-// shorter, rounder face (Cutify's, most of the way, the face shorter still), a full bust. Plain sculpt values: every
-// slider still moves from there. The hair editor's pictures are matched on it (hair2/node.mjs bodyByName "v2female");
-// as a base to pick in the Body tab it isn't built yet
-export const V2FEMALE = { height: 1.62, anime: true, sculpt: { ...Object.fromEntries(Object.entries(CUTE).map(([k, v]) => [k, v * 0.9])), face_height: -0.9, chin_length: -0.5, bust: 2 } };
+// ---- v2female: a base after the proportions of the user's own Daz3D characters (DECISIONS 2026-11-12, the 1:1: "feel
+// free to create a better preset base head shape called v2female (which still allows face sculpting etc)"). The base
+// itself is in Content/Studio/Bodies/MHR_presets.json (its weights and the sculpt it carries: a slender neck, sculpt.js
+// Neck width, a short narrow lower face, larger eyes, a smaller nose and mouth); picked, it is what the feminine end
+// of the base slider becomes, and every slider still moves from it. This is only what the hair editor's test body
+// adds to it (hair2/node.mjs bodyByName "v2female": her height, and a full bust for tails to rest on)
+export const V2FEMALE = { v2: 1, height: 1.62, anime: true, sculpt: { bust: 2 } };
 
 // ---- the creatures (monster mode's presets: the Body tab's cards, DECISIONS 2026-11-11: "add presets for the monster-ish
 // shapes you made so I can use them"). Each is a sculpt (what the sliders show: every one can be moved on from there),
@@ -289,4 +290,4 @@ export function limits(id, monster, anime = false) {
 // how far a control's whole value may go whatever the sliders say (past it the field turns the skin inside out: a nose
 // narrowed to nothing, lips pushed through the teeth, an arm pinched to a thread): [least, most]
 export const REACH = { nose_size: [-2.3, 9], nose_projection: [-1.7, 9], lips: [-1.6, 9], ears_size: [-1.6, 9], upper_arms: [-2.2, 9], forearms: [-2.2, 9], eye_size: [-2.4, 9], face_height: [-3, 3.4],
-                       skull_back: [-1.2, 9], neck_length: [-1.6, 9], fingers: [-2.4, 9], torso_length: [-2.4, 9], ears_out: [-1.1, 9], ears_point: [-0.5, 9] };
+                       skull_back: [-1.2, 9], neck_length: [-1.6, 9], neck_width: [-1.4, 9], fingers: [-2.4, 9], torso_length: [-2.4, 9], ears_out: [-1.1, 9], ears_point: [-0.5, 9] };
