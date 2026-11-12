@@ -58,8 +58,8 @@ a babysitting game with a grey alien needs) and for two things built (the Predat
 - **Then: `more-shotgun-shells` merged in and a quest for being shot** (the weapons plugin's `HSShotWith`,
   `quest/shot_with.gd`: under someone, a shot of a kind landing on her sets a Story fact, ticks a task, turns her
   look; `quest/loved.tscn`, `quest/soaked.tscn`; SHOTWITH, `tools/godot/shot_with_check.py`; the weapons guide §10).
-  By-hand games only. A pull request of the branch into main was opened at the user's word. WEAPONS itself wasn't run
-  again here after the merge (it's long): run it on the user's machine.
+  By-hand games only. A pull request of the branch into main was opened at the user's word (tsukibii/HorrorEngine#25).
+  WEAPONS passed here on the merged branch (headless, no pictures).
 - **Not done**: the story's `skin` word doesn't name the cloak yet (a desk game's cast), the runtime add-on has no
   word for eye looks (STORY_FORMAT: grow the runner, the check and the doc together when a game wants them); the
   guides don't show either; tutorial v2 uses neither. LATER has the cloak's next steps and the black eye under a
