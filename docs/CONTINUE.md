@@ -51,9 +51,10 @@ done, "the curls look like they float rather than come from the head/hair".
 - **The cards** are made again, each on the body its style is for (`hair2_check.py` `card_body`; the women's on
   `v2base`: v2female's head on the feminine base's plain body).
 - **Checked here**: HAIR2 (with two lines for the ringlets; its slider lines no longer lean on a style's own
-  settings), GDHAIR2 (nine styles in Godot: the scalp through the hair 0.0 to 3.3% of its outline), CHECKS. **Not
-  run here: HAIR2PAGE, STUDIO** (the tab draws the same engine; its own shader has no `streak`, so its picture of a
-  fringe is the older sheen): ask the user for a local run (docs/RUN_LOCALLY.md).
+  settings), GDHAIR2 (nine styles in Godot: the scalp through the hair 0.0 to 3.3% of its outline), CHECKS, and,
+  after the push, HAIR2PAGE (269 s on the cloud's CPU, without `EXPORT=1`). **Not run here: STUDIO, and HAIR2PAGE's
+  export** (the tab draws the same engine; its own shader has no `streak`, so its picture of a fringe is the older
+  sheen): ask the user for a local run (docs/RUN_LOCALLY.md, which now lists HAIR2PAGE).
 - **Left, and seen** (§10c, the end): see-through fringes begin as a row of card ends; light hair is better and
   still striped (the atlas is the salon's); the peekaboo's rose fans a little on the shoulders; nothing was looked
   at in motion. Tasks still open from before: the other Daz hairstyles (d2 to d4), the twin tails' own list (§10).
