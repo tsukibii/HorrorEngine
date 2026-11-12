@@ -2,6 +2,34 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, the last (the user: a sanity meter, and hunts and events synced to it)
+
+- **"Could we add a sanity bar/meter to the game, things like eating food, resting (sitting, sleeping at night) fix
+  sanity, things can prevent from sleeping e.g. current quest might have something toggled as cant sleep; have a way
+  to sync the hunts and events to the sanity so we can increase things and make things harder as sanity goes
+  down."** Built in the starter kit (games made by hand):
+  - **`sanity.gd`**: one node, a number 0 to 1 and a thin meter at the top right. **Down**: the dark, her near and in
+    the open, a hunt running, every scare, time, dying; each its own number. **Up**: sitting (to 0.7), lying down (to
+    0.8), eating, sleep (to full).
+  - **Food**: `food.gd` on a thing, eaten with E; or pocket things listed in the node's `foods`, eaten with C (the
+    laptop's shop already sells food into the pocket).
+  - **Sleep**: lying on a bed for `sleep_after` seconds. **What stops it**: `no_sleep`, a list of the Story's words
+    (any holding: `on:<task>` is "while this task is on the list", which is the quest's toggle), a hunt running,
+    `block_sleep(why)` from a script, `sleep_needs` not holding ("night": the games by hand have no clock, so night
+    is a fact the game sets).
+  - **Synced by facts**: `sanity:uneasy` (under 0.75), `sanity:shaken` (under 0.5), `sanity:breaking` (under 0.25),
+    set and taken back as it moves. Every Needs in the starter kit reads them: cues, scare and event areas, moments,
+    hunt spots, a hunt's own start, a look.
+  - **Synced by pace**: `hunt.gd` and `dread.gd` got `sanity_sync`. As sanity falls a hunt's spots come closer
+    together, its stages sooner, her aggression up faster, the rest between rushes shorter, the warning shorter (never
+    under a second), and under 0.25 she can rush a stage early. The director's moments come closer together. With no
+    Sanity node in the scene nothing changes.
+  - **At nothing**: a target's `fire()`, or death and back at the checkpoint with half.
+- **SANITY** (`python tools/godot/sanity_check.py`) plays all of it headless; HUNT and TUTORIAL2 still pass.
+- **Not in tutorial v2's game**: its guide has a short note (§31, Sanity). Not done: hunger, hallucinations of its
+  own (the facts turn the existing glimpses and cues on), the meter in the UI plugin's HUD style, a save of it at a
+  checkpoint, Director and desk games.
+
 ## 2026-11-12, after the plan (the user: build the hunt, Kimodo clips on its behaviours, a hunt in tutorial v2)
 
 - **"dont need to watch the pr as your the only one who will be committing to it"**: the pull request isn't watched.

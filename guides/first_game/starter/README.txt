@@ -106,6 +106,11 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            lunge...): a Kimodo .npz from res://animations/ put onto her own skeleton when the game
                            starts, an animation file, or one her model has by name; played by how fast she goes
   checkpoint.gd            an area: the Story keeps where you are and what you've done; dying puts you back there
+  sanity.gd                a sanity meter: worn down by the dark, her near, a hunt, every scare; mended by sitting,
+                           lying down, eating and sleep (lie on a bed); what stops sleep (a task on the list, a
+                           hunt, a script); the facts sanity:uneasy, sanity:shaken, sanity:breaking for anything's
+                           Needs; hunts and the night's director go faster as it falls (their sanity_sync)
+  food.gd                  something to eat or drink with E: mends your sanity
   sight.gd                 a helper: what the player's eye can see (in the frame, nothing in the way)
   arms_down.gd             under a Character Studio character: its arms down by its sides
   lights.gd, reach.gd      helpers the others use: lights switched, dimmed, flickered and blinked as the Look plugin

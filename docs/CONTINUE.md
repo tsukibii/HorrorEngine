@@ -65,6 +65,10 @@ a babysitting game with a grey alien needs) and for two things built (the Predat
   it**: Kimodo clips for a hunter (none in the repo: the user makes them, `res://animations/*.npz`, then the
   stalker's Moves rows); navigation, so she can come round another way (HUNT_PLAN §8: try Godot's navigation baked
   from the interior's colliders on the hotel floor); `hunt_path.gd`; the Director's cards.
+- **Then: sanity** (the starter's `sanity.gd` and `food.gd`; `hunt.gd` and `dread.gd` synced by `sanity_sync`; the
+  facts `sanity:uneasy`, `sanity:shaken`, `sanity:breaking`; SANITY, `tools/godot/sanity_check.py`). Not in tutorial
+  v2's game (a note in its §31). Next for it if the user wants: it in the tutorial's night, hunger, the meter in
+  the HUD's style, kept at a checkpoint.
 - **Not done**: the story's `skin` word doesn't name the cloak yet (a desk game's cast), the runtime add-on has no
   word for eye looks (STORY_FORMAT: grow the runner, the check and the doc together when a game wants them); the
   guides don't show either; tutorial v2 uses neither. LATER has the cloak's next steps and the black eye under a

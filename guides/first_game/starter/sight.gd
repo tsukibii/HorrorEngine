@@ -47,3 +47,24 @@ static func figure_seen(cam: Camera3D, feet: Vector3, head_m: float, skip: Array
 		if seen(cam, feet + Vector3.UP * h, skip, margin_deg):
 			return true
 	return false
+
+
+## the player in light: their flashlight on, or a lamp that's on reaching where they stand with nothing in the way
+## (never the sun or the moon). What sanity.gd calls the dark is this being false
+static func in_light(pl: Node3D) -> bool:
+	if pl == null or not pl.is_inside_tree():
+		return true
+	var t := pl.get_node_or_null("Eye/Flashlight") as Light3D
+	if t != null and t.visible and not bool(t.get("is_dead")) and t.light_energy > 0.02:
+		return true
+	var at := pl.global_position + Vector3.UP
+	for l in pl.get_tree().root.find_children("*", "Light3D", true, false):
+		var li := l as Light3D
+		if li == t or li is DirectionalLight3D or not li.is_visible_in_tree() or li.light_energy <= 0.05:
+			continue
+		if li.has_meta("hs_lit") and not bool(li.get_meta("hs_lit")):
+			continue
+		var reach := float(li.get("omni_range")) if li is OmniLight3D else float(li.get("spot_range"))
+		if li.global_position.distance_to(at) <= reach * 0.8 and clear(pl, li.global_position, at, [pl]):
+			return true
+	return false

@@ -18,7 +18,9 @@
 ## sight loses her, `safe_rooms` end it, hiding during the tell calls it off.
 ## Hidden: nothing on the to-do list unless `reveal_task` ("survive: Survive.") at `reveal_at`. While it runs the fact
 ## `hunt:<its name>` is set, and `hunt:<its name>:<n>` once stage n has come: anything's `needs` can read them. Her
-## moves are her moves.gd's (Kimodo clips), her look her HSLookSwitch's, her cloak her HSCloak's.
+## moves are her moves.gd's (Kimodo clips), her look her HSLookSwitch's, her cloak her HSCloak's. With a Sanity node
+## in the scene (sanity.gd) it goes faster as your sanity falls (`sanity_sync`), and its Needs can wait for
+## `sanity:shaken`.
 extends Node
 
 const Sight := preload("res://starter/sight.gd")
@@ -74,6 +76,8 @@ signal ended(how: String)                                 ## survived, task, saf
 @export var rush_rest := 20.0                             ## seconds before she can rush again
 @export var chase: Node                                   ## her chase.gd (empty: the one under her, or one made)
 @export var safe_rooms := PackedStringArray()             ## rooms she won't follow you into
+@export_group("Sanity")
+@export var sanity_sync := 1.0                            ## how much low sanity speeds it up (a Sanity node in the scene): 0 not at all; 1: twice as fast at nothing
 @export_group("Being caught")
 @export var kill_sound := "sting_big"
 @export var death_title := "You died"
@@ -339,8 +343,9 @@ func _process(dt: float) -> void:
 	if st != null and (bool(st.get("over")) or (st.has_method("card_up") and st.card_up())):
 		return                                            # (under a card, at the ending, dead: nothing moves)
 	clock += dt
-	_stage_t += dt
-	_rest = maxf(0.0, _rest - dt)
+	var fast := pressure()
+	_stage_t += dt * fast
+	_rest = maxf(0.0, _rest - dt * fast)
 	_grace = maxf(0.0, _grace - dt)
 	_dread()
 	# where you've walked (follow, a rush's start)
@@ -366,7 +371,7 @@ func _process(dt: float) -> void:
 		"quiet":
 			if _wants_rush(pl, cam) and _begin_tell(pl, cam):
 				return
-			_next -= dt
+			_next -= dt * fast
 			if _next <= 0.0:
 				if not _pick(pl, cam):
 					_next = 1.0                           # nothing possible this second: again soon
@@ -405,7 +410,7 @@ func _feel(pl: Node3D, dt: float) -> void:
 	var up := (0.0 if lit else 0.03) + (0.06 if _ran > 0.5 else 0.0) + 0.004 * stage
 	var down := 0.02 if lit and _ran <= 0.0 else 0.0
 	var cap := 1.0 if mercy_after <= 0 or deaths < mercy_after else 0.6
-	aggression = clampf(aggression + (up - down) * dt, 0.0, cap)
+	aggression = clampf(aggression + (up * pressure() - down) * dt, 0.0, cap)
 
 
 # you're in light: your flashlight on, or a lamp that's on reaching where you stand (looked at five times a second)
@@ -432,7 +437,7 @@ func _lit(pl: Node3D) -> bool:
 
 
 func _wants_rush(pl: Node3D, cam: Camera3D) -> bool:
-	if kind == "haunting" or stage < rush_stage or _rest > 0.0 or _grace > 0.0:
+	if kind == "haunting" or stage < rush_stage - (1 if _sanity() < 0.25 else 0) or _rest > 0.0 or _grace > 0.0:
 		return false
 	if str(pl.get("pose")) == "hiding" or _in_safe(pl):
 		return false
@@ -470,7 +475,7 @@ func _begin_tell(pl: Node3D, cam: Camera3D) -> bool:
 	active = null
 	_sp = {"on_stage": true}
 	state = "tell"
-	_tell_t = maxf(1.0, tell_secs * (1.5 if mercy_after > 0 and deaths >= mercy_after else 1.0))
+	_tell_t = maxf(1.0, tell_secs * (1.5 if mercy_after > 0 and deaths >= mercy_after else 1.0) * lerpf(0.7, 1.0, _sanity()))
 	_show_her(from, pl.global_position, "watch")
 	if cloaked and _cloak() != null:
 		_cloak().reveal(0.3)                              # (never from nothing: she's seen before she comes)
@@ -828,8 +833,22 @@ func _dread() -> void:
 		d.relax_for(2.0)
 
 
+## How much faster it goes for your sanity: 1 calm (or no Sanity node), 1 + `sanity_sync` at nothing. Spots come
+## closer together, stages sooner, her aggression up faster, the rest between rushes shorter.
+func pressure() -> float:
+	var san := get_tree().get_first_node_in_group("hs_sanity")
+	if san == null or sanity_sync <= 0.0 or not san.has_method("pressure"):
+		return 1.0
+	return float(san.pressure(sanity_sync))
+
+
+func _sanity() -> float:
+	var san := get_tree().get_first_node_in_group("hs_sanity")
+	return float(san.get("sanity")) if san != null and sanity_sync > 0.0 and san.get("sanity") != null else 1.0
+
+
 ## What it's doing, a check's.
 func report() -> Dictionary:
 	return {"running": running, "state": state, "stage": stage, "clock": clock, "aggression": aggression, "deaths": deaths,
 		"rushes": rushes, "played": played, "active": str(active.name) if active != null and is_instance_valid(active) else "",
-		"how": how, "her": hunter != null and hunter.visible, "rest": _rest, "grace": _grace, "dark": _dark}
+		"how": how, "her": hunter != null and hunter.visible, "rest": _rest, "grace": _grace, "dark": _dark, "pressure": pressure()}
