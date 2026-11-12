@@ -94,6 +94,19 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
   menace.gd                under her: a gauge filling while you're near her and see her; full, she withdraws a
                            while and the director relaxes
                            (head_m: her head over her feet, 1.5 m; set it for a child or a creature)
+  hunt.gd                  being hunted, as a hidden quest: pick the hunter and its kind (haunting: she never touches
+                           you; stalking: caught is a fright; lethal: caught, you die and come back at the
+                           checkpoint); what starts it (needs, or fire()) and ends it (a time, a task, a safe room,
+                           her shot down); stages; she rushes only by the rules you tick (in the dark, you ran...)
+                           after a tell; the facts hunt:<name> and hunt:<name>:<stage>
+  hunt_spot.gd             a Marker3D where a hunt can have her do something: watch, dart (run across ahead of you
+                           to another marker), peek, wait, ambush (in its box), follow, pass (cloaked), door, decoy,
+                           custom; each by its own rule of what you can see; her move or animation there
+  moves.gd                 under a character: a clip for each thing she does (idle, walk, run, stalk, watch, peek,
+                           lunge...): a Kimodo .npz from res://animations/ put onto her own skeleton when the game
+                           starts, an animation file, or one her model has by name; played by how fast she goes
+  checkpoint.gd            an area: the Story keeps where you are and what you've done; dying puts you back there
+  sight.gd                 a helper: what the player's eye can see (in the frame, nothing in the way)
   arms_down.gd             under a Character Studio character: its arms down by its sides
   lights.gd, reach.gd      helpers the others use: lights switched, dimmed, flickered and blinked as the Look plugin
                            keeps them, a collider round a thing you use

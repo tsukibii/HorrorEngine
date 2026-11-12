@@ -19,6 +19,9 @@ signal task_done(id: String)
 signal got(item: String)
 signal flagged(fact: String)
 signal ended(title: String)
+signal kept                                           ## a checkpoint was kept (checkpoint())
+signal died(how: String)                              ## die()
+signal revived                                        ## back at the checkpoint after dying
 signal pocket_changed                                 ## something came into the pocket or went out of it
 signal cash_changed(cash: float)
 
@@ -35,6 +38,10 @@ var names := {}                                       # what each is called on s
 var models := {}                                      # what each looks like in its slot (a copy of the thing)
 var flags := {}
 var over := false
+var dead := false                                     ## between die() and the checkpoint
+var deaths := 0
+var death_secs := 2.6                                 ## how long the death card stays
+var _kept := {}                                       # the checkpoint: what you'd done and where you stood
 var _tasks: Array = []                                # {id, text, done}
 var _obj: Label
 var _list: RichTextLabel
@@ -233,6 +240,97 @@ func flag(fact: String) -> void:
 
 func is_set(fact: String) -> bool:
 	return flags.has(fact)
+
+
+## a fact taken back (a hunt's "it's running"; most facts are never unset)
+func unflag(fact: String) -> void:
+	flags.erase(fact)
+
+
+# ---- dying, and coming back (a lethal hunt: hunt.gd) ---------------------------------------------------------------
+
+func _doors() -> Array:
+	var out := []
+	for it in get_tree().get_nodes_in_group("hs_interior"):
+		for n in it.find_children("*", "", true, false):
+			if n.has_method("lock") and "open" in n:
+				out.append(n)
+	return out
+
+
+## Keep where you are and what you've done: the tasks, the facts, the pocket and the cash, the objective, the doors.
+## die() comes back to it. A checkpoint.gd area calls this; a lethal hunt does when it starts.
+func checkpoint() -> void:
+	var pl := get_tree().get_first_node_in_group("hs_player") as Node3D
+	_kept = {"flags": flags.duplicate(), "tasks": _tasks.duplicate(true), "items": items.duplicate(), "names": names.duplicate(),
+		"cash": cash, "objective": _obj.text, "doors": {}}
+	if pl != null:
+		_kept["at"] = pl.global_transform
+		_kept["pitch"] = float(pl.get("pitch")) if pl.get("pitch") != null else 0.0
+	for d in _doors():
+		_kept["doors"][d.get_path()] = [bool(d.get("open")), bool(d.get("unlocked"))]
+	kept.emit()
+
+
+func has_checkpoint() -> bool:
+	return not _kept.is_empty()
+
+
+## You died: black, a card with `title` and `text`, then back at the checkpoint as you were (no checkpoint: where you
+## are, with what you have). `how` is who or what did it, for the `died` signal.
+func die(how := "", title := "You died", text := "") -> void:
+	if over or dead:
+		return
+	dead = true
+	over = true                                           # (the player stops, the director and the hunts wait)
+	deaths += 1
+	_end_title.text = title
+	_end_text.text = text
+	_end.visible = true
+	_end.modulate.a = 0.0
+	create_tween().tween_property(_end, "modulate:a", 1.0, 0.35)
+	died.emit(how)
+	get_tree().create_timer(death_secs).timeout.connect(revive)
+
+
+## Back at the checkpoint (die() calls it after its card).
+func revive() -> void:
+	if not dead:
+		return
+	if not _kept.is_empty():
+		flags = (_kept["flags"] as Dictionary).duplicate()
+		_tasks = (_kept["tasks"] as Array).duplicate(true)
+		items = (_kept["items"] as Dictionary).duplicate()
+		names = (_kept["names"] as Dictionary).duplicate()
+		cash = float(_kept["cash"])
+		objective(str(_kept["objective"]))
+		for path in _kept["doors"]:
+			var d := get_node_or_null(path)
+			if d != null:
+				d.set("unlocked", _kept["doors"][path][1])
+				d.set("open", _kept["doors"][path][0])
+		var pl := get_tree().get_first_node_in_group("hs_player") as Node3D
+		if pl != null and _kept.has("at"):
+			if pl.get("seat") != null and pl.has_method("rise"):
+				pl.rise()
+			pl.global_transform = _kept["at"]
+			pl.set("velocity", Vector3.ZERO)
+			pl.set("pitch", _kept["pitch"])
+			var eye := pl.get_node_or_null("Eye") as Node3D
+			if eye != null:
+				eye.rotation.x = float(_kept["pitch"])
+		_draw_list()
+		_draw_pocket()
+		cash_changed.emit(cash)
+	dead = false
+	over = false
+	_card.visible = false
+	var tw := create_tween()
+	tw.tween_property(_end, "modulate:a", 0.0, 0.6)
+	tw.tween_callback(func() -> void:
+		if not over:
+			_end.visible = false)
+	revived.emit()
 
 
 ## what an area's, a door's or a cue's `needs` says: "" always, "task:<id>" that task done, "on:<id>" that task on the
