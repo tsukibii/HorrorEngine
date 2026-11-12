@@ -2,6 +2,40 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, after the seats (the user: more intensifiers; a light that flickers on her, phasing, "am I going crazy")
+
+- **"an npc, if you flash a light it has a boolean that if a light faces it the light flickers (including
+  flashlights) but not counting maybe atmospheric lighting like moonlight."** The starter's **`flicker_lit.gd`**,
+  under her: `enabled` is the boolean. Every lamp whose light **reaches her** (in its reach, in a spot's cone,
+  nothing solid between) and your flashlight when **its beam is on her** falter, and are themselves again the moment
+  they're off her. Never a DirectionalLight3D (the moon, the sun), a light in the group `hs_ambient`, or one in
+  `ignore`. Three ways: `flicker` (dips, at most 2.5 a second: the flash limit), `dim` (it sinks while it's on her),
+  `die` (it fails, goes out after `die_after`, and stays out `dead_secs` once it's off her). It differs from
+  `presence.gd`, which flickers the lights *near* her whether they're on her or not.
+- **"some effect for phasing in and out of the reality/world so it's almost like the creature is in the world but
+  disappears but not super abruptly ... some kind of horror-ish one."** The look plugin's **`HSPhase`** and
+  `creature_phase.gdshader` (GODOT_LOOK §5s): she comes apart in thin level slices that jump sideways, drains to her
+  own shadow, and the slices go one by one; back the same way. `phase_out`, `phase_in`, `stutter` (torn a moment,
+  nothing gone), `blink`, `phase_to(where)`, `next_place`, `fire`. Gone, she's hidden.
+- **"Any other useful horror elements? Things that make the player think (am I going crazy)."** Built, three:
+  - **`moved.gd`** (starter): a thing that isn't where you left it. Once you've seen it and only while you can't, it
+    turns to face you, goes to its next mark, is nudged, tipped over or gone. One chance each time you look away.
+  - **`gaslight.gd`** (starter): the game's own words lying for a moment: a task on the list reads something else,
+    a line nothing said, a pickup you already have, the objective's letters out of order; then as they were. Only
+    while its `needs` hold (`sanity:shaken`), sooner as sanity falls. Nothing is really changed.
+  - **`HSUnease`** (look plugin, GODOT_LOOK §5t): the picture itself: the view's edges swimming while its middle
+    stays still, a second picture drifting, something dark growing in from the corners, the colour going. By the
+    Sanity node, or by hand; `most` a player's cap; nothing in it flashes.
+- **MIND** (`python tools/godot/mind_check.py`) plays the scripts and the two nodes headless and draws and measures
+  the two shaders; `--pictures` makes the look guide's two sheets.
+- **Not in tutorial v2's game** (the user didn't ask this time): the look guide and the starter's README say how.
+- **Suggested, not built** (the user picks): eyes in the dark (two glints that go when your beam finds them), a
+  sound from the room you just left (your own actions echoed late: a door, a drawer), a corridor that's one door
+  longer on the way back, a mirror that's a beat late, a photo or a painting whose figure has moved, a clock that
+  ran while you looked away, a save or pause menu line that's wrong once, a second set of footprints in the wet,
+  your flashlight's beam finding a shadow with nobody to cast it (`shadow_pass.gd` is half of that), a phone that
+  rings and is dead when you lift it.
+
 ## 2026-11-12, after the close calls (the user: the camera on a bed and a chair, and eating by holding the button)
 
 - **"can you make sure the camera adjust appropriately if we are on a chair or bed (sort of how a pov head would be,

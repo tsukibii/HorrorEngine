@@ -69,6 +69,10 @@ a babysitting game with a grey alien needs) and for two things built (the Predat
   facts `sanity:uneasy`, `sanity:shaken`, `sanity:breaking`; SANITY, `tools/godot/sanity_check.py`). In tutorial
   v2's game since (its §31, part 6: no sleep until she's shot). Next for it if the user wants: hunger, the meter in
   the HUD's style, kept at a checkpoint.
+- **Then: more intensifiers** (the starter's `flicker_lit.gd`, `moved.gd`, `gaslight.gd`; the look plugin's `HSPhase`
+  with `creature_phase.gdshader` and `HSUnease` with `unease.gdshader`; MIND, `tools/godot/mind_check.py`; the look
+  guide's Phasing and Unease). Not in tutorial v2's game. Next for it: the user's pick from the ideas in DECISIONS
+  (2026-11-12, after the seats), these in tutorial v2 if wanted, a hunt's cloaked pass or its vanish done by HSPhase.
 - **Then: seats that find the eye, and eating by holding the button** (the starter's `seat.gd` fitted to the
   furniture, `seat_bed.tscn`, `seat_chair.tscn`, `seat_stool.tscn`, the player's eased settle and head limits; SEATS,
   `tools/godot/seat_check.py`; the Story's `set_eatable`, `hold_eat`, its eat meter; `food.gd` a pickup; HSShopItem's

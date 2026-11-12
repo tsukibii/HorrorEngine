@@ -123,6 +123,16 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            Needs; hunts and the night's director go faster as it falls (their sanity_sync)
   food.gd                  something to eat or drink: E takes it into the pocket as eatable (restores, eat_secs,
                            count); then hold the left button to eat it (story.gd)
+  flicker_lit.gd           under her: the light that's turned on her flickers (a lamp whose light reaches her, your
+                           flashlight when its beam is on her); never the moon, a light in the group hs_ambient or
+                           one in `ignore`; flicker (three dips a second at most), dim, or die (out after a while,
+                           and out a while longer once it's off her); `enabled` the switch
+  moved.gd                 on a thing: once you've seen it, and only while you can't, it changes: turned to face
+                           you, moved to its next mark, nudged, tipped over or gone; a chance each time you look
+                           away, its `needs` (sanity:uneasy), a cooldown, at most `times`
+  gaslight.gd              one node: the game's words lying for a moment (a task on the list reads something else,
+                           a line nothing said, a pickup you already have, the objective's letters out of order),
+                           then as they were; only while its `needs` hold (sanity:shaken), sooner as sanity falls
   close_call.gd            under the character who hunts you: she nearly has you. When she's about to catch you
                            while you reload (or your gun's just clicked empty, or the Story's words say you're busy,
                            or she'd have found you hiding), by a chance she falters: still coming, slower, lunging,

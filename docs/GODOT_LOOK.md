@@ -1455,6 +1455,43 @@ the code, the panel over the game); the lists a look offers against HSCreatureSk
 beside her HSCharacterLook. Then the viewer run as a scene under xvfb: her default, cloaked in front of the stripes
 with her eyes glowing, her eyes green with the lamp out (counted). `docs/godot_sheets/2026-11-12_look_viewer.jpg`.
 
+## 5s. Phasing out of the world, and back (`creature_phase.gdshader`, `phase.gd` `HSPhase`; DECISIONS 2026-11-12, after the seats)
+
+The user: *"some effect for phasing in and out of the reality/world so it's almost like the creature is in the world
+but disappears, but not super abruptly, some kind of horror-ish one."*
+
+- **What it draws.** `amount` runs from 0, herself, to 1, gone. She comes apart in **thin level slices** (3.5 cm of the
+  world's height each) that **jump sideways** across the view a dozen times a second, more of them and further as it
+  goes, with a cut between them; her colour **drains to a cold near-black**, so she's her own shadow before she goes;
+  then the **slices go one by one**, each in threads and stuttering in and out first, lifting a little as it does. For a
+  moment she's a stack of slices standing in the air. Coming back is the same, backwards.
+- **How.** A shader of its own on everything she has (her skin, eyes, hair, clothes), through `HSCreatureSkin.wear`
+  with a look that isn't in the list. It keeps her own paint under Godot's lighting and has **no light of its own**.
+  It's solid where it's drawn (what's gone is cut out, not faded): it sorts as any solid thing and **her shadow comes
+  apart with her**.
+- **The node.** `HSPhase` under a character: `phase_out()`, `phase_in()`, `stutter()` (torn for a moment, nothing
+  gone), `blink()` (gone, a while of nothing, back), `phase_to(where)` and `next_place()` (gone here, back there),
+  `fire()` by `on_fire`. Gone, she's hidden; herself, she's on her own shaders again, and a creature skin an
+  HSLookSwitch gave her is put back.
+- **Measured** (MIND, a figure against black): at none of it she's her plain paint, whole; a third of the way she's
+  a third wider than she is and darker; half way under half of her is left with whole rows of her missing; at 1 nothing.
+- **Not done**: a sound of its own on the shelf; a Director or desk game's word for it; the slices are sheared between
+  a mesh's corners, so a body of very few triangles tears less cleanly than a character's.
+
+## 5t. Unease: the picture as a slipping mind sees it (`unease.gdshader`, `unease.gd` `HSUnease`; the same day)
+
+The user: *"things that make the player think, am I going crazy."*
+
+- **What it draws**, each part its own strength: the **edges of the view swim** and breathe while its middle stays
+  still (what you look at is steady, what you don't isn't); a **second picture** drifts a little off the first; something
+  **dark grows in from the corners** in veins; the **colour goes**. At 0 it draws nothing.
+- **What drives it.** The starter kit's Sanity node by default (`follow_sanity`: nothing over 0.6, all of it at 0.1),
+  or `set_amount`; `spike(k, secs)` and `fire()` for a moment of it. `most` is a player's cap.
+- **Where.** A CanvasLayer on layer 3: under the tape and the grade, which lie over it. Nothing in it moves faster
+  than a breath: no flashes.
+- **Measured** (MIND, a wall of stripes): at 0 the plain picture; with all of it a corner at an eighth of its
+  brightness and the middle unchanged, its colour a fifth paler; the edge moved fifty times more than the middle.
+
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 
 A street baked in Blender (`tools/street.py bake`, docs/STREET_TEXTURING.md) comes as plain glTF:

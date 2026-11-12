@@ -176,6 +176,7 @@ TOOLS = [
     ("Checks", "Creature skins check (chrome, pearl, greasy, the cloak and the rest on balls and on a creature in Godot, with the sheet)", "tools/godot/creature_skin_check.py", {}),
     ("Checks", "Creepy eyes check (glowing, black, spiral, hearts and the rest on eyeballs and on a character in Godot, with the sheet)", "tools/godot/eye_fx_check.py", {}),
     ("Checks", "Sanity check (the starter kit's sanity meter: what wears it down and mends it, food, sleep and what stops it, its facts, hunts and the director synced to it; headless in a by-hand project)", "tools/godot/sanity_check.py", {}),
+    ("Checks", "Mind check (flicker_lit, moved and gaslight in the starter kit; the look plugin's HSPhase and HSUnease, played headless and their shaders drawn and measured)", "tools/godot/mind_check.py", {}),
     ("Checks", "Seats check (the starter kit's seat.gd: where your eye goes on a bed, a chair or a stool, worked out from the furniture; the eye eased there, a head's limits, an interior's bed; headless in a by-hand project)", "tools/godot/seat_check.py", {}),
     ("Checks", "Hunt check (the starter kit's hunt: a haunting, a lethal hunt with its tell, death and checkpoint, every kind of spot, the cloak, Kimodo clips on MHR's body; headless in a by-hand project)", "tools/godot/hunt_check.py", {}),
     ("Checks", "Shot-with check (the weapons plugin's HSShotWith: someone shot with love hearts, water or any kind sets a Story fact and ticks a task, with the real gun in a by-hand project)", "tools/godot/shot_with_check.py", {}),

@@ -120,6 +120,31 @@ func tick(id: String) -> void:
 			return
 
 
+## a task's words changed where it stands on the list (gaslight.gd: for a moment), and what they are
+func retext(id: String, text: String) -> void:
+	for t in _tasks:
+		if t["id"] == id:
+			t["text"] = text
+			_draw_list()
+			return
+
+
+func task_text(id: String) -> String:
+	for t in _tasks:
+		if t["id"] == id:
+			return str(t["text"])
+	return ""
+
+
+## the tasks on the list that aren't done, their ids
+func open_tasks() -> Array:
+	return _tasks.filter(func(t): return not t["done"]).map(func(t): return t["id"])
+
+
+func objective_now() -> String:
+	return _obj.text
+
+
 func has_task(id: String) -> bool:
 	return _tasks.any(func(t): return t["id"] == id)
 

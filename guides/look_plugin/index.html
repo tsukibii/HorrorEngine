@@ -299,6 +299,34 @@ eyes each, <code>default</code> for either) and turns her from one to another:</
 It shows a character from your project with every skin and eye look to toggle, their colours, <b>Default</b>, a lamp
 to turn off, stripes to put behind her for the cloak, and <span class="ui">Save as a look</span>
 (<code>looks/&lt;name&gt;.tres</code>). <a href="../tutorial_v2/index.html#looks">Tutorial v2, §30</a> walks through all of it.</p>
+<h3 id="phase">Phasing out of the world, and back</h3>
+<p>For someone who is there and then isn't, without simply vanishing: put an <span class="node">HSPhase</span> under
+her. Going, she comes apart in thin level slices that jump sideways, drains to her own shadow, and the slices go one
+by one; coming, the same backwards. Once she's gone she's hidden, so nothing in the game finds her.</p>
+<figure><img src="img/phase.jpg" width="1280" height="440" alt="The grey alien five times against black: whole, torn into shifted slices, darker with slices missing, a few dark slivers, nearly nothing"><figcaption>The Character Studio's grey alien going: herself, a quarter of the way, half, most, nearly gone. It takes Seconds (1.4).</figcaption></figure>
+<table class="keys">
+<tr><td>Out</td><td>how she starts: gone</td></tr>
+<tr><td>Seconds</td><td>how long it takes to go or to come</td></tr>
+<tr><td>On Fire</td><td>what <code>fire</code> does, for a starter area's, cue's or hunt spot's Target: toggle, out, in, stutter (she tears a moment and settles, nothing of her gone), blink (gone, <b>Away Secs</b> of nothing, back), next place (gone here, back at the next of <b>Places</b>)</td></tr>
+<tr><td>How it looks</td><td>Band M (a slice's height), Tear M (how far it jumps), Rate, Rise M, Darken and Tone</td></tr>
+<tr><td>Sound</td><td>a shelf sound as she goes and as she comes (a game by hand: its Sound node)</td></tr>
+</table>
+<p>From a script: <code>$Her/HSPhase.phase_out()</code>, <code>.phase_in()</code>, <code>.stutter(0.4)</code>,
+<code>.blink()</code>, <code>.phase_to($Markers/ByTheBed)</code>; its signal <code>phased(out)</code>. She has no light
+of her own while she goes: in the dark she just isn't there any more, so let a lamp or your beam be on her.</p>
+<h3 id="unease">Unease: the picture as a mind that's slipping sees it</h3>
+<p>One <span class="node">HSUnease</span> anywhere in the scene. The edges of the view swim and breathe while its
+middle stays still, a second picture drifts off the first, something dark grows in from the corners, the colour
+goes. It draws nothing at all until it's wanted.</p>
+<figure><img src="img/unease.jpg" width="1280" height="360" alt="A wall of orange and black stripes twice: as it is, and with its edges bent, darkened from the corners and paler"><figcaption>A test wall as it is, and with all of it on. In a game it comes on over a second and takes its time going.</figcaption></figure>
+<table class="keys">
+<tr><td>Follow Sanity</td><td>on: it reads the starter kit's Sanity node. Nothing while sanity is over <b>From</b> (0.6), all of it at <b>Full</b> (0.1)</td></tr>
+<tr><td>Amount</td><td>by hand, with Follow Sanity off; <code>$Unease.set_amount(0.4)</code></td></tr>
+<tr><td>Parts</td><td>Warp, Doubled, Crawl, Drain: each part's strength; 0 leaves it out</td></tr>
+<tr><td>Most</td><td>the most of it ever drawn: a player's setting (0 turns it off)</td></tr>
+<tr><td>Fire Amount, Fire Secs</td><td><code>fire</code> (a starter area's or cue's Target) or <code>$Unease.spike(0.6, 3.0)</code>: that much more for a moment</td></tr>
+</table>
+<p>It's under the tape and the grade, so they lie over it, and nothing in it flashes.</p>
 </section>
 
 <section id="finish">

@@ -16,6 +16,7 @@ extends RefCounted
 
 const SHADER := "res://addons/horrorstudio_look/creature_skin.gdshader"
 const CLOAK := "res://addons/horrorstudio_look/creature_cloak.gdshader"
+const PHASE := "res://addons/horrorstudio_look/creature_phase.gdshader"   # HSPhase's: a look of its own, never in LOOKS (it's a way of going, not a skin)
 const REGIONS := "res://addons/horrorstudio_look/textures/mhr_skin_regions.png"
 const WAS := "hs_creature_was"                    # on a mesh: {surface: what it wore before} (clear puts it back)
 const WAS_MESH := "hs_creature_mesh"              # on a mesh a whole look changed: {overlay, cast, visible} (the cloak's)
@@ -72,10 +73,15 @@ static func shader() -> Shader:
 	return load(SHADER)
 
 
-## the shader a look is drawn by: the creature skin's, or the cloak's own
+## the shader a look is drawn by: the creature skin's, the cloak's own, or the phase's (HSPhase's look, a dictionary)
 static func shader_of(which) -> Shader:
 	var d: Dictionary = which if which is Dictionary else LOOKS.get(str(which), {})
-	return load(CLOAK) if str(d.get("shader", "")) == "cloak" else load(SHADER)
+	match str(d.get("shader", "")):
+		"cloak":
+			return load(CLOAK)
+		"phase":
+			return load(PHASE)
+	return load(SHADER)
 
 
 ## a look's own word (`all`: on every mesh she has; `shadow`: whether she still casts one), a setting over it
@@ -252,7 +258,7 @@ static func wear(node: Node, which = "chrome", settings: Dictionary = {}) -> Arr
 			# a look that reads the screen casts no shadow of its own: one that should gets a shadow-only twin (the
 			# mesh again on the same skeleton, never drawn, never saved)
 			var left_alone := _named(mi, NEVER) or (keep_eyes and _named(mi, ["eye"]) and not _named(mi, FINE))   # (hidden, or still itself: no twin)
-			if shadow and shader_of(which) != shader() and not left_alone and mi.visible and not held.has("twin") and held["cast"] != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF and mi.get_parent() != null:
+			if shadow and shader_of(which) == load(CLOAK) and not left_alone and mi.visible and not held.has("twin") and held["cast"] != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF and mi.get_parent() != null:
 				var twin := MeshInstance3D.new()
 				twin.name = String(mi.name) + "_shadow"
 				twin.mesh = mi.mesh
