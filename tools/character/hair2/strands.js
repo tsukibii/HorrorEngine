@@ -130,7 +130,7 @@ export function trace(ctx) {
       // the rules
       const azq = Math.atan2(qx, qz - C[2]) / D;
       if (gr === LOOSE && !hasFringe && Math.abs(azq) < 33 && qy < MARKS.brow + 0.018 && qy > MARKS.chin - 0.02 && qz > 0.02) {   // not over the eyes, the nose, the mouth: out to the face's side
-        const want = Math.sign(qx || 1) * Math.tan((44 + 12 * hash(u[i], 9)) * D) * (qz - C[2]); qx += (want - qx) * 0.6;   // (each to its own place there, in with the hair beside the face: not all down one line)
+        const want = Math.sign(qx || 1) * Math.tan((38 + 12 * hash(u[i], 9)) * D) * (qz - C[2]); qx += (want - qx) * 0.6;   // (each to its own place there, in with the hair beside the face: not all down one line)
       }
       if (ears === "clear" && !own && earIn(azq, qy) < 1.12 && dist(S, qx, qy, qz) < 0.03) done = true;   // the ear left clear: the hair is cut where it would cover it
       if (gr === LOOSE && (qx >= C[0] ? tuckL : tuckR) && qy > EAR.y - 0.012 && earIn(azq, qy) < EOUT && dist(S, qx, qy, qz) < 0.045) {   // tucked: never across the ear; lifted back onto its outline (over the top, down behind)

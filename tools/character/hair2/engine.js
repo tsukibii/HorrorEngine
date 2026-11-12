@@ -82,7 +82,7 @@ export function grow(body, pores, s, prep, o = {}) {
     cmb.lift[i] *= 1 + (hash(u[c], 53) - 0.5) * 1.2 * tx.messy;
   }
   for (let i = 0; i < n; i++) {                                          // hair lies down round the whorl (it stands up in a tuft there otherwise)
-    const dc = Math.hypot(pos[i * 3] - crown[0], pos[i * 3 + 1] - crown[1], pos[i * 3 + 2] - crown[2]); if (dc < 0.03 && cmb.group[i] === LOOSE) cmb.lift[i] *= 0.3 + 0.7 * smooth(0.004, 0.03, dc);
+    const dc = Math.hypot(pos[i * 3] - crown[0], pos[i * 3 + 1] - crown[1], pos[i * 3 + 2] - crown[2]); if (dc < 0.045 && cmb.group[i] === LOOSE) cmb.lift[i] *= 0.2 + 0.8 * smooth(0.006, 0.045, dc);
   }
   // the first row meets the line: a hair beside the parting, or by the whorl, starts at it (no bare strip a pore's
   // spacing wide: the parting is as wide as its Width says)

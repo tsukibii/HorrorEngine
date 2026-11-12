@@ -80,7 +80,8 @@ export function texture(ctx) {
         if (wave > 0 && sAt > start) {
           // in step: the wave runs by height, in and out of the hair's surface, so its ridges lie across the hair and the cards stay side by side;
           // each on its own: by how far along the hair, across it (separate S-shaped locks)
-          const env = smooth(start, start + lam * 0.6, sAt), ph = 2 * Math.PI * ((1 - tg) * (sAt - start) - tg * y) / lam + pc + own;
+          // (and not over the top of the head: waves begin where the hair comes down past the temples; up there they stood locks off the scalp like planks)
+          const env = smooth(start, start + lam * 0.6, sAt) * (1 - smooth(0.04, 0.085, y)), ph = 2 * Math.PI * ((1 - tg) * (sAt - start) - tg * y) / lam + pc + own;
           dout += wave * env * (0.25 + 0.75 * tg) * (0.6 + Math.sin(ph)); da += wave * env * (1 - 0.7 * tg) * Math.sin(ph + 1.3);   // (more out than in: hair by the skin waves away from it)
         }
         if (curl > 0 && sAt > start) { const env = smooth(start, start + pitch * 0.7, sAt) * curl, th = hand * 2 * Math.PI * (sAt - start) / pitch + pc + own * 0.5; da += cr * env * Math.cos(th); dout += cr * env * (1 + Math.sin(th)); if (axis) { axis[o] = tx0 * env; axis[o + 1] = ty0 * env; axis[o + 2] = tz0 * env; } }
@@ -97,7 +98,7 @@ export function texture(ctx) {
     let made = 0;
     for (let q = 0; q < want * 6 && made < want; q++) {
       const i = Math.floor(hash(q * 0.6180339 % 1, 41) * n), L = len[i]; if (!(L > 0.05) || ctx.group[i] !== 0 || (ctx.held && ctx.held[i])) continue;   // (held: hair tucked behind an ear lies tight; no wisp stands off it)
-      const r1 = hash(u[i] + q * 0.013, 42), r2 = hash(u[i] + q * 0.017, 43), r3 = hash(u[i] + q * 0.019, 44), from = 0.05 + 0.4 * r1, lift = 0.004 + 0.02 * r3 * r3, side = (r2 - 0.5) * 0.02;
+      const r1 = hash(u[i] + q * 0.013, 42), r2 = hash(u[i] + q * 0.017, 43), r3 = hash(u[i] + q * 0.019, 44), from = 0.05 + 0.4 * r1, top = pts[(i * K + Math.round(from * (K - 1))) * 3 + 1] > 0.085 ? 0.35 : 1, lift = (0.004 + 0.02 * r3 * r3) * top, side = (r2 - 0.5) * 0.02;   // (a wisp over the top of the head stands off it by millimetres: a halo of wires there is the first thing seen)
       let to = Math.min(1, from + 0.2 + 0.45 * r2);
       // a stray stands off hair in the air, never off hair lying on the neck, the shoulders or the chest: it ends where its hair comes to rest
       for (let k = K - 1; k > 1; k--) { const o = (i * K + k) * 3; if (TS[k] <= to) break; }
