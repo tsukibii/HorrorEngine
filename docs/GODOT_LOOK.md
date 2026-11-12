@@ -1438,6 +1438,9 @@ picker beside her. Above her: **Lamp** (off: what glows of itself), **Behind her
 something to bend), **Walk** (the cloak shows when she moves), **Turn**, **Face** and **Body**; drag to look round her,
 the wheel to come closer. Looks saved there go with you to the next character.
 
+**Where it's taught**: guides/tutorial_v2 §30 (the viewer, saving looks, the switch, a fact and an event changing
+her, F8), built into the tutorial's game and played by TUTORIAL2; guides/look_plugin §8 for the short version.
+
 **Not in it**: a game made in the Director or exported from the desk has no word for a cast member's look yet (the
 story's `skin` word wets her; nothing names a creature skin or eyes): the switch reads the starter kit's Story. It
 wants one story word (`look`), grown with the runner, the check and STORY_FORMAT together. And the picker isn't in the

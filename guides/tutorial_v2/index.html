@@ -10,7 +10,9 @@
      markers, the laptop's shop and its parcels, the shotgun, things that break and glow, her shot down, and a table of
      every system with what a game by hand can't do yet; 2026-11-11: "I dont want to build the map myself for tutorial 2,
      can you pre-build it so i can just do the godot part": the floor ready-made, Exports/interiors/hotel_floor, §2's
-     tip, §3 to §8 optional). Nothing loads from outside: the pictures in img/ are that game drawn by Godot and the scene builder showing
+     tip, §3 to §8 optional; 2026-11-12: "Add information how to use this in tutorial html": §30, her looks: the look
+     viewer, looks saved as files, an HSLookSwitch under her, a fact and an event that change her eyes, F8 while you
+     play). Nothing loads from outside: the pictures in img/ are that game drawn by Godot and the scene builder showing
      its floor (python tools/godot/tutorial_v2.py --pictures); TUTORIAL2 builds the game as these steps say and plays it
      through. -->
 <style>
@@ -103,6 +105,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#gun">The shotgun</a></li>
     <li><a href="#breaks">Things that break and glow</a></li>
     <li><a href="#shoot">Shooting her</a></li>
+    <li><a href="#looks">Her looks: eyes, skins, the cloak</a></li>
     <li class="part">The end</li>
     <li><a href="#ending">The way out</a></li>
     <li><a href="#play">Play it</a></li>
@@ -1091,8 +1094,105 @@ and her Searcher and Chase stop.</p>
 </div>
 </section>
 
+<section id="looks">
+<h2><span class="n">30</span>Her looks: other eyes, another skin, the cloak</h2>
+<p>She can change while the game runs. Her eyes can go black, or light up in the dark. Her skin can turn to chrome,
+stone or slime. She can be invisible. A <b>look</b> is one skin and one pair of eyes, and <b>default</b> is always
+there: her own skin and eyes, exactly as she was made. You try looks in a viewer, save the ones you like as files,
+and a quest or an event turns her to them.</p>
+<div class="note"><b>This needs a Character Studio character.</b> The eye looks are drawn by the Studio's eye, and the
+stand-in in this guide's other pictures has no eyes (the skins still work on meshes named skin, body or head). The
+pictures in this section use the Character Studio's grey alien (Body → Monster mode → Grey alien, then
+<span class="ui">Export for Godot</span>).</div>
+
+<h3 id="look-viewer">Try them: the look viewer</h3>
+<p>In Godot: <span class="ui">Project → Tools → HorrorStudio: look viewer</span>. (Or open
+<code>addons/horrorstudio_look/tools/look_viewer.tscn</code> and press <kbd>F6</kbd>.) It's a scene that runs by
+itself: your character, and a panel to change her.</p>
+<figure><img src="img/looks_viewer.jpg" width="1600" height="900" alt="The look viewer: the grey alien's face with glowing red eyes, the picker panel on the left with Skin on default and Eyes on glow"><figcaption>The look viewer. Skin: default. Eyes: glow.</figcaption></figure>
+<table class="keys">
+<tr><td>the list at the top</td><td>every character in <code>exports/characters/</code>; <span class="ui">Open…</span> for a .glb anywhere. With none, a stand-in.</td></tr>
+<tr><td><b>Skin</b></td><td><code>default</code> (her own), then chrome, mirror, pearl, greasy, slime, oil, porcelain, ember, stone, scales, wax, and <code>cloak</code> (invisible)</td></tr>
+<tr><td><b>Eyes</b></td><td><code>default</code> (her own), then glow, black, void, white, blind, bloodshot, spiral, hearts, star, slit, cross, dilated, pinprick</td></tr>
+<tr><td><b>How much</b></td><td>0 is her own, 1 is all of the look</td></tr>
+<tr><td><b>Its colour</b></td><td>click the swatch for your own colour (a glow in green, hearts in blue); tick <i>the look's own</i> to go back</td></tr>
+<tr><td>both, L, R</td><td>one eye only</td></tr>
+<tr><td><b>Default</b></td><td>her own skin and eyes back</td></tr>
+<tr><td><span class="ui">Lamp</span></td><td>off, to see what glows by itself</td></tr>
+<tr><td><span class="ui">Behind her</span></td><td>dark, grey or stripes. Pick stripes for the cloak: it shows what's behind her, bent, so it needs something there.</td></tr>
+<tr><td><span class="ui">Walk</span>, <span class="ui">Turn</span></td><td>the cloak is nearly gone when she stands still and ripples when she moves</td></tr>
+<tr><td><span class="ui">Face</span>, <span class="ui">Body</span></td><td>the camera on her face or on all of her; drag to look round her, the wheel to come closer</td></tr>
+</table>
+<figure><img src="img/looks_cloak.jpg" width="1600" height="900" alt="The look viewer: the alien cloaked in front of a striped wall, the stripes bent through its shape, its eyes left glowing red"><figcaption>Skin: cloak, Eyes: glow, stripes behind her. Under the cloak her eyes are left to see when the look has eyes of its own.</figcaption></figure>
+<p>Now save the two looks this game uses:</p>
+<ol class="steps">
+  <li><b>Eyes</b> → <code>black</code>. Under <b>Keep it</b> type <code>empty</code> and press <span class="ui">Save as a look</span>. It
+  writes <code>looks/empty.tres</code> in your project.</li>
+  <li>Press <b>Default</b>. <b>Eyes</b> → <code>glow</code> (red is its own colour). Type <code>hunting</code>,
+  <span class="ui">Save as a look</span>: <code>looks/hunting.tres</code>.</li>
+  <li>Close the viewer.</li>
+</ol>
+
+<h3 id="look-switch">Put them on her: the switch</h3>
+<p>Select <code>Her</code>, <span class="ui">Add Child Node</span>, <span class="node">HSLookSwitch</span>, and call it
+<code>Looks</code>. In the Inspector open <b>Looks</b>, add an element, and drag <code>looks/empty.tres</code> from the
+FileSystem into it. That's all a switch is: her looks, by name. Leave her <code>Look</code> node's own
+<b>Creature skin</b> and <b>Creepy eyes</b> on <i>none</i>: those are for a character with one look.</p>
+
+<h3 id="look-quest">A quest or a fact changes her</h3>
+<p>Click <code>looks/empty.tres</code> in the FileSystem. In the Inspector, under <b>When</b>, set <b>Needs</b> to
+<code>knocked_304</code>: the fact the three knocks set in <a href="#cues">§23</a>. From then on her eyes are black.
+You wrote no script: she wears a look while its Needs hold.</p>
+<table class="keys">
+<tr><td><code>task:dinner</code></td><td>that task on the to-do list is done</td></tr>
+<tr><td><code>on:dinner</code></td><td>that task is on the list and not done yet</td></tr>
+<tr><td><code>item:key_304</code></td><td>you're carrying it</td></tr>
+<tr><td><code>knocked_304</code></td><td>a fact that's been set (an event area's or a cue's <b>Fact</b>)</td></tr>
+<tr><td><code>!shot_her</code></td><td>not that</td></tr>
+<tr><td><code>task:dinner, !shot_her</code></td><td>all of them</td></tr>
+</table>
+<p>When several looks' Needs hold, the last one in the list wins. When none does, she's in her <b>Start</b> look
+(empty: her default).</p>
+
+<h3 id="look-event">An event changes her</h3>
+<p>The one who hunts should come with her eyes lit. Give <code>Events/Hunter</code> an
+<span class="node">HSLookSwitch</span> called <code>Looks</code> too, with <code>looks/hunting.tres</code> in its
+<b>Looks</b>, and set its <b>On Fire</b> to <code>hunting</code>. Then select <code>LightsOut</code> and, in the
+<span class="ui">Node</span> tab, connect its <b>scared</b> signal to <code>Events/Hunter/Looks</code> →
+<code>fire</code>. When the corridor goes dark, two red points come down it.</p>
+<figure><img src="img/looks_hunt.jpg" width="1600" height="900" alt="The dark corridor: a figure close by with two glowing red eyes"><figcaption>After the lights go out: the one who hunts, in <code>hunting</code>.</figcaption></figure>
+<p>Three ways an event can do it:</p>
+<ul>
+  <li><b>a signal</b> wired to the switch's <code>fire</code>, as here. <b>On Fire</b> says which look: a name,
+  <code>default</code>, or <code>next</code> (through her looks in turn);</li>
+  <li><b>an event area or a cue</b>: both have <b>Look Of</b> (drag her, or her switch, in) and <b>Her Look</b> (a
+  look's name, or <code>default</code>);</li>
+  <li><b>a Target</b>: a cue's, a shootable's or a hit react's <b>Target</b> can be the switch itself.</li>
+</ul>
+<p>A look turns over a moment: the old one fades out, the new one fades in. The switch's <b>Seconds</b> says how
+long (0.6); a look's own <b>Seconds</b> overrides it. The cloak turns in crackling patches.</p>
+
+<h3 id="look-f8">By hand while you play</h3>
+<p>Press <kbd>F8</kbd> in the running game. The same panel comes up for every character that has a switch: her
+named looks as buttons with <b>Default</b> first, and both lists to try anything else on the spot.
+<span class="ui">Save as a look</span> works here too. <kbd>F8</kbd> again closes it. (Debug builds only: it's gone
+from the game you ship.)</p>
+<figure><img src="img/looks_panel.jpg" width="1600" height="900" alt="The game running in the lit corridor with the look panel open on the left: her at the corridor's end with black eyes, the look empty picked"><figcaption><kbd>F8</kbd> in the game: her in <code>empty</code>.</figcaption></figure>
+
+<h3 id="look-script">From a script</h3>
+<pre>$Her/Looks.set_look("empty")          # by name
+$Her/Looks.default()                  # her own skin and eyes
+$Her/Looks.show({"skin": "cloak", "eyes": "glow", "eye_color": Color.GREEN}, 0.4)   # a look made on the spot
+$Her/Looks.look_changed.connect(func(look): print("she's in ", look))</pre>
+<div class="tip"><b>Good to know.</b> The cloak draws what's behind her, so see-through things behind her (a
+flashlight's beam in the fog, smoke, rain on glass) are missing inside her outline: in fog she shows as a hole.
+Cloaked, she casts no shadow unless the look's <b>Shadow</b> is ticked (nobody there, and a shadow on the wall). The
+glowing looks have light of their own; the others are as dark as the room. Every look and its numbers:
+<a href="../look_plugin/index.html#looks">the Look plugin's guide</a>.</div>
+</section>
+
 <section id="ending">
-<h2><span class="n">30</span>The way out</h2>
+<h2><span class="n">31</span>The way out</h2>
 <p>With <code>Hotel</code>'s Editable Children on, select <code>hotel_floor/doors/door_corridor_e_door</code> (the fire
 door) and drag <code>starter/door.gd</code> onto it. Set its <b>Tick</b> to <code>out</code>. In the
 <span class="ui">Node</span> tab connect its <b>opened</b> signal to <code>Story</code> → <code>end</code>. Opening the
@@ -1101,7 +1201,7 @@ fire door ends the night: the screen goes black and the ending's title comes up.
 </section>
 
 <section id="play">
-<h2><span class="n">31</span>Play it</h2>
+<h2><span class="n">32</span>Play it</h2>
 <p>Press <kbd>F5</kbd>.</p>
 <table class="keys">
 <tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>walk (up the stairs too), <kbd>Shift</kbd> runs</td></tr>
@@ -1111,6 +1211,7 @@ fire door ends the night: the screen goes black and the ending's title comes up.
 <tr><td><kbd>Tab</kbd></td><td>the pocket: the things you carry, as themselves, in a row</td></tr>
 <tr><td>at the laptop</td><td>the mouse on its screen; <kbd>Esc</kbd> or <kbd>E</kbd> back</td></tr>
 <tr><td>the gun</td><td>left click fires, right button aims, <kbd>R</kbd> reloads, <kbd>T</kbd> the kind of shell, <kbd>Q</kbd> lowers it</td></tr>
+<tr><td><kbd>F8</kbd></td><td>her looks, by hand (debug builds only)</td></tr>
 <tr><td><kbd>Esc</kbd></td><td>let the mouse go</td></tr>
 </table>
 <ol class="steps">
@@ -1122,14 +1223,14 @@ fire door ends the night: the screen goes black and the ending's title comes up.
   box of shells, close the laptop and wait. A knock: two parcels at 304's door. Open them. Order the explosive shells
   too. Try the gun on the kettle. Shoot out the entry's bulb, if you'd rather the dark.</li>
   <li>The flashlight dies. Batteries in the vending corner, where the radio's hissing. Walk back out and listen behind you.</li>
-  <li>On the way out she's at the end of the corridor, the tubes stuttering round her, her head on one side. Walk, and she walks. Your heart picks up as you near her. Shine the light on her and she backs off. Do it twice and the corridor goes dark.</li>
-  <li>When she hunts you in the dark she can be stopped now: both barrels.</li>
+  <li>On the way out she's at the end of the corridor, the tubes stuttering round her, her head on one side, her eyes black since the knocks. Walk, and she walks. Your heart picks up as you near her. Shine the light on her and she backs off. Do it twice and the corridor goes dark.</li>
+  <li>When she hunts you in the dark her eyes are lit: two red points. She can be stopped now: both barrels.</li>
   <li>Walk to the fire exit. Don't look under 308's door.</li>
 </ol>
 </section>
 
 <section id="coverage">
-<h2><span class="n">32</span>Every system in it</h2>
+<h2><span class="n">33</span>Every system in it</h2>
 <p>This night is meant to use every system the studio has made for a game built by hand, so that a missing or broken
 one shows up. Here's each one and where it is. <code>python tools/godot/tutorial_v2.py</code> (TUTORIAL2) builds the
 game as these steps say and plays all of it.</p>
@@ -1137,7 +1238,7 @@ game as these steps say and plays all of it.</p>
 <tr><th>System</th><th>In this game</th></tr>
 <tr><td><b>Scene builder</b></td><td>rooms on two floors, a dog-leg stair, doors locked by a key, windows, furniture, lamps, paint, the export: <a href="#plan">§3</a> to <a href="#export">§8</a>, or the <a href="#ready">ready-made floor</a></td></tr>
 <tr><td><b>Character Studio</b></td><td>her, a Studio export with its skin wet (a stand-in when you have none): <a href="#scene">§10</a>, <a href="#her">§20</a></td></tr>
-<tr><td><b>Look plugin</b></td><td>the look and the grade, light zones, the tube and dying bulb presets: <a href="#light">§11</a>; rain on glass, a car's lights, a CRT, a real mirror, a wet floor, blood, a light shaft, a leak and a puddle, leaves' shadows, the tape: <a href="#dress">§12</a>; the air, its dust and the beam: <a href="#air">§13</a>; lightning, breath and frost, steam writing: <a href="#intense">§22</a>; made props' effects (HSPropFX) and a liquid's level (HSLiquidFill): <a href="#breaks">§28</a></td></tr>
+<tr><td><b>Look plugin</b></td><td>the look and the grade, light zones, the tube and dying bulb presets: <a href="#light">§11</a>; rain on glass, a car's lights, a CRT, a real mirror, a wet floor, blood, a light shaft, a leak and a puddle, leaves' shadows, the tape: <a href="#dress">§12</a>; the air, its dust and the beam: <a href="#air">§13</a>; lightning, breath and frost, steam writing: <a href="#intense">§22</a>; made props' effects (HSPropFX) and a liquid's level (HSLiquidFill): <a href="#breaks">§28</a>; her looks (other eyes, creature skins, the cloak), the look viewer, a switch a fact and an event turn: <a href="#looks">§30</a></td></tr>
 <tr><td><b>Starter kit</b> (36 scripts)</td><td>the player, flashlight, story, pocket and cash, sound and its physics, room tones, footsteps, notes, pickups, doors and locks, event and scare areas, lights: <a href="#story">§15</a> to <a href="#jump">§21</a>; fear, the steps behind you, her signs, the glimpse, the one closer each time, the mirror figure, the shadow, the feet, the uncanny, the night's director and its moments, her menace, the searcher, the chase, the cold, the steam: <a href="#intense">§22</a>; cues and seats: <a href="#cues">§23</a></td></tr>
 <tr><td><b>Sound shelf and moods</b></td><td>the four moods, a tone for each room, every sound placed and traced through the rooms: <a href="#sound">§14</a>, <a href="#body">§22</a></td></tr>
 <tr><td><b>UI plugin</b></td><td>HSHud (the reticle, the keys, the pocket as a row of the things themselves), HSQuestMarker coming and going with the to-do list: <a href="#hud">§24</a>; HSModelSlot in the pocket's row and the shop's cards</td></tr>
@@ -1163,7 +1264,7 @@ way to use them yet:</p>
 </section>
 
 <section id="next">
-<h2><span class="n">33</span>Where to go next</h2>
+<h2><span class="n">34</span>Where to go next</h2>
 <ul>
   <li><b>Another floor</b>: in the scene builder, <span class="ui">copy ↑</span> copies a floor up with everything on it;
   export again, and the export's link puts it in your project at once.</li>
@@ -1173,7 +1274,7 @@ way to use them yet:</p>
   HSPropFX for what it glows with, an HSBlowUp to break it. A suitcase's lid and a journal's pages don't open in a game by
   hand yet (<a href="#missing">not in it yet</a>).</li>
   <li><b>Her face and her moves</b>: an <span class="node">AnimationPlayer</span> on her blend shapes, or the face clips the studio's Face page makes.</li>
-  <li><b>The whole look</b>: the plugin's other nodes and its 40 presets, in <a href="../look_plugin/index.html">its guide</a>.</li>
+  <li><b>The whole look</b>: the plugin's other nodes and its 80 presets, in <a href="../look_plugin/index.html">its guide</a>.</li>
   <li><b>Quests, conversations, branching endings</b>: what the Director does, in <a href="../director/index.html">its guide</a>.</li>
   <li><b>Shipping it</b>: <a href="../godot_by_hand/index.html#ship">Godot by hand</a>.</li>
 </ul>

@@ -49,6 +49,11 @@ a babysitting game with a grey alien needs) and for two things built (the Predat
   `her_look`; LOOKSWITCH. By-hand games only: **a Director or desk game needs a story word (`look`) for a cast
   member's skin and eyes**, with the runner, the check, STORY_FORMAT and the desk's command together: the next step
   if the user builds Freddy in the Director.
+- **Then: how to use it, in the tutorial** (guides/tutorial_v2 §30, Her looks; guides/look_plugin §8): the looks
+  are in the tutorial's own game now (`tutorial_v2.py`: `looks/empty.tres`, `looks/hunting.tres`, `Her/Looks`,
+  `Events/Hunter/Looks`), TUTORIAL2 plays them. On a cloud session TUTORIAL2 runs (the desk's server, about ten
+  minutes; `--reuse` after the first); a fresh run reports the ready-made floor differing from this machine's export
+  (not looked into: the user's machine made it).
 - **Not done**: the story's `skin` word doesn't name the cloak yet (a desk game's cast), the runtime add-on has no
   word for eye looks (STORY_FORMAT: grow the runner, the check and the doc together when a game wants them); the
   guides don't show either; tutorial v2 uses neither. LATER has the cloak's next steps and the black eye under a

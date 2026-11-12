@@ -184,6 +184,17 @@ func _initialize() -> void:
 		bad("the fire door's opened isn't wired to the Story's end")
 	if her.visible or again.visible:
 		bad("she's there before her scare (scare_area.gd hides who appears)")
+	# her looks (guide §30: the look plugin's HSLookSwitch): the two saved looks in their switches, both of them in her default so far
+	var her_looks: Node = main.get_node_or_null("Her/Looks")
+	var hunt_looks: Node = main.get_node_or_null("Events/Hunter/Looks")
+	if her_looks == null or hunt_looks == null:
+		bad("no HSLookSwitch under her or under the one who hunts (Her/Looks, Events/Hunter/Looks)")
+	else:
+		say("her looks", "her switch has %s, the hunter's %s (fire: %s); so far she's in %s and %s" % [str(Array(her_looks.names())), str(Array(hunt_looks.names())), hunt_looks.on_fire,
+			"her default" if her_looks.current() == "" else her_looks.current(), "her default" if hunt_looks.current() == "" else hunt_looks.current()])
+		if Array(her_looks.names()) != ["empty"] or Array(hunt_looks.names()) != ["hunting"] or her_looks.current() != "" or hunt_looks.current() != "" or HSEyeFx.worn(her).size() != 0:
+			bad("her looks at the start (looks/empty.tres under her, looks/hunting.tres under the hunter, both in their default): %s %s, in '%s' and '%s'" % [
+				str(Array(her_looks.names())), str(Array(hunt_looks.names())), her_looks.current(), hunt_looks.current()])
 	var m304: Node = main.get_node("Markers/Room304")
 	var mkey: Node = main.get_node("Things/Key/Marker")
 	var marks0 := [m304.shown(), mkey.shown(), main.get_node("Markers/FireExit").shown()]
@@ -871,6 +882,13 @@ func _initialize() -> void:
 		her.global_position.distance_to(player.global_position), float(fs.level), int(fs.beats), int(fs.breaths), int(fs.cutoff), float(fs.vignette), float(torch.tremor)])
 	if float(fs.level) < 0.3 or int(fs.beats) < 2 or float(fs.cutoff) > 19000.0 or float(torch.tremor) <= 0.0:
 		bad("the Fear node near her (fear.gd): fear %.2f, beats %d, the world's highs %d Hz, the tremor %.2f" % [float(fs.level), int(fs.beats), int(fs.cutoff), float(torch.tremor)])
+	# her look by a fact: the knocks have come (knocked_304: the look's needs), so her eyes are black by now
+	if her_looks != null:
+		var eyes_n: int = HSEyeFx.worn(her).size()
+		say("her look, by a fact", "the knocks came (knocked_304 %s): she's in '%s'%s" % [story.is_set("knocked_304"), her_looks.current(),
+			(", her eyes black (%d of them)" % eyes_n) if cfg.get("who") != null else " (a stand-in has no eyes to show it)"])
+		if her_looks.current() != "empty" or (cfg.get("who") != null and eyes_n != 2):
+			bad("her look didn't follow the story (looks/empty.tres needs knocked_304): she's in '%s', %d eyes changed" % [her_looks.current(), eyes_n])
 	var dark := tubes().filter(func(l): return not Lights.is_on(l)).size()
 	say("in the beam", "she backed off %.2f m; flashed twice, %d of %d tubes out" % [moved, dark, tubes().size()])
 	if not (moved > 0.5):
@@ -886,6 +904,14 @@ func _initialize() -> void:
 	say("fog", "rolled in to %.2f with the dark (LightsOut's fog 0.55), the environment's density %.4f" % [rolled, HSAir.environment_of(air).volumetric_fog_density])
 	if absf(rolled - 0.55) > 0.02:
 		bad("the fog didn't roll in when the corridor went dark (scare_area.gd fog: %.2f)" % rolled)
+	# her look by an event: LightsOut's scared fired the hunter's switch, so her eyes are lit in the dark
+	if hunt_looks != null:
+		var hunter_n: Node3D = main.get_node("Events/Hunter")
+		var lit_n: int = HSEyeFx.worn(hunter_n).size()
+		say("her look, by an event", "the corridor went dark (LightsOut's scared to her switch's fire): the one who hunts is in '%s'%s" % [hunt_looks.current(),
+			(", her eyes lit (%d of them)" % lit_n) if cfg.get("who") != null else " (a stand-in has no eyes to show it)"])
+		if hunt_looks.current() != "hunting" or (cfg.get("who") != null and lit_n != 2):
+			bad("the hunter's look didn't come with the dark (LightsOut scared -> Events/Hunter/Looks fire, on_fire hunting): she's in '%s', %d eyes lit" % [hunt_looks.current(), lit_n])
 	# being hunted (searcher.gd, armed when the corridor went dark): heard running, she listens, comes for the linen
 	# closet's corner and stands in its doorway; your breath held, she doesn't find you. Then you hold it too long: the
 	# gasp brings her, and this time she pulls you out
@@ -1285,6 +1311,19 @@ func every_system(fl: float, cz: float) -> void:
 			or not live.call(mlap) or live.call(m304) or gun.get("owned") or gun.visible:
 		bad("the HUD and its quest markers (HSHud keys, HSQuestMarker needs): %d keys; 304's %s, the fire exit's %s, the laptop's %s; live %s %s %s; the gun owned %s" % [
 			hud.hints.size(), m304.shown(), mfire.shown(), mlap.shown(), live.call(m304), live.call(mfire), live.call(mlap), gun.get("owned")])
+	# ---- her looks by hand: F8 opens the picker over the game on both switches, F8 again closes it and gives the mouse back
+	var mouse0 := Input.mouse_mode
+	await press(KEY_F8)
+	await frames(2)
+	var layer := root.get_node_or_null("HSLookPickerLayer")
+	var seen_sw: int = layer.get_child(0).switches.size() if layer != null and layer.get_child_count() > 0 else 0
+	var mouse1 := Input.mouse_mode
+	await press(KEY_F8)
+	await frames(3)
+	var shut: bool = root.get_node_or_null("HSLookPickerLayer") == null
+	say("her looks, by hand", "F8: the picker over the game on %d switches (the mouse let go %s); F8 again: closed %s, the mouse as it was %s" % [seen_sw, mouse1 == Input.MOUSE_MODE_VISIBLE, shut, Input.mouse_mode == mouse0])
+	if seen_sw != 2 or mouse1 != Input.MOUSE_MODE_VISIBLE or not shut or Input.mouse_mode != mouse0:
+		bad("the look picker over the game (an HSLookSwitch's panel_key, F8): %d switches, closed %s, the mouse back %s" % [seen_sw, shut, Input.mouse_mode == mouse0])
 	# ---- the $20 note beside the laptop
 	var note: Node3D = main.get_node("Things/Cash")
 	var cash0: float = story.cash

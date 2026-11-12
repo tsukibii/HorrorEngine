@@ -2,6 +2,24 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, last (the user: how to use it, in the tutorial)
+
+- **"Add information how to use this in tutorial html"**. In **guides/tutorial_v2**, a new **§30, Her looks: other
+  eyes, another skin, the cloak** (the sections after it are now §31 to §34): the look viewer and what each of its
+  controls does, saving two looks as files, an HSLookSwitch under her, a fact changing her (a look's Needs:
+  `knocked_304`, her eyes black after the knocks), an event changing her (LightsOut's `scared` to the hunter's switch:
+  her eyes lit in the dark), F8 while you play, the script lines, what the cloak can't do. **Built into the
+  tutorial's own game**, as its other sections are: `tools/godot/tutorial_v2.py` writes the two looks and the two
+  switches into `main.tscn`, TUTORIAL2 plays them (by a fact, by an event, by hand), and `--pictures` makes the
+  section's four pictures (two from the game, two from the look viewer: `viewer` in `--only`).
+- **Its pictures are the Character Studio's grey alien**, where the tutorial's other pictures are the stand-in: the
+  stand-in has no eyes to change. Said in the section.
+- **The Look plugin's guide** (`guides/look_plugin`, §8 People) has the cloak, the eye looks and the switch too, with
+  two pictures, and its preset list and count brought up to 80.
+- **Seen here, not from this**: on this machine a fresh TUTORIAL2 run says the ready-made floor differs from the set
+  as it exports here (9 room volume markers); with `--reuse` (which skips that comparison) it passes. READYMADE in
+  check_all passes. Not looked into.
+
 ## 2026-11-12, later (the user: a tool to toggle looks, and events and quests that change them)
 
 - **"Can you make a tool that let's us toggle between the eyes and skin shades (allows us to use default too), we

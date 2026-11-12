@@ -21,7 +21,11 @@ use of every aspect we've added so far"). The tutorial's project, made as its st
   until the knocks, the explosive shells until the gun's come), a parcel at 304's door unboxed into the hands, the
   weapons plugin's double barrel, a kettle (its LED and steam: HSPropFX) and a mug of tea (HSLiquidFill) that break
   (HSBlowUp), the entry's bulb shot out (HSShootable), a candle burning in the bath (HSPropFX), and her, the one who
-  hunts, shot down into black smoke (HSHitReact).
+  hunts, shot down into black smoke (HSHitReact);
+- her looks (DECISIONS 2026-11-12, later: "Add information how to use this in tutorial html"; guide §30): two looks as
+  the look viewer saves them (looks/empty.tres, looks/hunting.tres), an HSLookSwitch under her (her eyes black once
+  the knocks have come: the look's needs) and under the one who hunts (her eyes lit when the corridor goes dark:
+  LightsOut's scared to its fire()).
 
 Then played headless (tools/godot/tutorial_v2_test.gd): up the stairwell's dog-leg, the corridor's lights dimming and
 coming back, 304 locked, the note, the key and the lights going out one by one, 304 opened, the flashlight running low,
@@ -35,7 +39,7 @@ it in DIR instead of Saved/Godot/_tutorial_v2 (a project to open in Godot and pl
 
 `--reuse` keeps the last run's project (its export and import: the hotel's takes minutes) and makes the kit and the
 scene again: for working on the guide. `--only a,b` with `--pictures` draws only those pictures (the rest kept as they
-are; the scene builder's only when `builder` is among them).
+are; the scene builder's only when `builder` is among them, the look viewer's two when `viewer` is).
 
 Ends "TUTORIAL2 ok"."""
 import json
@@ -294,6 +298,11 @@ SOUNDS = {"hum": "ambience/electric_hum_01.ogg", "hum3": "ambience/electric_hum_
           "water": "ambience/water_running.ogg", "drone": "ambience/ambient_01.ogg", "cut": "house/power_hum_cut.ogg", "creak": "house/floorboard_creak.ogg",
           "sting": "stings/sting_short.ogg", "big": "stings/sting_big.ogg", "thunder": "ambience/thunder.ogg"}
 ext += [("AudioStream", f"res://sfx/{f}", "s_" + k) for k, f in SOUNDS.items()]
+# her looks (guide §30, the look plugin's HSLookSwitch): two looks as the look viewer saves them, res://looks/<name>.tres
+LOOKS = {"empty": ['eyes = "black"', 'needs = "knocked_304"'],             # her eyes black once the knocks have come (a fact)
+         "hunting": ['eyes = "glow"', "eye_color = Color(1, 0.1, 0.05, 1)"]}   # the one who hunts: two red points in the dark
+ext += [("Script", "res://addons/horrorstudio_look/nodes/look_switch.gd", "lookswitch"), ("Script", "res://addons/horrorstudio_look/look_preset.gd", "lookpreset")]
+ext += [("Resource", f"res://looks/{k}.tres", "look_" + k) for k in LOOKS]
 if who:
     ext += [("PackedScene", f"res://exports/characters/{who}/{who}.glb", "her"), ("Script", "res://starter/arms_down.gd", "arms")]
 subs = [("StandardMaterial3D", "paper", ["albedo_color = Color(0.93, 0.91, 0.84, 1)", "roughness = 0.9"]),
@@ -481,6 +490,7 @@ def person(name, at, turn, shy, parent=".", xform=None):
 person("Her", her_at, her_turn, True)
 nd("Presence", "Her", "Node", script="presence", props=['static_on = NodePath("../../Things/Radio")'], paths=["static_on"])   # the signs that she's near
 nd("Uncanny", "Her", "Node", script="uncanny", props=["tilt_deg = 48.0", "mimic = true"])   # her head bent too far, her steps copying yours
+nd("Looks", "Her", "Node", script="lookswitch", props=['looks = Array[ExtResource("lookpreset")]([ExtResource("look_empty")])'])   # her looks: `empty` once the knocks have come (its needs)
 nd("Menace", "Her", "Node", script="menace", props=["near_rate = 0.02", "seen_rate = 0.03"])  # stay near her half a minute and she goes
 person("HerAgain", again_at, her_turn, False)
 # the moments and the scares
@@ -537,6 +547,7 @@ nd("Chase", "Events/Hunter", "Node", script="chase", props=['searcher = NodePath
    'start_says = "Run."'], paths=["searcher"])   # seen in the open while she searches: she's after you; the stairwell's safe
 nd("Presence", "Events/Hunter", "Node", script="presence", props=['static_on = NodePath("../../../Things/Radio")'], paths=["static_on"])   # the radio and your flashlight as she comes
 nd("HitReact", "Events/Hunter", "Node3D", script="hitreact", props=['target = NodePath("../../ShotDown")'], paths=["target"])   # shot: black ichor and smoke; down, the hunt's over
+nd("Looks", "Events/Hunter", "Node", script="lookswitch", props=['looks = Array[ExtResource("lookpreset")]([ExtResource("look_hunting")])', 'on_fire = "hunting"'])   # her eyes lit when the corridor goes dark (LightsOut's scared, below)
 area("ShotDown", "Events", "event", None, props=['say = "Whatever she was, she\'s smoke now."', 'fact = "shot_her"', 'music = "uneasy"'])   # (fired by her HitReact)
 # the player, its flashlight on a battery that's seen better days
 nd("Player", ".", inst="player", props=[f"transform = {tf(start['at'], start['turn'])}"])
@@ -574,6 +585,7 @@ lines += ['[connection signal="picked" from="Things/Key" to="Events/LightsDie" m
           '[connection signal="gone" from="Events/MirrorHer" to="Events/MirrorSteam" method="arm"]',
           '[connection signal="scared" from="Events/LightsOut" to="Events/Feet308" method="arm"]',
           '[connection signal="scared" from="Events/LightsOut" to="Events/Hunter/Searcher" method="arm"]',
+          '[connection signal="scared" from="Events/LightsOut" to="Events/Hunter/Looks" method="fire"]',
           '[connection signal="scared" from="Events/Jump" to="Events/Hunter/Searcher" method="stop"]',
           f'[connection signal="opened" from="Hotel/{P["door_corridor_e_door"]}" to="Story" method="end"]', "", '[editable path="Hotel"]', '[editable path="Player"]', '[editable path="Things/Mug"]', ""]
 # the shop's own things, as the guide has you make them (FileSystem: New Resource, HSShopItem; a catalog with a folder)
@@ -606,6 +618,10 @@ cat += [f'[ext_resource type="Resource" path="res://addons/horrorstudio_devices/
 cat += ["", "[resource]", 'script = ExtResource("1")', 'store = "NIGHT-MART"',
         "items = Array[ExtResource(\"2\")]([" + ", ".join(f'ExtResource("{i + 3}")' for i in range(len(own))) + "])", 'folder = "res://shop/items"']
 (proj / "shop" / "hotel_shop.tres").write_text("\n".join(cat) + "\n", encoding="utf-8")
+(proj / "looks").mkdir(exist_ok=True)
+for name, fields in LOOKS.items():                         # as the look viewer's Save as a look writes them
+    (proj / "looks" / f"{name}.tres").write_text("\n".join(['[gd_resource type="Resource" script_class="HSLookPreset" load_steps=2 format=3]', "",
+        '[ext_resource type="Script" path="res://addons/horrorstudio_look/look_preset.gd" id="1"]', "", "[resource]", 'script = ExtResource("1")', f'name = "{name}"'] + fields) + "\n", encoding="utf-8")
 (proj / "main.tscn").write_text("\n".join(lines), encoding="utf-8")
 pg = (proj / "project.godot").read_text(encoding="utf-8")
 if "run/main_scene" not in pg:
@@ -639,20 +655,38 @@ if "--pictures" in args and not errs:
     only = args[args.index("--only") + 1].split(",") if "--only" in args else []
     for old_png in list(shots.glob("*.png")) + list(shots.glob("*.import")):
         old_png.unlink()                                   # only this run's pictures go into the guide
-    cmd = [G, "--path", str(proj), "--rendering-driver", "vulkan", "--fixed-fps", "30", "-s", "tutorial_v2_shots.gd", "--", f"--out={shots}"]
-    if only:
-        cmd.append("--only=" + ",".join(o for o in only if o != "builder"))
-    if shutil.which("xvfb-run"):
-        cmd = ["xvfb-run", "-a", "-s", "-screen 0 1920x1080x24"] + cmd
-    r = run(cmd, timeout=3600)
-    made = sorted(shots.glob("*.png"))
-    if not made:
-        errs.append("no pictures came out of Godot: " + (r.stdout + r.stderr)[-800:])
+    godot_only = [o for o in only if o not in ("builder", "viewer")]
+    made = []
+    if not only or godot_only:                             # Godot's own of the game
+        cmd = [G, "--path", str(proj), "--rendering-driver", "vulkan", "--fixed-fps", "30", "-s", "tutorial_v2_shots.gd", "--", f"--out={shots}"]
+        if godot_only:
+            cmd.append("--only=" + ",".join(godot_only))
+        if shutil.which("xvfb-run"):
+            cmd = ["xvfb-run", "-a", "-s", "-screen 0 1920x1080x24"] + cmd
+        r = run(cmd, timeout=3600)
+        made = sorted(shots.glob("*.png"))
+        if not made:
+            errs.append("no pictures came out of Godot: " + (r.stdout + r.stderr)[-800:])
     (GUIDE / "img").mkdir(parents=True, exist_ok=True)
     for p in made:
         im = Image.open(p).convert("RGB")
         im.save(GUIDE / "img" / f"{p.stem}.jpg", quality=86, optimize=True)
         print(f"  picture: guides/tutorial_v2/img/{p.stem}.jpg ({im.width}x{im.height})")
+    if not only or "viewer" in only:                       # the look viewer run as a scene of its own (guide §30): her eyes picked, her cloaked
+        glb_arg = [f"--glb=res://exports/characters/{who}/{who}.glb"] if who else []
+        for name, more in [("looks_viewer", ['--look={"eyes":"glow"}', "--behind=grey"]),
+                           ("looks_cloak", ['--look={"skin":"cloak","eyes":"glow"}', "--behind=stripes", "--view=body"])]:
+            png = shots / f"{name}.png"
+            cmd = [G, "--path", str(proj), "--rendering-driver", "vulkan", "res://addons/horrorstudio_look/tools/look_viewer.tscn", "--", f"--shot={png}"] + more + glb_arg
+            if shutil.which("xvfb-run"):
+                cmd = ["xvfb-run", "-a", "-s", "-screen 0 1920x1080x24"] + cmd
+            r = run(cmd, timeout=1800)
+            if not png.is_file():
+                errs.append(f"the look viewer's picture {name}: " + (r.stdout + r.stderr)[-600:])
+                continue
+            im = Image.open(png).convert("RGB")
+            im.save(GUIDE / "img" / f"{name}.jpg", quality=86, optimize=True)
+            print(f"  picture: guides/tutorial_v2/img/{name}.jpg ({im.width}x{im.height})")
     if not only or "builder" in only:
         r = run([node, str(ROOT / "tools/godot/tutorial_v2_builder.mjs"), "--out", str(GUIDE / "img")], cwd=ROOT, timeout=1800)
         print("  " + "\n  ".join((r.stdout.strip() or r.stderr.strip()[-600:]).splitlines()[-8:]))

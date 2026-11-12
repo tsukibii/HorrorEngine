@@ -264,10 +264,53 @@ func _initialize() -> void:
 	var hp := her.global_position
 	story.objective("Get out. The fire exit is at the end of the corridor.")
 	await shot("her", Vector3(hp.x - 4.2, eye, cz + 0.2), hp + Vector3(0, 1.3, 0))
+	# her looks (guide §30): the picker over the game (F8), her in `empty`; then the one who hunts, her eyes lit, in the dark
+	var face := func(n: Node3D) -> Vector3:                    # where her eyes are (a Studio character's), else her head
+		var bb := AABB()
+		var got := false
+		for mi in n.find_children("*", "MeshInstance3D", true, false):
+			if String(mi.name).to_lower().contains("_eye_"):
+				var a: AABB = (mi as MeshInstance3D).global_transform * (mi as MeshInstance3D).get_aabb()
+				bb = a if not got else bb.merge(a)
+				got = true
+		return bb.get_center() if got else n.global_position + Vector3(0, 1.5, 0)
+	var her_looks := main.get_node_or_null("Her/Looks")
+	if her_looks != null and (only.is_empty() or only.has("looks_panel")):
+		var to_cam := Vector3(hp.x - 1.0, 0, cz + 0.12) - Vector3(hp.x, 0, hp.z)
+		var turn0 := her.global_rotation.y
+		her.global_rotation.y = atan2(to_cam.x, to_cam.z)       # facing you
+		var pk: HSLookPicker = HSLookPicker.toggle(self)
+		pk.secs = 0.0
+		pk.setup([her_looks])
+		pk.choose_look("empty")
+		var f: Vector3 = face.call(her)
+		await shot("looks_panel", Vector3(hp.x - 1.0, f.y + 0.03, cz + 0.12), f + Vector3(0, -0.08, 0.22), 50)
+		HSLookPicker.toggle(self)
+		her_looks.default(0.0)
+		her.global_rotation.y = turn0
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	for l in tubes():
 		Lights.set_on(l, false)
 	main.get_node("Air").fog = 0.55                             # LightsOut's fog, rolled in
 	await shot("dark", Vector3(hp.x - 6.5, eye, cz - 0.3), hp + Vector3(0, 1.2, 0), 60)
+	var hunt_looks := main.get_node_or_null("Events/Hunter/Looks")
+	if hunt_looks != null and cfg.get("who") != null and (only.is_empty() or only.has("looks_hunt")):   # (a stand-in has no eyes to light)
+		var hn := main.get_node("Events/Hunter") as Node3D
+		her.visible = false
+		torch.visible = false
+		var at0 := hn.global_transform
+		hn.global_position = hp
+		var to_you := Vector3(hp.x - 1.5, 0, cz) - Vector3(hp.x, 0, hp.z)
+		hn.global_rotation.y = atan2(to_you.x, to_you.z)
+		hn.visible = true
+		hunt_looks.set_look("hunting", 0.0)
+		var hf: Vector3 = face.call(hn)
+		await shot("looks_hunt", Vector3(hp.x - 1.5, hf.y + 0.06, cz), hf, 60)
+		hunt_looks.default(0.0)
+		hn.visible = false
+		hn.global_transform = at0
+		her.visible = true
+		torch.visible = true
 	# feet under 308's door: its light in the dark corridor, someone standing behind it
 	var ft := main.get_node("Events/Feet308") as Node3D
 	ft.pose()
