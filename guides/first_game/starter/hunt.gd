@@ -95,6 +95,7 @@ var rushes := 0
 var played: Array = []                                    ## the spots played, in order: their names (a check's)
 var active: Node = null                                   ## the spot playing
 var state := "idle"                                       ## idle, quiet (between spots), spot, tell, rush
+var lit_by := ""                                          ## the lamp that's lighting you (why she won't rush), "" in the dark or by your flashlight
 var revealed_until := 0.0                                 ## cloaked: seen anyway until then (soaked, lit)
 var _stage_t := 0.0
 var _next := 0.0
@@ -194,7 +195,7 @@ func fact_name() -> String:
 
 
 ## Start it (from a signal too: whatever it sends is ignored).
-func start(_a = null, _b = null) -> void:
+func start(_a = null, _b = null, _c = null) -> void:
 	if running or hunter == null or (done and not again):
 		return
 	running = true
@@ -220,7 +221,7 @@ func start(_a = null, _b = null) -> void:
 	started.emit()
 
 
-func fire(_a = null, _b = null) -> void:
+func fire(_a = null, _b = null, _c = null) -> void:
 	start()
 
 
@@ -411,17 +412,21 @@ func _feel(pl: Node3D, dt: float) -> void:
 func _lit(pl: Node3D) -> bool:
 	var t := pl.get_node_or_null("Eye/Flashlight") as Light3D
 	if t != null and t.visible and not bool(t.get("is_dead")) and t.light_energy > 0.02:
+		lit_by = ""
 		return true
 	if clock - _lamps_at >= 0.2:
 		_lamps_at = clock
 		_lamp_lit = false
+		lit_by = ""
 		var at := pl.global_position + Vector3.UP
 		for l in get_tree().root.find_children("*", "Light3D", true, false):
 			if l == t or l is DirectionalLight3D or not (l as Light3D).is_visible_in_tree() or not Lights.is_on(l) or (l as Light3D).light_energy <= 0.05:
 				continue
 			var reach := float(l.get("omni_range")) if l is OmniLight3D else float(l.get("spot_range"))
-			if (l as Light3D).global_position.distance_to(at) <= reach * 0.8:
+			var from: Vector3 = (l as Light3D).global_position
+			if from.distance_to(at) <= reach * 0.8 and Sight.clear(pl, from, at, [pl]):   # (a lamp behind a wall doesn't light you)
 				_lamp_lit = true
+				lit_by = str(l.get_path())
 				break
 	return _lamp_lit
 

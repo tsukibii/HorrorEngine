@@ -1311,7 +1311,7 @@ func every_system(fl: float, cz: float) -> void:
 			or not live.call(mlap) or live.call(m304) or gun.get("owned") or gun.visible:
 		bad("the HUD and its quest markers (HSHud keys, HSQuestMarker needs): %d keys; 304's %s, the fire exit's %s, the laptop's %s; live %s %s %s; the gun owned %s" % [
 			hud.hints.size(), m304.shown(), mfire.shown(), mlap.shown(), live.call(m304), live.call(mfire), live.call(mlap), gun.get("owned")])
-	# ---- her looks by hand: F8 opens the picker over the game on both switches, F8 again closes it and gives the mouse back
+	# ---- her looks by hand: F8 opens the picker over the game on every switch (her, the hunter, the hunt's stalker), F8 again closes it and gives the mouse back
 	var mouse0 := Input.mouse_mode
 	await press(KEY_F8)
 	await frames(2)
@@ -1322,7 +1322,7 @@ func every_system(fl: float, cz: float) -> void:
 	await frames(3)
 	var shut: bool = root.get_node_or_null("HSLookPickerLayer") == null
 	say("her looks, by hand", "F8: the picker over the game on %d switches (the mouse let go %s); F8 again: closed %s, the mouse as it was %s" % [seen_sw, mouse1 == Input.MOUSE_MODE_VISIBLE, shut, Input.mouse_mode == mouse0])
-	if seen_sw != 2 or mouse1 != Input.MOUSE_MODE_VISIBLE or not shut or Input.mouse_mode != mouse0:
+	if seen_sw != 3 or mouse1 != Input.MOUSE_MODE_VISIBLE or not shut or Input.mouse_mode != mouse0:
 		bad("the look picker over the game (an HSLookSwitch's panel_key, F8): %d switches, closed %s, the mouse back %s" % [seen_sw, shut, Input.mouse_mode == mouse0])
 	# ---- the $20 note beside the laptop
 	var note: Node3D = main.get_node("Things/Cash")
@@ -1368,6 +1368,7 @@ func every_system(fl: float, cz: float) -> void:
 			at_it, od.pages.size(), str(heads), str(states), sg_new, ex_off, said, on_way, cash1])
 	lap.leave()
 	await secs(lap.zoom_secs + 0.4)
+	await the_hunt(fl, cz)
 	# ---- the parcels: left at 304's door while it's out of sight, a marker over each; E: the gun into the hands
 	var arrived: bool = await until(func() -> bool: return parcels().size() >= 2, 14.0)
 	var pk: Array = parcels()
@@ -1396,6 +1397,13 @@ func every_system(fl: float, cz: float) -> void:
 	if pk.size() != 2 or marked != 2 or not owned or not shown or not ticked or spare != 5 or in_pocket:
 		bad("the parcels and the gun (HSPackage, HSShopItem gun/shells/tick): %d parcels, %d marked; owned %s, shown %s, gun ticked %s; %d shells spare; in the Story's pocket %s" % [
 			pk.size(), marked, owned, shown, ticked, spare, in_pocket])
+	# the hunt over now the gun's in your hands
+	var hunt := main.get_node("Events/Hunt")
+	await frames(4)
+	say("the hunt, over", "the gun in your hands: the hunt running %s (ended by its %s), the fact 'armed' %s, the shown task done %s, her seen %s" % [
+		hunt.get("running"), hunt.get("how"), story.is_set("armed"), story.done("hunted"), (main.get_node("Events/Stalker") as Node3D).visible])
+	if hunt.get("running") or str(hunt.get("how")) != "task" or not story.is_set("armed") or not story.done("hunted") or (main.get_node("Events/Stalker") as Node3D).visible:
+		bad("the hunt didn't end when the gun came (running %s, how %s, armed %s)" % [hunt.get("running"), hunt.get("how"), story.is_set("armed")])
 	# ---- the explosive shells unlocked by the task, ordered, a third parcel; T picks them for R
 	await at_laptop(lap, "explosive")
 	od = lap.term.order
@@ -1501,6 +1509,71 @@ func every_system(fl: float, cz: float) -> void:
 
 
 ## both barrels loaded again (a script's: the double's chambers follow `loaded` once it isn't busy)
+## the hunt (guide §31, hunt.gd): started by the order at the laptop, hidden; her run past 304's open door seen from
+## inside and never while it's shut; the tell and the rush in the dark with her eyes lit; room 304 safe
+func the_hunt(fl: float, cz: float) -> void:
+	const Sight := preload("res://starter/sight.gd")
+	var hunt := main.get_node("Events/Hunt")
+	var her := main.get_node("Events/Stalker") as Node3D
+	var eye := player.get_node("Eye") as Camera3D
+	var was := player.global_transform
+	var torch_was := torch.visible
+	var d304 := door("door_304")
+	var past := main.get_node("Events/HuntSpots/PastTheDoor") as Node3D
+	var mid := (past.global_position + (past.get_node("To") as Node3D).global_position) * 0.5
+	say("the hunt", "an order at the laptop: running %s (%s), stage %d, hunt:Hunt %s, on the list %s, her seen %s; her moves node %s, her spots %d" % [
+		hunt.get("running"), hunt.get("kind"), hunt.get("stage"), story.is_set("hunt:Hunt"), story.has_task("hunted"), her.visible,
+		her.get_node_or_null("Moves") != null, main.get_node("Events/HuntSpots").get_child_count()])
+	if not hunt.get("running") or int(hunt.get("stage")) != 1 or not story.is_set("hunt:Hunt") or story.has_task("hunted") or her.visible:
+		bad("the hunt didn't start hidden with the order (running %s, stage %d, task shown %s, her %s)" % [hunt.get("running"), hunt.get("stage"), story.has_task("hunted"), her.visible])
+		return
+	# from 304's entry, its door open, looking out: she runs past the doorway; the door shut, never
+	d304.set("open", true)
+	stand(Vector3(mid.x, fl, mid.z + 2.3), mid + Vector3.UP * 1.2)
+	await secs(1.2)
+	var can: bool = past.ready_for(hunt, player, eye, 5000.0)
+	hunt.play_spot(past)
+	var n := 0
+	var seen_n := 0
+	while her.visible and n < 240:
+		n += 1
+		if Sight.figure_seen(eye, her.global_position, 1.5, [player]):
+			seen_n += 1
+		await physics_frame
+	var shown: bool = story.has_task("hunted")
+	d304.set("open", false)
+	await secs(1.2)
+	var can_shut: bool = past.ready_for(hunt, player, eye, 9000.0)
+	say("the hunt, past the door", "in 304's entry, the door open, looking out: possible %s; she ran past in %.2f s, in the doorway %d frames, gone at the far side %s; the task shown %s; the door shut: possible %s" % [
+		can, n / 60.0, seen_n, not her.visible, shown, can_shut])
+	if not can or n < 30 or n > 90 or seen_n < 3 or her.visible or not shown or can_shut:
+		bad("her run past 304's door (possible %s, %d frames, seen %d, gone %s, the task %s, with the door shut %s)" % [can, n, seen_n, not her.visible, shown, can_shut])
+	# the dark at stage 3: a tell first (her eyes lit: her look), then the rush; into 304, which is safe
+	d304.set("open", true)
+	await secs(1.0)
+	stand(Vector3(14.5, fl, cz), Vector3(18.0, fl + 1.3, cz))    # between 306 and 308, looking at the fire door: no lamp reaches here
+	hunt.call("_set_stage", 3)
+	torch.visible = false
+	await frames(20)
+	var lit: bool = hunt.call("_lit", player)
+	var told := await until(func() -> bool: return str(hunt.get("state")) == "tell", 6.0)
+	var look_now := str(her.get_node("Looks").current()) if told else ""
+	var tell_d := her.global_position.distance_to(player.global_position)
+	var rush := await until(func() -> bool: return str(hunt.get("state")) == "rush", 4.0)
+	stand(Vector3(6.9, fl, -2.0), Vector3(6.9, fl + 1.3, 0.0))
+	var away := await until(func() -> bool: return str(hunt.get("state")) == "quiet", 6.0)
+	var ch: Node = hunt.get("chase")
+	say("the hunt, in the dark", "the corridor's far end, your flashlight off (lit there %s%s): a tell %s, her %.1f m off in '%s'; the rush %s; into 304: she let you go %s (the chase %s), you alive %s, her seen %s, her look '%s'" % [
+		lit, " by " + str(hunt.get("lit_by")) if lit else "", told, tell_d, look_now, rush, away, str(ch.get("how")) if ch != null else "none", not story.get("dead"), her.visible, str(her.get_node("Looks").current())])
+	if lit or not told or look_now != "hunting" or tell_d < 4.5 or not rush or not away or ch == null or str(ch.get("how")) != "escaped" or her.visible or story.get("dead") \
+			or str(her.get_node("Looks").current()) == "hunting":
+		bad("the hunt's rush (lit %s, tell %s in '%s' at %.1f m, rush %s, safe in 304 %s, the chase %s)" % [lit, told, look_now, tell_d, rush, away, str(ch.get("how")) if ch != null else "none"])
+	torch.visible = torch_was
+	player.global_transform = was
+	player.velocity = Vector3.ZERO
+	await frames(5)
+
+
 func fill_gun(gun: Node) -> void:
 	await until(func() -> bool: return not gun.get("busy"), 4.0)
 	gun.set("loaded", 2)

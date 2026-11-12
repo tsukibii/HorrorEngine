@@ -2,6 +2,37 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, after the plan (the user: build the hunt, Kimodo clips on its behaviours, a hunt in tutorial v2)
+
+- **"dont need to watch the pr as your the only one who will be committing to it"**: the pull request isn't watched.
+- **"I like your plan, consider how to attach animations to the behaviours (from kimodo), implement this plan and
+  then update tutorial v2 to have a brief hunting phase before the final shotgun one."** Built for games made by hand
+  (the starter kit; docs/HUNT_PLAN.md says what's built and what isn't):
+  - **`hunt.gd`**: one node owns a hunt. The hunter; `haunting`, `stalking` or `lethal`; started by its `needs` or
+    `start()`; ended by a time, the Story's words (`task:gun`), a safe room, her shot down; hidden, with a task
+    revealed at the first sighting if wanted; stages with the facts `hunt:<name>` and `hunt:<name>:<n>`; the rush
+    only by ticked rules (dark, ran, stared, back) from a stage on, after a tell, with a rest after.
+  - **`hunt_spot.gd`**: markers round the map, ten kinds (watch, dart, peek, wait, ambush, follow, pass, door, decoy,
+    custom), each playable only when what you can see allows it.
+  - **Animations on the behaviours: `moves.gd`.** A node under a character with a clip per move (idle, walk, run,
+    stalk, crawl, watch, peek, search, lunge, kill, hit, and any more). **A clip is a Kimodo .npz dropped in
+    `res://animations/`**, retargeted onto her own skeleton when the game starts by the Director's reader and
+    retarget, which every by-hand project now carries (`res://kimodo/`, copied by `godot_byhand.py`); or an animation
+    file; or one her model has, by name. Walks are made in place and played by her real speed. No clip: the move
+    falls back (stalk to walk to nothing) and she slides. The hunt and its spots ask for moves by name; a spot can
+    name its own move or animation.
+  - **Dying in a game by hand**: the Story's `checkpoint()`, `die()`, `revive()` (tasks, facts, pocket, cash, doors,
+    where you stood) and `checkpoint.gd`; a lethal hunt keeps one when it starts and goes on a stage lower.
+  - **Dark** means your flashlight off or dead and no lamp that's on reaching you with nothing in the way; the hunt's
+    `lit_by` says which lamp, when she won't come.
+- **Tutorial v2 §31, The hunt**: from an order at the laptop until the gun's in your hands. A third copy of her
+  (Stalker) with a Moves node and her `hunting` look for the tell; six spots (her run past 304's open door seen from
+  inside, the stair end, the vending corner, the linen door, a knock at 302, behind you); `stalking`, the rush in the
+  dark from stage 3, room 304 safe. TUTORIAL2 plays it; one picture (`hunt_past`).
+- **Not done**: navigation and marker paths (she can't yet cut through another room to get ahead of you), the
+  Director's cards, a story word for desk games. No Kimodo clips are in the repo: the tutorial's stalker slides until
+  the user makes them (the prompts are in §31).
+
 ## 2026-11-12, after the pull request (the user: being hunted, as a hidden quest)
 
 - **"Can you consider how we could make an interesting horror sequence of being hunted ... a 'hidden' quest called

@@ -311,6 +311,27 @@ func _initialize() -> void:
 		hn.global_transform = at0
 		her.visible = true
 		torch.visible = true
+	# the hunt: her running past 304's open door, seen from its entry (hunt.gd's dart, guide §31)
+	var stalker := main.get_node_or_null("Events/Stalker") as Node3D
+	if stalker != null and (only.is_empty() or only.has("hunt_past")):
+		var past := main.get_node("Events/HuntSpots/PastTheDoor") as Node3D
+		var mid := (past.global_position + (past.get_node("To") as Node3D).global_position) * 0.5
+		var d304h := main.get_node("Hotel").find_child("door_door_304", true, false)
+		if d304h != null:
+			d304h.set("open", true)
+		for i in 40:
+			await process_frame
+		her.visible = false
+		stalker.global_position = mid + Vector3(0.3, 0, 0)
+		stalker.global_rotation.y = -PI / 2.0                    # running west, past the doorway
+		stalker.visible = true
+		await shot("hunt_past", Vector3(mid.x - 0.15, eye, mid.z + 2.5), mid + Vector3(0.25, 1.1, 0), 60)
+		stalker.visible = false
+		her.visible = true
+		if d304h != null:
+			d304h.set("open", false)
+		for i in 40:
+			await process_frame
 	# feet under 308's door: its light in the dark corridor, someone standing behind it
 	var ft := main.get_node("Events/Feet308") as Node3D
 	ft.pose()

@@ -282,6 +282,7 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://addons/horrorstudio_look/nodes/lightning_storm.gd", "lightning"),
        ("Script", "res://starter/cue.gd", "cue"), ("Script", "res://starter/seat.gd", "seat"), ("Script", "res://starter/cold_area.gd", "cold"), ("Script", "res://starter/steam_mirror.gd", "steam"),
        ("Script", "res://starter/searcher.gd", "searcher"), ("Script", "res://starter/chase.gd", "chase"),
+       ("Script", "res://starter/hunt.gd", "hunt"), ("Script", "res://starter/hunt_spot.gd", "huntspot"), ("Script", "res://starter/moves.gd", "moves"),
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
@@ -313,6 +314,7 @@ subs = [("StandardMaterial3D", "paper", ["albedo_color = Color(0.93, 0.91, 0.84,
         ("BoxMesh", "pack", ["size = Vector3(0.06, 0.022, 0.09)", 'material = SubResource("cells")']),
         ("BoxShape3D", "jumpbox", ["size = Vector3(1.0, 2.5, 1.9)"]),
         ("BoxShape3D", "coldbox", [f"size = Vector3(1.0, 2.5, {corr['size'][2]:.2f})"]),
+        ("BoxShape3D", "in304box", ["size = Vector3(4.5, 2.5, 5.9)"]),      # room 304 and its entry: where you watch her run past the door from
         ("StandardMaterial3D", "skin", ['resource_name = "skin"', "albedo_color = Color(0.82, 0.8, 0.78, 1)", "roughness = 0.8"]),
         ("QuadMesh", "screen", [f"size = Vector2({B['tv_screen']['size'][2] - 0.02:.3f}, {B['tv_screen']['size'][1] - 0.02:.3f})"]),
         ("StandardMaterial3D", "dress", ["albedo_color = Color(0.86, 0.85, 0.81, 1)", "roughness = 0.85"]),
@@ -548,6 +550,35 @@ nd("Chase", "Events/Hunter", "Node", script="chase", props=['searcher = NodePath
 nd("Presence", "Events/Hunter", "Node", script="presence", props=['static_on = NodePath("../../../Things/Radio")'], paths=["static_on"])   # the radio and your flashlight as she comes
 nd("HitReact", "Events/Hunter", "Node3D", script="hitreact", props=['target = NodePath("../../ShotDown")'], paths=["target"])   # shot: black ichor and smoke; down, the hunt's over
 nd("Looks", "Events/Hunter", "Node", script="lookswitch", props=['looks = Array[ExtResource("lookpreset")]([ExtResource("look_hunting")])', 'on_fire = "hunting"'])   # her eyes lit when the corridor goes dark (LightsOut's scared, below)
+# the hunt (guide §31): hidden, started by an order at the laptop, over once the gun's in your hands. A third copy of her,
+# hers to move; her moves (Kimodo clips, when you've made them); the spots she can act at, in and off the corridor
+stalk_post = [fire[0] - 1.6, floor_y, corr["at"][2]]
+person("Stalker", stalk_post, -90.0, False, parent="Events")
+nd("Moves", "Events/Stalker", "Node", script="moves")                    # her clips go here: idle, walk, run, watch, peek, lunge
+nd("Looks", "Events/Stalker", "Node", script="lookswitch", props=['looks = Array[ExtResource("lookpreset")]([ExtResource("look_hunting")])'])   # her eyes lit for the tell
+nd("Hunt", "Events", "Node", script="hunt", props=['hunter = NodePath("../Stalker")', 'kind = "stalking"', 'ends_when = "task:gun"',
+   'reveal_task = "hunted: Something is out in the corridor."', 'start_says = "It\'s on its way. So is something else."', 'end_says = "Armed. It keeps its distance now."',
+   'fact = "armed"', "stages = 3", "stage_secs = PackedFloat32Array(25, 35)", "gap_min = 6.0", "gap_max = 14.0", "rush_stage = 3",
+   'tell_look = "hunting"', 'safe_rooms = PackedStringArray("r304", "r304_entry", "r304_bath")'], paths=["hunter"])
+nd("HuntSpots", "Events", "Node3D")
+hs = "Events/HuntSpots"
+hunt_of = 'hunt = NodePath("../../Hunt")'
+past = [d304m[0] + 3.2, floor_y, corr["at"][2]]                           # in the corridor, east of 304's door and out of its sight
+nd("PastTheDoor", hs, "Marker3D", script="huntspot", props=[f"transform = {tf(past)}", hunt_of, 'kind = "dart"', 'to = NodePath("To")',
+   "near_m = 1.0", "far_m = 9.0", "speed = 6.5", "scare = 0.5", "cooldown = 50.0"], paths=["hunt", "to"])   # she runs past the open door while you look out of 304
+nd("To", f"{hs}/PastTheDoor", "Marker3D", props=[f"transform = {tf([-6.4, 0, 0])}"])                       # ...to the other side of it
+nd("In304", f"{hs}/PastTheDoor", "Area3D", props=[f"transform = {tf([R['r304']['at'][0] - past[0], 1.3, -3.0 - past[2]])}"])   # only while you're in 304 or its entry
+nd("Shape", f"{hs}/PastTheDoor/In304", "CollisionShape3D", props=['shape = SubResource("in304box")'])
+nd("StairEnd", hs, "Marker3D", script="huntspot", props=[f"transform = {tf([sdoor[0] - 0.9, floor_y, corr['at'][2]], 90.0)}", hunt_of, 'kind = "watch"',
+   "near_m = 5.0", "far_m = 17.0", 'blink_lamp = NodePath("../../../Zones/Corridor/Tube1")'], paths=["hunt", "blink_lamp"])   # stood at the stair end, watching
+nd("VendingCorner", hs, "Marker3D", script="huntspot", props=[f"transform = {tf([vend['at'][0] - vend['size'][0] / 2 + 0.3, floor_y, vend['at'][2] + vend['size'][2] / 2 - 0.15], -90.0)}",
+   hunt_of, 'kind = "peek"', "near_m = 2.5", "far_m = 9.0", "stage_min = 2"], paths=["hunt"])               # round the vending corner's edge
+nd("LinenDoor", hs, "Marker3D", script="huntspot", props=[f"transform = {tf(B['door_door_linen']['mid'])}", hunt_of, 'kind = "door"',
+   f'door = NodePath("../../../Hotel/{P["door_door_linen"]}")', 'sound = "latch"', "scare = 0.2", "once = true"], paths=["hunt", "door"])   # the linen closet's door, by itself
+nd("Knock302", hs, "Marker3D", script="huntspot", props=[f"transform = {tf([d302[0] + 0.4, floor_y + 1.2, inside])}", hunt_of, 'kind = "decoy"',
+   'sound = "knock_three"', "near_m = 3.0", "cooldown = 60.0"], paths=["hunt"])                                # a knock where she isn't
+nd("BehindYou", hs, "Marker3D", script="huntspot", props=[f"transform = {tf(corr['at'][:1] + [floor_y] + corr['at'][2:])}", hunt_of, 'kind = "follow"', "stage_min = 2",
+   "cooldown = 45.0"], paths=["hunt"])                                                                          # down the corridor the way you came, nearer each look away
 area("ShotDown", "Events", "event", None, props=['say = "Whatever she was, she\'s smoke now."', 'fact = "shot_her"', 'music = "uneasy"'])   # (fired by her HitReact)
 # the player, its flashlight on a battery that's seen better days
 nd("Player", ".", inst="player", props=[f"transform = {tf(start['at'], start['turn'])}"])
@@ -587,6 +618,7 @@ lines += ['[connection signal="picked" from="Things/Key" to="Events/LightsDie" m
           '[connection signal="scared" from="Events/LightsOut" to="Events/Hunter/Searcher" method="arm"]',
           '[connection signal="scared" from="Events/LightsOut" to="Events/Hunter/Looks" method="fire"]',
           '[connection signal="scared" from="Events/Jump" to="Events/Hunter/Searcher" method="stop"]',
+          '[connection signal="ordered" from="Things/Laptop" to="Events/Hunt" method="start"]',
           f'[connection signal="opened" from="Hotel/{P["door_corridor_e_door"]}" to="Story" method="end"]', "", '[editable path="Hotel"]', '[editable path="Player"]', '[editable path="Things/Mug"]', ""]
 # the shop's own things, as the guide has you make them (FileSystem: New Resource, HSShopItem; a catalog with a folder)
 SHOP = [   # (file, its fields, its resources): the shotgun a ? until the knocks, the explosive shells until the gun's come

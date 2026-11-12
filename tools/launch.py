@@ -175,6 +175,7 @@ TOOLS = [
     ("Checks", "Faces in Godot check (an export's 72 face shapes beside its blink, an expression played on every mesh; needs a Studio export)", "tools/godot/faces_check.py", {}),
     ("Checks", "Creature skins check (chrome, pearl, greasy, the cloak and the rest on balls and on a creature in Godot, with the sheet)", "tools/godot/creature_skin_check.py", {}),
     ("Checks", "Creepy eyes check (glowing, black, spiral, hearts and the rest on eyeballs and on a character in Godot, with the sheet)", "tools/godot/eye_fx_check.py", {}),
+    ("Checks", "Hunt check (the starter kit's hunt: a haunting, a lethal hunt with its tell, death and checkpoint, every kind of spot, the cloak, Kimodo clips on MHR's body; headless in a by-hand project)", "tools/godot/hunt_check.py", {}),
     ("Checks", "Shot-with check (the weapons plugin's HSShotWith: someone shot with love hearts, water or any kind sets a Story fact and ticks a task, with the real gun in a by-hand project)", "tools/godot/shot_with_check.py", {}),
     ("Checks", "Look switch check (a character's looks switched by name, by the starter's quests and events, the picker and the look viewer in a by-hand project)", "tools/godot/look_switch_check.py", {}),
     ("Checks", "Hitboxes check (the weapons' hit reactions sized to an adult, a child, a goblin and an ogre)", "tools/godot/hitbox_check.py", {}),

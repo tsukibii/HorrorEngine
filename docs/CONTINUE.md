@@ -60,9 +60,11 @@ a babysitting game with a grey alien needs) and for two things built (the Predat
   look; `quest/loved.tscn`, `quest/soaked.tscn`; SHOTWITH, `tools/godot/shot_with_check.py`; the weapons guide §10).
   By-hand games only. A pull request of the branch into main was opened at the user's word (tsukibii/HorrorEngine#25).
   WEAPONS passed here on the merged branch (headless, no pictures).
-- **Then: the hunt, as a plan** (docs/HUNT_PLAN.md, nothing built): being hunted as a hidden quest. It ends with
-  four questions (§9); its build order (§8) starts with the power-cut haunting in tutorial v2's hotel. Start there
-  when the user answers.
+- **Then: the hunt, planned and built** (docs/HUNT_PLAN.md; the starter's `hunt.gd`, `hunt_spot.gd`, `moves.gd`,
+  `checkpoint.gd`, `sight.gd`, the Story's `die()`; HUNT, `tools/godot/hunt_check.py`; tutorial v2 §31). **Next for
+  it**: Kimodo clips for a hunter (none in the repo: the user makes them, `res://animations/*.npz`, then the
+  stalker's Moves rows); navigation, so she can come round another way (HUNT_PLAN §8: try Godot's navigation baked
+  from the interior's colliders on the hotel floor); `hunt_path.gd`; the Director's cards.
 - **Not done**: the story's `skin` word doesn't name the cloak yet (a desk game's cast), the runtime add-on has no
   word for eye looks (STORY_FORMAT: grow the runner, the check and the doc together when a game wants them); the
   guides don't show either; tutorial v2 uses neither. LATER has the cloak's next steps and the black eye under a

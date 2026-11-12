@@ -10,7 +10,20 @@ past you very quickly into another room etc, hunts don't always have to be aggro
 'hunts' that basically act like haunting events, maybe you need to complete a task to get them to stop e.g. turn the
 power back on."*
 
-**Nothing here is built. It waits on the user's answers (§9).** For games built by hand first (the starter kit), as the
+**Built 2026-11-12, the same day** (the user: "I like your plan ... consider how to attach animations to the
+behaviours (from kimodo), implement this plan and then update tutorial v2 to have a brief hunting phase before the
+final shotgun one"): the starter kit's `hunt.gd`, `hunt_spot.gd`, `moves.gd` (Kimodo clips per behaviour, §8),
+`checkpoint.gd`, `sight.gd` and the Story's `die()`; HUNT (`tools/godot/hunt_check.py`); tutorial v2 §31. **Built as
+planned:** the hunt node and its three kinds, hidden and revealed, what starts and ends it, stages and their facts,
+every kind of spot in §3, the rush rules with a tell, hiding calling it off, death and the checkpoint with the hunt a
+stage lower, grace and mercy, hauntings ended by a task, the cloak as a state and a water shell showing her, her
+moves. **Not built, still as written below:** navigation (she comes from a spot out of your sight or back down your
+trail, and the rush is chase.gd along where she saw you go: §8's test of Godot's navigation hasn't been run), marker
+paths (`hunt_path.gd`), the survivability warning in the editor, the Director's cards and the story format's word.
+The questions in §9 were answered by the build: the haunting and the lethal half together, death as a card and a
+checkpoint, tutorial v2's hotel first, the stand-in sliding until clips are made.
+
+For games built by hand first (the starter kit), as the
 ghost events are planned (GHOST_EVENTS_PLAN §1); Director cards after.
 
 ## 1. What's already here, and what a hunt lacks
