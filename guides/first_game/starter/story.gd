@@ -12,15 +12,28 @@
 ## slots, the one in the hand in the middle; Tab shows it or hides it, the wheel turns it, and it shows a moment when
 ## something comes in. The player's `cash` too: pay(4.5) (false when there isn't enough), earn(20) (the devices
 ## plugin's laptop sells for it; a pickup with `cash` gives it).
+## Eating (DECISIONS 2026-11-12, after the close calls: "for us to eat something it has to be in our inventory, has
+## to be 'eatable', and we have to hold left click (an eat meter that fills up, roughly 2 seconds to start with), once
+## eaten it should disappear"): a pocket thing is eatable once set_eatable(item, restores, secs) says so (food.gd does
+## when it's picked up, the laptop's shop for an item marked Eatable, a Sanity node for its `foods`). With it in the
+## hand (the row's middle; with no HUD row, the first eatable thing in the pocket), hold the left button: a meter
+## fills over its seconds, then one of it is gone from the pocket and the Sanity node is mended by its `restores`.
+## Let go early and nothing's eaten. Not while a gun is up (the click is the gun's: Q lowers it), a card is, or the
+## laptop has the mouse.
 extends CanvasLayer
 
 signal task_added(id: String)
 signal task_done(id: String)
 signal got(item: String)
 signal flagged(fact: String)
+signal unflagged(fact: String)                        ## a flag switched off
 signal ended(title: String)
+signal kept                                           ## a checkpoint was kept (checkpoint())
+signal died(how: String)                              ## die()
+signal revived                                        ## back at the checkpoint after dying
 signal pocket_changed                                 ## something came into the pocket or went out of it
 signal cash_changed(cash: float)
+signal ate(item: String)                              ## a thing in the pocket was eaten
 
 @export var objective_text := ""                      ## the objective when the game starts
 @export var tasks: PackedStringArray = []             ## the to-do list when it starts, each "id: what it says"
@@ -28,13 +41,21 @@ signal cash_changed(cash: float)
 @export_multiline var ending_text := ""
 @export var accent := Color(0.88, 0.64, 0.37)         ## the list's ticks and the cards' titles
 @export var cash := 0.0                               ## the player's money: what the laptop's shop takes
+@export var flags_start: PackedStringArray = []       ## flags that are on when the game starts (a flag is just a name: type a new one anywhere)
+@export var task_flags: PackedStringArray = []        ## what a task switches: "key: +table_gone, -lights_ok" when it's ticked; "added key: +searching" when it's put on the list
 @export var pocket_row := true                        ## the pocket shown as an HSHud's inventory row (when the scene has one)
+@export var eat_secs := 2.0                           ## how long the left button is held to eat something that doesn't say
+@export var eat_sound := ""                           ## off the shelf, as something's eaten (a thing's own goes first)
 
 var items := {}                                       # what's carried: its name -> how many
 var names := {}                                       # what each is called on screen
 var models := {}                                      # what each looks like in its slot (a copy of the thing)
 var flags := {}
 var over := false
+var dead := false                                     ## between die() and the checkpoint
+var deaths := 0
+var death_secs := 2.6                                 ## how long the death card stays
+var _kept := {}                                       # the checkpoint: what you'd done and where you stood
 var _tasks: Array = []                                # {id, text, done}
 var _obj: Label
 var _list: RichTextLabel
@@ -46,6 +67,13 @@ var _card_text: Label
 var _end: ColorRect
 var _end_title: Label
 var _end_text: Label
+var eatable := {}                                     # pocket things that can be eaten: name -> {restores, secs, sound, say, tick}
+var eating := ""                                      ## what's being eaten now ("": nothing)
+var eat_progress := 0.0                               ## 0..1: the meter
+var _eat_held := false                                # the left button is down (pressed while the mouse was the game's)
+var _eat_box: Control
+var _eat_fill: ColorRect
+var _eat_label: Label
 var _at := 0                                          # the pocket's thing in the hand
 var _shown := false                                   # the row up (Tab)
 var _peek := 0.0                                      # the row up for a moment: something came in
@@ -56,6 +84,8 @@ func _ready() -> void:
 	add_to_group("hs_story")
 	layer = 5
 	_build()
+	for f in flags_start:
+		flag(f.strip_edges())
 	if objective_text != "":
 		objective(objective_text)
 	for t in tasks:
@@ -76,6 +106,7 @@ func add_task(id: String, text: String) -> void:
 			return
 	_tasks.append({"id": id, "text": text, "done": false})
 	_draw_list()
+	_task_flags("added " + id)
 	task_added.emit(id)
 
 
@@ -91,8 +122,34 @@ func tick(id: String) -> void:
 		if t["id"] == id and not t["done"]:
 			t["done"] = true
 			_draw_list()
+			_task_flags(id)
 			task_done.emit(id)
 			return
+
+
+## a task's words changed where it stands on the list (gaslight.gd: for a moment), and what they are
+func retext(id: String, text: String) -> void:
+	for t in _tasks:
+		if t["id"] == id:
+			t["text"] = text
+			_draw_list()
+			return
+
+
+func task_text(id: String) -> String:
+	for t in _tasks:
+		if t["id"] == id:
+			return str(t["text"])
+	return ""
+
+
+## the tasks on the list that aren't done, their ids
+func open_tasks() -> Array:
+	return _tasks.filter(func(t): return not t["done"]).map(func(t): return t["id"])
+
+
+func objective_now() -> String:
+	return _obj.text
 
 
 func has_task(id: String) -> bool:
@@ -166,6 +223,94 @@ func take(item: String, count := 1) -> void:
 	pocket_changed.emit()
 
 
+# ---- eating --------------------------------------------------------------------------------------------------------
+
+## A pocket thing can be eaten: `restores` how much of the Sanity meter one mends, `secs` how long the left button is
+## held (the Story's eat_secs when not given), `more` {sound, say, tick}.
+func set_eatable(item: String, restores := 0.25, secs := -1.0, more := {}) -> void:
+	var e := {"restores": restores, "secs": secs if secs > 0.0 else eat_secs}
+	e.merge(more)
+	eatable[item] = e
+
+
+func is_eatable(item: String) -> bool:
+	return eatable.has(item)
+
+
+## the pocket's thing in the hand ("": the pocket's empty)
+func in_hand() -> String:
+	var keys := _order()
+	return "" if keys.is_empty() else str(keys[clampi(_at, 0, keys.size() - 1)])
+
+
+## What holding the left button would eat now ("": nothing): the thing in the hand when it's eatable; with no HUD row
+## to turn, the first eatable thing in the pocket. Nothing while a gun is up, a card is, or the story's over.
+func edible_now() -> String:
+	if over or items.is_empty() or card_up():
+		return ""
+	for g in get_tree().get_nodes_in_group("hs_weapon"):
+		if bool(g.get("owned")) and g.get("raised") != false:
+			return ""
+	var h := in_hand()
+	if is_eatable(h):
+		return h
+	if _find_hud() == null or not pocket_row:
+		for k in _order():
+			if is_eatable(str(k)):
+				return str(k)
+	return ""
+
+
+## The left button went down or came up (a check's, or another way to hold: a gamepad's button).
+func hold_eat(on: bool) -> void:
+	_eat_held = on
+
+
+## One of `item` eaten out of the pocket now (the held button's end; a script's): gone from the pocket, the Sanity
+## node mended, its line, its sound, its task. False when it isn't there or isn't eatable.
+func eat_up(item: String) -> bool:
+	if not has(item) or not is_eatable(item):
+		return false
+	var e: Dictionary = eatable[item]
+	var nm := str(names.get(item, item.replace("_", " ")))
+	take(item, 1)
+	var san := get_tree().get_first_node_in_group("hs_sanity")
+	if san != null and san.has_method("eat"):
+		san.eat(float(e.get("restores", 0.0)), item)
+	var snd := get_tree().get_first_node_in_group("hs_sound")
+	var s := str(e.get("sound", eat_sound))
+	if s != "" and snd != null and snd.has_method("play"):
+		snd.play(s, Vector3.INF, 0.0, "foley")
+	say(str(e.get("say", "")) if str(e.get("say", "")) != "" else "You have %s." % nm)
+	if str(e.get("tick", "")) != "":
+		tick(str(e["tick"]))
+	ate.emit(item)
+	return true
+
+
+# the held button: the meter filling, then eaten; let go, back to nothing
+func _eat(dt: float) -> void:
+	var what := edible_now() if _eat_held else ""
+	if what == "" or (eating != "" and what != eating):
+		if eating != "" or eat_progress > 0.0:
+			eating = ""
+			eat_progress = 0.0
+			_eat_box.visible = false
+		return
+	eating = what
+	eat_progress = minf(1.0, eat_progress + dt / maxf(0.05, float((eatable[what] as Dictionary).get("secs", eat_secs))))
+	_eat_label.text = str(names.get(what, what.replace("_", " ")))
+	_eat_fill.size.x = 180.0 * eat_progress
+	_eat_box.visible = true
+	_peek = maxf(_peek, 0.6)                              # (the row up while you eat: what's going)
+	if eat_progress >= 1.0:
+		eating = ""
+		eat_progress = 0.0
+		_eat_held = false                                 # (one a hold: let go and hold again for the next)
+		_eat_box.visible = false
+		eat_up(what)
+
+
 ## pay out of the cash: false (and nothing taken) when there isn't enough
 func pay(amount: float) -> bool:
 	if amount > cash + 0.0001:
@@ -213,6 +358,8 @@ func _find_hud() -> Node:
 
 
 func _unhandled_input(e: InputEvent) -> void:
+	if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
+		hold_eat(e.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED)     # (the click that takes the mouse back eats nothing)
 	if items.is_empty() or _find_hud() == null or not pocket_row:
 		return
 	if e is InputEventKey and e.pressed and not e.echo and e.physical_keycode == KEY_TAB:
@@ -233,6 +380,136 @@ func flag(fact: String) -> void:
 
 func is_set(fact: String) -> bool:
 	return flags.has(fact)
+
+
+## a fact taken back (a hunt's "it's running"; a flag switched off)
+func unflag(fact: String) -> void:
+	if flags.has(fact):
+		flags.erase(fact)
+		unflagged.emit(fact)
+
+
+## A flag on or off by its name (a flag is a fact: anything's Needs can name it, `!name` for while it's off). New
+## flags need no list: the first thing that names one makes it.
+func set_flag(fact: String, on := true) -> void:
+	if on:
+		flag(fact)
+	else:
+		unflag(fact)
+
+
+func toggle_flag(fact: String) -> void:
+	set_flag(fact, not is_set(fact))
+
+
+## Flags written as words: "+name" (or "name") on, "-name" off, "~name" flipped; several apart by commas.
+func switch_flags(words: String) -> void:
+	for part in words.split(",", false):
+		var w := part.strip_edges()
+		if w == "":
+			continue
+		if w.begins_with("-"):
+			unflag(w.substr(1).strip_edges())
+		elif w.begins_with("~"):
+			toggle_flag(w.substr(1).strip_edges())
+		else:
+			flag(w.trim_prefix("+").strip_edges())
+
+
+# the flags a task switches (task_flags): `key` a task's id as it's ticked, "added <id>" as it's put on the list
+func _task_flags(key: String) -> void:
+	for line in task_flags:
+		var i := line.find(":")
+		if i > 0 and line.substr(0, i).strip_edges() == key:
+			switch_flags(line.substr(i + 1))
+
+
+# ---- dying, and coming back (a lethal hunt: hunt.gd) ---------------------------------------------------------------
+
+func _doors() -> Array:
+	var out := []
+	for it in get_tree().get_nodes_in_group("hs_interior"):
+		for n in it.find_children("*", "", true, false):
+			if n.has_method("lock") and "open" in n:
+				out.append(n)
+	return out
+
+
+## Keep where you are and what you've done: the tasks, the facts, the pocket and the cash, the objective, the doors.
+## die() comes back to it. A checkpoint.gd area calls this; a lethal hunt does when it starts.
+func checkpoint() -> void:
+	var pl := get_tree().get_first_node_in_group("hs_player") as Node3D
+	_kept = {"flags": flags.duplicate(), "tasks": _tasks.duplicate(true), "items": items.duplicate(), "names": names.duplicate(),
+		"cash": cash, "objective": _obj.text, "doors": {}}
+	if pl != null:
+		_kept["at"] = pl.global_transform
+		_kept["pitch"] = float(pl.get("pitch")) if pl.get("pitch") != null else 0.0
+	for d in _doors():
+		_kept["doors"][d.get_path()] = [bool(d.get("open")), bool(d.get("unlocked"))]
+	kept.emit()
+
+
+func has_checkpoint() -> bool:
+	return not _kept.is_empty()
+
+
+## You died: black, a card with `title` and `text`, then back at the checkpoint as you were (no checkpoint: where you
+## are, with what you have). `how` is who or what did it, for the `died` signal.
+func die(how := "", title := "You died", text := "") -> void:
+	if over or dead:
+		return
+	dead = true
+	over = true                                           # (the player stops, the director and the hunts wait)
+	deaths += 1
+	_end_title.text = title
+	_end_text.text = text
+	_end.visible = true
+	_end.modulate.a = 0.0
+	create_tween().tween_property(_end, "modulate:a", 1.0, 0.35)
+	died.emit(how)
+	get_tree().create_timer(death_secs).timeout.connect(revive)
+
+
+## Back at the checkpoint (die() calls it after its card).
+func revive() -> void:
+	if not dead:
+		return
+	if not _kept.is_empty():
+		flags = (_kept["flags"] as Dictionary).duplicate()
+		_tasks = (_kept["tasks"] as Array).duplicate(true)
+		items = (_kept["items"] as Dictionary).duplicate()
+		names = (_kept["names"] as Dictionary).duplicate()
+		cash = float(_kept["cash"])
+		objective(str(_kept["objective"]))
+		for path in _kept["doors"]:
+			var d := get_node_or_null(path)
+			if d != null:
+				d.set("unlocked", _kept["doors"][path][1])
+				d.set("open", _kept["doors"][path][0])
+		var pl := get_tree().get_first_node_in_group("hs_player") as Node3D
+		if pl != null and _kept.has("at"):
+			if pl.get("seat") != null and pl.has_method("rise"):
+				pl.rise()
+			pl.global_transform = _kept["at"]
+			pl.set("velocity", Vector3.ZERO)
+			pl.set("pitch", _kept["pitch"])
+			if pl.has_method("snap_eye"):
+				pl.snap_eye()
+			var eye := pl.get_node_or_null("Eye") as Node3D
+			if eye != null:
+				eye.rotation.x = float(_kept["pitch"])
+		_draw_list()
+		_draw_pocket()
+		cash_changed.emit(cash)
+	dead = false
+	over = false
+	_card.visible = false
+	var tw := create_tween()
+	tw.tween_property(_end, "modulate:a", 0.0, 0.6)
+	tw.tween_callback(func() -> void:
+		if not over:
+			_end.visible = false)
+	revived.emit()
 
 
 ## what an area's, a door's or a cue's `needs` says: "" always, "task:<id>" that task done, "on:<id>" that task on the
@@ -280,6 +557,7 @@ func end_with(title: String, text: String = "") -> void:
 
 # ---- on screen ---------------------------------------------------------------------------------------------------
 func _process(dt: float) -> void:
+	_eat(dt)
 	if _peek > 0.0:
 		_peek -= dt
 		if _peek <= 0.0:
@@ -385,3 +663,27 @@ func _build() -> void:
 	ec.add_child(_end_text)
 	_end.visible = false
 	add_child(_end)
+	# the eat meter: under the middle of the view, a thing's name over a thin bar
+	_eat_box = Control.new()
+	_eat_box.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_eat_box.offset_left = -90
+	_eat_box.offset_right = 90
+	_eat_box.offset_top = 64
+	_eat_box.offset_bottom = 104
+	_eat_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_eat_label = _label(15)
+	_eat_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_eat_label.size = Vector2(180, 20)
+	_eat_box.add_child(_eat_label)
+	var back := ColorRect.new()
+	back.color = Color(0, 0, 0, 0.55)
+	back.position = Vector2(0, 26)
+	back.size = Vector2(180, 4)
+	_eat_box.add_child(back)
+	_eat_fill = ColorRect.new()
+	_eat_fill.color = accent
+	_eat_fill.position = Vector2(0, 26)
+	_eat_fill.size = Vector2(0, 4)
+	_eat_box.add_child(_eat_fill)
+	_eat_box.visible = false
+	add_child(_eat_box)

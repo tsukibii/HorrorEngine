@@ -1379,16 +1379,40 @@ def manga_cover(f, d, rng):
 
 # ---- shotgun shells and their box (DECISIONS 2026-11-09: "a cartridge prop for the shells that I can customize") ------
 
-def _shell_mark(f, cx, cy, r, ink, letter, **pk):
-    """A maker's mark on a hull: a ring with a letter in it, turned to read along the hull."""
+SHAPES = ("heart", "drop")
+
+
+def shape_pts(kind, cx, cy, r, rot=0.0, n=48):
+    """A small shape's outline as points, `r` its half height, turned `rot` degrees as text is: a `heart`, a `drop`
+    (its point up). For a mark, a motif or a box's picture (the weapons plugin's easter egg shells)."""
+    t = np.linspace(0.0, 2.0 * np.pi, n, endpoint=False)
+    if kind == "heart":
+        x = 16.0 * np.sin(t) ** 3 / 15.0
+        y = (13.0 * np.cos(t) - 5.0 * np.cos(2 * t) - 2.0 * np.cos(3 * t) - np.cos(4 * t) + 2.5) / 15.0
+    elif kind == "drop":
+        x = 0.8 * np.sin(t) * np.sin(t / 2.0)
+        y = np.cos(t) - 0.1
+    else:
+        raise ValueError(f"shape {kind!r}: one of {', '.join(SHAPES)}")
+    a = np.radians(rot)
+    return [(cx + r * (xx * np.cos(a) - yy * np.sin(a)), cy + r * (xx * np.sin(a) + yy * np.cos(a))) for xx, yy in zip(x, y)]
+
+
+def _shell_mark(f, cx, cy, r, ink, mark, **pk):
+    """A maker's mark on a hull: a ring with a letter in it (or a small shape: `heart`, `drop`), turned to read along
+    the hull."""
     f.ring(cx, cy, r, r * 0.16, color=ink, **pk)
-    f.text(letter, (cx, cy), r * 0.95, font="serif_bold", rot=90, color=ink, **pk)
+    if mark in SHAPES:
+        f.poly(shape_pts(mark, cx, cy, r * 0.52, rot=90), color=ink, **pk)
+    else:
+        f.text(str(mark)[:1], (cx, cy), r * 0.95, font="serif_bold", rot=90, color=ink, **pk)
 
 
 def shell_print(f, d, rng):
     """A shotgun shell's hull: its plastic (`hull`), and printed along it on the side that faces you, reading from the
     brass toward the crimp, the brand, the load beside it and a mark near the brass (`ink`; `length` the hull's outside
-    in mm, the rest of a fired one's island its inside). Every brand here is made up."""
+    in mm, the rest of a fired one's island its inside; `mark` a letter, or `heart` or `drop`; `motif` `heart` or `drop`:
+    little ones all round the hull in `motif_color`). Every brand here is made up."""
     hull = d.get("hull", "#a3241f")
     ink = d.get("ink", "#f1eadb")
     pk = dict(rough=0.38, metal=0.0)
@@ -1396,6 +1420,16 @@ def shell_print(f, d, rng):
     L = min(float(d.get("length", f.H)), f.H)
     cx = f.W / 2
     y = L * 0.56
+    motif = d.get("motif")
+    if motif in SHAPES:                                              # little shapes all round the hull, under the print
+        mc = d.get("motif_color", ink)
+        step = 7.0
+        for j, yy in enumerate(np.arange(L * 0.24, L * 0.93, step * 0.62)):
+            for xx in np.arange((step / 2 if j % 2 else 0.0) + 1.0, f.W, step):
+                if abs(xx - cx) < 6.2:                                # (clear of the brand and the load)
+                    continue
+                f.poly(shape_pts(motif, xx + float(rng.uniform(-0.5, 0.5)), yy + float(rng.uniform(-0.5, 0.5)),
+                                 float(rng.uniform(0.85, 1.3)), rot=90 + float(rng.uniform(-18, 18))), color=mc, alpha=0.8, **pk)
     brand = d.get("brand", "HARROW")
     lb = dict(font=d.get("font", "anton"), rot=90, fit=L * 0.6)
     f.slot("brand", on(f, text_box(brand, (cx - 1.9, y), 3.4, **lb)), lambda: f.text(brand, (cx - 1.9, y), 3.4, color=ink, **lb, **pk),
@@ -1407,7 +1441,7 @@ def shell_print(f, d, rng):
     mark = d.get("mark", "H")
     if mark:
         my = min(L * 0.13, L - 3.0)
-        f.slot("mark", on(f, (cx, my, 4.4, 4.4)), lambda: _shell_mark(f, cx, my, 1.9, ink, str(mark)[:1], **pk),
+        f.slot("mark", on(f, (cx, my, 4.4, 4.4)), lambda: _shell_mark(f, cx, my, 1.9, ink, str(mark), **pk),
                rot=90, about="the maker's mark near the brass", **pk)
 
 
@@ -1432,7 +1466,7 @@ def shell_box(f, d, rng):
     brand, the load and its numbers, a shell drawn lying and how many; on the front the brand and the load; on the back
     a warning, a barcode and the brand; the gauge on the ends; the lot on the bottom; where to tuck it on the flap.
     Fields: brand, gauge, length, load, pellets, speed, count, colors [ground, band, ink], gold, hull, picture (shell,
-    target, none). Every brand here is made up."""
+    target, heart, drop, none). Every brand here is made up."""
     cols = list(d.get("colors") or [])
     ground, band, ink = (cols + ["#6e1712", "#171412", "#efe6d2"][len(cols):])[:3]
     gold = d.get("gold", "#c9a14a")
@@ -1484,9 +1518,14 @@ def shell_box(f, d, rng):
                 if pic == "target":
                     for k, rr in enumerate((1.0, 0.72, 0.44, 0.16)):
                         f.ellipse(xc, py0, ds * rr, color=gold if k % 2 == 0 else band, **pk)
+                elif pic in SHAPES:                                  # (a heart, a drop: the easter egg shells' boxes)
+                    f.poly(shape_pts(pic, xc, py0, ds * 0.78), color=band, **pk)
+                    f.poly(shape_pts(pic, xc, py0, ds * 0.62), color=d.get("hull", gold), **pk)
+                    f.ellipse(xc - ds * 0.2, py0 + ds * 0.22, ds * 0.11, ds * 0.06, rot=35, color="#ffffff", alpha=0.55, **pk)
                 else:
                     _shell_side(f, px0, py0, ls, ds, d.get("hull", "#a3241f"), gold, band, **pk)
-            f.slot("art", (xc, py0, (ls if pic != "target" else 2 * ds) + 1.0, ds * 1.3 + 1.0), art, kind="picture",
+            f.slot("art", (xc, py0, (2 * ds if pic == "target" else 1.7 * ds if pic in SHAPES else ls) + 1.0,
+                           (1.7 if pic in SHAPES else 1.3) * ds + 1.0), art, kind="picture",
                    about="the shell drawn lying on the lid", **pk)
         f.slot("count", text_box(count, (W - m - 1.0, m + H * 0.055), H * 0.06, font="bebas", tracking=0.12, anchor="right"),
                lambda: f.text(count, (W - m - 1.0, m + H * 0.055), H * 0.06, font="bebas", tracking=0.12, anchor="right",

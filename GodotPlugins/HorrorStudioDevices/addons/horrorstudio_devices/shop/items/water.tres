@@ -11,3 +11,5 @@ about = "Natural mineral water. Sealed, as far as you can tell."
 price = 1.2
 category = "FOOD & DRINK"
 model = ExtResource("1_2hejf")
+eatable = true
+restores = 0.06

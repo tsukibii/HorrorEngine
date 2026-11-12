@@ -25,10 +25,16 @@ extends Node3D
 ##   gone into it, a pool of ichor where she stood), VANISH (gone at once in a burst), RAGDOLL (her PhysicalBoneSimulator3D
 ##   let go, if she has one; else she dissolves) or NOTHING (only the signal). What hunts with her is stopped
 ##   (anything under her with a stop(): chase.gd, searcher.gd). `gone_secs` brings her back whole.
+## - **The easter egg shells** (a kind whose damage is 0: DECISIONS 2026-11-11, "this wouldnt damage the npc but have
+##   some kind of cute effect") never wound her, stagger her or count toward her health: `touched` says what reached
+##   her and she does what the kind's `touch` word says. `charm` (the love hearts): smitten, she stands where she is
+##   for `charm_s` with hearts floating up over her head and a little run of bells. `soak` (the water): a start, and
+##   she drips for `soak_s`, her skin wet if she wears the Look plugin's skin.
 
 signal hit(info: Dictionary)                      ## a shot that hit her: {part, parts, bone, damage, health, point, dir, power, staggered, blast}
 signal staggered(secs: float)
 signal down
+signal touched(info: Dictionary)                  ## a harmless shell's pellets on her (a kind whose damage is 0): {touch (charm, soak...), kind, part, parts, point, dir, pellets}
 
 enum Down { DISSOLVE, VANISH, RAGDOLL, NOTHING }
 
@@ -52,6 +58,10 @@ const SKIP := ["twist", "proc", "null", "_end", "roll", "ik_", "pole", "nub", "t
 @export_range(0.3, 3.0) var girth := 1.0          ## how thick her hitboxes are against what her bones say: more for a heavy creature whose flesh stands wide of its skeleton (a belly), less for a gaunt one
 @export var target: Node                          ## its fire() when she's down (a scare, a cue)
 @export var cry: AudioStream                      ## a sound of hers when she's hit (the wound's own plays anyway)
+@export_group("Easter eggs")
+@export var charm_s := 2.5                        ## smitten by a love-heart shell: stood where she is this long, hearts over her head (0: she isn't)
+@export var charm_color := Color(1.0, 0.42, 0.66) ## her hearts
+@export var soak_s := 6.0                         ## soaked by a water shell: dripping this long, her skin wet (0: she isn't)
 
 var damage := 0.0                                 ## taken so far
 var is_down := false
@@ -59,6 +69,10 @@ var hit_count := 0                                ## shots that hit her
 var wounds := 0                                   ## wounds she's been given
 var marks: Array = []                             ## the ichor she's left on the world (HSOozes, else Decals), oldest first
 var last := {}                                    ## the last hit, a check's (as `hit` gives it)
+var touches := 0                                  ## harmless shots that reached her
+var last_touch := {}                              ## the last of them, a check's (as `touched` gives it)
+var charmed_until := -1.0                         ## smitten until then (her own clock: `charmed()`)
+var soaked_until := -1.0
 
 var _lk: HSWoundLook
 var _sk: Skeleton3D
@@ -89,6 +103,10 @@ var _crumble: ShaderMaterial
 var _gone_at := -1.0
 var _pending_smoke := 0                           # wound smoke waiting for the shove to settle
 var _clock := 0.0                                 # the game's seconds (its frames' own: a fixed rate's check, a slow-motion)
+var _hearts: CPUParticles3D                       # the hearts over her head while she's smitten (outside her: in _root)
+var _drips: CPUParticles3D                        # the water dripping off her
+var _drip_bone := -1
+var _wet: Array = []                              # [material, parameter, the value it had] for her skin made wet
 
 
 func _ready() -> void:
@@ -117,7 +135,9 @@ func _now() -> float:
 func report() -> Dictionary:
 	return {"health": health, "damage": damage, "down": is_down, "hits": hit_count, "wounds": wounds, "boxes": _boxes.size(),
 		"skeleton": _sk != null, "roles": _roles.keys(), "holding": _now() < _hold_until, "marks": marks.size(),
-		"smoking": _smoke.size(), "flinching": _flinch != null and _flinch.busy()}
+		"smoking": _smoke.size(), "flinching": _flinch != null and _flinch.busy(), "touches": touches, "charmed": charmed(),
+		"soaked": soaked(), "hearts": _hearts != null and is_instance_valid(_hearts) and _hearts.emitting,
+		"drips": _drips != null and is_instance_valid(_drips) and _drips.emitting}
 
 
 # ---- set up: her bones, her hitboxes ---------------------------------------------------------------------------------
@@ -421,6 +441,12 @@ func _on_fired(shot_hits: Array) -> void:
 		return c is Node and is_instance_valid(c) and (c == her or her.is_ancestor_of(c)))
 	if mine.is_empty():
 		return
+	var soft := mine.filter(func(h) -> bool: return not bool(h.get("blast", false)) and float(h.get("damage", 1.0)) <= 0.0)
+	if not soft.is_empty():                              # (an easter egg shell's: nothing of hers is hurt)
+		_touched(soft)
+		mine = mine.filter(func(h) -> bool: return not soft.has(h))
+		if mine.is_empty():
+			return
 	var spots: Array = []
 	var blast := {}
 	var dmg := 0.0
@@ -436,6 +462,181 @@ func _on_fired(shot_hits: Array) -> void:
 	if not blast.is_empty():
 		dmg += float(blast.get("damage", 0.0))
 	_react(spots, blast, dmg)
+
+
+# ---- the easter egg shells: nothing hurt ---------------------------------------------------------------------------
+
+# a harmless shell's pellets on her: no wound, no stagger, no damage; what its kind's `touch` word says
+func _touched(hs: Array) -> void:
+	var spots: Array = []
+	var parts := {}
+	var dir := Vector3.ZERO
+	for h in hs:
+		var w := _where(h)
+		spots.append(w)
+		parts[w["part"]] = true
+		dir += w["dir"]
+	dir = dir.normalized() if dir.length() > 1e-4 else Vector3.FORWARD
+	var word := str(hs[0].get("touch", ""))
+	touches += 1
+	last_touch = {"touch": word, "kind": str(hs[0].get("kind", "")), "part": spots[0]["part"], "parts": parts.keys(),
+		"point": spots[0]["point"], "dir": dir, "pellets": hs.size()}
+	match word:
+		"charm":
+			charm()
+		"soak":
+			soak(spots, dir)
+	touched.emit(last_touch)
+
+
+## Smitten (a love-heart shell's, or a script's): she stands where she is for `secs` (none: `charm_s`), hearts floating
+## up over her head, a little run of bells. Nothing of hers is hurt.
+func charm(secs := -1.0) -> void:
+	var her := _her()
+	var s := secs if secs >= 0.0 else charm_s
+	if her == null or is_down or s <= 0.0:
+		return
+	var fresh := _now() >= charmed_until
+	charmed_until = _now() + s
+	_hold(Vector3.ZERO, 0.0, s)                          # (whatever moves her waits: no shove)
+	if _hearts == null or not is_instance_valid(_hearts):
+		var imp := HSImpacts.of(get_tree())
+		_hearts = CPUParticles3D.new()
+		_hearts.emitting = false                         # (started once it's over her head)
+		_hearts.name = "Hearts"
+		_hearts.amount = 14
+		_hearts.lifetime = 1.6
+		_hearts.local_coords = false
+		_hearts.direction = Vector3.UP
+		_hearts.spread = 38.0
+		_hearts.initial_velocity_min = 0.15
+		_hearts.initial_velocity_max = 0.45
+		_hearts.gravity = Vector3(0, 0.35, 0)
+		_hearts.damping_min = 0.4
+		_hearts.damping_max = 0.8
+		_hearts.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+		_hearts.emission_sphere_radius = 0.14
+		_hearts.scale_amount_min = 0.06
+		_hearts.scale_amount_max = 0.12
+		var pop := Curve.new()
+		pop.max_value = 1.3
+		pop.add_point(Vector2(0, 0.2))
+		pop.add_point(Vector2(0.15, 1.3))
+		pop.add_point(Vector2(0.3, 1.0))
+		pop.add_point(Vector2(1, 0.8))
+		_hearts.scale_amount_curve = pop
+		var g := Gradient.new()
+		g.set_color(0, Color(1, 1, 1, 0.0))
+		g.set_color(1, Color(1, 1, 1, 0.0))
+		g.add_point(0.08, Color(1, 1, 1, 1.0))
+		g.add_point(0.7, Color(1, 1, 1, 1.0))
+		_hearts.color_ramp = g
+		HSImpacts.heart_shades(_hearts, charm_color)
+		_hearts.mesh = imp.heart_mesh()
+		_hearts.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_root.add_child(_hearts)
+	_hearts.global_position = _over_head()
+	_hearts.emitting = true
+	if fresh:
+		_play(_sound("charm"), _hearts.global_position, -4.0, "sfx")
+
+
+## Whether she's smitten now.
+func charmed() -> bool:
+	return _now() < charmed_until
+
+
+## Soaked (a water shell's, or a script's): a start, water dripping off her for `secs` (none: `soak_s`), her skin wet
+## while it does if she wears the Look plugin's skin. Nothing of hers is hurt.
+func soak(spots: Array = [], dir := Vector3.ZERO, secs := -1.0) -> void:
+	var her := _her()
+	var s := secs if secs >= 0.0 else soak_s
+	if her == null or is_down or s <= 0.0:
+		return
+	var fresh := _now() >= soaked_until
+	soaked_until = _now() + s
+	var parts := {}
+	for w in spots:
+		parts[w["part"]] = true
+	if fresh and dir != Vector3.ZERO:
+		_flinch_for(parts.keys() if not parts.is_empty() else ["torso"], dir, 0.35)   # (a start: cold water)
+	_drip_bone = int(spots[0]["bone"]) if not spots.is_empty() and _sk != null else -1
+	if _drips == null or not is_instance_valid(_drips):
+		var imp := HSImpacts.of(get_tree())
+		_drips = CPUParticles3D.new()
+		_drips.emitting = false
+		_drips.name = "Drips"
+		_drips.amount = 10
+		_drips.lifetime = 0.7
+		_drips.local_coords = false
+		_drips.direction = Vector3.DOWN
+		_drips.spread = 12.0
+		_drips.initial_velocity_min = 0.0
+		_drips.initial_velocity_max = 0.3
+		_drips.gravity = Vector3(0, -9.8, 0)
+		_drips.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+		_drips.emission_sphere_radius = 0.16
+		_drips.scale_amount_min = 0.004
+		_drips.scale_amount_max = 0.008
+		_drips.color = Color(0.78, 0.88, 1.0, 0.75)
+		_drips.mesh = imp.water_mesh()
+		_drips.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_root.add_child(_drips)
+	_drips.global_position = _drip_at()
+	_drips.emitting = true
+	if _wet.is_empty():                                  # her skin wet, if it's the Look plugin's (skin_wet.gdshader's numbers)
+		for mi in her.find_children("*", "MeshInstance3D", true, false):
+			var m := mi as MeshInstance3D
+			if m.mesh == null or m is HSOoze:
+				continue
+			for i in m.mesh.get_surface_count():
+				var mat := m.get_active_material(i) as ShaderMaterial
+				if mat == null or mat.shader == null or not mat.shader.resource_path.ends_with("skin_wet.gdshader"):
+					continue
+				for pair in [["wetness", 0.85], ["drips", 0.7]]:
+					var was = mat.get_shader_parameter(pair[0])
+					_wet.append([mat, pair[0], was])
+					mat.set_shader_parameter(pair[0], maxf(float(was) if was != null else 0.0, float(pair[1])))
+
+
+## Whether she's soaked now.
+func soaked() -> bool:
+	return _now() < soaked_until
+
+
+# over her head: where her hearts come from
+func _over_head() -> Vector3:
+	var her := _her()
+	if _roles.has("head") and _sk != null:
+		return _bpos(_roles["head"]) + Vector3.UP * 0.24 * float(_size["head"])
+	return her.global_position + Vector3.UP * (_height() + 0.1)
+
+
+# where she drips from: the bone the water hit, else her chest's height
+func _drip_at() -> Vector3:
+	if _drip_bone >= 0 and _sk != null:
+		return _bpos(_drip_bone)
+	return _her().global_position + Vector3.UP * _height() * 0.7
+
+
+# the hearts and the drips riding her, each stopped when its time is up (the last ones live out their lives), her skin
+# dry again
+func _eggs(her: Node3D, now: float) -> void:
+	if _hearts != null and is_instance_valid(_hearts) and _hearts.emitting:
+		if now >= charmed_until or is_down or not her.is_visible_in_tree():
+			_hearts.emitting = false
+		else:
+			_hearts.global_position = _over_head()
+	if _drips != null and is_instance_valid(_drips) and _drips.emitting:
+		if now >= soaked_until or is_down or not her.is_visible_in_tree():
+			_drips.emitting = false
+		else:
+			_drips.global_position = _drip_at()
+	if not _wet.is_empty() and (now >= soaked_until or is_down):
+		for e in _wet:
+			if is_instance_valid(e[0]):
+				(e[0] as ShaderMaterial).set_shader_parameter(e[1], e[2])
+		_wet.clear()
 
 
 ## Hit by a script (a cue's, a trap's): `point` where (the world's), `dir` the way, `dmg` how hard (a buckshot pellet's 1).
@@ -673,6 +874,8 @@ func _process(dt: float) -> void:
 			continue
 		if her != null and her.is_visible_in_tree():
 			(m as Node3D).global_transform = _bone_xf(int(e["bone"])) * (e["local"] as Transform3D)
+	if her != null and (_hearts != null or _drips != null or not _wet.is_empty()):
+		_eggs(her, now)
 	if is_down and gone_secs > 0.0 and _gone_at > 0.0 and now - _gone_at > gone_secs:
 		restore()
 
@@ -1098,6 +1301,8 @@ func restore() -> void:
 	damage = 0.0
 	_acc = 0.0
 	is_down = false
+	charmed_until = -1.0
+	soaked_until = -1.0
 	_gone_at = -1.0
 	_hold_until = -1.0
 	_hold_at = Vector3.INF

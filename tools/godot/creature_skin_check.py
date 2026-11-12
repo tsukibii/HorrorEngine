@@ -6,7 +6,12 @@ ball is the plain skin; lit, chrome is bright and grey with a glint, the mirror 
 and turns colour toward its edge, greasy keeps the skin's colour under a glint, slime is green, black oil is black with
 a film's colours along its edge, porcelain white, stone grey and matt, scales glinting, the ember's cracks glowing; the
 lamp out, only the ember glows and chrome is as dark as the room; the lamp behind, wax and slime let it through; at half
-the look, halfway. Then on a Character Studio export (`--person NAME`, `--glb FILE`, else a creature made by
+the look, halfway. The cloak (§5p) on its own stage, a ball in front of a lit wall of stripes: cloaked it's the wall
+behind it, shifted (nothing of its paint, nothing round it, no shadow), more so moving; a post in front of it never
+pulled into it; as dark as the wall with the lamp out; half turned, part paint and a crackle; broken up, its paint
+back; its shadow kept when asked (nobody there, a shadow on the wall); and a made-up figure through wear() and the
+HSCloak node (everything she has cloaked, her eyes' wet layer and tear line put away and back, her eyes or shadow
+kept when asked, cloaking, moving, breaking up and coming back over time). Then on a Character Studio export (`--person NAME`, `--glb FILE`, else a creature made by
 `node tools/character/creatures.mjs make --export` when there is one), through the HSCharacterLook node as a game by
 hand wears it: every look on her skin and her horns, how much of it changed while it's worn, her own skin back at the
 end with its paint. A sheet of the balls and of her in every look in the keep folder. Ends "CREATURESKIN ok".
@@ -104,7 +109,7 @@ def main():
     lit, dark, back, half, none = S["lit"], S["dark"], S["back"], S["half"], S["none"]
     looks = [k for k in lit if k != "plain"]
     P = lit["plain"]
-    say(len(looks) >= 11, "%d looks, each on a ball beside a plain one: %s" % (len(looks), ", ".join(looks)))
+    say(len(looks) >= 12, "%d looks, each on a ball beside a plain one: %s" % (len(looks), ", ".join(looks)))
     off = max(max(abs(none[k]["rgb"][c] - none["plain"]["rgb"][c]) for c in range(3)) for k in looks)
     say(off < 0.05, "at none of the look every ball is the plain skin (the furthest colour %.3f off it)" % off)
     c = lit["chrome"]
@@ -143,6 +148,35 @@ def main():
     say(mono, "at half the look, halfway: the oil's black %.2f, %.2f, %.2f; the stone's grey %.2f, %.2f, %.2f; the ember's glow %.0f%%, %.0f%%, %.0f%% (the look, half, none)" % (
         lit["oil"]["mean"], half["oil"]["mean"], none["oil"]["mean"], lit["stone"]["sat"], half["stone"]["sat"], none["stone"]["sat"],
         100 * lit["ember"]["glow"], 100 * half["ember"]["glow"], 100 * none["ember"]["glow"]))
+    C, F = rep.get("cloak"), rep.get("cloak_figure")
+    if C and F:
+        on, mv = C["on"], C["moving"]
+        off_wall = max(abs(on["mean"][i] - on["wall"][i]) for i in range(3))
+        say(0.03 < on["seen"] < 0.22 and on["skin"] < 0.03 and off_wall < 0.08,
+            "the cloak: she's the wall behind her, shifted (the picture inside her outline %.2f off the wall's, its colour as a whole %.2f off; %.1f%% of it her paint's colour)" % (on["seen"], off_wall, 100 * on["skin"]))
+        say(on["round"] < 0.01 and abs(on["shade"]) < 0.02, "nothing round her outline (%.3f) and no shadow on the wall (%.3f)" % (on["round"], on["shade"]))
+        say(mv["seen"] > 1.5 * on["seen"], "moving she shows more (%.2f against %.2f standing still)" % (mv["seen"], on["seen"]))
+        say(C["post"]["red"] <= 0.002 * on["px"] and C["noguard"]["red"] > 20 * max(C["post"]["red"], 5),
+            "a post between her and the eye is never pulled into her (%d pixels of its red inside her outline; %d with the depth guard off)" % (C["post"]["red"], C["noguard"]["red"]))
+        dk = C["dark"]
+        say(dk["lum"] <= dk["around"] * 1.25 + 0.01, "the lamp out: as dark as the wall behind her (%.3f, the wall round her %.3f): no light of her own" % (dk["lum"], dk["around"]))
+        hf = C["half"]
+        say(0.04 < hf["skin"] < 0.9 and hf["bright"] > on["bright"] + 0.05, "half turned: part of her her paint (%.0f%%), a crackle along the patches (%.0f%% of her brighter than the wall, %.0f%% cloaked)" % (100 * hf["skin"], 100 * hf["bright"], 100 * on["bright"]))
+        say(C["glitch"]["seen"] > 1.5 * on["seen"], "broken up (glitch): her paint back in bands (%.2f off the wall against %.2f)" % (C["glitch"]["seen"], on["seen"]))
+        say(C["shadow"]["shade"] > 0.1 and C["shadow"]["skin"] < 0.03, "her shadow kept when asked: nobody there, and a shadow on the wall (the wall %.2f darker where it falls)" % C["shadow"]["shade"])
+        say(F["worn"] == 5 and F["own_shader"] and F["tear_hidden"] and F["overlay_off"] and F["shadow_off"] and F["hair_cut"],
+            "on a figure: everything she has cloaked (%d meshes: skin, eyes, hair, shirt), on its own shader, her eyes' wet layer and tear line put away, no shadow, her hair's cards cut by their picture" % F["worn"])
+        say(F["after_chrome"] == [1, True, True, True], "another look after it: the cloak wholly off first (chrome on her skin alone, her eyes and shirt as they were)")
+        say(F["eyes_kept"] and F["shadow_kept"], "her eyes left as they are and her shadow kept when asked")
+        say(F["left"] == 0 and F["back"], "taken off: nothing of it left, the tear line, the wet layer and her shadow back")
+        say(F["node_starts_plain"] and abs(F["node_half"][0] - 0.5) < 1e-6 and F["node_half"][1] == 5 and F["node_on"] == [1.0, 1.0],
+            "the HSCloak node: starting as herself, cloaking over a second (half way at half a second, on everything; then all of it)")
+        say(F["node_moving"] > 0.8 and F["node_still"] < 0.05, "it tells the shader how fast she moves (%.2f walking, %.2f after standing four seconds)" % (F["node_moving"], F["node_still"]))
+        say(F["node_glitch"][0] == 1.0 and 0.3 < F["node_glitch"][1] < 0.7 and F["node_glitch"][2] == 0.0, "flicker(): broken up, then settled in half a second (%.1f, %.1f, %.1f)" % tuple(F["node_glitch"]))
+        say(abs(F["node_revealing"] - 0.5) < 1e-6 and F["node_revealed"] == [0.0, 0, True] and F["node_heard"] == [True, False],
+            "fire(): she comes back over its seconds, and then nothing of the cloak is on her (its signal heard: cloaked, herself)")
+    else:
+        say(False, "the cloak's stages didn't run")
     who = rep.get("who")
     if glb is None or not who:
         print("  --  no character exported for Godot on this machine (node tools/character/creatures.mjs make --only demon --export): the looks aren't tried on one")
@@ -157,8 +191,11 @@ def main():
     try:
         from PIL import Image, ImageDraw
         W, H = 480, 270
-        tiles = [("the looks on balls, a plain skin first", keep / "creature_lit.png"), ("the lamp out: what glows of itself", keep / "creature_dark.png"), ("the lamp behind: what lets light through", keep / "creature_back.png")]
+        tiles = [("the looks on balls, a plain skin first", keep / "creature_lit.png"), ("the lamp out: what glows of itself", keep / "creature_dark.png"), ("the lamp behind: what lets light through", keep / "creature_back.png"),
+                 ("the cloak: a ball in front of the stripes", keep / "creature_cloak_on.png"), ("the cloak, moving", keep / "creature_cloak_moving.png"), ("the cloak half turned", keep / "creature_cloak_half.png"),
+                 ("the cloak with its shadow kept", keep / "creature_cloak_shadow.png")]
         if glb is not None and who:
+            tiles += [(t, keep / f) for t, f in [("her, cloaked, in front of the stripes", "creature_cloak_who.png"), ("her cloak half turned", "creature_cloak_who_half.png"), ("cloaked, her eyes left glowing", "creature_cloak_who_eyes.png")]]
             tiles += [("its own skin" if n == "off" else n, keep / f"creature_who_{n}.png") for n in ["off"] + looks]
         tiles = [(t, f) for t, f in tiles if f.exists()]
         cols = 4 if len(tiles) > 6 else 3

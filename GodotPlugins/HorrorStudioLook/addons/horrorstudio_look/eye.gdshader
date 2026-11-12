@@ -37,6 +37,32 @@ uniform float wrap = 0.3;             // the white's light wrapped past the term
 uniform vec3 scatter_color : source_color = vec3(1.0, 0.72, 0.62);   // the wrapped light's colour (MetaHuman's sclera transmission: warm, pinkish)
 uniform float sss = 0.3;              // Godot's screen-space scattering on the white, none on the iris (HumanShaders' eye 0.4, RoboPoets' 0.5)
 uniform int debug = 0;                // 1 q (where the iris is read), 2 the view in the tangent space, 3 the frame's tangent
+// ---- creepy eyes (HSEyeFx, eye_fx.gd; docs/GODOT_LOOK.md §5q): each 0 by default, the eye as it's painted
+uniform float fx_amount : hint_range(0.0, 1.0) = 1.0;   // all of them at once: 0 the eye as painted, 1 the look
+uniform float fx_glow : hint_range(0.0, 32.0) = 0.0;    // the iris lit from inside (its own light: seen in the dark)
+uniform vec4 fx_glow_color : source_color = vec4(1.0, 0.1, 0.05, 1.0);
+uniform float fx_glow_pupil : hint_range(0.0, 1.0) = 0.0;   // the pupil glowing too (0: it stays a dark hole in the glow)
+uniform float fx_pupil : hint_range(0.0, 1.0) = 0.31;       // the painted pupil's share of the iris (the export's own: HSEye sets it): where the glow's hole is
+uniform float fx_glow_white : hint_range(0.0, 1.0) = 0.0;   // the white glowing too (1: the whole eye a lamp)
+uniform float fx_glow_pulse : hint_range(0.0, 8.0) = 0.0;   // breathing, times a second
+uniform float fx_black : hint_range(0.0, 1.0) = 0.0;    // the white turned black
+uniform float fx_black_iris : hint_range(0.0, 1.0) = 1.0;   // and the iris with it (0: an iris in a black eye)
+uniform float fx_blind : hint_range(0.0, 1.0) = 0.0;    // the iris and pupil clouded over, milky
+uniform float fx_blood : hint_range(0.0, 1.0) = 0.0;    // bloodshot: the white reddened, veins toward the corners
+uniform float fx_dilate : hint_range(-1.0, 1.0) = 0.0;  // the pupil blown wide (1) or shrunk to a pinprick (-1)
+uniform float fx_spiral : hint_range(0.0, 1.0) = 0.0;   // a turning spiral in place of the iris
+uniform vec4 fx_spiral_a : source_color = vec4(0.95, 0.05, 0.1, 1.0);
+uniform vec4 fx_spiral_b : source_color = vec4(0.02, 0.0, 0.01, 1.0);
+uniform float fx_spiral_arms : hint_range(1.0, 8.0, 1.0) = 2.0;
+uniform float fx_spiral_twist : hint_range(0.0, 6.0) = 1.6; // how many times an arm winds from the middle to the edge
+uniform float fx_spiral_speed : hint_range(-4.0, 4.0) = 0.5; // turns a second
+uniform float fx_spiral_glow : hint_range(0.0, 16.0) = 0.0;
+uniform float fx_mark : hint_range(0.0, 1.0) = 0.0;     // a shape in the middle of the eye, over the pupil
+uniform int fx_mark_shape = 0;                           // 0 a heart, 1 a slit, 2 a cross, 3 a dot, 4 a star
+uniform vec4 fx_mark_color : source_color = vec4(1.0, 0.25, 0.5, 1.0);
+uniform float fx_mark_size : hint_range(0.02, 1.0) = 0.5;   // its half height, in the iris's radius
+uniform float fx_mark_beat : hint_range(0.0, 4.0) = 0.0;    // it throbs, beats a second (a heart's double beat)
+uniform float fx_mark_glow : hint_range(0.0, 16.0) = 0.0;
 uniform float lid_room = 0.0012;      // the eyeball drawn this much (m) deeper than it is, so a lid an expression has slid up to that far into the eye still covers it (0: its own depth)
 
 varying vec3 v_eyeN;                  // the surface's frame in the eye's own units, per vertex
@@ -47,6 +73,40 @@ varying float v_coat;                 // the wet coat's strength here, and the w
 varying float v_spec;
 
 void vertex() {
+}
+
+float fx_hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float fx_noise(vec2 p) {
+	vec2 i = floor(p), f = fract(p);
+	vec2 u = f * f * (3.0 - 2.0 * f);
+	return mix(mix(fx_hash(i), fx_hash(i + vec2(1.0, 0.0)), u.x), mix(fx_hash(i + vec2(0.0, 1.0)), fx_hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+float fx_dot2(vec2 v) { return dot(v, v); }
+// the marks as distances (under 0 inside), each about a unit tall and upright (+y up): Inigo Quilez's heart and star
+float fx_heart(vec2 p) {
+	p.x = abs(p.x);
+	p.y += 0.55;
+	if (p.y + p.x > 1.0) return sqrt(fx_dot2(p - vec2(0.25, 0.75))) - 0.353553;
+	return sqrt(min(fx_dot2(p - vec2(0.0, 1.0)), fx_dot2(p - 0.5 * max(p.x + p.y, 0.0)))) * sign(p.x - p.y);
+}
+float fx_star(vec2 p) {
+	const vec2 k1 = vec2(0.809016994, -0.587785252);
+	const vec2 k2 = vec2(-0.809016994, -0.587785252);
+	p.x = abs(p.x);
+	p -= 2.0 * max(dot(k1, p), 0.0) * k1;
+	p -= 2.0 * max(dot(k2, p), 0.0) * k2;
+	p.x = abs(p.x);
+	p.y -= 1.0;
+	vec2 ba = 0.45 * vec2(-k1.y, k1.x) - vec2(0.0, 1.0);
+	float h = clamp(dot(p, ba) / dot(ba, ba), 0.0, 1.0);
+	return length(p - ba * h) * sign(p.y * ba.x - p.x * ba.y);
+}
+float fx_shape(int shape, vec2 p) {
+	if (shape == 1) return length(vec2(abs(p.x) + 2.2, p.y)) - 2.41661;       // a slit: two arcs, as wide as a fifth of its height
+	if (shape == 2) return max(min(abs(p.x - p.y), abs(p.x + p.y)) * 0.7071 - 0.14, length(p) - 1.0);   // a cross
+	if (shape == 3) return length(p) - 1.0;
+	if (shape == 4) return fx_star(p);
+	return fx_heart(p);
 }
 
 void fragment() {
@@ -77,12 +137,59 @@ void fragment() {
 	float sl = max(length(xy), 0.0001);
 	vec2 s = onC ? xy / sl * max(sl, rho * (1.02 + 0.65 * w)) : xy;
 	vec3 white = texture(paint, vec2(0.5 + 0.5 * s.x, 0.5 + 0.5 * s.y * fv)).rgb;
-	vec3 iris = texture(paint, vec2(0.5 + 0.5 * q.x, 0.5 + 0.5 * q.y * fv)).rgb;
+	vec2 qp = q;                                                // the pupil blown wide or shrunk: the iris's paint read nearer its middle or its edge
+	float rqp = rq;                                             // (and where on the painted iris this is, 0 its middle to 1 its edge)
+	if (fx_dilate * fx_amount != 0.0 && rq < 1.0) {
+		float k = exp(fx_dilate * fx_amount * 1.2);
+		qp = q * pow(max(rq, 1e-4), k - 1.0);
+		rqp = pow(max(rq, 1e-4), k);
+	}
+	vec3 iris = texture(paint, vec2(0.5 + 0.5 * qp.x, 0.5 + 0.5 * qp.y * fv)).rgb;
 	float graze = 1.0 - clamp(-eD.z, 0.0, 1.0);
 	float extra = clamp(limbal * (1.0 + 1.5 * limbus_view * graze), 0.0, 1.0) - clamp(limbal, 0.0, 1.0);
 	iris = mix(iris, vec3(0.003, 0.0021, 0.0021), extra * smoothstep(1.0 - limbal_width - 0.3 * w, 1.0, rq));
 	white *= mix(vec3(1.0), vec3(1.0, 0.95, 0.9), sclera_warm / 0.35 * 0.6);   // a warm, slightly yellowed white (MetaHuman's sclera), pinker toward the corners
 	white = mix(white, white * vec3(1.0, 0.84, 0.78), sclera_warm * smoothstep(0.3, 0.95, abs(xy.x)));
+	// ---- creepy eyes (HSEyeFx): on the iris's own disc (1 at the limbus), behind the cornea as the iris is
+	vec3 fx_emit = vec3(0.0);
+	if (fx_amount > 0.0) {
+		vec2 fp = vec2(q.x, -q.y) / max(rho, 0.0001);            // +y up the eye (the layout's runs down it)
+		float fr = length(fp);
+		iris = mix(iris, vec3(0.6, 0.65, 0.7) * (0.9 + 0.2 * fx_noise(fp * 5.0)), fx_blind * fx_amount * mix(0.97, 0.7, smoothstep(0.2, 1.0, fr)));
+		white = mix(white, vec3(0.0025), fx_black * fx_amount);
+		iris = mix(iris, vec3(0.0025), fx_black * fx_black_iris * fx_amount);
+		if (fx_blood > 0.0) {                                    // veins: ridges of noise, thicker toward the corners
+			float vein = pow(1.0 - abs(fx_noise(xy * 7.0 + 3.0) * 2.0 - 1.0), 6.0) + 0.6 * pow(1.0 - abs(fx_noise(xy * 15.0 + 9.0) * 2.0 - 1.0), 8.0);
+			float where = smoothstep(rho * 0.9, 1.0, length(xy));
+			white = mix(white, white * vec3(1.0, 0.22, 0.18), clamp(fx_blood * fx_amount * (0.3 * where + vein * (0.35 + 0.65 * where)), 0.0, 1.0));
+		}
+		if (fx_spiral > 0.0) {
+			float v = sin(fx_spiral_arms * atan(fp.y, fp.x) + fx_spiral_twist * 6.28318 * fr - TIME * fx_spiral_speed * 6.28318);
+			float aa = clamp(fwidth(v), 0.02, 1.0);
+			vec3 sp = mix(fx_spiral_b.rgb, fx_spiral_a.rgb, smoothstep(-aa, aa, v));
+			iris = mix(iris, sp, fx_spiral * fx_amount);
+			fx_emit += sp * fx_spiral_glow * fx_spiral * fx_amount * irisW;
+		}
+		if (fx_mark > 0.0) {
+			float ph = fract(TIME * fx_mark_beat);
+			float beat = fx_mark_beat > 0.0 ? 1.0 + 0.16 * (exp(-ph * 9.0) + 0.6 * exp(-abs(ph - 0.22) * 14.0)) : 1.0;
+			vec2 mp = fp / (fx_mark_size * beat);
+			float d = fx_shape(fx_mark_shape, mp);
+			float aa = max(fwidth(d), 0.002);
+			float mk = (1.0 - smoothstep(-aa, aa, d)) * fx_mark * fx_amount * step(fr, 1.0);
+			iris = mix(iris, fx_mark_color.rgb, mk);
+			fx_emit += fx_mark_color.rgb * fx_mark_glow * mk * irisW;
+		}
+		if (fx_glow > 0.0) {
+			// the iris, with the pupil a hole in it (by the painted pupil's size, not its colour: a creature's eye painted
+			// all black glows as a ring too); the paint's own pattern faintly in it
+			float hole = smoothstep(fx_pupil * 0.9, fx_pupil * 1.1, rqp);
+			float lit_i = mix(hole, 1.0, fx_glow_pupil) * (0.8 + 0.2 * smoothstep(0.0, 0.25, dot(iris, vec3(0.3, 0.59, 0.11))));
+			float pulse = fx_glow_pulse > 0.0 ? 0.7 + 0.3 * sin(TIME * 6.28318 * fx_glow_pulse) : 1.0;
+			fx_emit += fx_glow_color.rgb * fx_glow * fx_amount * pulse * mix(fx_glow_white, lit_i, irisW);
+		}
+	}
+	EMISSION = fx_emit;
 	ALBEDO = mix(white * sclera_bright, iris, irisW) * mix(1.0, iris_bright, irisW);
 	// the lids' shadow: darker toward the opening's edge and most under the upper lid, on the eye's own frame (it
 	// turns with the eye: a glance moves it a little), the cornea's reflections shut out there too; the layout's +y

@@ -1,7 +1,9 @@
 ## Creature skins (docs/GODOT_LOOK.md §5o, DECISIONS 2026-11-11: "some more weird skin shaders/textures for the monster
 ## characters that we can apply in godot, e.g. a chrome silver skin, a pearlescent skin, some kind of greasy shader"):
 ## a look for a character's skin that isn't skin. One shader (creature_skin.gdshader), a look a set of its numbers
-## (`LOOKS`): chrome, mirror, pearl, greasy, slime, black oil, porcelain, ember, stone, scales, wax. `HSCreatureSkin.wear(node,
+## (`LOOKS`): chrome, mirror, pearl, greasy, slime, black oil, porcelain, ember, stone, scales, wax; and **the cloak**
+## (§5p: a shader of its own, creature_cloak.gdshader: she's what's behind her, bent; on everything she has, not only
+## her skin; HSCloak, cloak.gd, makes it come and go in play). `HSCreatureSkin.wear(node,
 ## "chrome")` puts one on every skin surface under a character (the same surfaces HSSkin finds: a Studio export's
 ## `<name>_skin`, or meshes named skin, body, head, face), keeping what the skin had: its own paint (as much as the look
 ## leaves of it), its relief, its occlusion; with `extend` its horns and ears wear it too. `clear(node)` puts back what
@@ -13,8 +15,15 @@ class_name HSCreatureSkin
 extends RefCounted
 
 const SHADER := "res://addons/horrorstudio_look/creature_skin.gdshader"
+const CLOAK := "res://addons/horrorstudio_look/creature_cloak.gdshader"
+const PHASE := "res://addons/horrorstudio_look/creature_phase.gdshader"   # HSPhase's: a look of its own, never in LOOKS (it's a way of going, not a skin)
 const REGIONS := "res://addons/horrorstudio_look/textures/mhr_skin_regions.png"
 const WAS := "hs_creature_was"                    # on a mesh: {surface: what it wore before} (clear puts it back)
+const WAS_MESH := "hs_creature_mesh"              # on a mesh a whole look changed: {overlay, cast, visible} (the cloak's)
+const NOT_NUMBERS := ["title", "about", "shader", "all", "shadow"]   # a look's words that aren't the shader's numbers
+const FINE := ["hair", "lash", "brow", "fringe", "beard"]            # cards: nothing where their picture is see-through
+const TWIN := "hs_shadow_twin"                    # on a mesh made here: a shadow-only twin of a cloaked one
+const NEVER := ["tear"]                           # under a whole look these are only hidden (the tear line: a glint added over an eye that isn't there)
 const EXTEND := ["horn", "antler", "ear_l", "ear_r", "ear_inner", "tail", "wing"]   # with `extend`: meshes named so wear it too
 
 ## each look: the shader's numbers (what it doesn't name is the shader's default), a title and a word about it
@@ -53,11 +62,34 @@ const LOOKS := {
 	"wax": {"title": "Wax", "about": "pale wax, soft, the light glowing through its edges",
 		"tint": Color(0.93, 0.86, 0.72), "keep_paint": 0.3, "metallic": 0.0, "roughness": 0.5, "specular": 0.4, "coat": 0.25, "coat_roughness": 0.35, "relief": 0.15,
 		"rim": 0.25, "rim_tint": 0.6, "backlight": Color(0.55, 0.33, 0.15), "sss": 0.7},
+	# the cloak: a shader of its own (it reads the screen), on everything she has (`all`), casting no shadow (`shadow`)
+	"cloak": {"title": "Cloak", "about": "invisible: the room behind her bent through her shape, nearly gone standing still, rippling when she moves",
+		"shader": "cloak", "all": true, "shadow": false,
+		"bend": 0.035, "shells": 5.0, "shell_mix": 0.7, "split": 0.25, "relief": 0.6, "ripple": 0.004, "ripple_m": 0.07, "edge_dark": 0.16, "glint": 0.15},
 }
 
 
 static func shader() -> Shader:
 	return load(SHADER)
+
+
+## the shader a look is drawn by: the creature skin's, the cloak's own, or the phase's (HSPhase's look, a dictionary)
+static func shader_of(which) -> Shader:
+	var d: Dictionary = which if which is Dictionary else LOOKS.get(str(which), {})
+	match str(d.get("shader", "")):
+		"cloak":
+			return load(CLOAK)
+		"phase":
+			return load(PHASE)
+	return load(SHADER)
+
+
+## a look's own word (`all`: on every mesh she has; `shadow`: whether she still casts one), a setting over it
+static func _word(which, settings: Dictionary, key: String, otherwise: bool) -> bool:
+	if settings.has(key):
+		return bool(settings[key])
+	var d: Dictionary = which if which is Dictionary else LOOKS.get(str(which), {})
+	return bool(d.get(key, otherwise))
 
 
 static func names() -> PackedStringArray:
@@ -69,7 +101,7 @@ static func look(which) -> Dictionary:
 	var d: Dictionary = which if which is Dictionary else LOOKS.get(str(which), {})
 	var out := {}
 	for k in d:
-		if k != "title" and k != "about":
+		if not NOT_NUMBERS.has(k):
 			out[k] = d[k]
 	return out
 
@@ -105,8 +137,9 @@ static func base_of(old: Material) -> Dictionary:
 ## look's), and any of the shader's numbers by name
 static func material(which, base: Dictionary = {}, settings: Dictionary = {}) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
-	m.shader = shader()
+	m.shader = shader_of(which)
 	m.set_shader_parameter("albedo", base.get("albedo", Color(1, 1, 1)))
+	m.set_shader_parameter("alpha_cut", bool(base.get("cut", false)))
 	for k in ["texture_albedo", "texture_normal", "texture_orm"]:
 		if base.get(k) is Texture2D:
 			m.set_shader_parameter(k, base[k])
@@ -125,7 +158,7 @@ static func material(which, base: Dictionary = {}, settings: Dictionary = {}) ->
 		if k == "tint":
 			if settings[k] is Color and (settings[k] as Color).a > 0.0:
 				m.set_shader_parameter("tint", Color(settings[k].r, settings[k].g, settings[k].b))
-		elif k != "extend":
+		elif not ["extend", "all", "shadow", "eyes"].has(k):
 			m.set_shader_parameter(k, settings[k])
 	m.set_meta("hs_creature", str(which) if not (which is Dictionary) else "custom")
 	return m
@@ -163,25 +196,46 @@ static func _is_extra(mi: MeshInstance3D) -> bool:
 	return false
 
 
+static func _named(mi: MeshInstance3D, words: Array) -> bool:
+	var nm := String(mi.name).to_lower()
+	for w in words:
+		if nm.contains(w):
+			return true
+	return false
+
+
 ## the look on every skin surface under `node` (and, with settings.extend, on its horns and ears); returns the
-## materials. Worn again with another look, it takes the first one's place; `clear` puts back what was there before any
+## materials. Worn again with another look, it takes the first one's place; `clear` puts back what was there before any.
+## A whole look (the cloak: its `all`) goes on every mesh she has, her eyes, hair and clothes too: `eyes: true` in the
+## settings leaves her eyes as they are (two eyes in the air), `shadow: true` lets her go on casting a shadow (nobody
+## there, and a shadow on the wall); her eyes' wet layer and tear line are put away with it and come back with `clear`
 static func wear(node: Node, which = "chrome", settings: Dictionary = {}) -> Array:
 	var out: Array = []
 	if node == null or (not (which is Dictionary) and not LOOKS.has(str(which))):
 		return out
 	var extend := bool(settings.get("extend", false))
+	var all := _word(which, settings, "all", false)
+	var shadow := _word(which, settings, "shadow", true)
+	var keep_eyes := bool(settings.get("eyes", false))
+	for mi in node.find_children("*", "MeshInstance3D", true, false):   # a whole look worn before (the cloak): everything back first
+		if mi.has_meta(WAS_MESH):
+			clear(node)
+			break
 	var meshes: Array = node.find_children("*", "MeshInstance3D", true, false)
 	if node is MeshInstance3D:
 		meshes.append(node)
 	for mi in meshes:
-		if mi.mesh == null:
+		if mi.mesh == null or mi.has_meta(TWIN):
 			continue
 		for s in mi.mesh.get_surface_count():
 			var now: Material = mi.get_active_material(s)
 			var was: Dictionary = mi.get_meta(WAS) if mi.has_meta(WAS) else {}
 			var old: Material = was[s]["active"] if was.has(s) else now   # (what it had before any look: the maps come from there)
 			var skin := _is_skin(mi, s, old)
-			if not skin and not (extend and _is_extra(mi)):
+			if all:
+				if (keep_eyes and _named(mi, ["eye"]) and not _named(mi, FINE)) or _named(mi, NEVER):
+					continue
+			elif not skin and not (extend and _is_extra(mi)):
 				continue
 			if not was.has(s):
 				was[s] = {"override": mi.get_surface_override_material(s), "active": now}
@@ -192,9 +246,35 @@ static func wear(node: Node, which = "chrome", settings: Dictionary = {}) -> Arr
 				base["uv_metres"] = _metres(mi)
 			elif not skin:
 				base["uv_metres"] = Vector2(0.25, 0.25)   # a horn's or an ear's own UVs: about a quarter of a metre across
+				base["cut"] = _named(mi, FINE)
 			var m := material(which, base, settings)
 			mi.set_surface_override_material(s, m)
 			out.append(m)
+		if all or not shadow:                            # the mesh as a whole: its overlay (an eye's wet layer), its shadow, a tear line hidden
+			if not mi.has_meta(WAS_MESH):
+				mi.set_meta(WAS_MESH, {"overlay": mi.material_overlay, "cast": mi.cast_shadow, "visible": mi.visible})
+			var held: Dictionary = mi.get_meta(WAS_MESH)
+			mi.cast_shadow = held["cast"] if shadow else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			# a look that reads the screen casts no shadow of its own: one that should gets a shadow-only twin (the
+			# mesh again on the same skeleton, never drawn, never saved)
+			var left_alone := _named(mi, NEVER) or (keep_eyes and _named(mi, ["eye"]) and not _named(mi, FINE))   # (hidden, or still itself: no twin)
+			if shadow and shader_of(which) == load(CLOAK) and not left_alone and mi.visible and not held.has("twin") and held["cast"] != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF and mi.get_parent() != null:
+				var twin := MeshInstance3D.new()
+				twin.name = String(mi.name) + "_shadow"
+				twin.mesh = mi.mesh
+				twin.skin = mi.skin
+				twin.skeleton = mi.skeleton
+				twin.transform = mi.transform
+				twin.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+				twin.set_meta(TWIN, true)
+				mi.get_parent().add_child(twin)
+				held["twin"] = twin
+				mi.set_meta(WAS_MESH, held)
+			if all:
+				if _named(mi, NEVER):
+					mi.visible = false
+				elif not (keep_eyes and _named(mi, ["eye"])):
+					mi.material_overlay = null
 	return out
 
 
@@ -205,6 +285,14 @@ static func clear(node: Node) -> int:
 	if node is MeshInstance3D:
 		meshes.append(node)
 	for mi in meshes:
+		if mi.has_meta(WAS_MESH):
+			var held: Dictionary = mi.get_meta(WAS_MESH)
+			mi.material_overlay = held["overlay"]
+			mi.cast_shadow = held["cast"]
+			mi.visible = held["visible"]
+			if held.get("twin") is Node and is_instance_valid(held["twin"]):
+				held["twin"].queue_free()
+			mi.remove_meta(WAS_MESH)
 		if not mi.has_meta(WAS):
 			continue
 		var was: Dictionary = mi.get_meta(WAS)
@@ -222,7 +310,7 @@ static func worn(node: Node) -> Array:
 	if node is MeshInstance3D:
 		meshes.append(node)
 	for mi in meshes:
-		if mi.mesh == null:
+		if mi.mesh == null or mi.has_meta(TWIN):
 			continue
 		for s in mi.mesh.get_surface_count():
 			var m = mi.get_surface_override_material(s)

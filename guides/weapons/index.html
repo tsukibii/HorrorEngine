@@ -164,7 +164,7 @@ it's drawn in to sit in the tape's picture.</div>
   <tr><td><kbd>Left click</kbd></td><td>fire a barrel: the right (the front trigger), then the left (the rear one), then a click. Nine pellets each from the middle of the view, through that barrel's own choke (the right's a little wider than the left's). It's ready as fast as you pull.</td></tr>
   <tr><td><kbd>Right button</kbd></td><td>held: aimed, the barrels straight ahead under your eye, the lens a little narrower, the sway calmer. The pattern stays the barrel's own: a choke doesn't change when you aim.</td></tr>
   <tr><td><kbd>R</kbd></td><td>break it open and load (section 6). A click while it's open stops the loading and fires once it's shut.</td></tr>
-  <tr><td><kbd>T</kbd></td><td>the kind of shell R loads next (buckshot, explosive: section 8). What's already in a chamber stays.</td></tr>
+  <tr><td><kbd>T</kbd></td><td>the kind of shell R loads next (buckshot, explosive, and the easter eggs once you've found some: section 8). What's already in a chamber stays.</td></tr>
   <tr><td><kbd>Q</kbd></td><td>lower it out of view, and raise it again.</td></tr>
   <tr><td><kbd>Shift</kbd></td><td>running (the starter's), it's carried low and turned in; it comes up again as you aim, shoot or reload.</td></tr>
   <tr><td><kbd>E</kbd></td><td>take a pickup (the starter's player).</td></tr>
@@ -247,6 +247,49 @@ while it's the kind you're loading. A box of them is an <span class="node">HSWea
 <figure><img src="img/explosive.jpg" width="1600" height="900" alt="The explosive shell fired down the corridor: a long fierce flash"><figcaption>An explosive shell fired: the bigger flash and its sparks.</figcaption></figure>
 <figure><img src="img/blast.jpg" width="1600" height="900" alt="A ball of fire down the corridor where the slug landed"><figcaption>Where the slug lands: a ball of fire (the same spheres and burn, laid out as a burst).</figcaption></figure>
 </div>
+<h3 id="eggs">Two for fun: love hearts and water</h3>
+<p>Two more kinds come with the plugin as easter eggs, to hide in a game. The gun doesn't offer them until some are in
+your pocket: put a box of them in a room (an <span class="node">HSWeaponPickup</span> of kind shells with its <b>Shell</b>
+set to <code>shells/heart.tres</code> or <code>shells/water.tres</code>; each comes in its own box), or give them from a
+script. Then <kbd>T</kbd> picks them like any other kind. Both are <b>harmless</b>: nobody is wounded or staggered, an
+HSShootable doesn't count them as a hit, nothing is dented or broken, the wall is left whole. Each has its own soft
+sound instead of the blast, is hardly heard by anything that listens, and leaves no ringing in your ears.</p>
+<div class="cols">
+  <div class="card"><h4>Love hearts</h4><p><code>shells/heart.tres</code>: seven hearts in a wide cone. A small pink flash,
+  pink smoke, and hearts that pop out of the muzzle and float up. Where each lands a heart is printed on the wall,
+  upright, glowing a few seconds and fading away after sixteen, and little hearts float up from it. <b>Someone with an
+  HSHitReact is smitten</b>: she stands where she is for <b>Charm S</b> (2.5 s) with hearts over her head and a run of
+  little bells, then comes on as before. A pink shell with white hearts on it.</p></div>
+  <div class="card"><h4>Water</h4><p><code>shells/water.tres</code>: nine splashes. No flash and no light: a spray and a
+  puff of mist. Each splash throws drops and leaves a wet patch that runs down the wall, glossy in the flashlight, dry
+  in 24 s. <b>Someone is soaked</b>: a start, and she drips for <b>Soak S</b>, her skin wet if she wears the Look
+  plugin's skin. <b>What burns within 40 cm of a splash goes out</b>: an explosive's embers, a made candle's flame, and
+  anything of yours in the group <code>hs_flame</code> with a <code>douse()</code> method. A blue shell with drops on it.</p></div>
+</div>
+<div class="pair">
+<figure><img src="img/hearts_flash.jpg" width="1600" height="900" alt="A love-heart shell fired down the corridor: the walls lit pink for a frame"><figcaption>A love-heart shell fired: a small pink flash, and the corridor blinks pink for a frame.</figcaption></figure>
+<figure><img src="img/hearts_fire.jpg" width="1600" height="900" alt="Hearts flying out of the muzzle down the corridor"><figcaption>A fifth of a second on: the hearts out of the muzzle.</figcaption></figure>
+</div>
+<div class="pair">
+<figure><img src="img/hearts_wall.jpg" width="1600" height="900" alt="Pink hearts printed on the corridor's wall, small hearts floating up from them"><figcaption>Where they land: a heart printed for each, glowing, hearts floating up. Nothing of the wall is missing.</figcaption></figure>
+<figure><img src="img/charmed.jpg" width="1600" height="900" alt="A figure standing in the corridor with pink hearts floating up over her head"><figcaption>Smitten: stood where she is, hearts over her head. Not a scratch on her.</figcaption></figure>
+</div>
+<div class="pair">
+<figure><img src="img/water_fire.jpg" width="1600" height="900" alt="A water shell fired at the wall: a pale spray leaving the muzzle, no flash"><figcaption>A water shell fired: no flash, a spray.</figcaption></figure>
+<figure><img src="img/water_wall.jpg" width="1600" height="900" alt="Water splashing off the corridor's wall, wet patches running down it"><figcaption>The splash: drops, mist, and wet patches running down the wall.</figcaption></figure>
+</div>
+<div class="pair">
+<figure><img src="img/soaked.jpg" width="1600" height="900" alt="A figure in the corridor hit by a splash of water; a wet patch running down the left wall, pink heart prints on the right wall"><figcaption>Soaked: the splashes on her, no wound, and she drips for a while. On the walls, what the two kinds left: a wet patch running down (left), the hearts' prints (right).</figcaption></figure>
+<figure><img src="img/egg_boxes.jpg" width="1600" height="900" alt="Two small card boxes of shells on the floor, one pink and open, one blue"><figcaption>Their boxes (the prop generator's <code>shells_box_5_heart</code> and <code>shells_box_5_water</code>), your own print on them in <a href="../prop_customizer/index.html">the prop customizer</a>.</figcaption></figure>
+</div>
+<div class="card"><h4>A joke of your own</h4><p>A kind whose <b>Damage</b> is 0 is harmless. Its <b>Touch</b> is a word:
+<code>charm</code> and <code>soak</code> are the two an HSHitReact knows; any other word only reaches the
+<code>touched(info)</code> signal of the HSHitReact or the HSShootable it lands on (<code>info.touch</code>,
+<code>info.kind</code>), for a line, a blush, a door that opens. For a quest that asks whether someone's been shot with one,
+no script at all: <a href="#shotwith">an HSShotWith</a>. <b>Fire Sound</b> is its own shot's sound, <b>Ring
+Scale</b> the ringing in your ears. Its impact's <b>Mark</b> can be <code>heart</code> or <code>wet</code> (a print or a wet
+patch, gone after <b>Fade S</b>), with <b>Hearts</b>, <b>Droplets</b> and <b>Mist</b> thrown off and <b>Douse M</b> for what
+it puts out; its muzzle look's <b>Spark Sprite</b> is a picture each spark becomes.</p></div>
 <div class="card"><h4>A kind of your own</h4><p>Duplicate <code>shells/buckshot.tres</code>, give it an <b>Id</b> and a
 <b>Title</b>, change what it fires (<b>Pellets</b>, 0 for the gun's own; <b>Spread Scale</b>, <b>Damage</b>, <b>Recoil
 Scale</b>...), give it a <b>Muzzle</b> (a flash of your own, above), an <b>Impact</b> (duplicate <code>impacts/pellet.tres</code>)
@@ -301,7 +344,7 @@ plasterboard), ricochets off concrete, and the wad lying on the floor after a sh
   Owned unticked) is carried from then on and drawn up into view; <b>Shells</b> come with it into the pocket.</p></div>
   <div class="card"><h4>shells</h4><p>A box of shells: <b>Shells</b> of them into the pocket, with a rattle.
   <b>Lid Open</b> shows it open (degrees), the shells inside. <b>Shell</b> the kind (none: buckshot; the explosive
-  comes in its own black and orange box).</p></div>
+  comes in its own black and orange box, the love hearts in a pink one, the water in a blue one).</p></div>
 </div>
 <div class="pair">
 <figure><img src="img/box.jpg" width="1600" height="900" alt="The box of shells where it lies, two shells beside it"><figcaption>The box of shells (the prop generator's <code>shells_box_5</code>), two spilled beside it.</figcaption></figure>
@@ -315,6 +358,37 @@ collision with it, then back: a ghost doesn't die), <b>push</b> it back, play a 
 <b>fire</b> a <b>target</b> (a scare area, a cue, the lights). Down, a gone one is gone for good. Under a lamp, tick
 <b>Lights Out</b>: shot, its lights go dark for good in a few sparks (the dark is the price of the shot). Its <code>hit</code> and
 <code>down</code> signals are there for anything else: your own scripts, an animation, the story moving on.</p>
+<h3 id="shotwith">A quest for being shot with something</h3>
+<p>"Make her love you." "Soak him twice." Put an <span class="node">HSShotWith</span> under a character (beside her
+HSHitReact or HSShootable), a doll, a door: when a shot of the kind it names lands on what it's under, it sets a
+<b>fact</b> in the Story, ticks a task, says a line. No script. Two are ready-made to drag from the FileSystem dock onto
+someone: <code>addons/horrorstudio_weapons/quest/loved.tscn</code> (love hearts) and <code>quest/soaked.tscn</code> (water).</p>
+<ol class="steps">
+  <li>Drag <code>quest/loved.tscn</code> onto her in the Scene dock (or Add Node, HSShotWith) and name it, say, <i>Loved</i>.</li>
+  <li><b>Shell</b>: <code>heart</code>. The others: <code>water</code>, <code>buckshot</code>, <code>explosive</code>,
+  <code>harmless</code> (any shell that hurts nobody), <code>harmful</code> (any that does), <code>any</code>; a kind of your
+  own by its Id in <b>Shell Id</b>.</li>
+  <li>Under <b>Then</b>, <b>Fact</b>: <code>her_loved</code>. That's the flag, true from then on. <b>Tick</b>: a task on the
+  to-do list to tick (<code>love</code>). <b>Say</b>: a line. <b>Target</b>: anything with a <code>fire()</code> (a scare
+  area, a cue, an event area). <b>Her Look</b>: a look of the HSLookSwitch under her (heart eyes), and <b>Look Secs</b>
+  how long before she's herself again.</li>
+  <li>Use the fact anywhere: a door's, an area's, a cue's, a quest marker's or a look's <b>Needs</b>
+  (<code>her_loved</code>; everyone in the house: <code>her_loved, him_loved, cat_loved</code>), or in a script
+  <code>Story.is_set("her_loved")</code>.</li>
+</ol>
+<table class="keys">
+<tr><td><b>Part</b></td><td>where on her it has to land: anywhere, head, torso, arm, leg (her HSHitReact's hitboxes)</td></tr>
+<tr><td><b>Pellets</b></td><td>pellets of one shot that must land on her (there) for the shot to count</td></tr>
+<tr><td><b>Times</b></td><td>shots that count until it happens (a shot is one pull of the trigger)</td></tr>
+<tr><td><b>Needs</b></td><td>the Story's words: counted only while they hold (<code>on:love</code>: only while that task is on the list)</td></tr>
+<tr><td><b>Once</b></td><td>it happens once; off, again every Times shots</td></tr>
+<tr><td><b>Who</b></td><td>the one shot, when the node isn't under them</td></tr>
+<tr><td><b>Objective</b>, <b>Add Tasks</b></td><td>a new objective and tasks when it happens, as the starter's areas have them</td></tr>
+</table>
+<p class="note">It hears every gun itself, so it knows the kind of a shot that hurts too, and an explosive shell's blast
+reaching her counts as that shell. Someone hidden isn't counted. A character with no collider of her own needs her
+HSHitReact (its hitboxes are what the pellets land on). The love hearts and the water still do what they do: she's
+smitten, she drips.</p>
 </section>
 
 <section id="break">
@@ -451,6 +525,10 @@ $Player/Eye/Shotgun.add_shells(5)        # a box picked up
 var boom := load("res://addons/horrorstudio_weapons/shells/explosive.tres")
 $Player/Eye/Shotgun.add_shells(2, boom)  # two explosive shells
 $Player/Eye/Shotgun.set_load_kind(boom)  # R loads those now (T does it in play)
+var love := load("res://addons/horrorstudio_weapons/shells/heart.tres")
+$Player/Eye/Shotgun.add_shells(2, love)  # two love-heart shells: T offers them from now on
+$Her/HSHitReact.touched.connect(func(info): print(info.touch))   # "charm", "soak": a harmless shell reached her
+$Her/HSHitReact.charm(4.0)               # smitten for four seconds, from a script
 $Player/Eye/Shotgun.loaded = 2           # both barrels loaded at once (a cutscene's)
 $Player/Eye/Shotgun.set_raised(false)    # lowered for a cutscene
 
@@ -488,7 +566,9 @@ $Hallway.add_child(o)</pre>
 <code>muzzle(barrel)</code>. Where shots land: <code>HSImpacts.of(get_tree())</code> (its <code>marks</code>, its
 <code>last_shot</code>: the pellets, the torn holes, the ones alone, the soot, the grains, the wad; <code>play(impact, hit)</code>
 for a hit of your own). On an <span class="node">HSShootable</span>: <code>hit(info)</code>, <code>down</code>,
-<code>count</code>, <code>is_down</code>. On an <span class="node">HSBlowUp</span>: <code>prepared</code>, <code>hit(info)</code> (a shot
+<code>count</code>, <code>is_down</code>. On an <span class="node">HSShotWith</span>: <code>counted(info)</code>,
+<code>happened(info)</code>, <code>count</code>, <code>done</code>, <code>last</code>, <code>fire()</code>, <code>reset()</code>;
+<code>HSShotWith.was(her)</code>. On an <span class="node">HSBlowUp</span>: <code>prepared</code>, <code>hit(info)</code> (a shot
 that didn't break it), <code>blown_up(pieces)</code>; <code>is_prepared()</code>, <code>blow_up(at, dir, power, blast_at)</code>,
 <code>restore()</code>, <code>damage</code>, <code>is_broken</code>, <code>pieces_out</code>, <code>report()</code>;
 <code>HSBlowUp.guess_kind(node)</code>. On an <span class="node">HSHitReact</span>: <code>hit(info)</code> (<code>{part,

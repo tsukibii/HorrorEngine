@@ -22,6 +22,7 @@ signal moment(name: String)                       ## a moment came
 @export var relax_max := 60.0
 @export var fall := 0.01                          ## a second
 @export var safe_rooms := PackedStringArray()     ## an interior's room names: nothing comes while you're in one
+@export var sanity_sync := 0.6                    ## how much low sanity brings its moments closer (a Sanity node in the scene): 0 not at all
 
 var intensity := 0.0
 var phase := "build"
@@ -74,7 +75,11 @@ func _scale() -> float:
 
 
 func _gap() -> float:
-	return _rng.randf_range(gap_min, gap_max) * _scale()
+	var g := _rng.randf_range(gap_min, gap_max) * _scale()
+	var san := get_tree().get_first_node_in_group("hs_sanity")     # (sanity.gd: its moments closer together as it falls)
+	if san != null and sanity_sync > 0.0 and san.has_method("pressure"):
+		g /= float(san.pressure(sanity_sync))
+	return g
 
 
 func _process(dt: float) -> void:

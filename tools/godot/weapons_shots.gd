@@ -10,7 +10,8 @@
 ## react_smoke, react_ichor, react_char, react_crumble, react_gone (someone who bleeds black ichor: HSHitReact on MHR's
 ## body); ooze_wound, ooze_wall, ooze_tape, ooze_pool (the ichor alive, HSOoze: her wound, the spray on the wall with
 ## its drips run, the same on camhybrid tape, the pool where she stood); blowup_before, blowup_burst, blowup_mug, blowup_after, blowup_close, blowup_cut (things that break when
-## they're shot: HSBlowUp).
+## they're shot: HSBlowUp); hearts_flash, hearts_fire, charmed, hearts_wall, water_fire, water_wall, soaked, egg_boxes
+## (the easter egg shells: love hearts and water).
 ##   godot --path PROJECT --rendering-driver vulkan --fixed-fps 30 -s weapons_shots.gd -- --out=DIR [--only=idle,fire]
 extends SceneTree
 
@@ -145,6 +146,7 @@ func _initialize() -> void:
 	await box_shots()
 	await react_shots()
 	await blowup_shots()
+	await egg_shots()
 	quit()
 
 
@@ -588,3 +590,147 @@ func react_shots() -> void:
 	player.set("pitch", 0.0)
 	eye.rotation.x = 0.0
 	await frames(30)
+
+
+# the easter egg shells (DECISIONS 2026-11-11): love hearts at MHR's body down the corridor (hearts_flash: the pink
+# flash; hearts_fire: the hearts out of the muzzle; charmed: her stood there, hearts over her head), the left barrel's
+# at the wall (hearts_wall: a heart printed where each landed, hearts floating up); water at the wall (water_fire: the
+# spray leaving the muzzle; water_wall: the splash and the wet patches running down) and at her (soaked); egg_boxes:
+# the two kinds' boxes on the floor, the hearts' open. Cleaned up after
+func egg_shots() -> void:
+	var names := ["hearts_flash", "hearts_fire", "charmed", "hearts_wall", "water_fire", "water_wall", "soaked", "egg_boxes"]
+	if names.all(func(n): return not wanted(n)):
+		return
+	var dir := "res://addons/horrorstudio_weapons/"
+	var heart = load(dir + "shells/heart.tres")
+	var water = load(dir + "shells/water.tres")
+	var eye := player.get_node("Eye") as Camera3D
+	var torch := player.get_node("Eye/Flashlight") as Node3D
+	eye.current = true
+	var home := player.global_position
+	var yaw0 := player.rotation.y
+	var cz := home.z - 0.15
+	var at := Vector3(home.x - 2.9, home.y, cz - 0.25)
+	player.global_position = Vector3(home.x, home.y, cz + 0.35)
+	var her := (load("res://bodies/MHR.fbx") as PackedScene).instantiate() as Node3D
+	her.name = "HerAgain"
+	main.add_child(her)
+	her.global_position = at
+	var to_you := (player.global_position - at) * Vector3(1, 0, 1)
+	her.rotation.y = atan2(to_you.x, to_you.z)
+	var sk := her.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
+	for side in [["l_uparm", -1.0], ["r_uparm", 1.0]]:
+		var bi := sk.find_bone(side[0])
+		var rest := sk.get_bone_global_rest(bi)
+		sk.set_bone_global_pose(bi, Transform3D(Basis(Vector3(0, 0, 1), deg_to_rad(52.0 * float(side[1]))) * rest.basis, rest.origin))
+	var hr := HSHitReact.new()
+	hr.health = 60.0
+	hr.charm_s = 6.0
+	her.add_child(hr)
+	await frames(4)
+	torch.visible = true
+	gun.set_raised(true)
+	await idle_gun(2.0)
+	gun.set("loaded", 0)
+	await frames(4)
+	gun.add_shells(2, heart)
+	gun.set_load_kind(heart)
+	gun.reload()
+	await frames(4)
+	await idle_gun(5.0)
+	var spine: Array = hr.get("_roles")["spine"]
+	var chest := sk.global_transform * sk.get_bone_global_pose(spine[mini(2, spine.size() - 1)]).origin
+	look(chest + Vector3(0, 0.1, 0))
+	await frames(30)
+	gun.pull()                                                    # the right barrel's hearts at her
+	await frames(1)
+	await now("hearts_flash")
+	await frames(6)
+	await now("hearts_fire")
+	await frames(30)
+	look(her.global_position + Vector3(0, 1.5, 0))
+	await shot("charmed", 12)
+	var wall := Vector3(home.x - 0.8, eye.global_position.y - 0.05, cz - 0.93)   # the north wall, nearly square on
+	player.global_position = Vector3(home.x, home.y, cz + 0.55)
+	look(wall)
+	await frames(20)
+	gun.pull()                                                    # the left barrel's at the wall
+	await frames(16)
+	torch.visible = false                                         # (the flashlight off: the prints' own glow)
+	await frames(2)
+	await now("hearts_wall")
+	torch.visible = true
+	await frames(20)
+	# water: the spray, the splash on the far wall, then her
+	gun.add_shells(2, water)
+	gun.set_load_kind(water)
+	gun.reload()
+	await frames(4)
+	await idle_gun(5.0)
+	var wall2 := Vector3(home.x - 0.8, eye.global_position.y - 0.1, cz + 0.93)   # the south wall, nearly square on
+	player.global_position = Vector3(home.x, home.y, cz - 0.55)
+	look(wall2)
+	await frames(25)
+	gun.pull()
+	await frames(2)
+	await now("water_fire")
+	await frames(10)
+	await now("water_wall")
+	await frames(25)
+	player.global_position = Vector3(home.x, home.y, cz + 0.35)
+	chest = sk.global_transform * sk.get_bone_global_pose(spine[mini(2, spine.size() - 1)]).origin
+	look(chest + Vector3(0, 0.1, 0))
+	await frames(25)
+	gun.pull()                                                    # the left barrel's water at her
+	await frames(3)
+	await now("soaked")
+	await frames(20)
+	# the two boxes on the floor, close under a held light: the hearts' open, the water's shut
+	if wanted("egg_boxes"):
+		var spot := Vector3(home.x - 0.9, home.y, cz + 0.2)
+		var made: Array = []
+		for spec in [[heart, Vector3(-0.09, 0, 0.0), 100.0, 14.0], [water, Vector3(0.1, 0, -0.03), 0.0, -12.0]]:
+			var pk := Node3D.new()
+			pk.set_script(load(dir + "pickup.gd"))
+			pk.set("kind", "shells")
+			pk.set("shell", spec[0])
+			pk.set("lid_open", spec[2])
+			main.add_child(pk)
+			pk.global_position = spot + (spec[1] as Vector3)
+			pk.rotation.y = deg_to_rad(float(spec[3]))
+			made.append(pk)
+		var cam := Camera3D.new()
+		main.add_child(cam)
+		cam.fov = 45.0
+		cam.global_position = spot + Vector3(-0.06, 0.34, 0.46)
+		cam.look_at(spot + Vector3(0.02, 0.01, -0.01), Vector3.UP)
+		cam.current = true
+		var sp := SpotLight3D.new()
+		main.add_child(sp)
+		sp.global_position = spot + Vector3(-0.3, 0.6, 0.4)
+		sp.look_at(spot, Vector3.UP)
+		sp.spot_angle = 26.0
+		sp.light_energy = 2.5
+		sp.spot_range = 3.0
+		sp.light_color = Color(1.0, 0.94, 0.84)
+		sp.shadow_enabled = true
+		await shot("egg_boxes", 40)
+		cam.queue_free()
+		sp.queue_free()
+		for pk in made:
+			pk.queue_free()
+		eye.current = true
+	gun.set_load_kind(gun.normal_kind())
+	gun.set("loaded", 0)
+	await frames(4)
+	gun.set("loaded", 2)
+	torch.visible = false
+	var left = hr.get("_root")
+	if left != null and is_instance_valid(left):
+		(left as Node).queue_free()
+	her.queue_free()
+	player.global_position = home
+	player.rotation.y = yaw0
+	player.set("pitch", 0.0)
+	eye.rotation.x = 0.0
+	await frames(10)

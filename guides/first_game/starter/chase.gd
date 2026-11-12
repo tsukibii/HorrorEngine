@@ -9,7 +9,7 @@
 ## (within `catch_m`): a fright in your face (the searcher's, if she has one), then she's gone. Into one of the
 ## `safe_rooms` (an interior's rooms: the stairwell, where she won't follow) or after `secs_min` to `secs_max`
 ## seconds she gives up, and goes. The chase mood while it runs (the Sound node's), then the hush and the mood
-## before. stop() ends it where it is (so does anything hiding her: a scare's `hide`, the searcher's stop()). While it runs the night's director holds back and the Fear node feels her. `started`, `caught`,
+## before. A close_call.gd under her makes her falter when she's about to have you (you're reloading). stop() ends it where it is (so does anything hiding her: a scare's `hide`, the searcher's stop()). While it runs the night's director holds back and the Fear node feels her. `started`, `caught`,
 ## `escaped` and `lost` to wire anything to; `state` for checks.
 extends Node
 
@@ -60,6 +60,17 @@ func _player() -> Node3D:
 	return get_tree().get_first_node_in_group("hs_player") as Node3D
 
 
+# her close calls (close_call.gd under her): she falters when she's about to have you, by its rules
+func _close() -> Node:
+	var her := _her()
+	if her == null:
+		return null
+	for c in her.get_children():
+		if c.has_method("factor") and c.has_method("spare"):
+			return c
+	return null
+
+
 ## after you (from a signal: whatever it sends is ignored)
 func start(_a = null, _b = null) -> void:
 	if state != "idle" and state != "done":
@@ -74,6 +85,9 @@ func start(_a = null, _b = null) -> void:
 	her.set_meta("hs_hidden", false)
 	if not her.is_in_group("hs_threat"):
 		her.add_to_group("hs_threat")                # (the Fear node feels her near: fear.gd)
+	var cc := _close()
+	if cc != null:
+		cc.new_chase()
 	state = "starting"
 	how = ""
 	_t = start_secs
@@ -150,7 +164,8 @@ func _process(dt: float) -> void:
 			_run(her, pl, dt)
 	if state == "chasing" or state == "door":
 		var to := pl.global_position - her.global_position
-		if Vector2(to.x, to.z).length() <= catch_m and absf(to.y) < 1.2:
+		var held := _close()
+		if Vector2(to.x, to.z).length() <= catch_m and absf(to.y) < 1.2 and not (held != null and bool(held.get("holding"))):
 			_catch(her, pl)
 
 
@@ -174,6 +189,9 @@ func _run(her: Node3D, pl: Node3D, dt: float) -> void:
 	var to := goal - her.global_position
 	var flat := Vector2(to.x, to.z)
 	var step := speed * _run_speed(pl) * dt
+	var cc := _close()
+	if cc != null:
+		step *= float(cc.factor(her, pl, dt))            # (a close call: she falters, you get your moment)
 	var door := _door_ahead(her, Vector3(to.x, 0.0, to.z).normalized(), 0.8)
 	if door != null:
 		_door = door

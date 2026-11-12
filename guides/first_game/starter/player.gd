@@ -5,8 +5,10 @@
 ## `step_height` (a kerb, a genkan's step, a stair's tread): Godot's CharacterBody3D takes any step for a wall. In the
 ## group hs_player (the other starter scripts find it so); it stops when the Story ends. Its footsteps: one a stride
 ## walked (footsteps.gd), the floor's own off the sound shelf through the Sound node (sound.gd step(): carpet, concrete,
-## wood, wet), traced through the room like every sound. A seat (seat.gd) sits you down or lays you down: the eye at
-## the seat, the body resting on what's under it; E or a step gets you up where you stood. doing() says what you're
+## wood, wet), traced through the room like every sound. A seat (seat.gd) sits you down or lays you down: the eye
+## where the seat says (worked out from its furniture: over the chair's seat, on the bed's pillow), eased there over
+## `settle_secs` as a head would go, the body resting on what's under it, your head turning only as far as a head
+## does there; E or a step gets you up where you stood. doing() says what you're
 ## doing (standing, walking, running, sitting, lying, hiding), which a cue (cue.gd) asks. Space holds your breath (the
 ## Fear node's breathing stops) for up to `breath_secs`; past it you gasp, loud. Your steps (louder running), a gasp
 ## and the doors you use are noises a searcher (searcher.gd) hears (noise.gd).
@@ -28,6 +30,7 @@ signal gasped                           ## you held your breath too long
 @export var step_height := 0.5         ## the highest step it walks up
 @export var breath_secs := 8.0         ## how long you can hold your breath (Space)
 @export var gasp_sound := "breath_02"  ## off the shelf: the gasp when you can't any longer
+@export var settle_secs := 0.35        ## how long the eye takes down onto a seat and up again (0: at once)
 
 var pitch := 0.0
 var steps := Footsteps.new()
@@ -41,6 +44,13 @@ var _was := Vector3.INF
 var _stood := Transform3D()             # where you stood before you sat
 var _stood_pitch := 0.0
 var _eye_y := 1.6
+var _eye_now := 1.6                     # the eye's height over your feet now (lower on a seat)
+var _ease_from := Transform3D()         # the eye easing onto a seat or up: where it was
+var _ease_t := -1.0                     # 0..1 (-1: not easing)
+var _seat_yaw := 0.0                    # the way the seat faces, and how far your head turns from it
+var _look_side := PI
+var _look_lo := -1.4
+var _look_hi := 1.4
 @onready var eye: Camera3D = $Eye
 @onready var aim: RayCast3D = $Eye/Aim
 @onready var torch: SpotLight3D = $Eye/Flashlight
@@ -54,6 +64,7 @@ func _ready() -> void:
 	aim.collision_mask |= 2                  # and layer 2: the seats (seat.gd), which only E finds
 	eye.cull_mask &= ~(1 << 18)              # layer 19: what's only in mirrors (the Look plugin's HSMirror.MIRROR_ONLY) is never seen straight
 	_eye_y = eye.position.y
+	_eye_now = _eye_y
 	breath_left = breath_secs
 
 
@@ -61,9 +72,7 @@ func _unhandled_input(e: InputEvent) -> void:
 	if ended():
 		return
 	if e is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		rotate_y(-e.relative.x * mouse_turn)
-		pitch = clamp(pitch - e.relative.y * mouse_turn, -1.4, 1.4)
-		eye.rotation.x = pitch
+		turn(e.relative)
 	elif e is InputEventMouseButton and e.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	elif e is InputEventKey and e.pressed and not e.echo:
@@ -84,6 +93,16 @@ func _unhandled_input(e: InputEvent) -> void:
 					torch.visible = not torch.visible
 
 
+## the look turned by a move of the mouse (pixels). On a seat a head turns only so far (the seat's look_limits()).
+func turn(by: Vector2) -> void:
+	rotate_y(-by.x * mouse_turn)
+	if seat != null and _look_side < PI:
+		rotation.y = _seat_yaw + clampf(wrapf(rotation.y - _seat_yaw, -PI, PI), -_look_side, _look_side)
+	pitch = clamp(pitch - by.y * mouse_turn, _look_lo if seat != null else -1.4, _look_hi if seat != null else 1.4)
+	if _ease_t < 0.0:
+		eye.rotation.x = pitch
+
+
 ## the Story node (story.gd), if the scene has one
 func story() -> Node:
 	return get_tree().get_first_node_in_group("hs_story")
@@ -97,6 +116,15 @@ func ended() -> bool:
 ## your breath: held while Space is down (the Fear node's breathing stops), up to breath_secs; then a gasp, loud, and
 ## a few seconds before you can again
 func _process(dt: float) -> void:
+	if _ease_t >= 0.0:                               # the eye on its way onto a seat, or up from it
+		_ease_t += dt / maxf(0.01, settle_secs)
+		var k := smoothstep(0.0, 1.0, clampf(_ease_t, 0.0, 1.0))
+		var to := global_transform * Transform3D(Basis(Vector3.RIGHT, pitch), Vector3(0, _eye_now, 0))
+		if _ease_t >= 1.0:
+			_ease_t = -1.0
+			eye.transform = Transform3D(Basis(Vector3.RIGHT, pitch), Vector3(0, _eye_now, 0))
+		else:
+			eye.global_transform = _ease_from.interpolate_with(to, k)
 	var want := Input.is_physical_key_pressed(KEY_SPACE) and _gasp_wait <= 0.0 and not ended()
 	var fear := get_tree().get_first_node_in_group("hs_fear")
 	if want and not holding:
@@ -136,10 +164,11 @@ func doing() -> String:
 	return "standing"
 
 
-## onto a seat (seat.gd calls this): turned its way, the eye where it is and tilted up by its look_up_deg, the body
-## resting on what's under it (the chair's seat, the mattress); nothing moves you until you rise(). An eye that would be
-## inside what's under it (an interior's export makes each piece of furniture a solid box to its top) goes just over
-## it instead: inside, every sound would come through the box's walls.
+## onto a seat (seat.gd calls this): turned its way, the eye where the seat says (its eye_transform(): worked out
+## from the furniture, or the seat's own place) and tilted up by its look_up_deg, the body resting on what's under it
+## (the chair's seat, the mattress); nothing moves you until you rise(). The eye goes there over settle_secs. An eye
+## that would be inside what's under it (an interior's export makes each piece of furniture a solid box to its top)
+## goes just over it instead: inside, every sound would come through the box's walls.
 func settle(s: Node3D) -> void:
 	if seat != null:
 		return
@@ -148,7 +177,9 @@ func settle(s: Node3D) -> void:
 	_stood = global_transform
 	_stood_pitch = pitch
 	velocity = Vector3.ZERO
-	var at := s.global_position
+	var eye_was := eye.global_transform
+	var et: Transform3D = s.eye_transform(_eye_y) if s.has_method("eye_transform") else Transform3D(Basis(Vector3.UP, s.global_rotation.y), s.global_position)
+	var at := et.origin
 	var lid := PhysicsRayQueryParameters3D.create(at + Vector3.UP * 0.35, at + Vector3.DOWN * 0.05, 1)
 	lid.exclude = [get_rid()]
 	var over := get_world_3d().direct_space_state.intersect_ray(lid)
@@ -160,12 +191,34 @@ func settle(s: Node3D) -> void:
 	var hit := get_world_3d().direct_space_state.intersect_ray(q)
 	if not hit.is_empty():
 		ground = (hit["position"] as Vector3).y
-	global_transform = Transform3D(Basis(Vector3.UP, s.global_rotation.y), Vector3(at.x, ground, at.z))
-	eye.position.y = at.y - ground
+	_seat_yaw = et.basis.get_euler().y
+	global_transform = Transform3D(Basis(Vector3.UP, _seat_yaw), Vector3(at.x, ground, at.z))
+	_eye_now = at.y - ground
 	pitch = deg_to_rad(float(s.get("look_up_deg") if s.get("look_up_deg") != null else 0.0))
-	eye.rotation.x = pitch
+	var lim: Vector3 = s.look_limits() if s.has_method("look_limits") else Vector3(180, 80, 80)
+	_look_side = deg_to_rad(lim.x) if lim.x < 179.5 else PI
+	_look_lo = -deg_to_rad(minf(lim.y, 80.0))
+	_look_hi = deg_to_rad(minf(lim.z, 80.0))
+	_ease_eye(eye_was)
 	_was = Vector3.INF
 	sat.emit(s)
+
+
+## the eye where it belongs at once (pulled out of a hiding place, back at a checkpoint: no easing)
+func snap_eye() -> void:
+	_ease_t = -1.0
+	eye.transform = Transform3D(Basis(Vector3.RIGHT, pitch), Vector3(0, _eye_now, 0))
+
+
+# the eye from where it was to where it belongs now, over settle_secs
+func _ease_eye(was: Transform3D) -> void:
+	if settle_secs <= 0.0:
+		_ease_t = -1.0
+		eye.transform = Transform3D(Basis(Vector3.RIGHT, pitch), Vector3(0, _eye_now, 0))
+		return
+	_ease_from = was
+	_ease_t = 0.0
+	eye.global_transform = was
 
 
 ## up again where you stood
@@ -174,10 +227,11 @@ func rise() -> void:
 		return
 	seat = null
 	pose = "standing"
+	var eye_was := eye.global_transform
 	global_transform = _stood
-	eye.position.y = _eye_y
+	_eye_now = _eye_y
 	pitch = _stood_pitch
-	eye.rotation.x = pitch
+	_ease_eye(eye_was)
 	velocity = Vector3.ZERO
 	_was = Vector3.INF
 	stood.emit()

@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="HSImpact" format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_weapons/impacts/impact.gd" id="1_impact"]
+[ext_resource type="AudioStream" path="res://addons/horrorstudio_weapons/sounds/heart_pop.ogg" id="2_sound"]
+
+[resource]
+script = ExtResource("1_impact")
+title = "Love heart"
+mark = "heart"
+mark_size_m = 0.17
+mark_jitter = 0.3
+keep = 60
+embers_s = 5.0
+embers_energy = 1.4
+fade_s = 16.0
+merge_m = 0.0
+soot_m = 0.0
+powder_m = 0.0
+wad_m = Vector2(0, 0)
+dust = 0
+chips = 0
+sparks = 0
+debris_scale = 1.0
+debris_max = 16
+hearts = 5
+spray_color = Color(1, 0.42, 0.66, 1)
+radius_m = 0.0
+sound = ExtResource("2_sound")
