@@ -166,6 +166,7 @@ func _initialize() -> void:
 	cb.height = 0.32
 	mesh(cb, Vector3.ZERO, Color(0.78, 0.56, 0.47), cloak_fig).name = "skin"
 	put("cloak", cloak_fig, Vector3.ZERO)
+	put("look_switch", body, Vector3.ZERO)             # a character's looks, switched: with no looks in its list it leaves her as she is
 	put("look_environment", world, Vector3.ZERO)
 	# the air: one atmosphere acts (the first in), the others wait; a flashlight and an LED torch aimed across the room
 	# with their beams; a lamp's cone; motes; a dusty room's own air

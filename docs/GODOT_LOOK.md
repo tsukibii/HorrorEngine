@@ -39,7 +39,7 @@ shaft's beam runs along it (tilt the node down for the sun); a sweep's and a lea
 wall with forward into the room and X along the street or the wall; a blood splat lies on the surface its +Y (the
 green arrow) points out of.
 
-The presets (`presets/*.tscn`, 78; the twelve creature skins' `creature_<look>` (§5o, §5p) and the thirteen eye looks' `eyes_<look>` (§5q) among them): `rain`, `downpour`; `wet_floor`, `wet_floor_raining` (ripples), `damp_floor`;
+The presets (`presets/*.tscn`, 80; the twelve creature skins' `creature_<look>` (§5o, §5p), the thirteen eye looks' `eyes_<look>` (§5q), `cloak` and `look_switch` (§5r) among them): `rain`, `downpour`; `wet_floor`, `wet_floor_raining` (ripples), `damp_floor`;
 `puddle`; `blood_pool`, `blood_dried`, `blood_wall`; `wall_leak`; `window_shaft`, `window_sun` (the shaft with a
 warm spot shining the same way, a child of it); `headlight_sweep`; `caustics_light`, `blinds_light`, `leaves_light`,
 `clouds_light`; `fluorescent_tube`, `dying_bulb`, `candle`, `alarm_pulse`, `faulty_neon`, `desk_lamp_dying`;
@@ -1393,6 +1393,64 @@ the dark (the grey alien: its black eyes ringed red). `docs/godot_sheets/2026-11
 **Seen while doing this, not fixed**: the grey alien's own eyes (black, gloss 1) go white under a strong lamp close
 by (CREATURESKIN's key light: 9 at 3 m), with the eye shader as it was before this: the catchlight's lobe spread over
 a black ball. Under the eye check's light (1.6) they're black with a glint. LATER.
+
+## 5r. Looks, switched: a tool to toggle skins and eyes, and events and quests that do (`HSLookSwitch`, `HSLookPreset`, `HSLookPicker`, the look viewer; DECISIONS 2026-11-12, later)
+
+The user: "Can you make a tool that lets us toggle between the eyes and skin shades (allows us to use default too), we
+should be able to make events or quests trigger different looks". Four pieces:
+
+**A look** (`look_preset.gd`, `HSLookPreset`, a resource: a `.tres` file): a name, a **skin** (`default`: her own; a
+creature skin, §5o; `cloak`, §5p) with its amount, tint and Extend, **eyes** (`default`: her own; an eye look, §5q)
+with their colour, amount and side, the cloak's two words (her eyes left to see, her shadow kept), its own `seconds`,
+and `needs` (below).
+
+**The switch** (`nodes/look_switch.gd`, `HSLookSwitch`, a node under the character beside her HSCharacterLook;
+`presets/look_switch.tscn`): her `looks` (a list of those), and it turns her from one to another: **half the turn the
+old look fades out, then the swap, then half the new one comes in** (from her default there's nothing to fade: all of
+it comes in). **Default is her own skin and eyes exactly as they were** (the same materials: measured).
+
+| How she's turned | What you set |
+|---|---|
+| by a quest or a flag | a look's **`needs`** (the starter Story's words: `task:dinner` that task done, `on:tidy` on the list, `item:key`, a fact, `!` for not, commas for all). She wears it while they hold; when several hold, the last in the list; when none does, her `start` look (empty: her default). A look asked by hand stays until the story next changes |
+| by an event | the starter's **event area** and **cue** have `look_of` (her, or her switch) and `her_look` (a look's name, or `default`); anything with a `target` (a cue, the weapons' shootable and hit react) calls the switch's `fire()`, which turns her to `on_fire` (a name, `default`, or `next`); any signal can be wired to `fire` |
+| by a script | `set_look("angry")`, `default()`, `next()`, `show({"skin": "cloak", "eyes": "glow", "eye_color": Color.GREEN}, 0.4)` for a look made on the spot; `look_changed(name)` when she's wholly in it |
+| by hand while you play | `panel_key` (F8, debug builds only): the picker over the game, for every switch in the scene |
+
+    $Freddy/HSLookSwitch.set_look("angry")
+    $Freddy/HSLookSwitch.default()
+
+Under the cloak her eyes are cloaked with the rest unless the look has eyes of its own or `eyes_show`; a change of
+eyes under a cloak puts the cloak on again (it's on her eyes too). A creature skin keeps her shadow; the cloak takes
+it unless `shadow`. Cloaked, the switch tells the cloak how fast she moves, as HSCloak does (use one or the other on
+a character). Her HSCharacterLook's own Creature skin and Creepy eyes rows are for a character with one look: leave
+them on none under a switch (the switch's default would take them off).
+
+**The picker** (`look_picker.gd`, `HSLookPicker`, a panel): the two lists (Skin: default and every skin; Eyes: default
+and every eye look), How much, Its colour (or the look's own), one eye, the cloak's two words, how long a turn takes;
+her named looks as buttons, **Default** first; **Save as a look** (an HSLookPreset at `res://looks/<name>.tres`, added
+to her list: drag the file into any switch's Looks) and **Copy as code** (the `show({...})` line). What it sets goes
+through her switch, so what you see is what an event will do.
+
+**The look viewer** (`tools/look_viewer.tscn`: open it and press F6, or **Project > Tools > HorrorStudio: look
+viewer**): a scene of its own. It lists every character in the project (`exports/characters`, `game/people`; Open… for
+a .glb anywhere; with none, a stand-in with a skin and two plain eyes), wears her look as a game does, and shows the
+picker beside her. Above her: **Lamp** (off: what glows of itself), **Behind her** (dark, grey, stripes: a cloak wants
+something to bend), **Walk** (the cloak shows when she moves), **Turn**, **Face** and **Body**; drag to look round her,
+the wheel to come closer. Looks saved there go with you to the next character.
+
+**Not in it**: a game made in the Director or exported from the desk has no word for a cast member's look yet (the
+story's `skin` word wets her; nothing names a creature skin or eyes): the switch reads the starter kit's Story. It
+wants one story word (`look`), grown with the runner, the check and STORY_FORMAT together. And the picker isn't in the
+editor's own viewport: the looks are put on when the game runs, so the tool is a scene that runs.
+
+**LOOKSWITCH** (`python tools/godot/look_switch_check.py`): in a `godot_byhand.py new` project, headless: a look at
+once and her default exactly back; a turn over a second in its halves; a look's own seconds; the cloak with her eyes
+left and with them cloaked; an amount alone on the same material; shadows; `next()`, `fire()`; the starter's own
+Story (a task ticked: its look; a fact: the later look; by hand until the story changes), its event area's `look_of`
+and `her_look`, the cue's same words; a switch starting in a look; the picker (picked, saved as a .tres and read back,
+the code, the panel over the game); the lists a look offers against HSCreatureSkin's and HSEyeFx's; on a Studio export
+beside her HSCharacterLook. Then the viewer run as a scene under xvfb: her default, cloaked in front of the stripes
+with her eyes glowing, her eyes green with the lamp out (counted). `docs/godot_sheets/2026-11-12_look_viewer.jpg`.
 
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 

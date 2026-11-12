@@ -2,6 +2,25 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, later (the user: a tool to toggle looks, and events and quests that change them)
+
+- **"Can you make a tool that let's us toggle between the eyes and skin shades (allows us to use default too), we
+  should be able to make events or quests trigger different looks"**. Built in the look plugin (GODOT_LOOK §5r):
+  - **A look** is a file (`HSLookPreset`, a `.tres`): a skin (**default**, a creature skin, the cloak), eyes
+    (**default**, an eye look), their colours and amounts.
+  - **The tool** is two things. **The look viewer** (`addons/horrorstudio_look/tools/look_viewer.tscn`: F6, or
+    Project > Tools > HorrorStudio: look viewer): a character from the project, every skin and eye look toggled beside
+    her, Default, the lamp off to see what glows, stripes behind her to see the cloak, walking, Save as a look. And
+    **the same panel over the running game** (F8, debug builds) for every character with a switch.
+  - **`HSLookSwitch`** under a character keeps her looks and turns her from one to another (the old fading out, the
+    new in; default exactly her own). **Quests**: a look's `needs` in the starter Story's words (`task:dinner`, a fact,
+    `!`...): worn while they hold. **Events**: the starter's event area and cue have `look_of` and `her_look`; a cue's
+    or a shootable's `target` calls the switch's `fire()`; from a script `set_look("angry")`, `default()`.
+  - **For games built by hand** (the starter kit's Story). A Director or desk game has no word for a cast member's
+    look yet: it wants a story word (`look`), not built; said to the user.
+  - The check is LOOKSWITCH. It caught the starter cue's own `look` (where the player looks): the new word is
+    `her_look` in both scripts.
+
 ## 2026-11-12 (the user: ghost events, the cloak, creepy eyes, what "Freddy" needs)
 
 - **"Come up with some extra things we could add to our godot horrorengine, e.g. since we are making paranormal games

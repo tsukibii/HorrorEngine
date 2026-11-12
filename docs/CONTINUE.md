@@ -44,6 +44,11 @@ a babysitting game with a grey alien needs) and for two things built (the Predat
   on a cloud session first `python tools/face_mesh.py setup` and `apt-get install -y libegl1 libgles2`: the page
   never becomes ready without MediaPipe, and its import needs libEGL) is the test subject for both, and Freddy's
   body when that game starts. It's in `Exports/characters/` (not tracked).
+- **Then, the same day: looks, switched** (GODOT_LOOK §5r): `HSLookPreset`, `HSLookSwitch`, `HSLookPicker`, the look
+  viewer (`addons/horrorstudio_look/tools/look_viewer.tscn`), the starter's event area and cue given `look_of` and
+  `her_look`; LOOKSWITCH. By-hand games only: **a Director or desk game needs a story word (`look`) for a cast
+  member's skin and eyes**, with the runner, the check, STORY_FORMAT and the desk's command together: the next step
+  if the user builds Freddy in the Director.
 - **Not done**: the story's `skin` word doesn't name the cloak yet (a desk game's cast), the runtime add-on has no
   word for eye looks (STORY_FORMAT: grow the runner, the check and the doc together when a game wants them); the
   guides don't show either; tutorial v2 uses neither. LATER has the cloak's next steps and the black eye under a

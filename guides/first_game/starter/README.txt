@@ -34,7 +34,9 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            stop; start() from a signal, or by itself now and then while you're afraid
   room_tone.gd             an Area3D: a room's tone while the player's in it
   event_area.gd            an Area3D: walked into, an objective, tasks added or ticked, a line, a fact, the music, the
-                           air's fog rolled to a level (the scene's HSAtmosphere), the end
+                           air's fog rolled to a level (the scene's HSAtmosphere), a character's look (look_of:
+                           her or her HSLookSwitch; her_look: a look's name, or default: other eyes, another skin,
+                           the cloak; the cue has the same two), the end
   scare_area.gd            an Area3D: walked into (or fire() from a signal), the lights go out, dim, flicker or go out
                            one by one, for good or for a while; someone appears (for a moment: a jump scare); a sting;
                            a hush first; the fog rolled in; the tape breaking up for a moment (the scene's HSTape)

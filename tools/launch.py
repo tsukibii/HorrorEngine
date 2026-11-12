@@ -175,6 +175,7 @@ TOOLS = [
     ("Checks", "Faces in Godot check (an export's 72 face shapes beside its blink, an expression played on every mesh; needs a Studio export)", "tools/godot/faces_check.py", {}),
     ("Checks", "Creature skins check (chrome, pearl, greasy, the cloak and the rest on balls and on a creature in Godot, with the sheet)", "tools/godot/creature_skin_check.py", {}),
     ("Checks", "Creepy eyes check (glowing, black, spiral, hearts and the rest on eyeballs and on a character in Godot, with the sheet)", "tools/godot/eye_fx_check.py", {}),
+    ("Checks", "Look switch check (a character's looks switched by name, by the starter's quests and events, the picker and the look viewer in a by-hand project)", "tools/godot/look_switch_check.py", {}),
     ("Checks", "Hitboxes check (the weapons' hit reactions sized to an adult, a child, a goblin and an ogre)", "tools/godot/hitbox_check.py", {}),
     ("Checks", "Wardrobe test (the wardrobe page in a headless browser; the Character Studio's server running)", "node tools/character/wardrobetest.mjs", {}),
     ("Checks", "GPU drape test (the drape on the card against the CPU's, WebGPU; the Character Studio's server running; GPU=1 for the card)", "node tools/character/tailor/gputest.mjs", {}),

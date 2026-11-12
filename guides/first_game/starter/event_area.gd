@@ -1,5 +1,6 @@
 ## A moment when the player walks in (guides/tutorial_v2): a new objective, tasks added or ticked, a line said, a fact
-## set, the music's mood, the air's fog rolling in or clearing (an HSAtmosphere's `fog_to`), or the ending. Only when
+## set, the music's mood, the air's fog rolling in or clearing (an HSAtmosphere's `fog_to`), a character's look
+## (`look_of` and `her_look`: her HSLookSwitch turns her to it: other eyes, another skin, her default), or the ending. Only when
 ## `needs` holds (a task done, task:<id>; an item carried, item:<name>; a fact; ! in front for not; several apart by
 ## commas): it waits while they're inside until it does. Once, or every time they come in. Its box: `interior` and
 ## `room` (that room's size), or a CollisionShape3D of your own. Its `fire()` does it all from anything's signal too.
@@ -20,6 +21,8 @@ signal entered
 @export_range(-0.01, 1.0, 0.01) var fog := -0.01   ## the air's fog level to roll to (the scene's HSAtmosphere); under 0: as it is
 @export var fog_seconds := 4.0              ## how long it takes
 @export var ending := false                 ## the Story's ending (its own title and words)
+@export var look_of: Node                   ## a character (or her HSLookSwitch) whose look this changes
+@export var her_look := ""                  ## the look she turns to: a name in her switch's Looks, or default
 
 var fired := false
 var _here := false
@@ -73,6 +76,13 @@ func fire(_a = null, _b = null) -> void:
 		var air := get_tree().get_first_node_in_group("hs_atmosphere")
 		if air != null and air.has_method("fog_to"):
 			air.fog_to(fog, fog_seconds)
+	if look_of != null and her_look != "":       # her look (the look plugin's HSLookSwitch under her)
+		var ls: Node = look_of if look_of.has_method("set_look") else null
+		for c in (look_of.get_children() if ls == null else []):
+			if c.has_method("set_look"):
+				ls = c
+		if ls != null:
+			ls.set_look(her_look)
 	entered.emit()
 	if ending and st != null:
 		st.end()
