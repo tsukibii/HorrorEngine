@@ -39,9 +39,12 @@ the fix.
   scratch folder) and after, every style grown by both and compared, took two minutes and said exactly which hairs.
   Compare hair by hair (`guides`), not point by index: one card with another point shifts every index after it, and
   a strand a centimetre longer reads as half the head moved 19 cm.
-- **Pushing the cards doesn't make strands.** Against a strand render (the user's Daz3D hair), twice the cards and
-  triangles, narrow cards and 120 loose wisps changed the picture hardly at all. What reads as hairs is each hair
-  drawn; more of a soft-edged card is more soft edge. Tested before building anything on the hope.
+- **One thing tested is one thing known.** Against a strand render (the user's Daz3D hair), twice the cards and
+  triangles, narrow cards and 120 loose wisps changed the picture hardly at all. From that I wrote, in four documents
+  and to the user, that real strands were needed. All it showed was that more cards don't help. How the cards are
+  drawn I hadn't touched, and that was the one that mattered: three settings on the material (no dither, no side
+  fade, no softness) changed the fringe more than doubling the geometry. Before a conclusion goes in a document,
+  name what was varied; what wasn't varied is still unknown, and the cheapest untried thing is tried first.
 - **A setting of my own can be the whole of a fault I put down to the system.** The first twin tails beside the
   reference were kinked ropes: the wave I had set. With it off they hung as the picture's do. Take one's own numbers
   out of a comparison before reading it.

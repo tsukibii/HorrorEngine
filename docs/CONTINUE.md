@@ -54,13 +54,18 @@ a heavier fringe and its Arch both ways (HAIR_V2 §3.7, §3.8).
 (not in git, and `Saved/` doesn't survive a session: ask the user for them again). What's known:
 - A baseline of the last picture beside it (`Saved/Hair2/daz/r0`, `r1_strandtest.jpg`): the shape roughly, far from a
   replica. Eight differences listed in DECISIONS and HAIR_V2 §9.
-- **Tested: the editor at its limits doesn't read as strands** (twice the triangles, hardly a change). The finding:
-  a pass of real thin strands over the cards (the fringe's ends, sidelocks, the tails' edges, flyaways). Not started.
-  `hair_fine.gdshader` (the brows' and lashes': blended at true coverage) is where to look first.
+- **Tested: more cards don't help** (the editor at its limits, twice the triangles: hardly a change). **Tested
+  after: how they're drawn does** (`--hair '{"hashed":false,"side_fade":0.0,"soft":0.0}'` at 1600 x 1200,
+  `Saved/Hair2/daz/x1/fringe_drawn.jpg`): the fringe a dark mass with separate tips where it was a haze. By eye, one
+  still, not at the reference's scale, nothing known in motion. Whether real thin strands are needed as well is not
+  decided (I first wrote that they were: the first test didn't show it). If they are, `hair_fine.gdshader` (the
+  brows' and lashes': blended at true coverage) is where to look first. A crisp setting belongs in a bake's own
+  `settings`, not in the plugin's defaults: those are every character's.
 - Also missing: a way to dye one chosen lock (a red streak in a fringe); a fringe dense above that parts into strands
   below; a tendril that hangs on past where it meets the body (it stops on the shoulder now).
 - The tails were my setting, not the system: with `texture.wave` 0 they hang as the picture's do.
-- The order meant: finish and commit 1; the strand pass; the one-lock dye; then each hairstyle against its picture,
+- The order meant: the same comparison at the reference's own scale and in black with its sheen, then decide on
+  strands; the fringe in locks; the one-lock dye; the sidelocks; then each hairstyle against its picture,
   side by side, with what still differs written down each round.
 
 **3. The styles' cards were distorted (found, fixed, made again).** `hair2_check.py` drew every picture 960 x 720

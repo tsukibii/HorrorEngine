@@ -300,9 +300,14 @@ head's hair 1.5 to 3 MB with its two 512 px textures.
   it at bust distance (the Studio's closer picture shows its strands; the two weren't taken alike); brown scalp shows at a pulled-back hairline under a see-through fringe. The coil was compared with the
   five older bun styles' cards at their size (the same), not close up.
 - **Not there, and needed for a strand render's look** (the user's Daz3D hairstyles, DECISIONS 2026-11-12, after the
-  very last): hair drawn as hairs close up. Tested: the editor at its limits (high detail, 2600 pores, narrow cards,
-  120 loose strands) reads the same as at its defaults beside a strand render. A pass of real thin strands over the
-  cards is the finding; not built. Nor is a way to dye one chosen lock (a single streak in a fringe).
+  very last): hair drawn as hairs close up. Two things tried, 2026-11-12. More cards: the editor at its limits (high
+  detail, 2600 pores, narrow cards, 120 loose strands) reads the same as at its defaults beside a strand render. The
+  same cards drawn crisply (`hashed` off, `side_fade` 0, `soft` 0 on the hair's material): the fringe goes from a
+  see-through haze to a dark mass whose edge breaks into separate tips, much nearer the reference's, by eye, in one
+  still, at three times the reference's scale; nothing is known of it in motion, where a cut-out card can shimmer
+  that a dithered one doesn't. So how the cards are drawn matters more than how many; whether a pass of real thin
+  strands is needed as well is open (an earlier note here called it the finding: the first test didn't show that).
+  Not there either: a way to dye one chosen lock (a single streak in a fringe).
 - **The pictures' size, and the cards' pictures** (found 2026-11-12): a picture is the scratch project's window, and
   the window's size is the project's own setting, not resizable; `hair2_shots.gd`'s `root.size` doesn't change it.
   The project was written 960 x 720 once, so every picture was that size whatever `--size` said, and a style's card

@@ -22,9 +22,13 @@ The user's answers, newest first. They override the plan, the research and the d
   changes. Every style stays a style of the editor: its lengths and the rest on sliders.
 - **Where it stands (not built):** a first baseline of the last picture beside the picture. The shape is roughly
   there; it is far from a replica. Tested, not assumed: the editor pushed to its limits (high detail, 2600 pores,
-  narrow cards, 120 loose strands: twice the triangles) barely changes how the hair reads: cards with a soft dithered
-  edge don't resolve into hairs. So tuning won't reach it. What the comparison says is needed: a pass of real thin
-  strands over the cards (the fringe's ends, the sidelocks, the tails' edges, flyaways); a way to dye one chosen lock
+  narrow cards, 120 loose strands: twice the triangles) barely changes how the hair reads. That showed only that more
+  cards don't help; I first wrote here that real strands over the cards were therefore needed, which it didn't show.
+  Tried since: the same cards drawn crisply (no dithered coverage, no side fade, no softness) turn the fringe from a
+  see-through haze into a dark mass whose edge breaks into separate tips, by eye, in one still picture, not yet at
+  the reference's own scale. So how the cards are drawn matters more than how many there are, and whether real
+  strands are needed at all (for the sidelocks, the tails' edges, flyaways) is not decided. Also needed, and these
+  stand: a way to dye one chosen lock
   (the red streak: the streaks there are put red on the sides and tails instead); a fringe that is dense above and
   parts into strands below. The choice between changing v2 and a v2B was left to Claude; this is its finding, the
   user hasn't seen the pictures yet. The pictures here are 960 x 720 on a CPU: some of the softness is the renderer.
