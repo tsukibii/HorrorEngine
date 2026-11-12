@@ -1278,9 +1278,19 @@ Title</b>, and you're back at the checkpoint with the tasks, facts, pocket and d
 one stage lower, with no rush for <b>Grace</b> seconds. After <b>Mercy After</b> deaths (2) her warning is longer.
 What saves you is always the same: light, a safe room, a door shut in her way (2 s), 6 s out of her sight, hiding
 before the warning ends, or shooting her.</p>
-<h3 id="sanity">6. Sanity, if you want it</h3>
-<p>Not in this night's game, but one node adds it. Add a Node anywhere, name it <b>Sanity</b>, give it
-<code>res://starter/sanity.gd</code>. A thin meter shows at the top right while it isn't full.</p>
+<h3 id="sanity">6. Sanity</h3>
+<p>One node. Under <b>Main</b> add a Node, name it <b>Sanity</b>, give it <code>res://starter/sanity.gd</code>. A thin
+meter shows at the top right while it isn't full. In this night's game set:</p>
+<table class="keys">
+<tr><td>Scare Cost</td><td><code>0.03</code> (this night has a lot of scares; the default is 0.06)</td></tr>
+<tr><td>Foods</td><td><code>{"soda": 0.12, "water": 0.06, "burger": 0.3}</code>: the laptop's FOOD &amp; DRINK page. Once one's in your pocket, <kbd>C</kbd> eats it</td></tr>
+<tr><td>No Sleep</td><td>one line: <code>!shot_her</code>. While she hasn't been shot, lying in 304's bed only rests you</td></tr>
+<tr><td>Cant Says</td><td><code>You can't sleep. Not while she's out there.</code></td></tr>
+<tr><td>Slept Says</td><td><code>You slept. It's nearly light.</code></td></tr>
+</table>
+<p>Play: the dark corridor wears it down, the desk chair and the bed bring it back part of the way, a soda a little
+more. Lie in 304's bed before the end and you're told you can't sleep. Shoot her, lie down again, and after four
+seconds the night is over: dark, then awake with it full. How it works in general:</p>
 <table class="keys">
 <tr><td>What wears it down</td><td>the dark (your flashlight off, no lamp near), her near you in the open, a hunt running, every scare. Each has its own number; <b>Drain</b> is time itself</td></tr>
 <tr><td>What mends it</td><td>sitting (to 0.7), lying down (to 0.8), food, and sleep (to full). Food is a thing with <code>res://starter/food.gd</code> eaten with <kbd>E</kbd>, or a pocket thing listed in <b>Foods</b> (<code>{"soda": 0.1}</code>: the laptop's shop sells those) eaten with <kbd>C</kbd></td></tr>
@@ -1292,6 +1302,22 @@ before the warning ends, or shooting her.</p>
 stage early). And three facts are set for anything's <b>Needs</b>: <code>sanity:uneasy</code> (under three quarters),
 <code>sanity:shaken</code> (under half), <code>sanity:breaking</code> (under a quarter). A cue, a scare area, a hunt
 spot or a whole hunt with Needs <code>sanity:shaken</code> only happens once you're that far gone.</p>
+<h3 id="closecall">7. Close calls: she nearly had you</h3>
+<p>A hunt that's fair by the numbers kills you while you reload. A <b>close call</b> cheats for you, where you can't
+see it: when she's about to have you and you're in the middle of something, she falters. She still comes, slower and
+slower, lunging, her breath in your ear, and never quite gets there until your reload is done, plus half a second for
+your shot. Miss, and she has you.</p>
+<p>Under <b>Hunter</b> (the one you shoot at the end) and under <b>Stalker</b> add a Node, name it <b>CloseCall</b>,
+give it <code>res://starter/close_call.gd</code>, and untick <b>Hiding</b> on both (this night's search is meant to find
+you when you gasp). Her chase finds it by itself.</p>
+<table class="keys">
+<tr><td>When</td><td><b>Reloading</b>: your gun is open. <b>Empty Gun</b>: the beat between the click and your reload. <b>While Needs</b>: the Story's words (<code>on:fuse</code>: you're at the fuse box). <b>Hiding</b>: the time her search would have found you, she leans in, stays <b>Linger</b> seconds longer, and goes</td></tr>
+<tr><td>How often</td><td><b>Chance</b> 0.75 (less as your sanity falls: its Sanity Sync), the first one in a game sure, one a chase, 40 s between them, and only while its <b>Needs</b> hold</td></tr>
+<tr><td>How</td><td>she starts to falter <b>Hold M</b> (2.8 m) from you and comes no nearer than <b>Stop M</b> (1.3 m); never longer than <b>Max Secs</b> (4 s), then she has you; her <b>Move</b> while it lasts (<code>lunge</code>) and a <b>Sound</b> at her head</td></tr>
+<tr><td>From a script</td><td><code>$CloseCall.call_it("the door", 2.0)</code>: the next time she's in reach, two seconds. Its signals <code>began(kind)</code> and <code>ended(kind, made_it)</code> for a line or a sound</td></tr>
+</table>
+<p>Keep it rare. One a chase is a story the player tells afterwards; one every chase is a monster that can't catch
+anyone.</p>
 <div class="note">A hunt that's only a haunting, ended by a task: Kind <code>haunting</code>, Ends When
 <code>task:power</code>, and start it from whatever cuts the power. She's seen, she's near, she never touches you;
 flip the breaker and she's gone. Other things can join in by its stage: a scare area with Needs
@@ -1346,7 +1372,7 @@ game as these steps say and plays all of it.</p>
 <tr><td><b>Scene builder</b></td><td>rooms on two floors, a dog-leg stair, doors locked by a key, windows, furniture, lamps, paint, the export: <a href="#plan">§3</a> to <a href="#export">§8</a>, or the <a href="#ready">ready-made floor</a></td></tr>
 <tr><td><b>Character Studio</b></td><td>her, a Studio export with its skin wet (a stand-in when you have none): <a href="#scene">§10</a>, <a href="#her">§20</a></td></tr>
 <tr><td><b>Look plugin</b></td><td>the look and the grade, light zones, the tube and dying bulb presets: <a href="#light">§11</a>; rain on glass, a car's lights, a CRT, a real mirror, a wet floor, blood, a light shaft, a leak and a puddle, leaves' shadows, the tape: <a href="#dress">§12</a>; the air, its dust and the beam: <a href="#air">§13</a>; lightning, breath and frost, steam writing: <a href="#intense">§22</a>; made props' effects (HSPropFX) and a liquid's level (HSLiquidFill): <a href="#breaks">§28</a>; her looks (other eyes, creature skins, the cloak), the look viewer, a switch a fact and an event turn: <a href="#looks">§30</a></td></tr>
-<tr><td><b>Starter kit</b> (43 scripts)</td><td>the player, flashlight, story, pocket and cash, sound and its physics, room tones, footsteps, notes, pickups, doors and locks, event and scare areas, lights: <a href="#story">§15</a> to <a href="#jump">§21</a>; fear, the steps behind you, her signs, the glimpse, the one closer each time, the mirror figure, the shadow, the feet, the uncanny, the night's director and its moments, her menace, the searcher, the chase, the cold, the steam: <a href="#intense">§22</a>; cues and seats: <a href="#cues">§23</a></td></tr>
+<tr><td><b>Starter kit</b> (44 scripts)</td><td>the player, flashlight, story, pocket and cash, sound and its physics, room tones, footsteps, notes, pickups, doors and locks, event and scare areas, lights: <a href="#story">§15</a> to <a href="#jump">§21</a>; fear, the steps behind you, her signs, the glimpse, the one closer each time, the mirror figure, the shadow, the feet, the uncanny, the night's director and its moments, her menace, the searcher, the chase, the cold, the steam: <a href="#intense">§22</a>; cues and seats: <a href="#cues">§23</a></td></tr>
 <tr><td><b>Sound shelf and moods</b></td><td>the four moods, a tone for each room, every sound placed and traced through the rooms: <a href="#sound">§14</a>, <a href="#body">§22</a></td></tr>
 <tr><td><b>UI plugin</b></td><td>HSHud (the reticle, the keys, the pocket as a row of the things themselves), HSQuestMarker coming and going with the to-do list: <a href="#hud">§24</a>; HSModelSlot in the pocket's row and the shop's cards</td></tr>
 <tr><td><b>Devices plugin</b></td><td>the laptop, its terminal, the Order tab a page per category, things as files in a catalog's folder, locks shown as a ?, NEW: <a href="#laptop">§25</a>; delivery, parcels with a marker each, unboxing into the hands: <a href="#parcel">§26</a></td></tr>
@@ -1361,6 +1387,8 @@ way to use them yet:</p>
 <tr><td><b>A book in the hands</b></td><td>a journal whose pages are written in a hand, turned with the arrows: the runtime's <code>book.gd</code> (here a note is a card)</td></tr>
 <tr><td><b>Faces</b></td><td>expressions from the Face page played on her face: the runtime's <code>face.gd</code> (here only <code>uncanny.gd</code>'s smile and stare)</td></tr>
 <tr><td><b>The hunt</b></td><td>a hidden quest from the order to the gun: who hunts, her spots in the corridor, the warning and the rush in the dark, 304 safe; her moves from Kimodo clips (<code>moves.gd</code>: here she slides until you make them): <a href="#hunt">§31</a></td></tr>
+<tr><td><b>Sanity</b></td><td>worn down by the dark, her and the scares; the desk chair, 304's bed and the shop's food mend it; no sleep until she's shot; the hunt and the director faster as it falls (<code>sanity.gd</code>): <a href="#sanity">§31, 6</a></td></tr>
+<tr><td><b>Close calls</b></td><td>reloading with her nearly on you, she falters just long enough, once a chase (<code>close_call.gd</code> under both of her): <a href="#closecall">§31, 7</a></td></tr>
 <tr><td><b>Her moves, edited</b></td><td>an animation library with cards, On stage per quest, paths: the Director's Animate tab. By hand, <code>moves.gd</code> plays a clip per behaviour: <a href="#huntmoves">§31</a></td></tr>
 <tr><td><b>The HUD's words</b></td><td>the starter Story draws its objective, list, lines and cards itself, so the HUD's corners, its serif lines and its cards go unused</td></tr>
 <tr><td><b>E's prompt</b></td><td>the reticle doesn't say what E will do ("Take: the master key"). The runtime feeds it, the starter player doesn't.</td></tr>

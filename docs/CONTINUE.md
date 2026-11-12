@@ -66,9 +66,13 @@ a babysitting game with a grey alien needs) and for two things built (the Predat
   stalker's Moves rows); navigation, so she can come round another way (HUNT_PLAN §8: try Godot's navigation baked
   from the interior's colliders on the hotel floor); `hunt_path.gd`; the Director's cards.
 - **Then: sanity** (the starter's `sanity.gd` and `food.gd`; `hunt.gd` and `dread.gd` synced by `sanity_sync`; the
-  facts `sanity:uneasy`, `sanity:shaken`, `sanity:breaking`; SANITY, `tools/godot/sanity_check.py`). Not in tutorial
-  v2's game (a note in its §31). Next for it if the user wants: it in the tutorial's night, hunger, the meter in
+  facts `sanity:uneasy`, `sanity:shaken`, `sanity:breaking`; SANITY, `tools/godot/sanity_check.py`). In tutorial
+  v2's game since (its §31, part 6: no sleep until she's shot). Next for it if the user wants: hunger, the meter in
   the HUD's style, kept at a checkpoint.
+- **Then: close calls** (the starter's `close_call.gd` under whoever hunts: she falters while you reload, are busy
+  or hide, by a chance, once a chase; `chase.gd` and `searcher.gd` ask it; HUNT plays it with the real double;
+  tutorial v2 §31, part 7). Next for it if the user wants: more kinds of near miss (DECISIONS 2026-11-12, after the
+  sanity meter, lists them), and the user's own feel for its numbers in play: `hold_m`, `stop_m`, `grace`, `chance`.
 - **Not done**: the story's `skin` word doesn't name the cloak yet (a desk game's cast), the runtime add-on has no
   word for eye looks (STORY_FORMAT: grow the runner, the check and the doc together when a game wants them); the
   guides don't show either; tutorial v2 uses neither. LATER has the cloak's next steps and the black eye under a

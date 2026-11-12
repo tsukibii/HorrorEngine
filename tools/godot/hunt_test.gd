@@ -602,5 +602,131 @@ func _initialize() -> void:
 		if (rep2["moves"] as Array) != ["wave"] or (rep2["problems"] as Array).size() != 1 or none_len != 0.0 or absf(wave_len - 0.7) > 0.01 or not own.is_playing():
 			bad("a stand-in's moves (%s, %d problems, walk %.1f, wave %.1f)" % [str(rep2["moves"]), (rep2["problems"] as Array).size(), none_len, wave_len])
 
+	# ---- E. a close call: reloading with her nearly on you ---------------------------------------------------------
+	for hn in [h, k, sv, c]:
+		if is_instance_valid(hn):
+			hn.queue_free()
+	await frames(3)
+	torch.visible = true
+	var gun := Node3D.new()
+	gun.name = "Shotgun"
+	gun.set_script(load("res://addons/horrorstudio_weapons/double.gd"))
+	gun.set("spare", 12)
+	eye.add_child(gun)
+	await secs(1.0)
+	await until(func() -> bool: return not gun.get("busy"), 4.0)
+	# how long a reload takes
+	gun.set("loaded", 0)
+	await frames(3)
+	var rt := [0.0]
+	var clocking := [true]
+	process_frame.connect(func() -> void:
+		if clocking[0]:
+			rt[0] += 1.0 / 60.0)
+	gun.reload()
+	await frames(2)
+	await until(func() -> bool: return not gun.get("reloading"), 8.0)
+	clocking[0] = false
+	var reload_s: float = rt[0]
+	var runner := standin("Runner")
+	var ch := Node.new()
+	ch.name = "Chase"
+	ch.set_script(load(S + "chase.gd"))
+	ch.set("mood", "")
+	ch.set("secs_min", 60.0)
+	ch.set("secs_max", 60.0)
+	runner.add_child(ch)
+	var cc := Node.new()
+	cc.name = "CloseCall"
+	cc.set_script(load(S + "close_call.gd"))
+	cc.set("cooldown", 0.0)
+	runner.add_child(cc)
+	var caught_n := [0]
+	ch.caught.connect(func() -> void: caught_n[0] += 1)
+	var calls: Array = []
+	cc.began.connect(func(kd: String) -> void: calls.append(kd))
+	var cc_ends: Array = []
+	cc.ended.connect(func(kd: String, ok: bool) -> void: cc_ends.append([kd, ok]))
+	var her_speed := 0.95 * float(player.get("run_speed"))
+	var at_m := 0.8 + her_speed * reload_s * 0.55              # she'd reach you a little over half way through the reload
+	var runs: Array = []
+	for with_call in [false, true]:
+		cc.set("chance", 1.0 if with_call else 0.0)
+		cc.set("first_sure", with_call)
+		put(Vector3.ZERO)
+		look(Vector3(0, 1.2, 10))
+		runner.global_position = Vector3(0, 0, maxf(at_m + 4.0, 9.0))
+		runner.visible = true
+		await until(func() -> bool: return not gun.get("busy"), 6.0)
+		gun.set("loaded", 0)
+		await frames(3)
+		caught_n[0] = 0
+		ch.start()
+		await until(func() -> bool: return runner.global_position.distance_to(player.global_position) <= at_m, 8.0)
+		gun.reload()
+		await frames(2)
+		var cc_near := 99.0
+		var caught_in := false
+		for i in 600:
+			cc_near = minf(cc_near, runner.global_position.distance_to(player.global_position))
+			if caught_n[0] > 0:
+				caught_in = true
+				break
+			if not gun.get("reloading"):
+				break
+			await physics_frame
+		var loaded_at_end: int = gun.get("loaded")
+		var cc_rep: Dictionary = cc.report()
+		# the reload done: she comes on cc_after her moment; you don't shoot, so she has you
+		var cc_after := await until(func() -> bool: return caught_n[0] > 0, 4.0)
+		runs.append({"call": with_call, "caught_reloading": caught_in, "nearest": cc_near, "loaded": loaded_at_end, "holding": bool(cc_rep["holding"]),
+			"kind": str(cc_rep["kind"]), "caught_after": cc_after})
+		ch.stop()
+		await secs(1.2)
+	say("close call", "a reload takes %.2f s; started with her %.1f m off. Without one: caught while reloading %s (%d shells in). With one: %s, caught while reloading %s, her nearest %.2f m, faltering as it ended %s (%s), %d shells in; you didn't shoot: caught afterwards %s; it began %s, ended %s" % [
+		reload_s, at_m, runs[0]["caught_reloading"], runs[0]["loaded"], "she faltered" if runs[1]["holding"] or not calls.is_empty() else "NOTHING", runs[1]["caught_reloading"],
+		runs[1]["nearest"], runs[1]["holding"], runs[1]["kind"], runs[1]["loaded"], runs[1]["caught_after"], str(calls), str(cc_ends)])
+	if not runs[0]["caught_reloading"] or runs[1]["caught_reloading"] or int(runs[1]["loaded"]) != 2 or float(runs[1]["nearest"]) < 0.85 or float(runs[1]["nearest"]) > 2.2 \
+			or calls.size() != 1 or not (calls[0] in ["reloading", "empty"]) or not runs[1]["caught_after"] or cc_ends.size() != 1 or not bool(cc_ends[0][1]):
+		bad("the close call while reloading (without: caught %s; with: caught %s, nearest %.2f, loaded %d, began %s, ended %s, caught cc_after %s)" % [
+			runs[0]["caught_reloading"], runs[1]["caught_reloading"], runs[1]["nearest"], runs[1]["loaded"], str(calls), str(cc_ends), runs[1]["caught_after"]])
+
+	# it never lasts: the Story's words keep her off only `max_secs`; one a chase; hiding's, once, and not when it's off
+	calls.clear()
+	cc_ends.clear()
+	await until(func() -> bool: return not gun.get("busy"), 6.0)
+	gun.set("loaded", 2)
+	await frames(3)
+	cc.set("while_needs", "at_the_fuse")
+	cc.set("max_secs", 1.5)
+	cc.set("chance", 1.0)
+	story.flag("at_the_fuse")
+	put(Vector3.ZERO)
+	look(Vector3(0, 1.2, 10))
+	runner.global_position = Vector3(0, 0, 7)
+	runner.visible = true
+	caught_n[0] = 0
+	ch.start()
+	var held_ok := await until(func() -> bool: return bool(cc.get("holding")), 6.0)
+	var t_hold := [0.0]
+	var timing := [true]
+	process_frame.connect(func() -> void:
+		if timing[0] and bool(cc.get("holding")):
+			t_hold[0] += 1.0 / 60.0)
+	var cc_got := await until(func() -> bool: return caught_n[0] > 0, 6.0)
+	timing[0] = false
+	ch.stop()
+	story.unflag("at_the_fuse")
+	var sp1: bool = cc.spare("hiding", runner)
+	cc.set("cooldown", 30.0)
+	var sp2: bool = cc.spare("hiding", runner)
+	cc.set("cooldown", 0.0)
+	cc.set("hiding", false)
+	var sp3: bool = cc.spare("hiding", runner)
+	say("close call, its limits", "busy at something (the Story's words): she faltered %s for %.2f s (its most 1.5), then had you %s; began %s, ended %s; hiding: spared %s, again inside its rest %s, with hiding off %s; close calls so far %d" % [
+		held_ok, t_hold[0], cc_got, str(calls), str(cc_ends), sp1, sp2, sp3, cc.get("count")])
+	if not held_ok or absf(t_hold[0] - 1.5) > 0.15 or not cc_got or calls.slice(0, 1) != ["busy"] or cc_ends.slice(0, 1) != [["busy", false]] or calls.slice(1) != ["hiding"] or not sp1 or sp2 or sp3:
+		bad("the close call's limits (held %s %.2f s, caught %s, %s, %s, hiding %s %s %s)" % [held_ok, t_hold[0], cc_got, str(calls), str(cc_ends), sp1, sp2, sp3])
+
 	print("HUNT result " + JSON.stringify({"errors": errors}))
 	quit()

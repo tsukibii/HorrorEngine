@@ -111,6 +111,11 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            hunt, a script); the facts sanity:uneasy, sanity:shaken, sanity:breaking for anything's
                            Needs; hunts and the night's director go faster as it falls (their sanity_sync)
   food.gd                  something to eat or drink with E: mends your sanity
+  close_call.gd            under the character who hunts you: she nearly has you. When she's about to catch you
+                           while you reload (or your gun's just clicked empty, or the Story's words say you're busy,
+                           or she'd have found you hiding), by a chance she falters: still coming, slower, lunging,
+                           never quite there until you're done, and a moment for your shot. Never longer than
+                           max_secs; one a chase; less likely as your sanity falls. call_it("the door", 2.0)
   sight.gd                 a helper: what the player's eye can see (in the frame, nothing in the way)
   arms_down.gd             under a Character Studio character: its arms down by its sides
   lights.gd, reach.gd      helpers the others use: lights switched, dimmed, flickered and blinked as the Look plugin

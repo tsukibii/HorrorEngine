@@ -283,6 +283,7 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://starter/cue.gd", "cue"), ("Script", "res://starter/seat.gd", "seat"), ("Script", "res://starter/cold_area.gd", "cold"), ("Script", "res://starter/steam_mirror.gd", "steam"),
        ("Script", "res://starter/searcher.gd", "searcher"), ("Script", "res://starter/chase.gd", "chase"),
        ("Script", "res://starter/hunt.gd", "hunt"), ("Script", "res://starter/hunt_spot.gd", "huntspot"), ("Script", "res://starter/moves.gd", "moves"),
+       ("Script", "res://starter/sanity.gd", "sanity"), ("Script", "res://starter/close_call.gd", "closecall"),
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
@@ -549,6 +550,7 @@ nd("Chase", "Events/Hunter", "Node", script="chase", props=['searcher = NodePath
    'start_says = "Run."'], paths=["searcher"])   # seen in the open while she searches: she's after you; the stairwell's safe
 nd("Presence", "Events/Hunter", "Node", script="presence", props=['static_on = NodePath("../../../Things/Radio")'], paths=["static_on"])   # the radio and your flashlight as she comes
 nd("HitReact", "Events/Hunter", "Node3D", script="hitreact", props=['target = NodePath("../../ShotDown")'], paths=["target"])   # shot: black ichor and smoke; down, the hunt's over
+nd("CloseCall", "Events/Hunter", "Node", script="closecall", props=["hiding = false"])   # reloading with her nearly on you: she falters, once a chase (§31.7)
 nd("Looks", "Events/Hunter", "Node", script="lookswitch", props=['looks = Array[ExtResource("lookpreset")]([ExtResource("look_hunting")])', 'on_fire = "hunting"'])   # her eyes lit when the corridor goes dark (LightsOut's scared, below)
 # the hunt (guide §31): hidden, started by an order at the laptop, over once the gun's in your hands. A third copy of her,
 # hers to move; her moves (Kimodo clips, when you've made them); the spots she can act at, in and off the corridor
@@ -556,6 +558,7 @@ stalk_post = [fire[0] - 1.6, floor_y, corr["at"][2]]
 person("Stalker", stalk_post, -90.0, False, parent="Events")
 nd("Moves", "Events/Stalker", "Node", script="moves")                    # her clips go here: idle, walk, run, watch, peek, lunge
 nd("Looks", "Events/Stalker", "Node", script="lookswitch", props=['looks = Array[ExtResource("lookpreset")]([ExtResource("look_hunting")])'])   # her eyes lit for the tell
+nd("CloseCall", "Events/Stalker", "Node", script="closecall", props=["hiding = false"])
 nd("Hunt", "Events", "Node", script="hunt", props=['hunter = NodePath("../Stalker")', 'kind = "stalking"', 'ends_when = "task:gun"',
    'reveal_task = "hunted: Something is out in the corridor."', 'start_says = "It\'s on its way. So is something else."', 'end_says = "Armed. It keeps its distance now."',
    'fact = "armed"', "stages = 3", "stage_secs = PackedFloat32Array(25, 35)", "gap_min = 6.0", "gap_max = 14.0", "rush_stage = 3",
@@ -589,6 +592,10 @@ nd("Story", ".", "CanvasLayer", script="story", props=['objective_text = "Room 3
    'tasks = PackedStringArray("up: Go up to the third floor", "find304: Find room 304")', 'ending_title = "Checked out"',
    'ending_text = "The fire stairs took you down to the street. Nobody ever asked who was staying in 308."'])
 nd("Sound", ".", "Node", script="sound", props=['mood = "uneasy"'])
+# sanity (§31.6): worn down by the dark, her and the scares; the desk chair and 304's bed rest you, the shop's food mends it,
+# and sleep only once she's shot (and never while a hunt runs); the hunt and the night's director speed up as it falls
+nd("Sanity", ".", "Node", script="sanity", props=['scare_cost = 0.03', 'foods = {\n"soda": 0.12,\n"water": 0.06,\n"burger": 0.3\n}', 'no_sleep = PackedStringArray("!shot_her")',
+   'cant_says = "You can\'t sleep. Not while she\'s out there."', 'slept_says = "You slept. It\'s nearly light."'])
 nd("HUD", ".", "CanvasLayer", script="hud", props=['keys = PackedStringArray("W A S D:walk", "E:use", "F:flashlight", "Tab:pocket")'])   # the UI plugin's HUD
 nd("Markers", ".", "Node3D")                                              # quest markers, each while its task is open
 nd("Room304", "Markers", "Node3D", script="marker", props=[f"transform = {tf([d304m[0], floor_y, d304m[2] - 0.12])}", 'label = "Room 304"', "height = 2.1", 'needs = "on:find304"'])

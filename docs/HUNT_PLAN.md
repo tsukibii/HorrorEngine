@@ -10,6 +10,10 @@ past you very quickly into another room etc, hunts don't always have to be aggro
 'hunts' that basically act like haunting events, maybe you need to complete a task to get them to stop e.g. turn the
 power back on."*
 
+**Since, the same day: close calls** (`close_call.gd` under the hunter: she falters while you reload, are busy or
+hide, by a chance, once a chase; DECISIONS 2026-11-12, after the sanity meter) and **sanity** (`sanity.gd`; a hunt's
+`sanity_sync`).
+
 **Built 2026-11-12, the same day** (the user: "I like your plan ... consider how to attach animations to the
 behaviours (from kimodo), implement this plan and then update tutorial v2 to have a brief hunting phase before the
 final shotgun one"): the starter kit's `hunt.gd`, `hunt_spot.gd`, `moves.gd` (Kimodo clips per behaviour, §8),

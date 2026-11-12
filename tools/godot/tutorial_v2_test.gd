@@ -32,6 +32,7 @@ var story: Node
 var sound: Node
 var torch: SpotLight3D
 var cfg: Dictionary
+var no_sleeps: Array = []                                # why Sanity said you couldn't sleep, each time you lay down
 
 
 func say(what: String, how: String) -> void:
@@ -158,6 +159,8 @@ func _initialize() -> void:
 	# the night's director (dread.gd): faster for the check (the game's own gaps are 25 to 70 s); each moment checked as it comes
 	main.get_node("Weather/Lightning").every = 0.0         # (the check's: its own strikes only when asked, below)
 	var dread: Node = main.get_node("Dread")
+	if main.get_node_or_null("Sanity") != null:
+		main.get_node("Sanity").couldnt_sleep.connect(func(why: String) -> void: no_sleeps.append(why))
 	dread.gap_min = 6.0
 	dread.gap_max = 9.0
 	dread.relax_min = 8.0
@@ -1203,6 +1206,8 @@ func _initialize() -> void:
 		bad("her look (HSCharacterLook) isn't worn")
 	# 9b. every system since: the HUD, the cash, the laptop and its parcels, the gun, things that break, her shot down
 	await every_system(fl, cz)
+	# 9c. sanity and the close calls (guide §31, 6 and 7)
+	await sanity_part(fl)
 	# 10. the fire door: the ending
 	var fc := fire.global_position + fire.global_basis.x * 0.42 + Vector3.UP * 1.0
 	await use_at(Vector3(fc.x - 0.9, fl + 0.02, fc.z), fc)
@@ -1506,6 +1511,70 @@ func every_system(fl: float, cz: float) -> void:
 	if hidden_boxes != (hr.get("_boxes") as Array).size() or hidden_boxes == 0 or not near or not down or stopped != "done" or not dissolving or not gone or not story.is_set("shot_her"):
 		bad("her shot down (HSHitReact on the starter's hunter): hidden boxes off %d/%d, near %s, down %s, the chase %s, dissolving %s, gone %s, the fact %s" % [
 			hidden_boxes, (hr.get("_boxes") as Array).size(), near, down, stopped, dissolving, gone, story.is_set("shot_her")])
+
+
+## sanity and the close calls (guide §31, 6 and 7): the night wore it down; lying in 304's bed while she was out there you
+## couldn't sleep, and were told so; a soda out of the pocket; now she's shot, the bed again, and sleep; a close call
+## under each of her, found by her chase
+func sanity_part(fl: float) -> void:
+	var san: Node = main.get_node_or_null("Sanity")
+	var cc1: Node = main.get_node_or_null("Events/Hunter/CloseCall")
+	var cc2: Node = main.get_node_or_null("Events/Stalker/CloseCall")
+	if san == null or cc1 == null or cc2 == null:
+		bad("the Sanity node and a CloseCall under each of her (%s, %s, %s)" % [san != null, cc1 != null, cc2 != null])
+		return
+	var was := player.global_transform
+	var night := float(san.sanity)
+	var rep: Dictionary = san.report()
+	# as it falls: the Story's facts, and the hunt and the director that much faster
+	san.set_to(0.2)
+	await frames(2)
+	var facts := [story.is_set("sanity:uneasy"), story.is_set("sanity:shaken"), story.is_set("sanity:breaking")]
+	var press_hunt := float(main.get_node("Events/Hunt").pressure())
+	var meter: bool = san.report()["meter_shown"]
+	# a soda (the laptop's shop sells it) out of the pocket with C
+	story.give("soda", "Kaze orange soda", null, 1)
+	await press(KEY_C)
+	await frames(2)
+	var after_soda := float(san.sanity)
+	var soda_left: int = story.count_of("soda")
+	# 304's bed, now she's shot and nothing hunts
+	var why_now: String = san.why_not_sleep()
+	var bed_seat: Node3D = main.get_node("Things/Bed")
+	var by_bed := Vector3(bed_seat.global_position.x + 0.9, fl + 0.02, bed_seat.global_position.z + 1.05)
+	await use_at(by_bed, bed_seat.global_position + Vector3(0.9, -0.15, 0))
+	await frames(3)
+	var lying: bool = player.pose == "lying"
+	var asleep: bool = await until(func() -> bool: return san.sleeping, 6.0)
+	var woke: bool = await until(func() -> bool: return not san.sleeping and story.is_set("slept"), 6.0)
+	await frames(3)
+	var after_sleep := float(san.sanity)
+	var line: String = story._line.text
+	await press(KEY_E)
+	await frames(3)
+	var ch1: Node = main.get_node_or_null("Events/Hunter/Chase")
+	var found1: bool = ch1 != null and ch1.has_method("_close") and ch1.call("_close") == cc1
+	var ch2: Node = main.get_node_or_null("Events/Stalker/HuntChase")
+	var found2: bool = ch2 != null and ch2.has_method("_close") and ch2.call("_close") == cc2
+	say("sanity", "after the night %.2f (%s, down by %s); lying in 304's bed before she was shot: no sleep %s; at 0.2: uneasy %s, shaken %s, breaking %s, its meter shown %s, the hunt's pace x%.2f; a soda with C: %.2f, %d left; she's shot: why not sleep '%s', lying %s, asleep %s, awake %s at %.2f, \"%s\", up again %s" % [
+		night, rep["band"], rep["why_down"], str(no_sleeps), facts[0], facts[1], facts[2], meter, press_hunt, after_soda, soda_left, why_now, lying, asleep, woke, after_sleep, line, player.pose])
+	if night >= 1.0:                                         # (the check's night is every fright there is, several times over: it may be at nothing)
+		bad("the night should have worn your sanity down (%.2f)" % night)
+	if no_sleeps.is_empty() or no_sleeps.any(func(w: String) -> bool: return w != "!shot_her" and w != "hunt"):
+		bad("lying in 304's bed before she's shot: no sleep, because she's out there (%s)" % str(no_sleeps))
+	if facts != [true, true, true] or not meter or press_hunt <= 1.0:
+		bad("sanity at 0.2: its three facts %s, its meter %s, the hunt's pace x%.2f" % [str(facts), meter, press_hunt])
+	if absf(after_soda - 0.32) > 0.01 or soda_left != 0:
+		bad("a soda with C: 0.2 and 0.12 more (%.2f), none left (%d)" % [after_soda, soda_left])
+	if why_now != "" or not lying or not asleep or not woke or after_sleep < 0.99 or line.find("slept") < 0 or player.pose != "standing":
+		bad("sleep in 304's bed once she's shot (why not '%s', lying %s, asleep %s, awake %s, %.2f, \"%s\", %s)" % [why_now, lying, asleep, woke, after_sleep, line, player.pose])
+	say("close calls", "under the one who hunts by ear: found by her chase %s, hiding %s, reloading %s, %d so far; under the hunt's: found by its chase %s, %d so far" % [
+		found1, cc1.hiding, cc1.reloading, int(cc1.count), found2, int(cc2.count)])
+	if not found1 or not found2 or cc1.hiding or not cc1.reloading:
+		bad("a close call under each of her, found by her chase (%s, %s; hiding %s, reloading %s)" % [found1, found2, cc1.hiding, cc1.reloading])
+	player.global_transform = was
+	player.velocity = Vector3.ZERO
+	await frames(5)
 
 
 ## both barrels loaded again (a script's: the double's chambers follow `loaded` once it isn't busy)

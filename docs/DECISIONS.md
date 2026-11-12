@@ -2,6 +2,41 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, after the sanity meter (the user: sanity in the tutorial, and close calls)
+
+- **"Sure wire it to the tutorial."** Tutorial v2's game has a **Sanity** node now: its scares cost 0.03 each, the
+  laptop's soda, water and burger mend it (C eats one out of the pocket), the desk chair and 304's bed rest you, and
+  **you can't sleep until she's shot** (`no_sleep = ["!shot_her"]`; lying down says "You can't sleep. Not while she's
+  out there."; a running hunt stops it too). Shot, lie down in 304's bed: asleep, awake with it full. The hunt and
+  the night's director speed up as it falls, by themselves. The guide's §31, part 6.
+- **"can we also add some 'fake' just about made it feelings. The game doesn't need to be mathematically fair, just
+  needs to feel like it is, e.g. a monster is running towards us as I'm shooting it, I'm about to kill it, but run
+  out of shells, so I reload, normally it would reach me before I reload and I'd die but if x criteria is met or x
+  chance it somewhat slows down or acts in a way that seems like it's about to kill me but gives me just enough time
+  for reload to finish and I shoot it. It doesn't have to be with shooting either, hiding etc, just needs to feel
+  intense, the core about horror is intensity and atmosphere and how much it draws you in."** Built as the starter's
+  **`close_call.gd`**: a node under the character who hunts you (beside her `chase.gd` or `searcher.gd`, or a
+  `hunt.gd`'s hunter; they find it by themselves).
+  - **When** (each a switch): your gun is being **reloaded**; the beat between the click on an **empty gun** and the
+    reload; **while** the Story's words hold (`on:fuse`: you're at the fuse box); **hiding**, the time her search
+    would have found you (she leans in, stays `linger` seconds longer, and goes); or a script's
+    `call_it("the door", 2.0)`.
+  - **What she does**: from `hold_m` (2.8 m) she's slower the nearer she is, a crawl by `stop_m` (1.3 m), playing
+    her `lunge` move with her breath at your ear, and her chase can't catch you while it lasts. It ends `grace`
+    (0.5 s) after what you were doing is done, which is your shot. Miss, or take longer than `max_secs` (4 s), and
+    she comes on at full speed and has you.
+  - **How often**: `chance` 0.75, the first one in a game sure, one a chase, 40 s between them, only while its
+    `needs` hold, and **less likely as sanity falls** (`sanity_sync`: half as likely at nothing). So it's the
+    criteria and the chance the user asked for, and a low sanity means fewer rescues.
+  - **Measured** (HUNT, with the weapons plugin's real double: its reload takes 1.42 s): started with her 3.2 m off,
+    without a close call she catches you mid-reload; with one she falters, comes no nearer than 1.7 m, both shells
+    are in, and if you then don't shoot she has you.
+  - In tutorial v2 one sits under the one you shoot at the end and one under the hunt's stalker, both with Hiding
+    off (that night's search is meant to find you when you gasp). The guide's §31, part 7.
+- **Not done**: other kinds of near miss (a door that shuts with her hand in it, the last shell always the one that
+  drops her, a hiding place she checks second), a close call for the Director's or the desk's games, a picture of
+  one in the guide. The close call isn't told to the player anywhere, on purpose.
+
 ## 2026-11-12, the last (the user: a sanity meter, and hunts and events synced to it)
 
 - **"Could we add a sanity bar/meter to the game, things like eating food, resting (sitting, sleeping at night) fix
@@ -26,7 +61,7 @@ The user's answers, newest first. They override the plan, the research and the d
     Sanity node in the scene nothing changes.
   - **At nothing**: a target's `fire()`, or death and back at the checkpoint with half.
 - **SANITY** (`python tools/godot/sanity_check.py`) plays all of it headless; HUNT and TUTORIAL2 still pass.
-- **Not in tutorial v2's game**: its guide has a short note (§31, Sanity). Not done: hunger, hallucinations of its
+- **Not in tutorial v2's game** (it is since the entry above): its guide has a short note (§31, Sanity). Not done: hunger, hallucinations of its
   own (the facts turn the existing glimpses and cues on), the meter in the UI plugin's HUD style, a save of it at a
   checkpoint, Director and desk games.
 
