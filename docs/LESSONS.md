@@ -3,6 +3,13 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The ringlets: the user's catch (2026-11-12)
+
+- **Look at every part from the side; the user did.** The ringlets were looked at from the front and three
+  quarters, where a coil beside the face reads as a ringlet. From the side it floated over the cheek with nothing
+  leading into it: the user's screenshot, not mine. A thing hung beside a thing is not attached to it: what is
+  wound from a lock has to begin where the lock ends, and a check should say so (it does now: HAIR2's two lines).
+
 ## The bodyv2 base: what took a second try (2026-11-12)
 
 - **A picture's scale is an unknown when both ends of the ruler are hidden.** Her height in the picture runs from a

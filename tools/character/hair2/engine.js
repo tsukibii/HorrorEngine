@@ -13,7 +13,7 @@ import { patch, paint } from "./scalp.js";
 import { build as shells, SHELL_MAX } from "./shell.js";
 import { place, alive, hairline, EAR, MARKS } from "./pores.js";
 import { parts, comb, ease, fieldOf, partingSide, partingShare, sagittal, LOOSE, FRINGE, FRAME, TIE } from "./flow.js";
-import { trace, hash, cutLine, K } from "./strands.js";
+import { trace, hash, cutLine, K, DRILL_TOP } from "./strands.js";
 import { build, coverage, join } from "./cards.js";
 import { clumpsOf, texture } from "./texture.js";
 import { tiesOf, tail, band, drills, ahoge } from "./ties.js";
@@ -94,7 +94,10 @@ export function grow(body, pores, s, prep, o = {}) {
   }
   // ---- tendrils: the face-framing strands gathered into pointed locks (Tendrils: so many a side), each lock its own
   // length and its hairs drawn to its point; and the wisps by the ears, each to somewhere between the lobe and the jaw
-  const fr0 = s.fringe || {}, NL = (fr0.frameCurl || 0) > 0 ? 0 : Math.round(clamp(fr0.frameLocks || 0, 0, 4)), fline = new Float32Array(n).fill(9), clumpAmt = new Float32Array(n); let anyLock = false;
+  // (Ringlets: each side's strands are one lock, gathered to a point where its ringlet begins: the ringlet is that lock
+  // wound up. Left as loose strands lying on the cheek they ended under a ringlet that hung two centimetres off the
+  // skin, and it read as floating beside the face: the user's picture, DECISIONS 2026-11-12, the ringlets)
+  const fr0 = s.fringe || {}, curlOn = (fr0.frameCurl || 0) > 0, NL = curlOn ? 1 : Math.round(clamp(fr0.frameLocks || 0, 0, 4)), fline = new Float32Array(n).fill(9), clumpAmt = new Float32Array(n), curlGuide = new Map(); let anyLock = false;
   {
     const a0 = fr0.kind && fr0.kind !== "none" ? Math.max(34, (fr0.width ?? 46) - 8) : 36, base = fr0.frameLine ?? MARKS.jaw, stag = clamp(fr0.frameStagger ?? 0.5, 0, 1), guide = new Map(), lock = new Int32Array(n);
     for (let i = 0; i < n; i++) {
@@ -118,7 +121,8 @@ export function grow(body, pores, s, prep, o = {}) {
       for (const [q, gd] of guide) { if ((q > 0) !== (lock[i] > 0)) continue; const d = Math.hypot(pos[i * 3] - pos[gd.i * 3], pos[i * 3 + 1] - pos[gd.i * 3 + 1], pos[i * 3 + 2] - pos[gd.i * 3 + 2]); if (d <= bd) { bd = d; key = q; } }
       if (!key) continue;
       const gI = guide.get(key).i, j = Math.abs(key) - 1, k = (j * 0.618 + (key > 0 ? 0.13 : 0.47) + (s.seed || 1) * 0.31) % 1;
-      clump.of[i] = gI; clumpAmt[i] = gI === i ? 0 : 0.93; fline[i] = base + stag * 0.085 * k; anyLock = true;
+      clump.of[i] = gI; clumpAmt[i] = gI === i ? 0 : 0.93; fline[i] = curlOn ? DRILL_TOP - 0.015 : base + stag * 0.085 * k; anyLock = true;
+      if (curlOn) curlGuide.set(key > 0 ? 1 : -1, gI);
     }
   }
   // the first row meets the line: a hair beside the parting, or by the whorl, starts at it (no bare strip a pore's
@@ -256,13 +260,18 @@ export function grow(body, pores, s, prep, o = {}) {
   }
   if (stray) geo = join(geo, stray);
   // ringlets (the face-framing strands wound up: where each side's strands end is where its ringlet hangs from) and an ahoge
+  let ringlets = [];                                                      // (where each ringlet begins: its lock's point; for the checks)
   if ((fr.frameCurl || 0) > 0) {
-    const tops = [];
-    for (const side of [1, -1]) { let x = 0, z = 0, m = 0; for (let i = 0; i < n; i++) if (cmb.group[i] === FRAME && tr.len[i] > 0.02 && (pos[i * 3] >= C[0] ? 1 : -1) === side) { const o = (i * K + K - 1) * 3; x += tr.pts[o]; z += tr.pts[o + 2]; m++; } if (m) tops.push({ side, x: x / m, z: z / m }); }
+    const tops = ringlets;
+    for (const side of [1, -1]) {                                         // (from the point of the side's lock: its guide's tip; with no lock, the middle of where the side's strands end)
+      const gI = curlGuide.get(side);
+      if (gI !== undefined && tr.len[gI] > 0.02) { const o = (gI * K + K - 1) * 3; tops.push({ side, x: tr.pts[o], y: tr.pts[o + 1], z: tr.pts[o + 2] }); continue; }
+      let x = 0, z = 0, m = 0; for (let i = 0; i < n; i++) if (cmb.group[i] === FRAME && tr.len[i] > 0.02 && (pos[i * 3] >= C[0] ? 1 : -1) === side) { const o = (i * K + K - 1) * 3; x += tr.pts[o]; z += tr.pts[o + 2]; m++; } if (m) tops.push({ side, x: x / m, z: z / m });
+    }
     const dr = drills(S, C, s, tops);
     // (dyed: a ringlet is the colour of the strands wound into it; its cards are laid end to end, so it's one colour all the way down)
     const drw = DY && dr ? Float32Array.from({ length: dr.n }, (_, h) => { const side = tops[Math.floor(h / (dr.n / tops.length))].side; let a = 0, m = 0; for (let i = 0; i < n; i++) if (cmb.group[i] === FRAME && (pos[i * 3] >= C[0] ? 1 : -1) === side) { a += dw[i]; m++; } return m && a / m > 0.5 ? 1 : 0; }) : null;
-    if (dr) geo = join(geo, build({ n: dr.n, pts: dr.pts, len: dr.len, u: dr.u, width: dr.width, taper: dr.taper, wispy: dr.wisp, v0: dr.v0, v1: dr.v1, S, C, out: dr.outv, most: 22, tol: 0.0003, dye: DY ? { ...DY, w: drw, roots: 0, ends: 0, tips: 0, abs: 0 } : null }));
+    if (dr) geo = join(geo, build({ n: dr.n, pts: dr.pts, len: dr.len, u: dr.u, width: dr.width, taper: dr.taper, rootTaper: dr.rootTaper, wispy: dr.wisp, v0: dr.v0, v1: dr.v1, S, C, out: dr.outv, most: 22, tol: 0.0003, dye: DY ? { ...DY, w: drw, roots: 0, ends: 0, tips: 0, abs: 0 } : null }));
   }
   { const ah = ahoge(S, C, s); if (ah) geo = join(geo, build({ n: ah.n, pts: ah.pts, len: ah.len, u: ah.u, width: ah.width, taper: 0.85, wispy: 0.55, S, C, out: ah.outv, most: 14, tol: 0.0004, dye: DY ? { ...DY, w: new Float32Array(ah.n).fill(dye.where === "all" || dye.where === "over" ? 1 : 0), ends: 0, tips: 0 } : null })); }
   lap("cards");
@@ -345,5 +354,5 @@ export function grow(body, pores, s, prep, o = {}) {
   if (tails.length) stats.tailTriangles = tails.reduce((a, t) => a + t.geo.triangles, 0);
   // (guides.lock: for a strand gathered into a tendril, the strand it's gathered to; itself for that one; else -1)
   const lockOf = new Int32Array(n).fill(-1); if (anyLock) { for (let i = 0; i < n; i++) if (clumpAmt[i] > 0) { lockOf[i] = clump.of[i]; lockOf[clump.of[i]] = clump.of[i]; } }
-  return { hair: geo, scalp, shell, tails, bands, stats, guides: { n, pts: tr.pts, len: tr.len, group: cmb.group, pos, nrm, lock: lockOf } };
+  return { hair: geo, scalp, shell, tails, bands, stats, ringlets, guides: { n, pts: tr.pts, len: tr.len, group: cmb.group, pos, nrm, lock: lockOf } };
 }

@@ -2,6 +2,30 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, the ringlets (the user, with a screenshot, while the styles were being gone through)
+
+- **"Not sure if you caught it but the curls look like they float rather than come from the head/hair"**, with the
+  side view of *Long, with ringlets in front* before and after the look's change: the ringlet in front of the cheek,
+  its top a blunt coil at the nose's height, no hair leading into it.
+- I had not caught it. **What this sets:** a ringlet has to read as hair that comes from the head: a lock from the
+  hairline, wound up. Not a coil hung beside the face.
+- **Done the same day** (docs/HAIR_V2.md §3.7): each side's face-framing strands are one gathered lock that ends in
+  a point, the ringlet begins at that point as thin as the lock and opens into the coil over three centimetres, it
+  is kept off the body by its own width at each height (no step sideways at its top), and its colour goes on from
+  the lock's, not from the roots' shade. On *Long, with ringlets in front* the lock hangs free from the temple, so
+  the ringlet hangs in front of the ear at the edge of the side hair. HAIR2 holds it (two lines).
+
+## 2026-11-12, the lessons into every style (the user)
+
+- **"Can you take everything you've learnt from the last hairstyles and enhance improve v2 hairstyles"**
+- **What this sets:** what the two Daz3D hairstyles taught (`daz_twin_tails`, `daz_bob`: docs/HAIR_V2.md §10, §10b)
+  goes into the hair editor v2.0's other styles, not only into the two that were matched. The hairstyles named are
+  the same ones; none is removed or renamed.
+- **My reading of "everything you've learnt"** (to be overruled if it's wrong): the settings those two needed and no
+  older style uses (tied hair that hangs and has body, tails as brushes, sidelocks that hang free, a fringe closed
+  at its middle, a bob tucked under, the fuller Volume), and the way of working (a style judged by its pictures
+  from four sides before and after, not by its numbers).
+
 ## 2026-11-12, a T-pose reference: base bodyv2, and its hairstyle (the user, with a picture)
 
 - **"I just made this t pose reference for what the body should look like (I added clothes to keep it appropriate

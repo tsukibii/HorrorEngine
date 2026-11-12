@@ -10,7 +10,7 @@
 import { bodyByName, loadPores } from "./node.mjs";
 import { prepare, grow, BUDGET } from "./engine.js";
 import { STYLES, GROUPS, CONTROLS, DEFAULTS, settings, differs, lookOf, drawLook, dyed, DYES, FRINGES } from "./styles.js";
-import { tiesOf, tail } from "./ties.js";
+import { tiesOf, tail, drills } from "./ties.js";
 import { K, TS } from "./strands.js";
 import { linear } from "../hairtex.js";
 import { alive, HAIRLINES, THINNING, EAR, earIn } from "./pores.js";
@@ -212,6 +212,21 @@ if (!only.length) {
     }
     const wisps = e => { const G = g("odango", { fringe: { frameEars: e } }).guides; let n = 0; for (let i = 0; i < G.n; i++) if (G.group[i] === 2 && G.len[i] > 0.01 && Math.abs(Math.atan2(G.pos[i * 3] - base.C[0], G.pos[i * 3 + 2] - base.C[2])) * 180 / Math.PI >= 64) n++; return n; };
     say(wisps(0) === 0 && wisps(0.6) > 6, `wisps by the ears: none, then ${wisps(0.6)}`);
+    // ---- ringlets: each is its side's lock wound up (the user's picture, DECISIONS 2026-11-12, the ringlets: they
+    // floated beside the face). The side's face-framing strands end in one point; the ringlet's ribbon begins at
+    // that point, as thin as the lock is there, and is a full coil a third of the way down
+    {
+      const st = settings("anime_drills"), r = grow(base, pores, st, prep, {}), G = r.guides, tops = r.ringlets, dr = drills(prep.S, base.C, st, tops), per = dr.n / tops.length, segs = per / 2;
+      const P = (h, k) => [dr.pts[(h * K + k) * 3], dr.pts[(h * K + k) * 3 + 1], dr.pts[(h * K + k) * 3 + 2]], far = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+      let members = 0, spread = 0, begin = 0, thin = 0, full = 1;
+      tops.forEach((top, t) => {
+        for (let i = 0; i < G.n; i++) { if (G.group[i] !== 2 || G.lock[i] < 0 || (G.pos[i * 3] >= base.C[0] ? 1 : -1) !== top.side || !(G.len[i] > 0.02)) continue; const e = (i * K + K - 1) * 3; members++; spread = Math.max(spread, far([G.pts[e], G.pts[e + 1], G.pts[e + 2]], [top.x, top.y, top.z])); }
+        const h0 = t * per, sgF = Math.ceil(0.34 * segs);
+        begin = Math.max(begin, far(P(h0, 0), [top.x, top.y, top.z])); thin = Math.max(thin, far(P(h0, 0), P(h0 + segs, 0))); full = Math.min(full, far(P(h0 + sgF, 0), P(h0 + segs + sgF, 0)));
+      });
+      say(tops.length === 2 && members >= 8 && spread < 0.006, `ringlets: each side's ${members / 2} face-framing strands end in one point (${(spread * 1000).toFixed(1)} mm apart at the most)`);
+      say(begin < 0.002 && thin < 0.002 && full > 0.015, `a ringlet begins at its lock's point (${(begin * 1000).toFixed(1)} mm from it), ${(thin * 1000).toFixed(1)} mm across there, ${(full * 100).toFixed(1)} cm a third of the way down`);
+    }
     // ---- tied hair that hangs to its tie (Drape, Fullness, Puff, Tie lower), round an ear that's out; a tail as a brush; a fringe closed at its middle
     {
       const C = base.C, DEG = 180 / Math.PI, low = set => settings("twin_tails_high", { ears: "tucked", ties: { height: 0, side: 0.85, tight: 0, tail: { thick: 0.008, fall: "front" }, ...set } });

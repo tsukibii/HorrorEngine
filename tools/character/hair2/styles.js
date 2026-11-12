@@ -218,7 +218,7 @@ export const STYLES = {
       fringe: { kind: "curtain", amount: 0.9, split: 0.4, hold: 0.8, line: P.eye + 0.002, width: 50, choppy: 0.4 }, texture: { clump: 0.7, clumpSize: 0.03, strays: 0 }, card: { width: 2.6 }, look: "off_black" } },
   anime_drills: { label: "Long, with ringlets in front", group: "anime",
     set: { parting: { kind: "middle", length: 0.45, width: 0.0006 }, cut: { mode: "line", line: -0.14, uneven: 0.3, wispy: 0.5 }, length: { fringe: 0.13 }, shape: { lift: 24, volume: { top: 0.009, sides: 0.012, back: 0.013 }, turn: 0.1 },
-      fringe: { kind: "curtain", amount: 0.6, split: 0.7, line: P.eye - 0.002, width: 46, frame: 1, frameLine: -0.135, frameCurl: 0.9 }, texture: { clump: 0.7, clumpSize: 0.03, strays: 0 }, card: { width: 2.6 }, look: "blonde" } },
+      fringe: { kind: "curtain", amount: 0.6, split: 0.7, line: P.eye - 0.002, width: 46, frame: 1, frameLine: -0.135, frameCurl: 0.9, frameHang: 1 }, texture: { clump: 0.7, clumpSize: 0.03, strays: 0 }, card: { width: 2.6 }, look: "blonde" } },
   anime_buns: { label: "Twin buns, the hair down", group: "anime",
     set: { parting: { kind: "middle", length: 1, width: 0.0006 }, cut: { mode: "line", line: -0.1, uneven: 0.5, wispy: 0.6 }, ties: { kind: "buns", part: "top", height: 0.88, side: 0.55, tight: 0.7, tail: { bun: 0.03 }, tie: { kind: "none" } },
       length: { fringe: 0.12 }, shape: { lift: 24, volume: { top: 0.008, sides: 0.012, back: 0.013 }, turn: 0.3 }, fringe: { kind: "choppy", line: P.eye + 0.012, amount: 0.9, width: 50, choppy: 0.7, centre: 0.6 }, texture: { clump: 0.75, clumpSize: 0.03, strays: 0 }, card: { width: 2.6 } } },

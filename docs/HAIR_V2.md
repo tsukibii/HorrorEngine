@@ -136,6 +136,17 @@ longer one between the eyes), **Slant** (longer toward one side: hair over one e
 some of the temples' own pores, hanging in front of the ears to their own line; **Ringlets** winds each side's into a
 drill (`ties.js` `drills`: a ribbon round a middle line kept off the body, cards end to end).
 
+**A ringlet is its lock wound up** (DECISIONS 2026-11-12, the ringlets: the user's picture, "the curls look like they
+float rather than come from the head/hair"). It was a coil hung beside the face: it began at its full width at
+once, two centimetres off the cheek, at the middle of where a few loose strands ended on the skin, its top the
+roots' dark under strands already in the lengths' colour. Now: each side's face-framing strands are **one gathered
+lock** (the tendrils' gathering, one lock a side: their tips under a millimetre apart), ending in a point; the ringlet **begins
+at that point** (0.1 mm from it), 0.2 mm across there, and opens into the coil over its first three centimetres
+(2.1 cm across a third of the way down); it is kept off the body by its own width at each height, so there is no
+step sideways at its top; its ribbon starts as a point; and its colour goes on from a lock some centimetres from
+its roots. With *Hang free* (which *Long, with ringlets in front* now has) the lock leaves the head at the temple
+and the ringlet hangs in front of the ear, at the front edge of the side hair. HAIR2 holds the three numbers.
+
 **Hang free** (`fringe.frameHang`, 2026-11-12, the twin tails' long sidelocks). At 0 a face-framing strand is combed
 along the cheek for a quarter of its length, turned 12 degrees in toward the face, and then falls: right for strands
 that end at the cheek or the jaw. At 1 it is combed for its first two centimetres only, straight down, and leaves the

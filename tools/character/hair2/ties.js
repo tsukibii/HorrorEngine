@@ -212,24 +212,32 @@ export function band(tie, s) {
 export function drills(S, C, s, tops) {
   const fr = s.fringe || {}, amt = clamp(fr.frameCurl || 0, 0, 1), yEnd = fr.frameLine ?? -0.066; if (!(amt > 0) || !tops.length || yEnd > DRILL_TOP - 0.05) return null;
   const R0 = 0.008 + 0.008 * amt, pitch = 0.024 + 0.012 * amt, Ld = DRILL_TOP - yEnd, turns = Ld / pitch, per = 0.75, segs = Math.ceil(turns / per), g = [0, 0, 0];
-  const n = tops.length * 2 * segs, pts = new Float32Array(n * K * 3), len = new Float32Array(n), u = new Float32Array(n), width = new Float32Array(n), taper = new Float32Array(n), wisp = new Float32Array(n), v0 = new Float32Array(n), v1 = new Float32Array(n), outv = new Float32Array(n * K * 3);
+  const n = tops.length * 2 * segs, pts = new Float32Array(n * K * 3), len = new Float32Array(n), u = new Float32Array(n), width = new Float32Array(n), taper = new Float32Array(n), rootTaper = new Float32Array(n), wisp = new Float32Array(n), v0 = new Float32Array(n), v1 = new Float32Array(n), outv = new Float32Array(n * K * 3);
+  // A ringlet is its lock wound up, so it begins as the lock ends: at the lock's own point (top.y: where its strands
+  // end), as thin as the lock there, opening into the coil over its first three centimetres; and it's kept off the
+  // body by its own width at each height, so it leaves from that point with no step sideways. (It began at its full
+  // width, at once, two centimetres off the cheek, over strands that ended on the skin: a coil with a blunt top
+  // floating beside the face)
+  const open = f => smooth(0, 0.22, f + 0.012);
   let h = 0;
   for (const top of tops) {
-    const N = 80, mid = []; let x = top.x, y = DRILL_TOP, z = top.z;      // the middle line, straight down, pushed off the cheek, the neck, the shoulder and the chest
-    for (let q = 0; q <= N; q++) { const d = dist(S, x, y, z); if (d < R0 + 0.008 && grad(S, x, y, z, g)) { const w = R0 + 0.008 - d; x += g[0] * w; z += g[2] * w; } mid.push([x, y, z]); y -= Ld / N; }
+    const N = 80, mid = [], y0 = top.y ?? DRILL_TOP, Lt = y0 - yEnd; let x = top.x, y = y0, z = top.z;   // the middle line, straight down, pushed off the cheek, the neck, the shoulder and the chest
+    for (let q = 0; q <= N; q++) { const room = R0 * open(q / N) + 0.006, d = dist(S, x, y, z); if (d < room && grad(S, x, y, z, g)) { const w = room - d; x += g[0] * w; z += g[2] * w; } mid.push([x, y, z]); y -= Lt / N; }
     const at = f => { const q = clamp(f, 0, 1) * N, a = Math.min(N - 1, Math.floor(q)), k = q - a; return [0, 1, 2].map(c => mid[a][c] + (mid[a + 1][c] - mid[a][c]) * k); };
     for (let rib = 0; rib < 2; rib++) for (let sg = 0; sg < segs; sg++) {
       const f0 = sg / segs, f1 = (sg + 1) / segs, th0 = rib * Math.PI + top.side * 0.6; let L = 0, prev = null;
       for (let k = 0; k < K; k++) {
-        const f = f0 + (f1 - f0) * TS[k], c = at(f), th = top.side * (th0 + 2 * Math.PI * turns * f), r = R0 * (rib ? 0.55 : 1) * (1 - 0.5 * f * f) * smooth(0, 0.06, f + 0.01), o = (h * K + k) * 3;
+        const f = f0 + (f1 - f0) * TS[k], c = at(f), th = top.side * (th0 + 2 * Math.PI * turns * f), r = R0 * (rib ? 0.55 : 1) * (1 - 0.5 * f * f) * open(f), o = (h * K + k) * 3;
         pts[o] = c[0] + r * Math.cos(th); pts[o + 1] = c[1]; pts[o + 2] = c[2] + r * Math.sin(th); outv[o] = Math.cos(th); outv[o + 1] = 0; outv[o + 2] = Math.sin(th);
         if (prev) L += Math.hypot(pts[o] - prev[0], pts[o + 1] - prev[1], pts[o + 2] - prev[2]); prev = [pts[o], pts[o + 1], pts[o + 2]];
       }
       len[h] = L; u[h] = hash(top.side * 0.31 + rib * 0.17 + 0.4, 91); width[h] = pitch * (rib ? 0.5 : 0.72); taper[h] = sg === segs - 1 ? 0.75 : 0; wisp[h] = sg === segs - 1 ? 0.8 : 0;
-      v0[h] = 0.08 + 0.5 * f0; v1[h] = 0.08 + 0.5 * f1 + (sg === segs - 1 ? 0.3 : 0); h++;
+      rootTaper[h] = sg === 0 ? 0.9 : 0;                                  // (the ribbon begins as a point, as its lock ends)
+      // (the atlas from where a lock some centimetres from its roots is, not from the roots' own shade: the top of a ringlet was the roots' dark under a lock already in the lengths' colour)
+      v0[h] = 0.3 + 0.27 * f0; v1[h] = 0.3 + 0.27 * f1 + (sg === segs - 1 ? 0.3 : 0); h++;
     }
   }
-  return { n, pts, len, u, width, taper, wisp, v0, v1, outv };
+  return { n, pts, len, u, width, taper, rootTaper, wisp, v0, v1, outv };
 }
 
 // An ahoge: one lock standing up out of the top of the head and curving over (two thin cards, a little apart)
