@@ -21,7 +21,11 @@ use of every aspect we've added so far"). The tutorial's project, made as its st
   until the knocks, the explosive shells until the gun's come), a parcel at 304's door unboxed into the hands, the
   weapons plugin's double barrel, a kettle (its LED and steam: HSPropFX) and a mug of tea (HSLiquidFill) that break
   (HSBlowUp), the entry's bulb shot out (HSShootable), a candle burning in the bath (HSPropFX), and her, the one who
-  hunts, shot down into black smoke (HSHitReact).
+  hunts, shot down into black smoke (HSHitReact);
+- her looks (DECISIONS 2026-11-12, later: "Add information how to use this in tutorial html"; guide §30): two looks as
+  the look viewer saves them (looks/empty.tres, looks/hunting.tres), an HSLookSwitch under her (her eyes black once
+  the knocks have come: the look's needs) and under the one who hunts (her eyes lit when the corridor goes dark:
+  LightsOut's scared to its fire()).
 
 Then played headless (tools/godot/tutorial_v2_test.gd): up the stairwell's dog-leg, the corridor's lights dimming and
 coming back, 304 locked, the note, the key and the lights going out one by one, 304 opened, the flashlight running low,
@@ -35,7 +39,7 @@ it in DIR instead of Saved/Godot/_tutorial_v2 (a project to open in Godot and pl
 
 `--reuse` keeps the last run's project (its export and import: the hotel's takes minutes) and makes the kit and the
 scene again: for working on the guide. `--only a,b` with `--pictures` draws only those pictures (the rest kept as they
-are; the scene builder's only when `builder` is among them).
+are; the scene builder's only when `builder` is among them, the look viewer's two when `viewer` is).
 
 Ends "TUTORIAL2 ok"."""
 import json
@@ -206,7 +210,9 @@ rr = R["r304"]
 bed, chair, desk304 = B["r304_kt_bed_double_1"], B["r304_kt_dining_chair_1"], B["r304_kt_desk_1"]
 if bed["size"][0] < bed["size"][2]:
     sys.exit("TUTORIAL2 FAILED: 304's bed should lie east to west, its head at the west wall (the hotel set's layout)")
-bed_eye = [bed["at"][0] - bed["size"][0] / 2 + 0.3, bed["top"] + 0.06, bed["at"][2]]   # lying on your back, your head by the west wall: just over the bed's collider (the export's furniture is solid to its top, 0.95 m: an ear inside it hears everything through its walls)
+BED_LIE = 0.50                                                                        # the kit's double bed: its blanket's top over the floor (seat.gd measures it from the bed's meshes; the play test holds the two together)
+bed_eye = [bed["at"][0] - bed["size"][0] / 2 + 0.3, floor_y + BED_LIE + 0.22, bed["at"][2]]   # lying on your back, your head on the pillow by the west wall: where seat.gd puts the eye (0.30 m in from the head end, 0.22 m over where you lie)
+bed_node = [bed["at"][0], bed["top"] + 0.3, bed["at"][2]]                             # the seat's node: anywhere over the bed
 chair_eye = [chair["at"][0], floor_y + 1.2, chair["at"][2]]                           # sitting at 304's desk
 chair_turn = math.degrees(math.atan2(-(desk304["at"][0] - chair["at"][0]), -(desk304["at"][2] - chair["at"][2])))   # facing it
 ceil_y = rr["at"][1] + rr["size"][1] / 2 + 0.025                                     # 304's ceiling (its volume is 0.05 short of it)
@@ -278,6 +284,8 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://addons/horrorstudio_look/nodes/lightning_storm.gd", "lightning"),
        ("Script", "res://starter/cue.gd", "cue"), ("Script", "res://starter/seat.gd", "seat"), ("Script", "res://starter/cold_area.gd", "cold"), ("Script", "res://starter/steam_mirror.gd", "steam"),
        ("Script", "res://starter/searcher.gd", "searcher"), ("Script", "res://starter/chase.gd", "chase"),
+       ("Script", "res://starter/hunt.gd", "hunt"), ("Script", "res://starter/hunt_spot.gd", "huntspot"), ("Script", "res://starter/moves.gd", "moves"),
+       ("Script", "res://starter/sanity.gd", "sanity"), ("Script", "res://starter/close_call.gd", "closecall"), ("Script", "res://starter/shown.gd", "shown"),
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
@@ -294,6 +302,11 @@ SOUNDS = {"hum": "ambience/electric_hum_01.ogg", "hum3": "ambience/electric_hum_
           "water": "ambience/water_running.ogg", "drone": "ambience/ambient_01.ogg", "cut": "house/power_hum_cut.ogg", "creak": "house/floorboard_creak.ogg",
           "sting": "stings/sting_short.ogg", "big": "stings/sting_big.ogg", "thunder": "ambience/thunder.ogg"}
 ext += [("AudioStream", f"res://sfx/{f}", "s_" + k) for k, f in SOUNDS.items()]
+# her looks (guide §30, the look plugin's HSLookSwitch): two looks as the look viewer saves them, res://looks/<name>.tres
+LOOKS = {"empty": ['eyes = "black"', 'needs = "knocked_304"'],             # her eyes black once the knocks have come (a fact)
+         "hunting": ['eyes = "glow"', "eye_color = Color(1, 0.1, 0.05, 1)"]}   # the one who hunts: two red points in the dark
+ext += [("Script", "res://addons/horrorstudio_look/nodes/look_switch.gd", "lookswitch"), ("Script", "res://addons/horrorstudio_look/look_preset.gd", "lookpreset")]
+ext += [("Resource", f"res://looks/{k}.tres", "look_" + k) for k in LOOKS]
 if who:
     ext += [("PackedScene", f"res://exports/characters/{who}/{who}.glb", "her"), ("Script", "res://starter/arms_down.gd", "arms")]
 subs = [("StandardMaterial3D", "paper", ["albedo_color = Color(0.93, 0.91, 0.84, 1)", "roughness = 0.9"]),
@@ -304,6 +317,10 @@ subs = [("StandardMaterial3D", "paper", ["albedo_color = Color(0.93, 0.91, 0.84,
         ("BoxMesh", "pack", ["size = Vector3(0.06, 0.022, 0.09)", 'material = SubResource("cells")']),
         ("BoxShape3D", "jumpbox", ["size = Vector3(1.0, 2.5, 1.9)"]),
         ("BoxShape3D", "coldbox", [f"size = Vector3(1.0, 2.5, {corr['size'][2]:.2f})"]),
+        ("BoxShape3D", "in304box", ["size = Vector3(4.5, 2.5, 5.9)"]),
+        ("StandardMaterial3D", "terry", ['resource_name = "terry"', "albedo_color = Color(0.86, 0.84, 0.78, 1)", "roughness = 0.95"]),   # the hotel's slippers
+        ("BoxMesh", "sole", ["size = Vector3(0.095, 0.018, 0.25)", 'material = SubResource("terry")']),
+        ("BoxMesh", "strap", ["size = Vector3(0.1, 0.04, 0.1)", 'material = SubResource("terry")']),      # room 304 and its entry: where you watch her run past the door from
         ("StandardMaterial3D", "skin", ['resource_name = "skin"', "albedo_color = Color(0.82, 0.8, 0.78, 1)", "roughness = 0.8"]),
         ("QuadMesh", "screen", [f"size = Vector2({B['tv_screen']['size'][2] - 0.02:.3f}, {B['tv_screen']['size'][1] - 0.02:.3f})"]),
         ("StandardMaterial3D", "dress", ["albedo_color = Color(0.86, 0.85, 0.81, 1)", "roughness = 0.85"]),
@@ -432,10 +449,30 @@ nd("Batteries", "Things", "Node3D", script="pickup", props=[f"transform = {tf(ba
 nd("Mesh", "Things/Batteries", "MeshInstance3D", props=['mesh = SubResource("pack")'])
 nd("Radio", "Things", "MeshInstance3D", props=[f"transform = {tf(radio_at, -8.0)}", 'mesh = SubResource("radiobox")'])   # someone's radio, left on: static as she nears
 nd("Grille", "Things/Radio", "MeshInstance3D", props=[f"transform = {tf([-0.04, 0.0, 0.051])}", 'mesh = SubResource("grille")'])
-nd("Bed", "Things", "Node3D", script="seat", props=[f"transform = {tf(bed_eye, -90.0)}", 'pose = "lying"', "look_up_deg = 70.0",   # 304's bed: lie on your back, looking up past its foot
-   f"reach_size = {f3([bed['size'][2], bed_eye[1] - floor_y - 0.3, bed['size'][0]])}", f"reach_at = {f3([0.0, -(bed_eye[1] - floor_y - 0.3) / 2.0, -(bed['size'][0] / 2 - 0.3)])}",
-   'say = "The sheets are cold."'])   # its box from 0.3 m up to the eye: over the bed's collider, so E finds it
+nd("Bed", "Things", "Node3D", script="seat", props=[f"transform = {tf(bed_node, -90.0)}", 'pose = "lying"', "look_up_deg = 70.0",   # 304's bed: anywhere over it; the seat finds the bed, your head on its pillow, looking up past its foot
+   'say = "The sheets are cold."'])
 nd("Chair", "Things", "Node3D", script="seat", props=[f"transform = {tf(chair_eye, chair_turn)}"])   # 304's desk chair
+# things that aren't where they were (guide §23, shown.gd): the hotel's slippers. A pair inside 304's door; once the
+# knocks have come (the fact knocked_304) and only while you can't see either place, that pair is gone and one is by
+# the bed, its toes to the bed. And a pair outside 308's door that wasn't there when you came up: there once you've
+# found 304 (the flag checked_in, which the Story's Task Flags switch on when find304 is ticked)
+def slippers(name, at, turn):
+    nd(name, "Things", "Node3D", props=[f"transform = {tf(at, turn)}"])
+    for side, x in (("L", -0.07), ("R", 0.07)):
+        nd(f"Sole{side}", f"Things/{name}", "MeshInstance3D", props=[f"transform = {tf([x, 0.009, 0.0])}", 'mesh = SubResource("sole")'])
+        nd(f"Strap{side}", f"Things/{name}", "MeshInstance3D", props=[f"transform = {tf([x, 0.03, -0.07])}", 'mesh = SubResource("strap")'])   # over the toes: its -Z end
+
+
+slip_door = [d304m[0] - 0.3, floor_y + 0.002, d304m[2] + 0.5]                         # just inside 304's door, toes to the room
+slip_bed = [bed["at"][0] + 0.25, floor_y + 0.002, bed["at"][2] - bed["size"][2] / 2 - 0.28]   # beside the bed, toes to it
+d308m = B["door_door_308"].get("mid", d308)
+slip_308 = [d308m[0], floor_y + 0.002, d308m[2] - 0.32]                               # in the corridor at 308's door, toes to the door
+slippers("Slippers", slip_door, 180.0)
+nd("Shown", "Things/Slippers", "Node", script="shown", props=['hidden_when = "knocked_304"', "when_unseen = true",
+   'swap_with = Array[NodePath]([NodePath("../../SlippersByBed")])', "size_m = 0.3"])
+slippers("SlippersByBed", slip_bed, 180.0)
+slippers("Slippers308", slip_308, 180.0)
+nd("Shown", "Things/Slippers308", "Node", script="shown", props=["shown = false", 'shown_when = "checked_in"', "when_unseen = true", "size_m = 0.3"])
 nd("Hide", "Things", "Node3D", script="seat", props=[f"transform = {tf(hide_eye, hide_turn)}", 'pose = "hiding"', "reach_size = Vector3(0.6, 1.3, 0.6)",
    "reach_at = Vector3(0, -0.3, 0)", 'say = "Crouched in the corner. Space holds your breath."'])   # the linen closet's far corner, facing its doorway
 nd("Approach", "Things/Hide", "Marker3D", props=[f"transform = {tf(local_of(hide_eye, hide_turn, hide_app))}"])   # where she stands to look: 1 to 1.5 m from you
@@ -481,6 +518,7 @@ def person(name, at, turn, shy, parent=".", xform=None):
 person("Her", her_at, her_turn, True)
 nd("Presence", "Her", "Node", script="presence", props=['static_on = NodePath("../../Things/Radio")'], paths=["static_on"])   # the signs that she's near
 nd("Uncanny", "Her", "Node", script="uncanny", props=["tilt_deg = 48.0", "mimic = true"])   # her head bent too far, her steps copying yours
+nd("Looks", "Her", "Node", script="lookswitch", props=['looks = Array[ExtResource("lookpreset")]([ExtResource("look_empty")])'])   # her looks: `empty` once the knocks have come (its needs)
 nd("Menace", "Her", "Node", script="menace", props=["near_rate = 0.02", "seen_rate = 0.03"])  # stay near her half a minute and she goes
 person("HerAgain", again_at, her_turn, False)
 # the moments and the scares
@@ -537,6 +575,38 @@ nd("Chase", "Events/Hunter", "Node", script="chase", props=['searcher = NodePath
    'start_says = "Run."'], paths=["searcher"])   # seen in the open while she searches: she's after you; the stairwell's safe
 nd("Presence", "Events/Hunter", "Node", script="presence", props=['static_on = NodePath("../../../Things/Radio")'], paths=["static_on"])   # the radio and your flashlight as she comes
 nd("HitReact", "Events/Hunter", "Node3D", script="hitreact", props=['target = NodePath("../../ShotDown")'], paths=["target"])   # shot: black ichor and smoke; down, the hunt's over
+nd("CloseCall", "Events/Hunter", "Node", script="closecall", props=["hiding = false"])   # reloading with her nearly on you: she falters, once a chase (§31.7)
+nd("Looks", "Events/Hunter", "Node", script="lookswitch", props=['looks = Array[ExtResource("lookpreset")]([ExtResource("look_hunting")])', 'on_fire = "hunting"'])   # her eyes lit when the corridor goes dark (LightsOut's scared, below)
+# the hunt (guide §31): hidden, started by an order at the laptop, over once the gun's in your hands. A third copy of her,
+# hers to move; her moves (Kimodo clips, when you've made them); the spots she can act at, in and off the corridor
+stalk_post = [fire[0] - 1.6, floor_y, corr["at"][2]]
+person("Stalker", stalk_post, -90.0, False, parent="Events")
+nd("Moves", "Events/Stalker", "Node", script="moves")                    # her clips go here: idle, walk, run, watch, peek, lunge
+nd("Looks", "Events/Stalker", "Node", script="lookswitch", props=['looks = Array[ExtResource("lookpreset")]([ExtResource("look_hunting")])'])   # her eyes lit for the tell
+nd("CloseCall", "Events/Stalker", "Node", script="closecall", props=["hiding = false"])
+nd("Hunt", "Events", "Node", script="hunt", props=['hunter = NodePath("../Stalker")', 'kind = "stalking"', 'ends_when = "task:gun"',
+   'reveal_task = "hunted: Something is out in the corridor."', 'start_says = "It\'s on its way. So is something else."', 'end_says = "Armed. It keeps its distance now."',
+   'fact = "armed"', "stages = 3", "stage_secs = PackedFloat32Array(25, 35)", "gap_min = 6.0", "gap_max = 14.0", "rush_stage = 3",
+   'tell_look = "hunting"', 'safe_rooms = PackedStringArray("r304", "r304_entry", "r304_bath")'], paths=["hunter"])
+nd("HuntSpots", "Events", "Node3D")
+hs = "Events/HuntSpots"
+hunt_of = 'hunt = NodePath("../../Hunt")'
+past = [d304m[0] + 3.2, floor_y, corr["at"][2]]                           # in the corridor, east of 304's door and out of its sight
+nd("PastTheDoor", hs, "Marker3D", script="huntspot", props=[f"transform = {tf(past)}", hunt_of, 'kind = "dart"', 'to = NodePath("To")',
+   "near_m = 1.0", "far_m = 9.0", "speed = 6.5", "scare = 0.5", "cooldown = 50.0"], paths=["hunt", "to"])   # she runs past the open door while you look out of 304
+nd("To", f"{hs}/PastTheDoor", "Marker3D", props=[f"transform = {tf([-6.4, 0, 0])}"])                       # ...to the other side of it
+nd("In304", f"{hs}/PastTheDoor", "Area3D", props=[f"transform = {tf([R['r304']['at'][0] - past[0], 1.3, -3.0 - past[2]])}"])   # only while you're in 304 or its entry
+nd("Shape", f"{hs}/PastTheDoor/In304", "CollisionShape3D", props=['shape = SubResource("in304box")'])
+nd("StairEnd", hs, "Marker3D", script="huntspot", props=[f"transform = {tf([sdoor[0] - 0.9, floor_y, corr['at'][2]], 90.0)}", hunt_of, 'kind = "watch"',
+   "near_m = 5.0", "far_m = 17.0", 'blink_lamp = NodePath("../../../Zones/Corridor/Tube1")'], paths=["hunt", "blink_lamp"])   # stood at the stair end, watching
+nd("VendingCorner", hs, "Marker3D", script="huntspot", props=[f"transform = {tf([vend['at'][0] - vend['size'][0] / 2 + 0.3, floor_y, vend['at'][2] + vend['size'][2] / 2 - 0.15], -90.0)}",
+   hunt_of, 'kind = "peek"', "near_m = 2.5", "far_m = 9.0", "stage_min = 2"], paths=["hunt"])               # round the vending corner's edge
+nd("LinenDoor", hs, "Marker3D", script="huntspot", props=[f"transform = {tf(B['door_door_linen']['mid'])}", hunt_of, 'kind = "door"',
+   f'door = NodePath("../../../Hotel/{P["door_door_linen"]}")', 'sound = "latch"', "scare = 0.2", "once = true"], paths=["hunt", "door"])   # the linen closet's door, by itself
+nd("Knock302", hs, "Marker3D", script="huntspot", props=[f"transform = {tf([d302[0] + 0.4, floor_y + 1.2, inside])}", hunt_of, 'kind = "decoy"',
+   'sound = "knock_three"', "near_m = 3.0", "cooldown = 60.0"], paths=["hunt"])                                # a knock where she isn't
+nd("BehindYou", hs, "Marker3D", script="huntspot", props=[f"transform = {tf(corr['at'][:1] + [floor_y] + corr['at'][2:])}", hunt_of, 'kind = "follow"', "stage_min = 2",
+   "cooldown = 45.0"], paths=["hunt"])                                                                          # down the corridor the way you came, nearer each look away
 area("ShotDown", "Events", "event", None, props=['say = "Whatever she was, she\'s smoke now."', 'fact = "shot_her"', 'music = "uneasy"'])   # (fired by her HitReact)
 # the player, its flashlight on a battery that's seen better days
 nd("Player", ".", inst="player", props=[f"transform = {tf(start['at'], start['turn'])}"])
@@ -544,9 +614,16 @@ nd("Flashlight", "Player/Eye", props=["battery = 90.0", "charge = 0.5", "low_at 
                                       'low_task = "batteries: Find batteries (the vending corner)"'])
 nd("Shotgun", "Player/Eye", "Node3D", script="shotgun", props=['light = NodePath("../Flashlight")', "owned = false", "spare = 0"], paths=["light"])   # the double, till a parcel brings it
 nd("Story", ".", "CanvasLayer", script="story", props=['objective_text = "Room 304, third floor. The lift is out."',
-   'tasks = PackedStringArray("up: Go up to the third floor", "find304: Find room 304")', 'ending_title = "Checked out"',
+   'tasks = PackedStringArray("up: Go up to the third floor", "find304: Find room 304")',
+   'task_flags = PackedStringArray("find304: +checked_in")',                # a flag a task switches on: 308's slippers wait for it
+   'ending_title = "Checked out"',
    'ending_text = "The fire stairs took you down to the street. Nobody ever asked who was staying in 308."'])
 nd("Sound", ".", "Node", script="sound", props=['mood = "uneasy"'])
+# sanity (§31.6): worn down by the dark, her and the scares; the desk chair and 304's bed rest you, the shop's food mends it
+# (its soda, water and burger are Eatable: in the pocket, the left button held eats one),
+# and sleep only once she's shot (and never while a hunt runs); the hunt and the night's director speed up as it falls
+nd("Sanity", ".", "Node", script="sanity", props=['scare_cost = 0.03', 'no_sleep = PackedStringArray("!shot_her")',
+   'cant_says = "You can\'t sleep. Not while she\'s out there."', 'slept_says = "You slept. It\'s nearly light."'])
 nd("HUD", ".", "CanvasLayer", script="hud", props=['keys = PackedStringArray("W A S D:walk", "E:use", "F:flashlight", "Tab:pocket")'])   # the UI plugin's HUD
 nd("Markers", ".", "Node3D")                                              # quest markers, each while its task is open
 nd("Room304", "Markers", "Node3D", script="marker", props=[f"transform = {tf([d304m[0], floor_y, d304m[2] - 0.12])}", 'label = "Room 304"', "height = 2.1", 'needs = "on:find304"'])
@@ -574,7 +651,9 @@ lines += ['[connection signal="picked" from="Things/Key" to="Events/LightsDie" m
           '[connection signal="gone" from="Events/MirrorHer" to="Events/MirrorSteam" method="arm"]',
           '[connection signal="scared" from="Events/LightsOut" to="Events/Feet308" method="arm"]',
           '[connection signal="scared" from="Events/LightsOut" to="Events/Hunter/Searcher" method="arm"]',
+          '[connection signal="scared" from="Events/LightsOut" to="Events/Hunter/Looks" method="fire"]',
           '[connection signal="scared" from="Events/Jump" to="Events/Hunter/Searcher" method="stop"]',
+          '[connection signal="ordered" from="Things/Laptop" to="Events/Hunt" method="start"]',
           f'[connection signal="opened" from="Hotel/{P["door_corridor_e_door"]}" to="Story" method="end"]', "", '[editable path="Hotel"]', '[editable path="Player"]', '[editable path="Things/Mug"]', ""]
 # the shop's own things, as the guide has you make them (FileSystem: New Resource, HSShopItem; a catalog with a folder)
 SHOP = [   # (file, its fields, its resources): the shotgun a ? until the knocks, the explosive shells until the gun's come
@@ -606,6 +685,10 @@ cat += [f'[ext_resource type="Resource" path="res://addons/horrorstudio_devices/
 cat += ["", "[resource]", 'script = ExtResource("1")', 'store = "NIGHT-MART"',
         "items = Array[ExtResource(\"2\")]([" + ", ".join(f'ExtResource("{i + 3}")' for i in range(len(own))) + "])", 'folder = "res://shop/items"']
 (proj / "shop" / "hotel_shop.tres").write_text("\n".join(cat) + "\n", encoding="utf-8")
+(proj / "looks").mkdir(exist_ok=True)
+for name, fields in LOOKS.items():                         # as the look viewer's Save as a look writes them
+    (proj / "looks" / f"{name}.tres").write_text("\n".join(['[gd_resource type="Resource" script_class="HSLookPreset" load_steps=2 format=3]', "",
+        '[ext_resource type="Script" path="res://addons/horrorstudio_look/look_preset.gd" id="1"]', "", "[resource]", 'script = ExtResource("1")', f'name = "{name}"'] + fields) + "\n", encoding="utf-8")
 (proj / "main.tscn").write_text("\n".join(lines), encoding="utf-8")
 pg = (proj / "project.godot").read_text(encoding="utf-8")
 if "run/main_scene" not in pg:
@@ -639,20 +722,38 @@ if "--pictures" in args and not errs:
     only = args[args.index("--only") + 1].split(",") if "--only" in args else []
     for old_png in list(shots.glob("*.png")) + list(shots.glob("*.import")):
         old_png.unlink()                                   # only this run's pictures go into the guide
-    cmd = [G, "--path", str(proj), "--rendering-driver", "vulkan", "--fixed-fps", "30", "-s", "tutorial_v2_shots.gd", "--", f"--out={shots}"]
-    if only:
-        cmd.append("--only=" + ",".join(o for o in only if o != "builder"))
-    if shutil.which("xvfb-run"):
-        cmd = ["xvfb-run", "-a", "-s", "-screen 0 1920x1080x24"] + cmd
-    r = run(cmd, timeout=3600)
-    made = sorted(shots.glob("*.png"))
-    if not made:
-        errs.append("no pictures came out of Godot: " + (r.stdout + r.stderr)[-800:])
+    godot_only = [o for o in only if o not in ("builder", "viewer")]
+    made = []
+    if not only or godot_only:                             # Godot's own of the game
+        cmd = [G, "--path", str(proj), "--rendering-driver", "vulkan", "--fixed-fps", "30", "-s", "tutorial_v2_shots.gd", "--", f"--out={shots}"]
+        if godot_only:
+            cmd.append("--only=" + ",".join(godot_only))
+        if shutil.which("xvfb-run"):
+            cmd = ["xvfb-run", "-a", "-s", "-screen 0 1920x1080x24"] + cmd
+        r = run(cmd, timeout=3600)
+        made = sorted(shots.glob("*.png"))
+        if not made:
+            errs.append("no pictures came out of Godot: " + (r.stdout + r.stderr)[-800:])
     (GUIDE / "img").mkdir(parents=True, exist_ok=True)
     for p in made:
         im = Image.open(p).convert("RGB")
         im.save(GUIDE / "img" / f"{p.stem}.jpg", quality=86, optimize=True)
         print(f"  picture: guides/tutorial_v2/img/{p.stem}.jpg ({im.width}x{im.height})")
+    if not only or "viewer" in only:                       # the look viewer run as a scene of its own (guide §30): her eyes picked, her cloaked
+        glb_arg = [f"--glb=res://exports/characters/{who}/{who}.glb"] if who else []
+        for name, more in [("looks_viewer", ['--look={"eyes":"glow"}', "--behind=grey"]),
+                           ("looks_cloak", ['--look={"skin":"cloak","eyes":"glow"}', "--behind=stripes", "--view=body"])]:
+            png = shots / f"{name}.png"
+            cmd = [G, "--path", str(proj), "--rendering-driver", "vulkan", "res://addons/horrorstudio_look/tools/look_viewer.tscn", "--", f"--shot={png}"] + more + glb_arg
+            if shutil.which("xvfb-run"):
+                cmd = ["xvfb-run", "-a", "-s", "-screen 0 1920x1080x24"] + cmd
+            r = run(cmd, timeout=1800)
+            if not png.is_file():
+                errs.append(f"the look viewer's picture {name}: " + (r.stdout + r.stderr)[-600:])
+                continue
+            im = Image.open(png).convert("RGB")
+            im.save(GUIDE / "img" / f"{name}.jpg", quality=86, optimize=True)
+            print(f"  picture: guides/tutorial_v2/img/{name}.jpg ({im.width}x{im.height})")
     if not only or "builder" in only:
         r = run([node, str(ROOT / "tools/godot/tutorial_v2_builder.mjs"), "--out", str(GUIDE / "img")], cwd=ROOT, timeout=1800)
         print("  " + "\n  ".join((r.stdout.strip() or r.stderr.strip()[-600:]).splitlines()[-8:]))

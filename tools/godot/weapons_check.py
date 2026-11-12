@@ -69,6 +69,8 @@ else:
     body_in()
     dst = proj / "exports/interiors/hotel_floor"
     have = ROOT / "Saved/Godot/_tutorial_v2/exports/interiors/hotel_floor/hotel_floor.glb"
+    if not have.is_file():
+        have = ROOT / "Exports/interiors/hotel_floor/hotel_floor.glb"   # (the ready-made export: no desk server needed)
     if have.is_file():                                   # tutorial v2's export of the same set: the same file
         shutil.copytree(have.parent, dst, dirs_exist_ok=True, ignore=shutil.ignore_patterns("*.import"))
     else:

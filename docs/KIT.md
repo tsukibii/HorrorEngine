@@ -217,7 +217,9 @@ Wrinkles come from the **seed**, strongest near the seams. **Piping** is a real 
 pull **tufts** in, in a diamond. Each is a welded mesh with smooth normals, about 1,000 to 3,000 triangles a
 cushion (`detail`).
 - The sofa's cushions and back cushions are soft now (piped, wrinkled, and buttoned if you ask). So are a bed's
-  mattress (quilted if you ask), its duvet and its pillows. Turn *soft* off for the old blocks.
+  mattress (quilted if you ask), its duvet and its pillows. Turn *soft* off for the old blocks. The duvet lies a little
+  into the mattress and hangs down its sides and its foot onto the frame, and a pillow's pinched rim rests just over the
+  mattress with its belly pressed in (2026-11-12: they stood on a line above it, and read as floating).
 - **Cushions on things:** with *Furniture*, click a cushion onto a sofa, a bed or a table. It lands on the seat, the
   mattress or the top (`on` the thing, at that height), facing the same way. The standing pillows lean on the back.
 

@@ -58,6 +58,9 @@ enum Blend { SOLID, ADD }
 @export var spark_length_m := 0.06
 @export var spark_gravity := 3.0
 @export var spark_color := Color(1.0, 0.72, 0.32)
+@export var spark_sprite: Texture2D                   ## each spark this picture turned to the eye instead of a streak (the love-heart shell's hearts: fx/heart.png); `spark_length_m` its size, a `spark_gravity` under 0 floats them up
+@export var spark_energy := 2.6                       ## how bright the sparks are (a streak's is added to what's behind it: lower for a spray of water)
+@export var spark_width_m := 0.0025                   ## a streak's width (a spray of water's drops are thicker than a spark)
 @export_group("Smoke")
 @export_range(0, 64) var puffs := 10                  ## the cloud thrown out with the shot
 @export var puff_size_m := Vector2(0.06, 0.11)

@@ -323,6 +323,368 @@ The user's answers, newest first. They override the plan, the research and the d
   crown, with the hairline shapes as dots on the head; about 20,000 triangles of hair by default; braids, beards and
   hair under hats later. The pictures stay on the user's side, not in git (other people's renders).
 
+## 2026-11-12, the bed (the user: "Why does the blanket and pillows float above the bed")
+
+- **Why**: the kit's bed (`tools/director/kit.js` `bedGen`), not the seats. Measured in the hotel's export: the duvet
+  was a stiff lens 6 cm thick ending level with the mattress's rounded edge (its rim at 0.448 m, the mattress's edge
+  top at 0.449 m and falling away), so a line of shadow ran under it all round; and a pillow's pinched rim is at half
+  its height, so with its belly on the mattress its rim stood 6 to 7 cm above it.
+- **Fixed in the generator** (every bed in every set and game, on its next build or export): the duvet lies 2.5 cm
+  into the mattress and **hangs down its sides and its foot** onto the frame (three thin panels, inside the bed's own
+  size: no collider or layout changes); a pillow's rim rests 3 cm over the mattress with its belly pressed in.
+- The ready-made hotel floor was **made again** (`godot_byhand.py ready`), and the tutorial's pictures that show the
+  bed. KIT passes.
+
+## 2026-11-12, after the intensifiers (the user: things that disappear and come back, and flags a quest can switch)
+
+- **"if we dont have already can you create a script that makes objects disappear (not deleted just disappear
+  visually), so we can trigger an event that makes it look like the table looks different or something is missing,
+  we should also be able to make objects appear back, and be able to start them in game from either state, so I can
+  reuse the same droppable script for appearing. Appearing can be quest based or flag event based, ideally quests
+  can trigger variable flags on/off, should be easy to make new flags."** We had only pieces (a scare area's Appear
+  and Hide, `moved.gd`'s vanish). Now, in the starter kit:
+  - **`shown.gd`**, one script for both ways, on a thing or as a child of it. **`shown`** is how it starts (there or
+    not). It changes by **`fire()`** (any area's, cue's, scare's or moment's Target, or a signal: `on_fire` toggle,
+    show or hide), by **the Story's words** (`shown_when`: there while they hold: `task:key` once that task's ticked,
+    `on:key` while it's on the list, a flag's name, `!flag`; `hidden_when` the other way), or from a script
+    (`appear()`, `vanish()`, `set_shown`, `toggle`). **`when_unseen`**: only while you can't see it, so you look back
+    and it's different. **`also`**: more things with it. **`swap_with`**: things there only while it isn't (the same
+    table laid another way, in the same place). `fade_secs`. Nothing is deleted: it's hidden and its own colliders
+    are off with it.
+  - **Flags.** A flag is a fact the Story keeps, on or off; **a new one needs no list: the first thing that names
+    it makes it.** The Story got `set_flag(name, on)`, `toggle_flag`, `switch_flags("+a, -b, ~c")`, the signal
+    `unflagged`, **`flags_start`** (on when the game starts) and **`task_flags`**: what a task switches, a line each:
+    `"key: +table_gone, -lights_ok"` when it's ticked, `"added key: +searching"` when it's put on the list.
+  - **`flag_switch.gd`**, a node for the same: its `flags` (`+name`, `-name`, `~name`), done by `fire()` or by itself
+    when the Story's words come to hold (`when = "task:key"`), `again`, `needs`.
+- MIND plays them. **Not done**: a piece of an interior's export stays solid when hidden (it's part of its room's one
+  collider; a prop you placed yourself isn't); Director and desk games.
+- **"include it as part of the tutorial v2"** (the next message). In tutorial v2's game and its guide (§23, *Things
+  that aren't where they were*): the hotel's **slippers**. A pair just inside 304's door; once the knocks have come
+  (the fact `knocked_304`) and only while you can't see either place, it's gone and a pair is beside the bed, toes to
+  it (`hidden_when`, `when_unseen`, `swap_with`). And a pair outside 308's door that isn't there when you come up
+  (`shown` off): there once 304's found, by the flag `checked_in`, which the Story's Task Flags switch on when
+  `find304` is ticked. TUTORIAL2 plays both; a picture of the pair by the bed. The flag switch node is described
+  there, not placed.
+
+## 2026-11-12, after the seats (the user: more intensifiers; a light that flickers on her, phasing, "am I going crazy")
+
+- **"an npc, if you flash a light it has a boolean that if a light faces it the light flickers (including
+  flashlights) but not counting maybe atmospheric lighting like moonlight."** The starter's **`flicker_lit.gd`**,
+  under her: `enabled` is the boolean. Every lamp whose light **reaches her** (in its reach, in a spot's cone,
+  nothing solid between) and your flashlight when **its beam is on her** falter, and are themselves again the moment
+  they're off her. Never a DirectionalLight3D (the moon, the sun), a light in the group `hs_ambient`, or one in
+  `ignore`. Three ways: `flicker` (dips, at most 2.5 a second: the flash limit), `dim` (it sinks while it's on her),
+  `die` (it fails, goes out after `die_after`, and stays out `dead_secs` once it's off her). It differs from
+  `presence.gd`, which flickers the lights *near* her whether they're on her or not.
+- **"some effect for phasing in and out of the reality/world so it's almost like the creature is in the world but
+  disappears but not super abruptly ... some kind of horror-ish one."** The look plugin's **`HSPhase`** and
+  `creature_phase.gdshader` (GODOT_LOOK §5s): she comes apart in thin level slices that jump sideways, drains to her
+  own shadow, and the slices go one by one; back the same way. `phase_out`, `phase_in`, `stutter` (torn a moment,
+  nothing gone), `blink`, `phase_to(where)`, `next_place`, `fire`. Gone, she's hidden.
+- **"Any other useful horror elements? Things that make the player think (am I going crazy)."** Built, three:
+  - **`moved.gd`** (starter): a thing that isn't where you left it. Once you've seen it and only while you can't, it
+    turns to face you, goes to its next mark, is nudged, tipped over or gone. One chance each time you look away.
+  - **`gaslight.gd`** (starter): the game's own words lying for a moment: a task on the list reads something else,
+    a line nothing said, a pickup you already have, the objective's letters out of order; then as they were. Only
+    while its `needs` hold (`sanity:shaken`), sooner as sanity falls. Nothing is really changed.
+  - **`HSUnease`** (look plugin, GODOT_LOOK §5t): the picture itself: the view's edges swimming while its middle
+    stays still, a second picture drifting, something dark growing in from the corners, the colour going. By the
+    Sanity node, or by hand; `most` a player's cap; nothing in it flashes.
+- **MIND** (`python tools/godot/mind_check.py`) plays the scripts and the two nodes headless and draws and measures
+  the two shaders; `--pictures` makes the look guide's two sheets.
+- **Not in tutorial v2's game** (the user didn't ask this time): the look guide and the starter's README say how.
+- **Suggested, not built** (the user picks): eyes in the dark (two glints that go when your beam finds them), a
+  sound from the room you just left (your own actions echoed late: a door, a drawer), a corridor that's one door
+  longer on the way back, a mirror that's a beat late, a photo or a painting whose figure has moved, a clock that
+  ran while you looked away, a save or pause menu line that's wrong once, a second set of footprints in the wet,
+  your flashlight's beam finding a shadow with nobody to cast it (`shadow_pass.gd` is half of that), a phone that
+  rings and is dead when you lift it.
+
+## 2026-11-12, after the close calls (the user: the camera on a bed and a chair, and eating by holding the button)
+
+- **"can you make sure the camera adjust appropriately if we are on a chair or bed (sort of how a pov head would be,
+  maybe slightly hovering above the bed as if the persons head was on a large pillow, if we drop a bed interactable
+  on a bed prop it should calculate it based off the middle of the bed + height + length), similar with chairs though
+  since we can have stools maybe make the drop script have a height / pos adjuster for view."** The starter's
+  **`seat.gd` works the eye out from the furniture** (its `fit`, on by default; pose hiding is always as placed):
+  - **Which furniture**: its `furniture` when set; the node's own meshes (the script on the prop); the model it's a
+    child of (**`seat_bed.tscn`, `seat_chair.tscn`, `seat_stool.tscn`** to drag onto a model in the Scene tree); else
+    the furniture under it in an interior's export (its piece of meshes found by a ray down); else the solid box
+    under it.
+  - **Lying**: the middle of the bed across, 0.30 m in from its head end, 0.22 m over where you lie (the highest
+    surface in the bed's middle: the blanket), facing its foot. The head end is the one with a headboard; with none,
+    the end behind the node's own facing; `flip` the other.
+  - **Sitting**: the seat's middle, a seated eye 0.75 m over it (scaled by the player's own eye height), facing away
+    from its back (the side that stands over the seat along its whole length); no back, the node's own facing.
+  - **Adjusters** (the View group): `seat_height` (from the furniture's foot: a bar stool that's only a tall box),
+    `view_offset` (right, up, back), `view_turn_deg`, `flip`, `look_limit_deg`, `fit` off.
+  - **A head**: the eye eases onto the seat and up again (the player's `settle_secs`, 0.35), and turns only so far
+    there (75° each side and 5° down lying; 125° sitting; a stool free).
+  - **In the editor** an orange camera shows where the eye will be (the script is a `@tool`), when the furniture is
+    a model in the scene.
+  - **Found on the way**: an interior's export makes each piece of furniture solid as **one box to its top**, a bed's
+    to its headboard (0.95 m), so tutorial v2's bed had your eye 0.5 m over the mattress. A seat whose eye would be
+    inside that box now takes its twelve triangles out of the room's collider and puts a truer solid in (to where
+    you lie, plus each side that stands over it). Only when the box is found whole; otherwise the player still
+    lifts the eye over the lid, as before.
+  - Tutorial v2's bed and chair are now nodes "anywhere over" their furniture (its §23); a new picture from the
+    pillow. **SEATS** (`python tools/godot/seat_check.py`) plays all of it on furniture made of boxes.
+- **"for us to eat something it has to be in our inventory, has to be 'eatable', and we have to hold left click
+  (should be an eat meter that fills up, roughly 2 seconds to start with to eat it), once eating it should
+  disappear."** Eating is the **Story's** now (it owns the pocket): `set_eatable(item, restores, secs)` marks a
+  pocket thing; with it **in the hand** (the HUD row's middle; with no HUD row, the first eatable thing in the
+  pocket) the **left button held** fills a meter under the middle of the view over its seconds (`eat_secs`, 2), then
+  one is gone from the pocket and the Sanity node mended. Let go early: nothing. One a hold. **Not while a gun is
+  up** (the click is the gun's; Q lowers it), a card is up, or the laptop has the mouse.
+  - What makes a thing eatable: **`food.gd`** (E now takes it into the pocket instead of eating it: `restores`,
+    `eat_secs`, `count`), an **HSShopItem's Eaten group** (`eatable`, `restores`, `eat_secs`; the catalog's soda,
+    water and burger are), or a Sanity node's `foods`.
+  - **Gone**: eating a food.gd thing with E where it lies, and the Sanity node's C key (`eat_key`).
+    `sanity.eat_item(item)` is a script's instant eat.
+- **Not done**: the interior export itself still writes the one box (the scene builder's `levelexport.js`: a bed's
+  collider should be its mattress and headboard; then the seat's swap isn't needed); a prop's own box collider to its
+  headboard isn't swapped (only a room's merged collider is); no eating sound is on the shelf (`eat_sound` is empty);
+  no picture of the eat meter in the guide; Director and desk games.
+
+## 2026-11-12, after the sanity meter (the user: sanity in the tutorial, and close calls)
+
+- **"Sure wire it to the tutorial."** Tutorial v2's game has a **Sanity** node now: its scares cost 0.03 each, the
+  laptop's soda, water and burger mend it (C eats one out of the pocket), the desk chair and 304's bed rest you, and
+  **you can't sleep until she's shot** (`no_sleep = ["!shot_her"]`; lying down says "You can't sleep. Not while she's
+  out there."; a running hunt stops it too). Shot, lie down in 304's bed: asleep, awake with it full. The hunt and
+  the night's director speed up as it falls, by themselves. The guide's §31, part 6.
+- **"can we also add some 'fake' just about made it feelings. The game doesn't need to be mathematically fair, just
+  needs to feel like it is, e.g. a monster is running towards us as I'm shooting it, I'm about to kill it, but run
+  out of shells, so I reload, normally it would reach me before I reload and I'd die but if x criteria is met or x
+  chance it somewhat slows down or acts in a way that seems like it's about to kill me but gives me just enough time
+  for reload to finish and I shoot it. It doesn't have to be with shooting either, hiding etc, just needs to feel
+  intense, the core about horror is intensity and atmosphere and how much it draws you in."** Built as the starter's
+  **`close_call.gd`**: a node under the character who hunts you (beside her `chase.gd` or `searcher.gd`, or a
+  `hunt.gd`'s hunter; they find it by themselves).
+  - **When** (each a switch): your gun is being **reloaded**; the beat between the click on an **empty gun** and the
+    reload; **while** the Story's words hold (`on:fuse`: you're at the fuse box); **hiding**, the time her search
+    would have found you (she leans in, stays `linger` seconds longer, and goes); or a script's
+    `call_it("the door", 2.0)`.
+  - **What she does**: from `hold_m` (2.8 m) she's slower the nearer she is, a crawl by `stop_m` (1.3 m), playing
+    her `lunge` move with her breath at your ear, and her chase can't catch you while it lasts. It ends `grace`
+    (0.5 s) after what you were doing is done, which is your shot. Miss, or take longer than `max_secs` (4 s), and
+    she comes on at full speed and has you.
+  - **How often**: `chance` 0.75, the first one in a game sure, one a chase, 40 s between them, only while its
+    `needs` hold, and **less likely as sanity falls** (`sanity_sync`: half as likely at nothing). So it's the
+    criteria and the chance the user asked for, and a low sanity means fewer rescues.
+  - **Measured** (HUNT, with the weapons plugin's real double: its reload takes 1.42 s): started with her 3.2 m off,
+    without a close call she catches you mid-reload; with one she falters, comes no nearer than 1.7 m, both shells
+    are in, and if you then don't shoot she has you.
+  - In tutorial v2 one sits under the one you shoot at the end and one under the hunt's stalker, both with Hiding
+    off (that night's search is meant to find you when you gasp). The guide's §31, part 7.
+- **Not done**: other kinds of near miss (a door that shuts with her hand in it, the last shell always the one that
+  drops her, a hiding place she checks second), a close call for the Director's or the desk's games, a picture of
+  one in the guide. The close call isn't told to the player anywhere, on purpose.
+
+## 2026-11-12, the last (the user: a sanity meter, and hunts and events synced to it)
+
+- **"Could we add a sanity bar/meter to the game, things like eating food, resting (sitting, sleeping at night) fix
+  sanity, things can prevent from sleeping e.g. current quest might have something toggled as cant sleep; have a way
+  to sync the hunts and events to the sanity so we can increase things and make things harder as sanity goes
+  down."** Built in the starter kit (games made by hand):
+  - **`sanity.gd`**: one node, a number 0 to 1 and a thin meter at the top right. **Down**: the dark, her near and in
+    the open, a hunt running, every scare, time, dying; each its own number. **Up**: sitting (to 0.7), lying down (to
+    0.8), eating, sleep (to full).
+  - **Food**: `food.gd` on a thing, eaten with E; or pocket things listed in the node's `foods`, eaten with C (the
+    laptop's shop already sells food into the pocket).
+  - **Sleep**: lying on a bed for `sleep_after` seconds. **What stops it**: `no_sleep`, a list of the Story's words
+    (any holding: `on:<task>` is "while this task is on the list", which is the quest's toggle), a hunt running,
+    `block_sleep(why)` from a script, `sleep_needs` not holding ("night": the games by hand have no clock, so night
+    is a fact the game sets).
+  - **Synced by facts**: `sanity:uneasy` (under 0.75), `sanity:shaken` (under 0.5), `sanity:breaking` (under 0.25),
+    set and taken back as it moves. Every Needs in the starter kit reads them: cues, scare and event areas, moments,
+    hunt spots, a hunt's own start, a look.
+  - **Synced by pace**: `hunt.gd` and `dread.gd` got `sanity_sync`. As sanity falls a hunt's spots come closer
+    together, its stages sooner, her aggression up faster, the rest between rushes shorter, the warning shorter (never
+    under a second), and under 0.25 she can rush a stage early. The director's moments come closer together. With no
+    Sanity node in the scene nothing changes.
+  - **At nothing**: a target's `fire()`, or death and back at the checkpoint with half.
+- **SANITY** (`python tools/godot/sanity_check.py`) plays all of it headless; HUNT and TUTORIAL2 still pass.
+- **Not in tutorial v2's game** (it is since the entry above): its guide has a short note (§31, Sanity). Not done: hunger, hallucinations of its
+  own (the facts turn the existing glimpses and cues on), the meter in the UI plugin's HUD style, a save of it at a
+  checkpoint, Director and desk games.
+
+## 2026-11-12, after the plan (the user: build the hunt, Kimodo clips on its behaviours, a hunt in tutorial v2)
+
+- **"dont need to watch the pr as your the only one who will be committing to it"**: the pull request isn't watched.
+- **"I like your plan, consider how to attach animations to the behaviours (from kimodo), implement this plan and
+  then update tutorial v2 to have a brief hunting phase before the final shotgun one."** Built for games made by hand
+  (the starter kit; docs/HUNT_PLAN.md says what's built and what isn't):
+  - **`hunt.gd`**: one node owns a hunt. The hunter; `haunting`, `stalking` or `lethal`; started by its `needs` or
+    `start()`; ended by a time, the Story's words (`task:gun`), a safe room, her shot down; hidden, with a task
+    revealed at the first sighting if wanted; stages with the facts `hunt:<name>` and `hunt:<name>:<n>`; the rush
+    only by ticked rules (dark, ran, stared, back) from a stage on, after a tell, with a rest after.
+  - **`hunt_spot.gd`**: markers round the map, ten kinds (watch, dart, peek, wait, ambush, follow, pass, door, decoy,
+    custom), each playable only when what you can see allows it.
+  - **Animations on the behaviours: `moves.gd`.** A node under a character with a clip per move (idle, walk, run,
+    stalk, crawl, watch, peek, search, lunge, kill, hit, and any more). **A clip is a Kimodo .npz dropped in
+    `res://animations/`**, retargeted onto her own skeleton when the game starts by the Director's reader and
+    retarget, which every by-hand project now carries (`res://kimodo/`, copied by `godot_byhand.py`); or an animation
+    file; or one her model has, by name. Walks are made in place and played by her real speed. No clip: the move
+    falls back (stalk to walk to nothing) and she slides. The hunt and its spots ask for moves by name; a spot can
+    name its own move or animation.
+  - **Dying in a game by hand**: the Story's `checkpoint()`, `die()`, `revive()` (tasks, facts, pocket, cash, doors,
+    where you stood) and `checkpoint.gd`; a lethal hunt keeps one when it starts and goes on a stage lower.
+  - **Dark** means your flashlight off or dead and no lamp that's on reaching you with nothing in the way; the hunt's
+    `lit_by` says which lamp, when she won't come.
+- **Tutorial v2 §31, The hunt**: from an order at the laptop until the gun's in your hands. A third copy of her
+  (Stalker) with a Moves node and her `hunting` look for the tell; six spots (her run past 304's open door seen from
+  inside, the stair end, the vending corner, the linen door, a knock at 302, behind you); `stalking`, the rush in the
+  dark from stage 3, room 304 safe. TUTORIAL2 plays it; one picture (`hunt_past`).
+- **Not done**: navigation and marker paths (she can't yet cut through another room to get ahead of you), the
+  Director's cards, a story word for desk games. No Kimodo clips are in the repo: the tutorial's stalker slides until
+  the user makes them (the prompts are in §31).
+
+## 2026-11-12, after the pull request (the user: being hunted, as a hidden quest)
+
+- **"Can you consider how we could make an interesting horror sequence of being hunted ... a 'hidden' quest called
+  survive the hunt ... select an npc that is hunting you ... behaviours (animations), jump scaring events, paths,
+  hidden hunt event boxes around the map ... goes invisible ... 'kill' the player if it touches them ... designed in a
+  way where the player can survive them too ... we don't want the creatures just running up to you, maybe if it's dark
+  they would ... run past you very quickly into another room ... 'hunts' that basically act like haunting events,
+  maybe you need to complete a task to get them to stop e.g. turn the power back on."**
+- **A plan, not built: docs/HUNT_PLAN.md.** One `Hunt` node that owns it (who hunts, the kind: haunting, stalking,
+  lethal; hidden or revealed; what starts and ends it; stages), **hunt spots** round the map picked at the director's
+  pace (watch, dart across ahead of you, peek, ambush, follow, a cloaked pass, a door, a decoy, wait), **rush rules**
+  (she keeps her distance; she rushes only in the dark, at your back, when you run or make noise, and always after a
+  tell), **death and checkpoints for a game by hand** with the ways to live listed and checked, **hauntings** that end
+  on a task (the power cut), **the cloak as a state** with what gives her away (a water shell among them), what's
+  under it (navigation or marks, her moves) and a build order.
+- **It waits on four answers** (HUNT_PLAN §9): the haunting first or the lethal hunt, what death is in a game by
+  hand, which game it's first for, and whether there are clips for a hunter yet.
+
+## 2026-11-12, the very last (the user: the shells merged in, a quest for being shot with one, a pull request)
+
+- **"create a pr, merge in more-shotgun-shells into this branch"**. `more-shotgun-shells` (the love heart and water
+  shells) is merged into `claude/jolly-darwin-9t8hkc`; CLAUDE.md, CONTINUE and this file kept both sides. The pull
+  request is the branch into main.
+- **"maybe add some question or drag and drop thing that we can do quests to have npcs be hit by the easter egg love
+  shells or water shells (a way to check if someone did it), e.g. an npc gets shot with love, then it ticks that flag
+  as true"**. Built in the weapons plugin: **`HSShotWith`** (`quest/shot_with.gd`), a node to put under a character
+  (beside her HSHitReact or HSShootable) or anything with a collider. A shot of the kind it names landing on her
+  (**Shell**: heart, water, buckshot, explosive, harmless, harmful, any, or a kind of your own by its id; a **Part**
+  of her; so many **Pellets**; so many **Times**; only while its **Needs** hold) sets a **Fact** in the Story, ticks a
+  task, says a line, sets an objective, adds tasks, fires a target and turns her look (the look switch under her,
+  back after a while). Two ready-made to drag onto someone: `quest/loved.tscn`, `quest/soaked.tscn`.
+- **The way to check is the fact.** Anything's Needs takes it (a door, an area, a cue, a quest marker, a look), a
+  script asks `Story.is_set("her_loved")`, the node says `done`, `count`, `last`, and `HSShotWith.was(her)`.
+- **It listens to the guns itself**, not to HSHitReact's or HSShootable's signals: only the gun's hit records carry
+  the shell's kind when the shot hurts, so one node covers the easter eggs and the real shells, and works on
+  something with neither of the two. An explosive's blast reaching her counts as that shell.
+- **For games built by hand** (the starter's Story). A Director or desk game has no word for it: a fact such as
+  `shot:<who>:<kind>` recorded by the brain would be the way, with the runner, the check and STORY_FORMAT together.
+  Not built.
+- **SHOTWITH** (`python tools/godot/shot_with_check.py`): the real gun, shells and Story in a small by-hand project.
+- **Not in tutorial v2**: the weapons guide has it (§10, *A quest for being shot with something*).
+
+## 2026-11-12, last (the user: how to use it, in the tutorial)
+
+- **"Add information how to use this in tutorial html"**. In **guides/tutorial_v2**, a new **§30, Her looks: other
+  eyes, another skin, the cloak** (the sections after it are now §31 to §34): the look viewer and what each of its
+  controls does, saving two looks as files, an HSLookSwitch under her, a fact changing her (a look's Needs:
+  `knocked_304`, her eyes black after the knocks), an event changing her (LightsOut's `scared` to the hunter's switch:
+  her eyes lit in the dark), F8 while you play, the script lines, what the cloak can't do. **Built into the
+  tutorial's own game**, as its other sections are: `tools/godot/tutorial_v2.py` writes the two looks and the two
+  switches into `main.tscn`, TUTORIAL2 plays them (by a fact, by an event, by hand), and `--pictures` makes the
+  section's four pictures (two from the game, two from the look viewer: `viewer` in `--only`).
+- **Its pictures are the Character Studio's grey alien**, where the tutorial's other pictures are the stand-in: the
+  stand-in has no eyes to change. Said in the section.
+- **The Look plugin's guide** (`guides/look_plugin`, §8 People) has the cloak, the eye looks and the switch too, with
+  two pictures, and its preset list and count brought up to 80.
+- **Seen here, not from this**: on this machine a fresh TUTORIAL2 run says the ready-made floor differs from the set
+  as it exports here (9 room volume markers); with `--reuse` (which skips that comparison) it passes. READYMADE in
+  check_all passes. Not looked into.
+
+## 2026-11-12, later (the user: a tool to toggle looks, and events and quests that change them)
+
+- **"Can you make a tool that let's us toggle between the eyes and skin shades (allows us to use default too), we
+  should be able to make events or quests trigger different looks"**. Built in the look plugin (GODOT_LOOK §5r):
+  - **A look** is a file (`HSLookPreset`, a `.tres`): a skin (**default**, a creature skin, the cloak), eyes
+    (**default**, an eye look), their colours and amounts.
+  - **The tool** is two things. **The look viewer** (`addons/horrorstudio_look/tools/look_viewer.tscn`: F6, or
+    Project > Tools > HorrorStudio: look viewer): a character from the project, every skin and eye look toggled beside
+    her, Default, the lamp off to see what glows, stripes behind her to see the cloak, walking, Save as a look. And
+    **the same panel over the running game** (F8, debug builds) for every character with a switch.
+  - **`HSLookSwitch`** under a character keeps her looks and turns her from one to another (the old fading out, the
+    new in; default exactly her own). **Quests**: a look's `needs` in the starter Story's words (`task:dinner`, a fact,
+    `!`...): worn while they hold. **Events**: the starter's event area and cue have `look_of` and `her_look`; a cue's
+    or a shootable's `target` calls the switch's `fire()`; from a script `set_look("angry")`, `default()`.
+  - **For games built by hand** (the starter kit's Story). A Director or desk game has no word for a cast member's
+    look yet: it wants a story word (`look`), not built; said to the user.
+  - The check is LOOKSWITCH. It caught the starter cue's own `look` (where the player looks): the new word is
+    `her_look` in both scripts.
+
+## 2026-11-12 (the user: ghost events, the cloak, creepy eyes, what "Freddy" needs)
+
+- **"Come up with some extra things we could add to our godot horrorengine, e.g. since we are making paranormal games
+  we might want to be able to create ghostly-eventors, e.g. objects within this range might fly off the table (some
+  light physics), ghostly eventors should function based off flags ... items that are flung shouldn't clip out of the
+  scene. ... if I have an animation of an npc opening a door what if I want a door to open easily in sync with when
+  their hand touches the door, or a cupboard ..."**, and what a game like *My Sister's Imaginary Friend Freddy* (a
+  grey alien in the house while you look after your sister: Tamagotchi chores first, the paranormal bleeding in)
+  would need, as *"drag and drop scripts that would help set the atmosphere"*. **A plan, not built**:
+  **docs/GHOST_EVENTS_PLAN.md**. A ghost event is one node with `needs` (the flags), a trigger, what it does and what
+  it tells the Fear node and the director; the two described in detail (the poltergeist's fling, which throws each
+  thing to a place inside the room instead of with a force and watches it there; `touch_sync`, where the door follows
+  the hand instead of a clock, and which opens a door "by itself" when the actor is cloaked); a catalogue of forty
+  more against what the project already has; a **haunt level** (0 to 5) every event reads, so the paranormal bleeds
+  in by one setting; Freddy's missing half (the sister's needs, a day, counting chores, cooking and food props,
+  look-at, a routine); a build order and four questions. Waiting on the user's pick.
+- **"can you also add a new one that emulates that 'invisibility cloaking' effect that the predators in the predators
+  use"**. Built: the creature skin **`cloak`** (GODOT_LOOK §5p), a shader of its own that draws the room behind her
+  bent through her shape in nested shells, on everything she has, nearly gone standing still and rippling when she
+  moves, no light of her own; `eyes: true` and `shadow: true` for two eyes in the air and a shadow with nobody
+  casting it; and the node **`HSCloak`** (`cloak()`, `reveal()`, `flicker()`, `fire()`), which makes it come and go
+  in crackling patches. Its limits are in §5p (see-through things behind her aren't in it: in fog or a beam she's a
+  hole). CREATURESKIN holds it.
+- **"consider adding some glowing eye shaders or creepy eye effects, spiral eyes, glowing eyes (adjustable color),
+  black eye, love hearts inside the eyes"**. Built: **`HSEyeFx`** (GODOT_LOOK §5q), thirteen looks drawn by the eye's
+  own shader behind the cornea: glow (any colour), black, void, white, blind, bloodshot, spiral, hearts, star, slit,
+  cross, dilated, pinprick; on the HSCharacterLook node its Creepy eyes row; a preset each. A new check, EYEFX.
+- **Tried on the Studio's grey alien** (`creatures.mjs make --only alien --export`, made here: 1.25 m): every eye
+  look, the cloak, and the two together (cloaked, his eyes glowing). Seen and left: his own black eyes go white under
+  a strong lamp close by, with the eye shader as it was (LATER).
+
+## 2026-11-11, after the very last (the user: two goofy kinds of shell, easter eggs; the branch `more-shotgun-shells`)
+
+- **"Look at our shotgun asset and our bullets/muzzle/eplosive types of ammo, add a couple of new goofy ammo types, love
+  hearts (this wouldnt damage the npc but have some kind of cute effect), water shells (water splashes), just some fun
+  easter egg ones. call this branch more-shotgun-shells"**. So the weapons plugin has two more kinds of shell
+  (`GodotPlugins/HorrorStudioWeapons`, its README's *The easter egg shells*; the guide's section 8):
+  - **Both are harmless**, and that is one switch: an HSShellType whose `damage` is 0. What it hits is pushed a little
+    and marked as its impact says, but an HSHitReact isn't wounded, staggered or brought nearer to going down, an
+    HSShootable doesn't count it, an HSBlowUp isn't dented or broken; each says `touched(info)` instead, with the kind's
+    `touch` word. A kind also has its own `fire_sound` (no blast) and `ring_scale` (no ringing in the ears) now.
+  - **Love hearts** (`shells/heart.tres`): seven hearts in a wide cone. A small pink flash, pink smoke and hearts out of
+    the muzzle that float up (a muzzle look's `spark_sprite`: each spark a picture, `muzzle/sprite.gdshader`). Where
+    each lands, a pink heart printed on the wall, upright, glowing a few seconds, gone after sixteen, and hearts
+    floating up from it; nothing of the wall missing. **The cute effect on someone** (`touch` "charm"): she's smitten,
+    stood where she is for `charm_s` (2.5 s: whatever moves her waits, as in a stagger, with no shove) with hearts
+    floating up over her head and a run of little bells, then comes on as before.
+  - **Water** (`shells/water.tres`): nine splashes. No flash, no light: a pale spray and mist. Each splash throws drops
+    and mist and leaves a wet patch that runs down a wall and dries in 24 s. Someone hit is soaked (`touch` "soak"): a
+    start, dripping for `soak_s`, her skin wet if she wears the Look plugin's skin. **And it puts things out** (mine,
+    not asked for: easy to take back, `douse_m` 0): an explosive's embers, a made candle's flame (HSPropFX), anything in
+    the group `hs_flame` with `douse()`, within 40 cm of a splash.
+  - **They're easter eggs**: not in a gun's kinds until some are in the pocket (a pickup with its `shell`, or
+    `add_shells`). Nothing in tutorial v2 or the laptop's shop sells them yet: the user's to place.
+  - **Their props** are the prop generator's, customizable as the others (`shell_12ga_heart`, `_heart_spent`,
+    `shells_box_5_heart`, `shell_12ga_water`, `_water_spent`, `shells_box_5_water`: PROPGEN §31; a hull's `mark` and
+    `motif` and a box's `picture` can be a heart or a drop). Their maps `tools/weapon_fx.py` (a heart, heart prints, wet
+    patches), their sounds `tools/weapon_sounds.py` (`--only` makes just the new ones). WEAPONS plays them (§8k); the
+    guide's pictures are Godot's.
+  - **Found on the way, and fixed** (not asked for; it changes what every shot looks like): every impact's dust, chips
+    and sparks, the ichor's droplets, a broken thing's bits and a shot-out lamp's sparks had been coming out at the
+    scene's origin instead of at the hit since the weapons were built (a one-shot particle emitter throws its first
+    particles as it enters the tree, before it was placed: LESSONS). They come out where the shot lands now. The
+    guide's older pictures were taken with the fault and aren't redrawn here.
+
 ## 2026-11-11, the very last (the user: fix the library garments' limits)
 
 - **"fix all the limits"**, each with its answer:

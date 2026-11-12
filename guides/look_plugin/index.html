@@ -95,7 +95,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   character's skin, eyes and hair, a film grade and a camcorder's tape. It's in every Director project and every game
   the desk exports, and it goes into a project you build by hand the same way.</p>
   <div class="chips"><span class="chip">Godot 4.7</span><span class="chip">GDScript and shaders</span><span class="chip">19 nodes</span>
-  <span class="chip">40 presets</span><span class="chip">a GTX 1060's budget</span></div>
+  <span class="chip">80 presets</span><span class="chip">a GTX 1060's budget</span></div>
 </header>
 
 <section id="what">
@@ -252,6 +252,81 @@ as the look leaves), its pores and wrinkles, its shading in the creases.</p>
 <p>They have no light of their own: with the lamps out a chrome creature is as dark as the room, and a flashlight on it
 flares. From a script: <code>HSCreatureSkin.wear($Demon, "chrome")</code>, <code>HSCreatureSkin.clear($Demon)</code> to take it off,
 <code>$Demon/HSCharacterLook.set_creature("ember")</code> and <code>set_creature_amount(0.4)</code> while the game runs.</p>
+<h3 id="cloak">The cloak: invisible</h3>
+<p>The twelfth creature skin, <code>cloak</code>. She shows what's behind her, bent through her shape in stepped shells,
+on everything she has: skin, eyes, hair, clothes. Standing still she's nearly gone; moving, she ripples. She has no
+light of her own, and a lamp only glints on her.</p>
+<figure><img src="img/cloak.jpg" width="1278" height="480" alt="The grey alien in front of a striped wall: cloaked, half turned in patches, and cloaked with its eyes left glowing"><figcaption>The Character Studio's grey alien in front of stripes: cloaked; half turned (it comes and goes in crackling patches); cloaked with its eyes left glowing.</figcaption></figure>
+<p>For a cloak that comes and goes, put an <span class="node">HSCloak</span> under her (<code>presets/cloak.tscn</code>):
+<b>Cloaked</b> is how she starts, <b>Seconds</b> how long it takes, <b>Eyes Show</b> leaves her eyes to see,
+<b>Shadow</b> lets her go on casting one (nobody there, and a shadow on the wall). From a script:
+<code>$Her/HSCloak.reveal(0.15)</code>, <code>.cloak()</code>, <code>.flicker(0.6)</code> (it breaks up for a moment: with
+the weapons plugin's hit react beside it, every hit does). Its <code>fire()</code> does what <b>On Fire</b> says, so a cue
+or a scare area can aim at it.</p>
+<p>It reads the picture behind her. See-through things behind her (a beam in the fog, smoke, rain on a pane) aren't
+in that picture, so in fog she shows as a hole.</p>
+<h3 id="eyes">Creepy eyes</h3>
+<p>For a Character Studio character's eyes. On her <span class="node">HSCharacterLook</span>, open <b>Creepy eyes</b>
+and pick one (or drag <code>presets/eyes_glow.tscn</code>, <code>eyes_black</code>, <code>eyes_hearts</code>… under her).
+<b>Eye Fx Color</b> changes a look's colour (see-through: its own), <b>Eye Fx Side</b> does one eye only.</p>
+<table class="keys">
+<tr><td><code>glow</code></td><td>the iris lit from inside, in any colour: two points in the dark</td></tr>
+<tr><td><code>black</code></td><td>the whole eye black and wet</td></tr>
+<tr><td><code>void</code></td><td>black, with a point of light in the middle</td></tr>
+<tr><td><code>white</code></td><td>no iris, no pupil: the whole eye a pale lamp</td></tr>
+<tr><td><code>blind</code></td><td>clouded over, milky</td></tr>
+<tr><td><code>bloodshot</code></td><td>the white reddened, veins toward the corners, the pupil wide</td></tr>
+<tr><td><code>spiral</code></td><td>a spiral turning in place of the iris</td></tr>
+<tr><td><code>hearts</code>, <code>star</code></td><td>a heart (throbbing) or a star in place of the pupil</td></tr>
+<tr><td><code>slit</code>, <code>cross</code></td><td>a serpent's upright pupil; a cross</td></tr>
+<tr><td><code>dilated</code>, <code>pinprick</code></td><td>the pupil blown wide, or shrunk to a point</td></tr>
+</table>
+<figure><img src="img/eyes.jpg" width="1280" height="640" alt="The grey alien's face eight times: its own black eyes, glowing red lit and in the dark, a spiral, hearts lit and in the dark, white in the dark, a point of light in the dark"><figcaption>The grey alien: its own eyes, <code>glow</code> lit and in the dark, <code>spiral</code>; <code>hearts</code> lit and in the dark, <code>white</code> and <code>void</code> in the dark.</figcaption></figure>
+<p>From a script: <code>HSEyeFx.wear($Her, "glow", {"color": Color.GREEN})</code>, <code>HSEyeFx.set_amount($Her, 0.5)</code>
+(coming on), <code>HSEyeFx.clear($Her)</code>. Eyes that aren't the Studio's (a plain ball named eye) get only the glow,
+the black, the void and the white.</p>
+<h3 id="looks">Looks, switched: by a quest, an event, or by hand</h3>
+<p>When she should change during the game, don't use the rows above: put an <span class="node">HSLookSwitch</span>
+under her instead (<code>presets/look_switch.tscn</code>). It keeps a list of <b>looks</b> (files: a skin and a pair of
+eyes each, <code>default</code> for either) and turns her from one to another:</p>
+<ul>
+  <li>a look's <b>Needs</b> (the starter Story's words: <code>task:dinner</code>, a fact, <code>!</code> for not): she wears it while they hold;</li>
+  <li>the starter kit's event areas and cues: <b>Look Of</b> and <b>Her Look</b>; or any signal wired to the switch's <code>fire</code> (<b>On Fire</b> says which look);</li>
+  <li>a script: <code>$Her/Looks.set_look("angry")</code>, <code>.default()</code>, <code>.next()</code>;</li>
+  <li>by hand: <kbd>F8</kbd> in the running game (debug builds only).</li>
+</ul>
+<p>You make the looks in <b>the look viewer</b>: <span class="ui">Project → Tools → HorrorStudio: look viewer</span>.
+It shows a character from your project with every skin and eye look to toggle, their colours, <b>Default</b>, a lamp
+to turn off, stripes to put behind her for the cloak, and <span class="ui">Save as a look</span>
+(<code>looks/&lt;name&gt;.tres</code>). <a href="../tutorial_v2/index.html#looks">Tutorial v2, §30</a> walks through all of it.</p>
+<h3 id="phase">Phasing out of the world, and back</h3>
+<p>For someone who is there and then isn't, without simply vanishing: put an <span class="node">HSPhase</span> under
+her. Going, she comes apart in thin level slices that jump sideways, drains to her own shadow, and the slices go one
+by one; coming, the same backwards. Once she's gone she's hidden, so nothing in the game finds her.</p>
+<figure><img src="img/phase.jpg" width="1280" height="440" alt="The grey alien five times against black: whole, torn into shifted slices, darker with slices missing, a few dark slivers, nearly nothing"><figcaption>The Character Studio's grey alien going: herself, a quarter of the way, half, most, nearly gone. It takes Seconds (1.4).</figcaption></figure>
+<table class="keys">
+<tr><td>Out</td><td>how she starts: gone</td></tr>
+<tr><td>Seconds</td><td>how long it takes to go or to come</td></tr>
+<tr><td>On Fire</td><td>what <code>fire</code> does, for a starter area's, cue's or hunt spot's Target: toggle, out, in, stutter (she tears a moment and settles, nothing of her gone), blink (gone, <b>Away Secs</b> of nothing, back), next place (gone here, back at the next of <b>Places</b>)</td></tr>
+<tr><td>How it looks</td><td>Band M (a slice's height), Tear M (how far it jumps), Rate, Rise M, Darken and Tone</td></tr>
+<tr><td>Sound</td><td>a shelf sound as she goes and as she comes (a game by hand: its Sound node)</td></tr>
+</table>
+<p>From a script: <code>$Her/HSPhase.phase_out()</code>, <code>.phase_in()</code>, <code>.stutter(0.4)</code>,
+<code>.blink()</code>, <code>.phase_to($Markers/ByTheBed)</code>; its signal <code>phased(out)</code>. She has no light
+of her own while she goes: in the dark she just isn't there any more, so let a lamp or your beam be on her.</p>
+<h3 id="unease">Unease: the picture as a mind that's slipping sees it</h3>
+<p>One <span class="node">HSUnease</span> anywhere in the scene. The edges of the view swim and breathe while its
+middle stays still, a second picture drifts off the first, something dark grows in from the corners, the colour
+goes. It draws nothing at all until it's wanted.</p>
+<figure><img src="img/unease.jpg" width="1280" height="360" alt="A wall of orange and black stripes twice: as it is, and with its edges bent, darkened from the corners and paler"><figcaption>A test wall as it is, and with all of it on. In a game it comes on over a second and takes its time going.</figcaption></figure>
+<table class="keys">
+<tr><td>Follow Sanity</td><td>on: it reads the starter kit's Sanity node. Nothing while sanity is over <b>From</b> (0.6), all of it at <b>Full</b> (0.1)</td></tr>
+<tr><td>Amount</td><td>by hand, with Follow Sanity off; <code>$Unease.set_amount(0.4)</code></td></tr>
+<tr><td>Parts</td><td>Warp, Doubled, Crawl, Drain: each part's strength; 0 leaves it out</td></tr>
+<tr><td>Most</td><td>the most of it ever drawn: a player's setting (0 turns it off)</td></tr>
+<tr><td>Fire Amount, Fire Secs</td><td><code>fire</code> (a starter area's or cue's Target) or <code>$Unease.spike(0.6, 3.0)</code>: that much more for a moment</td></tr>
+</table>
+<p>It's under the tape and the grade, so they lie over it, and nothing in it flashes.</p>
 </section>
 
 <section id="finish">
@@ -271,7 +346,7 @@ warm or none, then each number (lift, gamma, gain, warmth, saturation, contrast,
 
 <section id="presets">
 <h2><span class="n">11</span>The presets</h2>
-<p><code>addons/horrorstudio_look/presets/</code> holds 64 ready-made nodes. Drag one from the FileSystem dock into the level and move it:</p>
+<p><code>addons/horrorstudio_look/presets/</code> holds 80 ready-made nodes. Drag one from the FileSystem dock into the level and move it:</p>
 <table class="keys">
 <tr><td>Lights</td><td><code>candle</code>, <code>dying_bulb</code>, <code>desk_lamp_dying</code>, <code>fluorescent_tube</code>, <code>faulty_neon</code>, <code>alarm_pulse</code></td></tr>
 <tr><td>Rooms</td><td><code>room_bulb</code>, <code>room_lamp</code>, <code>room_candle</code>, <code>room_dying</code>, <code>room_fluorescent</code>, <code>room_night</code> (light zones with their lights)</td></tr>
@@ -280,7 +355,9 @@ warm or none, then each number (lift, gamma, gain, warmth, saturation, contrast,
 <tr><td>Water</td><td><code>rain</code>, <code>downpour</code>, <code>wet_floor</code>, <code>wet_floor_raining</code>, <code>damp_floor</code>, <code>puddle</code>, <code>window_pane</code>, <code>wall_leak</code></td></tr>
 <tr><td>Blood</td><td><code>blood_pool</code>, <code>blood_wall</code>, <code>blood_dried</code></td></tr>
 <tr><td>People</td><td><code>character_look</code>, <code>character_sweating</code></td></tr>
-<tr><td>Creature skins</td><td><code>creature_chrome</code>, <code>creature_mirror</code>, <code>creature_pearl</code>, <code>creature_greasy</code>, <code>creature_slime</code>, <code>creature_oil</code>, <code>creature_porcelain</code>, <code>creature_ember</code>, <code>creature_stone</code>, <code>creature_scales</code>, <code>creature_wax</code> (each under a character)</td></tr>
+<tr><td>Creature skins</td><td><code>creature_chrome</code>, <code>creature_mirror</code>, <code>creature_pearl</code>, <code>creature_greasy</code>, <code>creature_slime</code>, <code>creature_oil</code>, <code>creature_porcelain</code>, <code>creature_ember</code>, <code>creature_stone</code>, <code>creature_scales</code>, <code>creature_wax</code> (each under a character), <code>creature_cloak</code></td></tr>
+<tr><td>Eyes</td><td><code>eyes_glow</code>, <code>eyes_black</code>, <code>eyes_void</code>, <code>eyes_white</code>, <code>eyes_blind</code>, <code>eyes_bloodshot</code>, <code>eyes_spiral</code>, <code>eyes_hearts</code>, <code>eyes_star</code>, <code>eyes_slit</code>, <code>eyes_cross</code>, <code>eyes_dilated</code>, <code>eyes_pinprick</code></td></tr>
+<tr><td>Looks that change</td><td><code>cloak</code> (it comes and goes), <code>look_switch</code> (her looks, switched)</td></tr>
 <tr><td>The finish</td><td><code>look_balanced</code>, <code>look_environment</code>, <code>grade_cinema</code>, <code>grade_cold</code>, <code>grade_noir</code>, <code>tape_camhybrid</code>, <code>tape_worn</code>, <code>mirror</code></td></tr>
 </table>
 <figure><img src="img/window_sun.jpg" width="1280" height="720" alt="The window sun preset"><figcaption><code>window_sun</code>: the beam from the glass to the floor.</figcaption></figure>

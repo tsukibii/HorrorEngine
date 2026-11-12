@@ -39,7 +39,7 @@ shaft's beam runs along it (tilt the node down for the sun); a sweep's and a lea
 wall with forward into the room and X along the street or the wall; a blood splat lies on the surface its +Y (the
 green arrow) points out of.
 
-The presets (`presets/*.tscn`, 64; the eleven creature skins' `creature_<look>` among them, §5o): `rain`, `downpour`; `wet_floor`, `wet_floor_raining` (ripples), `damp_floor`;
+The presets (`presets/*.tscn`, 80; the twelve creature skins' `creature_<look>` (§5o, §5p), the thirteen eye looks' `eyes_<look>` (§5q), `cloak` and `look_switch` (§5r) among them): `rain`, `downpour`; `wet_floor`, `wet_floor_raining` (ripples), `damp_floor`;
 `puddle`; `blood_pool`, `blood_dried`, `blood_wall`; `wall_leak`; `window_shaft`, `window_sun` (the shaft with a
 warm spot shining the same way, a child of it); `headlight_sweep`; `caustics_light`, `blinds_light`, `leaves_light`,
 `clouds_light`; `fluorescent_tube`, `dying_bulb`, `candle`, `alarm_pulse`, `faulty_neon`, `desk_lamp_dying`;
@@ -1280,7 +1280,219 @@ slime let it through; at half the look, halfway. Then on a creature exported fro
 HSCharacterLook node: every look on her skin and horns, the amount changed while worn, her own skin back with its
 paint. `docs/godot_sheets/2026-11-11_creature_skins.jpg`: the balls, and the demon in every look.
 
-## 5p. Grown hair: the hair editor v2.0's locks, shells and scalp (`hair_shell.gdshader`; DECISIONS 2026-11-11, the go)
+## 5p. The cloak: invisible, the film's way (`creature_cloak.gdshader`, `HSCreatureSkin`'s `cloak`, `cloak.gd` `HSCloak`; DECISIONS 2026-11-12)
+
+The user: "can you also add a new one that emulates that 'invisibility cloaking' effect that the predators in the
+predators use". A twelfth creature skin, `cloak`, with **a shader of its own** (it reads the screen; the other looks
+stay opaque and keep their scattering and reflections), and a node that makes it come and go.
+
+**What it draws.** Her surface shows the picture behind her, shifted: by her own shape (the view-space normal: nothing
+facing the eye, most at her outline: `bend`, 3.5 cm at her distance, the same near and far), **in nested shells**
+(`shells` 5, `shell_mix` 0.7: the shift stepped from her middle to her outline, each shell a whole copy of the
+background moved a little further: the film's look, where smooth glass would only be a lens), the colours parted at
+the edges (`split`), her skin's own relief in it (`relief`), her outline a little darker (`edge_dark`). **Ripples that
+stand still in the world** (`ripple`, 4 mm, a 3D noise read at each point's place in the world): she swims through
+them, so standing still she's nearly gone and moving she shows, with no history buffer; `motion` (0 to 1, the node
+sets it from her speed) bends and ripples it up to 3.5 times more.
+
+**No light of its own.** What it draws is the room behind it, so with the lamps out it's as dark as the room
+(measured: 0.088 against the wall's 0.097). A lamp catches on her as a faint glint (`glint`), a lobe of its own in
+`light()` capped as it lands (`glint_cap`): Godot's own shine rises to a mirror's at a grazing angle, and a first
+cloak was a glass ball with a pale rim; the room's reflections are off where she's cloaked.
+
+**Turning and breaking up.** `amount` runs from her own paint (0) to the cloak (1) **in patches** (a noise in the
+world and flickering cells, `patch_m`) with a crackle along their edges (`spark`, blue-white; nothing of it at 0 or
+1). `glitch` (0 to 1) breaks it up in flickering bands of her paint: she's been shot, she's standing by the TV.
+
+**On everything she has.** A creature skin goes on skin; the cloak's `all` puts it on every mesh under her (her
+eyes, teeth, hair, clothes, horns), her hair's cards cut by their own picture (`alpha_cut`), her eyes' wet layer
+taken off and her tear lines hidden while it's worn, all of it back with `clear`. Two words in the settings:
+`eyes: true` leaves her eyes as they are (with §5q's glow: two eyes in the air), `shadow: true` lets her cast a
+shadow (nobody there, and a shadow on the wall).
+
+**What reading the screen costs** (the limits, said plainly):
+- It's drawn in the transparent pass, after the screen is copied. **What's see-through behind her isn't in that
+  copy**: a beam in fog, smoke, rain, a window's drops. In fog or a flashlight's beam she shows as a hole. For a
+  horror game that's a feature (the film's creature shows in rain), and GHOST_EVENTS_PLAN counts on it.
+- **Godot draws no shadow for it.** A depth prepass would (tried): it also hides the wall behind her from the copy,
+  and she was a black figure. So `shadow: true` adds a shadow-only twin of each mesh on the same skeleton (never
+  drawn, never saved, freed by `clear`); without it she casts none (her `cast_shadow` off, back with `clear`).
+- **A thing in front of her is never pulled into her**: the shifted sample's depth is read, and one nearer than she
+  is falls back to no shift (measured with a red post in front of the ball: 6 pixels of its colour inside her
+  outline, 1079 with `depth_guard` off). Beside such a thing she's a little less bent.
+- One cloaked thing doesn't show through another (both read the same copy).
+
+**The node, `HSCloak`** (drop it under the character; `presets/cloak.tscn`): she starts `cloaked` or not; `cloak(secs)`
+and `reveal(secs)` turn it over a moment (`seconds`, 1.2), and fully revealed nothing of the cloak is left on her (her
+own skin, eye and hair shaders back); `flicker(secs)` breaks it up and settles; `fire()` does what `on_fire` says
+(toggle, reveal, cloak, flicker), so the starter kit's areas and cues can aim at it; `shimmer_when_moving` and
+`full_speed` (1.4 m/s); with an `HSHitReact` beside it every hit flickers it (`hit_flicker`); `cloaked_changed`.
+
+    HSCreatureSkin.wear($Freddy, "cloak")                          # the look alone, still
+    HSCreatureSkin.wear($Freddy, "cloak", {"eyes": true})          # his eyes left as they are
+    HSCloak.attach($Freddy, {"cloaked": true})                     # the node, from a script
+    $Freddy/HSCloak.reveal(0.15)                                   # in your face
+    $Freddy/HSCloak.flicker(0.6)
+
+On the `HSCharacterLook` node the Creature skin row has `cloak` too (the look alone; `presets/creature_cloak.tscn`).
+
+**CREATURESKIN** holds it: a ball in front of a lit wall of stripes, pictured beside the wall alone: cloaked, the
+picture inside her outline 0.12 off the wall's and its colour as a whole 0.07 off, 0.5% of it her paint's colour;
+nothing round her outline and no shadow; moving 0.26 off; the post; the lamp out; half turned 17% her paint with the
+crackle; broken up; her shadow kept (the wall 0.40 darker where it falls); a made-up figure through `wear` (five
+meshes cloaked, the wet layer and tear line put away and back, another look after it, her eyes and shadow kept) and
+through the node (cloaking over a second, 0.99 of the shimmer walking and none after standing, the flicker settling,
+`fire()` and its signal). On the Studio's grey alien (`creatures.mjs make --only alien --export`): cloaked, half
+turned and cloaked with his eyes glowing, in front of the stripes. `docs/godot_sheets/2026-11-12_cloak.jpg`.
+
+## 5q. Creepy eyes (`eye_fx.gd` `HSEyeFx`, the eye shader's `fx_` numbers; DECISIONS 2026-11-12)
+
+The user: "consider adding some glowing eye shaders or creepy eye effects, spiral eyes, glowing eyes (adjustable
+color), black eye, love hearts inside the eyes". Looks for a Studio export's eyes, **drawn by the eye's own shader**
+on the iris's disc behind the cornea (so the catchlight, the lids' shadow and the wet layer stay over them, and they
+slide against the white as the eye turns), each a set of the shader's `fx_` numbers, all 0 with no look:
+
+| Look | What | Its numbers |
+|---|---|---|
+| `glow` | the iris lit from inside, any colour; the pupil a dark hole in it; seen in the dark | `fx_glow` 2.2, `fx_glow_color`; the hole by the painted pupil's size (`fx_pupil`, the export's own), not its colour: a creature's eye painted all black glows as a ring too |
+| `black` | the whole eye black and wet | `fx_black`, `fx_black_iris` |
+| `void` | black, a point of light in the middle | black, and a dot mark that glows |
+| `white` | no iris, no pupil: the whole eye a pale lamp | `fx_blind` 1, the glow on the white and the pupil too |
+| `blind` | clouded over, milky | `fx_blind` |
+| `bloodshot` | the white reddened, veins toward the corners, the pupil wide | `fx_blood`, `fx_dilate` |
+| `spiral` | a spiral turning in place of the iris | `fx_spiral`, its two colours, `fx_spiral_arms`, `_twist`, `_speed` (half a turn a second) |
+| `hearts` | a heart in each eye in place of the pupil, throbbing | a mark (`fx_mark_shape` 0), pink, `fx_mark_beat` 1.2 a second (a double beat), the painted pupil shrunk away under it |
+| `star`, `slit`, `cross` | a star; a serpent's upright pupil; a cross | marks 4, 1, 2 |
+| `dilated`, `pinprick` | the pupil blown wide; shrunk to a point | `fx_dilate` (the iris's paint read nearer its middle or its edge) |
+
+    HSEyeFx.wear($Her, "glow", {"color": Color(0.2, 1.0, 0.3)})    # the colour is yours
+    HSEyeFx.wear($Her, "hearts")
+    HSEyeFx.wear($Her, "black", {"side": "L"})                     # one eye
+    HSEyeFx.set_amount($Her, 0.5)                                  # coming on
+    HSEyeFx.set_color($Her, Color.RED)
+    HSEyeFx.clear($Her)
+
+`color` changes the look's own colour (the glow's, a mark's, the spiral's), `amount` runs from her own eyes to the
+look, `side` one eye, and any `fx_` number by name. On the `HSCharacterLook` node: **Creepy eyes** (`eye_fx`,
+`eye_fx_color`, `eye_fx_amount`, `eye_fx_side`; `set_eyes(look, color)`, `set_eyes_amount(k)`); presets
+`presets/eyes_<look>.tscn`. Eyes that aren't the Studio's (a stand-in's plain ball named eye) get `glow` as an
+emission and `black` as a black glossy ball; the other looks need the Studio's eye.
+
+What glows has light of its own (it's the point: `glow`, `void`, `white`, the spiral, the hearts, the star), with
+the look's glow post effect round it; the others have none. Under a cloak worn with `eyes: true` they're all of her
+that shows.
+
+**EYEFX** (`python tools/godot/eye_fx_check.py`): each look on a made-up eyeball on the eye shader beside a plain
+one, seen square on, measured where it lands: the looks off, every eye the plain eye (0.009 off); the glow with the
+lamp out (the iris 0.64, the pupil 0.00, the white 0.01), green when asked, half lit at half; black with its glint;
+the void's point; the white lamp; the cloud; the reddened white; two arms turning; a heart with its notch, lobes and
+point, throbbing; five points; an upright slit; four arms; the pupil's edge moved; one side; the looks replaced and
+off; the stand-in's version. Then on a Studio export through the node: every look on both eyes, the glow counted in
+the dark (the grey alien: its black eyes ringed red). `docs/godot_sheets/2026-11-12_eye_fx.jpg`.
+
+**Seen while doing this, not fixed**: the grey alien's own eyes (black, gloss 1) go white under a strong lamp close
+by (CREATURESKIN's key light: 9 at 3 m), with the eye shader as it was before this: the catchlight's lobe spread over
+a black ball. Under the eye check's light (1.6) they're black with a glint. LATER.
+
+## 5r. Looks, switched: a tool to toggle skins and eyes, and events and quests that do (`HSLookSwitch`, `HSLookPreset`, `HSLookPicker`, the look viewer; DECISIONS 2026-11-12, later)
+
+The user: "Can you make a tool that lets us toggle between the eyes and skin shades (allows us to use default too), we
+should be able to make events or quests trigger different looks". Four pieces:
+
+**A look** (`look_preset.gd`, `HSLookPreset`, a resource: a `.tres` file): a name, a **skin** (`default`: her own; a
+creature skin, §5o; `cloak`, §5p) with its amount, tint and Extend, **eyes** (`default`: her own; an eye look, §5q)
+with their colour, amount and side, the cloak's two words (her eyes left to see, her shadow kept), its own `seconds`,
+and `needs` (below).
+
+**The switch** (`nodes/look_switch.gd`, `HSLookSwitch`, a node under the character beside her HSCharacterLook;
+`presets/look_switch.tscn`): her `looks` (a list of those), and it turns her from one to another: **half the turn the
+old look fades out, then the swap, then half the new one comes in** (from her default there's nothing to fade: all of
+it comes in). **Default is her own skin and eyes exactly as they were** (the same materials: measured).
+
+| How she's turned | What you set |
+|---|---|
+| by a quest or a flag | a look's **`needs`** (the starter Story's words: `task:dinner` that task done, `on:tidy` on the list, `item:key`, a fact, `!` for not, commas for all). She wears it while they hold; when several hold, the last in the list; when none does, her `start` look (empty: her default). A look asked by hand stays until the story next changes |
+| by an event | the starter's **event area** and **cue** have `look_of` (her, or her switch) and `her_look` (a look's name, or `default`); anything with a `target` (a cue, the weapons' shootable and hit react) calls the switch's `fire()`, which turns her to `on_fire` (a name, `default`, or `next`); any signal can be wired to `fire` |
+| by a script | `set_look("angry")`, `default()`, `next()`, `show({"skin": "cloak", "eyes": "glow", "eye_color": Color.GREEN}, 0.4)` for a look made on the spot; `look_changed(name)` when she's wholly in it |
+| by hand while you play | `panel_key` (F8, debug builds only): the picker over the game, for every switch in the scene |
+
+    $Freddy/HSLookSwitch.set_look("angry")
+    $Freddy/HSLookSwitch.default()
+
+Under the cloak her eyes are cloaked with the rest unless the look has eyes of its own or `eyes_show`; a change of
+eyes under a cloak puts the cloak on again (it's on her eyes too). A creature skin keeps her shadow; the cloak takes
+it unless `shadow`. Cloaked, the switch tells the cloak how fast she moves, as HSCloak does (use one or the other on
+a character). Her HSCharacterLook's own Creature skin and Creepy eyes rows are for a character with one look: leave
+them on none under a switch (the switch's default would take them off).
+
+**The picker** (`look_picker.gd`, `HSLookPicker`, a panel): the two lists (Skin: default and every skin; Eyes: default
+and every eye look), How much, Its colour (or the look's own), one eye, the cloak's two words, how long a turn takes;
+her named looks as buttons, **Default** first; **Save as a look** (an HSLookPreset at `res://looks/<name>.tres`, added
+to her list: drag the file into any switch's Looks) and **Copy as code** (the `show({...})` line). What it sets goes
+through her switch, so what you see is what an event will do.
+
+**The look viewer** (`tools/look_viewer.tscn`: open it and press F6, or **Project > Tools > HorrorStudio: look
+viewer**): a scene of its own. It lists every character in the project (`exports/characters`, `game/people`; Open… for
+a .glb anywhere; with none, a stand-in with a skin and two plain eyes), wears her look as a game does, and shows the
+picker beside her. Above her: **Lamp** (off: what glows of itself), **Behind her** (dark, grey, stripes: a cloak wants
+something to bend), **Walk** (the cloak shows when she moves), **Turn**, **Face** and **Body**; drag to look round her,
+the wheel to come closer. Looks saved there go with you to the next character.
+
+**Where it's taught**: guides/tutorial_v2 §30 (the viewer, saving looks, the switch, a fact and an event changing
+her, F8), built into the tutorial's game and played by TUTORIAL2; guides/look_plugin §8 for the short version.
+
+**Not in it**: a game made in the Director or exported from the desk has no word for a cast member's look yet (the
+story's `skin` word wets her; nothing names a creature skin or eyes): the switch reads the starter kit's Story. It
+wants one story word (`look`), grown with the runner, the check and STORY_FORMAT together. And the picker isn't in the
+editor's own viewport: the looks are put on when the game runs, so the tool is a scene that runs.
+
+**LOOKSWITCH** (`python tools/godot/look_switch_check.py`): in a `godot_byhand.py new` project, headless: a look at
+once and her default exactly back; a turn over a second in its halves; a look's own seconds; the cloak with her eyes
+left and with them cloaked; an amount alone on the same material; shadows; `next()`, `fire()`; the starter's own
+Story (a task ticked: its look; a fact: the later look; by hand until the story changes), its event area's `look_of`
+and `her_look`, the cue's same words; a switch starting in a look; the picker (picked, saved as a .tres and read back,
+the code, the panel over the game); the lists a look offers against HSCreatureSkin's and HSEyeFx's; on a Studio export
+beside her HSCharacterLook. Then the viewer run as a scene under xvfb: her default, cloaked in front of the stripes
+with her eyes glowing, her eyes green with the lamp out (counted). `docs/godot_sheets/2026-11-12_look_viewer.jpg`.
+
+## 5s. Phasing out of the world, and back (`creature_phase.gdshader`, `phase.gd` `HSPhase`; DECISIONS 2026-11-12, after the seats)
+
+The user: *"some effect for phasing in and out of the reality/world so it's almost like the creature is in the world
+but disappears, but not super abruptly, some kind of horror-ish one."*
+
+- **What it draws.** `amount` runs from 0, herself, to 1, gone. She comes apart in **thin level slices** (3.5 cm of the
+  world's height each) that **jump sideways** across the view a dozen times a second, more of them and further as it
+  goes, with a cut between them; her colour **drains to a cold near-black**, so she's her own shadow before she goes;
+  then the **slices go one by one**, each in threads and stuttering in and out first, lifting a little as it does. For a
+  moment she's a stack of slices standing in the air. Coming back is the same, backwards.
+- **How.** A shader of its own on everything she has (her skin, eyes, hair, clothes), through `HSCreatureSkin.wear`
+  with a look that isn't in the list. It keeps her own paint under Godot's lighting and has **no light of its own**.
+  It's solid where it's drawn (what's gone is cut out, not faded): it sorts as any solid thing and **her shadow comes
+  apart with her**.
+- **The node.** `HSPhase` under a character: `phase_out()`, `phase_in()`, `stutter()` (torn for a moment, nothing
+  gone), `blink()` (gone, a while of nothing, back), `phase_to(where)` and `next_place()` (gone here, back there),
+  `fire()` by `on_fire`. Gone, she's hidden; herself, she's on her own shaders again, and a creature skin an
+  HSLookSwitch gave her is put back.
+- **Measured** (MIND, a figure against black): at none of it she's her plain paint, whole; a third of the way she's
+  a third wider than she is and darker; half way under half of her is left with whole rows of her missing; at 1 nothing.
+- **Not done**: a sound of its own on the shelf; a Director or desk game's word for it; the slices are sheared between
+  a mesh's corners, so a body of very few triangles tears less cleanly than a character's.
+
+## 5t. Unease: the picture as a slipping mind sees it (`unease.gdshader`, `unease.gd` `HSUnease`; the same day)
+
+The user: *"things that make the player think, am I going crazy."*
+
+- **What it draws**, each part its own strength: the **edges of the view swim** and breathe while its middle stays
+  still (what you look at is steady, what you don't isn't); a **second picture** drifts a little off the first; something
+  **dark grows in from the corners** in veins; the **colour goes**. At 0 it draws nothing.
+- **What drives it.** The starter kit's Sanity node by default (`follow_sanity`: nothing over 0.6, all of it at 0.1),
+  or `set_amount`; `spike(k, secs)` and `fire()` for a moment of it. `most` is a player's cap.
+- **Where.** A CanvasLayer on layer 3: under the tape and the grade, which lie over it. Nothing in it moves faster
+  than a breath: no flashes.
+- **Measured** (MIND, a wall of stripes): at 0 the plain picture; with all of it a corner at an eighth of its
+  brightness and the middle unchanged, its colour a fifth paler; the edge moved fifty times more than the middle.
+
+## 5u. Grown hair: the hair editor v2.0's locks, shells and scalp (`hair_shell.gdshader`; DECISIONS 2026-11-11, the go)
 
 The Character Studio's Hair editor v2.0 (docs/HAIR_V2.md) grows hair from fixed pores instead of laying locks by hand.
 What it puts in an export is the salon's bake's kind of thing (§5e), so `HSHair.wear` wears it with nothing to set up;

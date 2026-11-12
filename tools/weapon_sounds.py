@@ -1,10 +1,14 @@
 """The weapons plugin's sounds, made from nothing (numpy, then ffmpeg for the Ogg; DECISIONS 2026-11-09): a 12-gauge's
 blast, a shell pushed home, the dry click on an empty chamber, things breaking when they're shot and their pieces landing (HSBlowUp),
 a spent hull dropping on the floor, the gun raised and lowered, a box of shells picked up, an explosive shell bursting
-where it lands, and someone who bleeds black ichor being hit and going into smoke (HSHitReact). Each is mono (the Sound node places it in the room and
+where it lands, someone who bleeds black ichor being hit and going into smoke (HSHitReact), and the easter egg shells'
+(a love-heart shell's pomf and bells, hearts popping where they land, someone smitten; a water shell's spray, its
+splash). Each is mono (the Sound node places it in the room and
 the sound physics give it the room's reverb, so the blast carries no room of its own: a short tail only).
 
-    python tools/weapon_sounds.py [--out DIR]     (default GodotPlugins/HorrorStudioWeapons/addons/horrorstudio_weapons/sounds)
+    python tools/weapon_sounds.py [--out DIR] [--only name ...]
+                                                  (default GodotPlugins/HorrorStudioWeapons/addons/horrorstudio_weapons/sounds;
+                                                  --only: just these, the rest left as they are)
 """
 import subprocess
 import sys
@@ -307,6 +311,83 @@ def ichor_down(rng):
     return np.tanh(1.5 * x)
 
 
+# ---- the easter egg shells (DECISIONS 2026-11-11): hearts and water ---------------------------------------------------
+
+def bell(t, at, f, tau, amp, rng):
+    """A small glass bell: its note, an octave and a twelfth over it and one partial out of tune, each dying faster the
+    higher it is."""
+    out = np.zeros_like(t)
+    for mult, a, k in ((1.0, 1.0, 1.0), (2.0, 0.45, 0.6), (3.01, 0.22, 0.4), (4.17, 0.12, 0.25)):
+        ph = rng.uniform(0, 2 * np.pi)
+        out += a * np.sin(2 * np.pi * f * mult * (t - at) + ph) * decay(t, tau * k, at, 0.002)
+    return amp * out
+
+
+def shell_heart(rng):
+    """A love-heart shell fired: no blast. A soft pomf out of the barrel (air and a low thump whose pitch falls), a pop
+    with its pitch rising, and three little bells going up."""
+    t = t_(1.1)
+    pomf = band(rng.standard_normal(len(t)), 120, 2200) * decay(t, 0.03, 0, 0.002)
+    f = 150 * np.exp(-t / 0.06) + 70
+    thump = np.sin(2 * np.pi * np.cumsum(f) / SR) * decay(t, 0.07, 0, 0.002)
+    air = band(rng.standard_normal(len(t)), 1500, 7000) * decay(t, 0.09, 0.01, 0.01)
+    pop = bubble(t, 0.02, 620.0, 0.03, 9.0, 1.0)
+    bells = sum(bell(t, 0.06 + 0.075 * i, fr, 0.34, 0.8 - 0.12 * i, rng) for i, fr in enumerate((1318.5, 1661.2, 1975.5)))
+    x = 0.9 * pomf / np.abs(pomf).max() + 0.9 * thump + 0.22 * air / np.abs(air).max() + 0.5 * pop + 0.34 * bells
+    return np.tanh(1.2 * x)
+
+
+def heart_pop(rng):
+    """Hearts landing: a few soft pops (bubbles, their pitch rising) and a sprinkle of small bells."""
+    t = t_(0.8)
+    x = np.zeros(len(t))
+    for i in range(5):
+        x += bubble(t, rng.uniform(0.0, 0.16), rng.uniform(700, 1500), rng.uniform(0.012, 0.03), rng.uniform(6, 16), rng.uniform(0.5, 1.0))
+    for i in range(6):
+        x += bell(t, 0.03 + rng.uniform(0.0, 0.3), rng.choice([2093.0, 2637.0, 3136.0, 3951.0]), rng.uniform(0.12, 0.25), rng.uniform(0.1, 0.22), rng)
+    return x
+
+
+def charm(rng):
+    """Someone smitten: a harp-like run of bells up a major chord, the last one held with a slow waver."""
+    t = t_(1.5)
+    x = np.zeros(len(t))
+    for i, fr in enumerate((1046.5, 1318.5, 1568.0, 2093.0, 2637.0)):
+        x += bell(t, 0.07 * i, fr, 0.3 + 0.12 * (i == 4), 0.7, rng)
+    x *= 1.0 + 0.12 * np.sin(2 * np.pi * 5.5 * t) * np.clip((t - 0.35) / 0.3, 0.0, 1.0)
+    shimmer = band(rng.standard_normal(len(t)), 6000, 14000) * decay(t, 0.25, 0.05, 0.05)
+    return x + 0.05 * shimmer / np.abs(shimmer).max()
+
+
+def shell_water(rng):
+    """A water shell fired: no blast. A thump of air out of the barrel, the spray's hiss thrown out and thinning, drops
+    in it."""
+    t = t_(0.9)
+    f = 120 * np.exp(-t / 0.05) + 55
+    thump = np.sin(2 * np.pi * np.cumsum(f) / SR) * decay(t, 0.06, 0, 0.002)
+    burst = band(rng.standard_normal(len(t)), 250, 5000) * decay(t, 0.035, 0, 0.002)
+    spray = band(rng.standard_normal(len(t)), 1800, 11000, tilt=-2.0) * decay(t, 0.16, 0.01, 0.015) * (0.6 + 0.4 * wobble(t, 20, 60, rng))
+    wet = squelch(26, t, 0.02, 0.12, 900, 5200, 0.2, rng)
+    x = 0.9 * thump + 0.8 * burst / np.abs(burst).max() + 0.75 * spray / np.abs(spray).max() + 0.35 * wet / max(np.abs(wet).max(), 1e-9)
+    return np.tanh(1.3 * x)
+
+
+def water_splash(rng):
+    """Water landing on a wall or a floor: the slap, the splash thrown back and falling, drops pattering down after it,
+    a few bubbles."""
+    t = t_(1.1)
+    slap = band(rng.standard_normal(len(t)), 300, 4500) * decay(t, 0.02, 0, 0.001)
+    wash = band(rng.standard_normal(len(t)), 900, 9000, tilt=-3.0) * decay(t, 0.13, 0.01, 0.02) * (0.5 + 0.5 * wobble(t, 12, 40, rng))
+    x = 1.0 * slap / np.abs(slap).max() + 0.8 * wash / np.abs(wash).max()
+    for i in range(22):                                              # the drops landing after it
+        at = 0.08 + rng.exponential(0.22)
+        if at < 1.0:
+            x += tick(t, at, rng.uniform(1500, 3500), rng.uniform(5000, 10000), rng.uniform(0.002, 0.006), rng.uniform(0.05, 0.25) * np.exp(-at / 0.4), rng) * 6.0
+    for i in range(7):
+        x += bubble(t, rng.uniform(0.02, 0.5), rng.uniform(380, 1100), rng.uniform(0.01, 0.025), rng.uniform(8, 22), rng.uniform(0.08, 0.2))
+    return np.tanh(1.2 * x)
+
+
 SOUNDS = {"shotgun_fire": (blast, -0.5), "shotgun_shell_insert": (shell_insert, -6.0), "shotgun_dry": (dry_click, -8.0),
           "shell_drop": (shell_drop, -10.0), "shotgun_handle": (handle, -10.0), "shells_box": (shells_box, -9.0),
           "double_open": (double_open, -5.0), "double_close": (double_close, -3.0), "double_flick": (double_flick, -8.0),
@@ -323,6 +404,9 @@ SOUNDS["ichor_hit"] = (ichor_hit, -2.0)
 SOUNDS["ichor_down"] = (ichor_down, -1.5)
 SEEDS["ichor_hit"] = 40
 SEEDS["ichor_down"] = 41
+SOUNDS.update({"shell_heart": (shell_heart, -5.0), "heart_pop": (heart_pop, -9.0), "charm": (charm, -8.0),
+               "shell_water": (shell_water, -3.0), "water_splash": (water_splash, -5.0)})
+SEEDS.update({"shell_heart": 50, "heart_pop": 51, "charm": 52, "shell_water": 53, "water_splash": 54})
 
 
 def write(path, x, peak_db):
@@ -347,11 +431,16 @@ def write(path, x, peak_db):
 def main():
     out = Path(sys.argv[sys.argv.index("--out") + 1]) if "--out" in sys.argv else OUT
     out.mkdir(parents=True, exist_ok=True)
+    only = sys.argv[sys.argv.index("--only") + 1:] if "--only" in sys.argv else []
+    for bad in [n for n in only if n not in SOUNDS]:
+        sys.exit(f"no sound {bad!r}: one of {', '.join(SOUNDS)}")
     for name, (fn, peak) in SOUNDS.items():
+        if only and name not in only:
+            continue
         x = fn(np.random.default_rng(1000 + SEEDS[name]))
         write(out / f"{name}.ogg", x, peak)
         print(f"  {name}.ogg {len(x) / SR:.2f} s")
-    print(f"WEAPONSOUNDS ok ({len(SOUNDS)} into {out})")
+    print(f"WEAPONSOUNDS ok ({len(only) if only else len(SOUNDS)} into {out})")
 
 
 if __name__ == "__main__":

@@ -72,6 +72,8 @@ signal ended                                      ## over: what appeared is gone
 @export var fact := ""
 @export_enum("keep", "silence", "calm", "uneasy", "dread", "chase") var music := "keep"
 @export var target: Node                          ## its fire() too
+@export var look_of: Node                         ## a character (or her HSLookSwitch) whose look this changes
+@export var her_look := ""                        ## the look she turns to: a name in her switch's Looks, or default
 @export var head_m := 1.5                         ## the head of what appears, over its feet (m): where the cue's spot is taken when no Spot is set, and where its sound comes from; a child's about 1.2, an imp's 0.8, an ogre's 2.3
 
 var count := 0                                    ## times it's happened (a check's)
@@ -230,6 +232,13 @@ func fire(_a = null, _b = null) -> void:
 		snd.music(music)
 	if target != null and target != self and target.has_method("fire"):
 		target.fire()
+	if look_of != null and her_look != "":                # her look (the look plugin's HSLookSwitch under her)
+		var ls: Node = look_of if look_of.has_method("set_look") else null
+		for c in (look_of.get_children() if ls == null else []):
+			if c.has_method("set_look"):
+				ls = c
+		if ls != null:
+			ls.set_look(her_look)
 	fired.emit()
 	if scare:
 		scared.emit()

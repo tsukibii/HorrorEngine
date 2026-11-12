@@ -1,4 +1,4 @@
-// Short hair as shells (HSHair, docs/GODOT_LOOK.md §5p; the Character Studio's hair editor v2.0, docs/HAIR_V2.md
+// Short hair as shells (HSHair, docs/GODOT_LOOK.md §5u; the Character Studio's hair editor v2.0, docs/HAIR_V2.md
 // §3.10): a buzz cut, stubble, clipped sides and napes. The mesh is a few copies of the scalp lifted off the skin (the
 // fur technique); each is drawn with a tile of hairs' cross-sections: a hair is drawn on a layer while it's tall enough
 // to reach it, narrower the higher the layer, and only where hair is left (the hairline's edge and a thinning patch

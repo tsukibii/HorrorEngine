@@ -1195,12 +1195,23 @@ function bedGen(s, P) {
     tufts: s.quilted ? [Math.max(2, Math.round(W / 0.22)), Math.max(4, Math.round((y1 - y0) / 0.22))] : [0, 0], tuft: 0.18, wrinkle: 0.002, n: 24 });
   else bx(P, -W / 2 + 0.01, y0 + 0.01, base, W / 2 - 0.01, y1 - 0.005, top - 0.03, s.mattress, { b: sb });
   if (dv > 0) {
-    if (soft) sf(P, -W / 2, y0, top - 0.06, W / 2, y0 + (y1 - y0) * dv, top, s.duvet_slot, { seam: "none", puff: 0.5, b: 0.03, wrinkle: 0.012, seed: seed + 3, n: 26 });
-    else bx(P, -W / 2, y0, top - 0.05, W / 2, y0 + (y1 - y0) * dv, top, s.duvet_slot, { b: Math.min(sb, 0.024), skip: "-z" });
+    const ye = y0 + (y1 - y0) * dv;
+    if (soft) {
+      // the duvet lies in the mattress, not on a line above it (its rim was level with the mattress's rounded edge:
+      // a board with a shadow under it), and hangs down the mattress's sides and its foot onto the frame
+      sf(P, -W / 2, y0, top - 0.085, W / 2, ye, top - 0.005, s.duvet_slot, { seam: "none", puff: 0.5, b: 0.03, wrinkle: 0.012, seed: seed + 3, n: 26 });
+      const hang = Math.max(base + 0.02, top - 0.24), tk = 0.012;
+      bx(P, -W / 2, y0, hang, -W / 2 + tk, ye - 0.02, top - 0.03, s.duvet_slot, { b: 0.004 });
+      bx(P, W / 2 - tk, y0, hang, W / 2, ye - 0.02, top - 0.03, s.duvet_slot, { b: 0.004 });
+      bx(P, -W / 2, y0, hang, W / 2, y0 + tk, top - 0.03, s.duvet_slot, { b: 0.004 });
+    } else bx(P, -W / 2, y0, top - 0.05, W / 2, ye, top, s.duvet_slot, { b: Math.min(sb, 0.024), skip: "-z" });
   }
   for (let i = 0; i < np && pz > top; i++) {
     const pw = (W - 0.08) / np, x0 = -W / 2 + 0.04 + i * pw;
-    if (soft) sf(P, x0 + 0.01, y1 - 0.42, top - 0.03, x0 + pw - 0.01, y1 - 0.05, pz, "white", { seam: "knife", puff: 0.55, pinch: 0.8, b: 0.03, wrinkle: 0.005, seed: seed + 10 + i, pipe: 0 });
+    // a pillow's pinched rim is at half its height: set so the rim rests 3 cm over the mattress and its belly is
+    // pressed into it (it stood with only its belly touching, its rim 7 cm up: floating)
+    const ph = pz - (top - 0.03), pc = top;
+    if (soft) sf(P, x0 + 0.01, y1 - 0.42, pc - ph / 2, x0 + pw - 0.01, y1 - 0.05, pc + ph / 2, "white", { seam: "knife", puff: 0.55, pinch: 0.8, b: 0.03, wrinkle: 0.005, seed: seed + 10 + i, pipe: 0 });
     else bx(P, x0 + 0.01, y1 - 0.42, top - 0.03, x0 + pw - 0.01, y1 - 0.05, pz, "white", { b: Math.min(0.05, sb * 1.5) });
   }
 }

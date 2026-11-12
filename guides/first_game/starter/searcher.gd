@@ -52,6 +52,7 @@ var state := "idle"                               ## idle, listening, going, pas
 var heard_at := Vector3.INF
 var passes := 0                                   ## close passes made (a check's)
 var times_found := 0
+var spared := 0                                    ## times she'd have found you and a close call let you off
 var searches_done := 0
 var steps := 0                                    ## her steps played (a check's)
 var checked: Array = []                           ## the places checked on the last search (a check's)
@@ -330,7 +331,21 @@ func _caught() -> bool:
 	if _lit(pl):
 		return true
 	var chance := find_chance * (held_factor if bool(pl.get("holding")) else 1.0)
-	return randf() < chance
+	if randf() >= chance:
+		return false
+	# she'd have found you. A close call (close_call.gd under her): she leans in, stays longer, and goes
+	var her := get_parent() as Node3D
+	if her != null:
+		for c in her.get_children():
+			if c.has_method("spare") and c.spare("hiding", her):
+				var lean := (pl as Node3D).global_position - her.global_position
+				lean.y = 0.0
+				if lean.length() > 0.9:
+					her.global_position += lean.normalized() * 0.35
+				_t += float(c.get("linger"))
+				spared += 1
+				return false
+	return true
 
 
 func _lit(pl: Node) -> bool:
@@ -366,6 +381,8 @@ func _find(her: Node3D) -> void:
 	var seat = pl.get("seat")
 	if seat != null and seat.has_method("leave"):
 		seat.leave()
+		if pl.has_method("snap_eye"):
+			pl.snap_eye()                              # (pulled out: no easing up)
 	var eye := pl.get_node_or_null("Eye") as Node3D
 	if eye != null:
 		var from := her.global_position - eye.global_position

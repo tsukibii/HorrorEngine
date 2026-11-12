@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="HSShellType" format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_weapons/shells/shell_type.gd" id="1_shell"]
+[ext_resource type="Resource" path="res://addons/horrorstudio_weapons/muzzle/heart.tres" id="2_muzzle"]
+[ext_resource type="Resource" path="res://addons/horrorstudio_weapons/impacts/heart.tres" id="3_impact"]
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_weapons/models/shell_12ga_heart.glb" id="4_model"]
+[ext_resource type="PackedScene" path="res://addons/horrorstudio_weapons/models/shell_12ga_heart_spent.glb" id="5_spent"]
+[ext_resource type="AudioStream" path="res://addons/horrorstudio_weapons/sounds/shell_heart.ogg" id="6_sound"]
+
+[resource]
+script = ExtResource("1_shell")
+id = "heart"
+title = "Love hearts"
+pellets = 7
+spread_scale = 7.0
+reach_scale = 0.5
+push_scale = 0.15
+damage = 0.0
+recoil_scale = 0.25
+noise_scale = 0.3
+ring_scale = 0.0
+fire_sound = ExtResource("6_sound")
+touch = "charm"
+muzzle = ExtResource("2_muzzle")
+impact = ExtResource("3_impact")
+model = ExtResource("4_model")
+spent_model = ExtResource("5_spent")
+color = Color(1, 0.45, 0.68, 1)

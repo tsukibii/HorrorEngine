@@ -11,3 +11,5 @@ about = "An orange soda. Warm."
 price = 1.5
 category = "FOOD & DRINK"
 model = ExtResource("1_6ftag")
+eatable = true
+restores = 0.12

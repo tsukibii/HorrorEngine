@@ -10,7 +10,9 @@
      markers, the laptop's shop and its parcels, the shotgun, things that break and glow, her shot down, and a table of
      every system with what a game by hand can't do yet; 2026-11-11: "I dont want to build the map myself for tutorial 2,
      can you pre-build it so i can just do the godot part": the floor ready-made, Exports/interiors/hotel_floor, §2's
-     tip, §3 to §8 optional). Nothing loads from outside: the pictures in img/ are that game drawn by Godot and the scene builder showing
+     tip, §3 to §8 optional; 2026-11-12: "Add information how to use this in tutorial html": §30, her looks: the look
+     viewer, looks saved as files, an HSLookSwitch under her, a fact and an event that change her eyes, F8 while you
+     play). Nothing loads from outside: the pictures in img/ are that game drawn by Godot and the scene builder showing
      its floor (python tools/godot/tutorial_v2.py --pictures); TUTORIAL2 builds the game as these steps say and plays it
      through. -->
 <style>
@@ -103,6 +105,8 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#gun">The shotgun</a></li>
     <li><a href="#breaks">Things that break and glow</a></li>
     <li><a href="#shoot">Shooting her</a></li>
+    <li><a href="#looks">Her looks: eyes, skins, the cloak</a></li>
+    <li><a href="#hunt">The hunt: something in the corridor</a></li>
     <li class="part">The end</li>
     <li><a href="#ending">The way out</a></li>
     <li><a href="#play">Play it</a></li>
@@ -882,18 +886,37 @@ not.</td></tr>
 
 <h3 id="seats">A bed and a chair</h3>
 <p>Sitting and lying need somewhere to do it. Add two <span class="node">Node3D</span>s to <code>Things</code> with
-<code>starter/seat.gd</code>, each where your eye goes when you're there, turned the way you face. E on one sits you
-there or lays you down; E again, or a step, gets you up where you stood.</p>
+<code>starter/seat.gd</code>. You don't place your eye by hand: put each one <b>anywhere over its furniture</b> and the
+seat finds the bed or the chair under it, measures it, and works out where a head would be. E on one sits you there
+or lays you down, your eye easing onto it; E again, or a step, gets you up where you stood.</p>
 <table class="vals">
-<tr><td><code>Bed</code></td><td>over 304's pillow, 1.01 m up, turned −90° (toward the bed's foot): Pose <i>lying</i>, Look Up Deg 70,
-Reach Size 1.4 × 0.71 × 2.05, Reach At (0, −0.355, −0.725) (the box E finds it by, over the mattress), Say "The sheets
-are cold."</td></tr>
-<tr><td><code>Chair</code></td><td>over the desk chair's seat, 1.2 m up, facing the desk. The rest as it is.</td></tr>
+<tr><td><code>Bed</code></td><td>anywhere over 304's bed, turned −90° (the way you'll face: toward the bed's foot): Pose <i>lying</i>,
+Look Up Deg 70, Say "The sheets are cold."</td></tr>
+<tr><td><code>Chair</code></td><td>over the desk chair. The rest as it is.</td></tr>
 </table>
-<p>Why so high in the bed: the interior's export makes each piece of furniture one solid box to its top, the bed's
-to its headboard at 0.95 m. An ear inside that box hears every sound through its walls, so the eye sits just over it,
-and the seat's box reaches above it so E finds the seat and not the bed. (Put a seat lower and the player lifts your
-eye out by itself.) The seat's box is on collision layer 2: only E's aim looks there.</p>
+<figure><img src="img/bed_view.jpg" width="1600" height="900" alt="From the pillow of room 304's bed, looking down the blanket to its foot and the room beyond"><figcaption>Lying in 304's bed, looking down it: your eye a pillow's height over the blanket, where the seat worked out your head would be.</figcaption></figure>
+<p>What the seat works out:</p>
+<table class="keys">
+<tr><td>Lying</td><td>the middle of the bed across, 0.30 m in from its head end, 0.22 m over where you lie: a head on a large pillow. The head end is the one with a headboard; with none, the end behind the way the node faces</td></tr>
+<tr><td>Sitting</td><td>the middle of the seat, a seated eye (0.75 m) over it, facing away from the chair's back. With no back (a stool, a bench) the way the node faces</td></tr>
+<tr><td>Your head</td><td>turns as a head does there: 75° to each side lying down, 125° sitting (<b>Look Limit Deg</b> for your own)</td></tr>
+</table>
+<p>And what you can set, under <b>View</b>, when it isn't quite right:</p>
+<table class="keys">
+<tr><td>Seat Height</td><td>where you sit or lie, in metres from the furniture's foot (0: measured). A bar stool that's only a tall box: 0.75</td></tr>
+<tr><td>View Offset</td><td>the eye moved from there: x to your right, y up, z back, in metres</td></tr>
+<tr><td>View Turn Deg</td><td>turned, in degrees</td></tr>
+<tr><td>Flip</td><td>a bed: your head at its other end. A seat: facing the other way</td></tr>
+<tr><td>Fit</td><td>off: the eye is exactly where the node is, its −Z the way you face (the linen closet's hiding place is set this way)</td></tr>
+</table>
+<p>In the editor a small orange camera shows where the eye will be when the furniture is a model you can see in the
+Scene tree. Three ready ones to drag from the FileSystem dock onto a model of your own (a made prop, a mesh):
+<code>res://starter/seat_bed.tscn</code>, <code>seat_chair.tscn</code>, <code>seat_stool.tscn</code>. Dropped onto a
+bed, it uses that bed.</p>
+<div class="note">An interior's export makes each piece of furniture solid as one box to its top, the bed's to its
+headboard at 0.95 m, so a head on the pillow would be inside it. The seat takes that one box out of the room's collider
+and puts a truer one in its place: solid to the mattress, and the headboard. You don't do anything; it's why you can
+lie low on this bed and still hear the room. The seat's own box is on collision layer 2: only E's aim looks there.</div>
 
 <h3 id="bedcue">Her on the ceiling</h3>
 <p>Add a <span class="node">Node3D</span> <code>BedCeiling</code> to <code>Events</code> with <code>starter/cue.gd</code>,
@@ -920,6 +943,43 @@ Stand by the bed with her place in a corner of your view and nothing happens eit
 <tr><td><b>Scare</b> off, <b>Sound</b> <code>knock_three</code>, <b>Sound At</b> <code>Door</code></td><td>three knocks at the door, heard through it</td></tr>
 <tr><td><b>Say</b> "Three knocks. Someone is at the door.", <b>Fact</b> <code>knocked_304</code></td><td>a fact for whatever you build next</td></tr>
 </table>
+
+<h3 id="shown">Things that aren't where they were</h3>
+<p>What you build next with that fact: the hotel's slippers. A pair stands just inside 304's door when you come in.
+After the knocks, once you aren't looking, that pair is gone and there's one beside the bed, toes to it. Nobody came
+in. One script does both, <code>starter/shown.gd</code>: something that's there, or isn't.</p>
+<figure><img src="img/slippers.jpg" width="1600" height="900" alt="A pair of pale slippers on the carpet beside the bed in room 304, their toes toward the bed"><figcaption>After the knocks: the slippers that were at the door, by the bed.</figcaption></figure>
+<p>Make the two pairs first, both under <code>Things</code>: a <span class="node">Node3D</span> <code>Slippers</code>
+on the floor just inside 304's door and a <span class="node">Node3D</span> <code>SlippersByBed</code> beside the bed,
+each with four small <span class="node">MeshInstance3D</span> boxes (two soles 9.5 × 1.8 × 25 cm, a strap over each
+one's toes). Any two models of yours do as well. Then under <code>Slippers</code> add a <span class="node">Node</span>
+named <code>Shown</code> with <code>starter/shown.gd</code>:</p>
+<table class="vals">
+<tr><td><b>Hidden When</b> <code>knocked_304</code></td><td>gone while that fact is set (it never is unset: gone for good)</td></tr>
+<tr><td><b>When Unseen</b> on</td><td>it waits until you can't see either place</td></tr>
+<tr><td><b>Swap With</b> <code>../../SlippersByBed</code></td><td>there only while this pair isn't: it starts hidden by itself</td></tr>
+<tr><td><b>Size M</b> 0.3</td><td>about how big it is, for "you can see it"</td></tr>
+</table>
+<p>And a thing that starts <i>gone</i> and appears, by a flag a task switches. Add a third pair,
+<code>Slippers308</code>, in the corridor at 308's door, toes to the door, with its own <code>Shown</code>:</p>
+<table class="vals">
+<tr><td><b>Shown</b> off</td><td>how it starts: not there when you come up</td></tr>
+<tr><td><b>Shown When</b> <code>checked_in</code>, <b>When Unseen</b> on, <b>Size M</b> 0.3</td><td>there while that flag is on</td></tr>
+</table>
+<p><code>checked_in</code> is a flag you just made up by typing it. Switch it on from the quest: select <code>Story</code>
+and add one line to <b>Task Flags</b>: <code>find304: +checked_in</code>. When the task <code>find304</code> is ticked
+the flag goes on, and by the time you next step into the corridor someone is in 308.</p>
+<table class="keys">
+<tr><td>The Story's words</td><td>Shown When and Hidden When take the same words as every Needs: <code>task:key</code> (that task ticked), <code>on:key</code> (on your list, not done), a flag's name, <code>!flag</code> (while it's off), several apart by commas</td></tr>
+<tr><td>By an event</td><td>give any area, cue, scare or moment the Shown node as its <b>Target</b>: its <code>fire</code> does <b>On Fire</b> (toggle, show or hide)</td></tr>
+<tr><td>Task Flags</td><td><code>key: +a, -b, ~c</code> when a task is ticked (+ on, − off, ~ flipped); <code>added key: +a</code> when it's put on the list. <b>Flags Start</b>: flags that are on from the beginning</td></tr>
+<tr><td>A flag switch</td><td><code>starter/flag_switch.gd</code> on a Node does the same from the scene: its <b>Flags</b>, by <code>fire</code> or by itself when its <b>When</b> comes to hold</td></tr>
+<tr><td>Also, Fade Secs</td><td>more things that go with it; a fade instead of at once</td></tr>
+<tr><td>From a script</td><td><code>$Things/Slippers/Shown.vanish()</code>, <code>.appear()</code>, <code>.toggle()</code>; <code>$Story.set_flag("checked_in")</code></td></tr>
+</table>
+<div class="note">Nothing is deleted: the thing is hidden and its own colliders go off with it. A piece of furniture
+that came with the interior hides too, but stays solid (it's part of its room's one collider), so use this on things
+you placed yourself.</div>
 </section>
 
 <section id="hud">
@@ -1091,8 +1151,241 @@ and her Searcher and Chase stop.</p>
 </div>
 </section>
 
+<section id="looks">
+<h2><span class="n">30</span>Her looks: other eyes, another skin, the cloak</h2>
+<p>She can change while the game runs. Her eyes can go black, or light up in the dark. Her skin can turn to chrome,
+stone or slime. She can be invisible. A <b>look</b> is one skin and one pair of eyes, and <b>default</b> is always
+there: her own skin and eyes, exactly as she was made. You try looks in a viewer, save the ones you like as files,
+and a quest or an event turns her to them.</p>
+<div class="note"><b>This needs a Character Studio character.</b> The eye looks are drawn by the Studio's eye, and the
+stand-in in this guide's other pictures has no eyes (the skins still work on meshes named skin, body or head). The
+pictures in this section use the Character Studio's grey alien (Body → Monster mode → Grey alien, then
+<span class="ui">Export for Godot</span>).</div>
+
+<h3 id="look-viewer">Try them: the look viewer</h3>
+<p>In Godot: <span class="ui">Project → Tools → HorrorStudio: look viewer</span>. (Or open
+<code>addons/horrorstudio_look/tools/look_viewer.tscn</code> and press <kbd>F6</kbd>.) It's a scene that runs by
+itself: your character, and a panel to change her.</p>
+<figure><img src="img/looks_viewer.jpg" width="1600" height="900" alt="The look viewer: the grey alien's face with glowing red eyes, the picker panel on the left with Skin on default and Eyes on glow"><figcaption>The look viewer. Skin: default. Eyes: glow.</figcaption></figure>
+<table class="keys">
+<tr><td>the list at the top</td><td>every character in <code>exports/characters/</code>; <span class="ui">Open…</span> for a .glb anywhere. With none, a stand-in.</td></tr>
+<tr><td><b>Skin</b></td><td><code>default</code> (her own), then chrome, mirror, pearl, greasy, slime, oil, porcelain, ember, stone, scales, wax, and <code>cloak</code> (invisible)</td></tr>
+<tr><td><b>Eyes</b></td><td><code>default</code> (her own), then glow, black, void, white, blind, bloodshot, spiral, hearts, star, slit, cross, dilated, pinprick</td></tr>
+<tr><td><b>How much</b></td><td>0 is her own, 1 is all of the look</td></tr>
+<tr><td><b>Its colour</b></td><td>click the swatch for your own colour (a glow in green, hearts in blue); tick <i>the look's own</i> to go back</td></tr>
+<tr><td>both, L, R</td><td>one eye only</td></tr>
+<tr><td><b>Default</b></td><td>her own skin and eyes back</td></tr>
+<tr><td><span class="ui">Lamp</span></td><td>off, to see what glows by itself</td></tr>
+<tr><td><span class="ui">Behind her</span></td><td>dark, grey or stripes. Pick stripes for the cloak: it shows what's behind her, bent, so it needs something there.</td></tr>
+<tr><td><span class="ui">Walk</span>, <span class="ui">Turn</span></td><td>the cloak is nearly gone when she stands still and ripples when she moves</td></tr>
+<tr><td><span class="ui">Face</span>, <span class="ui">Body</span></td><td>the camera on her face or on all of her; drag to look round her, the wheel to come closer</td></tr>
+</table>
+<figure><img src="img/looks_cloak.jpg" width="1600" height="900" alt="The look viewer: the alien cloaked in front of a striped wall, the stripes bent through its shape, its eyes left glowing red"><figcaption>Skin: cloak, Eyes: glow, stripes behind her. Under the cloak her eyes are left to see when the look has eyes of its own.</figcaption></figure>
+<p>Now save the two looks this game uses:</p>
+<ol class="steps">
+  <li><b>Eyes</b> → <code>black</code>. Under <b>Keep it</b> type <code>empty</code> and press <span class="ui">Save as a look</span>. It
+  writes <code>looks/empty.tres</code> in your project.</li>
+  <li>Press <b>Default</b>. <b>Eyes</b> → <code>glow</code> (red is its own colour). Type <code>hunting</code>,
+  <span class="ui">Save as a look</span>: <code>looks/hunting.tres</code>.</li>
+  <li>Close the viewer.</li>
+</ol>
+
+<h3 id="look-switch">Put them on her: the switch</h3>
+<p>Select <code>Her</code>, <span class="ui">Add Child Node</span>, <span class="node">HSLookSwitch</span>, and call it
+<code>Looks</code>. In the Inspector open <b>Looks</b>, add an element, and drag <code>looks/empty.tres</code> from the
+FileSystem into it. That's all a switch is: her looks, by name. Leave her <code>Look</code> node's own
+<b>Creature skin</b> and <b>Creepy eyes</b> on <i>none</i>: those are for a character with one look.</p>
+
+<h3 id="look-quest">A quest or a fact changes her</h3>
+<p>Click <code>looks/empty.tres</code> in the FileSystem. In the Inspector, under <b>When</b>, set <b>Needs</b> to
+<code>knocked_304</code>: the fact the three knocks set in <a href="#cues">§23</a>. From then on her eyes are black.
+You wrote no script: she wears a look while its Needs hold.</p>
+<table class="keys">
+<tr><td><code>task:dinner</code></td><td>that task on the to-do list is done</td></tr>
+<tr><td><code>on:dinner</code></td><td>that task is on the list and not done yet</td></tr>
+<tr><td><code>item:key_304</code></td><td>you're carrying it</td></tr>
+<tr><td><code>knocked_304</code></td><td>a fact that's been set (an event area's or a cue's <b>Fact</b>)</td></tr>
+<tr><td><code>!shot_her</code></td><td>not that</td></tr>
+<tr><td><code>task:dinner, !shot_her</code></td><td>all of them</td></tr>
+</table>
+<p>When several looks' Needs hold, the last one in the list wins. When none does, she's in her <b>Start</b> look
+(empty: her default).</p>
+
+<h3 id="look-event">An event changes her</h3>
+<p>The one who hunts should come with her eyes lit. Give <code>Events/Hunter</code> an
+<span class="node">HSLookSwitch</span> called <code>Looks</code> too, with <code>looks/hunting.tres</code> in its
+<b>Looks</b>, and set its <b>On Fire</b> to <code>hunting</code>. Then select <code>LightsOut</code> and, in the
+<span class="ui">Node</span> tab, connect its <b>scared</b> signal to <code>Events/Hunter/Looks</code> →
+<code>fire</code>. When the corridor goes dark, two red points come down it.</p>
+<figure><img src="img/looks_hunt.jpg" width="1600" height="900" alt="The dark corridor: a figure close by with two glowing red eyes"><figcaption>After the lights go out: the one who hunts, in <code>hunting</code>.</figcaption></figure>
+<p>Three ways an event can do it:</p>
+<ul>
+  <li><b>a signal</b> wired to the switch's <code>fire</code>, as here. <b>On Fire</b> says which look: a name,
+  <code>default</code>, or <code>next</code> (through her looks in turn);</li>
+  <li><b>an event area or a cue</b>: both have <b>Look Of</b> (drag her, or her switch, in) and <b>Her Look</b> (a
+  look's name, or <code>default</code>);</li>
+  <li><b>a Target</b>: a cue's, a shootable's or a hit react's <b>Target</b> can be the switch itself.</li>
+</ul>
+<p>A look turns over a moment: the old one fades out, the new one fades in. The switch's <b>Seconds</b> says how
+long (0.6); a look's own <b>Seconds</b> overrides it. The cloak turns in crackling patches.</p>
+
+<h3 id="look-f8">By hand while you play</h3>
+<p>Press <kbd>F8</kbd> in the running game. The same panel comes up for every character that has a switch: her
+named looks as buttons with <b>Default</b> first, and both lists to try anything else on the spot.
+<span class="ui">Save as a look</span> works here too. <kbd>F8</kbd> again closes it. (Debug builds only: it's gone
+from the game you ship.)</p>
+<figure><img src="img/looks_panel.jpg" width="1600" height="900" alt="The game running in the lit corridor with the look panel open on the left: her at the corridor's end with black eyes, the look empty picked"><figcaption><kbd>F8</kbd> in the game: her in <code>empty</code>.</figcaption></figure>
+
+<h3 id="look-script">From a script</h3>
+<pre>$Her/Looks.set_look("empty")          # by name
+$Her/Looks.default()                  # her own skin and eyes
+$Her/Looks.show({"skin": "cloak", "eyes": "glow", "eye_color": Color.GREEN}, 0.4)   # a look made on the spot
+$Her/Looks.look_changed.connect(func(look): print("she's in ", look))</pre>
+<div class="tip"><b>Good to know.</b> The cloak draws what's behind her, so see-through things behind her (a
+flashlight's beam in the fog, smoke, rain on glass) are missing inside her outline: in fog she shows as a hole.
+Cloaked, she casts no shadow unless the look's <b>Shadow</b> is ticked (nobody there, and a shadow on the wall). The
+glowing looks have light of their own; the others are as dark as the room. Every look and its numbers:
+<a href="../look_plugin/index.html#looks">the Look plugin's guide</a>.</div>
+</section>
+
+<section id="hunt">
+<h2><span class="n">31</span>The hunt: something in the corridor</h2>
+<p>You've ordered the gun. It will be left at 304's door. Until it's in your hands, something else is out in the
+corridor, and it knows you're waiting. This is a <b>hunt</b>: one node that picks who hunts you, how, what starts it
+and what ends it. It's a <b>hidden quest</b>: nothing on the to-do list tells you it has begun.</p>
+<figure><img src="img/hunt_past.jpg" width="1600" height="900" alt="Seen from inside room 304's entry through its open door: a figure running past in the dark corridor, caught in the flashlight"><figcaption>From 304's entry, looking out of its open door: she runs past, east to west, and is gone. The hunt only plays this while you're in 304 looking at the doorway. (Here she's the Character Studio's grey alien, caught mid-way; with no clips yet she slides: her moves, below.)</figcaption></figure>
+<p>She doesn't run at you. She's seen at the stair end and gone when you look; she runs past your door; a door opens
+by itself; there's a knock where she isn't; she's behind you, nearer each time you look away. She <b>rushes</b> only
+if you're in the dark (your flashlight off or dead, no lamp near you) once the hunt has been going a minute, and
+before she does, you're warned: a breath, your flashlight dips, her eyes light. Room 304 is safe.</p>
+
+<h3>1. Who hunts</h3>
+<ol class="steps">
+  <li>Duplicate <b>Her</b> (Ctrl+D), drag the copy under <b>Events</b> and name it <b>Stalker</b>. Untick its eye in the
+  Scene dock: hidden. Delete its LightShy, Presence, Menace and Uncanny children: the hunt moves this one.</li>
+  <li>Under Stalker add a Node, name it <b>Moves</b>, and give it <code>res://starter/moves.gd</code>. Leave its rows
+  empty for now (<a href="#huntmoves">her moves</a>, below): with no clips she slides, as the one who searches
+  does.</li>
+  <li>Under Stalker add an <span class="node">HSLookSwitch</span> named <b>Looks</b> with <code>looks/hunting.tres</code>
+  in its Looks (§30). The hunt turns her to it for the warning.</li>
+</ol>
+
+<h3>2. The hunt</h3>
+<p>Under <b>Events</b> add a Node, name it <b>Hunt</b>, give it <code>res://starter/hunt.gd</code>:</p>
+<table class="keys">
+<tr><td><b>Hunter</b></td><td>Stalker</td></tr>
+<tr><td><b>Kind</b></td><td><code>stalking</code>. The three: <code>haunting</code> (she never touches you: get close and the lights blink, she's elsewhere), <code>stalking</code> (she can rush you; caught is a fright), <code>lethal</code> (caught, you die and come back at the last checkpoint)</td></tr>
+<tr><td><b>Ends When</b></td><td><code>task:gun</code>: over once the gun's task is ticked. Also there: <b>Survive Secs</b> (a time), <b>Safe Ends</b> (reaching a safe room), and her being shot down ends any hunt</td></tr>
+<tr><td><b>Reveal Task</b></td><td><code>hunted: Something is out in the corridor.</code> Shown the first time you see her (<b>Reveal At</b>); leave it empty for a hunt that's never named</td></tr>
+<tr><td><b>Start Says</b>, <b>End Says</b></td><td>a line when it starts and when it's survived</td></tr>
+<tr><td><b>Fact</b></td><td><code>armed</code>: set when it's survived. While it runs <code>hunt:Hunt</code> is set, and <code>hunt:Hunt:2</code>, <code>hunt:Hunt:3</code> once those stages have come: any Needs can read them</td></tr>
+<tr><td><b>Stages</b>, <b>Stage Secs</b></td><td>3, and <code>25, 35</code>: stage 2 after 25 s, stage 3 after 35 more. Spots belong to stages; the rush waits for <b>Rush Stage</b> (3)</td></tr>
+<tr><td><b>Gap Min</b>, <b>Gap Max</b></td><td>6 and 14: seconds between the things she does (shorter in later stages)</td></tr>
+<tr><td><b>Rush Dark</b></td><td>on: she comes when you've been in the dark 3 s. The other rules: <b>Rush Ran</b>, <b>Rush Stared</b>, <b>Rush Back</b>; all off: she never comes</td></tr>
+<tr><td><b>Tell Look</b></td><td><code>hunting</code>: her look for the warning and the rush. <b>Tell Secs</b> 1.4: how long the warning is</td></tr>
+<tr><td><b>Safe Rooms</b></td><td><code>r304</code>, <code>r304_entry</code>, <code>r304_bath</code>: she won't follow you in, and won't start a rush while you're there</td></tr>
+</table>
+<p>Start it from the laptop: select <b>Things/Laptop</b>, Node dock, Signals, <code>ordered</code>, connect it to
+<b>Events/Hunt</b>, method <code>start</code>. (A hunt can also start by itself: its <b>Needs</b>, in the Story's
+words.)</p>
+
+<h3>3. Hunt spots: where she can do something</h3>
+<p>Under Events add a Node3D named <b>HuntSpots</b>. Each spot is a Marker3D with
+<code>res://starter/hunt_spot.gd</code>, put where she'll be, its <b>Hunt</b> set to Events/Hunt. The hunt plays the
+ones that are possible at that moment, never the same twice running.</p>
+<table class="keys">
+<tr><td><b>PastTheDoor</b></td><td>Kind <code>dart</code>. In the corridor 3 m east of 304's door. A Marker3D child <b>To</b> 6.4 m west of it (the other side of the door); set the spot's <b>To</b> to it. An Area3D child with a box over room 304 and its entry: it only plays while you're in there. Near M 1, Far M 9, Speed 6.5. It needs the doorway's middle in your view and her start out of it, so with 304's door shut it never plays</td></tr>
+<tr><td><b>StairEnd</b></td><td>Kind <code>watch</code>, by the stair door, facing down the corridor. Near M 5. She's put there only while you can't see the spot; look at her for <b>Stare</b> (0.8 s) and she's gone in a blink of <b>Blink Lamp</b> (Tube1)</td></tr>
+<tr><td><b>VendingCorner</b></td><td>Kind <code>peek</code>, at the edge of the vending corner, turned so its red arrow (X) points out into the corridor: she draws back the other way. Stage Min 2</td></tr>
+<tr><td><b>LinenDoor</b></td><td>Kind <code>door</code>, <b>Door</b> the linen closet's door, Sound <code>latch</code>, Once. It opens by itself when you're not beside it</td></tr>
+<tr><td><b>Knock302</b></td><td>Kind <code>decoy</code>, behind 302's door, Sound <code>knock_three</code>: a knock where she isn't</td></tr>
+<tr><td><b>BehindYou</b></td><td>Kind <code>follow</code>, anywhere in the corridor, Stage Min 2: she's 7 m back down the way you came, a step nearer each time you look away, never nearer than 2.2 m; watched, she goes</td></tr>
+</table>
+<p>The other kinds: <code>wait</code> (as watch, her back to you: by the thing you need), <code>ambush</code> (in its box,
+a jump scare; with <b>Catches</b> a real catch), <code>pass</code> (cloaked, she walks to <b>To</b>: needs an HSCloak
+under her and the hunt's <b>Cloaked</b>), <code>custom</code> (your animation and a <b>Target</b>'s fire()). Every spot
+has <b>Stage Min/Max</b>, <b>Needs</b>, <b>Once</b>, <b>Cooldown</b>, <b>Weight</b>, a <b>Sound</b> and how much of a
+<b>Scare</b> it is.</p>
+
+<h3 id="huntmoves">4. Her moves: clips from Kimodo</h3>
+<p>Each thing she does has a <b>move</b>, and <b>Moves</b> (moves.gd) holds a clip for each. Make the clips in the
+Kimodo demo, save each .npz, and drop them into the project's <code>animations/</code> folder. In Moves' Inspector,
+pick the file for each row. When the game starts each one is put onto <i>her</i> skeleton (a Character Studio
+character, a Mixamo or humanoid model), so one .npz serves every character. A stand-in has no skeleton: it slides.</p>
+<table class="keys">
+<tr><td><b>Idle</b></td><td>standing still, breathing, a little wrong. Looped</td></tr>
+<tr><td><b>Walk</b>, <b>Run</b></td><td>made in place and looped; played faster or slower by how fast she's really going, so her feet don't skate. Run is the dart and the rush</td></tr>
+<tr><td><b>Stalk</b></td><td>coming slowly: low, creeping. A cloaked pass uses it. Without one she walks</td></tr>
+<tr><td><b>Watch</b></td><td>stood watching you: the watch and follow spots. Without one, Idle</td></tr>
+<tr><td><b>Peek</b></td><td>leaning out round a corner</td></tr>
+<tr><td><b>Lunge</b>, <b>Kill</b></td><td>the ambush; what she does when she has you</td></tr>
+</table>
+<p>Kimodo prompts to start from (ANIMATION, KIMODO): "a person stands still, head tilted, arms hanging" (idle,
+watch), "a person walks slowly forward, hunched, arms limp" (stalk), "a person sprints forward" (run, tick In place
+and Loop), "a person leans sideways to look round a corner, then pulls back" (peek), "a person lunges forward with
+both arms reaching" (lunge). A spot can name a move of its own (<b>Move</b>), or one of her model's animations by
+name (<b>Animation</b>). <b>More</b> on the Moves node takes any other names you invent.</p>
+
+<h3>5. Dying, if you want it</h3>
+<p>This tutorial's hunt is <code>stalking</code>: caught, she's in your face and gone. For one that kills, set Kind to
+<code>lethal</code>. The Story keeps a <b>checkpoint</b> when a lethal hunt starts, and you can put more: an Area3D
+with <code>res://starter/checkpoint.gd</code> in a doorway. Caught, the screen goes black with the hunt's <b>Death
+Title</b>, and you're back at the checkpoint with the tasks, facts, pocket and doors as they were; the hunt goes on
+one stage lower, with no rush for <b>Grace</b> seconds. After <b>Mercy After</b> deaths (2) her warning is longer.
+What saves you is always the same: light, a safe room, a door shut in her way (2 s), 6 s out of her sight, hiding
+before the warning ends, or shooting her.</p>
+<h3 id="sanity">6. Sanity</h3>
+<p>One node. Under <b>Main</b> add a Node, name it <b>Sanity</b>, give it <code>res://starter/sanity.gd</code>. A thin
+meter shows at the top right while it isn't full. In this night's game set:</p>
+<table class="keys">
+<tr><td>Scare Cost</td><td><code>0.03</code> (this night has a lot of scares; the default is 0.06)</td></tr>
+<tr><td>No Sleep</td><td>one line: <code>!shot_her</code>. While she hasn't been shot, lying in 304's bed only rests you</td></tr>
+<tr><td>Cant Says</td><td><code>You can't sleep. Not while she's out there.</code></td></tr>
+<tr><td>Slept Says</td><td><code>You slept. It's nearly light.</code></td></tr>
+</table>
+<p>Food needs nothing here: the laptop's FOOD &amp; DRINK page already sells things marked <b>Eatable</b> (an
+HSShopItem's Eaten group: Eatable, Restores, Eat Secs). To eat, a thing has to be in your pocket and in your hand (Tab
+shows the row, the wheel turns it), and you <b>hold the left button</b>: a meter under the middle of the view fills
+over two seconds, then it's gone from the pocket. Let go early and nothing's eaten. With the gun up the click is the
+gun's: <kbd>Q</kbd> lowers it first.</p>
+<p>Play: the dark corridor wears it down, the desk chair and the bed bring it back part of the way, a soda a little
+more. Lie in 304's bed before the end and you're told you can't sleep. Shoot her, lie down again, and after four
+seconds the night is over: dark, then awake with it full. How it works in general:</p>
+<table class="keys">
+<tr><td>What wears it down</td><td>the dark (your flashlight off, no lamp near), her near you in the open, a hunt running, every scare. Each has its own number; <b>Drain</b> is time itself</td></tr>
+<tr><td>What mends it</td><td>sitting (to 0.7), lying down (to 0.8), food, and sleep (to full). Food is eaten out of the pocket by holding the left button (the Story's <b>Eat Secs</b>, 2). What makes a pocket thing eatable: <code>res://starter/food.gd</code> on a thing you pick up with <kbd>E</kbd> (its Restores, Eat Secs, Count), a shop item marked Eatable, or its name in this node's <b>Foods</b> (<code>{"noodles": 0.3}</code>)</td></tr>
+<tr><td>Sleep</td><td>lie on a bed (a seat with pose <code>lying</code>) for <b>Sleep After</b> seconds: dark, then awake with it mended. <b>No Sleep</b> is a list of the Story's words; while any holds you can't (<code>on:find304</code>: while that task is on your list). A running hunt stops it too. <b>Sleep Needs</b> is what must hold (<code>night</code>)</td></tr>
+<tr><td>At nothing</td><td><b>Zero Target</b>'s fire(), or <b>Zero Dies</b>: back at the checkpoint with half of it</td></tr>
+</table>
+<p>To make the night harder as it falls: a <b>hunt</b> and the <b>night's director</b> speed up by themselves (their
+<b>Sanity Sync</b>: spots and moments closer together, stages sooner, a shorter warning; under a quarter she rushes a
+stage early). And three facts are set for anything's <b>Needs</b>: <code>sanity:uneasy</code> (under three quarters),
+<code>sanity:shaken</code> (under half), <code>sanity:breaking</code> (under a quarter). A cue, a scare area, a hunt
+spot or a whole hunt with Needs <code>sanity:shaken</code> only happens once you're that far gone.</p>
+<h3 id="closecall">7. Close calls: she nearly had you</h3>
+<p>A hunt that's fair by the numbers kills you while you reload. A <b>close call</b> cheats for you, where you can't
+see it: when she's about to have you and you're in the middle of something, she falters. She still comes, slower and
+slower, lunging, her breath in your ear, and never quite gets there until your reload is done, plus half a second for
+your shot. Miss, and she has you.</p>
+<p>Under <b>Hunter</b> (the one you shoot at the end) and under <b>Stalker</b> add a Node, name it <b>CloseCall</b>,
+give it <code>res://starter/close_call.gd</code>, and untick <b>Hiding</b> on both (this night's search is meant to find
+you when you gasp). Her chase finds it by itself.</p>
+<table class="keys">
+<tr><td>When</td><td><b>Reloading</b>: your gun is open. <b>Empty Gun</b>: the beat between the click and your reload. <b>While Needs</b>: the Story's words (<code>on:fuse</code>: you're at the fuse box). <b>Hiding</b>: the time her search would have found you, she leans in, stays <b>Linger</b> seconds longer, and goes</td></tr>
+<tr><td>How often</td><td><b>Chance</b> 0.75 (less as your sanity falls: its Sanity Sync), the first one in a game sure, one a chase, 40 s between them, and only while its <b>Needs</b> hold</td></tr>
+<tr><td>How</td><td>she starts to falter <b>Hold M</b> (2.8 m) from you and comes no nearer than <b>Stop M</b> (1.3 m); never longer than <b>Max Secs</b> (4 s), then she has you; her <b>Move</b> while it lasts (<code>lunge</code>) and a <b>Sound</b> at her head</td></tr>
+<tr><td>From a script</td><td><code>$CloseCall.call_it("the door", 2.0)</code>: the next time she's in reach, two seconds. Its signals <code>began(kind)</code> and <code>ended(kind, made_it)</code> for a line or a sound</td></tr>
+</table>
+<p>Keep it rare. One a chase is a story the player tells afterwards; one every chase is a monster that can't catch
+anyone.</p>
+<div class="note">A hunt that's only a haunting, ended by a task: Kind <code>haunting</code>, Ends When
+<code>task:power</code>, and start it from whatever cuts the power. She's seen, she's near, she never touches you;
+flip the breaker and she's gone. Other things can join in by its stage: a scare area with Needs
+<code>hunt:Hunt:2</code>.</div>
+</section>
+
 <section id="ending">
-<h2><span class="n">30</span>The way out</h2>
+<h2><span class="n">32</span>The way out</h2>
 <p>With <code>Hotel</code>'s Editable Children on, select <code>hotel_floor/doors/door_corridor_e_door</code> (the fire
 door) and drag <code>starter/door.gd</code> onto it. Set its <b>Tick</b> to <code>out</code>. In the
 <span class="ui">Node</span> tab connect its <b>opened</b> signal to <code>Story</code> → <code>end</code>. Opening the
@@ -1101,7 +1394,7 @@ fire door ends the night: the screen goes black and the ending's title comes up.
 </section>
 
 <section id="play">
-<h2><span class="n">31</span>Play it</h2>
+<h2><span class="n">33</span>Play it</h2>
 <p>Press <kbd>F5</kbd>.</p>
 <table class="keys">
 <tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>walk (up the stairs too), <kbd>Shift</kbd> runs</td></tr>
@@ -1111,6 +1404,7 @@ fire door ends the night: the screen goes black and the ending's title comes up.
 <tr><td><kbd>Tab</kbd></td><td>the pocket: the things you carry, as themselves, in a row</td></tr>
 <tr><td>at the laptop</td><td>the mouse on its screen; <kbd>Esc</kbd> or <kbd>E</kbd> back</td></tr>
 <tr><td>the gun</td><td>left click fires, right button aims, <kbd>R</kbd> reloads, <kbd>T</kbd> the kind of shell, <kbd>Q</kbd> lowers it</td></tr>
+<tr><td><kbd>F8</kbd></td><td>her looks, by hand (debug builds only)</td></tr>
 <tr><td><kbd>Esc</kbd></td><td>let the mouse go</td></tr>
 </table>
 <ol class="steps">
@@ -1122,14 +1416,14 @@ fire door ends the night: the screen goes black and the ending's title comes up.
   box of shells, close the laptop and wait. A knock: two parcels at 304's door. Open them. Order the explosive shells
   too. Try the gun on the kettle. Shoot out the entry's bulb, if you'd rather the dark.</li>
   <li>The flashlight dies. Batteries in the vending corner, where the radio's hissing. Walk back out and listen behind you.</li>
-  <li>On the way out she's at the end of the corridor, the tubes stuttering round her, her head on one side. Walk, and she walks. Your heart picks up as you near her. Shine the light on her and she backs off. Do it twice and the corridor goes dark.</li>
-  <li>When she hunts you in the dark she can be stopped now: both barrels.</li>
+  <li>On the way out she's at the end of the corridor, the tubes stuttering round her, her head on one side, her eyes black since the knocks. Walk, and she walks. Your heart picks up as you near her. Shine the light on her and she backs off. Do it twice and the corridor goes dark.</li>
+  <li>When she hunts you in the dark her eyes are lit: two red points. She can be stopped now: both barrels.</li>
   <li>Walk to the fire exit. Don't look under 308's door.</li>
 </ol>
 </section>
 
 <section id="coverage">
-<h2><span class="n">32</span>Every system in it</h2>
+<h2><span class="n">34</span>Every system in it</h2>
 <p>This night is meant to use every system the studio has made for a game built by hand, so that a missing or broken
 one shows up. Here's each one and where it is. <code>python tools/godot/tutorial_v2.py</code> (TUTORIAL2) builds the
 game as these steps say and plays all of it.</p>
@@ -1137,8 +1431,8 @@ game as these steps say and plays all of it.</p>
 <tr><th>System</th><th>In this game</th></tr>
 <tr><td><b>Scene builder</b></td><td>rooms on two floors, a dog-leg stair, doors locked by a key, windows, furniture, lamps, paint, the export: <a href="#plan">§3</a> to <a href="#export">§8</a>, or the <a href="#ready">ready-made floor</a></td></tr>
 <tr><td><b>Character Studio</b></td><td>her, a Studio export with its skin wet (a stand-in when you have none): <a href="#scene">§10</a>, <a href="#her">§20</a></td></tr>
-<tr><td><b>Look plugin</b></td><td>the look and the grade, light zones, the tube and dying bulb presets: <a href="#light">§11</a>; rain on glass, a car's lights, a CRT, a real mirror, a wet floor, blood, a light shaft, a leak and a puddle, leaves' shadows, the tape: <a href="#dress">§12</a>; the air, its dust and the beam: <a href="#air">§13</a>; lightning, breath and frost, steam writing: <a href="#intense">§22</a>; made props' effects (HSPropFX) and a liquid's level (HSLiquidFill): <a href="#breaks">§28</a></td></tr>
-<tr><td><b>Starter kit</b> (36 scripts)</td><td>the player, flashlight, story, pocket and cash, sound and its physics, room tones, footsteps, notes, pickups, doors and locks, event and scare areas, lights: <a href="#story">§15</a> to <a href="#jump">§21</a>; fear, the steps behind you, her signs, the glimpse, the one closer each time, the mirror figure, the shadow, the feet, the uncanny, the night's director and its moments, her menace, the searcher, the chase, the cold, the steam: <a href="#intense">§22</a>; cues and seats: <a href="#cues">§23</a></td></tr>
+<tr><td><b>Look plugin</b></td><td>the look and the grade, light zones, the tube and dying bulb presets: <a href="#light">§11</a>; rain on glass, a car's lights, a CRT, a real mirror, a wet floor, blood, a light shaft, a leak and a puddle, leaves' shadows, the tape: <a href="#dress">§12</a>; the air, its dust and the beam: <a href="#air">§13</a>; lightning, breath and frost, steam writing: <a href="#intense">§22</a>; made props' effects (HSPropFX) and a liquid's level (HSLiquidFill): <a href="#breaks">§28</a>; her looks (other eyes, creature skins, the cloak), the look viewer, a switch a fact and an event turn: <a href="#looks">§30</a></td></tr>
+<tr><td><b>Starter kit</b> (49 scripts, 3 seats to drop)</td><td>the player, flashlight, story, pocket and cash, sound and its physics, room tones, footsteps, notes, pickups, doors and locks, event and scare areas, lights: <a href="#story">§15</a> to <a href="#jump">§21</a>; fear, the steps behind you, her signs, the glimpse, the one closer each time, the mirror figure, the shadow, the feet, the uncanny, the night's director and its moments, her menace, the searcher, the chase, the cold, the steam: <a href="#intense">§22</a>; cues and seats: <a href="#cues">§23</a></td></tr>
 <tr><td><b>Sound shelf and moods</b></td><td>the four moods, a tone for each room, every sound placed and traced through the rooms: <a href="#sound">§14</a>, <a href="#body">§22</a></td></tr>
 <tr><td><b>UI plugin</b></td><td>HSHud (the reticle, the keys, the pocket as a row of the things themselves), HSQuestMarker coming and going with the to-do list: <a href="#hud">§24</a>; HSModelSlot in the pocket's row and the shop's cards</td></tr>
 <tr><td><b>Devices plugin</b></td><td>the laptop, its terminal, the Order tab a page per category, things as files in a catalog's folder, locks shown as a ?, NEW: <a href="#laptop">§25</a>; delivery, parcels with a marker each, unboxing into the hands: <a href="#parcel">§26</a></td></tr>
@@ -1152,7 +1446,11 @@ way to use them yet:</p>
 <tr><td><b>Parts that open</b></td><td>a made prop's lids, doors and drawers (a suitcase, a wardrobe to hide in, a box), things put in and taken out, things shoved and carried: the runtime's <code>parts.gd</code></td></tr>
 <tr><td><b>A book in the hands</b></td><td>a journal whose pages are written in a hand, turned with the arrows: the runtime's <code>book.gd</code> (here a note is a card)</td></tr>
 <tr><td><b>Faces</b></td><td>expressions from the Face page played on her face: the runtime's <code>face.gd</code> (here only <code>uncanny.gd</code>'s smile and stare)</td></tr>
-<tr><td><b>Her moves</b></td><td>Kimodo's motions and an animation library: the Director's Animate tab (here she stands, and walks as a whole)</td></tr>
+<tr><td><b>The hunt</b></td><td>a hidden quest from the order to the gun: who hunts, her spots in the corridor, the warning and the rush in the dark, 304 safe; her moves from Kimodo clips (<code>moves.gd</code>: here she slides until you make them): <a href="#hunt">§31</a></td></tr>
+<tr><td><b>Things that come and go, flags</b></td><td>the slippers at 304's door, by the bed after the knocks; a pair at 308's door once 304's found, by a flag a task switches (<code>shown.gd</code>, the Story's Task Flags): <a href="#shown">§23</a></td></tr>
+<tr><td><b>Sanity</b></td><td>worn down by the dark, her and the scares; the desk chair, 304's bed and the shop's food mend it; no sleep until she's shot; the hunt and the director faster as it falls (<code>sanity.gd</code>): <a href="#sanity">§31, 6</a></td></tr>
+<tr><td><b>Close calls</b></td><td>reloading with her nearly on you, she falters just long enough, once a chase (<code>close_call.gd</code> under both of her): <a href="#closecall">§31, 7</a></td></tr>
+<tr><td><b>Her moves, edited</b></td><td>an animation library with cards, On stage per quest, paths: the Director's Animate tab. By hand, <code>moves.gd</code> plays a clip per behaviour: <a href="#huntmoves">§31</a></td></tr>
 <tr><td><b>The HUD's words</b></td><td>the starter Story draws its objective, list, lines and cards itself, so the HUD's corners, its serif lines and its cards go unused</td></tr>
 <tr><td><b>E's prompt</b></td><td>the reticle doesn't say what E will do ("Take: the master key"). The runtime feeds it, the starter player doesn't.</td></tr>
 <tr><td><b>Pause menu, saves</b></td><td>the HUD's menu (Save, Settings, Quit) is the runtime's, with Standalone off</td></tr>
@@ -1163,7 +1461,7 @@ way to use them yet:</p>
 </section>
 
 <section id="next">
-<h2><span class="n">33</span>Where to go next</h2>
+<h2><span class="n">35</span>Where to go next</h2>
 <ul>
   <li><b>Another floor</b>: in the scene builder, <span class="ui">copy ↑</span> copies a floor up with everything on it;
   export again, and the export's link puts it in your project at once.</li>
@@ -1173,7 +1471,7 @@ way to use them yet:</p>
   HSPropFX for what it glows with, an HSBlowUp to break it. A suitcase's lid and a journal's pages don't open in a game by
   hand yet (<a href="#missing">not in it yet</a>).</li>
   <li><b>Her face and her moves</b>: an <span class="node">AnimationPlayer</span> on her blend shapes, or the face clips the studio's Face page makes.</li>
-  <li><b>The whole look</b>: the plugin's other nodes and its 40 presets, in <a href="../look_plugin/index.html">its guide</a>.</li>
+  <li><b>The whole look</b>: the plugin's other nodes and its 80 presets, in <a href="../look_plugin/index.html">its guide</a>.</li>
   <li><b>Quests, conversations, branching endings</b>: what the Director does, in <a href="../director/index.html">its guide</a>.</li>
   <li><b>Shipping it</b>: <a href="../godot_by_hand/index.html#ship">Godot by hand</a>.</li>
 </ul>

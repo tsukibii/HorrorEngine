@@ -7,11 +7,14 @@ extends EditorPlugin
 ## effects' buffers; a GTX 1060 the target) are applied the first time the plugin is enabled in a project (recorded
 ## in `horrorstudio/look/settings_applied`), and again from Project > Tools > HorrorStudio: apply the balanced project
 ## settings.
+## Project > Tools > HorrorStudio: look viewer runs tools/look_viewer.tscn (GODOT_LOOK §5r).
 ## It also registers HSStreet.Import: a street baked in Blender (tools/street.py bake) wears its dirt, rain streaks and
 ## worn edges as it's imported (street_import.gd, street.gd, street.gdshader).
 
 const DONE := "horrorstudio/look/settings_applied"
 const MENU := "HorrorStudio: apply the balanced project settings"
+const VIEWER_MENU := "HorrorStudio: look viewer (a character's skins and eyes)"
+const VIEWER := "res://addons/horrorstudio_look/tools/look_viewer.tscn"
 
 ## a street from the Blender bake wears its wear on import (street.gd)
 var _street: EditorScenePostImportPlugin
@@ -22,6 +25,7 @@ func _enter_tree() -> void:
 	_street = preload("res://addons/horrorstudio_look/street_import.gd").new()
 	add_scene_post_import_plugin(_street)
 	add_tool_menu_item(MENU, _apply)
+	add_tool_menu_item(VIEWER_MENU, _viewer)
 	# the made props' enhancers (HSPropFX), each kind switched for the whole project here
 	for k: String in ["enabled", "glow", "flame", "smoke", "steam", "wax"]:
 		var key: String = "horrorstudio/prop_fx/" + k
@@ -38,7 +42,13 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	remove_scene_post_import_plugin(_street)
 	remove_tool_menu_item(MENU)
+	remove_tool_menu_item(VIEWER_MENU)
 	remove_custom_type("HSLookEnvironment")
+
+
+## the look viewer run as a scene of its own (tools/look_viewer.gd: every skin and eye look on a character, saved as looks)
+func _viewer() -> void:
+	EditorInterface.play_custom_scene(VIEWER)
 
 
 func _apply() -> void:

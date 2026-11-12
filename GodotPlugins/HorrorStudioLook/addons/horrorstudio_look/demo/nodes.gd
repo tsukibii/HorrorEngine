@@ -17,6 +17,8 @@ var wall: MeshInstance3D
 var tiles: Array = []
 var body: Node3D
 var creatures: Array = []     # [look, its figure]
+var eye_figs: Array = []      # [look, its figure, its preset's node]
+var cloak_fig: Node3D = null
 var got := {}                  # preset name -> its node
 var rep := {}
 var n := 0
@@ -141,6 +143,30 @@ func _initialize() -> void:
 		put("creature_%s" % look, fig, Vector3.ZERO)
 		creatures.append([look, fig])
 		ci += 1
+	# creepy eyes: each preset on a figure with a plain ball named eye (the stand-in's version: the glow and the black)
+	ci = 0
+	for look in HSEyeFx.names():
+		var fig := Node3D.new()
+		fig.name = "Eyes_%s" % look
+		world.add_child(fig)
+		fig.position = Vector3(-2.6 + 0.4 * ci, 0.12, 3.1)
+		var ball := SphereMesh.new()
+		ball.radius = 0.08
+		ball.height = 0.16
+		mesh(ball, Vector3.ZERO, Color(0.9, 0.9, 0.88), fig).name = "doll_eye"
+		eye_figs.append([look, fig, put("eyes_%s" % look, fig, Vector3.ZERO)])
+		ci += 1
+	# the cloak that comes and goes: the node under a figure
+	cloak_fig = Node3D.new()
+	cloak_fig.name = "Cloaked"
+	world.add_child(cloak_fig)
+	cloak_fig.position = Vector3(3.2, 0.25, 2.7)
+	var cb := SphereMesh.new()
+	cb.radius = 0.16
+	cb.height = 0.32
+	mesh(cb, Vector3.ZERO, Color(0.78, 0.56, 0.47), cloak_fig).name = "skin"
+	put("cloak", cloak_fig, Vector3.ZERO)
+	put("look_switch", body, Vector3.ZERO)             # a character's looks, switched: with no looks in its list it leaves her as she is
 	put("look_environment", world, Vector3.ZERO)
 	# the air: one atmosphere acts (the first in), the others wait; a flashlight and an LED torch aimed across the room
 	# with their beams; a lamp's cone; motes; a dusty room's own air
@@ -254,6 +280,18 @@ func measure() -> void:
 			worn += 1
 	rep["creatures"] = worn
 	rep["creature_looks"] = creatures.size()
+	var eyes_ok := 0                                 # each eye preset's node names its own look; the glow and the black go on a plain eye
+	var eyes_plain := 0
+	for e in eye_figs:
+		if str(e[2].eye_fx) == str(e[0]):
+			eyes_ok += 1
+		if HSEyeFx.worn(e[1]).size() == 1:
+			eyes_plain += 1
+	rep["eyes"] = eyes_ok
+	rep["eye_looks"] = eye_figs.size()
+	rep["eyes_plain"] = eyes_plain
+	var cm: Array = HSCreatureSkin.worn(cloak_fig)   # the cloak's node: its figure cloaked from the start, on the cloak's own shader
+	rep["cloak_node"] = cm.size() == 1 and cm[0].shader == HSCreatureSkin.shader_of("cloak") and float(cm[0].get_shader_parameter("amount")) == 1.0
 	rep["look_env_freed"] = not is_instance_valid(got["look_environment"])
 
 

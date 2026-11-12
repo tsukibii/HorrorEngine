@@ -17,6 +17,11 @@ extends Node3D
 ## A shot's pellets (`play_shot`) leave what a 12-gauge leaves indoors (docs/research/shotgun_damage.md): close up one
 ## torn hole with the smoke's soot and the powder's grains round it, a few metres out a torn middle with pellet holes
 ## round it and the wad's dent, farther each pellet its own hole; on concrete, stone or steel lead smears instead.
+##
+## The easter egg shells' impacts break nothing (DECISIONS 2026-11-11): a `heart` or a `wet` mark is a print or a wet
+## patch on the wall as it is (no tint, no lead smear, upright on a wall, the water's running down it), fading away
+## after the impact's `fade_s`; `_spray` throws hearts that float up, drops of water and mist; `douse` puts out what
+## burns near a splash.
 
 const DIR := "res://addons/horrorstudio_weapons/"
 const MARK_MASK := 0x3FFFF                               # every layer but 19 (only in mirrors) and 20 (the gun in your hands)
@@ -42,19 +47,25 @@ const SURFACES := {
 	"ichor": {"tint": Color(0.02, 0.016, 0.018), "dust": Color(0.03, 0.025, 0.03), "chip": Color(0.02, 0.016, 0.018), "sparks": 0.0, "size": 0.0, "mark": false, "dust_k": 0.0, "chips_k": 0.0},
 }
 
-const VARIANTS := {"crater": 4, "scorch": 2, "blast": 3, "smear": 2, "wad": 1, "soot": 1, "grains": 1}   # each mark's maps in fx/
+const VARIANTS := {"crater": 4, "scorch": 2, "blast": 3, "smear": 2, "wad": 1, "soot": 1, "grains": 1, "heart": 2, "wet": 3, "wet_drip": 2}   # each mark's maps in fx/
 const HOLE := 0.4                                       # a torn hole's share of its decal's width (fx/blast_*)
 
 var marks: Array = []                                   ## the marks in the world, oldest first
 var last := {}                                          ## the last impact, a check's: {surface, mark, dust, chips, sparks, blast, torn}
-var last_shot := {}                                     ## the last shot's marks, a check's: {pellets, torn (each torn hole's pellets), alone, soot, grains, wad, surface, muzzle_m, marks}
+var last_shot := {}                                     ## the last shot's marks, a check's: {pellets, torn (each torn hole's pellets), alone, soot, grains, wad, surface, muzzle_m, marks, hearts, droplets}
 var blasts := 0                                         ## blasts so far
+var doused := 0                                         ## embers and flames put out so far (a check's)
 
 var _tex := {}
 var _chip: Mesh
 var _splinter: Mesh
 var _puff: Mesh
 var _spark: Mesh
+var _heart: Mesh
+var _water: Mesh
+var _mist: Mesh
+var _fx_nodes: Array = []                               # the scene's HSPropFX nodes (looked for now and then)
+var _fx_at := -1000.0
 
 
 ## The scene's HSImpacts (made under the running scene the first time).
@@ -84,6 +95,8 @@ func play(imp: HSImpact, hit: Dictionary, debris := true) -> Array:
 	var info := {"surface": kind, "mark": d, "dust": 0, "chips": 0, "sparks": 0, "blast": [], "torn": 0}
 	if debris:
 		_debris(imp, hit, look, info)
+	if imp.douse_m > 0.0:
+		info["doused"] = douse(hit.get("point", Vector3.ZERO), imp.douse_m)
 	if imp.radius_m > 0.0:
 		info["blast"] = _blast(imp, hit)
 	last = info
@@ -103,11 +116,20 @@ func play_shot(imp: HSImpact, hits: Array) -> Array:
 	var alone := 0
 	var main: Array = []
 	var near := {}
+	var n_hearts := 0
+	var n_drops := 0
 	if imp.radius_m > 0.0 or imp.merge_m <= 0.0:
 		for i in hits.size():
 			out.append_array(play(imp, hits[i], i < imp.debris_max))
 			made.append(last.get("mark"))
+			n_hearts += int(last.get("hearts", 0))
+			n_drops += int(last.get("droplets", 0))
 		alone = hits.size()
+		if imp.radius_m <= 0.0 and imp.sound != null and not hits.is_empty():
+			var mid := Vector3.ZERO                          # (its sound once a shot, where the pattern's middle lands)
+			for h in hits:
+				mid += (h["point"] as Vector3) / float(hits.size())
+			_sound_at(imp.sound, mid)
 	else:
 		var n_debris := 0
 		for g in clusters(hits, imp.merge_m):
@@ -130,7 +152,7 @@ func play_shot(imp: HSImpact, hits: Array) -> Array:
 	last_shot = {"pellets": hits.size(), "torn": torn, "alone": alone, "soot": float(near.get("soot", 0.0)),
 			"grains": float(near.get("grains", 0.0)), "wad": bool(near.get("wad", false)), "muzzle_m": float(near.get("dist", -1.0)),
 			"surface": surface_of(main[0]) if not main.is_empty() else str(last.get("surface", "")),
-			"marks": made.filter(func(d) -> bool: return d != null)}
+			"marks": made.filter(func(d) -> bool: return d != null), "hearts": n_hearts, "droplets": n_drops}
 	return out
 
 
@@ -207,7 +229,11 @@ func _mark(imp: HSImpact, hit: Dictionary, look: Dictionary, kind := "", size :=
 	var hard := bool(look.get("hard", false))
 	if hard and (mk == "crater" or mk == "blast"):
 		mk = "smear"                                     # (the lead doesn't go in: a smear and chips)
-	var nm := "%s_%d" % [mk, randi() % int(VARIANTS.get(mk, 1))]
+	var whole := mk == "heart" or mk == "wet"            # (nothing of the wall missing: a print on it, a wet patch)
+	var y := (hit.get("normal", Vector3.UP) as Vector3).normalized()
+	var wall := absf(y.y) < 0.55
+	var maps := "wet_drip" if (mk == "wet" and wall) else mk   # (water on a wall runs down it)
+	var nm := "%s_%d" % [maps, randi() % int(VARIANTS.get(maps, 1))]
 	var flat := mk == "soot" or mk == "grains"           # (colour only: the wall's own relief under it)
 	var d := Decal.new()
 	d.name = "Mark"
@@ -216,16 +242,21 @@ func _mark(imp: HSImpact, hit: Dictionary, look: Dictionary, kind := "", size :=
 		d.texture_normal = _t(nm + "_normal")
 		d.texture_orm = _t(nm + "_orm")
 	var scorch := mk == "scorch"
-	if imp.embers_s > 0.0 and scorch:
+	var glows := imp.embers_s > 0.0 and (scorch or mk == "heart")
+	if glows:
 		d.texture_emission = _t(nm + "_emission")
 		d.emission_energy = imp.embers_energy
 	var s := size
 	if s <= 0.0:
-		s = imp.mark_size_m * (1.0 if scorch else float(look.get("size", 1.0))) * randf_range(1.0 - imp.mark_jitter, 1.0 + imp.mark_jitter)
+		s = imp.mark_size_m * (1.0 if (scorch or whole) else float(look.get("size", 1.0))) * randf_range(1.0 - imp.mark_jitter, 1.0 + imp.mark_jitter)
 		if mk == "smear":
 			s *= 0.75
+		if maps == "wet_drip":
+			s *= 1.5                                     # (its runs are most of its square)
 	d.size = Vector3(s, clampf(s * 0.6, 0.05, 0.6), s)
-	d.modulate = Color.WHITE if (scorch or flat or mk == "smear" or mk == "wad") else (look.get("tint", Color.WHITE) as Color)
+	d.modulate = Color.WHITE if (scorch or flat or whole or mk == "smear" or mk == "wad") else (look.get("tint", Color.WHITE) as Color)
+	if mk == "wet":
+		d.albedo_mix = 0.2                               # (water darkens a wall a little, and patches overlap; its gloss and its domes are all there)
 	d.normal_fade = 0.35                                 # (never wrapped round a corner onto the next face)
 	d.upper_fade = 0.15
 	d.lower_fade = 0.15
@@ -238,13 +269,25 @@ func _mark(imp: HSImpact, hit: Dictionary, look: Dictionary, kind := "", size :=
 	var on = hit.get("collider")
 	var host: Node = on if on is Node3D and is_instance_valid(on) and not (on as Node).is_queued_for_deletion() else self
 	host.add_child(d)                                    # (a door swings with its holes, a crate carries them away)
-	var y := (hit.get("normal", Vector3.UP) as Vector3).normalized()
 	var x := y.cross(Vector3.UP if absf(y.y) < 0.9 else Vector3.RIGHT).normalized()
-	d.global_transform = Transform3D(Basis(x, y, x.cross(y)).rotated(y, randf() * TAU), (hit.get("point", Vector3.ZERO) as Vector3) + y * 0.004)
-	if imp.embers_s > 0.0 and scorch:
+	var b := Basis(x, y, x.cross(y)).rotated(y, randf() * TAU)
+	if whole and wall:                                   # upright on a wall: its picture's bottom down it (a heart a little askew)
+		var z := (Vector3.DOWN - y * Vector3.DOWN.dot(y)).normalized()
+		b = Basis(y.cross(z).normalized(), y, z)
+		if mk == "heart":
+			b = b.rotated(y, randf_range(-0.3, 0.3))
+	d.global_transform = Transform3D(b, (hit.get("point", Vector3.ZERO) as Vector3) + y * 0.004)
+	if glows:
 		var tw := d.create_tween()                       # the embers dying: a flicker, then out
 		tw.tween_property(d, "emission_energy", imp.embers_energy * 0.55, imp.embers_s * 0.25).set_trans(Tween.TRANS_SINE)
 		tw.tween_property(d, "emission_energy", 0.0, imp.embers_s * 0.75).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		d.set_meta("hs_glow", tw)                        # (a splash of water puts it out: douse)
+	if imp.fade_s > 0.0:
+		var tf := d.create_tween()                       # gone after a while: water drying, a heart fading
+		tf.tween_interval(imp.fade_s * 0.5)
+		tf.tween_property(d, "modulate:a", 0.0, imp.fade_s * 0.5)
+		tf.tween_callback(d.queue_free)
+		marks = marks.filter(func(m) -> bool: return is_instance_valid(m) and not (m as Node).is_queued_for_deletion())
 	d.set_meta("hs_mark", mk)
 	marks.append(d)
 	while marks.size() > maxi(imp.keep, 1):
@@ -376,12 +419,153 @@ func _debris(imp: HSImpact, hit: Dictionary, look: Dictionary, info: Dictionary)
 		g3.set_color(1, Color(0.9, 0.25, 0.05, 0.0))
 		_burst(_spark, n_sparks, 0.32, Vector2(2.0, 6.0), 62.0, Vector3(0, -6.0, 0), Vector2(0.02, 0.05), g3, at, b, true, _grow(0.3), 0.5)
 		info["sparks"] = n_sparks
+	_spray(imp, at, b, info)
 
 
-# a one-shot burst of particles at `at`, flying out along `b`'s Y within `spread` degrees, freed when it's done
+# what an easter egg shell throws off where it lands, none of it the wall's own: hearts popping out and floating up,
+# drops of water splashing off, a puff of fine spray
+func _spray(imp: HSImpact, at: Vector3, b: Basis, info: Dictionary) -> void:
+	var k := imp.debris_scale
+	var c := imp.spray_color
+	if imp.hearts > 0:
+		hearts(at, b, imp.hearts, c, k)
+		info["hearts"] = imp.hearts
+	if imp.droplets > 0:
+		var g := Gradient.new()
+		g.set_color(0, Color(c, 0.8))
+		g.set_color(1, Color(c, 0.35))
+		_burst(water_mesh(), imp.droplets, 0.7, Vector2(1.0, 3.6) * imp.debris_speed / 1.4, 62.0, Vector3(0, -9.8, 0), Vector2(0.005, 0.013) * k, g, at, b, false, _grow(0.7), 0.3)
+		info["droplets"] = imp.droplets
+	if imp.mist > 0:
+		if _mist == null:
+			_mist = HSMuzzle.puff_mesh(_t("puff"), 0.0)     # (it only adds its light, as dust does)
+			(_mist.material as ShaderMaterial).set_shader_parameter("glow", 0.2)
+		var g2 := Gradient.new()
+		g2.set_color(0, Color(c, 0.0))
+		g2.set_color(1, Color(c, 0.0))
+		g2.add_point(0.08, Color(c, 0.5))
+		g2.add_point(0.4, Color(c, 0.3))
+		_burst(_mist, imp.mist, 0.9, Vector2(0.3, 1.1) * imp.debris_speed / 1.4, 50.0, Vector3(0, -0.4, 0), Vector2(0.04, 0.09) * k, g2, at, b, false, _grow(3.0), 1.6)
+		info["mist"] = imp.mist
+
+
+## A burst of hearts at `at`, out along `b`'s Y and floating up: `n` of them in shades of `color`, `k` times as big
+## (a love-heart shell's where it lands; HSHitReact's when someone's smitten). Freed when it's done.
+func hearts(at: Vector3, b: Basis, n: int, color: Color, k := 1.0) -> CPUParticles3D:
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 1, 1, 0.0))
+	g.set_color(1, Color(1, 1, 1, 0.0))
+	g.add_point(0.06, Color(1, 1, 1, 1.0))
+	g.add_point(0.72, Color(1, 1, 1, 1.0))
+	var pop := Curve.new()                               # popping out, settling, a little smaller as it goes
+	pop.max_value = 1.3
+	pop.add_point(Vector2(0, 0.3))
+	pop.add_point(Vector2(0.14, 1.3))
+	pop.add_point(Vector2(0.3, 1.0))
+	pop.add_point(Vector2(1, 0.75))
+	var e := _burst(heart_mesh(), n, 1.6, Vector2(0.35, 1.2), 70.0, Vector3(0, 0.9, 0), Vector2(0.035, 0.075) * k, g, at, b, false, pop, 1.3, false)
+	heart_shades(e, color)
+	e.emitting = true
+	return e
+
+
+## An emitter's hearts each a shade of `color` (paler to deeper), upright give or take, swaying.
+static func heart_shades(e: CPUParticles3D, color: Color) -> void:
+	var shades := Gradient.new()
+	shades.set_color(0, color.lerp(Color.WHITE, 0.45))
+	shades.set_color(1, color.lerp(Color(1.0, 0.1, 0.3), 0.35))
+	shades.add_point(0.5, color)
+	e.color_initial_ramp = shades
+	e.angle_min = -28.0
+	e.angle_max = 28.0
+	e.angular_velocity_min = -50.0
+	e.angular_velocity_max = 50.0
+
+
+## The hearts' mesh: the plugin's heart turned to the eye (one for the scene).
+func heart_mesh() -> Mesh:
+	if _heart == null:
+		_heart = HSMuzzle.sprite_mesh(_t("heart"), 1.15)
+	return _heart
+
+
+## A drop of water: a small glossy bead the lights find (one for the scene).
+func water_mesh() -> Mesh:
+	if _water == null:
+		var m := SphereMesh.new()
+		m.radius = 0.5
+		m.height = 1.0
+		m.radial_segments = 8
+		m.rings = 4
+		var mat := StandardMaterial3D.new()
+		mat.vertex_color_use_as_albedo = true
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.roughness = 0.04
+		mat.metallic_specular = 1.0
+		mat.emission_enabled = true                      # (a little light of its own: seen in a dark corridor)
+		mat.emission = Color(0.55, 0.7, 0.85)
+		mat.emission_energy_multiplier = 0.25
+		m.material = mat
+		_water = m
+	return _water
+
+
+## Put out what burns within `r` of `at` (a water shell's splash): a scorch's embers, a prop's candle flames (the Look
+## plugin's HSPropFX), anything in the group hs_flame with a douse() method. Returns how many.
+func douse(at: Vector3, r: float) -> int:
+	var n := 0
+	for d in marks:
+		if not is_instance_valid(d) or not (d is Decal) or (d as Decal).emission_energy <= 0.0:
+			continue
+		if str(d.get_meta("hs_mark", "")) != "scorch" or (d as Decal).global_position.distance_to(at) > r + (d as Decal).size.x * 0.5:
+			continue
+		var tw = d.get_meta("hs_glow", null)
+		if tw is Tween and (tw as Tween).is_valid():
+			(tw as Tween).kill()
+		(d as Decal).emission_energy = 0.0
+		n += 1
+	for f in get_tree().get_nodes_in_group("hs_flame"):
+		if f is Node3D and f.has_method("douse") and (f as Node3D).global_position.distance_to(at) <= r:
+			f.douse()
+			n += 1
+	var now := Time.get_ticks_msec() / 1000.0
+	if now - _fx_at > 4.0:                               # (the scene's HSPropFX nodes: looked for now and then, never a shot)
+		_fx_at = now
+		_fx_nodes = get_tree().root.find_children("*", "HSPropFX", true, false)
+	for fx in _fx_nodes:
+		if not is_instance_valid(fx) or not bool(fx.get("flame")) or not (fx.get("info") is Dictionary) or not (fx.get("info") as Dictionary).has("flame"):
+			continue
+		var host = fx.host() if fx.has_method("host") else null
+		if host is Node3D and (host as Node3D).global_position.distance_to(at) <= r + 0.15:
+			fx.set("flame", false)                       # (its flame, its light and the wax's glow with it)
+			n += 1
+	doused += n
+	return n
+
+
+# a sound where something landed (through the starter's Sound node when there is one)
+func _sound_at(st: AudioStream, at: Vector3, db := 0.0) -> void:
+	var snd := get_tree().get_first_node_in_group("hs_sound")
+	if snd != null and snd.has_method("play"):
+		snd.play(st, at, db, "sfx")
+		return
+	var a := AudioStreamPlayer3D.new()
+	a.stream = st
+	a.volume_db = db
+	add_child(a)
+	a.global_position = at
+	a.play()
+	a.finished.connect(a.queue_free)
+
+
+# a one-shot burst of particles at `at`, flying out along `b`'s Y within `spread` degrees, freed when it's done.
+# Made not emitting and started once it's placed: a CPUParticles3D that's emitting as it enters the tree throws its
+# first particles there and then, from wherever it is (the scene's origin: LESSONS). `go` false: the caller starts it
+# (`emitting = true`) after changing more of it.
 func _burst(mesh: Mesh, amount: int, life: float, speed: Vector2, spread: float, gravity: Vector3, size: Vector2,
-		ramp: Gradient, at: Vector3, b: Basis, align: bool, scale_curve: Curve, damping: float) -> CPUParticles3D:
+		ramp: Gradient, at: Vector3, b: Basis, align: bool, scale_curve: Curve, damping: float, go := true) -> CPUParticles3D:
 	var e := CPUParticles3D.new()
+	e.emitting = false
 	e.one_shot = true
 	e.amount = maxi(amount, 1)
 	e.lifetime = life
@@ -408,7 +592,8 @@ func _burst(mesh: Mesh, amount: int, life: float, speed: Vector2, spread: float,
 	e.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(e)
 	e.global_transform = Transform3D(b, at)
-	e.emitting = true
+	if go:
+		e.emitting = true
 	get_tree().create_timer(life + 0.4).timeout.connect(e.queue_free)
 	return e
 

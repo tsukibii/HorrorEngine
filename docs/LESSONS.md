@@ -2911,3 +2911,28 @@ pale one shows.
   starts, so about 0.6 s went uncounted. It passed twice, while the dice gave her a long listen, and failed on the
   merged tree at 2.7 s. A time the game keeps is read off the engine's own count (`Engine.get_physics_frames()` over
   the fixed 60), never off a counter that runs only while the check is looking.
+
+## The easter egg shells (2026-11-11, `more-shotgun-shells`: love hearts and water)
+
+- **A CPUParticles3D that's emitting as it enters the tree throws its first particles there and then**, from wherever
+  it is at that moment. HSImpacts' `_burst` made a one-shot emitter (emitting by default), added it, and only then
+  placed it: with an explosiveness of 1 every particle was already out, at the scene's origin. So since 2026-11-09
+  every impact's dust, chips and sparks, the ichor's droplets, a broken thing's bits and a shot-out lamp's sparks came
+  out at (0, 0, 0), not at the hit. WEAPONS counted them and never looked where they were; in the hotel the origin is
+  out of sight, so no picture showed it. The hearts did: a lab scene with its wall at the origin had them at the
+  skirting board. An emitter is made with `emitting = false`, placed, then started. And **what's set on it after it
+  starts never reaches the first batch**: the hearts were white because their shades were set a line too late.
+- **A count isn't a place.** A check of an effect that only counts what was made passes while the effect is somewhere
+  else. Look at it once, close, in a picture, before trusting the numbers.
+- **Tune a look in a lab, not in the playthrough.** The hotel's pictures need the whole check first and a few minutes
+  of CPU rendering each time, with a flashlight's hot spot over the thing. A scene of a wall, a floor, a lamp and a
+  camera two metres off draws thirteen pictures in under a minute, and showed four faults at once.
+- **A choke's cone puts a goofy shell's marks on one spot.** Seven 11 cm hearts in the left barrel's 0.7° (times 2.6)
+  landed within 6 cm of each other at two metres: one pink blob. A kind that leaves big marks needs its own spread
+  (the hearts' 7, the water's 5 times the barrel's).
+- **Wet is gloss, not black.** The first wet patch was the ichor's shape in near black at full strength and read as
+  ink. Water only darkens what it's on (the decal's `albedo_mix` 0.2: nine patches of a shot overlap, and each darkens
+  what the last left, so 0.35 was black again where three met) and is found by its shine and its domes; its shape is
+  rounder than a thrown liquid's (the thin spikes soaked in).
+- **A muzzle flash's light at a few metres' range tints the whole corridor**: the hearts' pink light at 0.3 of the
+  gun's made one frame of the picture all pink. A coloured flash wants a tenth.

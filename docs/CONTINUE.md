@@ -25,8 +25,10 @@ Character Studio, then the creature presets and a Studio character's face in God
 knit dress; then on `claude/beautiful-cray-a622xx`: tutorial v2's floor ready-made; 2026-11-11 on
 `claude/compassionate-babbage-3bnfqx`: the clothing research (Cloth2Tex, ready-made garments, the fit test, the
 clothing library), merged; then on `claude/ecstatic-dijkstra-6ixk71`: the hair editor v2.0, planned, then built (2026-11-12),
-two of the user's Daz hairstyles held to their pictures, the v2female and bodyv2 bases, and the styles gone through.
-Read this after CLAUDE.md's start
+two of the user's Daz hairstyles held to their pictures, the v2female and bodyv2 bases, and the styles gone through;
+beside it on `more-shotgun-shells`: two easter egg shells for the shotgun; and 2026-11-12 on
+`claude/jolly-darwin-9t8hkc` (merged first, PR #25): the ghost events plan, the cloak and creepy eyes, the hunt, sanity
+and the kit's bed, with `more-shotgun-shells` merged in. Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
@@ -220,7 +222,7 @@ runs well"; and while it was built (DECISIONS 2026-11-12): long women's styles w
   out as cards with the salon bake's finish, short hair as shells, the scalp painted from the pores. A character keeps
   `hair2: { on, style, set }`; the hair is made again on any body. 59 styles as cards; nine sections of sliders.
 - **In Godot**: Export for Godot carries it (HSHair wears the locks by their record, `hair_shell.gdshader` the shells,
-  HSJiggle the tails' chains; GODOT_LOOK §5p). *Preview in Godot* in the tab pictures the head and hair with Godot
+  HSJiggle the tails' chains; GODOT_LOOK §5u). *Preview in Godot* in the tab pictures the head and hair with Godot
   without exporting the character.
 - **The ears out** (2026-11-12): `ears: "tucked"` (both or one ear) and `tuckFall` (over the shoulders in front, or
   behind them); five styles in their own group.
@@ -241,6 +243,106 @@ runs well"; and while it was built (DECISIONS 2026-11-12): long women's styles w
   GDHAIR2 on their 3090 (docs/RUN_LOCALLY.md: the browser draws on the CPU here); braids.
 - The salon, its files and every baked hair are untouched. GDTESTROOM still stops at station 6 in this container (no
   bake bodies here: below), GDPLAY ok.
+
+## On main meanwhile (2026-11-12, `claude/jolly-darwin-9t8hkc`, merged in PR #25): the ghost events plan, the cloak, creepy eyes
+
+The user asked for ideas (ghost events on flags, things flung that stay in the room, a door in time with a hand, what
+a babysitting game with a grey alien needs) and for two things built (the Predator's cloak, creepy eyes).
+
+- **The plan: docs/GHOST_EVENTS_PLAN.md. Nothing of it is built**; it ends with four questions for the user (§7) and
+  a build order (§6: the base, `ghost_fling.gd`, `ghost_hand.gd`, `touch_sync.gd` first; then the haunt level; six
+  cheap events; look-at and the sister's needs; cooking and food props; Director cards). Start there when they say
+  which.
+- **Built** (the look plugin, GODOT_LOOK §5p, §5q): `HSCreatureSkin`'s `cloak` (`creature_cloak.gdshader`), the
+  `HSCloak` node (`cloak.gd`), `HSEyeFx` (`eye_fx.gd`, the `fx_` block in `eye.gdshader`), the HSCharacterLook
+  node's rows for both, 15 new presets (79), EYEFX (`tools/godot/eye_fx_check.py`), CREATURESKIN grown.
+- **The grey alien** (`node tools/character/creatures.mjs make --only alien --export`, the Studio's server running;
+  on a cloud session first `python tools/face_mesh.py setup` and `apt-get install -y libegl1 libgles2`: the page
+  never becomes ready without MediaPipe, and its import needs libEGL) is the test subject for both, and Freddy's
+  body when that game starts. It's in `Exports/characters/` (not tracked).
+- **Then, the same day: looks, switched** (GODOT_LOOK §5r): `HSLookPreset`, `HSLookSwitch`, `HSLookPicker`, the look
+  viewer (`addons/horrorstudio_look/tools/look_viewer.tscn`), the starter's event area and cue given `look_of` and
+  `her_look`; LOOKSWITCH. By-hand games only: **a Director or desk game needs a story word (`look`) for a cast
+  member's skin and eyes**, with the runner, the check, STORY_FORMAT and the desk's command together: the next step
+  if the user builds Freddy in the Director.
+- **Then: how to use it, in the tutorial** (guides/tutorial_v2 §30, Her looks; guides/look_plugin §8): the looks
+  are in the tutorial's own game now (`tutorial_v2.py`: `looks/empty.tres`, `looks/hunting.tres`, `Her/Looks`,
+  `Events/Hunter/Looks`), TUTORIAL2 plays them. On a cloud session TUTORIAL2 runs (the desk's server, about ten
+  minutes; `--reuse` after the first); a fresh run reports the ready-made floor differing from this machine's export
+  (not looked into: the user's machine made it).
+- **Then: `more-shotgun-shells` merged in and a quest for being shot** (the weapons plugin's `HSShotWith`,
+  `quest/shot_with.gd`: under someone, a shot of a kind landing on her sets a Story fact, ticks a task, turns her
+  look; `quest/loved.tscn`, `quest/soaked.tscn`; SHOTWITH, `tools/godot/shot_with_check.py`; the weapons guide §10).
+  By-hand games only. A pull request of the branch into main was opened at the user's word (tsukibii/HorrorEngine#25).
+  WEAPONS passed here on the merged branch (headless, no pictures).
+- **Then: the hunt, planned and built** (docs/HUNT_PLAN.md; the starter's `hunt.gd`, `hunt_spot.gd`, `moves.gd`,
+  `checkpoint.gd`, `sight.gd`, the Story's `die()`; HUNT, `tools/godot/hunt_check.py`; tutorial v2 §31). **Next for
+  it**: Kimodo clips for a hunter (none in the repo: the user makes them, `res://animations/*.npz`, then the
+  stalker's Moves rows); navigation, so she can come round another way (HUNT_PLAN §8: try Godot's navigation baked
+  from the interior's colliders on the hotel floor); `hunt_path.gd`; the Director's cards.
+- **Then: sanity** (the starter's `sanity.gd` and `food.gd`; `hunt.gd` and `dread.gd` synced by `sanity_sync`; the
+  facts `sanity:uneasy`, `sanity:shaken`, `sanity:breaking`; SANITY, `tools/godot/sanity_check.py`). In tutorial
+  v2's game since (its §31, part 6: no sleep until she's shot). Next for it if the user wants: hunger, the meter in
+  the HUD's style, kept at a checkpoint.
+- **Then: things that come and go, and flags** (the starter's `shown.gd` and `flag_switch.gd`; the Story's
+  `set_flag`, `switch_flags`, `task_flags`, `flags_start`; MIND plays them; in tutorial v2 as the slippers, §23). Next for it: hiding a piece of an
+  interior's export without leaving it solid (the seat's way of taking a box out of the room's collider would do).
+- **Then: more intensifiers** (the starter's `flicker_lit.gd`, `moved.gd`, `gaslight.gd`; the look plugin's `HSPhase`
+  with `creature_phase.gdshader` and `HSUnease` with `unease.gdshader`; MIND, `tools/godot/mind_check.py`; the look
+  guide's Phasing and Unease). Not in tutorial v2's game. Next for it: the user's pick from the ideas in DECISIONS
+  (2026-11-12, after the seats), these in tutorial v2 if wanted, a hunt's cloaked pass or its vanish done by HSPhase.
+- **Then: seats that find the eye, and eating by holding the button** (the starter's `seat.gd` fitted to the
+  furniture, `seat_bed.tscn`, `seat_chair.tscn`, `seat_stool.tscn`, the player's eased settle and head limits; SEATS,
+  `tools/godot/seat_check.py`; the Story's `set_eatable`, `hold_eat`, its eat meter; `food.gd` a pickup; HSShopItem's
+  Eaten group). Next for it: the interior export writing a bed's collider as its mattress and headboard
+  (`tools/director/levelexport.js`; then `godot_byhand.py ready` and TUTORIAL2 fresh, on the user's machine), an
+  eating sound for the shelf, the user's feel for 0.22 m and 0.30 m in play.
+- **Then: close calls** (the starter's `close_call.gd` under whoever hunts: she falters while you reload, are busy
+  or hide, by a chance, once a chase; `chase.gd` and `searcher.gd` ask it; HUNT plays it with the real double;
+  tutorial v2 §31, part 7). Next for it if the user wants: more kinds of near miss (DECISIONS 2026-11-12, after the
+  sanity meter, lists them), and the user's own feel for its numbers in play: `hold_m`, `stop_m`, `grace`, `chance`.
+- **Not done**: the story's `skin` word doesn't name the cloak yet (a desk game's cast), the runtime add-on has no
+  word for eye looks (STORY_FORMAT: grow the runner, the check and the doc together when a game wants them); the
+  guides don't show either; tutorial v2 uses neither. LATER has the cloak's next steps and the black eye under a
+  strong lamp.
+- **Checks run here**: CREATURESKIN and EYEFX on the alien, LOOKPLUGIN, GDFACES, GDPLAY, GDTESTROOM, check_all (see
+  the session's last message for what passed).
+
+## Beside it (2026-11-11, `more-shotgun-shells`, from main, merged into `claude/jolly-darwin-9t8hkc`): two easter egg shells, love hearts and water
+
+The user: "add a couple of new goofy ammo types, love hearts (this wouldnt damage the npc but have some kind of cute
+effect), water shells (water splashes), just some fun easter egg ones" (DECISIONS 2026-11-11, after the very last).
+Built in the weapons plugin (`GodotPlugins/HorrorStudioWeapons`: its README's *The easter egg shells*, its CLAUDE.md,
+the guide's section 8):
+
+- **A harmless kind** is an HSShellType with `damage` 0: HSHitReact, HSShootable and HSBlowUp take its hits out before
+  they count anything and say `touched(info)`; a kind has `fire_sound`, `ring_scale` and a `touch` word now.
+- **Love hearts** (`shells/heart.tres`, `muzzle/heart.tres`, `impacts/heart.tres`): hearts out of the muzzle
+  (`spark_sprite`, `muzzle/sprite.gdshader`), a heart printed upright where each lands (`mark` heart, `fade_s`), hearts
+  floating up; someone hit is smitten (`HSHitReact.charm`: held with no shove for `charm_s`, hearts over her head).
+- **Water** (`shells/water.tres`, `muzzle/water.tres`, `impacts/water.tres`): a spray, drops and mist, wet patches that
+  run down a wall and dry (`mark` wet), someone soaked (`soak`), embers and flames put out (`HSImpacts.douse`).
+- **Made for it**: six prop generator recipes (PROPGEN §31; `designs.py` `shape_pts`: a heart, a drop as a hull's mark
+  and motif and a box's picture; `crimp`), `tools/weapon_fx.py`'s heart and wet maps (WEAPONFX holds them),
+  `tools/weapon_sounds.py`'s five sounds (`--only`), WEAPONS §8k, `weapons_shots.gd` `egg_shots()`.
+- **Checked here**: CHECKS (check_all), WEAPONFX, THUMBS, PROPGEN, WEAPONS (with §8k); the guide's eight new pictures
+  are Godot's under xvfb on the CPU. **TUTORIAL2's playthrough passed every step** (the kettle and mug shot, the bulb,
+  her shot down) **but the check failed on one line that isn't this branch's**: the ready-made floor against this
+  machine's export differs in nine rooms' wall set, `pbr/_made/412ad2f04aeb` kept and `pbr/_made/ef65db5f3357` made
+  here: a made set's hash (`storykit/pbrmix.py`) isn't the same on every machine. Worth a look: the hash should come
+  from the look's recipe, not from what the machine wrote. `weapons_check.py` now falls back to the ready-made hotel floor
+  (`Exports/interiors/hotel_floor`) when tutorial v2's export isn't on the machine: no desk server needed.
+
+- **A fault found and fixed on the way**: `HSImpacts._burst` placed its emitter after it had started, so every
+  impact's debris (and the ichor's droplets, a broken thing's bits, a lamp's sparks) came out at the scene's origin.
+  Placed first now. **The guide's older pictures (damage, blowup, react) were drawn with the fault**: worth redrawing on
+  the user's machine (`python tools/godot/weapons_check.py --reuse --pictures`, about a quarter of an hour on a GPU),
+  and a look at whether the debris, now seen, wants toning.
+
+**What could come next**: a box of each hidden in tutorial v2 (the user's to place: nothing sells or hides them yet),
+the laptop's shop selling them as a ? till something's done; a blush on a smitten character's skin (the skin shader's
+flush); puddles on the floor that stay a while and reflect; more kinds the same way (confetti, bubbles): a kind is three
+resources and a word.
 
 ## Before that (2026-11-11, `claude/compassionate-babbage-3bnfqx`, merged in PR #24): ready-made clothing fitted to our bodies, researched and tested, then worn in layers
 

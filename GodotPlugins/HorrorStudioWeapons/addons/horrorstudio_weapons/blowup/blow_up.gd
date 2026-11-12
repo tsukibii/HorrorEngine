@@ -566,7 +566,8 @@ func _on_fired(shot_hits: Array) -> void:
 	var mine := shot_hits.filter(func(h) -> bool:
 		var c = h.get("collider")
 		return c is Node and is_instance_valid(c) and (c == host or host.is_ancestor_of(c)))
-	if mine.is_empty():
+	mine = mine.filter(func(h) -> bool: return bool(h.get("blast", false)) or float(h.get("damage", 1.0)) > 0.0)
+	if mine.is_empty():                                  # (nothing of it, or only a harmless shell's hearts or water)
 		return
 	var dmg := 0.0
 	var at := Vector3.ZERO

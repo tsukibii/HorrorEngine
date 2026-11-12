@@ -347,13 +347,13 @@ call for a Studio export) finds:
 
 - the **locks** by the `studioHair` record: the salon bake's look (soft dithered coverage under TAA, tapered card
   sides, two highlights, light through from behind), with the bake's own `settings` over it, and the look's own
-  `bake` over those (GODOT_LOOK §5p). Since 2026-11-12 every look of the editor's own asks for the first highlight
+  `bake` over those (GODOT_LOOK §5u). Since 2026-11-12 every look of the editor's own asks for the first highlight
   **lock by lock** (`streak`: 0.9 on the glossy black, 0.7 on the other dark looks, 0.5 to 0.6 on the light ones): a
   fringe under a light from the front was one even grey sheet, the same on every dark style; and the light looks
   (dark blonde, grey, white) for more light wandering through the hair and less dark between its strands
   (`scatter` 0.6, `occlusion` 0.55), where they read as yarn. The salt and pepper of the two balding cuts is as it
   was. The Studio's own shader has neither: its tab shows the older sheen;
-- **`hair_shell`**: `hair_shell.gdshader` (GODOT_LOOK §5p) with the look's root and tip colours;
+- **`hair_shell`**: `hair_shell.gdshader` (GODOT_LOOK §5u) with the look's root and tip colours;
 - **`hair_scalp`** with a texture: kept as it is, matt;
 - the tails' chains: **HSJiggle** springs every chain named `jiggle_…`, soft by the tail's Sway.
 
@@ -535,7 +535,7 @@ hers, centimetres, minus where ours is narrower:
 
 **What is not** (the list to work from):
 1. **The look**, in part. Under a light from the front every strand of ours lit up alike: a grey sheet, where hers
-   is black with bright strands. The hair shader has **`streak`** for that (GODOT_LOOK §5p): the first highlight
+   is black with bright strands. The hair shader has **`streak`** for that (GODOT_LOOK §5u): the first highlight
    lock by lock; 0 for every other hair, 0.9 in the look `gloss_black` through its `bake`. Still different: ours
    is striped evenly across the fringe and the tails where hers has larger dark areas (her light is from one side;
    the rig's is from the front), and hers has a faint teal tint in its highlights. The Studio's own shader has no

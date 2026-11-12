@@ -1448,7 +1448,9 @@ printed or stamped thing on them one of their own pictures (§15), seen on the p
 
 - **`shell`**: the 12-gauge shell of §30, here now, its parts at their true sizes (the islands as long as the profile
   they're turned from: the hull's print sits where it's drawn). Its hull is the design `shell_print` (`art`: `brand`,
-  `load`, `ink`, `mark`, `font`): the plastic in `hull`, and printed along its length on the side that faces you
+  `load`, `ink`, `mark` (a letter in a ring, or a small shape: `heart`, `drop`), `motif` (`heart` or `drop`: little ones
+  all round the hull clear of the print, in `motif_color`), `font`; the recipe's `crimp` the colour in the star crimp's
+  folds, a dark red when not given): the plastic in `hull`, and printed along its length on the side that faces you
   (the print's middle faces -y, as a lathe's does), read from the brass toward the crimp, the brand, the load beside
   it and a maker's mark near the brass. Its brass head is stamped round the primer (`stamp`: [the top's words, the
   bottom's], pressed in). Own pictures: `hull.brand`, `hull.load`, `hull.mark` (turned a quarter, `rot` 90: your
@@ -1464,7 +1466,7 @@ printed or stamped thing on them one of their own pictures (§15), seen on the p
   shell's islands (`brass`, `hull`: `bake: false`, so the copies sharing them don't scramble an occlusion bake), as
   the recipe's `shells` say (a shell recipe's keys: hull, brass_mm, art, stamp). Its print is the design `shell_box`
   on each outside by `part` (`art`: `brand`, `gauge`, `length`, `load`, `pellets`, `speed`, `count`, `colors` [ground,
-  band, ink], `gold`, `hull`, `picture` shell | target | none, `warning`, `lot`, `tuck`): on the lid the gauge in a
+  band, ink], `gold`, `hull`, `picture` shell | target | heart | drop | none, `warning`, `lot`, `tuck`): on the lid the gauge in a
   dark disc, the brand, the load and its numbers, a shell drawn lying (or a target) and how many; on the front the
   brand and the load; on the back the brand, a warning and a barcode; the gauge on the ends; the lot on the bottom;
   "tuck in to close" on the flap. The inside plain card (`inside`). Own pictures: `lid.brand`, `lid.gauge`, `lid.load`,
@@ -1481,10 +1483,17 @@ of shells), `shells_box_5_open` (open 105°), `shells_box_25` (twenty-five stand
 **the explosive kind's** (DECISIONS 2026-11-09, latest: the weapons plugin's second shell kind) `shell_12ga_explosive` (a
 black hull printed in orange, high brass, its head stamped `12 GA HE`), `shell_12ga_explosive_spent` and
 `shells_box_5_explosive` (a black and orange box of five, "HE BURST SLUG", its warning its own), each `from` its normal
-one with what differs. PROPGEN's cases have `shell_12ga`, `shells_box_5` and `shells_box_25`; THUMBS keeps all eight with
-their passes. Into the weapons plugin: `shell_12ga.glb`, `shell_12ga_spent.glb`, `shells_box_5.glb` and the three
-explosive ones copied into its `models/` (the explosive kind, `shells/explosive.tres`, wears its shell and hull; a
-pickup of that kind its box).
+one with what differs; **the easter egg kinds'** (DECISIONS 2026-11-11: "a couple of new goofy ammo types, love hearts
+... water shells ... just some fun easter egg ones") `shell_12ga_heart` (a pink hull with little white hearts all
+round it, a heart in its mark's ring, low brass, stamped `12 GA XO`, "WITH LOVE"), `shell_12ga_heart_spent`,
+`shells_box_5_heart` (a pink box, a heart on its lid, "LOVE HEARTS · 7 HEARTS · HARMLESS", a warning of its own) and
+`shell_12ga_water` (a blue hull with drops, stamped `12 GA H2O`, "TAP WATER"), `shell_12ga_water_spent`,
+`shells_box_5_water` (a blue box, a drop on its lid, "WATER · 9 SPLASHES · SOAKING"); the shapes are `designs.py`'s
+`shape_pts` (`SHAPES`: a heart, a drop, turned as text is). PROPGEN's cases have `shell_12ga`, `shells_box_5` and
+`shells_box_25`; THUMBS keeps all fourteen with their passes. Into the weapons plugin: `shell_12ga.glb`,
+`shell_12ga_spent.glb`, `shells_box_5.glb`, the three explosive ones and the six easter egg ones copied into its
+`models/` (a kind, `shells/explosive.tres`, `shells/heart.tres`, `shells/water.tres`, wears its shell and hull; a
+pickup of that kind its box, by the kind's id).
 
 ## 32. Computers: the user's laptop and mouse (DECISIONS 2026-11-10, later still)
 

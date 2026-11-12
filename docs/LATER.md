@@ -54,6 +54,13 @@ records what's chosen.
   three ways blended: no seam anywhere. Also for later: the story's `skin` word naming a creature skin (the desk game's
   cast), a creature preset in the Studio naming the Godot skin it wants, and wet creatures (the sweat's beads over a
   creature skin).
+- **A black glossy eye under a strong lamp** (seen 2026-11-12 on the grey alien, GODOT_LOOK §5q): its eyes (black,
+  gloss 1) go white under CREATURESKIN's key light (9 at 3 m), the catchlight's lobe spread over the whole ball; fine
+  under a room's light. The eye shader's `catch_cap` caps a lobe per lamp, not what lands: cap it as the cloak's
+  glint is capped.
+- **The cloak, further**: a history buffer so it shimmers by its own movement on screen (a limb moving on a body
+  standing still); what's see-through behind her kept (it reads the opaque picture only); the story's `skin` word
+  naming it for a desk game's cast.
 
 - **A full bust, further** (2026-11-11, the Studio's Anime switch; CHARACTER_STUDIO §2e, TAILOR §1j). Four things
   it doesn't do, each small beside what's there:

@@ -47,6 +47,8 @@ STARTER = ROOT / "guides" / "first_game" / "starter"
 SFX = ROOT / "Content" / "Studio" / "SFX"                       # the sound shelf (docs/SFX.md, CC0)
 MOODS = ROOT / "Content" / "Studio" / "Music" / "moods"         # the music's moods (tools/score/moods.mjs)
 TAILS = ROOT / "Saved" / "SFX" / "tails"                         # the sounds' reverb tails (tools/sfx.py tails)
+KIMODO = ROOT / "GodotPlugins" / "HorrorStudioDirector" / "addons" / "horrorstudio_director" / "kimodo"   # the Kimodo reader and retarget
+SOMA = ROOT / "Content" / "Studio" / "soma77.json"              # Kimodo's skeleton (the retarget reads it)
 
 
 def project_godot(name):
@@ -95,6 +97,15 @@ def install(proj, starter=True):
         for f in MOODS.glob("*.ogg"):
             shutil.copy2(f, proj / "music" / f.name)
         did.append("music")
+    # Kimodo motions for a character's moves (starter/moves.gd): the Director's reader and retarget, the studio's code
+    # as the add-ons are (copied every time), and a folder to drop the .npz files into
+    if (KIMODO / "retarget.gd").is_file() and SOMA.is_file():
+        (proj / "kimodo").mkdir(exist_ok=True)
+        for f in ("npz.gd", "retarget.gd"):
+            shutil.copy2(KIMODO / f, proj / "kimodo" / f)
+        shutil.copy2(SOMA, proj / "kimodo" / "soma77.json")
+        (proj / "animations").mkdir(exist_ok=True)
+        did.append("kimodo (the Kimodo reader), animations/")
     for k in EX.KINDS:
         (proj / "exports" / k).mkdir(parents=True, exist_ok=True)
     return did

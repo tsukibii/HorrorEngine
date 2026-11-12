@@ -78,6 +78,7 @@ static func params(rec: Dictionary) -> Dictionary:
 		"limbal_soft": float(p.get("limbalSoft", 0.0)), "caustic": float(p.get("caustic", 0.6)) if real else 0.0,
 		"roughness": 0.4 - 0.34 * gloss, "coat_roughness": 0.18 - 0.16 * gloss,
 		"occlusion": 1.0, "sclera_bright": 0.58, "sclera_warm": 0.35,     # the lids' shadow and a white that isn't paper, warmer toward the corners (a doll's eyes glow: docs/GODOT_LOOK.md §5d, §5f)
+		"fx_pupil": float(p.get("pupil", 0.31)),                         # the painted pupil's share of the iris (HSEyeFx's glow leaves it a hole)
 		"socket": float(p.get("socket", 0.35)),                          # the socket's shade (the Studio's; an export from before it, the Studio's default)
 		"lid_room": LID_ROOM}
 
