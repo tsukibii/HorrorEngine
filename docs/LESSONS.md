@@ -5,6 +5,26 @@ the fix.
 
 ## The v2female base: what took a second try (2026-11-12)
 
+- **"It should look more feminine" is the fault described, not the brief: when there is an original, measure it
+  before designing anything.** The user said the base's shoulders and neck base looked uncanny. I answered from my
+  own idea of feminine (a long neck, shoulders sloped and narrowed), built two controls for it, tested and
+  pictured it. The user: match it to the original, as the face and the hair are. Her pictures had been in the
+  fitted frames the whole time, and they say the opposite: her head sits close on shoulders that are where MHR's
+  are, and what differs is the neck (a straight slim column; ours flared at its top). An hour of careful work on
+  the wrong target, which one overlay would have prevented.
+- **A base is the whole bust: look at what the user will look at, not at the part being fitted.** The head was held
+  to her pictures in frames that end at the chin, and "her shoulders begin lower" was written down from an outline
+  read before her head's tilt was taken off. A frame that ends at the chin cannot say whether a head suits its
+  body; and a tilted head raises one shoulder and lowers the other in the head's own frame (1.9 cm at 14 cm out
+  for 8 degrees): measure both sides and take the tilt off before saying where the shoulders are.
+- **A bald silhouette hides what stands in front of it.** From the front the shoulders' line crosses the neck's side
+  high up, because the trapezius rises behind the neck: the outline's corner is not where the neck ends. Her
+  neck's skin is visible in front of her collar far below that corner. Compare the neck as a column (its two
+  edges by height), and the shoulder line as a line, separately.
+- **A field's edge that runs slantwise across the mesh leaves a crease; where a narrow thing meets a wide one, the
+  run-in has to be as long as the join is in life.** Neck width reaching up under the ears first left a step under
+  the skull (12.5 cm to 9.5 within 2 cm) and notches behind the jaw. Under the jaw 3 cm is right (the jaw
+  overhangs); at the nape it needs 5, and the offsets behind the jaw are smoothed over the mesh.
 - **A width read off a picture by eye went into a base; fitted, it was 2 cm out.** "Her neck is about 7.5 cm" set
   Neck width to -1 and was committed. It came from the skin showing between two strands at one height, at a scale
   set by eye. With a camera fitted from landmarks, both edges of the neck are in the picture and it is a quarter

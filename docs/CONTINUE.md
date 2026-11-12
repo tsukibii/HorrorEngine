@@ -59,15 +59,21 @@ for it ("lets create a v2female base").
 - **Not matched, in order** (§10's list): the last 3 cm over the tie, the fringe's pieces, the sidelocks as ribbons and the plait, the red
   streaks, strands across the ear, her first picture's view (a fuller bulb behind the ear), the back.
 - **The v2female base is built** (DECISIONS 2026-11-12, v2female; docs/CHARACTER_STUDIO.md §2f): a fourth base
-  button and a switch in the Body tab, *what the feminine end becomes*: the feminine body, with eighteen plain
-  sculpt values for the head and the neck (`MHR_presets.json` `sculpt.v2female`), every slider still moving from
-  it; and the two controls it needed, **Neck width** (the whole neck about its own axis) and **Face taper** (the
-  face narrowing from the eyes down, no ledge). Off for new characters (nobody asked for the default to change).
+  button and a switch in the Body tab, *what the feminine end becomes*: the feminine body, with nineteen plain
+  sculpt values for the head, the neck and the shoulders (`MHR_presets.json` `sculpt.v2female`), every slider still
+  moving from it; and the controls it needed, **Neck width** (the whole neck about its own axis) and **Face taper**
+  (the face narrowing from the eyes down, no ledge). Off for new characters (nobody asked for the default to change).
   GROW and GROWPAGE (`QUICK=1`) hold it. **Ask the user for a local STUDIO and GROWPAGE** (docs/RUN_LOCALLY.md).
+- **Its neck and shoulders** (DECISIONS 2026-11-12, v2female's neck and shoulders): the user found the slim neck
+  on MHR's shoulders uncanny; my first answer (a long neck, sloped and narrowed shoulders) was wrong and the user
+  said so: match the original. Measured in the fitted frames: her shoulders are where MHR's are, her neck is a
+  straight column of about 9.3 cm. The base carries Neck width -0.7 (the field now reaches up under the ears, with
+  a longer run-in at the nape) and Neck base -0.3; nothing else. Shoulder slope stays as a slider, unused by the
+  base. The picture: `docs/studio_sheets/2026-11-12_v2female.jpg`.
 - **It is held to two of her pictures** (the scratch `rig2/joint.mjs`: MediaPipe's points on the body and the ear
   as the sculpt finds it against the same points in each picture, a camera fitted for each): the front one from
   9.5 degrees to her right and 5 above, rolled 7.9, the points 3.4 mm off; the other from 32 to her left and 14.5
-  below, 2.8 mm. The first version's neck (-1, from a width read by eye) was 2 cm too thin and is -0.4 now.
+  below, 2.8 mm. The first version's neck (-1, from a width read by eye) was too thin and the second (-0.4) too wide and flared at its top; it is -0.7 now.
   Not matched: her right ear's lean, her larger eyes, her shoulders (lower under the chin than MHR's, but covered).
 - **What her head's roll means for the hair** (found while fitting, not yet used): in the front picture her head is
   rolled 8 degrees and her hair hangs by the picture's own vertical, so against her head her right tail hangs

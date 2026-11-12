@@ -166,11 +166,15 @@ SCULPT = {"feminine": {"belly": -0.7},
           # the sculpt's own controls (every slider still moves from it): a slender neck (Neck width: MHR's shapes
           # can't slim it), a small lower face (Face length and Face taper: shorter and narrower together), eyes larger
           # and further apart, a smaller nose and mouth. Held to two of her pictures by their landmarks and outlines
-          "v2female": {"belly": -0.7, "neck_width": -0.4, "eye_spacing": 1.6, "eye_size": 0.7, "nose_size": -0.4,
+          "v2female": {"belly": -0.7, "neck_width": -0.7, "eye_spacing": 1.6, "eye_size": 0.7, "nose_size": -0.4,
                        "nose_projection": -0.22, "nose_length": 0.35, "nose_bridge": -0.22, "mouth_width": -0.72,
                        "lips": 0.13, "brow_ridge": -0.18, "forehead_slope": 0.45, "chin_length": -0.15,
                        "chin_width": -0.8, "jaw_width": -0.5, "cheekbones": -0.2, "face_height": -0.8,
-                       "face_taper": -1.0}}
+                       "face_taper": -1.0,
+                       # the neck's base, as her pictures have it (the user, 2026-11-12: match the neck's shape to the
+                       # shoulders as the face and the hair are matched): the rise from shoulder to neck a little lower
+                       # beside the neck. Her shoulders themselves are where MHR's are: nothing else moves
+                       "neck_base": -0.3}}
 # a base that is another's body with a sculpt of its own: its MHR weights are that base's (clothes cut for one fit the other)
 # (written into the file by hand, 2026-11-12: `presets` fits the bodies again and no longer lands on the committed weights
 # (feminine up to 0.9 off, masculine 1.6), which every character made on a base depends on. Don't run it to add a base.)
@@ -197,7 +201,7 @@ def make_presets(path=PRESETS_FILE):
     for name, of in SAME_BODY.items(): out[name] = list(out[of])
     path.write_text(json.dumps({"about": "MHR identity weights for the Character Studio's bases (tools/character/mhr.py presets), "
                                          "and the sculpt each base carries (sculpt.js's controls); v2female is the feminine "
-                                         "base's body with a sculpt of its own for the head and the neck: what the feminine "
+                                         "base's body with a sculpt of its own for the head, the neck and the shoulders: what the feminine "
                                          "end becomes when it is picked (DECISIONS 2026-11-12, v2female)",
                                 "presets": out, "sculpt": SCULPT}, indent=1), encoding="utf-8")
     return out

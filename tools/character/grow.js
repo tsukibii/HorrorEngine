@@ -290,4 +290,4 @@ export function limits(id, monster, anime = false) {
 // how far a control's whole value may go whatever the sliders say (past it the field turns the skin inside out: a nose
 // narrowed to nothing, lips pushed through the teeth, an arm pinched to a thread): [least, most]
 export const REACH = { nose_size: [-2.3, 9], nose_projection: [-1.7, 9], lips: [-1.6, 9], ears_size: [-1.6, 9], upper_arms: [-2.2, 9], forearms: [-2.2, 9], eye_size: [-2.4, 9], face_height: [-3, 3.4],
-                       skull_back: [-1.2, 9], neck_length: [-1.6, 9], neck_width: [-1.4, 9], fingers: [-2.4, 9], torso_length: [-2.4, 9], ears_out: [-1.1, 9], ears_point: [-0.5, 9] };
+                       skull_back: [-1.2, 9], neck_length: [-1.6, 9], neck_width: [-1.4, 9], neck_base: [-2.3, 1.9], shoulder_slope: [-3.4, 1.8], fingers: [-2.4, 9], torso_length: [-2.4, 9], ears_out: [-1.1, 9], ears_point: [-0.5, 9] };

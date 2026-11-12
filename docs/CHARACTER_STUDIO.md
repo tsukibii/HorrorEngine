@@ -391,7 +391,7 @@ ties could not be judged closer than 2 cm while the head and the neck under it w
 
   | control | value | | control | value |
   |---|---|---|---|---|
-  | Belly | -0.7 (the feminine base's) | | Neck width | -0.4 |
+  | Belly | -0.7 (the feminine base's) | | Neck width | -0.7 |
   | Face length | -0.8 | | Face taper | -1 |
   | Eye spacing | 1.6 | | Eye size | 0.7 |
   | Nose size | -0.4 | | Nose projection | -0.22 |
@@ -400,8 +400,9 @@ ties could not be judged closer than 2 cm while the head and the neck under it w
   | Brow ridge | -0.18 | | Forehead slope | 0.45 |
   | Chin length | -0.15 | | Chin width | -0.8 |
   | Jaw width | -0.5 | | Cheekbones | -0.2 |
+  | Neck base | -0.3 | | | |
 
-  Eighteen plain values on the Sculpt's own controls: a base is a starting point, and nothing in it is locked. The
+  Nineteen plain values on the Sculpt's own controls: a base is a starting point, and nothing in it is locked. The
   character's own sliders and circles add to them (`sculptValue`: its own, its base's, its age's and Cutify's, eased
   into the control's limit), so the user's "which still allows face sculpting" holds by construction: a character on
   v2female with Eye size at -0.7 has the feminine base's eyes again.
@@ -412,14 +413,18 @@ ties could not be judged closer than 2 cm while the head and the neck under it w
   as they were. The body's cache key carries it (`bodyKey`: its weights are the feminine base's, so nothing else
   would tell the two apart and the clothes cut for one would be kept for the other). A creature's card turns it off
   (a creature is its own whole shape). New characters start without it.
-- **Two controls it needed** (`sculpt.js`), both for anyone:
+- **Controls made for it** (`sculpt.js`), all for anyone (Shoulder slope was made for the first answer about the
+  shoulders and is not used by the base):
   - **Neck width** (Body). MHR's neck could not be slimmed: the sculpt's *Neck* is the throat under the jaw alone
     (it stops 7.5 cm from the neck's axis; the widest of the neck is its back and sides, further out), and MHR's
     identity shapes make a whole body heavier or lighter. Neck width moves every point of the neck toward its own
     axis or away from it, 30% at -1. *Its axis* is the line through the neck's middle (front to back) at two heights
     of the neck proper, 1.45 m and 1.2 cm under the chin. *Where it ends above* goes by the bearing round that axis:
-    at the front just under the chin, round the side along the jaw's line, at the back up the nape to under the
-    skull; it fades over the last 3 cm under that line, so the jaw, the chin and the skull stay. *Below* it fades in
+    at the front just under the chin, round the side along the jaw's line, then from just behind the jaw up to under
+    the ear and the skull's base and so round the nape; it comes in over 3 cm under that line at the front and sides
+    (the jaw overhangs the neck anyway) and over 5 cm at the back, where the skull runs down into the nape, and
+    behind the jaw its offsets are smoothed over the mesh (three rounds), so the jaw, the chin and the skull stay
+    and no step or crease is left under the skull. *Below* it fades in
     from 1.405 to 1.46 m, and out from 8 to 12.5 cm off the axis (the shoulders are not the neck). *Its reach* is
     -1.4 (`grow.js` `REACH`): past it the triangles where the neck runs into the shoulders turn over.
   - **Face taper** (Face, with a circle of its own on the jaw). The face narrowing from the eyes down to the chin,
@@ -430,14 +435,39 @@ ties could not be judged closer than 2 cm while the head and the neck under it w
     makes a small lower face, shorter and narrower together. (Jaw width is a spot at the jaw's angle and Chin width
     a spot at the chin: pulled in far, they leave the cheek above them as a ledge. A band along the jaw's own line
     was tried first and did the same.)
+  - **Shoulder slope** (Body; the Shoulder circle moves it up and down as it moves Shoulders sideways). The
+    shoulders' points and the arms lower (or higher), the line from the neck coming down to them: nothing within
+    7 cm of the middle, all of it (3 cm at 1) from 19 cm out, the arm whole. Its reach is 1.8 (past it the armpit
+    folds).
+  - **Neck base** (Body, with a circle of its own on the shoulder's top). The rise from the shoulders up to the neck,
+    the trapezius' top edge: hollowed and lower, or fuller and higher. Only the top of the shoulder between the
+    neck's root and the shoulder's point, most 9 cm out (2.5 cm at 1), nothing at either end. Its reach is -2.3 to
+    1.9.
+- **The neck and the shoulders** (the user, on seeing the base: "the shoulders and base of neck ... looks a bit
+  uncanny when it should look more feminine"; then, on my first answer, a long neck on sloped, narrowed shoulders:
+  "instead of doing the long neck ... try match the neck shape to the shoulders in a same way" as the face and the
+  hair are matched). Measured in the fitted frames of her front and three-quarter pictures:
+  - **her shoulders are where MHR's are.** Her collar's line lies 0.75 cm over our shoulder line at 14 cm out
+    once the 8 degrees her head is tilted on her body are taken off (they raise one side and lower the other by
+    1.9 cm there, which is what the two sides showed), and a collar is about that thick. Her head sits close on
+    her shoulders. Nothing is dropped, sloped or narrowed.
+  - **her neck is a straight column**, about 9.3 cm across from under the ears to the collar (the head's own
+    units). Ours was 10.2 to 11 from the chin's level down and wider still under the ears, because Neck width
+    stopped at the jaw's height all the way round to behind the ear: a neck that flared at its top. The field now
+    climbs to under the ear just behind the jaw, and the base carries -0.7: **9.2 to 9.9 cm against her 9.1 to 9.4
+    from the chin's level to 2.5 cm under it.**
+  - **the rise from her shoulders to her neck is a little lower beside the neck**: Neck base -0.3 (the collar's
+    line is all there is to go on; -0.6 put our skin under where hers can be).
+  - The first answer's picture is not kept; the one in the repo is the base as it is.
 - **Held to her pictures.** The first version (the same day) was made from proportions read off one picture by eye
   and carried Neck width at -1. Then the head was laid against two of her pictures properly (the scratch
   `rig2/joint.mjs`: landmarks on the body, MediaPipe's points through `MHR_landmarks.json` and the ear as the sculpt
   finds it, against the same points in each picture; each picture's camera fitted, the misses in millimetres), and:
-  - **her neck is 1.27 times as wide as her eyes are apart**, and both of its edges are in the picture (the head is
-    turned 10 degrees on it, which is why its middle is not under the chin and why one edge was missed the first
-    time). At -1 ours was 1.10 (7.4 cm against eyes 6.7 apart) and, from the side, dented at the nape. At **-0.4**
-    it is 1.34 (9.0 cm).
+  - **her neck is 1.22 to 1.27 times as wide as her eyes are apart** (124 to 129 px against 101.9), and both of
+    its edges are in the picture (the head is turned 10 degrees on it, which is why its middle is not under the
+    chin and why one edge was missed the first time). At -1 ours was 1.10 (7.4 cm against eyes 6.7 apart) and,
+    from the side, dented at the nape. At -0.4, the second try, 1.34. At **-0.7**, with the field reaching under
+    the ears, 1.19 (8.0 cm at its narrowest).
   - **her lower face is short**: the chin 1 cm higher than ours, the mouth 3 mm, the nose's tip 3 mm *lower*; and
     with the chins aligned her jaw's outline is ours on the side where it is clear of hair. So the face is shorter
     under the eyes (Face length -0.8, with the nose let down again by Nose length) and narrower in step with it
@@ -447,15 +477,20 @@ ties could not be judged closer than 2 cm while the head and the neck under it w
     points landed, the face looked wrong), the chin back by 8 mm (her mouth is open in that picture).
   The landmarks now land 3.4 mm off in the front picture and 2.8 in the other (4.7 and 3.7 on the first version):
   the eyes, nose, mouth and far ear within 2.5 mm.
-- **Measured** (GROW, on MHR's base at 1.70 m): the neck at its narrowest from the front 10.3 cm on the feminine
-  base, 7.4 with Neck width at -1, **9.0 on v2female**. Neck width alone moves the chin, the nose, the mouth, the
-  eyes, the head's sides and the forehead 0.00 mm, the jaw's angles 1.3 mm; held at its reach none of the 1214
-  triangles it moves is turned past a right angle. The masculine base is the same with v2female on to the bit. The
+- **Measured** (GROW: bodies at the feminine adult's own height, 1.63 m): the neck at its narrowest from the front 10.3 cm on the feminine
+  base, 7.2 with Neck width at -1, **8.0 on v2female**. Neck width alone moves the chin, the nose, the mouth, the
+  eyes, the head's sides and the forehead 0.00 mm, the jaw's line by the mouth 0.0 mm, and under the ear behind
+  the jaw it comes in 6.6 mm (meant); held at its reach none of the 1306 triangles it moves is turned past a right
+  angle. The masculine base is the same with v2female on to the bit. The
   face: the eyes 6.7 cm apart (the feminine base's 5.7), each 27.1 mm corner to corner (24.7), 9.1 cm from the
   eyes' line to the chin (10.1), 9.7 cm between the jaw's angles (10.7), 6.3 across the jaw by the chin (7.5), the
   mouth 3.8 (4.8). Face taper at -1 alone: the jaw by the chin 16% nearer the middle, at the mouth's height 10%, the
   mouth's corners 7%, the eyes and the ears 0.2 mm; at one height every point within 2.4% of the same proportion;
-  no triangle turned at 3 either way.
+  no triangle turned at 3 either way. Shoulder slope at 1 alone: the arm down whole by 30 mm and nothing sideways,
+  13 to 17 mm halfway out, 0.00 mm within 7 cm of the middle, from the chin up and on the trunk under the armpits.
+  Neck base at 1 alone: 25 mm at 9 cm out, 0.00 mm within 4.5 cm of the middle, from the shoulder's point out and
+  from the chin up. **v2female's neck base**: the top of the shoulder 9 cm out 0.7 cm lower than the feminine
+  base's, the shoulder's point where it was.
 - **Outside the page**: `tailor/node.mjs` `grownBody(m, { base: -1, v2: 1, ... })`; `grow.js` `V2FEMALE` is what the
   hair editor's test body adds to it (`hair2/node.mjs` `bodyByName("v2female")`: 1.62 m and a full bust, for tails to
   lie on), `node tools/character/hair2/make.mjs --body v2female`.
@@ -469,16 +504,19 @@ ties could not be judged closer than 2 cm while the head and the neck under it w
 - **Not matched, and known**: her right ear in the front picture leans more than ours (its top 5 mm further out,
   its lobe 7 mm further in; her left ear in the other picture fits within 2 mm: no control was made for one ear in
   one picture). Her shoulders begin lower under the chin than MHR's (a longer neck, or sloping shoulders, or her
-  pose: the collar and the hair cover them, so nothing was changed; *Neck length* is there for it). Her eyes are far
+  pose: this was read off too early. Measured with her head's tilt taken off, they are where MHR's are: above). Her eyes are far
   larger than Eye size makes them.
-- **Known in Neck width**: past about -0.7 it dents the nape under the ears (seen from the side on a bald head: where
-  it ends above changes quickly with the bearing there). v2female's -0.4 is clear of it; a character that takes the
-  slider on down is not.
+- **Known in Neck width**: its first form dented the nape under the ears past about -0.7. The longer run-in at the
+  back and the smoothing behind the jaw were made for that and looked at on v2female's -0.7 (from the side, behind
+  and three quarters: a smooth taper); further down the slider nobody has looked.
 - **A side effect to know**: the hair tools size a head by its height from the top to the chin (`salonref.js`
   `headFrame`). v2female's chin is 1 cm higher, so its frame is 6.6% smaller than the feminine base's (0.868
   against 0.929) on the same skull, and hair grown from the same numbers is that much smaller on it.
-- **Not yet**: no picture of it in `docs/studio_sheets/` (drawn on the CPU here; ask for one); no outfit has been
-  looked at on its neck; the wardrobe's dummy and the outfits' cards are the plain bodies.
+- **Picture** (Godot's, of the hair tool's bare head and shoulders: no skin, no eyes): `docs/studio_sheets/2026-11-12_v2female.jpg`
+  (the feminine base and v2female; from the front, three quarters, the side and behind).
+- **Not yet**: no outfit has been looked at on its neck and shoulders (clothes are cut on the body, so they follow;
+  nobody has looked); the wardrobe's dummy and the outfits' cards are the plain bodies; seen in the Studio's own
+  T-pose view only by the user.
 
 ## 3. Each stage against the rule (as of this branch)
 

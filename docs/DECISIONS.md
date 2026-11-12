@@ -2,6 +2,26 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, v2female's neck and shoulders (the user, on seeing the base, twice)
+
+- **"Could you modify the shoulders and base of neck to match that shape of the head and thinner neck, looks a bit
+  uncanny when it should look more feminine."** I answered it from my own idea of feminine: a longer neck, the
+  shoulders sloped and narrowed, and showed that.
+- **"Instead of doing the long neck in a similar way you're matching the face and hair to the original, try match the
+  neck shape to the shoulders in a same way."**
+- **What this sets:** the neck and its join to the shoulders are held to the user's pictures, as the face and the hair
+  are: measured in the fitted frames, not styled. The long neck and the sloped, narrowed shoulders are taken out.
+- **What the pictures say** (the front one and the three-quarter one; docs/CHARACTER_STUDIO.md §2f): her neck is a
+  straight column from under the ears to the collar, about 9.3 cm across where ours was 10.2 to 11 and flared at its
+  top; her shoulders' line is where MHR's already was, within the thickness of her collar (her head sits close on
+  her shoulders: nothing like a long neck); the rise from shoulder to neck is a little lower beside the neck.
+- **What the base carries now:** Neck width -0.7, reaching up under the ears and behind the jaw; Neck base -0.3;
+  the shoulders as the feminine base's. From the chin's level to 2.5 cm under it the neck is within about half a
+  centimetre of hers.
+- **Left in as sliders, not used by the base:** Shoulder slope (made for the first answer). Neck base is used.
+- **A rule for me from this:** when the user says a part looks wrong and there is an original, the original is
+  measured before anything is designed. "More feminine" was a description of the fault, not a brief.
+
 ## 2026-11-12, v2female (the user: "lets create a v2female base")
 
 - **"lets create a v2female base."** After the finding below (the 1:1): the error left by the twin tails' ties is the
@@ -21,7 +41,7 @@ The user's answers, newest first. They override the plan, the research and the d
 - **Corrected the same day, and why it matters:** the first version carried Neck width at -1 (a neck of 7.4 cm), from
   a width I had read off her picture by eye as "about 7.5". Laid against two of her pictures with fitted cameras, both
   edges of her neck are there and it is 1.27 times as wide as her eyes are apart; ours at -1 was 1.10, and dented at
-  the nape from the side. The base carries **-0.4** (9.0 cm on a 1.70 m body, 1.34) now, a face 1 cm shorter under the eyes and narrower with it, a
+  the nape from the side. The base carries **-0.4** (9.0 cm on the 1.63 m body GROW measures, 1.34) now, a face 1 cm shorter under the eyes and narrower with it, a
   smaller mouth. The landmarks land 3.4 and 2.8 mm off in the two pictures (4.7 and 3.7 before).
 - **Mine, not the user's:** it is **off for new characters**, which start where they always did (halfway between the
   bases). Nobody asked for the default to change; say so if every new character should start on it. Characters saved
