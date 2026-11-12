@@ -943,6 +943,43 @@ Stand by the bed with her place in a corner of your view and nothing happens eit
 <tr><td><b>Scare</b> off, <b>Sound</b> <code>knock_three</code>, <b>Sound At</b> <code>Door</code></td><td>three knocks at the door, heard through it</td></tr>
 <tr><td><b>Say</b> "Three knocks. Someone is at the door.", <b>Fact</b> <code>knocked_304</code></td><td>a fact for whatever you build next</td></tr>
 </table>
+
+<h3 id="shown">Things that aren't where they were</h3>
+<p>What you build next with that fact: the hotel's slippers. A pair stands just inside 304's door when you come in.
+After the knocks, once you aren't looking, that pair is gone and there's one beside the bed, toes to it. Nobody came
+in. One script does both, <code>starter/shown.gd</code>: something that's there, or isn't.</p>
+<figure><img src="img/slippers.jpg" width="1600" height="900" alt="A pair of pale slippers on the carpet beside the bed in room 304, their toes toward the bed"><figcaption>After the knocks: the slippers that were at the door, by the bed.</figcaption></figure>
+<p>Make the two pairs first, both under <code>Things</code>: a <span class="node">Node3D</span> <code>Slippers</code>
+on the floor just inside 304's door and a <span class="node">Node3D</span> <code>SlippersByBed</code> beside the bed,
+each with four small <span class="node">MeshInstance3D</span> boxes (two soles 9.5 × 1.8 × 25 cm, a strap over each
+one's toes). Any two models of yours do as well. Then under <code>Slippers</code> add a <span class="node">Node</span>
+named <code>Shown</code> with <code>starter/shown.gd</code>:</p>
+<table class="vals">
+<tr><td><b>Hidden When</b> <code>knocked_304</code></td><td>gone while that fact is set (it never is unset: gone for good)</td></tr>
+<tr><td><b>When Unseen</b> on</td><td>it waits until you can't see either place</td></tr>
+<tr><td><b>Swap With</b> <code>../../SlippersByBed</code></td><td>there only while this pair isn't: it starts hidden by itself</td></tr>
+<tr><td><b>Size M</b> 0.3</td><td>about how big it is, for "you can see it"</td></tr>
+</table>
+<p>And a thing that starts <i>gone</i> and appears, by a flag a task switches. Add a third pair,
+<code>Slippers308</code>, in the corridor at 308's door, toes to the door, with its own <code>Shown</code>:</p>
+<table class="vals">
+<tr><td><b>Shown</b> off</td><td>how it starts: not there when you come up</td></tr>
+<tr><td><b>Shown When</b> <code>checked_in</code>, <b>When Unseen</b> on, <b>Size M</b> 0.3</td><td>there while that flag is on</td></tr>
+</table>
+<p><code>checked_in</code> is a flag you just made up by typing it. Switch it on from the quest: select <code>Story</code>
+and add one line to <b>Task Flags</b>: <code>find304: +checked_in</code>. When the task <code>find304</code> is ticked
+the flag goes on, and by the time you next step into the corridor someone is in 308.</p>
+<table class="keys">
+<tr><td>The Story's words</td><td>Shown When and Hidden When take the same words as every Needs: <code>task:key</code> (that task ticked), <code>on:key</code> (on your list, not done), a flag's name, <code>!flag</code> (while it's off), several apart by commas</td></tr>
+<tr><td>By an event</td><td>give any area, cue, scare or moment the Shown node as its <b>Target</b>: its <code>fire</code> does <b>On Fire</b> (toggle, show or hide)</td></tr>
+<tr><td>Task Flags</td><td><code>key: +a, -b, ~c</code> when a task is ticked (+ on, − off, ~ flipped); <code>added key: +a</code> when it's put on the list. <b>Flags Start</b>: flags that are on from the beginning</td></tr>
+<tr><td>A flag switch</td><td><code>starter/flag_switch.gd</code> on a Node does the same from the scene: its <b>Flags</b>, by <code>fire</code> or by itself when its <b>When</b> comes to hold</td></tr>
+<tr><td>Also, Fade Secs</td><td>more things that go with it; a fade instead of at once</td></tr>
+<tr><td>From a script</td><td><code>$Things/Slippers/Shown.vanish()</code>, <code>.appear()</code>, <code>.toggle()</code>; <code>$Story.set_flag("checked_in")</code></td></tr>
+</table>
+<div class="note">Nothing is deleted: the thing is hidden and its own colliders go off with it. A piece of furniture
+that came with the interior hides too, but stays solid (it's part of its room's one collider), so use this on things
+you placed yourself.</div>
 </section>
 
 <section id="hud">
@@ -1395,7 +1432,7 @@ game as these steps say and plays all of it.</p>
 <tr><td><b>Scene builder</b></td><td>rooms on two floors, a dog-leg stair, doors locked by a key, windows, furniture, lamps, paint, the export: <a href="#plan">§3</a> to <a href="#export">§8</a>, or the <a href="#ready">ready-made floor</a></td></tr>
 <tr><td><b>Character Studio</b></td><td>her, a Studio export with its skin wet (a stand-in when you have none): <a href="#scene">§10</a>, <a href="#her">§20</a></td></tr>
 <tr><td><b>Look plugin</b></td><td>the look and the grade, light zones, the tube and dying bulb presets: <a href="#light">§11</a>; rain on glass, a car's lights, a CRT, a real mirror, a wet floor, blood, a light shaft, a leak and a puddle, leaves' shadows, the tape: <a href="#dress">§12</a>; the air, its dust and the beam: <a href="#air">§13</a>; lightning, breath and frost, steam writing: <a href="#intense">§22</a>; made props' effects (HSPropFX) and a liquid's level (HSLiquidFill): <a href="#breaks">§28</a>; her looks (other eyes, creature skins, the cloak), the look viewer, a switch a fact and an event turn: <a href="#looks">§30</a></td></tr>
-<tr><td><b>Starter kit</b> (44 scripts, 3 seats to drop)</td><td>the player, flashlight, story, pocket and cash, sound and its physics, room tones, footsteps, notes, pickups, doors and locks, event and scare areas, lights: <a href="#story">§15</a> to <a href="#jump">§21</a>; fear, the steps behind you, her signs, the glimpse, the one closer each time, the mirror figure, the shadow, the feet, the uncanny, the night's director and its moments, her menace, the searcher, the chase, the cold, the steam: <a href="#intense">§22</a>; cues and seats: <a href="#cues">§23</a></td></tr>
+<tr><td><b>Starter kit</b> (49 scripts, 3 seats to drop)</td><td>the player, flashlight, story, pocket and cash, sound and its physics, room tones, footsteps, notes, pickups, doors and locks, event and scare areas, lights: <a href="#story">§15</a> to <a href="#jump">§21</a>; fear, the steps behind you, her signs, the glimpse, the one closer each time, the mirror figure, the shadow, the feet, the uncanny, the night's director and its moments, her menace, the searcher, the chase, the cold, the steam: <a href="#intense">§22</a>; cues and seats: <a href="#cues">§23</a></td></tr>
 <tr><td><b>Sound shelf and moods</b></td><td>the four moods, a tone for each room, every sound placed and traced through the rooms: <a href="#sound">§14</a>, <a href="#body">§22</a></td></tr>
 <tr><td><b>UI plugin</b></td><td>HSHud (the reticle, the keys, the pocket as a row of the things themselves), HSQuestMarker coming and going with the to-do list: <a href="#hud">§24</a>; HSModelSlot in the pocket's row and the shop's cards</td></tr>
 <tr><td><b>Devices plugin</b></td><td>the laptop, its terminal, the Order tab a page per category, things as files in a catalog's folder, locks shown as a ?, NEW: <a href="#laptop">§25</a>; delivery, parcels with a marker each, unboxing into the hands: <a href="#parcel">§26</a></td></tr>
@@ -1410,6 +1447,7 @@ way to use them yet:</p>
 <tr><td><b>A book in the hands</b></td><td>a journal whose pages are written in a hand, turned with the arrows: the runtime's <code>book.gd</code> (here a note is a card)</td></tr>
 <tr><td><b>Faces</b></td><td>expressions from the Face page played on her face: the runtime's <code>face.gd</code> (here only <code>uncanny.gd</code>'s smile and stare)</td></tr>
 <tr><td><b>The hunt</b></td><td>a hidden quest from the order to the gun: who hunts, her spots in the corridor, the warning and the rush in the dark, 304 safe; her moves from Kimodo clips (<code>moves.gd</code>: here she slides until you make them): <a href="#hunt">§31</a></td></tr>
+<tr><td><b>Things that come and go, flags</b></td><td>the slippers at 304's door, by the bed after the knocks; a pair at 308's door once 304's found, by a flag a task switches (<code>shown.gd</code>, the Story's Task Flags): <a href="#shown">§23</a></td></tr>
 <tr><td><b>Sanity</b></td><td>worn down by the dark, her and the scares; the desk chair, 304's bed and the shop's food mend it; no sleep until she's shot; the hunt and the director faster as it falls (<code>sanity.gd</code>): <a href="#sanity">§31, 6</a></td></tr>
 <tr><td><b>Close calls</b></td><td>reloading with her nearly on you, she falters just long enough, once a chase (<code>close_call.gd</code> under both of her): <a href="#closecall">§31, 7</a></td></tr>
 <tr><td><b>Her moves, edited</b></td><td>an animation library with cards, On stage per quest, paths: the Director's Animate tab. By hand, <code>moves.gd</code> plays a clip per behaviour: <a href="#huntmoves">§31</a></td></tr>

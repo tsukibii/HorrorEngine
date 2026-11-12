@@ -189,6 +189,14 @@ func _initialize() -> void:
 	var be := v3(cfg["bed_eye"])
 	await shot("cue", be, be + Vector3(0.342, 0.940, 0.0), 50)
 	await shot("bed_view", be, be + Vector3(1.0, 0.1, 0.12), 40)       # the same pillow, looking down the bed to its foot: where seat.gd puts your eye
+	# the slippers that were at the door, by the bed (shown.gd's swap, set by hand for the picture)
+	var s_in: Node3D = main.get_node("Things/Slippers")
+	var s_bed: Node3D = main.get_node("Things/SlippersByBed")
+	s_in.visible = false
+	s_bed.visible = true
+	await shot("slippers", s_bed.global_position + Vector3(0.9, 1.25, -1.0), s_bed.global_position + Vector3(0, 0.05, 0.15), 40)
+	s_bed.visible = false
+	s_in.visible = true
 	bfig.visible = false
 	hud_on.call(true)
 	var b: Dictionary = R["r304_bath"]

@@ -25,7 +25,14 @@ The user's answers, newest first. They override the plan, the research and the d
   - **`flag_switch.gd`**, a node for the same: its `flags` (`+name`, `-name`, `~name`), done by `fire()` or by itself
     when the Story's words come to hold (`when = "task:key"`), `again`, `needs`.
 - MIND plays them. **Not done**: a piece of an interior's export stays solid when hidden (it's part of its room's one
-  collider; a prop you placed yourself isn't); not in tutorial v2's game; Director and desk games.
+  collider; a prop you placed yourself isn't); Director and desk games.
+- **"include it as part of the tutorial v2"** (the next message). In tutorial v2's game and its guide (§23, *Things
+  that aren't where they were*): the hotel's **slippers**. A pair just inside 304's door; once the knocks have come
+  (the fact `knocked_304`) and only while you can't see either place, it's gone and a pair is beside the bed, toes to
+  it (`hidden_when`, `when_unseen`, `swap_with`). And a pair outside 308's door that isn't there when you come up
+  (`shown` off): there once 304's found, by the flag `checked_in`, which the Story's Task Flags switch on when
+  `find304` is ticked. TUTORIAL2 plays both; a picture of the pair by the bed. The flag switch node is described
+  there, not placed.
 
 ## 2026-11-12, after the seats (the user: more intensifiers; a light that flickers on her, phasing, "am I going crazy")
 

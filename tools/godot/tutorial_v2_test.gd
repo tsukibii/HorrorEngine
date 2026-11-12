@@ -32,6 +32,7 @@ var story: Node
 var sound: Node
 var torch: SpotLight3D
 var cfg: Dictionary
+var slip_start: Array = []                               # the slippers and the flag as the game starts
 var no_sleeps: Array = []                                # why Sanity said you couldn't sleep, each time you lay down
 
 
@@ -157,6 +158,8 @@ func _initialize() -> void:
 	var her := main.get_node("Her") as Node3D
 	var again := main.get_node("HerAgain") as Node3D
 	var fl := float(cfg["floor"])
+	await frames(3)
+	slip_start = [main.get_node("Things/Slippers").visible, main.get_node("Things/SlippersByBed").visible, main.get_node("Things/Slippers308").visible, story.is_set("checked_in")]
 	# the night's director (dread.gd): faster for the check (the game's own gaps are 25 to 70 s); each moment checked as it comes
 	main.get_node("Weather/Lightning").every = 0.0         # (the check's: its own strikes only when asked, below)
 	var dread: Node = main.get_node("Dread")
@@ -689,6 +692,24 @@ func _initialize() -> void:
 		bad("the player's doing(): up from the chair %s, walking %s, running %s, still %s" % [up2, walking, running, still])
 	root.size = size0
 	await frames(2)
+	# things that aren't where they were (shown.gd), and a flag a task switched (the Story's Task Flags): the pair of
+	# slippers inside 304's door is gone and one is by the bed once the knocks have come and you aren't looking; a
+	# pair outside 308's door that wasn't there at the start, since find304 was ticked
+	var s_in := main.get_node("Things/Slippers") as Node3D
+	var s_bed := main.get_node("Things/SlippersByBed") as Node3D
+	var s_308 := main.get_node("Things/Slippers308") as Node3D
+	var s_mid := (s_in.global_position + s_bed.global_position) * 0.5
+	look(Vector3(2.0 * player.global_position.x - s_mid.x, fl + 1.5, 2.0 * player.global_position.z - s_mid.z))   # away from both places
+	var swapped: bool = await until(func() -> bool: return not s_in.visible and s_bed.visible, 2.0)
+	var toes := -s_bed.global_basis.z
+	var bed_at2 := v3(cfg["boxes"]["r304_kt_bed_double_1"]["at"])
+	say("slippers", "at the start: the pair at 304's door %s, by the bed %s, at 308's door %s, the flag checked_in %s; find304 ticked: the flag %s, a pair at 308's door %s; the knocks have come and you're looking away: the door's pair gone %s (still in the scene %s), a pair by the bed %s, %.2f m from its side, toes to it %s" % [
+		slip_start[0], slip_start[1], slip_start[2], slip_start[3], story.is_set("checked_in"), s_308.visible, not s_in.visible, s_in.is_inside_tree(), s_bed.visible,
+		absf(s_bed.global_position.z - bed_at2.z), toes.z > 0.9])
+	if slip_start != [true, false, false, false] or not story.is_set("checked_in") or not s_308.visible:
+		bad("the slippers at the start %s (the door's there, the bed's and 308's not, no flag); once 304's found the flag %s and 308's pair %s" % [str(slip_start), story.is_set("checked_in"), s_308.visible])
+	if not swapped or not s_in.is_inside_tree() or toes.z < 0.9:
+		bad("after the knocks, unseen: the door's slippers gone %s and a pair by the bed %s, toes to it %s" % [not s_in.visible, s_bed.visible, toes.z > 0.9])
 	# only in the mirror (mirror_figure.gd, armed by InBath): her in the tub behind you in the bath's mirror; nobody when you turn round
 	var bd := door("door_304_bath")
 	var bdp := bd.global_position + bd.global_basis.x * 0.38 + Vector3.UP * 1.0

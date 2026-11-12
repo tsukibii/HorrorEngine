@@ -285,7 +285,7 @@ ext = [("PackedScene", "res://exports/interiors/hotel_floor/hotel_floor.glb", "h
        ("Script", "res://starter/cue.gd", "cue"), ("Script", "res://starter/seat.gd", "seat"), ("Script", "res://starter/cold_area.gd", "cold"), ("Script", "res://starter/steam_mirror.gd", "steam"),
        ("Script", "res://starter/searcher.gd", "searcher"), ("Script", "res://starter/chase.gd", "chase"),
        ("Script", "res://starter/hunt.gd", "hunt"), ("Script", "res://starter/hunt_spot.gd", "huntspot"), ("Script", "res://starter/moves.gd", "moves"),
-       ("Script", "res://starter/sanity.gd", "sanity"), ("Script", "res://starter/close_call.gd", "closecall"),
+       ("Script", "res://starter/sanity.gd", "sanity"), ("Script", "res://starter/close_call.gd", "closecall"), ("Script", "res://starter/shown.gd", "shown"),
        ("Script", "res://addons/horrorstudio_look/nodes/air_zone.gd", "airzone"), ("Script", "res://addons/horrorstudio_look/nodes/light_shaft.gd", "shaft"),
        ("Script", "res://addons/horrorstudio_look/nodes/wall_leak.gd", "leak"), ("Script", "res://addons/horrorstudio_look/nodes/puddle.gd", "puddle"),
        ("Script", "res://addons/horrorstudio_look/nodes/pattern_light.gd", "pattern"), ("Script", "res://addons/horrorstudio_look/nodes/tape.gd", "tape"),
@@ -317,7 +317,10 @@ subs = [("StandardMaterial3D", "paper", ["albedo_color = Color(0.93, 0.91, 0.84,
         ("BoxMesh", "pack", ["size = Vector3(0.06, 0.022, 0.09)", 'material = SubResource("cells")']),
         ("BoxShape3D", "jumpbox", ["size = Vector3(1.0, 2.5, 1.9)"]),
         ("BoxShape3D", "coldbox", [f"size = Vector3(1.0, 2.5, {corr['size'][2]:.2f})"]),
-        ("BoxShape3D", "in304box", ["size = Vector3(4.5, 2.5, 5.9)"]),      # room 304 and its entry: where you watch her run past the door from
+        ("BoxShape3D", "in304box", ["size = Vector3(4.5, 2.5, 5.9)"]),
+        ("StandardMaterial3D", "terry", ['resource_name = "terry"', "albedo_color = Color(0.86, 0.84, 0.78, 1)", "roughness = 0.95"]),   # the hotel's slippers
+        ("BoxMesh", "sole", ["size = Vector3(0.095, 0.018, 0.25)", 'material = SubResource("terry")']),
+        ("BoxMesh", "strap", ["size = Vector3(0.1, 0.04, 0.1)", 'material = SubResource("terry")']),      # room 304 and its entry: where you watch her run past the door from
         ("StandardMaterial3D", "skin", ['resource_name = "skin"', "albedo_color = Color(0.82, 0.8, 0.78, 1)", "roughness = 0.8"]),
         ("QuadMesh", "screen", [f"size = Vector2({B['tv_screen']['size'][2] - 0.02:.3f}, {B['tv_screen']['size'][1] - 0.02:.3f})"]),
         ("StandardMaterial3D", "dress", ["albedo_color = Color(0.86, 0.85, 0.81, 1)", "roughness = 0.85"]),
@@ -449,6 +452,27 @@ nd("Grille", "Things/Radio", "MeshInstance3D", props=[f"transform = {tf([-0.04, 
 nd("Bed", "Things", "Node3D", script="seat", props=[f"transform = {tf(bed_node, -90.0)}", 'pose = "lying"', "look_up_deg = 70.0",   # 304's bed: anywhere over it; the seat finds the bed, your head on its pillow, looking up past its foot
    'say = "The sheets are cold."'])
 nd("Chair", "Things", "Node3D", script="seat", props=[f"transform = {tf(chair_eye, chair_turn)}"])   # 304's desk chair
+# things that aren't where they were (guide §23, shown.gd): the hotel's slippers. A pair inside 304's door; once the
+# knocks have come (the fact knocked_304) and only while you can't see either place, that pair is gone and one is by
+# the bed, its toes to the bed. And a pair outside 308's door that wasn't there when you came up: there once you've
+# found 304 (the flag checked_in, which the Story's Task Flags switch on when find304 is ticked)
+def slippers(name, at, turn):
+    nd(name, "Things", "Node3D", props=[f"transform = {tf(at, turn)}"])
+    for side, x in (("L", -0.07), ("R", 0.07)):
+        nd(f"Sole{side}", f"Things/{name}", "MeshInstance3D", props=[f"transform = {tf([x, 0.009, 0.0])}", 'mesh = SubResource("sole")'])
+        nd(f"Strap{side}", f"Things/{name}", "MeshInstance3D", props=[f"transform = {tf([x, 0.03, -0.07])}", 'mesh = SubResource("strap")'])   # over the toes: its -Z end
+
+
+slip_door = [d304m[0] - 0.3, floor_y + 0.002, d304m[2] + 0.5]                         # just inside 304's door, toes to the room
+slip_bed = [bed["at"][0] + 0.25, floor_y + 0.002, bed["at"][2] - bed["size"][2] / 2 - 0.28]   # beside the bed, toes to it
+d308m = B["door_door_308"].get("mid", d308)
+slip_308 = [d308m[0], floor_y + 0.002, d308m[2] - 0.32]                               # in the corridor at 308's door, toes to the door
+slippers("Slippers", slip_door, 180.0)
+nd("Shown", "Things/Slippers", "Node", script="shown", props=['hidden_when = "knocked_304"', "when_unseen = true",
+   'swap_with = Array[NodePath]([NodePath("../../SlippersByBed")])', "size_m = 0.3"])
+slippers("SlippersByBed", slip_bed, 180.0)
+slippers("Slippers308", slip_308, 180.0)
+nd("Shown", "Things/Slippers308", "Node", script="shown", props=["shown = false", 'shown_when = "checked_in"', "when_unseen = true", "size_m = 0.3"])
 nd("Hide", "Things", "Node3D", script="seat", props=[f"transform = {tf(hide_eye, hide_turn)}", 'pose = "hiding"', "reach_size = Vector3(0.6, 1.3, 0.6)",
    "reach_at = Vector3(0, -0.3, 0)", 'say = "Crouched in the corner. Space holds your breath."'])   # the linen closet's far corner, facing its doorway
 nd("Approach", "Things/Hide", "Marker3D", props=[f"transform = {tf(local_of(hide_eye, hide_turn, hide_app))}"])   # where she stands to look: 1 to 1.5 m from you
@@ -590,7 +614,9 @@ nd("Flashlight", "Player/Eye", props=["battery = 90.0", "charge = 0.5", "low_at 
                                       'low_task = "batteries: Find batteries (the vending corner)"'])
 nd("Shotgun", "Player/Eye", "Node3D", script="shotgun", props=['light = NodePath("../Flashlight")', "owned = false", "spare = 0"], paths=["light"])   # the double, till a parcel brings it
 nd("Story", ".", "CanvasLayer", script="story", props=['objective_text = "Room 304, third floor. The lift is out."',
-   'tasks = PackedStringArray("up: Go up to the third floor", "find304: Find room 304")', 'ending_title = "Checked out"',
+   'tasks = PackedStringArray("up: Go up to the third floor", "find304: Find room 304")',
+   'task_flags = PackedStringArray("find304: +checked_in")',                # a flag a task switches on: 308's slippers wait for it
+   'ending_title = "Checked out"',
    'ending_text = "The fire stairs took you down to the street. Nobody ever asked who was staying in 308."'])
 nd("Sound", ".", "Node", script="sound", props=['mood = "uneasy"'])
 # sanity (§31.6): worn down by the dark, her and the scares; the desk chair and 304's bed rest you, the shop's food mends it
