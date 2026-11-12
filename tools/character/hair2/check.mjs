@@ -60,7 +60,7 @@ say(Object.keys(FRINGES).length >= 8, "the fringes");
 const base = bodyByName("base"), prep = prepare(base);
 say(prep.ms < 6000, `the body as a distance grid in ${prep.ms.toFixed(0)} ms`);
 const finite = a => { for (let i = 0; i < a.length; i++) if (!Number.isFinite(a[i])) return false; return true; };
-const KINDS = { pony: 1, twin: 2, half: 1, bun: 1, buns: 2, knot: 1 };
+const KINDS = { pony: 1, twin: 2, half: 1, twin_half: 2, bun: 1, buns: 2, knot: 1 };
 let slowest = [0, ""], most = [0, ""];
 for (const id of Object.keys(STYLES)) {
   if (only.length && !only.includes(id)) continue;
@@ -75,6 +75,10 @@ for (const id of Object.keys(STYLES)) {
   for (let i = 0; i < P.length; i += 3) { if (dist(prep.S, P[i], P[i + 1], P[i + 2]) < -0.004) deep++; if (P[i + 1] < -0.325) low++; if (Math.hypot(P[i], P[i + 1], P[i + 2]) > 0.5) far++; }
   say(deep <= P.length / 3 * 0.004, `${id}: ${deep} of ${P.length / 3} points deep inside the body`);
   say(!low && !far, `${id}: nothing below the chest (${low}) or flown off (${far})`);
+  // (no loose hair across the face: the eyes, the nose, the mouth. A fringe's own hair and face-framing strands are meant to be there; loose hair there was once a lock's hair dragged after a guide that went another way round the head)
+  { const G = r.guides; let across = 0;
+    for (let i = 0; i < G.n; i++) { if (G.group[i] !== 0 || !(G.len[i] > 0)) continue; let hit = 0; for (let k = 0; k < 24; k++) { const o = (i * 24 + k) * 3, x = G.pts[o], y = G.pts[o + 1], z = G.pts[o + 2]; if (Math.abs(x) < 0.05 && y < 0.008 && y > -0.07 && z > 0.035 && dist(prep.S, x, y, z) < 0.012) hit++; } if (hit >= 2) across++; }
+    say(across <= (s.fringe.kind === "over" ? 40 : 1), `${id}: ${across} loose hairs across the face`); }
   const bald = (s.hairline.thinning && s.hairline.thinning !== "none") || /receding/.test(s.hairline.shape);
   if (st.cards > 300 && st.covered !== undefined) say(st.covered >= (bald ? 0.8 : 0.9), `${id}: the scalp ${(st.covered * 100).toFixed(1)}% covered where locks grow`);
   say(st.total < 3000, `${id}: made in ${st.total.toFixed(0)} ms`);
@@ -82,7 +86,7 @@ for (const id of Object.keys(STYLES)) {
   say(r.tails.length === tails, `${id}: ${tails} tails (${r.tails.length})`);
   for (const t of r.tails) {
     say(finite(t.geo.position) && t.geo.triangles > 100 && t.along.length === t.geo.position.length / 3, `${id}: the tail ${t.name}'s cards`);
-    if (kind === "pony" || kind === "twin" || kind === "half") say(t.joints && t.joints.length === 5 && t.joints.every(j => j.every(Number.isFinite)) && t.joints[4][1] < t.joints[0][1], `${id}: ${t.name} carries a chain's five joints, hanging down`);
+    if (kind === "pony" || kind === "twin" || kind === "half" || kind === "twin_half") say(t.joints && t.joints.length === 5 && t.joints.every(j => j.every(Number.isFinite)) && t.joints[4][1] < t.joints[0][1], `${id}: ${t.name} carries a chain's five joints, hanging down`);
     else say(!t.joints, `${id}: a bun has no chain`);
   }
   say(r.bands.length === (s.ties.tie.kind === "none" ? 0 : tails), `${id}: its ties (${r.bands.length})`);

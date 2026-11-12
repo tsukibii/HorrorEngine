@@ -280,7 +280,7 @@ func shoot(name: String) -> void:
 func flat(c: Color) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
 	m.shader = Shader.new()
-	m.shader.code = "shader_type spatial;\nrender_mode unshaded, cull_disabled;\nuniform vec3 c;\nuniform sampler2D a : filter_linear_mipmap, repeat_enable;\nuniform bool cut = false;\nvoid fragment() {\n\tALBEDO = c;\n\tif (cut) {\n\t\tALPHA = texture(a, UV).a;\n\t\tALPHA_SCISSOR_THRESHOLD = 0.35;\n\t}\n}\n"
+	m.shader.code = "shader_type spatial;\nrender_mode unshaded, cull_disabled;\nuniform vec3 c;\nuniform sampler2D a : filter_linear_mipmap, repeat_enable;\nuniform bool cut = false;\nuniform float cut_at = 0.35;\nvoid fragment() {\n\tALBEDO = c;\n\tif (cut) {\n\t\tALPHA = texture(a, UV).a;\n\t\tALPHA_SCISSOR_THRESHOLD = cut_at;\n\t}\n}\n"
 	m.set_shader_parameter("c", Vector3(c.r, c.g, c.b))
 	return m
 
@@ -300,8 +300,14 @@ func marker_on(on: bool) -> void:
 				mi.set_surface_override_material(s, kept[[mi, s]])
 	for mi in scalp_meshes:
 		if on:
-			kept[[mi, 0]] = mi.get_active_material(0)
-			mi.set_surface_override_material(0, flat(Color(1, 0, 1)))
+			var own = mi.get_active_material(0)
+			kept[[mi, 0]] = own
+			var sm := flat(Color(1, 0, 1))
+			if own is BaseMaterial3D and own.albedo_texture != null:   # a painted scalp: only where its paint is (inside the hairline, off the parting's skin), not the patch's margin round it
+				sm.set_shader_parameter("a", own.albedo_texture)
+				sm.set_shader_parameter("cut", true)
+				sm.set_shader_parameter("cut_at", 0.75)      # at its full shade only: well inside the hairline. The soft edge's faint shade under hair pulled up off a nape or back off a temple is the hairline, not a gap
+			mi.set_surface_override_material(0, sm)
 		else:
 			mi.set_surface_override_material(0, kept[[mi, 0]])
 
@@ -314,9 +320,9 @@ func count(img: Image) -> Dictionary:
 	for y in range(0, h):
 		for x in range(0, w):
 			var c := img.get_pixel(x, y)
-			if c.g > 0.6 and c.r < 0.35 and c.b < 0.35:
+			if c.g > 0.5 and c.g > c.r * 1.3 and c.g > c.b * 1.6:      # the hair's flat green as the look's curve leaves it (AgX takes a pure green to about (0.53, 0.85, 0.31): by its hue, not its value)
 				hair += 1
-			elif c.r > 0.6 and c.b > 0.6 and c.g < 0.35:
+			elif c.r > 0.5 and c.b > 0.4 and c.r > c.g * 1.3 and c.b > c.g * 1.2:   # the scalp's magenta
 				skin += 1
 	return {"hair_px": hair, "scalp_px": skin}
 

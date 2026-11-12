@@ -18,6 +18,7 @@ import { MARKS, earIn, EAR } from "./pores.js";
 
 export const K = 24;                                                     // points a hair keeps
 export const GAP = 0.0022;                                               // hair this far off the skin, at the least
+export const DRILL_TOP = 0.0;                                            // where a ringlet (the face-framing strands wound up: fringe.frameCurl) begins: the ears' line
 export const TS = Array.from({ length: K }, (_, k) => Math.pow(k / (K - 1), 1.35));   // where the kept points are along a hair: closer near the root, where it bends
 const D = Math.PI / 180, MAXS = 72;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -26,13 +27,17 @@ const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t
 export const hash = (u, k) => { const x = Math.sin((u + 0.137) * (12.9898 + k * 78.233)) * 43758.5453; return x - Math.floor(x); };
 
 // the cut line's height at an angle round the head: Tilt lowers the front (an A-line) or the back, Round dips the back's middle
+// Two lengths (tiers "front"): the front and the sides have a line of their own, higher up, as far round the head as
+// frontTo; behind that the cut's own line (a step, or a slope by frontSoft)
 export function cutLine(c, az) {
-  const a = Math.abs(az) * D;
-  return (c.line ?? -0.1) - (c.tilt || 0) * 0.045 * Math.cos(a) - (c.round || 0) * 0.035 * smooth(115, 180, Math.abs(az));
+  const a = Math.abs(az) * D, line = (c.line ?? -0.1) - (c.tilt || 0) * 0.045 * Math.cos(a) - (c.round || 0) * 0.035 * smooth(115, 180, Math.abs(az));
+  if (c.tiers !== "front" || c.front == null || c.front <= line) return line;
+  const to = c.frontTo ?? 112, w = Math.max(0.5, (c.frontSoft ?? 0.2) * 50);
+  return line + (c.front - line) * (1 - smooth(to - w / 2, to + w / 2, Math.abs(az)));
 }
 
 // ctx: { n, pos, nrm, dir, lift, group, u, len (the length each may reach), vol (how thick the hair lies there), S (the
-//        distance grid), field(x, y, z, out), C, s (the settings), ties, limit (the hairline: its height at an angle round the head) }
+//        distance grid), field(x, y, z, out), C, s (the settings), ties, limit (the hairline: its height at an angle round the head), cu (each hair's lock's own number) }
 export function trace(ctx) {
   const { n, pos, nrm, dir, lift, group, u, len, vol, S, field, C, s } = ctx;
   const cut = s.cut || {}, sh = s.shape || {}, fr = s.fringe || {}, byLine = cut.mode === "line", hasFringe = !!fr.kind && fr.kind !== "none";
@@ -138,8 +143,9 @@ export function trace(ctx) {
       }
       if (qy < cap) done = true;                                          // (never below the chest)
       if (!tie && !draping && qy < MARKS.chin && dist(S, qx, qy, qz) < h + 0.004) {            // lying on the neck, a shoulder, the chest: it gathers there; it may hang on down, it never runs along the body sideways (but round the neck to the front, when it's tucked and falls over the shoulders)
-        const side = Math.hypot(qx - px, qz - pz), downs = Math.max(0, py - qy);
-        rest -= g[1] > 0.6 ? dl * 2.5 : dl * (0.25 + 1.5 * side / (side + downs + 1e-6)); if (rest <= 0) done = true;   // (on a shoulder's top it ends within a centimetre: no brim of hair spread along the shoulders)
+        // (what ends it is running along the body, not lying on it: hair that still comes down, down the back or the chest, goes on to its cut; on a shoulder's top it ends within a centimetre or so: no brim of hair spread along the shoulders)
+        const level = Math.max(0, 1 - 2 * Math.max(0, py - qy) / dl), outward = Math.max(0, Math.abs(qx) - Math.abs(px));   // (and it doesn't slide out along a shoulder's slope: long hair falls in front of a shoulder or behind it, it doesn't fan over it)
+        rest -= dl * (g[1] > 0.6 ? 4 : 1.5) * level + outward * 2.5; if (rest <= 0) done = true;
       }
       if (byLine && gr !== FRINGE && !tie) {                              // cut to the line
         const line = cutLine(cut, azq) + (hash(u[i], 5) - 0.5) * 0.012 * (cut.uneven ?? 0.15) + (ctx.raise ? ctx.raise[i] : 0);
@@ -147,11 +153,14 @@ export function trace(ctx) {
       }
       const overFace = hasFringe && gr === LOOSE && qz > C[2] + 0.045 && Math.abs(azq) < (fr.width ?? 46) && qy > MARKS.chin;   // hair from behind a fringe that comes down over the face is cut with it
       if ((gr === FRINGE || overFace) && fr.line !== undefined) {         // the fringe's own line (the brows, the eyes...), arched by its Curve
-        const line = fr.line + (fr.arch || 0) * 0.02 * Math.pow(Math.abs(azq) / 45, 2) + (hash(u[i], 6) - 0.5) * 0.008 * (fr.uneven ?? 0.3);
+        // (Choppy: each lock its own length; Centre lock: longer between the eyes; Slant: longer toward one side, hair over one eye)
+        const line = fr.line + (fr.arch || 0) * 0.02 * Math.pow(Math.abs(azq) / 45, 2) + (hash(u[i], 6) - 0.5) * 0.008 * (fr.uneven ?? 0.3)
+          + (gr === FRINGE ? (ctx.cu ? hash(ctx.cu[i], 26) * 0.04 * (fr.choppy || 0) : 0) - (fr.centre || 0) * 0.032 * Math.exp(-(azq * azq) / 70) : 0.006)   // (the fringe's own locks only: a lock shorter by up to four centimetres, the centre one longer; the hair from behind it that's cut with it ends a little above its line, under it)
+          - (fr.slant || 0) * 0.05 * clamp(azq / 45, -1.2, 1.2);
         if (qy < line) { const f = clamp((py - line) / Math.max(1e-6, py - qy), 0, 1); qx = px + (qx - px) * f; qy = py + (qy - py) * f; qz = pz + (qz - pz) * f; sAt -= dl * (1 - f); done = true; }
       }
       if (gr === FRAME) {                                                 // a face-framing strand's own line (the cheek, the jaw...)
-        const line = (fr.frameLine ?? MARKS.jaw) + (hash(u[i], 6) - 0.5) * 0.02 * (fr.uneven ?? 0.3);
+        const line = (fr.frameCurl || 0) > 0 ? DRILL_TOP - 0.012 : (fr.frameLine ?? MARKS.jaw) + (hash(u[i], 6) - 0.5) * 0.02 * (fr.uneven ?? 0.3);   // (wound into a ringlet: they end where it begins, ties.js drills)
         if (qy < line) { const f = clamp((py - line) / Math.max(1e-6, py - qy), 0, 1); qx = px + (qx - px) * f; qy = py + (qy - py) * f; qz = pz + (qz - pz) * f; sAt -= dl * (1 - f); done = true; }
       }
       tx = qx - px; ty = qy - py; tz = qz - pz; const tl = Math.hypot(tx, ty, tz); if (tl < 1e-7) break; tx /= tl; ty /= tl; tz /= tl;

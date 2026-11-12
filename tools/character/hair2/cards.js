@@ -11,6 +11,7 @@ import { K, TS, hash } from "./strands.js";
 
 export const ATLAS_M = 0.05;                                             // the atlas's width in metres of hair (its 34 clumps: 1.5 mm a clump)
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const smooth01 = x => { const t = clamp(x, 0, 1); return t * t * (3 - 2 * t); };
 
 // which of a hair's K points a card keeps: the ends, then whichever point the kept line misses most, until none is
 // missed by more than `tol` (or `most` are kept): straight hair a few, a curl many
@@ -35,7 +36,7 @@ function keep(pts, o, tol, least, most) {
 }
 
 // ctx: { n, pts, len, u, width (each hair's card width, m), taper, rootTaper (0..1 a hair: how much narrower it starts), wispy (0 blunt .. 1 wispy ends: one number, or one a hair), roll (each hair's turn about itself, radians: standing short hair),
-//        tint (3 a hair, or none), S, C, tol, least, most, twist (K a hair: a card's own turn, or none), axis (3 a kept point: a curl's middle line), out (3 a kept point: the way out, for a tail) }
+//        tint (3 a hair, or none), shade ({ lr, lt (the roots' and the lengths' brightness), rootLength (the atlas's), abs (metres of root shade) }), S, C, tol, least, most, twist (K a hair: a card's own turn, or none), axis (3 a kept point: a curl's middle line), out (3 a kept point: the way out, for a tail) }
 export function build(ctx) {
   const { n, pts, len, u, width, S, C } = ctx, tol = ctx.tol ?? 0.0008, least = ctx.least ?? 4, most = ctx.most ?? 14;
   const P = [], N = [], T = [], UV = [], COL = [], I = [], CARD = [], g = [0, 0, 0];
@@ -77,8 +78,14 @@ export function build(ctx) {
       const t = TS[k], rt = ctx.rootTaper ? ctx.rootTaper[i] : 0, sr = t * len[i] / 0.022, x = pts[o + k * 3], y = pts[o + k * 3 + 1], z = pts[o + k * 3 + 2];
       const w = w0 * (1 - taper * Math.pow(t, 1.5)) * (rt > 0 && sr < 1 ? 1 - rt * (1 - sr * sr * (3 - 2 * sr)) : 1) * 0.5;   // (a lock at the hairline's edge leaves the skin as a point and widens over two centimetres: an edge of hairs, not of planks' ends)
       P.push(x - ac[k * 3] * w, y - ac[k * 3 + 1] * w, z - ac[k * 3 + 2] * w, x + ac[k * 3] * w, y + ac[k * 3 + 1] * w, z + ac[k * 3 + 2] * w);
-      for (let e = 0; e < 2; e++) { N.push(nr[k * 3], nr[k * 3 + 1], nr[k * 3 + 2]); T.push(tn[k * 3], tn[k * 3 + 1], tn[k * 3 + 2], 1); CARD.push(i); if (tint) COL.push(tint[i * 3], tint[i * 3 + 1], tint[i * 3 + 2]); else COL.push(1, 1, 1); }
-      UV.push(u0, t * vEnd, u0 + span, t * vEnd);
+      // (the atlas goes from the roots' colour to the lengths' over the first third of a card, however long the card: a 9 cm
+      // fringe was all "lengths" beside 30 cm hair still in its roots' shade, and read grey. Each point is shaded to the
+      // colour hair that far from its root has on a long card: the vertex colour, which HSHair and the Studio multiply in)
+      let sd = 1;
+      if (ctx.shade) { const q = ctx.shade, vt = ctx.v0 ? ctx.v0[i] + t * (ctx.v1[i] - ctx.v0[i]) : t * vEnd, kt = smooth01(vt / q.rootLength), kd = smooth01(t * len[i] / q.abs); sd = Math.min(1, (q.lr + (q.lt - q.lr) * kd) / Math.max(1e-5, q.lr + (q.lt - q.lr) * kt)); }
+      for (let e = 0; e < 2; e++) { N.push(nr[k * 3], nr[k * 3 + 1], nr[k * 3 + 2]); T.push(tn[k * 3], tn[k * 3 + 1], tn[k * 3 + 2], 1); CARD.push(i); if (tint) COL.push(tint[i * 3] * sd, tint[i * 3 + 1] * sd, tint[i * 3 + 2] * sd); else COL.push(sd, sd, sd); }
+      const vv = ctx.v0 ? ctx.v0[i] + t * (ctx.v1[i] - ctx.v0[i]) : t * vEnd;   // (v0, v1: a card's own stretch of the atlas, for cards laid end to end: a ringlet)
+      UV.push(u0, vv, u0 + span, vv);
       if (rows) { const a = base + (rows - 1) * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
       rows++;
     }

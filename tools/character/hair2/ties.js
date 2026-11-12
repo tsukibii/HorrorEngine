@@ -10,7 +10,7 @@
 //   tail(tie, ctx)   -> { n, pts, len, u, width, outv, joints, name } hairs for cards.js build (outv: each kept point's way out of the tail)
 //   band(tie, s)     -> { position, normal, index, colour } the tie's own mesh
 import { dist, grad } from "./sdf.js";
-import { K, TS, GAP, hash } from "./strands.js";
+import { K, TS, GAP, hash, DRILL_TOP } from "./strands.js";
 
 const D = Math.PI / 180;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -24,12 +24,12 @@ function skinAlong(S, C, d) {
   return [C[0] + d[0] * r, C[1] + d[1] * r, C[2] + d[2] * r];
 }
 
-export const TIES = { none: "None", pony: "Ponytail", twin: "Twin tails", half: "Half-up", bun: "Bun", buns: "Twin buns", knot: "Top knot" };
+export const TIES = { none: "None", pony: "Ponytail", twin: "Twin tails", half: "Half-up", twin_half: "Two side up", bun: "Bun", buns: "Twin buns", knot: "Top knot" };
 
 export function tiesOf(S, C, s) {
   const t = s.ties || {}, kind = t.kind || "none"; if (kind === "none") return [];
   const h = clamp(t.height ?? 0.5, 0, 1), tl = t.tail || {}, thick = clamp(tl.thick ?? 0.013, 0.004, 0.03), loose = clamp(t.loose ?? 0, 0, 1), g = [0, 0, 0], out = [];
-  const twin = kind === "twin" || kind === "buns", front = (tl.fall || "back") === "front";
+  const twin = kind === "twin" || kind === "buns" || kind === "twin_half", front = (tl.fall || "back") === "front";   // (two side up: two small tails of the top's hair, the rest loose)
   const make = (name, side, d) => {
     const p = skinAlong(S, C, unit(d)); grad(S, p[0], p[1], p[2], g);
     const n = g.slice(), at = [p[0] + n[0] * (0.01 + thick), p[1] + n[1] * (0.01 + thick), p[2] + n[2] * (0.01 + thick)];
@@ -38,13 +38,16 @@ export function tiesOf(S, C, s) {
     out.push({ name, side, at, out: n, dir, radius: thick, tight: clamp(t.tight ?? 0.6, 0, 1), kind,
       takes: (i, pp, az, by, P) => {
         if (Math.abs(az) < 118 * loose) return false;                    // the front left loose, as far round as Loose says
-        if (kind === "half" && P.top[i] < 0.45 && by < 0.06) return false;   // half-up: the top's hair only
+        if ((kind === "half" || kind === "twin_half" || t.part === "top") && P.top[i] < 0.45 && by < 0.06) return false;   // half-up, two side up, or any tie of The top's hair only: the rest hangs loose
         if (twin && (pp[0] >= 0 ? 1 : -1) !== side) return false;
         return true;
       } });
   };
   if (twin) { const az = lerp(162, 98, clamp(t.side ?? 0.7, 0, 1)) * D, el = lerp(-38, 42, h) * D; for (const sd of [1, -1]) make(sd > 0 ? "tail_l" : "tail_r", sd, [sd * Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)]); }
-  else { const ph = (kind === "knot" ? lerp(-45, -8, h) : kind === "half" ? lerp(-100, -42, h) : lerp(-122, -30, h)) * D; make("tail", 0, [0, Math.cos(ph), Math.sin(ph)]); }
+  else {                                                                // one tail: up the back of the head by Height, round to one side by To one side (a side ponytail)
+    const ph = (kind === "knot" ? lerp(-45, -8, h) : kind === "half" ? lerp(-100, -42, h) : lerp(-122, -30, h)) * D, b = clamp(t.offset || 0, -1, 1) * 85 * D, hz = Math.sin(ph);
+    make("tail", 0, [-hz * Math.sin(b), Math.cos(ph), hz * Math.cos(b)]);
+  }
   return out;
 }
 
@@ -136,4 +139,51 @@ export function band(tie, s) {
     }
   }
   return { name: tie.name.replace("tail", "tie"), position: new Float32Array(P), normal: new Float32Array(N), index: new Uint32Array(I), colour: k.colour || "#a01c24" };
+}
+
+// Ringlets ("drills"): on each side the face-framing strands are wound into one ringlet that hangs from the ears' line
+// to their own line: a ribbon round a middle line that's kept off the body, and a thinner one inside it. A ribbon is
+// more turns than a card has points for, so it's cards end to end, each three quarters of a turn, the atlas running on
+// from one to the next (cards.js v0, v1).
+//   tops: [{ side, x, z }] where each side's strands end (engine.js)   -> hairs for cards.js build, or null
+export function drills(S, C, s, tops) {
+  const fr = s.fringe || {}, amt = clamp(fr.frameCurl || 0, 0, 1), yEnd = fr.frameLine ?? -0.066; if (!(amt > 0) || !tops.length || yEnd > DRILL_TOP - 0.05) return null;
+  const R0 = 0.008 + 0.008 * amt, pitch = 0.024 + 0.012 * amt, Ld = DRILL_TOP - yEnd, turns = Ld / pitch, per = 0.75, segs = Math.ceil(turns / per), g = [0, 0, 0];
+  const n = tops.length * 2 * segs, pts = new Float32Array(n * K * 3), len = new Float32Array(n), u = new Float32Array(n), width = new Float32Array(n), taper = new Float32Array(n), wisp = new Float32Array(n), v0 = new Float32Array(n), v1 = new Float32Array(n), outv = new Float32Array(n * K * 3);
+  let h = 0;
+  for (const top of tops) {
+    const N = 80, mid = []; let x = top.x, y = DRILL_TOP, z = top.z;      // the middle line, straight down, pushed off the cheek, the neck, the shoulder and the chest
+    for (let q = 0; q <= N; q++) { const d = dist(S, x, y, z); if (d < R0 + 0.008 && grad(S, x, y, z, g)) { const w = R0 + 0.008 - d; x += g[0] * w; z += g[2] * w; } mid.push([x, y, z]); y -= Ld / N; }
+    const at = f => { const q = clamp(f, 0, 1) * N, a = Math.min(N - 1, Math.floor(q)), k = q - a; return [0, 1, 2].map(c => mid[a][c] + (mid[a + 1][c] - mid[a][c]) * k); };
+    for (let rib = 0; rib < 2; rib++) for (let sg = 0; sg < segs; sg++) {
+      const f0 = sg / segs, f1 = (sg + 1) / segs, th0 = rib * Math.PI + top.side * 0.6; let L = 0, prev = null;
+      for (let k = 0; k < K; k++) {
+        const f = f0 + (f1 - f0) * TS[k], c = at(f), th = top.side * (th0 + 2 * Math.PI * turns * f), r = R0 * (rib ? 0.55 : 1) * (1 - 0.5 * f * f) * smooth(0, 0.06, f + 0.01), o = (h * K + k) * 3;
+        pts[o] = c[0] + r * Math.cos(th); pts[o + 1] = c[1]; pts[o + 2] = c[2] + r * Math.sin(th); outv[o] = Math.cos(th); outv[o + 1] = 0; outv[o + 2] = Math.sin(th);
+        if (prev) L += Math.hypot(pts[o] - prev[0], pts[o + 1] - prev[1], pts[o + 2] - prev[2]); prev = [pts[o], pts[o + 1], pts[o + 2]];
+      }
+      len[h] = L; u[h] = hash(top.side * 0.31 + rib * 0.17 + 0.4, 91); width[h] = pitch * (rib ? 0.5 : 0.72); taper[h] = sg === segs - 1 ? 0.75 : 0; wisp[h] = sg === segs - 1 ? 0.8 : 0;
+      v0[h] = 0.08 + 0.5 * f0; v1[h] = 0.08 + 0.5 * f1 + (sg === segs - 1 ? 0.3 : 0); h++;
+    }
+  }
+  return { n, pts, len, u, width, taper, wisp, v0, v1, outv };
+}
+
+// An ahoge: one lock standing up out of the top of the head and curving over (two thin cards, a little apart)
+export function ahoge(S, C, s) {
+  const sh = s.shape || {}, amt = clamp(sh.ahoge || 0, 0, 1); if (!(amt > 0)) return null;
+  const side = clamp(sh.ahogeSide ?? -0.5, -1, 1), root = skinAlong(S, C, unit([side * 0.22, 1, 0.3])), L = 0.035 + 0.06 * amt, n = 2, g = [0, 0, 0];
+  grad(S, root[0], root[1], root[2], g);
+  const pts = new Float32Array(n * K * 3), len = new Float32Array(n), u = new Float32Array(n), width = new Float32Array(n), outv = new Float32Array(n * K * 3), lean = Math.sign(side || -1);
+  for (let j = 0; j < n; j++) {
+    let prev = null, total = 0;
+    for (let k = 0; k < K; k++) {
+      const t = TS[k], up = L * (t - 0.42 * t * t) * (1 - 0.12 * j), over = L * 0.62 * t * t * (1 + 0.25 * j), o = (j * K + k) * 3;   // up, then over to its side and a little down
+      pts[o] = root[0] + g[0] * up + lean * over; pts[o + 1] = root[1] + g[1] * up - 0.004 * j - L * 0.1 * t * t * t; pts[o + 2] = root[2] + g[2] * up + 0.004 * j;
+      outv[o] = 0; outv[o + 1] = 0.25; outv[o + 2] = 1;                  // (its face to the front: seen from where you look at her)
+      if (prev) total += Math.hypot(pts[o] - prev[0], pts[o + 1] - prev[1], pts[o + 2] - prev[2]); prev = [pts[o], pts[o + 1], pts[o + 2]];
+    }
+    len[j] = total; u[j] = 0.37 + 0.31 * j; width[j] = 0.015 - 0.005 * j;
+  }
+  return { n, pts, len, u, width, outv };
 }

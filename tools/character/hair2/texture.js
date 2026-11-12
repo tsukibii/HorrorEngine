@@ -47,13 +47,15 @@ export function texture(ctx) {
   const g = [0, 0, 0], axis = curl > 0 ? new Float32Array(n * K * 3) : null;
   // ---- clumps: each hair toward its clump's guide, more toward the tip
   if (cAmt > 0) {
-    const src = new Float32Array(pts);
+    const src = new Float32Array(pts), far = Math.max(0.02, 1.4 * (tx.clumpSize || 0.018));
     for (let i = 0; i < n; i++) {
       const c = clump.of[i]; if (c === i || !(len[i] > 0) || !(len[c] > 0)) continue;
       const amt = cAmt * (0.75 + 0.25 * hash(u[i], 21));
       for (let k = 1; k < K; k++) {
-        const f = amt * Math.pow(smooth(0.08, 1, TS[k]), 0.8), o = (i * K + k) * 3, q = (c * K + k) * 3;
-        pts[o] = src[o] + (src[q] - src[o]) * f; pts[o + 1] = src[o + 1] + (src[q + 1] - src[o + 1]) * f; pts[o + 2] = src[o + 2] + (src[q + 2] - src[o + 2]) * f;
+        const o = (i * K + k) * 3, q = (c * K + k) * 3, dx = src[q] - src[o], dy = src[q + 1] - src[o + 1], dz = src[q + 2] - src[o + 2];
+        // (only while they travel together: a hair whose guide went another way round the head, at the whorl or by a tie, isn't dragged across the head, or the face, after it)
+        const f = amt * Math.pow(smooth(0.08, 1, TS[k]), 0.8) * (1 - smooth(far, far * 2.2, Math.hypot(dx, dy, dz)));
+        pts[o] = src[o] + dx * f; pts[o + 1] = src[o + 1] + dy * f; pts[o + 2] = src[o + 2] + dz * f;
       }
     }
   }

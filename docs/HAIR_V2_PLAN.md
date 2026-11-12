@@ -1,5 +1,8 @@
 # Hair editor v2.0: hair grown from pores, shaped by sliders (the plan)
 
+**Built** (2026-11-12): what's there, how it works and what differs from this plan is `docs/HAIR_V2.md`. This file
+stays as the plan it was built from.
+
 The user (DECISIONS 2026-11-11, after the very last), with five reference pictures: *"Analyse our character studio hair
 creator, I really love how I can make the hair and it looks really good in godot but there are often small gaps etc,
 can you make a new tab called hair editor v2.0, instead of me having to create the strands, add pre defined hair pores

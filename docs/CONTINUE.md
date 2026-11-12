@@ -24,35 +24,45 @@ builder's floors, the street's steel stair, climbing in Godot and on the desk; 2
 Character Studio, then the creature presets and a Studio character's face in Godot, then the Anime switch and the red
 knit dress; then on `claude/beautiful-cray-a622xx`: tutorial v2's floor ready-made; 2026-11-11 on
 `claude/compassionate-babbage-3bnfqx`: the clothing research (Cloth2Tex, ready-made garments, the fit test, the
-clothing library), merged; then on `claude/ecstatic-dijkstra-6ixk71`: the hair editor v2.0, planned and not built.
+clothing library), merged; then on `claude/ecstatic-dijkstra-6ixk71`: the hair editor v2.0, planned, then built (2026-11-12).
 Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-11, `claude/ecstatic-dijkstra-6ixk71`): the hair editor v2.0, planned; waiting on the user's yes
+## Where it stopped last (2026-11-12, `claude/ecstatic-dijkstra-6ixk71`): the hair editor v2.0, built
 
-From main (PR #24 merged). **Nothing built: a plan, as the user asked** (DECISIONS 2026-11-11, after the very last):
-"come up with the detailed plan first ... then ask me to start on implementation". With five reference pictures (a
-sleek middle-part bob, low twin tails with a swept fringe, shoulder-length waves from a side parting, a short cut
-with a long swept fringe, a chin bob with see-through bangs; kept on the user's side, not in git).
+From main (PR #24 merged). The user's go (DECISIONS 2026-11-11, the go): "v2 should be in the character creator studio
+tab, let it reach the chest ... Start working on everything and dont stop until it looks really good inside godot and
+runs well"; and while it was built (DECISIONS 2026-11-12): long women's styles with the ears out.
 
-- **docs/HAIR_V2_PLAN.md** is the plan: the salon analysed (where its gaps come from: roots only where locks were
-  put, cards see-through toward their tips, strands that scale with a card's width, cures that are patches by hand, a
-  fall that undoes the shape, a head of rays, nothing swinging in Godot), the five pictures taken apart, and the
-  design: **a new Studio tab, Hair editor v2.0**, hair grown from a fixed set of pores on MHR's scalp (the hairline a
-  dropdown, thinning for balding), combed by a parting, the crown, the fringe and ties, each hair traced (comb, lie,
-  fall: layers in order by construction, no simulation after), cut by length or to a line, textured (clumps, waves,
-  curls, strays), ties with tails on HSJiggle's bones, out as cards through the salon's own bake so Godot's HSHair
-  wears it unchanged; coverage counted and filled; a Preview in Godot button; the checks HAIR2, HAIR2PAGE, GDHAIR2.
-- **The next step, on the user's yes**: the plan's step 1 (§7): the engine in node and the first sheet from Godot
-  (the hairline shapes as dots on the head; picture 1's bob, picture 4's short cut, a man's side parting, a thinning
-  crown, from five sides, beside the pictures). **Stop there for the user's answer** before the tab (LESSONS: a
-  look-alike is the user's to judge, part by part). The plan's §5 has five questions with defaults; their answers
-  override them.
-- **Measured for it** (a scratch script, nothing kept): MHR's scalp by the salon's outline is 679 cm² over 1,838
-  triangles; pores 6 mm apart are about 1,800, 7 mm about 1,300; the shoulders' tops are about 25 cm under the crown.
-  Godot 4.7 installed in the cloud session by `tools/godot_setup.sh`, GODOT ok.
-- The salon, its files and every baked hair are untouched.
+- **docs/HAIR_V2.md** is what's built (docs/HAIR_V2_PLAN.md the plan it came from). In short: the Character Studio has
+  a **Hair editor v2.0** tab beside the salon's Hair tab (untouched). Hair is **grown** from 4096 fixed, ranked pores
+  on MHR's scalp (`Content/Studio/Hair2/pores.bin`) by an engine of plain arrays (`tools/character/hair2/`): a
+  hairline from a dropdown, thinning, each hair traced (comb, lie, fall; the rules in the trace), cut, textured, tied;
+  out as cards with the salon bake's finish, short hair as shells, the scalp painted from the pores. A character keeps
+  `hair2: { on, style, set }`; the hair is made again on any body. 59 styles as cards; nine sections of sliders.
+- **In Godot**: Export for Godot carries it (HSHair wears the locks by their record, `hair_shell.gdshader` the shells,
+  HSJiggle the tails' chains; GODOT_LOOK §5p). *Preview in Godot* in the tab pictures the head and hair with Godot
+  without exporting the character.
+- **The ears out** (2026-11-12): `ears: "tucked"` (both or one ear) and `tuckFall` (over the shoulders in front, or
+  behind them); five styles in their own group.
+- **Japanese and Korean styles, and the chart's twelve drawn ones** (2026-11-12, later): a cut of two lengths
+  (`cut.tiers`), ties of the top's hair only and to one side, a choppy fringe with a centre lock, a fringe's slant,
+  ringlets, an ahoge; eight and twelve styles in two more groups (59 styles in all). The chart and the user's five
+  pictures are on the user's side, not in git.
+- **Long hair ends with just its tips on the shoulders** in every style (2026-11-12, last): the sliders still go to
+  the chest.
+- **Checks**: HAIR2 (in check_all), HAIR2PAGE (the Studio's server running; `EXPORT=1` for the export), GDHAIR2
+  (`python tools/godot/hair2_check.py`; `sheets`, `shots`, `thumbs` for looking).
+- **What it found on the way** (LESSONS 2026-11-12): HSHair's root fade bared the scalp on grown hair (a bake now
+  carries its own settings); Volume has to act where the hair is; a rule for hair has to start at the root.
+- **Not there** (HAIR_V2 §9): braids, beards, hair under hats (the user: later); clothes in the distance grid; a
+  tail's chain colliding with the body in Godot.
+- **What could come next**: the user's own look at the five picture styles beside their pictures (a look-alike is
+  theirs to judge, part by part: LESSONS), in the Studio and with Preview in Godot; a local run of HAIR2PAGE and
+  GDHAIR2 on their 3090 (docs/RUN_LOCALLY.md: the browser draws on the CPU here); braids.
+- The salon, its files and every baked hair are untouched. GDTESTROOM still stops at station 6 in this container (no
+  bake bodies here: below), GDPLAY ok.
 
 ## Before that (2026-11-11, `claude/compassionate-babbage-3bnfqx`, merged in PR #24): ready-made clothing fitted to our bodies, researched and tested, then worn in layers
 

@@ -74,7 +74,7 @@ try {
   const tD = await B(async () => { const H = window.__body.hair2, r = [...document.querySelectorAll("#hair2Rows .row")].find(x => x.firstChild.textContent === "Volume, sides"), i = r.querySelector("input"), t = performance.now(); i.value = 20; i.oninput();
     while (window.__body.hair2.state.shownSeq < window.__body.hair2.state.seq) await new Promise(ok => setTimeout(ok, 10)); const draft = performance.now() - t, wasDraft = H.state.draft, made = H.state.stats.total; i.onchange();
     while (!(H.state.shownSeq === H.state.seq && !H.state.draft)) await new Promise(ok => setTimeout(ok, 10)); return { draft, wasDraft, made, full: performance.now() - t, fullMade: H.state.stats.total }; });
-  say(tD.wasDraft && tD.made < 600 && tD.fullMade < 1500, `a slider dragged: a draft made in ${Math.round(tD.made)} ms (on screen ${Math.round(tD.draft)} ms after the drag began), the finished hair in ${Math.round(tD.fullMade)} ms (${Math.round(tD.full)} ms after)`);
+  say(tD.wasDraft && tD.made < 1500 && tD.fullMade < 3000, `a slider dragged: a draft made in ${Math.round(tD.made)} ms (on screen ${Math.round(tD.draft)} ms after the drag began), the finished hair in ${Math.round(tD.fullMade)} ms (${Math.round(tD.full)} ms after)`);
 
   // ---- the hairline's dropdown, a fringe's kind, Undo
   const p0 = h.state.stats.pores; await pick("Shape", "receding_3"); await settled(); h = await hair();

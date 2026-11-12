@@ -2,6 +2,37 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, last (the user: long hair ends with just its tips on the shoulders)
+
+- **"Can you modify the long hairs so they're just barely on the shoulders (just the tips)."** So every long style's
+  cut is at the shoulders (`cut.line: -0.14`; the shoulders' tops are -0.135): twenty-four styles brought up, the
+  tails of the tied ones shortened to match (their tips at the shoulders), the ringlets to the shoulder. This is the
+  styles' own lengths, not a wall: the sliders still go down to the chest (the go, 2026-11-11). It also brings the
+  first rule back ("dont make the hair too much longer than shoulder height as this may cause clipping with clothing
+  later").
+
+## 2026-11-12, later (the user, while the hair editor v2.0 was being built: Japanese and Korean styles, and a chart of twelve drawn hairstyles)
+
+- **"Can you do some more Asian variations where the girls front and side hair is above shoulders slightly below ears
+  but then back is longer and other Asian variations."** So a cut can have **two lengths** (`cut.tiers`): *the front
+  and sides shorter, the back long* (the shorter line as far round the head as `frontTo`, a step or a slope) or *a bob
+  over a long nape* (the jellyfish cut: everything cut at the shorter line but the hair that grows on the low back of
+  the head). And a tie can take **the top's hair only** (`ties.part`, and the kind *Two side up*). Eight styles in a
+  group of their own (*Japanese and Korean styles*): sides just under the ears with a long back; hime with sidelocks to
+  the jaw; the jellyfish cut; a wolf cut; two side up; odango; long with C-curl ends and see-through bangs; a lob with
+  the ends flipped out.
+- **"Can you try recreate as close as possible a preset for each of these more animals hairstyles"** (read as *anime*:
+  the picture is a drawing chart of twelve hairstyles, three by four; it stays on the user's side, not in git). A
+  preset for each, in a group of their own (*Drawn hair: the chart's twelve*), row by row: long and straight with
+  bangs to the eyes; shoulder length with the ends flicked out; hime; long and tousled with an ahoge; a side ponytail
+  with straight bangs; a bob with the fringe over one eye; pigtails; a short bob with parted bangs; long with ringlets
+  in front; twin buns with the hair down; short and spiky; short with two small low tails. What they needed that the
+  engine didn't have, all sliders now: a **choppy** fringe (each lock its own length) with a longer **centre lock**; a
+  fringe's **slant** (longer toward one side: hair over one eye); a tail **to one side** (`ties.offset`: a side
+  ponytail); **ringlets** (`fringe.frameCurl`: the face-framing strands wound into a drill a side); an **ahoge**.
+  A look-alike is the user's to judge, part by part (LESSONS): Godot's pictures of the twelve are in
+  `Saved/Hair2/t5*.jpg` while they were made; the cards' pictures are the thumbs.
+
 ## 2026-11-12 (the user, while the hair editor v2.0 was being built: long hair with the ears out)
 
 - **"Could you do some female hairstyles where the ears aren't covered but the hair is still long (so the ears poke out

@@ -7,6 +7,8 @@ picture: the gaps); the hair neither black nor bleached; the triangles within th
 bones found. A contact sheet a style in Saved/Story/_look/godot_hair2/. Ends "GDHAIR2 ok".
 
     python tools/godot/hair2_check.py [--styles a,b] [--quick] [--keep DIR]
+    python tools/godot/hair2_check.py thumbs [--styles a,b]          the styles' cards (Content/Studio/Hair2/thumbs)
+    python tools/godot/hair2_check.py sheets --styles a,b [--frame bust] [--shots front,q,back] [--sheet FILE.jpg]
     python tools/godot/hair2_check.py shots --glb FILE.glb [--out DIR] [--tag NAME] [--shots front,q,side,back,top]
                                             [--size 960x720] [--frames 20] [--light reel|front|room] [--marker]
                                             [--origin x,y,z] [--hair JSON] [--frame head|bust] [--sheet FILE.jpg]
@@ -172,6 +174,77 @@ def cmd_sheets(a):
     return 0
 
 
+# the styles the check pictures unless told others: the five from the user's pictures, a man's cut with shells under its
+# locks, shells alone, tied hair, hair tucked behind the ears
+KEY = ["bob_middle", "twin_tails_low", "waves_side", "short_swept", "bob_bangs", "m_side_part", "m_buzz", "ponytail_high", "ears_long"]
+THIN = {"m_buzz", "m_crew", "shaved", "horseshoe", "comb_over", "thinning_crown", "receding"}   # (the scalp is meant to show through these)
+
+
+def cmd_check(a):
+    """GDHAIR2: styles made by node, worn by HSHair in Godot, pictured from every side and measured"""
+    from PIL import Image
+    import numpy as np
+    if not godot_bin():
+        print("GDHAIR2 FAIL: no godot ($GODOT, godot or godot-mono)")
+        return 1
+    out = Path(a.keep) if a.keep else KEEP
+    out.mkdir(parents=True, exist_ok=True)
+    styles = [s for s in (a.styles.split(",") if a.styles else KEY) if s]
+    views = ["front", "side", "back"] if a.quick else VIEWS
+    bad, rows, said = [], [], []
+
+    def say(ok, what):
+        print(("  ok  " if ok else "  BAD ") + what)
+        if not ok:
+            bad.append(what)
+
+    for st in styles:
+        glb = out / f"{st}.glb"
+        stats, err = make(st, glb)
+        if stats is None:
+            say(False, f"{st}: not made: {err[-300:]}")
+            continue
+        rep, err = shoot(glb, out, st, views, "960x720", 12 if a.quick else 16, "reel", True, "0,0,0", None, "balanced", "bust")
+        if rep is None:
+            say(False, f"{st}: Godot didn't picture it: {err[-400:]}")
+            continue
+        cards, shells = stats.get("cards", 0), stats.get("shellTriangles", 0)
+        want = (1 if cards else 0) + (1 if shells else 0) + (2 if "twin" in st else 1 if stats.get("tailTriangles") else 0)
+        say(rep["hair_meshes"] >= want and rep["scalps"] == 1, f"{st}: {rep['hair_meshes']} hair meshes and the scalp in Godot ({rep['hair_triangles']} triangles)")
+        if cards:
+            say(rep["hair_baked"] >= 1 and rep["hair_baked"] == rep["hair_mats"], f"{st}: every lock material on the bake's look (shell normals, the strands' numbers): {rep['hair_baked']} of {rep['hair_mats']}")
+        worst, lum = 0.0, []
+        for v in views:
+            m = rep["shots"].get(v, {})
+            hp, sp = m.get("hair_px", 0), m.get("scalp_px", 0)
+            if v != "top" or cards:
+                say(hp > 1500, f"{st}, {v}: hair in the picture ({hp} px)")
+            worst = max(worst, sp / max(1, hp + sp))
+            pic = np.asarray(Image.open(out / f"{st}_{v}.png").convert("RGB"), dtype=np.float32) / 255.0
+            mk = np.asarray(Image.open(out / f"{st}_{v}_marker.png").convert("RGB"), dtype=np.float32) / 255.0
+            mask = (mk[..., 1] > 0.5) & (mk[..., 1] > mk[..., 0] * 1.3) & (mk[..., 1] > mk[..., 2] * 1.6)   # (the marker's green by its hue: the look's curve pales it)
+            if mask.sum() > 500:
+                lum.append(float((pic[mask] @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)).mean()))
+        if st not in THIN:                               # (tied hair is pulled up off the nape and back off the temples: the last centimetre of its hairline is the scalp's shade by design, so it's allowed more)
+            limit = 0.05 if stats.get("tailTriangles") else 0.03
+            say(worst < limit, f"{st}: the scalp seen through the hair at the most {worst * 100:.1f}% of the hair's own outline, from any side (under {limit * 100:.0f}%)")
+        if lum:
+            say(0.012 < min(lum) and max(lum) < 0.5, f"{st}: the hair neither black nor bleached (its mean brightness {min(lum):.3f} to {max(lum):.3f} by view)")
+        row = out / f"{st}_row.jpg"
+        sheet([out / f"{st}_{v}.png" for v in views], row, label=f"{st}: {cards} locks, {rep['hair_triangles']} triangles in Godot, the scalp through the hair {worst * 100:.1f}%", height=300)
+        rows.append(Image.open(row))
+        said.append(f"{st} {worst * 100:.1f}%")
+    if rows:
+        S = Image.new("RGB", (max(r.width for r in rows), sum(r.height for r in rows)), (24, 24, 26))
+        y = 0
+        for r in rows:
+            S.paste(r, (0, y))
+            y += r.height
+        S.save(out / "sheet.jpg", quality=88)
+    print(f"GDHAIR2 FAIL ({len(bad)})" if bad else f"GDHAIR2 ok ({len(styles)} styles in Godot; the scalp through the hair: {', '.join(said)}; the sheet {(out / 'sheet.jpg').relative_to(ROOT) if (out / 'sheet.jpg').is_relative_to(ROOT) else out / 'sheet.jpg'})")
+    return 1 if bad else 0
+
+
 THUMBS = ROOT / "Content" / "Studio" / "Hair2" / "thumbs"
 
 
@@ -262,8 +335,7 @@ def main():
         return cmd_sheets(a)
     if a.cmd == "thumbs":
         return cmd_thumbs(a)
-    print("GDHAIR2 FAIL: the check isn't written yet (use `shots`)")
-    return 1
+    return cmd_check(a)
 
 
 if __name__ == "__main__":

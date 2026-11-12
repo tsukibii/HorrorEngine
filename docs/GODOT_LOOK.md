@@ -1280,6 +1280,39 @@ slime let it through; at half the look, halfway. Then on a creature exported fro
 HSCharacterLook node: every look on her skin and horns, the amount changed while worn, her own skin back with its
 paint. `docs/godot_sheets/2026-11-11_creature_skins.jpg`: the balls, and the demon in every look.
 
+## 5p. Grown hair: the hair editor v2.0's locks, shells and scalp (`hair_shell.gdshader`; DECISIONS 2026-11-11, the go)
+
+The Character Studio's Hair editor v2.0 (docs/HAIR_V2.md) grows hair from fixed pores instead of laying locks by hand.
+What it puts in an export is the salon's bake's kind of thing (§5e), so `HSHair.wear` wears it with nothing to set up;
+three things are its own:
+
+- **A bake's own settings.** Its locks carry the same record as the salon's (`studioHair`: shell normals, strand
+  tangents, the occlusion on the second UV, the strands' numbers), and beside it `settings`: numbers `set_bake` puts
+  over the plugin's own (`BAKED`) for that material. It sets `root_fade: 0.012`: the 6% of a lock that fades the
+  salon's roots in is right for hand-laid locks, whose roots lie under other locks; grown hair starts every lock at
+  its own pore, and on 20 cm hair pulled back to a bun that 6% bared two centimetres of scalp at the temple and made
+  every parting twice as wide as it was set. Only keys `BAKED` has are taken.
+- **Short hair as shells** (`hair_shell.gdshader`): hair under 3 cm (a buzz cut, stubble, clipped sides and napes, the
+  undercoat of a short cut) is a mesh named `hair_shell`: four to ten copies of the scalp lifted off the skin a
+  couple of millimetres apart, leaning the way the hair is combed (the fur technique: a card standing on end can't be
+  seen from above). Each layer is drawn with a tile of hairs' cross-sections (R each hair's own height, G its number
+  for thinning, B its shade, A its profile), 2.8 cm of scalp a repeat: a hair is drawn on a layer while it's tall
+  enough to reach it, narrower the higher the layer, and only where hair is left (the mesh's colour: r the layer, g
+  how much hair is left there, so a hairline's edge and a thinning crown thin the shells too). The coverage is
+  dithered frame by frame for the TAA as the locks' is. `HSHair.shell_material(tile, record)` takes the look's root
+  and tip colours; uniforms `amount`, `thick`, `density`, `shine`, `roughness`.
+- **A painted scalp.** A mesh named `hair_scalp` whose material has a texture (a dot a pore in the roots' colour, its
+  alpha the shade) is kept as it is: matt, no specular, blended. The salon's (a flat cap, coloured by vertex) is still
+  given the plugin's own scalp material.
+
+A tail (`hair_tail…`) is skinned to a chain of bones of its own under the head, `jiggle_hair_tail…_0` … `_tip`:
+HSJiggle (§5n) springs it, soft by the tail's Sway.
+
+GDHAIR2 (`python tools/godot/hair2_check.py`): nine styles made by node, worn in a scratch project and pictured from
+every side: every lock material on the bake's look, the scalp seen through the hair as a share of the hair's own
+outline (a second picture with the hair a flat green and the painted scalp, where it's at its full shade, a flat
+magenta: under 3%, 5% for tied hair, which is pulled up off its hairline), the hair neither black nor bleached.
+
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 
 A street baked in Blender (`tools/street.py bake`, docs/STREET_TEXTURING.md) comes as plain glTF:

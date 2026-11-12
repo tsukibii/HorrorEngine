@@ -51,7 +51,7 @@ export function mountHair2(ctx) {
   let S = settings(H.style, H.set);                                       // every setting in full
   const group = new THREE.Group(); group.name = "hair2"; group.matrixAutoUpdate = false; group.visible = false; group.userData.rev = 0; rig.add(group);
   const ATL = hairAtlas(), U = hairUniforms(atlasTexture(ATL), lookOf(S));
-  const cardsMat = hairMaterial(U); cardsMat.name = "hair_cards";
+  const cardsMat = hairMaterial(U, { shade: true }); cardsMat.name = "hair_cards";
   const tileTex = (() => { const t = new THREE.DataTexture(new Uint8Array(shellTile().buffer), 256, 256, THREE.RGBAFormat, THREE.UnsignedByteType); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter; t.generateMipmaps = true; t.colorSpace = THREE.NoColorSpace; t.needsUpdate = true; return t; })();
   const shellMat = new THREE.ShaderMaterial({ uniforms: { tile: { value: tileTex }, rootC: U.rootC, tipC: U.tipC, keyDir: U.keyDir, keyC: U.keyC, ambientC: U.ambientC }, vertexShader: SHELL_VERT, fragmentShader: SHELL_FRAG, side: THREE.DoubleSide, alphaToCoverage: true });
   shellMat.name = "hair_shell";
@@ -114,6 +114,7 @@ export function mountHair2(ctx) {
     for (let i = 0; i < n; i++) { at[i * 3] = m.tangent[i * 4]; at[i * 3 + 1] = m.tangent[i * 4 + 1]; at[i * 3 + 2] = m.tangent[i * 4 + 2]; dep[i] = 0.028 * (m.uv1 ? m.uv1[i * 2 + 1] : 1); }
     g.setAttribute("position", attr(m.position, 3)); g.setAttribute("normal", attr(m.normal, 3)); g.setAttribute("tangent", attr(m.tangent, 4)); g.setAttribute("uv", attr(m.uv, 2));
     if (m.uv1) g.setAttribute("uv1", attr(m.uv1, 2));
+    g.setAttribute("color", attr(m.color && m.color.length === n * 3 ? m.color : new Float32Array(n * 3).fill(1), 3));   // each point's shade (cards.js): in the view and in a file
     g.setAttribute("aTangent", attr(at, 3)); g.setAttribute("aTint", attr(tint, 4)); g.setAttribute("aDepth", attr(dep, 1));
     g.setIndex(attr(m.index, 1)); g.computeBoundingSphere();
     return g;

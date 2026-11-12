@@ -21,6 +21,16 @@ the fix.
   hair rooted just over the ear dropping onto it first (it turns only as fast as its stiffness lets it), and out over
   the rim as "handles". The roots there are combed back themselves, and what's over the ear is carried on round to the
   back. And a wisp grown off a tucked hair stands off it by centimetres: none are grown from held hair.
+- **Pulling a hair toward its lock's guide is only right while they travel together.** At the whorl, and by a tie,
+  neighbours go different ways round the head: a hair whose guide went the other way was dragged across the head and
+  down over an eye (one thin strand on the face in three of the drawn styles). The pull now fades with the distance
+  between them, and HAIR2 counts loose hairs across the face.
+- **A rule that ends hair "lying on the body" ends long hair at the shoulders.** The rest rule (no brim of hair spread
+  along the shoulders) also stopped hair that hangs down the back or the chest: every "long" style was shoulder
+  length from behind. What ends a hair is running level along the body or sliding out over a shoulder, not lying on it.
+- **A marker colour isn't its value after the look's curve.** The gap measure counted pure green and magenta pixels;
+  AgX takes a flat (0, 1, 0) to about (0.53, 0.85, 0.31), so it counted none and every style "failed" with 0 px of hair.
+  Tell a marker by its hue, and look at a marker picture before trusting a count of zero.
 - **A background job that starts while a patch script is writing the file it runs reads half a file.** The sheet job
   died of a syntax error that wasn't in the file a second later. Finish the edit, then start the job.
 
