@@ -5,6 +5,10 @@
 ## colour turns from its middle to its edge, how broken its surface is, what glows). Then, given a Studio export
 ## (`--glb=`), each look on the character (her skin, and her horns and ears with `extend`), pictured head and shoulders;
 ## what she wore before put back at the end and counted.
+## The cloak (§5p) has stages of its own: a ball in front of a lit wall of stripes with a red post between it and the
+## eye, pictured without the ball, cloaked standing still, moving, with the lamp out, half turned, broken up and with
+## its shadow kept, each compared with the wall alone; then a made-up figure (skin, eyes with a wet layer, a card of
+## hair, a tear line, a shirt) through HSCreatureSkin.wear and the HSCloak node, counted, no pictures.
 ##   godot --path PROJECT --rendering-driver vulkan -s res://addons/horrorstudio_look/demo/creature.gd -- --out=DIR [--glb=FILE] [--looks=chrome,pearl]
 extends SceneTree
 
@@ -24,6 +28,12 @@ var stages: Array = []
 var stage := 0
 var n := 0
 const R := 0.2
+var cloak_at := Vector3(0, 1.0, -40.0)    # the cloak's own stage, far from the balls
+var cloak_holder: Node3D = null
+var cloak_ball: MeshInstance3D = null
+var cloak_post: MeshInstance3D = null
+var cloak_bg: Image = null
+var cloak_on: Image = null
 
 
 func _initialize() -> void:
@@ -99,13 +109,149 @@ func _initialize() -> void:
 		world.add_child(mi)
 		balls.append({"name": names[i], "mi": mi})
 	stages = ["lit", "dark", "back", "half", "none"]
+	if looks.has("cloak"):
+		cloak_stage()
+		cloak_figure()
+		stages.append_array(["cloak_bg", "cloak_on", "cloak_post", "cloak_noguard", "cloak_moving", "cloak_dark", "cloak_half", "cloak_glitch", "cloak_shadow"])
 	if glb != "":
 		load_who()
 		if who != null:
+			if looks.has("cloak"):                      # her in front of the stripes: cloaked, half turned, cloaked with her eyes left glowing
+				stages.append_array(["cloak_who", "cloak_who_half", "cloak_who_eyes"])
 			for l in looks:
 				stages.append("who:" + str(l))
 			stages.append("who:off")
 	print("CREATURE stages ", stages)
+
+
+## the cloak's stage: a wall of stripes 1 m behind a ball with the made-up skin, a thin red post between it and the eye
+func cloak_stage() -> void:
+	var img := Image.create(256, 8, false, Image.FORMAT_RGB8)
+	var cols := [Color(0.85, 0.85, 0.8), Color(0.04, 0.04, 0.05), Color(0.1, 0.55, 0.2), Color(0.8, 0.7, 0.1)]
+	for y in 8:
+		for x in 256:
+			img.set_pixel(x, y, cols[(x / 4) % 4])                # 64 stripes over 4 m: each 6.25 cm
+	var wall := MeshInstance3D.new()
+	var qm := QuadMesh.new()
+	qm.size = Vector2(4, 3)
+	wall.mesh = qm
+	var wm := StandardMaterial3D.new()
+	wm.albedo_texture = ImageTexture.create_from_image(img)
+	wm.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	wm.roughness = 0.9
+	wall.material_override = wm
+	world.add_child(wall)
+	wall.position = cloak_at + Vector3(0, 0, -1.0)
+	cloak_holder = Node3D.new()
+	cloak_holder.name = "Cloaked"
+	world.add_child(cloak_holder)
+	cloak_holder.position = cloak_at
+	cloak_ball = MeshInstance3D.new()
+	cloak_ball.name = "her_skin"
+	var sm := SphereMesh.new()
+	sm.radius = R
+	sm.height = 2.0 * R
+	sm.radial_segments = 96
+	sm.rings = 48
+	var bm := StandardMaterial3D.new()
+	bm.albedo_texture = skin_paint()
+	bm.roughness = 0.62
+	sm.material = bm
+	cloak_ball.mesh = sm
+	cloak_holder.add_child(cloak_ball)
+	cloak_post = MeshInstance3D.new()
+	var bx := BoxMesh.new()
+	bx.size = Vector3(0.03, 1.2, 0.03)
+	cloak_post.mesh = bx
+	var pm := StandardMaterial3D.new()
+	pm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	pm.albedo_color = Color(1, 0, 0)
+	cloak_post.material_override = pm
+	cloak_post.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	world.add_child(cloak_post)
+	cloak_post.position = cloak_at + Vector3(0.09, 0, 0.6)
+
+
+## a made-up figure through wear() and the HSCloak node (no pictures): what's cloaked, what's put away, what comes back
+func cloak_figure() -> void:
+	var rep := {}
+	var her := Node3D.new()
+	her.name = "Figure"
+	world.add_child(her)
+	her.position = Vector3(0, 0, 60.0)
+	var parts := {}
+	for nm in ["fig_skin", "fig_eye_L", "fig_eye_R", "fig_hair", "fig_tearline", "fig_shirt"]:
+		var mi := MeshInstance3D.new()
+		mi.name = nm
+		var sm := SphereMesh.new()
+		sm.radius = 0.05
+		sm.height = 0.1
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.7, 0.5, 0.4)
+		sm.material = mat
+		mi.mesh = sm
+		her.add_child(mi)
+		parts[nm] = mi
+	var wet := StandardMaterial3D.new()                        # an eye's wet layer
+	parts["fig_eye_L"].material_overlay = wet
+	parts["fig_eye_R"].material_overlay = wet
+	var mats: Array = HSCreatureSkin.wear(her, "cloak")
+	var cloak_shader: Shader = HSCreatureSkin.shader_of("cloak")
+	var on := 0
+	for m in mats:
+		if m is ShaderMaterial and m.shader == cloak_shader:
+			on += 1
+	rep["worn"] = on                                          # every mesh but the tear line: 5
+	rep["own_shader"] = cloak_shader != HSCreatureSkin.shader()
+	rep["tear_hidden"] = not parts["fig_tearline"].visible
+	rep["overlay_off"] = parts["fig_eye_L"].material_overlay == null
+	rep["shadow_off"] = parts["fig_skin"].cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	rep["hair_cut"] = (parts["fig_hair"].get_surface_override_material(0) as ShaderMaterial).get_shader_parameter("alpha_cut") == true
+	HSCreatureSkin.wear(her, "chrome")                        # another look after it: the cloak wholly off first
+	rep["after_chrome"] = [HSCreatureSkin.worn(her).size(), parts["fig_tearline"].visible, parts["fig_eye_L"].material_overlay == wet, parts["fig_shirt"].get_surface_override_material(0) == null]
+	HSCreatureSkin.clear(her)
+	HSCreatureSkin.wear(her, "cloak", {"eyes": true, "shadow": true})
+	rep["eyes_kept"] = parts["fig_eye_L"].get_surface_override_material(0) == null and parts["fig_eye_L"].material_overlay == wet
+	rep["shadow_kept"] = parts["fig_skin"].cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	rep["cleared"] = HSCreatureSkin.clear(her)
+	rep["left"] = HSCreatureSkin.worn(her).size()
+	rep["back"] = parts["fig_tearline"].visible and parts["fig_eye_L"].material_overlay == wet and parts["fig_skin"].cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	# the node: she starts cloaked, shows when she moves, comes back over a second, goes again, breaks up when asked
+	var c := HSCloak.new()
+	c.cloaked = false
+	her.add_child(c)
+	var heard: Array = []
+	c.cloaked_changed.connect(func(v): heard.append(v))
+	c.advance(0.1)
+	rep["node_starts_plain"] = HSCreatureSkin.worn(her).size() == 0
+	c.cloak(1.0)
+	c.advance(0.5)
+	rep["node_half"] = [c.amount, HSCreatureSkin.worn(her).size()]
+	c.advance(0.6)
+	rep["node_on"] = [c.amount, float(c.materials[0].get_shader_parameter("amount")) if c.materials.size() > 0 else -1.0]
+	for i in 30:                                              # walking at 1.4 m/s for half a second
+		her.position.x += 1.4 / 60.0
+		c.advance(1.0 / 60.0)
+	rep["node_moving"] = c.motion
+	for i in 240:                                             # standing four seconds
+		c.advance(1.0 / 60.0)
+	rep["node_still"] = c.motion
+	c.flicker(0.5)
+	rep["node_glitch"] = [c.glitch]
+	c.advance(0.25)
+	rep["node_glitch"].append(c.glitch)
+	c.advance(0.3)
+	rep["node_glitch"].append(c.glitch)
+	c.on_fire = "toggle"
+	c.fire()                                                  # cloaked: revealed
+	c.advance(0.6)
+	rep["node_revealing"] = c.amount
+	c.advance(0.7)
+	c.advance(0.1)
+	rep["node_revealed"] = [c.amount, HSCreatureSkin.worn(her).size(), parts["fig_tearline"].visible]
+	rep["node_heard"] = heard
+	report["cloak_figure"] = rep
+	her.visible = false
 
 
 ## a made-up skin's paint: a tone with darker and redder patches (so a look that keeps the paint shows it)
@@ -197,6 +343,75 @@ func measure(img: Image, mi: MeshInstance3D) -> Dictionary:
 		"glow": float(glow) / maxf(cnt, 1), "dark": float(darkline) / maxf(cnt, 1), "px": cnt}
 
 
+## the cloaked ball against the wall alone: how much it shows inside its outline (the picture's difference from the
+## wall's, 0..1), how much of that is her skin's colour, how much brighter than the wall (the crackle), what changed
+## round it, how dark the wall is where her shadow would fall, and (the post's shot) how much inside her outline, away
+## from the post itself, differs from the shot without the post: the post pulled into her
+func measure_cloak(img: Image) -> Dictionary:
+	var d := disc(cloak_ball)
+	var c: Vector2 = d[0]
+	var r: float = d[1]
+	var post_x := cam.unproject_position(cloak_post.global_position).x
+	var post_w := absf(cam.unproject_position(cloak_post.global_position + cam.global_basis.x * 0.015).x - post_x) + 3.0
+	var post_c := img.get_pixel(int(post_x), int(c.y - 1.3 * r))           # the post as the picture has it, above her
+	var seen := 0.0
+	var cnt := 0
+	var skin := 0
+	var bright := 0
+	var red := 0
+	var around := 0.0
+	var mean := Vector3.ZERO
+	var bmean := Vector3.ZERO
+	var lum := 0.0
+	var round_it := 0.0
+	var rn := 0
+	for y in range(int(c.y - 1.6 * r), int(c.y + 1.6 * r) + 1):
+		for x in range(int(c.x - 1.6 * r), int(c.x + 1.6 * r) + 1):
+			if x < 0 or y < 0 or x >= img.get_width() or y >= img.get_height():
+				continue
+			var q := Vector2(x + 0.5, y + 0.5).distance_to(c) / r
+			var p := img.get_pixel(x, y)
+			var b := cloak_bg.get_pixel(x, y)
+			var l := p.r * 0.3 + p.g * 0.59 + p.b * 0.11
+			var bl := b.r * 0.3 + b.g * 0.59 + b.b * 0.11
+			if q < 0.97:
+				cnt += 1
+				seen += (absf(p.r - b.r) + absf(p.g - b.g) + absf(p.b - b.b)) / 3.0
+				mean += Vector3(p.r, p.g, p.b)
+				bmean += Vector3(b.r, b.g, b.b)
+				lum += l
+				if p.r > 0.2 and p.r > p.g * 1.25 and p.g > p.b * 1.05:
+					skin += 1
+				if l - bl > 0.3:
+					bright += 1
+				if cloak_post.visible and absf(x + 0.5 - post_x) > post_w:      # the post's own colour, away from the post
+					if absf(p.r - post_c.r) + absf(p.g - post_c.g) + absf(p.b - post_c.b) < 0.3:
+						red += 1
+			elif q > 1.08 and q < 1.6:
+				rn += 1
+				round_it += absf(l - bl)
+				around += l
+	# where her shadow falls on the wall: her middle carried along the lamp's ray to the wall's plane
+	var to := (cloak_ball.global_position - key.global_position).normalized()
+	var hit := cloak_ball.global_position + to * ((cloak_at.z - 1.0 - cloak_ball.global_position.z) / to.z)
+	var sc := cam.unproject_position(hit)
+	var shade := 0.0
+	var sn := 0
+	for y in range(int(sc.y - 0.4 * r), int(sc.y + 0.4 * r) + 1):
+		for x in range(int(sc.x - 0.4 * r), int(sc.x + 0.4 * r) + 1):
+			if x < 0 or y < 0 or x >= img.get_width() or y >= img.get_height():
+				continue
+			var p := img.get_pixel(x, y)
+			var b := cloak_bg.get_pixel(x, y)
+			shade += (b.r * 0.3 + b.g * 0.59 + b.b * 0.11) - (p.r * 0.3 + p.g * 0.59 + p.b * 0.11)
+			sn += 1
+	mean /= maxf(cnt, 1)
+	bmean /= maxf(cnt, 1)
+	return {"seen": seen / maxf(cnt, 1), "skin": float(skin) / maxf(cnt, 1), "bright": float(bright) / maxf(cnt, 1), "red": red,
+		"mean": [mean.x, mean.y, mean.z], "wall": [bmean.x, bmean.y, bmean.z], "lum": lum / maxf(cnt, 1), "round": round_it / maxf(rn, 1), "around": around / maxf(rn, 1),
+		"shade": shade / maxf(sn, 1), "px": cnt}
+
+
 func setup(name: String) -> void:
 	key.visible = true
 	key.light_energy = 14.0
@@ -218,8 +433,44 @@ func setup(name: String) -> void:
 		"none":
 			for b in balls:
 				(b["mi"].material_override as ShaderMaterial).set_shader_parameter("amount", 0.0)
+	if name.begins_with("cloak_"):                     # the cloak's own stage: the ball in front of the stripes
+		cam.look_at_from_position(cloak_at + Vector3(0, 0, 2.6), cloak_at)
+		key.position = cloak_at + Vector3(-1.6, 1.8, 2.4)
+		key.look_at(cloak_at + Vector3(0, 0, -0.5))
+		key.light_energy = 9.0
+		key.visible = name != "cloak_dark"
+		fill.position = cloak_at + Vector3(2.0, 0.4, 2.0)
+		HSCreatureSkin.clear(cloak_holder)
+		if name.begins_with("cloak_who"):                  # the character in the ball's place
+			cloak_ball.visible = false
+			cloak_post.visible = false
+			var tall := 1.7
+			for mi in who.find_children("*", "MeshInstance3D", true, false):
+				if String(mi.name).to_lower().ends_with("_skin"):
+					tall = (mi as MeshInstance3D).get_aabb().size.y
+			who.position = cloak_at + Vector3(0, 0.55 - tall, 0)       # her head in the picture's upper half
+			var bl = HSBlink.of(who)
+			if bl != null:
+				bl.idle = false
+			HSCreatureSkin.clear(who)
+			HSEyeFx.clear(who)
+			if name == "cloak_who_eyes":
+				HSEyeFx.wear(who, "glow")
+			HSCreatureSkin.wear(who, "cloak", {"amount": 0.5 if name == "cloak_who_half" else 1.0, "eyes": name == "cloak_who_eyes"})
+			return
+		cloak_ball.visible = name != "cloak_bg"
+		cloak_post.visible = name == "cloak_post" or name == "cloak_noguard"   # (in the other shots it would only be in the way of the measure)
+		if name != "cloak_bg":
+			var st := {"motion": 1.0 if name == "cloak_moving" else 0.0, "amount": 0.5 if name == "cloak_half" else 1.0,
+				"glitch": 1.0 if name == "cloak_glitch" else 0.0, "shadow": name == "cloak_shadow", "depth_guard": name != "cloak_noguard"}
+			HSCreatureSkin.wear(cloak_holder, "cloak", st)
+		return
 	if name.begins_with("who:") and who != null:
 		var l := name.substr(4)
+		if who.position.z < 0.0:                           # back from the cloak's stage, as she was
+			HSCreatureSkin.clear(who)
+			HSEyeFx.clear(who)
+			who.position = Vector3(0, 0.35, 40.0)
 		if not report["who"].has("materials"):
 			report["who"]["materials"] = look_node.materials.size()
 			look_node.wear()                             # worn again (a script's call after the node's own): her skin keeps its paint
@@ -310,7 +561,18 @@ func _process(_d: float) -> bool:
 		print("CREATURE FAIL: can't write into " + out_dir)
 		quit(1)
 		return true
-	if not name.begins_with("who:"):
+	if name.begins_with("cloak_who"):
+		pass
+	elif name.begins_with("cloak_"):
+		if name == "cloak_bg":
+			cloak_bg = img
+		elif cloak_bg != null:
+			if not report.has("cloak"):
+				report["cloak"] = {}
+			report["cloak"][name.substr(6)] = measure_cloak(img)
+			if name == "cloak_on":
+				cloak_on = img
+	elif not name.begins_with("who:"):
 		var row := {}
 		for b in balls:
 			row[b["name"]] = measure(img, b["mi"])

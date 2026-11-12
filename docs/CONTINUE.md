@@ -24,11 +24,34 @@ builder's floors, the street's steel stair, climbing in Godot and on the desk; 2
 Character Studio, then the creature presets and a Studio character's face in Godot, then the Anime switch and the red
 knit dress; then on `claude/beautiful-cray-a622xx`: tutorial v2's floor ready-made; 2026-11-11 on
 `claude/compassionate-babbage-3bnfqx`: the clothing research (Cloth2Tex, ready-made garments, the fit test, the
-clothing library). Read this after CLAUDE.md's start
+clothing library); 2026-11-12 on `claude/jolly-darwin-9t8hkc`: the ghost events plan, the cloak and creepy eyes. Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-11, `claude/compassionate-babbage-3bnfqx`): ready-made clothing fitted to our bodies, researched and tested, then worn in layers
+## Where it stopped last (2026-11-12, `claude/jolly-darwin-9t8hkc`): the ghost events plan, the cloak, creepy eyes
+
+The user asked for ideas (ghost events on flags, things flung that stay in the room, a door in time with a hand, what
+a babysitting game with a grey alien needs) and for two things built (the Predator's cloak, creepy eyes).
+
+- **The plan: docs/GHOST_EVENTS_PLAN.md. Nothing of it is built**; it ends with four questions for the user (§7) and
+  a build order (§6: the base, `ghost_fling.gd`, `ghost_hand.gd`, `touch_sync.gd` first; then the haunt level; six
+  cheap events; look-at and the sister's needs; cooking and food props; Director cards). Start there when they say
+  which.
+- **Built** (the look plugin, GODOT_LOOK §5p, §5q): `HSCreatureSkin`'s `cloak` (`creature_cloak.gdshader`), the
+  `HSCloak` node (`cloak.gd`), `HSEyeFx` (`eye_fx.gd`, the `fx_` block in `eye.gdshader`), the HSCharacterLook
+  node's rows for both, 15 new presets (79), EYEFX (`tools/godot/eye_fx_check.py`), CREATURESKIN grown.
+- **The grey alien** (`node tools/character/creatures.mjs make --only alien --export`, the Studio's server running;
+  on a cloud session first `python tools/face_mesh.py setup` and `apt-get install -y libegl1 libgles2`: the page
+  never becomes ready without MediaPipe, and its import needs libEGL) is the test subject for both, and Freddy's
+  body when that game starts. It's in `Exports/characters/` (not tracked).
+- **Not done**: the story's `skin` word doesn't name the cloak yet (a desk game's cast), the runtime add-on has no
+  word for eye looks (STORY_FORMAT: grow the runner, the check and the doc together when a game wants them); the
+  guides don't show either; tutorial v2 uses neither. LATER has the cloak's next steps and the black eye under a
+  strong lamp.
+- **Checks run here**: CREATURESKIN and EYEFX on the alien, LOOKPLUGIN, GDFACES, GDPLAY, GDTESTROOM, check_all (see
+  the session's last message for what passed).
+
+## Before that (2026-11-11, `claude/compassionate-babbage-3bnfqx`): ready-made clothing fitted to our bodies, researched and tested, then worn in layers
 
 Research and a prototype, from main (PR #21, then PR #22 merged in); nothing in the Studio changed. The user asked
 five things (DECISIONS 2026-11-11, both sections): whether Cloth2Tex could be a second clothing system, a CloV2 tab;

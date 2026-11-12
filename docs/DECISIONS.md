@@ -2,6 +2,37 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12 (the user: ghost events, the cloak, creepy eyes, what "Freddy" needs)
+
+- **"Come up with some extra things we could add to our godot horrorengine, e.g. since we are making paranormal games
+  we might want to be able to create ghostly-eventors, e.g. objects within this range might fly off the table (some
+  light physics), ghostly eventors should function based off flags ... items that are flung shouldn't clip out of the
+  scene. ... if I have an animation of an npc opening a door what if I want a door to open easily in sync with when
+  their hand touches the door, or a cupboard ..."**, and what a game like *My Sister's Imaginary Friend Freddy* (a
+  grey alien in the house while you look after your sister: Tamagotchi chores first, the paranormal bleeding in)
+  would need, as *"drag and drop scripts that would help set the atmosphere"*. **A plan, not built**:
+  **docs/GHOST_EVENTS_PLAN.md**. A ghost event is one node with `needs` (the flags), a trigger, what it does and what
+  it tells the Fear node and the director; the two described in detail (the poltergeist's fling, which throws each
+  thing to a place inside the room instead of with a force and watches it there; `touch_sync`, where the door follows
+  the hand instead of a clock, and which opens a door "by itself" when the actor is cloaked); a catalogue of forty
+  more against what the project already has; a **haunt level** (0 to 5) every event reads, so the paranormal bleeds
+  in by one setting; Freddy's missing half (the sister's needs, a day, counting chores, cooking and food props,
+  look-at, a routine); a build order and four questions. Waiting on the user's pick.
+- **"can you also add a new one that emulates that 'invisibility cloaking' effect that the predators in the predators
+  use"**. Built: the creature skin **`cloak`** (GODOT_LOOK §5p), a shader of its own that draws the room behind her
+  bent through her shape in nested shells, on everything she has, nearly gone standing still and rippling when she
+  moves, no light of her own; `eyes: true` and `shadow: true` for two eyes in the air and a shadow with nobody
+  casting it; and the node **`HSCloak`** (`cloak()`, `reveal()`, `flicker()`, `fire()`), which makes it come and go
+  in crackling patches. Its limits are in §5p (see-through things behind her aren't in it: in fog or a beam she's a
+  hole). CREATURESKIN holds it.
+- **"consider adding some glowing eye shaders or creepy eye effects, spiral eyes, glowing eyes (adjustable color),
+  black eye, love hearts inside the eyes"**. Built: **`HSEyeFx`** (GODOT_LOOK §5q), thirteen looks drawn by the eye's
+  own shader behind the cornea: glow (any colour), black, void, white, blind, bloodshot, spiral, hearts, star, slit,
+  cross, dilated, pinprick; on the HSCharacterLook node its Creepy eyes row; a preset each. A new check, EYEFX.
+- **Tried on the Studio's grey alien** (`creatures.mjs make --only alien --export`, made here: 1.25 m): every eye
+  look, the cloak, and the two together (cloaked, his eyes glowing). Seen and left: his own black eyes go white under
+  a strong lamp close by, with the eye shader as it was (LATER).
+
 ## 2026-11-11, the very last (the user: fix the library garments' limits)
 
 - **"fix all the limits"**, each with its answer:
