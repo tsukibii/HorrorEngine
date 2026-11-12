@@ -40,4 +40,6 @@ export function textures(look) {
   return { W: A.W, H: A.H, albedo: albedo(A, k), strands, atlas: A, look: k };
 }
 // (dyed hair, a look that's a carrier: each lock's broad highlight in its own colour too, where that's brighter than the look's: HSHair's spec2_own)
-export const record = look => ({ look, shader: "tools/character/hairshader.js (Kajiya-Kay, shifted per strand; the atlas's R brightness, G strand, B clump, A coverage)", studioHair: look && look.carrier ? { ...STUDIO_HAIR, settings: { ...STUDIO_HAIR.settings, spec2_own: 1 } } : STUDIO_HAIR });
+// (and a look's own word for its bake, `bake`: numbers for HSHair's settings, a glossier or a softer hair than its own)
+export const record = look => ({ look, shader: "tools/character/hairshader.js (Kajiya-Kay, shifted per strand; the atlas's R brightness, G strand, B clump, A coverage)",
+  studioHair: look && (look.carrier || look.bake) ? { ...STUDIO_HAIR, settings: { ...STUDIO_HAIR.settings, ...(look.bake || {}), ...(look.carrier ? { spec2_own: 1 } : {}) } } : STUDIO_HAIR });

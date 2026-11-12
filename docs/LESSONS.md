@@ -5,6 +5,44 @@ the fix.
 
 ## The hair editor v2.0: what took a second try (2026-11-12)
 
+- **A before-and-after that changed two things credits the wrong one.** The line of skin down the fringe's middle was
+  gone in the picture after *Closed* went in; the same render had also switched the light from the front to the
+  reel's. A number then said Closed did nothing (the strands' spacing at the middle: 7.6 mm, 6.5 Closed) and for a
+  moment both were believable. Rendered again with only the setting changed, under one light: the line is there
+  without it and gone with it. The number had measured the wrong thing (how far apart the two sides' nearest strands
+  are, which is the pores' spacing either way); what Closed changes is that they stop fanning apart (12.5 mm of
+  drift to their own side, 5.1 Closed), and that is what the check asserts now. One factor a render; and when a
+  number and a picture disagree, find which of the two is measuring something else before believing either.
+- **"The older styles can't be touched by this" is a claim to run, not to reason.** The fringe's forward combing was
+  written to start 3.6 cm above the hairline, "past where the default fringes reach". The hair-by-hair comparison
+  with the committed engine (the scratch `regress3.mjs` over `git archive HEAD`) showed 12 committed styles moved, one
+  by 4 cm. It went behind its own setting. The comparison takes two minutes; run it after every engine change, before
+  looking at anything else.
+- **Read the reference enlarged before describing it.** The note written a day earlier said her ear's top was covered
+  and its lower half showed, and a whole plan followed from it (an ear mode in between). At seven times the size
+  the whole ear is out with the hair behind it. Her tie was "2.5 cm under the lobe" by eye; on a grid it is 5. Her
+  hair stood "1.3 cm beyond the ear"; its solid edge, found row by row from the pixels, is 0.8, the rest is wisps.
+  Each of these moved a design. Enlarge it, put a grid on it, take the number off the pixels.
+- **One scale from several landmarks, or none.** The picture's scale from the eyes' spacing alone was 17.8 px a
+  centimetre (her eyes are set wide: wrong), from the eyes to the chin 13 to 15, from the ear 12.5 to 14, from the
+  head's width with the ears 14. Three that agree are a scale; one is a guess with decimals.
+- **Slopes added up don't arrive; a curve that is aimed at does.** The first Puff added an outward slope and an
+  inward one to the hanging hair's direction, each right on paper and summing to zero over the fall. Through the
+  bend smoothing and a blend they came out late and weak: the hair tucked in with a hook in its last centimetre, 27
+  strands doubling back. Planned as a curve where the hair leaves the head and steered at that curve's next point,
+  every step, it arrives whatever puts it off on the way.
+- **A rule with no edge finds one.** The line that sends the sideburn's hair up over the ear ("in front of the ear's
+  back edge") had no lower limit. Hair that had come down behind the ear and swung forward under it for the tie was
+  in front of the ear's back edge too: sent back up, down again, up: 583 of 984 reached their tie, one strand 58 cm
+  long. The kept points of a few strands printed (height, distance from the axis, bearing) showed it in a minute.
+- **A flat thing has a face; say which way it looks.** The tail's flat section took the body's own way out as its
+  thin direction. On the chest that is forward, right; beside the neck it is sideways, so from the front the fan
+  under the tie was edge-on: a tube that widened only where it met the chest.
+- **Tied hair was glued to the head.** Not a second try, the finding under the user's "the curvature of the sides":
+  every step pulled tied hair onto the skin and there was no gravity in it, so it could only ever follow the skull.
+  The volume sliders, Tightness, a thinner tail: none could make a curtain. When a shape can't be reached by any
+  slider, read the stepper for what it can't do, before tuning.
+
 - **Two guesses by eye, then a measurement: measure first.** Dyed streaks on hair tied into a bun came out as
   card-shaped flecks. First guess (the hair's sweep and swirl): rendered with both off, the same. Second (stray wisps,
   the hairline's baby hairs, the locks' pull): rendered without each, the same. Three renders spent, and one change made on the first guess that wasn't the cause.

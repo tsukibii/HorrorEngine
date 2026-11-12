@@ -11,6 +11,7 @@
 //   band(tie, s)     -> { position, normal, index, colour } the tie's own mesh
 import { dist, grad } from "./sdf.js";
 import { K, TS, GAP, hash, DRILL_TOP } from "./strands.js";
+import { EAR } from "./pores.js";
 
 const D = Math.PI / 180;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -28,14 +29,27 @@ export const TIES = { none: "None", pony: "Ponytail", twin: "Twin tails", half: 
 
 export function tiesOf(S, C, s) {
   const t = s.ties || {}, kind = t.kind || "none"; if (kind === "none") return [];
-  const h = clamp(t.height ?? 0.5, 0, 1), tl = t.tail || {}, thick = clamp(tl.thick ?? 0.013, 0.004, 0.03), loose = clamp(t.loose ?? 0, 0, 1), g = [0, 0, 0], out = [];
+  const h = clamp(t.height ?? 0.5, 0, 1), tl = t.tail || {}, thick = clamp(tl.thick ?? 0.013, 0.004, 0.03), loose = clamp(t.loose ?? 0, 0, 1), g = [0, 0, 0], out = [], drop = clamp(t.drop ?? 0, 0, 0.08);
   const twin = kind === "twin" || kind === "buns" || kind === "twin_half", front = (tl.fall || "back") === "front";   // (two side up: two small tails of the top's hair, the rest loose)
   const make = (name, side, d) => {
     const p = skinAlong(S, C, unit(d)); grad(S, p[0], p[1], p[2], g);
     const n = g.slice(), at = [p[0] + n[0] * (0.01 + thick), p[1] + n[1] * (0.01 + thick), p[2] + n[2] * (0.01 + thick)];
+    if (drop > 0) {                                                       // Drop: the tie slid down the hanging hair, below where Height can put it on the head (a low tail's elastic a few centimetres under the ear); kept off the neck sideways, at its height
+      // (it hangs on the hair there, against the neck: brought in to it, the band just clear of the skin, where a tie on the head stands a centimetre off it)
+      const off = thick + 0.003 + 0.007 * (1 - smooth(0, 0.02, drop));
+      at[1] -= drop;
+      for (let it = 0; it < 8; it++) { const d = dist(S, at[0], at[1], at[2]); if (Math.abs(d - off) < 0.0004 || !grad(S, at[0], at[1], at[2], g)) break; const hl = Math.hypot(g[0], g[2]) || 1; at[0] += g[0] / hl * (off - d); at[2] += g[2] / hl * (off - d); }
+    }
     // the way the tail leaves the tie: out of the head, and down; a low tail that falls in front goes forward over the shoulder
-    const dir = unit(front && twin ? [side * 0.12, -0.5, 0.85] : [n[0] * 0.75, n[1] * 0.75 - 0.55 - 0.5 * (1 - h), n[2] * 0.75]);
-    out.push({ name, side, at, out: n, dir, radius: thick, tight: clamp(t.tight ?? 0.6, 0, 1), kind,
+    // (Out: twin tails lean away from the neck: they leave their ties turned out and hang a little out of plumb all the way down, as tails that rest on the shoulders and the chest do)
+    const outA = twin ? clamp(tl.out ?? 0, -1, 1) : 0, dir = unit(front && twin ? [side * (0.12 + 0.6 * Math.tan(outA * 36 * D)), -0.5 - 0.1 * Math.abs(outA), 0.85 * (1 - 0.4 * Math.abs(outA))] : [n[0] * 0.75 + side * 0.6 * Math.tan(outA * 36 * D), n[1] * 0.75 - 0.55 - 0.5 * (1 - h), n[2] * 0.75]);
+    const fall = unit([side * Math.tan(outA * 32 * D), -1, 0]);
+    // a low tie by an ear that's out (tucked): its hair goes round the ear to it, over the ear's top and down behind
+    // (strands.js). round: how much so (1 under or just behind the ear, 0 from the nape's side on); under: it sits
+    // within the ear's own span round the head; guard: the ear is kept clear down to here
+    const azT = Math.abs(Math.atan2(at[0] - C[0], at[2] - C[2])) / D, low = at[1] < EAR.y;
+    const round = low ? 1 - smooth(EAR.az + 30, EAR.az + 55, azT) : 0, under = low && Math.abs(azT - EAR.az) < EAR.da * 1.08;
+    out.push({ name, side, at, out: n, dir, fall, radius: thick, tight: clamp(t.tight ?? 0.6, 0, 1), kind, round, under, guard: Math.max(EAR.y - EAR.dy * 1.08, Math.min(EAR.y - 0.012, at[1] + 0.02)),
       takes: (i, pp, az, by, P) => {
         if (Math.abs(az) < 118 * loose) return false;                    // the front left loose, as far round as Loose says
         if ((kind === "half" || kind === "twin_half" || t.part === "top") && P.top[i] < 0.45 && by < 0.06) return false;   // half-up, two side up, or any tie of The top's hair only: the rest hangs loose
@@ -53,11 +67,11 @@ export function tiesOf(S, C, s) {
 
 // the tail's spine from the tie: its own way at first, then falling; kept a tail's thickness off the body
 function spine(tie, S, L, stiff) {
-  const steps = clamp(Math.ceil(L / 0.008), 6, 64), dl = L / steps, P = [tie.at.slice()], g = [0, 0, 0];
+  const steps = clamp(Math.ceil(L / 0.008), 6, 64), dl = L / steps, P = [tie.at.slice()], g = [0, 0, 0], fl = tie.fall || [0, -1, 0];
   let [px, py, pz] = tie.at, [tx, ty, tz] = tie.dir;
   for (let k = 1; k <= steps; k++) {
     const s = k * dl, w = 1 - smooth(stiff * 0.3, stiff, s), al = 1 - Math.exp(-dl / 0.02);
-    let dx = tie.dir[0] * w, dy = tie.dir[1] * w - (1 - w), dz = tie.dir[2] * w; const dn = Math.hypot(dx, dy, dz) || 1;
+    let dx = tie.dir[0] * w + fl[0] * (1 - w), dy = tie.dir[1] * w + fl[1] * (1 - w), dz = tie.dir[2] * w + fl[2] * (1 - w); const dn = Math.hypot(dx, dy, dz) || 1;
     tx += (dx / dn - tx) * al; ty += (dy / dn - ty) * al; tz += (dz / dn - tz) * al; const tn = Math.hypot(tx, ty, tz) || 1; tx /= tn; ty /= tn; tz /= tn;
     let qx = px + tx * dl, qy = py + ty * dl, qz = pz + tz * dl;
     const need = tie.radius * 0.8 + GAP;
@@ -74,7 +88,11 @@ export function tail(tie, ctx) {
   const { S, s } = ctx, tl = (s.ties && s.ties.tail) || {}, tx = s.texture || {}, bun = tie.kind === "bun" || tie.kind === "buns" || tie.kind === "knot";
   const L = bun ? 0.001 : clamp(tl.length ?? 0.2, 0.03, 0.45), thick = tie.radius, spread = clamp(tl.spread ?? 0.5, 0, 1.5), taper = clamp(tl.taper ?? 0.6, 0, 1);
   if (bun) return bunOf(tie, ctx);
-  const SP = spine(tie, S, L, 0.02 + 0.06 * clamp(tl.stiff ?? 0.4, 0, 1)), m = clamp(Math.round(14 + thick / 0.013 * 20), 12, 64);
+  // Strands: how many hairs the tail has (1: by its thickness); Fan: it springs out right under the tie, as a brush
+  // does, where 0 leaves the tie as a rope and widens after; Flat: it lies against the body as a brush laid on it,
+  // wide across and thin through (its section's frame is the body's own there: across it, and out of it)
+  const fan = clamp(tl.fan ?? 0, 0, 1), flat = clamp(tl.flat ?? 0, 0, 1), bloom = clamp(tl.bloom ?? 0.3, 0.1, 0.8);
+  const SP = spine(tie, S, L, 0.02 + 0.06 * clamp(tl.stiff ?? 0.4, 0, 1)), m = clamp(Math.round((14 + thick / 0.013 * 20) * clamp(tl.strands ?? 1, 0.3, 4)), 8, 140);
   const pts = new Float32Array(m * K * 3), len = new Float32Array(m), u = new Float32Array(m), width = new Float32Array(m), outv = new Float32Array(m * K * 3);
   const wave = Math.max(0, tx.wave || 0), wl = Math.max(0.02, tx.waveLength || 0.09), curl = clamp(tx.curl || 0, 0, 1), g = [0, 0, 0];
   // a frame carried down the spine (a across, b the other way), so the cards keep their places round it
@@ -83,7 +101,15 @@ export function tail(tie, ctx) {
     const p0 = at(SP, Math.max(0, TS[k] - 0.02)), p1 = at(SP, Math.min(1, TS[k] + 0.02)), t = unit([p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]]);
     if (!a) a = unit(Math.abs(t[1]) < 0.9 ? [t[2], 0, -t[0]] : [1, 0, 0]);
     const d = a[0] * t[0] + a[1] * t[1] + a[2] * t[2]; a = unit([a[0] - t[0] * d, a[1] - t[1] * d, a[2] - t[2] * d]);
-    fr.push([t, a.slice(), [t[1] * a[2] - t[2] * a[1], t[2] * a[0] - t[0] * a[2], t[0] * a[1] - t[1] * a[0]]]);
+    let av = a.slice(), bv = [t[1] * a[2] - t[2] * a[1], t[2] * a[0] - t[0] * a[2], t[0] * a[1] - t[1] * a[0]];
+    if (flat > 0) {                                                       // (out of the body here, square to the tail; across it the other way)
+      // (where the tail rests on the body, out of the body; where it hangs in the air, the way it faces: forward for tails that fall over the shoulders, out of the head for the others. Not the body's own way there: beside the neck that is sideways, and the fan would be edge-on from the front)
+      const c = at(SP, TS[k]), face = (tl.fall || "back") === "front" && tie.side ? [0, 0.15, 1] : [tie.out[0], 0, tie.out[2]], dB = dist(S, c[0], c[1], c[2]), on = grad(S, c[0], c[1], c[2], g) ? 1 - smooth(0.008, 0.02, dB) : 0;
+      let nb = unit([g[0] * on + face[0] * (1 - on), g[1] * on + face[1] * (1 - on), g[2] * on + face[2] * (1 - on)]);
+      const dd = nb[0] * t[0] + nb[1] * t[1] + nb[2] * t[2]; nb = [nb[0] - t[0] * dd, nb[1] - t[1] * dd, nb[2] - t[2] * dd];
+      if (Math.hypot(...nb) > 0.2) { bv = unit(nb); av = [bv[1] * t[2] - bv[2] * t[1], bv[2] * t[0] - bv[0] * t[2], bv[0] * t[1] - bv[1] * t[0]]; }
+    }
+    fr.push([t, av, bv]);
   }
   for (let j = 0; j < m; j++) {
     const r1 = hash((j + 1) * 0.0731 + (ctx.seed || 1) * 0.013, 71), r2 = hash((j + 1) * 0.0731, 72), r3 = hash((j + 1) * 0.0731, 73);
@@ -91,11 +117,13 @@ export function tail(tie, ctx) {
     u[j] = r2; len[j] = own; width[j] = clamp(thick * 2 * Math.PI * Math.max(0.35, ring) / Math.sqrt(m) * 1.9, 0.004, 0.02);
     for (let k = 0; k < K; k++) {
       const f = TS[k] * own / L, c = at(SP, f), [, av, bv] = fr[Math.min(K - 1, Math.round(f * (K - 1)))], sAt = f * L;
-      const rad = thick * ring * lerp(0.75, 1 + 1.3 * spread, smooth(0, 0.3, f)) * (1 - taper * 0.75 * smooth(0.55, 1, f));
-      const th = th0 + curl * sAt / 0.05 * 2 + (wave > 0 ? 0.6 * Math.sin(2 * Math.PI * sAt / wl + r3 * 6.28) : 0), cs = Math.cos(th), sn = Math.sin(th), wv = wave > 0 ? wave * 0.8 * smooth(0.02, 0.08, sAt) * Math.sin(2 * Math.PI * sAt / wl) : 0;
+      const open = lerp(smooth(0, bloom, f), Math.pow(Math.min(1, f / bloom), 0.55), fan);
+      const rad = thick * ring * lerp(0.75, 1 + 1.3 * spread, open) * (1 - taper * 0.75 * smooth(0.55, 1, f));
+      const th = th0 + curl * sAt / 0.05 * 2 + (wave > 0 ? 0.6 * Math.sin(2 * Math.PI * sAt / wl + r3 * 6.28) : 0), cs = Math.cos(th), sn = Math.sin(th) * (1 - 0.72 * flat * open), wv = wave > 0 ? wave * 0.8 * smooth(0.02, 0.08, sAt) * Math.sin(2 * Math.PI * sAt / wl) : 0;
       const ox = av[0] * cs + bv[0] * sn, oy = av[1] * cs + bv[1] * sn, oz = av[2] * cs + bv[2] * sn, o = (j * K + k) * 3;
       pts[o] = c[0] + ox * rad + av[0] * wv; pts[o + 1] = c[1] + oy * rad + av[1] * wv; pts[o + 2] = c[2] + oz * rad + av[2] * wv;
-      outv[o] = ox; outv[o + 1] = oy; outv[o + 2] = oz;
+      if (flat > 0) { const fl2 = flat * open, nx = bv[0] * (sn >= 0 ? 1 : -1), ny = bv[1] * (sn >= 0 ? 1 : -1), nz = bv[2] * (sn >= 0 ? 1 : -1), ol = Math.hypot(ox * (1 - fl2) + nx * fl2, oy * (1 - fl2) + ny * fl2, oz * (1 - fl2) + nz * fl2) || 1; outv[o] = (ox * (1 - fl2) + nx * fl2) / ol; outv[o + 1] = (oy * (1 - fl2) + ny * fl2) / ol; outv[o + 2] = (oz * (1 - fl2) + nz * fl2) / ol; }   // (a flat tail's cards face out of the body, or into it: not sideways)
+      else { outv[o] = ox; outv[o + 1] = oy; outv[o + 2] = oz; }
     }
   }
   for (let j = 0; j < m; j++) for (let k = 1; k < K; k++) {               // kept off the body: the tail lies on a shoulder, it doesn't sink into it

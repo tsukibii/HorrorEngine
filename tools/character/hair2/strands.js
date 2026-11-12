@@ -53,6 +53,10 @@ export function trace(ctx) {
   const FRONT = (tuckL || tuckR) && (s.tuckFall || "front") === "front";
   // tied hair's way to its tie: Sweep (it keeps its root's way at first and bends round to the tie over some centimetres: arcs over the head) and Swirl (it comes in turned, winding round the tie)
   const tieSweep = clamp((s.ties && s.ties.sweep) || 0, 0, 1) * 0.1, tieSwirl = clamp((s.ties && s.ties.swirl) || 0, -1, 1) * 42 * D;
+  // Drape: tied hair hangs to its tie. It lies on the head only where the head holds it up; where the head falls away
+  // under it (below its widest, behind the ear, down to the neck) it leaves the skin and hangs free, a curtain, drawn
+  // in to the tie at the end, with some slack (it sags on the way). 0: it lies on the head all the way to its tie
+  const drape = clamp((s.ties && s.ties.drape) || 0, 0, 1), puff = clamp((s.ties && s.ties.puff) || 0, 0, 1) * 0.035, EBACK = EAR.az + EAR.da * 1.15, GATHER = clamp((s.ties && s.ties.gather) ?? 0.075, 0.03, 0.2);
   for (let i = 0; i < n; i++) {
     let L = len[i]; if (!(L > 0.0015)) continue;
     const gr = group[i], steps = clamp(Math.ceil(L / 0.008), 5, MAXS), dl = L / steps, al = 1 - Math.exp(-dl / bendLen);
@@ -62,20 +66,62 @@ export function trace(ctx) {
     const V = vol[i], reach = V / Math.max(sl, 0.1), jit = 0.88 + 0.24 * hash(u[i], 3);
     const tie = gr >= TIE ? ctx.ties[gr - TIE] : null, own = gr === FRINGE || gr === FRAME, ownHold = own ? (gr === FRINGE ? (fr.hold ?? 0.5) : 0.25) * L : 0;
     poly[0] = px; poly[1] = py; poly[2] = pz;
-    let m = 1, sAt = 0, rest = 0.03, done = false, draped = false;
+    let m = 1, sAt = 0, rest = 0.03, done = false, draped = false, hung = false, eta0 = 0, bow = 0, r0x = 0, r0z = 0, o0x = 0, o0z = 0;
+    // a low tie by an ear that's out: this hair goes round the ear to it. Hair that grows in front of the ear's back
+    // edge goes over the ear's top to a place of its own behind the ear (its lane) and comes down there; hair from
+    // behind comes forward no further than the ear's back edge until it's below the ear
+    const round = tie && tie.round > 0 && (pos[i * 3] >= C[0] ? tuckL : tuckR) ? tie.round : 0;
+    const az0 = round ? Math.abs(Math.atan2(pos[i * 3] - C[0], pos[i * 3 + 2] - C[2])) / D : 0, lane = round && az0 < EBACK ? EAR.az + EAR.da * (1.15 + 0.45 * hash(u[i], 19)) : EBACK;
     for (let k = 1; k <= steps && !done; k++) {
       sAt = k * dl;
       const d0 = dist(S, px, py, pz), ok = grad(S, px, py, pz, g), near = ok && d0 < GAP + V + 0.014;
       // the way wanted: combed, or falling
       let wc = 0, cx = 0, cy = 0, cz = 0;
-      let free = false, atTie = false;
+      let free = false, atTie = false, leave = 0;
       if (tie) {                                                          // toward its tie along the head; the last few centimetres straight to it, and it ends in it
         cx = tie.at[0] - px; cy = tie.at[1] - py; cz = tie.at[2] - pz; wc = 1; const dT = Math.hypot(cx, cy, cz);
-        free = dT < 0.045; if (dT < (tie.radius || 0.012) * 0.6 + dl * 1.2) atTie = true;
+        free = dT < (hung ? 0.045 - 0.03 * drape : 0.045); if (dT < (tie.radius || 0.012) * 0.6 + dl * 1.2) atTie = true;   // (hair that hangs comes down to its tie along its own curve: only the last centimetre or two straight)
         if (!free && dT > 1e-6 && (tieSweep > 0 || tieSwirl)) {
           cx /= dT; cy /= dT; cz /= dT;
           if (tieSwirl && ok) { const a = tieSwirl * smooth(0.045, 0.1, dT), cs = Math.cos(a), sn = Math.sin(a), rx = g[1] * cz - g[2] * cy, ry = g[2] * cx - g[0] * cz, rz = g[0] * cy - g[1] * cx; cx = cx * cs + rx * sn; cy = cy * cs + ry * sn; cz = cz * cs + rz * sn; }
           if (sAt < tieSweep) { const k = smooth(0, tieSweep, sAt); cx = dir[i * 3] * (1 - k) + cx * k; cy = dir[i * 3 + 1] * (1 - k) + cy * k; cz = dir[i * 3 + 2] * (1 - k) + cz * k; }
+        }
+        if (!free && dT > 1e-6 && (drape > 0 || round)) {
+          const cl = Math.hypot(cx, cy, cz) || 1; cx /= cl; cy /= cl; cz /= cl;
+          const eta = py - tie.at[1], ex = px - C[0], ez = pz - C[2], r = Math.hypot(ex, ez) || 1, ap = Math.abs(Math.atan2(ex, ez)) / D, sgn = ex >= 0 ? 1 : -1, bx = sgn * ez / r, bz = -sgn * ex / r;   // (b: round the head toward the back)
+          // round an ear that's out: in front of its lane and above the ear, to its own pass over the ear's top, at its
+          // lane; not to the tie yet (the hair in front of the ear, the sideburn's, too: up the front of the ear to above
+          // its top first, then back with the rest)
+          let wg = 0;
+          if (round && az0 < EBACK && ok && d0 < 0.06) wg = smooth(-2, 6, lane - ap) * round * Math.max(smooth(ETOP - 0.004, ETOP + 0.006, py), (1 - smooth(EAR.az + EAR.da * 0.9, EAR.az + EAR.da * 1.1, ap)) * smooth(tie.guard - 0.004, tie.guard + 0.01, py));   // (level with the ear or above it only: under the ear it's on its way to the tie)
+          if (drape > 0 && eta > 0.004) {
+            // Drape. Where the head doesn't hold it up (its side from the widest part down, or already off the skin),
+            // and near its tie's own plumb line, tied hair leaves the skin and hangs to its tie along a curve of its
+            // own, planned where it leaves: plumb down to a gather's height over the tie (Gather: 7.5 cm, measured on
+            // the user's Daz3D twin tails), then in to it, its distance from the tie's plumb line shrinking as
+            // 1 - (1 - t)^2 of its height over the tie in gather heights (it ends pointing at the tie); and with Puff
+            // (slack) it bows out from the head on the way, as t (1 - t)^1.5, fullest two fifths of the way up from
+            // the tie, and tucks in to it: a rounded bulb over the tie. Hair that has come further bows more: it lies
+            // outside hair from nearer by, and the bulb has a body. It is steered at the curve's next point, so it comes
+            // back to it when the body or an ear puts it off. Hair far round the head from its tie runs to it along the
+            // head, as hair with no drape does, and joins the others as it comes near
+            if (!hung) {
+              leave = drape * (ok && d0 < GAP + V + 0.008 ? 1 - smooth(-0.05, 0.25, g[1]) : 1) * (1 - smooth(0.04, 0.09, Math.hypot(tie.at[0] - px, tie.at[2] - pz))) * (1 - wg);
+              if (leave > 0.5 * drape) { hung = true; eta0 = Math.max(eta, 0.03); r0x = px - tie.at[0]; r0z = pz - tie.at[2]; o0x = ex / r; o0z = ez / r; bow = puff * (0.4 + 0.6 * smooth(0.02, 0.12, sAt)) * (0.8 + 0.4 * hash(u[i], 21)) * Math.min(1, eta0 / 0.08); }
+              else if (leave > 0) { cx *= 1 - leave; cy = cy * (1 - leave) - leave; cz *= 1 - leave; }
+            }
+            if (hung) {
+              leave = drape * (1 - wg);
+              const tq = clamp((eta - dl) / eta0, 0, 1), tg = Math.min(1, (eta - dl) / GATHER), F = tg > 0 ? 1 - (1 - tg) * (1 - tg) : 0, B = bow * tq * Math.pow(1 - tq, 1.5) / 0.1859;   // (plumb down to a gather's height over the tie, then in)
+              const gx = tie.at[0] + r0x * F + o0x * B - px, gy = tie.at[1] + eta0 * tq - py, gz = tie.at[2] + r0z * F + o0z * B - pz, gl = Math.hypot(gx, gy, gz) || 1;
+              cx = cx * (1 - leave) + gx / gl * leave; cy = cy * (1 - leave) + gy / gl * leave; cz = cz * (1 - leave) + gz / gl * leave;
+            }
+          }
+          if (wg > 0) { const gy = ETOP + 0.007 + 0.016 * hash(u[i], 15) - py, ga = (lane - ap) * D * r * (ap < EAR.az ? smooth(ETOP - 0.006, ETOP + 0.01, py) : 1), gl = Math.hypot(ga, gy) || 1; cx = cx * (1 - wg) + bx * ga / gl * wg; cy = cy * (1 - wg) + gy / gl * wg; cz = cz * (1 - wg) + bz * ga / gl * wg; }
+          if (round && ok && d0 < 0.06) {                                 // and never forward past its lane (the ear's back edge) while it's level with the ear
+            const f = cx * bx + cz * bz, kf = f < 0 ? (1 - smooth(lane, lane + 5, ap)) * smooth(tie.guard - 0.004, tie.guard + 0.01, py) * round : 0;
+            if (kf > 0) { cx -= bx * f * kf; cz -= bz * f * kf; }
+          }
         }
       }
       else if (own) { cx = dir[i * 3]; cy = dir[i * 3 + 1]; cz = dir[i * 3 + 2]; wc = 1 - smooth(ownHold * 0.4, ownHold + 1e-6, sAt); }
@@ -103,7 +149,9 @@ export function trace(ctx) {
           if (draping) { rest = Math.max(rest, 0.16); draped = true; }       // (and it may lie on down the chest to its cut: it came there to hang, not to gather)
         }
       }
-      if (wc > 0 && ok && !free) { const kk = cx * g[0] + cy * g[1] + cz * g[2]; cx -= g[0] * kk; cy -= g[1] * kk; cz -= g[2] * kk; }   // along the skin
+      if (wc > 0 && ok && !free) {                                        // along the skin (draped hair that hangs: only kept from going into it)
+        const kk = cx * g[0] + cy * g[1] + cz * g[2], k1 = kk > 0 ? kk * (1 - leave) : kk; cx -= g[0] * k1; cy -= g[1] * k1; cz -= g[2] * k1;
+      }
       const cn = Math.hypot(cx, cy, cz); if (cn < 1e-6) wc = 0; else { cx /= cn; cy /= cn; cz /= cn; }
       let dx = cx * wc, dy = cy * wc - (1 - wc), dz = cz * wc;
       // the ends turn in (or out) round a radius
@@ -115,7 +163,8 @@ export function trace(ctx) {
         }
       }
       const dn = Math.hypot(dx, dy, dz) || 1; dx /= dn; dy /= dn; dz /= dn;
-      tx += (dx - tx) * al; ty += (dy - ty) * al; tz += (dz - tz) * al;
+      const a2 = hung ? Math.max(al, 0.7) : al;                           // (hair on its own hanging curve follows it: the curve is smooth already)
+      tx += (dx - tx) * a2; ty += (dy - ty) * a2; tz += (dz - tz) * a2;
       const tn = Math.hypot(tx, ty, tz) || 1; tx /= tn; ty /= tn; tz /= tn;
       let qx = px + tx * dl, qy = py + ty * dl, qz = pz + tz * dl;
       // lie: out of the body and the hair below, down onto it while it's combed. How thick the hair lies is the
@@ -130,7 +179,7 @@ export function trace(ctx) {
       for (let pass = 0; pass < 2; pass++) {
         const dq = dist(S, qx, qy, qz); if (!grad(S, qx, qy, qz, g)) break;
         if (dq < h) { qx += g[0] * (h - dq); qy += g[1] * (h - dq); qz += g[2] * (h - dq); }
-        else if (wc > 0.05 && !free && dq < h + 0.03) { const k2 = (dq - h) * Math.min(1, wc * 1.3); qx -= g[0] * k2; qy -= g[1] * k2; qz -= g[2] * k2; }
+        else if (wc > 0.05 && !free && dq < h + 0.03) { const k2 = (dq - h) * Math.min(1, wc * 1.3) * (1 - leave); qx -= g[0] * k2; qy -= g[1] * k2; qz -= g[2] * k2; }
         else break;
         if (pass === 0) { const vx = qx - px, vy = qy - py, vz = qz - pz, vl = Math.hypot(vx, vy, vz) || 1; qx = px + vx / vl * dl; qy = py + vy / vl * dl; qz = pz + vz / vl * dl; }   // the step keeps its length
       }
@@ -141,12 +190,28 @@ export function trace(ctx) {
         const want = Math.sign(qx || 1) * Math.tan((38 + 12 * hash(u[i], 9)) * D) * (qz - C[2]); qx += (want - qx) * 0.6;   // (each to its own place there, in with the hair beside the face: not all down one line)
       }
       if (ears === "clear" && !own && earIn(azq, qy) < 1.12 && dist(S, qx, qy, qz) < 0.03) done = true;   // the ear left clear: the hair is cut where it would cover it
-      if ((gr === LOOSE || tie) && (qx >= C[0] ? tuckL : tuckR) && qy > EAR.y - 0.012 && earIn(azq, qy) < EOUT && dist(S, qx, qy, qz) < 0.045) {   // tucked: never across the ear; lifted back onto its outline (over the top, down behind); tied hair on its way up to a tie goes over the ear's top too
+      if ((gr === LOOSE || tie) && (qx >= C[0] ? tuckL : tuckR) && qy > (round ? tie.guard : EAR.y - 0.012) && earIn(azq, qy) < EOUT && dist(S, qx, qy, qz) < 0.045) {   // tucked: never across the ear; lifted back onto its outline (over the top, down behind); tied hair on its way up to a tie goes over the ear's top too
         const da = Math.abs((Math.abs(azq) - EAR.az) / EAR.da);
-        qy = Math.max(qy, EAR.y + EAR.dy * Math.pow(Math.max(0, Math.pow(EOUT, EAR.n) - Math.pow(da, EAR.n)), 1 / EAR.n));
-        if (!tie && Math.abs(azq) > EAR.az - EAR.da * 0.6) {              // and on round the head to the back while it's over the ear: it comes down behind it, never in front or over its rim
-          const ex = qx - C[0], ez = qz - C[2], r = Math.hypot(ex, ez), a2 = Math.atan2(ex, ez) + Math.sign(ex || 1) * 2.5 * D;
+        if (round) {
+          // a tie under the ear itself (within the ear's span round the head, below its middle: low twin tails by the
+          // ears). Hair bound for it has to get down past the ear, and only ever over its top and down behind it: in
+          // front of the ear's middle it is lifted onto the outline and moved on toward the back; behind it, it is put
+          // straight back to the outline's back edge at its own height, so it slides down behind the ear. (Lifted only,
+          // it stepped into the outline on its way down, was put back up on the top, and shuttled there for good. Put
+          // out the short way, the way it lies from the ear's middle, hair that came in low and in front went down and
+          // forward and hooked under the lobe.)
+          const u = (Math.abs(azq) - EAR.az) / EAR.da, v = (qy - EAR.y) / EAR.dy, ex = qx - C[0], ez = qz - C[2], r = Math.hypot(ex, ez), sg = Math.sign(ex || 1);
+          let a2;
+          if (u < 0) { qy = Math.max(qy, EAR.y + EAR.dy * Math.pow(Math.max(0, Math.pow(EOUT, EAR.n) - Math.pow(da, EAR.n)), 1 / EAR.n)); a2 = Math.atan2(ex, ez) + sg * 2.5 * D; }
+          else a2 = sg * Math.max(Math.abs(azq), EAR.az + EAR.da * Math.pow(Math.max(0, Math.pow(EOUT, EAR.n) - Math.pow(Math.abs(v), EAR.n)), 1 / EAR.n)) * D;
           qx = C[0] + r * Math.sin(a2); qz = C[2] + r * Math.cos(a2);
+        }
+        else {
+          qy = Math.max(qy, EAR.y + EAR.dy * Math.pow(Math.max(0, Math.pow(EOUT, EAR.n) - Math.pow(da, EAR.n)), 1 / EAR.n));
+          if (!tie && Math.abs(azq) > EAR.az - EAR.da * 0.6) {            // and on round the head to the back while it's over the ear: it comes down behind it, never in front or over its rim
+            const ex = qx - C[0], ez = qz - C[2], r = Math.hypot(ex, ez), a2 = Math.atan2(ex, ez) + Math.sign(ex || 1) * 2.5 * D;
+            qx = C[0] + r * Math.sin(a2); qz = C[2] + r * Math.cos(a2);
+          }
         }
       }
       if (qy < cap) done = true;                                          // (never below the chest)

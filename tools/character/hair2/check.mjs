@@ -10,10 +10,10 @@
 import { bodyByName, loadPores } from "./node.mjs";
 import { prepare, grow, BUDGET } from "./engine.js";
 import { STYLES, GROUPS, CONTROLS, DEFAULTS, settings, differs, lookOf, drawLook, dyed, DYES, FRINGES } from "./styles.js";
-import { tiesOf } from "./ties.js";
-import { K } from "./strands.js";
+import { tiesOf, tail } from "./ties.js";
+import { K, TS } from "./strands.js";
 import { linear } from "../hairtex.js";
-import { alive, HAIRLINES, THINNING } from "./pores.js";
+import { alive, HAIRLINES, THINNING, EAR, earIn } from "./pores.js";
 import { dist } from "./sdf.js";
 
 const bad = [], t0 = Date.now(), only = process.argv.slice(2);
@@ -194,6 +194,37 @@ if (!only.length) {
     }
     const wisps = e => { const G = g("odango", { fringe: { frameEars: e } }).guides; let n = 0; for (let i = 0; i < G.n; i++) if (G.group[i] === 2 && G.len[i] > 0.01 && Math.abs(Math.atan2(G.pos[i * 3] - base.C[0], G.pos[i * 3 + 2] - base.C[2])) * 180 / Math.PI >= 64) n++; return n; };
     say(wisps(0) === 0 && wisps(0.6) > 6, `wisps by the ears: none, then ${wisps(0.6)}`);
+    // ---- tied hair that hangs to its tie (Drape, Fullness, Puff, Tie lower), round an ear that's out; a tail as a brush; a fringe closed at its middle
+    {
+      const C = base.C, DEG = 180 / Math.PI, low = set => settings("twin_tails_high", { ears: "tucked", ties: { height: 0, side: 0.85, tight: 0, tail: { thick: 0.008, fall: "front" }, ...set } });
+      const measure = st => { const G = grow(base, pores, st, prep, { draft: true }).guides, ties = tiesOf(prep.S, C, st), off = []; let n = 0, at = 0, across = 0;
+        for (let i = 0; i < G.n; i++) { if (G.group[i] < 3 || !(G.len[i] > 0.02)) continue; n++; const t = ties[G.group[i] - 3], e = (i * K + K - 1) * 3; if (Math.hypot(G.pts[e] - t.at[0], G.pts[e + 1] - t.at[1], G.pts[e + 2] - t.at[2]) < 0.02) at++;
+          for (let k = 1; k < K; k++) { const o = (i * K + k) * 3, x = G.pts[o], y = G.pts[o + 1], z = G.pts[o + 2], az = Math.abs(Math.atan2(x - C[0], z - C[2])) * DEG;
+            if (y > t.guard + 0.004 && earIn(az, y) < 0.9 && dist(prep.S, x, y, z) < 0.045) across++;                       // (a point of it across the ear)
+            if (Math.abs(y - (EAR.y - EAR.dy * 0.5)) < 0.006 && az > 100 && az < 150) off.push(dist(prep.S, x, y, z)); } }   // (behind the ear's lower half: how far off the skin)
+        off.sort((a, b) => a - b); return { n, at, across, off: off.length ? off[off.length >> 1] * 1000 : 0, tie: ties[0] }; };
+      // (the tie 4 cm under where Height can put it: under the ear, as low twin tails are worn; then the hair has room to hang)
+      const high = measure(low({})), plain = measure(low({ drop: 0.04 })), hung = measure(low({ drop: 0.04, drape: 1 })), full = measure(low({ drop: 0.04, drape: 1, full: 0.5 })), puffed = measure(low({ drop: 0.04, drape: 1, puff: 0.5 }));
+      for (const [name, m] of [["the tie by the ear", high], ["the tie 4 cm lower", plain], ["and Drape", hung], ["and Fullness", full], ["and Puff", puffed]])
+        say(m.n > 600 && m.at >= m.n * 0.97 && m.across === 0, `low twin tails, the ears out, ${name}: ${m.at} of ${m.n} tied hairs end at their tie, ${m.across} of their points across an ear`);
+      say(hung.off > plain.off + 4 && full.off > hung.off + 1 && puffed.off > hung.off + 4, `behind the ear's lower half the tied hair stands ${plain.off.toFixed(1)} mm off the skin, ${hung.off.toFixed(1)} with Drape, ${full.off.toFixed(1)} with Fullness too, ${puffed.off.toFixed(1)} with Puff`);
+      say(plain.tie.at[1] < high.tie.at[1] - 0.035 && dist(prep.S, ...plain.tie.at) > 0.008 && dist(prep.S, ...plain.tie.at) < 0.014, `Tie lower: the tie ${((high.tie.at[1] - plain.tie.at[1]) * 100).toFixed(1)} cm lower, ${(dist(prep.S, ...plain.tie.at) * 1000).toFixed(0)} mm off the neck`);
+      // a tail: Strands, Fan (wider right under the tie), Flat (thin through, wide across), Out (its tip further from the neck)
+      const tl = set => { const st = low({ tail: { thick: 0.008, fall: "front", length: 0.2, spread: 2, ...set } }), t = tiesOf(prep.S, C, st)[0], g = tail(t, { S: prep.S, C, s: st, seed: 1 });
+        const ring = f => { const k = TS.findIndex(v => v >= f); let cx = 0, cz = 0, wx = 0, wz = 0; for (let j = 0; j < g.n; j++) { cx += g.pts[(j * K + k) * 3]; cz += g.pts[(j * K + k) * 3 + 2]; } cx /= g.n; cz /= g.n;
+          for (let j = 0; j < g.n; j++) { wx = Math.max(wx, Math.abs(g.pts[(j * K + k) * 3] - cx)); wz = Math.max(wz, Math.abs(g.pts[(j * K + k) * 3 + 2] - cz)); } return { cx, wx, wz }; };
+        return { n: g.n, near: ring(0.05), mid: ring(0.5), tip: ring(0.9), tie: t }; };
+      const t0 = tl({}), tf = tl({ fan: 1, bloom: 0.5 }), tfl = tl({ flat: 0.8 }), to = tl({ out: 0.5 }), ts = tl({ strands: 2.5 });
+      say(ts.n > t0.n * 2.2 && tf.near.wx > t0.near.wx * 1.25 && tfl.mid.wz < t0.mid.wz * 0.6 && tfl.mid.wx > t0.mid.wx * 0.85 && (to.tip.cx - to.tie.at[0]) > (t0.tip.cx - t0.tie.at[0]) + 0.015,
+        `a tail: ${t0.n} hairs, ${ts.n} with Strands 2.5; right under the tie ${(t0.near.wx * 200).toFixed(1)} cm across, ${(tf.near.wx * 200).toFixed(1)} with Fan; half way ${(t0.mid.wz * 200).toFixed(1)} cm through, ${(tfl.mid.wz * 200).toFixed(1)} Flat; its tip ${((t0.tip.cx - t0.tie.at[0]) * 100).toFixed(1)} cm out from its tie, ${((to.tip.cx - to.tie.at[0]) * 100).toFixed(1)} with Out`);
+      // a fringe closed at its middle: no gap between the two sides' tips
+      // (what shows as a line of skin down a fringe's middle is its two sides fanning away from each other: how far the hairs that grow within 12 mm of the middle drift out to their own side by three fifths of their length; Godot's picture of the line itself: docs/HAIR_V2.md §10)
+      const drift = c => { const G = grow(base, pores, settings("twin_tails_high", { parting: { kind: "none" }, length: { fringe: 0.17 }, fringe: { amount: 1.5, hold: 0.7, closed: c } }), prep, { draft: true }).guides, k = Math.round(0.6 * (K - 1)); let sum = 0, n = 0;
+        for (let i = 0; i < G.n; i++) if (G.group[i] === 1 && G.len[i] > 0.05 && Math.abs(G.pos[i * 3] - C[0]) < 0.012) { sum += Math.sign(G.pos[i * 3] - C[0]) * (G.pts[(i * K + k) * 3] - G.pos[i * 3]); n++; }
+        return { mm: sum / Math.max(1, n) * 1000, n }; };
+      const d0 = drift(0), d1 = drift(1);
+      say(d0.n > 20 && d0.mm > 1 && d1.mm < d0.mm * 0.5, `a heavy fringe: the ${d0.n} hairs beside its middle drift ${d0.mm.toFixed(1)} mm out to their own side, ${d1.mm.toFixed(1)} Closed`);
+    }
   }
 }
 // ---- other bodies

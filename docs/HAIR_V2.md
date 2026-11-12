@@ -157,6 +157,12 @@ A card's shade is by how far from its root it is in metres (`cards.js` `shade`, 
 from the roots' colour to the lengths' over the first third of a card however long the card, so a 9 cm fringe was all
 "lengths" beside long hair still in its roots' shade, and read grey.
 
+**Closed middle** (`fringe.closed`, 0 by default): a fringe with no line of skin down its middle. A fringe's hair runs
+down the dome, so its two sides fan away from the middle (HAIR2: the hairs beside the middle of a heavy fringe drift
+12.5 mm out to their own side) and the skin shows between them; Closed combs the hair beside the middle, and the hair
+from far back on the top, straight forward side by side (5.1 mm). A heavy fringe from the top of the head (Amount
+1.5) needs it, with Hold long enough to carry its hair to the forehead (0.7 of 17 cm).
+
 ### 3.8 Ties
 
 `ties.js`: a ponytail, twin tails, half-up, two side up, a bun, twin buns, a top knot. A tie is a point just off the
@@ -175,6 +181,42 @@ coil: most of its hair wound the one way, a few across, a pair of buns mirrored.
 bun (`ties.js` `wildOf`: three to fourteen thin locks that leave it every way but into the head, and a halo of short
 fine hairs; **Soft or spiky**: they arc and droop, or stand straight to a point); they are the bun's own cards and
 stay out of the body.
+
+**Tied hair that hangs** (DECISIONS 2026-11-12, the sides; the 1:1). Tied hair used to lie on the head all the way
+to its tie: drawn onto the skin at every step, with no gravity. Low ties showed it: the hair followed the skull in
+under the ear, where a person's hangs from the head's widest part as a curtain and is gathered at the end. Five
+settings, all 0 by default (the older styles are the same hair by hair):
+
+- **Drape**: where the head doesn't hold it up (its side from the widest part down: the skin's normal level or
+  tipping down; or already off the skin) and within some centimetres of its tie's plumb line, a tied hair leaves the
+  skin and follows a curve of its own, planned where it leaves: plumb down to a **Gather**'s height over the tie
+  (7.5 cm, measured on the user's picture), then in, its distance from the plumb line shrinking as 1 − (1 − t)² of
+  its height over the tie. It is steered at the curve's next point, a step below it, so it comes back to the curve
+  when the body or an ear puts it off, and it ends in its tie. Hair far round the head from its tie runs to it along
+  the head as before and joins the others as it comes near.
+- **Puff**: slack. The hanging hair bows out from the head on the way down, as t (1 − t)^1.5 of its height over the
+  tie (fullest two fifths of the way up), and tucks in to the tie: a rounded bulb. Hair that has come further bows
+  more, so the bulb has a body.
+- **Fullness**: how thick the gathered hair lies on the head (up to 2.2 cm over Tightness's 1).
+- **Tie lower**: the tie slid down the hanging hair, below where Height can put it on the head (the lowest was level
+  with the ear lobe; a low tail's elastic sits some centimetres under the ear), brought in against the neck there.
+
+**Round an ear that's out.** A low tie by a tucked ear (under it, or behind it as far as 30 to 55 degrees round):
+hair that grows in front of the ear's back edge goes to a pass of its own over the ear's top and on to a lane of its
+own behind the ear, comes down there, and goes to the tie from under the ear; the sideburn's hair goes up the front
+of the ear first; hair from behind comes forward no further than the ear's back edge while it's level with the ear.
+The ear's outline stays the safety net (lifted over the top in front of the ear's middle, put back to the back edge
+behind it). Before, the temple's hair ran down across the cheek and under the lobe to the tie as a ribbon, and hair
+shuttled on the ear's top. HAIR2: 974 to 979 of 983 tied hairs end at their tie with none of their points across an
+ear, with the tie by the ear, 4 cm lower, and with Drape, Fullness and Puff.
+
+**A tail as a brush.** **Fan**: it springs out right under the tie (0: it leaves the tie as a rope and widens
+after); **Widest at**; **Flat**: it lies against the body, wide across and thin through (its section's frame is the
+body's where it rests on it, and faces forward where it hangs in the air: the body's own way beside the neck is
+sideways, and the fan was edge-on from the front); **Tails lean out**: twin tails leave their ties turned out and
+hang a little out of plumb all the way down; **Tail strands**: how many hairs it has; **Tail stiffness**. HAIR2: 26
+hairs, 66 at Strands 2.5; 1.4 cm across right under the tie, 2.1 with Fan; 4.5 cm through half way, 1.9 Flat; the
+tip 1.1 cm out from its tie, 5.0 with Out.
 
 An **ahoge** (Shape and volume): one lock standing up out of the top of the head and curving over to a side (`ties.js`
 `ahoge`: two thin cards facing the front).
@@ -330,9 +372,10 @@ head's hair 1.5 to 3 MB with its two 512 px textures.
   inside the ear's outline straight up onto its top; a tie under the ear is on the far side of the outline, so a
   strand steps in, is lifted back, and shuttles along the outline without ever reaching its tie (printed: 401 of 469
   tied strands on a side with points on the outline, doubling back on themselves, one 38 cm long). High ties (the
-  Advanced styles' buns and ponytail) pass above the ear and are not caught. Not fixed. The fix meant: round the
-  ear, not up (a point pushed out of the outline the way it lies from the ear's middle, so hair bound down and back
-  slides round behind the ear), and for the user's look the ear's top covered and only its lower half kept clear; a side volume that can be shaped (on tied hair only Tightness thickens it, to a centimetre at the
+  Advanced styles' buns and ponytail) pass above the ear and are not caught. **Fixed since, and what this note
+  said of her ear was wrong:** enlarged seven times, her whole ear shows, with the hair behind it; the look is *ears
+  out*, not the ear's top covered. Tied hair now has a route round an ear that's out and hangs to its tie (§3.8:
+  Drape, Puff, Fullness, Tie lower); §10 has the match. What this note asked for beyond that: a side volume that can be shaped (on tied hair only Tightness thickens it, to a centimetre at the
   most, evenly: the Volume sliders and Sweep do nothing to it). The outline's numbers (where it's widest, how far it
   pinches at the tie) were met once by a shape that was plainly wrong in the picture: they support a picture, they
   don't stand in for it.
@@ -345,7 +388,48 @@ head's hair 1.5 to 3 MB with its two 512 px textures.
   960 x 720 and 1600 x 1200 each come out that size (a window larger than xvfb's 1280 x 1024 screen is no trouble).
   All 65 cards were made again with it the same day, from the same view, and looked at as sheets: none cropped.
 
-## 10. Files
+## 10. The Daz3D twin tails, held to their picture
+
+DECISIONS 2026-11-12, the 1:1: one hairstyle matched to its picture, to find what the system lacks. The style is
+`daz_twin_tails` (the group *From your Daz3D pictures*). The pictures stay out of git (`Saved/Hair2/daz/ref`).
+
+**The rig** (scratch scripts, not in git; the numbers are what matter). The style is grown on the body `v2female`
+(`grow.js` `V2FEMALE`) and pictured by `tools/godot/hair2_check.py shots --origin 0,0,0 --size 1600x1200` from
+`v:-11:12:1.05:22:0:-0.07:-0.02` (11 degrees to her right, 12 above: her picture's camera as far as the ear, the
+eyes and the face's edges say). Her picture is turned level (her head is rolled 8.5 degrees), scaled 2.16 and laid
+eye-middle on eye-middle: at that one scale the ear's size, the ear-to-eye distance and the eyes' spacing agree with
+ours within a few percent (her picture is about 14 px to a centimetre). Then: side by side, her picture's edges
+over ours, and the hair's solid outer edge by height on her right side, hers against ours, in centimetres.
+
+**What is matched.**
+- The side, from above the ear down to 3 cm over the tie: within 0.3 cm of hers at every height (Drape 1, Fullness
+  0.1, Puff 0.12, the tie 4 cm lower, Gather 7.5 cm). Hers stands about 0.8 cm beyond the ear's rim as a solid edge
+  (1.3 with its wisps) and comes in to the tie as 1 − (1 − t)² over the last 7.3 cm: that is where Gather's number
+  and curve come from. Before: 0.4 to 2.6 cm too wide, or hidden behind the ear.
+- The ears out, the hair behind them, nothing of it across the ear or the cheek.
+- The tie's place: level with hers; small and dark.
+- The tails: brushes that fan from the tie, lean out, taper to ragged tips; as long as hers.
+- The fringe's line (her lash line: 0.034), no gap down its middle, from the top of the head.
+- A long thin sidelock a side, to the chest.
+
+**What is not** (the list to work from, the biggest first):
+1. **The look.** Under a light from the front every strand of ours lights up alike: a grey sheet. Hers is black with
+   a few bright strands. That needs the first highlight's strength strand by strand in the hair shader; not built.
+   The look `gloss_black` is set moderate until then.
+2. **The tails right under the ties** flare 0.9 to 2 cm wider than hers; hers differ left and right (her head is
+   tilted and the tails hang by gravity), ours are a pair.
+3. **The last 3 cm over the tie**: 0.4 to 0.7 cm too wide, and the tie 0.6 to 0.8 cm further from the neck.
+4. **The fringe's pieces**: hers ends in locks with small steps and gaps; ours in a straighter line.
+5. **The sidelocks**: hers are flat glossy ribbons a centimetre wide that end in a point, a thin plait beside one;
+   ours are thin strands, and there is no plait.
+6. **The red streaks**, the few fine strands across the ear, the flyaways: none.
+7. **The other views.** Her first picture (three-quarters, from her left) shows a fuller bulb behind the ear than
+   Puff 0.12 gives; it has not been put in a rig of its own. The back is in no picture.
+8. **The head.** `v2female` is near hers, not hers (her ears sit higher on the face).
+
+**Not checked here:** the Studio's own tab draws the same hair, but a look's `bake` numbers are Godot's only.
+
+## 11. Files
 
 | File | What |
 |---|---|

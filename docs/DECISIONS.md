@@ -2,6 +2,27 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, the 1:1 (the user, on the first matched comparisons of the Daz twin tails: be a perfectionist; a v2female base)
+
+- **"I need you to be even more of a perfectionist, for this image your goal is to re-create a 1:1 of that hairstyle
+  meaning including the volume, curvatures etc, this is so you can figure out the system for aesthetic hair and apply
+  that later to the rest of our styles, I really need you to be a perfectionist for the above style."** The image: the
+  fifth Daz picture (the blunt fringe, low twin tails, long sidelocks; the same hair in the first and in the second's
+  right half).
+- **What this sets:** that one hairstyle is the target, every part of it, and it is held to its picture, not to my
+  description of it. The work goes: a rig that puts her picture and ours in one frame (the same camera, the same
+  scale, her outline over ours, numbers by height), a written list of what differs, the biggest first; where the
+  system can't make a part, the system is changed. What is learnt is then carried to the other styles; that part is
+  not done yet. docs/HAIR_V2.md §10 is the state: what is matched, by how much, and what isn't.
+- **"If required to make these hairstyles work feel free to create a better preset base head shape called v2female
+  (which still allows face sculpting etc)."**
+- **What this sets:** a base called v2female may be made. So far the hair engine has not needed one: hair grows on any
+  body. What it is used for now is the comparison: the pictures are matched on a body with the proportions of the
+  user's Daz characters, kept as plain sculpt values under that name (`tools/character/grow.js` `V2FEMALE`: the
+  feminine base, a shorter rounder face, a full bust; `bodyByName("v2female")` in node). As a base to pick in the
+  Character Studio's Body tab it is **not built yet**; it is the next step there, with every slider still moving
+  from it.
+
 ## 2026-11-12, the sides (the user, on the first whole pictures of the Daz baseline: the sides' curve and volume)
 
 - **"You're making the bangs really good but note that I really want you to be able to emulate the curvature of the

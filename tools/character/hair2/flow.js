@@ -89,7 +89,9 @@ export function comb(ctx) {
       const depth = by[i] - lim(a), wide = fr.width ?? 46, deep = (0.007 + 0.034 * clamp(fr.amount ?? 0.7, 0, 1.6)) * (1 - 0.5 * smooth(wide * 0.5, wide, Math.abs(a)));   // (past 1: a heavy fringe, from further back on the head)
       if (Math.abs(a) < wide && depth < deep) {
         const split = fr.kind === "curtain" ? (p[0] >= (fr.splitAt || 0) ? 1 : -1) * (fr.split ?? 0.6) * 55 * D : 0, sweep = (fr.sweep || 0) * D + split;
-        d = turn(down, nn, sweep); group[i] = FRINGE; lf = (10 + 50 * (fr.curve ?? 0.4)) * D;
+        // (Closed: a fringe with no gap down its middle. Its hair from far back on the top is combed forward over the head, side by side, to the forehead, and so is the hair beside the head's middle line: left to run down the dome, both part from the middle a few millimetres and the skin shows as a line down the fringe)
+        const kf = clamp(+fr.closed || 0, 0, 1) * Math.max(smooth(0.036, 0.05, depth), 1 - smooth(0.004, 0.022, Math.abs(p[0] - C[0]))), fw = kf > 0 ? unit(along([0, -0.2, 1], nn)) || down : down;
+        d = turn(kf > 0 ? unit([down[0] * (1 - kf) + fw[0] * kf, down[1] * (1 - kf) + fw[1] * kf, down[2] * (1 - kf) + fw[2] * kf]) || down : down, nn, sweep); group[i] = FRINGE; lf = (10 + 50 * (fr.curve ?? 0.4)) * D;
       }
     }
     // face-framing strands: some of the hairline's own pores beside the fringe (or beside the parting), straight down in front of the ears

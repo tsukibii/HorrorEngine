@@ -166,7 +166,7 @@ export function grow(body, pores, s, prep, o = {}) {
     const wisp = cmb.group[i] === LOOSE && L > 0 && (pos[i * 3] >= 0 ? tuckL : tuckR) && Math.abs(az[i]) > 36 && Math.abs(az[i]) < 86 && by[i] < EAR.y + EAR.dy + 0.008;
     if (wisp) L = hash(u[i], 17) < 0.5 ? Math.min(L, 0.012 + 0.03 * hash(u[i], 16)) : 0;                   // (every other one: a few wisps, not a patch of stubble)
     len[i] = L;
-    vol[i] = cmb.group[i] >= TIE ? 0.0015 + 0.008 * (1 - (ctx.ties[cmb.group[i] - TIE].tight ?? 0.6)) : cmb.group[i] === FRINGE ? 0.003 + 0.012 * (fr.curve ?? 0.4) : P.top[i] * (V.top ?? 0.007) + P.sides[i] * (V.sides ?? 0.007) + (P.back[i] + P.nape[i]) * (V.back ?? 0.009);
+    vol[i] = cmb.group[i] >= TIE ? 0.0015 + 0.008 * (1 - (ctx.ties[cmb.group[i] - TIE].tight ?? 0.6)) + 0.022 * clamp((s.ties && s.ties.full) || 0, 0, 1) : cmb.group[i] === FRINGE ? 0.003 + 0.012 * (fr.curve ?? 0.4) : P.top[i] * (V.top ?? 0.007) + P.sides[i] * (V.sides ?? 0.007) + (P.back[i] + P.nape[i]) * (V.back ?? 0.009);
     width[i] = w0 * (fine ? 0.35 : wisp ? 0.4 : cmb.group[i] === FRINGE ? 0.6 + 0.4 * Math.min(1, fr.amount ?? 0.7) : cmb.group[i] === FRAME ? (Math.abs(az[i]) >= 64 ? 0.4 : 0.75) : 1);   // (a wisp by the ear: thin)
     taper[i] = L < 0.06 ? 0.65 : (s.card.taper ?? 0.3);
     roll[i] = L < 0.05 && cmb.lift[i] > 34 * D ? (hash(u[i], 7) - 0.5) * Math.PI * smooth(34 * D, 60 * D, cmb.lift[i]) : 0;

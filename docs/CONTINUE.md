@@ -29,7 +29,28 @@ Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-12, later, `claude/ecstatic-dijkstra-6ixk71`): two asks in progress, neither finished
+## Where it stopped last (2026-11-12, the 1:1, `claude/ecstatic-dijkstra-6ixk71`): one Daz hairstyle held to its picture
+
+Read DECISIONS 2026-11-12, "the 1:1", first: the user wants **one** hairstyle (the fifth Daz picture: blunt fringe,
+low twin tails behind the ears, long sidelocks) re-created 1:1, volume and curves, "to figure out the system for
+aesthetic hair and apply that later to the rest of our styles", and offered a base head **v2female**.
+
+- **Built** (docs/HAIR_V2.md §3.7, §3.8, §10): tied hair that hangs to its tie (Drape, Gather, Puff, Fullness, Tie
+  lower), a route for it round an ear that's out, tails as brushes (Fan, Flat, lean out, Strands), a fringe closed at
+  its middle, a look that can ask more of its bake, the style `daz_twin_tails` in a group of its own, HAIR2's
+  assertions for each, the test body `v2female` in node. The older 65 styles are the same hair by hair.
+- **The rig** is scratch (her pictures stay out of git): §10 says how to rebuild it (the body, the camera, the scale
+  2.16, the roll 8.5, eye-middle on eye-middle, the outline by height).
+- **Matched:** the side from above the ear to 3 cm over the tie within 0.3 cm, the ears out, the tie's place, the
+  tails' kind and length, the fringe's line, the sidelocks' length.
+- **Not matched, in order** (§10's list): the look (ours lights every strand alike; hers is black with a few bright
+  strands: a per-strand first highlight in `hair.gdshaderinc`, then LOOKPLUGIN and GDHAIR2), the tails' flare under
+  the ties, the last 3 cm over the tie, the fringe's pieces, the sidelocks as ribbons and the plait, the red
+  streaks, strands across the ear, her first picture's view (a fuller bulb behind the ear), the back.
+- **Then:** v2female as a base in the Studio's Body tab (GROW, GROWPAGE, STUDIO); the other six Daz hairstyles; the
+  new settings carried to the older styles (their cards made again).
+
+## Before that (2026-11-12, later, `claude/ecstatic-dijkstra-6ixk71`): two asks in progress, neither finished
 
 Read DECISIONS 2026-11-12, "the very last", "after the very last" and "the sides", first. All three are the user's;
 the second is the one they stressed ("be extremely critical ... an exact replica"), and the third is where they

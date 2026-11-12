@@ -23,10 +23,12 @@ export const DEFAULTS = {
   shape: { lift: 22, volume: { top: 0.007, sides: 0.007, back: 0.009 }, turn: 0.35, turnRadius: 0.035, stiff: 0.2, quiff: 0, ahoge: 0, ahogeSide: -0.5 },   // ahoge: a lock standing up out of the top (its size; to her right or left)
   texture: { clump: 0.3, clumpSize: 0.018, wave: 0, waveLength: 0.09, waveStart: 0.3, together: 0.5, curl: 0, curlRadius: 0.012, frizz: 0.15, messy: 0.1, wet: 0, strays: 24 },
   fringe: { kind: "none", line: MARKS.brow + 0.004, width: 46, amount: 0.7, sweep: 0, split: 0.6, curve: 0.4, arch: 0.3, hold: 0.5, uneven: 0.3, wispy: 0.75, choppy: 0, centre: 0, slant: 0, frame: 0, frameLine: MARKS.jaw, frameWispy: 0.85, frameCurl: 0,
-    frameLocks: 0, frameStagger: 0.5, frameWave: 0, frameEars: 0 },   // choppy: each lock its own length; centre: a longer lock between the eyes; slant: longer toward her left (+) or right (-); frameCurl: the face-framing strands wound into a ringlet a side
+    frameLocks: 0, frameStagger: 0.5, frameWave: 0, frameEars: 0, closed: 0 },   // choppy: each lock its own length; centre: a longer lock between the eyes; slant: longer toward her left (+) or right (-); frameCurl: the face-framing strands wound into a ringlet a side
   // tendrils: frameLocks, the face-framing strands gathered into so many pointed locks a side (0: a flat sidelock), frameStagger each lock its own length, frameWave an S along them (m), frameEars thin wisps left out in front of the ears
-  ties: { kind: "none", height: 0.5, side: 0.7, offset: 0, part: "all", tight: 0.6, loose: 0, sweep: 0, swirl: 0, wild: 0, wildLength: 0.07, wildStiff: 0.4,   // sweep: the hair leaves its roots the way it's combed and bends round to the tie (arcs over the head); swirl: it winds in to the tie; wild: strands standing out of a bun or a tie, how long, soft (0) to spikes (1)   // offset: one tail round to her left (+) or right (-): a side ponytail; part: all the hair, or the top's only (the rest loose)
-    tail: { length: 0.2, thick: 0.013, spread: 0.5, fall: "back", taper: 0.6, stiff: 0.4, sway: 0.5, bun: 0.035 }, tie: { kind: "elastic", colour: "#101010" } },
+  // drape: tied hair hangs to its tie (a curtain from the head's widest part, gathered over the last `gather` metres) where 0 lies on the head all the way; full: how thick it lies on the head; puff: slack, it bows out on the way and tucks in to the tie (a bulb); drop: the tie slid down the hanging hair, below the ear (m)
+  ties: { kind: "none", height: 0.5, side: 0.7, offset: 0, part: "all", tight: 0.6, loose: 0, drape: 0, full: 0, puff: 0, drop: 0, gather: 0.075, sweep: 0, swirl: 0, wild: 0, wildLength: 0.07, wildStiff: 0.4,   // sweep: the hair leaves its roots the way it's combed and bends round to the tie (arcs over the head); swirl: it winds in to the tie; wild: strands standing out of a bun or a tie, how long, soft (0) to spikes (1)   // offset: one tail round to her left (+) or right (-): a side ponytail; part: all the hair, or the top's only (the rest loose)
+    // a tail: out (twin tails lean away from the neck), fan (it springs out right under the tie, as a brush), bloom (how far down it's widest), flat (it lies against the body, wide and thin), strands (how many hairs it has, 1: by its thickness)
+    tail: { length: 0.2, thick: 0.013, spread: 0.5, fall: "back", taper: 0.6, stiff: 0.4, sway: 0.5, bun: 0.035, out: 0, fan: 0, bloom: 0.3, flat: 0, strands: 1 }, tie: { kind: "elastic", colour: "#101010" } },
   look: "soft_black",
   // a second colour: where (none, all, streaks, under, over, front, fringe, split, split_r, tips), its colour, how much (the share of locks, how far up or down, how long the ends), a streak's size, the roots and the ends left natural (m), how soft its edges along the hair
   dye: { where: "none", colour: "#7b3fd6", amount: 0.5, size: 0.5, roots: 0, ends: 0, soft: 0.5, seed: 1 },
@@ -37,6 +39,9 @@ export const DEFAULTS = {
 // the hair's colours (hairtex.js's looks, and these): black with a cool, quiet sheen and the browns and greys the
 // styles use; root and tip the strands' colours, spec1 the sharp highlight, spec2 the broad one
 export const LOOKS2 = {
+  // (the user's Daz3D hair: jet black, a white highlight in fine streaks, strand by strand, and little else; `bake`: what its bake asks of Godot's hair over HSHair's own settings)
+  gloss_black: { label: "Glossy black", root: "#020203", tip: "#07070a", inner: "#07070a", innerAmount: 0, spec1: "#e8ecf4", spec2: "#0b0d12", shine: 1, gloss1: 150, gloss2: 40, shift1: -0.08, shift2: 0.12, shiftNoise: 0.6, rim: "#2a2f3a", rimAmount: 0.05, rootLength: 0.3,
+    bake: { spec_gain: 1.3, glints: 0.4, soft: 0.4, side_fade: 0.3 } },
   soft_black: { label: "Soft black", root: "#050506", tip: "#0e0e11", inner: "#0e0e11", innerAmount: 0, spec1: "#c8ccd6", spec2: "#2a303c", shine: 0.9, gloss1: 200, gloss2: 40, shift1: -0.06, shift2: 0.1, shiftNoise: 0.25, rim: "#353b48", rimAmount: 0.1, rootLength: 0.3 },
   off_black: { label: "Off black, brown in the light", root: "#060504", tip: "#15100d", inner: "#15100d", innerAmount: 0, spec1: "#d8d0c6", spec2: "#3a2d25", shine: 0.85, gloss1: 200, gloss2: 42, shift1: -0.06, shift2: 0.1, shiftNoise: 0.25, rim: "#3d332d", rimAmount: 0.1, rootLength: 0.3 },
   deep_brown: { label: "Deep brown", root: "#0a0605", tip: "#2b1b13", inner: "#2b1b13", innerAmount: 0, spec1: "#e2d2c0", spec2: "#5a3a28", shine: 0.8, gloss1: 190, gloss2: 44, shift1: -0.05, shift2: 0.1, shiftNoise: 0.25, rim: "#4a3628", rimAmount: 0.1, rootLength: 0.3 },
@@ -123,6 +128,14 @@ export const STYLES = {
   twin_tails_high: { label: "High twin tails, blunt bangs", group: "women",
     set: { parting: { kind: "middle", length: 1, width: 0.001 }, ties: { kind: "twin", height: 0.78, side: 0.45, tight: 0.7, tail: { length: 0.2, thick: 0.013, spread: 0.5, fall: "back", taper: 0.7, sway: 0.8 }, tie: { kind: "elastic", colour: "#c02040" } },
       fringe: { kind: "blunt", line: P.brow + 0.002, amount: 0.8, frame: 0.6, frameLine: P.jaw + 0.01 }, texture: { clump: 0.3, strays: 20 } } },
+  // the user's Daz3D twin tails (DECISIONS 2026-11-12, the 1:1): no parting, a heavy blunt fringe from the crown, the
+  // ears out, the hair hanging behind them to small ties under the ears, short full tails over the shoulders, a long
+  // thin sidelock a side. Held to the picture on the doll body (docs/HAIR_V2.md §10)
+  daz_twin_tails: { label: "Low twin tails behind the ears, blunt fringe, long sidelocks", group: "daz",
+    set: { parting: { kind: "none" }, ears: "tucked",
+      ties: { kind: "twin", height: 0, side: 0.85, tight: 0, drape: 1, full: 0.1, puff: 0.12, drop: 0.04,
+        tail: { length: 0.2, thick: 0.008, spread: 2, fan: 1, bloom: 0.5, flat: 0.7, out: 0.5, taper: 0.9, strands: 2.5, stiff: 0.8, fall: "front", sway: 0.8 }, tie: { kind: "elastic", colour: "#17120f" } },
+      length: { fringe: 0.17 }, fringe: { kind: "blunt", line: 0.034, amount: 1.5, width: 52, hold: 0.7, wispy: 0.15, uneven: 0.1, choppy: 0.12, closed: 1, frame: 0.55, frameLine: -0.17, frameLocks: 1, frameStagger: 0, frameWispy: 0.6 }, texture: { clump: 0.3, strays: 20 }, look: "gloss_black" } },
   curls_shoulder: { label: "Shoulder-length curls", group: "women",
     set: { parting: { kind: "left", offset: 0.03, length: 0.5, width: 0.001 }, cut: { mode: "line", line: -0.14, layers: 0.4, uneven: 0.8, wispy: 0.6 }, length: { top: 0.3, sides: 0.28, back: 0.28, nape: 0.18 },
       shape: { lift: 45, volume: { top: 0.016, sides: 0.024, back: 0.024 }, turn: 0 }, texture: { clump: 0.8, clumpSize: 0.03, curl: 0.9, curlRadius: 0.011, waveStart: 0.18, frizz: 0.45, messy: 0.2, strays: 80 }, look: "deep_brown" } },
@@ -299,7 +312,7 @@ export const STYLES = {
     set: { parting: { kind: "none" }, comb: { top: "forward" }, cut: { mode: "line", line: -0.055, uneven: 0.2, wispy: 0.2 }, shape: { lift: 24, volume: { top: 0.009, sides: 0.011, back: 0.012 }, turn: 0.6, turnRadius: 0.025 },
       fringe: { kind: "blunt", line: P.brow + 0.004, amount: 0.9, width: 46 }, texture: { clump: 0.25, strays: 15 } } },
 };
-export const GROUPS = { pictures: "From the pictures", women: "Women's", ears: "Women's, long with the ears out", asian: "Japanese and Korean styles", anime: "Drawn hair: the chart's twelve", advanced: "Advanced: swept, wound, tendrils, a second colour", men: "Men's", balding: "Balding", horror: "For our games", children: "Children's" };
+export const GROUPS = { daz: "From your Daz3D pictures", pictures: "From the pictures", women: "Women's", ears: "Women's, long with the ears out", asian: "Japanese and Korean styles", anime: "Drawn hair: the chart's twelve", advanced: "Advanced: swept, wound, tendrils, a second colour", men: "Men's", balding: "Balding", horror: "For our games", children: "Children's" };
 
 // a style's settings: the defaults, the style it's from, its own, then what the character changed. A fringe's kind
 // brings its own numbers in under whatever is set by name
@@ -412,6 +425,7 @@ export const CONTROLS = [
     ["fringe.choppy", "Choppy", "slide", 0, 1, 0.05, 1, "Each lock cut to its own length (with Locks: pointed, drawn-looking bangs)."],
     ["fringe.centre", "Centre lock", "slide", 0, 1, 0.05, 1, "A longer lock between the eyes."],
     ["fringe.slant", "Slant", "slide", -1, 1, 0.05, 1, "Longer toward her left (+) or her right (-): hair over one eye."],
+    ["fringe.closed", "Closed middle", "slide", 0, 1, 0.05, 1, "No gap down the fringe's middle: its hair is combed forward side by side (a heavy fringe from the top of the head)."],
     ["length.fringe", "Longest", "slide", 0.1, 40, 0.1, cm, "A swept fringe's length (cm)."],
     ["fringe.frame", "Face-framing strands", "slide", 0, 1, 0.05, 1, "Strands left hanging in front of the ears."],
     ["fringe.frameLine", "Their length", "slide", -26, 3, 0.5, cm, "The cheek (-2), the jaw (-6.6), the chin (-9.6)."],
@@ -428,6 +442,11 @@ export const CONTROLS = [
     ["ties.offset", "To one side", "slide", -1, 1, 0.05, 1, "One tail or bun round to her left (+) or her right (-): a side ponytail."],
     ["ties.part", "Takes", "pick", [["all", "All the hair"], ["top", "The top's hair only (the rest hangs loose)"]]],
     ["ties.tight", "Tightness", "slide", 0, 1, 0.05, 1, ""],
+    ["ties.drape", "Drape", "slide", 0, 1, 0.05, 1, "The gathered hair hangs to its tie like a curtain from the head's widest part (0: it lies on the head all the way)."],
+    ["ties.full", "Fullness", "slide", 0, 1, 0.05, 1, "How thick the gathered hair lies on the head."],
+    ["ties.puff", "Puff", "slide", 0, 1, 0.05, 1, "Slack: the hanging hair bows out on its way down and tucks in to the tie (needs Drape)."],
+    ["ties.gather", "Gather", "slide", 3, 20, 0.5, cm, "How far over the tie the hanging hair starts to come in to it (cm)."],
+    ["ties.drop", "Tie lower", "slide", 0, 8, 0.5, cm, "The tie slid down the hanging hair, below where Height puts it: under the ear (cm)."],
     ["ties.loose", "Left loose in front", "slide", 0, 1, 0.02, 1, "How far round from the face the hair stays out of the ties."],
     ["ties.sweep", "Sweep", "slide", 0, 1, 0.05, 1, "The hair leaves its roots the way it's combed and bends round to the tie: arcs over the head, not straight lines."],
     ["ties.swirl", "Swirl", "slide", -1, 1, 0.05, 1, "The hair winds in to the tie, one way or the other."],
@@ -436,8 +455,14 @@ export const CONTROLS = [
     ["ties.wildStiff", "Soft or spiky", "slide", 0, 1, 0.05, 1, "Soft strands that arc and droop, to stiff spikes."],
     ["ties.tail.length", "Tail length", "slide", 3, 45, 0.5, cm, "cm"],
     ["ties.tail.thick", "Tail thickness", "slide", 5, 28, 0.5, mm, "mm"],
-    ["ties.tail.spread", "Tail spread", "slide", 0, 1.5, 0.05, 1, ""],
+    ["ties.tail.spread", "Tail spread", "slide", 0, 2.5, 0.05, 1, ""],
     ["ties.tail.taper", "Tail taper", "slide", 0, 1, 0.05, 1, ""],
+    ["ties.tail.fan", "Tail fan", "slide", 0, 1, 0.05, 1, "The tail springs out right under its tie, as a brush (0: it leaves the tie as a rope and widens after)."],
+    ["ties.tail.bloom", "Widest at", "slide", 0.1, 0.8, 0.05, 1, "How far down the tail it's widest."],
+    ["ties.tail.flat", "Tail flat", "slide", 0, 1, 0.05, 1, "It lies against the body as a brush laid on it: wide across, thin through."],
+    ["ties.tail.out", "Tails lean out", "slide", -1, 1, 0.05, 1, "Twin tails lean away from the neck (or in toward it)."],
+    ["ties.tail.strands", "Tail strands", "slide", 0.3, 4, 0.1, 1, "How many hairs the tail has (1: by its thickness)."],
+    ["ties.tail.stiff", "Tail stiffness", "slide", 0, 1, 0.05, 1, "How far the tail keeps the way it leaves its tie before it hangs."],
     ["ties.tail.fall", "Tails fall", "pick", [["back", "Behind"], ["front", "Over the shoulders"]]],
     ["ties.tail.sway", "Sway", "slide", 0, 1, 0.05, 1, "How freely the tail swings in a game."],
     ["ties.tail.bun", "Bun size", "slide", 1.5, 7, 0.1, cm, "cm"],

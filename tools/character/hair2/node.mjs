@@ -3,7 +3,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import { loadMhr, mhrBody, grownBody, namedBody, ROOT } from "../tailor/node.mjs";
-import { MONSTERS } from "../grow.js";
+import { MONSTERS, V2FEMALE } from "../grow.js";
 import { localBody } from "./body.js";
 import { readPores } from "./pores.js";
 
@@ -12,12 +12,15 @@ export const PORES_FILE = join(ROOT, "Content", "Studio", "Hair2", "pores.bin");
 let MHR = null;
 export const mhr = () => MHR || (MHR = loadMhr());
 
-// a body by name: base (MHR's own, 1.70 m), fem, masc, child8, child12, teen15, a creature (goblin, ogre...), or one of the tailor's (tailor/bodies.json)
+// a body by name: base (MHR's own, 1.70 m), fem, masc, v2female (grow.js V2FEMALE: the proportions of the user's own
+// Daz3D characters, what their hair pictures are matched on), child8, child12, teen15,
+// a creature (goblin, ogre...), or one of the tailor's (tailor/bodies.json)
 export function bodyByName(name = "base") {
   const m = mhr();
   const made = name === "base" ? mhrBody(m, [], 1.7)
     : name === "fem" ? grownBody(m, { base: -1 })
     : name === "masc" ? grownBody(m, { base: 1 })
+    : name === "v2female" || name === "doll" ? grownBody(m, { base: -1, ...V2FEMALE })
     : /^child(\d+)$/.test(name) ? grownBody(m, { age: +name.slice(5), base: -0.3 })
     : /^teen(\d+)$/.test(name) ? grownBody(m, { age: +name.slice(4), base: 0.3 })
     : MONSTERS[name] ? grownBody(m, { base: MONSTERS[name].base, height: MONSTERS[name].height, monster: true, sculpt: MONSTERS[name].sculpt })   // a creature (grow.js: goblin, ogre...)
