@@ -46,6 +46,10 @@ aesthetic hair and apply that later to the rest of our styles", and offered a ba
 - **The look** went in after (the hair shader's `streak`: the first highlight lock by lock; `gloss_black` asks for
   it): black with bright streak bundles in the rig. Left of it: ours is striped evenly, hers has larger dark areas
   and a faint teal; the Studio's own shader has no `streak`.
+- **A second side** (her first picture, from her left front): there her hair is a round bulb behind the ear; ours
+  was a flat band. The back of the head's hair hangs now and is swept round the head to the tie: fuller, the front
+  outline unchanged. Still short: about 2 cm beyond the ear where hers is 3.4, a squared corner at the tie, her tie
+  further forward. That view has no matched camera yet: build one (the ear as the ruler so far).
 - **Not matched, in order** (§10's list): the tails' flare under
   the ties, the last 3 cm over the tie, the fringe's pieces, the sidelocks as ribbons and the plait, the red
   streaks, strands across the ear, her first picture's view (a fuller bulb behind the ear), the back.

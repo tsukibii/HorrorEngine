@@ -192,8 +192,10 @@ settings, all 0 by default (the older styles are the same hair by hair):
   skin and follows a curve of its own, planned where it leaves: plumb down to a **Gather**'s height over the tie
   (7.5 cm, measured on the user's picture), then in, its distance from the plumb line shrinking as 1 − (1 − t)² of
   its height over the tie. It is steered at the curve's next point, a step below it, so it comes back to the curve
-  when the body or an ear puts it off, and it ends in its tie. Hair far round the head from its tie runs to it along
-  the head as before and joins the others as it comes near.
+  when the body or an ear puts it off, and it ends in its tie. The curve is laid round the head's own axis (how far
+  out, and the bearing, each going from where the hair left to the tie's): hair as far round the head from its tie
+  as a quarter turn hangs too, the back of the head's as a bob's curtain, and is swept round to the tie (a straight
+  line across would go through the neck); past 70 to 100 degrees round it runs along the head as before.
 - **Puff**: slack. The hanging hair bows out from the head on the way down, as t (1 − t)^1.5 of its height over the
   tie (fullest two fifths of the way up), and tucks in to the tie: a rounded bulb. Hair that has come further bows
   more, so the bulb has a body.
@@ -427,8 +429,15 @@ over ours, and the hair's solid outer edge by height on her right side, hers aga
 5. **The sidelocks**: hers are flat glossy ribbons a centimetre wide that end in a point, a thin plait beside one;
    ours are thin strands, and there is no plait.
 6. **The red streaks**, the few fine strands across the ear, the flyaways: none.
-7. **The other views.** Her first picture (three-quarters, from her left) shows a fuller bulb behind the ear than
-   Puff 0.12 gives; it has not been put in a rig of its own. The back is in no picture.
+7. **From her left front** (her first picture, turned level, her ear at our ear's size, beside ours from 38 degrees
+   to her left and 8 below; no matched camera yet, so by eye and by the ear as the ruler). Her hair behind the ear
+   is a round bulb that stands about 3.4 cm beyond the ear's rim at the ear's level and sweeps in under it. Ours
+   stood 1.5 cm, a flat band: only hair near the tie hung, the back of the head's still ran along the skull. With
+   the back hair hanging and swept round (§3.8) ours is fuller, about 2 cm at the ear's level and more below it, and
+   the front outline is what it was (within 0.3 cm). Still short of hers: less full at the ear's level, a squared
+   corner where it turns for the tie where hers is round, and her tie sits further forward, under the jaw. A longer
+   gather for hair from further round was tried for the corner and taken out (no rounder from here, half a
+   centimetre worse from the front). The back is in no picture.
 8. **The head.** `v2female` is near hers, not hers (her ears sit higher on the face).
 
 **Not checked here:** the Studio's own tab draws the same hair, but a look's `bake` numbers are Godot's only.

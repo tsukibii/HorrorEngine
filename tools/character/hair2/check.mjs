@@ -197,17 +197,19 @@ if (!only.length) {
     // ---- tied hair that hangs to its tie (Drape, Fullness, Puff, Tie lower), round an ear that's out; a tail as a brush; a fringe closed at its middle
     {
       const C = base.C, DEG = 180 / Math.PI, low = set => settings("twin_tails_high", { ears: "tucked", ties: { height: 0, side: 0.85, tight: 0, tail: { thick: 0.008, fall: "front" }, ...set } });
-      const measure = st => { const G = grow(base, pores, st, prep, { draft: true }).guides, ties = tiesOf(prep.S, C, st), off = []; let n = 0, at = 0, across = 0;
+      const measure = st => { const G = grow(base, pores, st, prep, { draft: true }).guides, ties = tiesOf(prep.S, C, st), off = [], up = []; let n = 0, at = 0, across = 0;
         for (let i = 0; i < G.n; i++) { if (G.group[i] < 3 || !(G.len[i] > 0.02)) continue; n++; const t = ties[G.group[i] - 3], e = (i * K + K - 1) * 3; if (Math.hypot(G.pts[e] - t.at[0], G.pts[e + 1] - t.at[1], G.pts[e + 2] - t.at[2]) < 0.02) at++;
           for (let k = 1; k < K; k++) { const o = (i * K + k) * 3, x = G.pts[o], y = G.pts[o + 1], z = G.pts[o + 2], az = Math.abs(Math.atan2(x - C[0], z - C[2])) * DEG;
             if (y > t.guard + 0.004 && earIn(az, y) < 0.9 && dist(prep.S, x, y, z) < 0.045) across++;                       // (a point of it across the ear)
-            if (Math.abs(y - (EAR.y - EAR.dy * 0.5)) < 0.006 && az > 100 && az < 150) off.push(dist(prep.S, x, y, z)); } }   // (behind the ear's lower half: how far off the skin)
-        off.sort((a, b) => a - b); return { n, at, across, off: off.length ? off[off.length >> 1] * 1000 : 0, tie: ties[0] }; };
+            if (Math.abs(y - (EAR.y - EAR.dy * 0.5)) < 0.006 && az > 100 && az < 150) off.push(dist(prep.S, x, y, z));     // (behind the ear's lower half: how far off the skin)
+            if (Math.abs(y - (EAR.y + EAR.dy + 0.04)) < 0.006 && az > 80 && az < 150 && TS[k] * G.len[i] > 0.03) up.push(dist(prep.S, x, y, z)); } }   // (on the head, 4 cm over the ear's top, the hair that has come 3 cm or more: how thick it lies)
+        off.sort((a, b) => a - b); up.sort((a, b) => a - b); return { n, at, across, off: off.length ? off[off.length >> 1] * 1000 : 0, up: up.length ? up[up.length >> 1] * 1000 : 0, tie: ties[0] }; };
       // (the tie 4 cm under where Height can put it: under the ear, as low twin tails are worn; then the hair has room to hang)
       const high = measure(low({})), plain = measure(low({ drop: 0.04 })), hung = measure(low({ drop: 0.04, drape: 1 })), full = measure(low({ drop: 0.04, drape: 1, full: 0.5 })), puffed = measure(low({ drop: 0.04, drape: 1, puff: 0.5 }));
       for (const [name, m] of [["the tie by the ear", high], ["the tie 4 cm lower", plain], ["and Drape", hung], ["and Fullness", full], ["and Puff", puffed]])
         say(m.n > 600 && m.at >= m.n * 0.97 && m.across === 0, `low twin tails, the ears out, ${name}: ${m.at} of ${m.n} tied hairs end at their tie, ${m.across} of their points across an ear`);
-      say(hung.off > plain.off + 4 && full.off > hung.off + 1 && puffed.off > hung.off + 4, `behind the ear's lower half the tied hair stands ${plain.off.toFixed(1)} mm off the skin, ${hung.off.toFixed(1)} with Drape, ${full.off.toFixed(1)} with Fullness too, ${puffed.off.toFixed(1)} with Puff`);
+      say(hung.off > plain.off + 4 && puffed.off > hung.off + 4, `behind the ear's lower half the tied hair stands ${plain.off.toFixed(1)} mm off the skin, ${hung.off.toFixed(1)} with Drape, ${puffed.off.toFixed(1)} with Puff too`);
+      say(full.up > hung.up + 3, `on the head over the ear the tied hair lies ${hung.up.toFixed(1)} mm thick, ${full.up.toFixed(1)} with Fullness`);
       say(plain.tie.at[1] < high.tie.at[1] - 0.035 && dist(prep.S, ...plain.tie.at) > 0.008 && dist(prep.S, ...plain.tie.at) < 0.014, `Tie lower: the tie ${((high.tie.at[1] - plain.tie.at[1]) * 100).toFixed(1)} cm lower, ${(dist(prep.S, ...plain.tie.at) * 1000).toFixed(0)} mm off the neck`);
       // a tail: Strands, Fan (wider right under the tie), Flat (thin through, wide across), Out (its tip further from the neck)
       const tl = set => { const st = low({ tail: { thick: 0.008, fall: "front", length: 0.2, spread: 2, ...set } }), t = tiesOf(prep.S, C, st)[0], g = tail(t, { S: prep.S, C, s: st, seed: 1 });

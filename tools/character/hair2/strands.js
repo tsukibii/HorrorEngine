@@ -66,7 +66,7 @@ export function trace(ctx) {
     const V = vol[i], reach = V / Math.max(sl, 0.1), jit = 0.88 + 0.24 * hash(u[i], 3);
     const tie = gr >= TIE ? ctx.ties[gr - TIE] : null, own = gr === FRINGE || gr === FRAME, ownHold = own ? (gr === FRINGE ? (fr.hold ?? 0.5) : 0.25) * L : 0;
     poly[0] = px; poly[1] = py; poly[2] = pz;
-    let m = 1, sAt = 0, rest = 0.03, done = false, draped = false, hung = false, eta0 = 0, bow = 0, r0x = 0, r0z = 0, o0x = 0, o0z = 0;
+    let m = 1, sAt = 0, rest = 0.03, done = false, draped = false, hung = false, eta0 = 0, bow = 0, r0x = 0, r0z = 0;   // (r0x, r0z: where it left the head, as its distance from the head's axis and its bearing from the tie's)
     // a low tie by an ear that's out: this hair goes round the ear to it. Hair that grows in front of the ear's back
     // edge goes over the ear's top to a place of its own behind the ear (its lane) and comes down there; hair from
     // behind comes forward no further than the ear's back edge until it's below the ear
@@ -88,6 +88,7 @@ export function trace(ctx) {
         }
         if (!free && dT > 1e-6 && (drape > 0 || round)) {
           const cl = Math.hypot(cx, cy, cz) || 1; cx /= cl; cy /= cl; cz /= cl;
+          const tAz = Math.atan2(tie.at[0] - C[0], tie.at[2] - C[2]), tR = Math.hypot(tie.at[0] - C[0], tie.at[2] - C[2]);
           const eta = py - tie.at[1], ex = px - C[0], ez = pz - C[2], r = Math.hypot(ex, ez) || 1, ap = Math.abs(Math.atan2(ex, ez)) / D, sgn = ex >= 0 ? 1 : -1, bx = sgn * ez / r, bz = -sgn * ex / r;   // (b: round the head toward the back)
           // round an ear that's out: in front of its lane and above the ear, to its own pass over the ear's top, at its
           // lane; not to the tie yet (the hair in front of the ear, the sideburn's, too: up the front of the ear to above
@@ -98,22 +99,25 @@ export function trace(ctx) {
             // Drape. Where the head doesn't hold it up (its side from the widest part down, or already off the skin),
             // and near its tie's own plumb line, tied hair leaves the skin and hangs to its tie along a curve of its
             // own, planned where it leaves: plumb down to a gather's height over the tie (Gather: 7.5 cm, measured on
-            // the user's Daz3D twin tails), then in to it, its distance from the tie's plumb line shrinking as
-            // 1 - (1 - t)^2 of its height over the tie in gather heights (it ends pointing at the tie); and with Puff
+            // the user's Daz3D twin tails), then in to it, its distance from the head's axis and its bearing round it
+            // each going to the tie's as 1 - (1 - t)^2 of its height over the tie in gather heights; and with Puff
             // (slack) it bows out from the head on the way, as t (1 - t)^1.5, fullest two fifths of the way up from
             // the tie, and tucks in to it: a rounded bulb over the tie. Hair that has come further bows more: it lies
             // outside hair from nearer by, and the bulb has a body. It is steered at the curve's next point, so it comes
             // back to it when the body or an ear puts it off. Hair far round the head from its tie runs to it along the
             // head, as hair with no drape does, and joins the others as it comes near
             if (!hung) {
-              leave = drape * (ok && d0 < GAP + V + 0.008 ? 1 - smooth(-0.05, 0.25, g[1]) : 1) * (1 - smooth(0.04, 0.09, Math.hypot(tie.at[0] - px, tie.at[2] - pz))) * (1 - wg);
-              if (leave > 0.5 * drape) { hung = true; eta0 = Math.max(eta, 0.03); r0x = px - tie.at[0]; r0z = pz - tie.at[2]; o0x = ex / r; o0z = ez / r; bow = puff * (0.4 + 0.6 * smooth(0.02, 0.12, sAt)) * (0.8 + 0.4 * hash(u[i], 21)) * Math.min(1, eta0 / 0.08); }
+              // (as far round the head from its tie as a quarter turn: the back of the head's hair hangs too, a bob's curtain, and is swept round to the tie; past that it runs along the head)
+              let dA = (Math.atan2(ex, ez) - tAz) / D; dA -= 360 * Math.round(dA / 360);
+              leave = drape * (ok && d0 < GAP + V + 0.008 ? 1 - smooth(-0.05, 0.25, g[1]) : 1) * (1 - smooth(70, 100, Math.abs(dA))) * (1 - wg);
+              if (leave > 0.5 * drape) { hung = true; eta0 = Math.max(eta, 0.03); r0x = r; r0z = dA * D; bow = puff * (0.4 + 0.6 * smooth(0.02, 0.12, sAt)) * (0.8 + 0.4 * hash(u[i], 21)) * Math.min(1, eta0 / 0.08); }
               else if (leave > 0) { cx *= 1 - leave; cy = cy * (1 - leave) - leave; cz *= 1 - leave; }
             }
             if (hung) {
               leave = drape * (1 - wg);
-              const tq = clamp((eta - dl) / eta0, 0, 1), tg = Math.min(1, (eta - dl) / GATHER), F = tg > 0 ? 1 - (1 - tg) * (1 - tg) : 0, B = bow * tq * Math.pow(1 - tq, 1.5) / 0.1859;   // (plumb down to a gather's height over the tie, then in)
-              const gx = tie.at[0] + r0x * F + o0x * B - px, gy = tie.at[1] + eta0 * tq - py, gz = tie.at[2] + r0z * F + o0z * B - pz, gl = Math.hypot(gx, gy, gz) || 1;
+              const tq = clamp((eta - dl) / eta0, 0, 1), tg = Math.min(1, (eta - dl) / GATHER), F = tg > 0 ? 1 - (1 - tg) * (1 - tg) : 0, B = bow * tq * Math.pow(1 - tq, 1.5) / 0.1859;   // (plumb down to a gather's height over the tie, then in. Tried and taken out: a longer gather for hair from further round the head, to round off the corner where it turns for the tie; from her second picture's side the corner stayed, and from the front the side came in half a centimetre too early)
+              // (its place on the curve round the head's own axis: how far out, and its bearing, each from where it left to the tie's; a straight line across would go through the neck)
+              const rT = tR + (r0x - tR) * F + B, aT = tAz + r0z * F, gx = C[0] + rT * Math.sin(aT) - px, gy = tie.at[1] + eta0 * tq - py, gz = C[2] + rT * Math.cos(aT) - pz, gl = Math.hypot(gx, gy, gz) || 1;
               cx = cx * (1 - leave) + gx / gl * leave; cy = cy * (1 - leave) + gy / gl * leave; cz = cz * (1 - leave) + gz / gl * leave;
             }
           }

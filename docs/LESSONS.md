@@ -5,6 +5,15 @@ the fix.
 
 ## The hair editor v2.0: what took a second try (2026-11-12)
 
+- **One outline can be met by the wrong shape: look from a second side before calling it matched.** The side of the
+  Daz twin tails was within 0.3 cm of her picture's outline at every height, from the front. Beside her other
+  picture, from her left front, ours was a flat band 1.5 cm beyond the ear where hers is a round bulb of 3.4: the
+  front view only sees the hair's widest reach to the side, and behind the ear ours had none, because only hair
+  near the tie hung. The fix (the back hair hangs and is swept round the head) left the front outline where it was,
+  which is the point: two views hold a shape, one holds a line.
+- **A refinement that doesn't show goes back out, with what it did.** A longer gather for hair from further round
+  the head was meant to round off the corner where it turns for the tie. From the side it was no rounder; from the
+  front the side came in 0.3 to 0.5 cm too early. It is out again, and the line where it was says so.
 - **A before-and-after that changed two things credits the wrong one.** The line of skin down the fringe's middle was
   gone in the picture after *Closed* went in; the same render had also switched the light from the front to the
   reel's. A number then said Closed did nothing (the strands' spacing at the middle: 7.6 mm, 6.5 Closed) and for a
