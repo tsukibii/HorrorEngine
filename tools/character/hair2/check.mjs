@@ -211,6 +211,15 @@ if (!only.length) {
       say(hung.off > plain.off + 4 && puffed.off > hung.off + 4, `behind the ear's lower half the tied hair stands ${plain.off.toFixed(1)} mm off the skin, ${hung.off.toFixed(1)} with Drape, ${puffed.off.toFixed(1)} with Puff too`);
       say(full.up > hung.up + 3, `on the head over the ear the tied hair lies ${hung.up.toFixed(1)} mm thick, ${full.up.toFixed(1)} with Fullness`);
       say(plain.tie.at[1] < high.tie.at[1] - 0.035 && dist(prep.S, ...plain.tie.at) > 0.008 && dist(prep.S, ...plain.tie.at) < 0.014, `Tie lower: the tie ${((high.tie.at[1] - plain.tie.at[1]) * 100).toFixed(1)} cm lower, ${(dist(prep.S, ...plain.tie.at) * 1000).toFixed(0)} mm off the neck`);
+      // Fullness at the back: thicker on the back of the head, the side over the ear as it was
+      { const lie = b => { const G = grow(base, pores, low({ drop: 0.04, drape: 1, back: b }), prep, { draft: true }).guides, side = [], rear = [];
+          for (let i = 0; i < G.n; i++) { if (G.group[i] < 3 || !(G.len[i] > 0.02)) continue;
+            for (let k = 1; k < K; k++) { const o = (i * K + k) * 3, x = G.pts[o], y = G.pts[o + 1], z = G.pts[o + 2], az = Math.abs(Math.atan2(x - C[0], z - C[2])) * DEG; if (TS[k] * G.len[i] < 0.03) continue;
+              if (Math.abs(y - (EAR.y + EAR.dy + 0.04)) < 0.006 && az > 70 && az < 100) side.push(dist(prep.S, x, y, z));
+              if (Math.abs(y - (EAR.y + EAR.dy + 0.02)) < 0.006 && az > 135 && az < 170) rear.push(dist(prep.S, x, y, z)); } }
+          side.sort((a, b2) => a - b2); rear.sort((a, b2) => a - b2); return { side: side[side.length >> 1] * 1000, rear: rear[rear.length >> 1] * 1000 }; };
+        const b0 = lie(0), b1 = lie(0.5);
+        say(b1.rear > b0.rear + 6 && Math.abs(b1.side - b0.side) < 1.5, `Fullness at the back 0.5: the tied hair lies ${b0.rear.toFixed(1)} mm thick on the back of the head, ${b1.rear.toFixed(1)} with it; at the side over the ear ${b0.side.toFixed(1)} and ${b1.side.toFixed(1)}`); }
       // a tail: Strands, Fan (wider right under the tie), Flat (thin through, wide across), Out (its tip further from the neck)
       const tl = set => { const st = low({ tail: { thick: 0.008, fall: "front", length: 0.2, spread: 2, ...set } }), t = tiesOf(prep.S, C, st)[0], g = tail(t, { S: prep.S, C, s: st, seed: 1 });
         const ring = f => { const k = TS.findIndex(v => v >= f); let cx = 0, cz = 0, wx = 0, wz = 0; for (let j = 0; j < g.n; j++) { cx += g.pts[(j * K + k) * 3]; cz += g.pts[(j * K + k) * 3 + 2]; } cx /= g.n; cz /= g.n;

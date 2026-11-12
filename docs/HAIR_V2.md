@@ -200,6 +200,9 @@ settings, all 0 by default (the older styles are the same hair by hair):
   tie (fullest two fifths of the way up), and tucks in to the tie: a rounded bulb. Hair that has come further bows
   more, so the bulb has a body.
 - **Fullness**: how thick the gathered hair lies on the head (up to 2.2 cm over Tightness's 1).
+- **Fullness at the back** (`ties.back`): thicker on the back of the head only, behind the ears and below the top
+  (up to 2.5 cm): body behind the ear without a taller top. HAIR2: at 0.5 the tied hair lies 10.0 mm thick on the
+  back of the head and 20.9 with it, 9.9 and 9.8 at the side over the ear.
 - **Tie lower**: the tie slid down the hanging hair, below where Height can put it on the head (the lowest was level
   with the ear lobe; a low tail's elastic sits some centimetres under the ear), brought in against the neck there.
 
@@ -438,6 +441,14 @@ over ours, and the hair's solid outer edge by height on her right side, hers aga
    corner where it turns for the tie where hers is round, and her tie sits further forward, under the jaw. A longer
    gather for hair from further round was tried for the corner and taken out (no rounder from here, half a
    centimetre worse from the front). The back is in no picture.
+   **In numbers** (the strands' reach beyond the head's own outline, the ear included, at heights 1 and -1 cm, the
+   ear's level): toward the side, what the front view sees, 0.1 and 0.3 cm; toward 128 degrees round, what a camera
+   38 degrees to her left sees, 1.9 and 2.0, and 3.1 to 3.6 below the ear: ours is bottom-heavy where hers is
+   fullest at the ear. Fullness 0.4 and Puff 0.4 each add half a centimetre and more to both. *Fullness at the
+   back* 0.5 takes the second to 3.2 and 3.2, and the first to 0.7 and 0.8: body at the back of the head shows from
+   the front too. So the two pictures don't agree on my numbers, and the soft one is the second: its 3.4 cm was
+   read by eye with the ear as the ruler, at a turn of the head I assumed. **The style leaves it at 0** until that
+   picture has a fitted camera; then its value is set by both.
 8. **The head.** `v2female` is near hers, not hers (her ears sit higher on the face).
 
 **Not checked here:** the Studio's own tab draws the same hair, but a look's `bake` numbers are Godot's only.

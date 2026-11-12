@@ -49,7 +49,10 @@ aesthetic hair and apply that later to the rest of our styles", and offered a ba
 - **A second side** (her first picture, from her left front): there her hair is a round bulb behind the ear; ours
   was a flat band. The back of the head's hair hangs now and is swept round the head to the tie: fuller, the front
   outline unchanged. Still short: about 2 cm beyond the ear where hers is 3.4, a squared corner at the tie, her tie
-  further forward. That view has no matched camera yet: build one (the ear as the ruler so far).
+  further forward. That view has no matched camera yet: **fit one next** (her eyes, ear, nose and chin in the picture against the
+  same points on `v2female`), then set *Fullness at the back* (`ties.back`, built, 0 in the style: at 0.5 it gives
+  the second view its fullness at the ear's level and widens the front by half a centimetre, so its value has to be
+  set by both pictures, not by eye).
 - **Not matched, in order** (§10's list): the tails' flare under
   the ties, the last 3 cm over the tie, the fringe's pieces, the sidelocks as ribbons and the plait, the red
   streaks, strands across the ear, her first picture's view (a fuller bulb behind the ear), the back.

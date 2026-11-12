@@ -56,6 +56,7 @@ export function trace(ctx) {
   // Drape: tied hair hangs to its tie. It lies on the head only where the head holds it up; where the head falls away
   // under it (below its widest, behind the ear, down to the neck) it leaves the skin and hangs free, a curtain, drawn
   // in to the tie at the end, with some slack (it sags on the way). 0: it lies on the head all the way to its tie
+  const tieBack = clamp((s.ties && s.ties.back) || 0, 0, 1) * 0.025;
   const drape = clamp((s.ties && s.ties.drape) || 0, 0, 1), puff = clamp((s.ties && s.ties.puff) || 0, 0, 1) * 0.035, EBACK = EAR.az + EAR.da * 1.15, GATHER = clamp((s.ties && s.ties.gather) ?? 0.075, 0.03, 0.2);
   for (let i = 0; i < n; i++) {
     let L = len[i]; if (!(L > 0.0015)) continue;
@@ -178,6 +179,10 @@ export function trace(ctx) {
       if (gr === LOOSE && VOL) {
         const ex = qx - C[0], ey = qy - C[1], ez = qz - C[2], el = Math.asin(clamp(ey / (Math.hypot(ex, ey, ez) || 1), -1, 1)) / D, aq = Math.abs(Math.atan2(ex, ez)) / D, t = smooth(36, 54, el), b = smooth(104, 128, aq);
         Vq = t * VOL[0] + (1 - t) * ((1 - b) * VOL[1] + b * VOL[2]);
+      }
+      if (tie && tieBack > 0) {                                           // Fullness at the back: tied hair lies thicker on the back of the head (behind the ears, below the top), where a gathered style carries its body; the sides, which the face is seen between, stay as they are
+        const ex = qx - C[0], ey = qy - C[1], ez = qz - C[2], el = Math.asin(clamp(ey / (Math.hypot(ex, ey, ez) || 1), -1, 1)) / D, aq = Math.abs(Math.atan2(ex, ez)) / D;
+        Vq = V + tieBack * (1 - smooth(36, 54, el)) * smooth(104, 128, aq);
       }
       const h = GAP + Vq * (1 - Math.exp(-sAt / reach)) * jit + (draped ? 0.014 * hash(u[i], 18) : 0);   // (hair brought forward over a shoulder hangs as a lock with some body, not a sheet on the chest)
       for (let pass = 0; pass < 2; pass++) {
