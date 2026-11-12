@@ -97,7 +97,7 @@ export function comb(ctx) {
     // face-framing strands: some of the hairline's own pores beside the fringe (or beside the parting), straight down in front of the ears
     if (!group[i] && (fr.frame || 0) > 0 && lim) {
       const depth = by[i] - lim(a), a0 = hasFringe ? Math.max(34, (fr.width ?? 46) - 8) : 36;   // (the temples' pores: in front of the ears, never over the eyes)
-      if (depth < 0.014 && Math.abs(a) > a0 && Math.abs(a) < 64 && u[i] < fr.frame) { d = turn(down, nn, (p[0] >= 0 ? -1 : 1) * 12 * D); group[i] = FRAME; lf = 22 * D; }
+      if (depth < 0.014 && Math.abs(a) > a0 && Math.abs(a) < 64 && u[i] < fr.frame) { d = turn(down, nn, (p[0] >= 0 ? -1 : 1) * 12 * (1 - clamp(+fr.frameHang || 0, 0, 1)) * D); group[i] = FRAME; lf = 22 * D; }   // (turned in toward the face, to lie along the cheek; Hang free: straight down)
     }
     // wisps by the ears: some of the sideburn's own pores, left out of a tie to hang in front of the ear
     if (!group[i] && (fr.frameEars || 0) > 0 && lim && Math.abs(a) >= 64 && Math.abs(a) < 90 && by[i] < ETOP + 0.014 && by[i] - lim(a) < 0.03 && u[i] < fr.frameEars) { d = down; group[i] = FRAME; lf = 14 * D; }

@@ -57,6 +57,7 @@ export function trace(ctx) {
   // under it (below its widest, behind the ear, down to the neck) it leaves the skin and hangs free, a curtain, drawn
   // in to the tie at the end, with some slack (it sags on the way). 0: it lies on the head all the way to its tie
   const tieBack = clamp((s.ties && s.ties.back) || 0, 0, 1) * 0.025;
+  const frHang = clamp(+fr.frameHang || 0, 0, 1);
   const drape = clamp((s.ties && s.ties.drape) || 0, 0, 1), puff = clamp((s.ties && s.ties.puff) || 0, 0, 1) * 0.035, EBACK = EAR.az + EAR.da * 1.15, GATHER = clamp((s.ties && s.ties.gather) ?? 0.075, 0.03, 0.2);
   for (let i = 0; i < n; i++) {
     let L = len[i]; if (!(L > 0.0015)) continue;
@@ -65,7 +66,9 @@ export function trace(ctx) {
     let px = pos[i * 3] + nx * 0.0006, py = pos[i * 3 + 1] + ny * 0.0006, pz = pos[i * 3 + 2] + nz * 0.0006;
     let tx = dir[i * 3] * cl + nx * sl, ty = dir[i * 3 + 1] * cl + ny * sl, tz = dir[i * 3 + 2] * cl + nz * sl;
     const V = vol[i], reach = V / Math.max(sl, 0.1), jit = 0.88 + 0.24 * hash(u[i], 3);
-    const tie = gr >= TIE ? ctx.ties[gr - TIE] : null, own = gr === FRINGE || gr === FRAME, ownHold = own ? (gr === FRINGE ? (fr.hold ?? 0.5) : 0.25) * L : 0;
+    const tie = gr >= TIE ? ctx.ties[gr - TIE] : null, own = gr === FRINGE || gr === FRAME, ownHold = own ? (gr === FRINGE ? (fr.hold ?? 0.5) * L : 0.25 * L + (0.02 - 0.25 * L) * frHang) : 0;   // (a face-framing strand is combed along the cheek for a quarter of its length; hanging free, for its first two centimetres only: it leaves the head at the temple)
+    // a face-framing strand's own line (the cheek, the jaw...; wound into a ringlet: they end where it begins, ties.js drills; fline: a tendril's lock's own line, a wisp by the ear's: engine.js)
+    const ownLine = gr === FRAME ? (ctx.fline && ctx.fline[i] < 1 ? ctx.fline[i] : (fr.frameCurl || 0) > 0 ? DRILL_TOP - 0.012 : (fr.frameLine ?? MARKS.jaw) + (hash(u[i], 6) - 0.5) * 0.02 * (fr.uneven ?? 0.3)) : 0;
     poly[0] = px; poly[1] = py; poly[2] = pz;
     let m = 1, sAt = 0, rest = 0.03, done = false, draped = false, hung = false, eta0 = 0, bow = 0, r0x = 0, r0z = 0;   // (r0x, r0z: where it left the head, as its distance from the head's axis and its bearing from the tie's)
     // a low tie by an ear that's out: this hair goes round the ear to it. Hair that grows in front of the ear's back
@@ -161,9 +164,12 @@ export function trace(ctx) {
       let dx = cx * wc, dy = cy * wc - (1 - wc), dz = cz * wc;
       // the ends turn in (or out) round a radius
       if (turnLen > 0 && !tie && gr !== FRINGE) {
-        const left = byLine ? Math.min(L - sAt, py - cutLine(cut, Math.atan2(px, pz - C[2]) / D)) : L - sAt;
+        // (a face-framing strand that goes on below the cut's line turns at its own end, not there: read against the cut's
+        // line alone it began to turn in at the chin, where a tied style's cut is left, and stayed turned all the way
+        // down: long sidelocks drawn in under the chin to the pit of the neck. One that hangs free doesn't turn)
+        const cl = byLine ? cutLine(cut, Math.atan2(px, pz - C[2]) / D) : 0, left = byLine ? Math.min(L - sAt, py - (gr === FRAME ? Math.min(cl, ownLine) : cl)) : L - sAt;
         if (left < turnLen) {
-          const b = Math.sign(turnAmt) * (1 - Math.max(0, left) / turnLen) * 1.25, hx = -(px - C[0]), hz = -(pz - C[2]), hl = Math.hypot(hx, hz) || 1, dn = Math.hypot(dx, dy, dz) || 1;
+          const b = Math.sign(turnAmt) * (1 - Math.max(0, left) / turnLen) * 1.25 * (gr === FRAME ? 1 - frHang : 1), hx = -(px - C[0]), hz = -(pz - C[2]), hl = Math.hypot(hx, hz) || 1, dn = Math.hypot(dx, dy, dz) || 1;
           dx = dx / dn * Math.cos(b) + hx / hl * Math.sin(b); dy = dy / dn * Math.cos(b); dz = dz / dn * Math.cos(b) + hz / hl * Math.sin(b);
         }
       }
@@ -242,7 +248,7 @@ export function trace(ctx) {
         if (qy < line) { const f = clamp((py - line) / Math.max(1e-6, py - qy), 0, 1); qx = px + (qx - px) * f; qy = py + (qy - py) * f; qz = pz + (qz - pz) * f; sAt -= dl * (1 - f); done = true; }
       }
       if (gr === FRAME) {                                                 // a face-framing strand's own line (the cheek, the jaw...)
-        const line = ctx.fline && ctx.fline[i] < 1 ? ctx.fline[i] : (fr.frameCurl || 0) > 0 ? DRILL_TOP - 0.012 : (fr.frameLine ?? MARKS.jaw) + (hash(u[i], 6) - 0.5) * 0.02 * (fr.uneven ?? 0.3);   // (wound into a ringlet: they end where it begins, ties.js drills; fline: a tendril's lock's own line, a wisp by the ear's: engine.js)
+        const line = ownLine;
         if (qy < line) { const f = clamp((py - line) / Math.max(1e-6, py - qy), 0, 1); qx = px + (qx - px) * f; qy = py + (qy - py) * f; qz = pz + (qz - pz) * f; sAt -= dl * (1 - f); done = true; }
       }
       tx = qx - px; ty = qy - py; tz = qz - pz; const tl = Math.hypot(tx, ty, tz); if (tl < 1e-7) break; tx /= tl; ty /= tl; tz /= tl;

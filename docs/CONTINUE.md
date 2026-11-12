@@ -41,10 +41,12 @@ for it ("lets create a v2female base").
   fringe closed at its middle, a look that can ask more of its bake (`streak`), the style `daz_twin_tails` in a
   group of its own, HAIR2's assertions for each. The older 65 styles are the same hair by hair.
 - **Where the hairstyle stands, on the new head** (HAIR_V2 §10: the rig, the table): from two fitted cameras its
-  edge is within about half a centimetre of hers from the crown to the tie in both views (Fullness 0.33, the tie
-  3.3 cm lower). Not matched, in order: the tails under the ties (0.6 to 1.4 cm narrow, short at the tips), 0.7 to
-  1 cm behind the ear's top in the second view, the fringe's pieces, the sidelocks as ribbons and the plait, the
-  red streaks, the look's evenness and teal, `streak` in the Studio's own shader.
+  edge is within about half a centimetre of hers from the crown to nine centimetres down the tails (Fullness 0.33,
+  the tie 3.3 cm lower, the tails as flat brushes), and its sidelocks hang free from the fringe's corners (*Hang
+  free*; they had been drawn in under the chin: the ends' turn was read against the cut's line, fixed for every
+  style, which changed three Advanced ones for the better). Not matched, in order: the look's evenness and teal
+  (`streak` in the Studio's own shader), the loose hair on the tails' outside, 0.7 to 0.9 cm behind the ear's top
+  in the second view, the fringe's pieces, the sidelocks as ribbons and the plait, the red streaks.
 - **The rig is scratch** (`rig2/`: her pictures stay out of git); §10 has what rebuilds it: the two views, the
   scales and turns, how the landmarks are taken, what her head's tilt does to the comparison.
 - **The v2female base is built** (DECISIONS 2026-11-12, v2female; docs/CHARACTER_STUDIO.md §2f): a fourth base

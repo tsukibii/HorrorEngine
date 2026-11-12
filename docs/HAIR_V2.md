@@ -128,6 +128,17 @@ longer one between the eyes), **Slant** (longer toward one side: hair over one e
 some of the temples' own pores, hanging in front of the ears to their own line; **Ringlets** winds each side's into a
 drill (`ties.js` `drills`: a ribbon round a middle line kept off the body, cards end to end).
 
+**Hang free** (`fringe.frameHang`, 2026-11-12, the twin tails' long sidelocks). At 0 a face-framing strand is combed
+along the cheek for a quarter of its length, turned 12 degrees in toward the face, and then falls: right for strands
+that end at the cheek or the jaw. At 1 it is combed for its first two centimetres only, straight down, and leaves the
+head at the temple: it hangs plumb in front of the ear, clear of the cheek and the jaw, to its line (measured: no more
+than 2 mm sideways from where it passes the jaw). **And the ends' turn is at the strand's own end** (`strands.js`
+`ownLine`): the turn (Shape, *Ends turn*) was read against the cut's line alone, so a face-framing strand that goes on
+below it (a tied style's tendrils and sidelocks: the cut is left at the chin) began to turn in at the chin and stayed
+turned all the way down, drawn in under the chin to the pit of the neck. It now turns at the lower of the two lines,
+and one that hangs free doesn't turn. Four of the 66 styles had such strands (the twin tails and three of the
+Advanced ones: space buns, the messy bun, the high ponytail); the other 62 are the same hair by hair.
+
 Since the Advanced styles (DECISIONS 2026-11-12, the very last): a fringe's **Amount** goes past 1 (a heavy fringe,
 its band up to six centimetres deep: from further back on the head) and its **Arch** both ways (shorter toward the
 temples, or longer: rounded down at its sides). **Tendrils** gathers each side's face-framing strands into one to
@@ -352,7 +363,9 @@ head's hair 1.5 to 3 MB with its two 512 px textures.
 - **The Advanced styles' faults, as they stand** (2026-11-12, after a close look at each from the side): the space
   buns have no gathered tendrils at all (under their wide fringe only two face-framing strands grow a side: each
   "lock" is one strand, hard to see from the front, where two thirds of it is edge on) and a blocky dark patch at the
-  sideburn; the messy bun's long waved tendrils still turn sharply near their tips (not looked into); the high
+  sideburn; the messy bun's long waved tendrils turned sharply near their tips, and that one is found and fixed (the
+  ends' turn was read against the cut's line, §3.7: the space buns', the messy bun's and the high ponytail's tendrils
+  no longer hook in toward the neck; their cards made again); the high
   ponytail has a bare strip of scalp at its hairline under its see-through fringe, and two strands from low on the
   temple now hang as a strand of their own across the jaw. Streaks on hair tied into buns still show card-shaped
   flecks close up (the lanes' fix above removed one cause, measured; what is left is unexplained); the underside
@@ -432,41 +445,48 @@ landmarks, pictured by `tools/godot/hair2_check.py shots --origin 0,0,0 --size 1
   is turned by that much against ours in the frame. Her left side in the front picture can't be measured by its
   edge: her sidelock hangs outermost there.
 
-**What is matched** (`daz_twin_tails`: Drape 1, Fullness 0.33, Puff 0.12, the tie 3.3 cm lower, Gather 7.5 cm).
-Ours against hers, centimetres, minus where ours is narrower:
+**What is matched** (`daz_twin_tails`: Drape 1, Fullness 0.33, Puff 0.12, the tie 3.3 cm lower, Gather 7.5 cm; the
+tails 10.5 mm thick, flat, widest four fifths of the way down, Fan 0.6; the sidelocks hanging free). Ours against
+hers, centimetres, minus where ours is narrower:
 
 | under the eyes' line | front, her right | the other view, her left |
 |---|---|---|
-| 7 to 1 cm above | -0.3 to +0.1 | (her ears and horns: a headband, not hair) |
-| 0 to 1 | +0.2 to +0.3 | -0.9 to -0.6 |
-| 2 to 5 | 0.0 to -0.3 | -0.3 to +0.1 |
-| 6 to 8 (behind the ear's lower half) | -0.6 to -0.2 | +0.1 to -0.4 |
-| 9 to 11 (the tie) | +0.1 to -0.6 | -0.3 to -0.2 |
-| 12 to 13 | -0.4 to -0.1 | -0.1 (one row out by 0.9) |
+| 7 to 1 cm above | -0.4 to +0.1 | (her ears and horns: a headband, not hair) |
+| 0 to 1 | +0.2 to +0.3 | -0.9 to -0.7 |
+| 2 to 5 | 0.0 to -0.2 | -0.3 to 0.0 |
+| 6 to 8 (behind the ear's lower half) | -0.6 to -0.1 | +0.2 to -0.4 |
+| 9 to 11 (the tie) | +0.2 to -0.1 | -0.2 to -0.1 |
+| 12 to 18 (the tail) | +0.4 to -0.6 | -0.6 to +0.7 (to 14; the picture ends at 15, where ours is 2.1 wide) |
+| 19 to 21 | -2.9 to -0.6 (hers flares: loose hair on the tail's outside) | |
+| 22 to 24 (the tips) | +0.3 to -0.7 | |
 
-- So the hair's edge is within about half a centimetre of hers from the crown to the tie in both views. The two
-  settings that did it on the new head: **Fullness 0.33** (it was 0.1: the top and sides were 0.4 to 0.7 cm short
-  all the way round; the plain Volume sliders do nothing to tied hair, whose thickness is Fullness) and **the tie
-  7 mm higher** (Tie lower 3.3 cm, from 4: it sat 0.7 cm under hers on both sides, which read as 0.6 to 1 cm too
-  wide just over it).
+- So the hair's edge is within about half a centimetre of hers from the crown to nine centimetres down the tails.
+  What did it on the new head: **Fullness 0.33** (it was 0.1: the top and sides were 0.4 to 0.7 cm short all the way
+  round; the plain Volume sliders do nothing to tied hair, whose thickness is Fullness), **the tie 7 mm higher** (Tie
+  lower 3.3 cm, from 4: it sat 0.7 cm under hers on both sides, which read as 0.6 to 1 cm too wide just over it), and
+  **the tails as flat brushes** (thick 10.5 mm from 8, Flat 1 from 0.7, widest at 0.8 from 0.65, Fan 0.6 from 1:
+  they were 0.7 to 1.5 cm narrow from the front and already a little wide from the other view, which is a tail that
+  is wide across and thin through; and narrower where it leaves the tie).
 - The ears out, the hair behind them, nothing of it across the ear or the cheek.
 - The fringe's line (her lash line: 0.034), no gap down its middle, from the top of the head.
-- A long thin sidelock a side, to the chest.
+- **A long sidelock a side that hangs free** from the fringe's corner, in front of the ear, to the collar (*Hang
+  free*, §3.7). They had been drawn in under the chin to a V at the pit of the neck: not the cheek's doing but the
+  ends' turn, read against the cut's line.
 
 **What is not** (the list to work from):
 1. **The look**, in part. Under a light from the front every strand of ours lit up alike: a grey sheet, where hers
    is black with bright strands. The hair shader has **`streak`** for that (GODOT_LOOK §5p): the first highlight
    lock by lock; 0 for every other hair, 0.9 in the look `gloss_black` through its `bake`. Still different: ours
-   is striped evenly across the fringe where hers has larger dark areas (her light is from one side; the rig's is
-   from the front), and hers has a faint teal tint in its highlights. The Studio's own shader has no `streak`: its
-   tab shows the old sheen.
-2. **The tails under the ties.** On her right in the front picture ours are 0.7 to 1.5 cm narrower from 15 to 18 cm
-   under the eyes' line and 1 to 3.4 cm short at their tips. Hers hang by a vertical tilted 8° against her head and
-   are fuller lower down; ours are a pair. Not tuned on the new head yet.
-3. **Behind the ear's top, in the other view**: 0.6 to 0.9 cm narrow over the first centimetre under the eyes' line.
+   is striped evenly across the fringe and the tails where hers has larger dark areas (her light is from one side;
+   the rig's is from the front), and hers has a faint teal tint in its highlights. The Studio's own shader has no
+   `streak`: its tab shows the old sheen.
+2. **The tails' outside, 19 to 21 cm under the eyes' line**: hers flares 0.6 to 2.9 cm wider there, loose hair on the
+   outside of the tail; ours has a clean edge. (Hers hang by a vertical tilted 8 degrees against her head; ours are
+   a pair.)
+3. **Behind the ear's top, in the other view**: 0.7 to 0.9 cm narrow over the first centimetre under the eyes' line.
 4. **The fringe's pieces**: hers ends in locks with small steps and gaps; ours in a straighter line.
-5. **The sidelocks**: hers are flat glossy ribbons a centimetre wide that end in a point, a thin plait beside one;
-   ours are thin strands, and there is no plait.
+5. **The sidelocks' body**: hers are flat glossy ribbons a centimetre wide that end in a point, a thin plait beside
+   one; ours hang where hers do but are thin strands, and there is no plait.
 6. **The red streaks**, the few fine strands across the ear, the flyaways: none.
 7. **The back** is in no picture.
 

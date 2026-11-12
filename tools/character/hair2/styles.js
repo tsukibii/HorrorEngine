@@ -23,8 +23,9 @@ export const DEFAULTS = {
   shape: { lift: 22, volume: { top: 0.007, sides: 0.007, back: 0.009 }, turn: 0.35, turnRadius: 0.035, stiff: 0.2, quiff: 0, ahoge: 0, ahogeSide: -0.5 },   // ahoge: a lock standing up out of the top (its size; to her right or left)
   texture: { clump: 0.3, clumpSize: 0.018, wave: 0, waveLength: 0.09, waveStart: 0.3, together: 0.5, curl: 0, curlRadius: 0.012, frizz: 0.15, messy: 0.1, wet: 0, strays: 24 },
   fringe: { kind: "none", line: MARKS.brow + 0.004, width: 46, amount: 0.7, sweep: 0, split: 0.6, curve: 0.4, arch: 0.3, hold: 0.5, uneven: 0.3, wispy: 0.75, choppy: 0, centre: 0, slant: 0, frame: 0, frameLine: MARKS.jaw, frameWispy: 0.85, frameCurl: 0,
-    frameLocks: 0, frameStagger: 0.5, frameWave: 0, frameEars: 0, closed: 0 },   // choppy: each lock its own length; centre: a longer lock between the eyes; slant: longer toward her left (+) or right (-); frameCurl: the face-framing strands wound into a ringlet a side
+    frameLocks: 0, frameStagger: 0.5, frameWave: 0, frameEars: 0, frameHang: 0, closed: 0 },   // choppy: each lock its own length; centre: a longer lock between the eyes; slant: longer toward her left (+) or right (-); frameCurl: the face-framing strands wound into a ringlet a side
   // tendrils: frameLocks, the face-framing strands gathered into so many pointed locks a side (0: a flat sidelock), frameStagger each lock its own length, frameWave an S along them (m), frameEars thin wisps left out in front of the ears
+  // frameHang: the face-framing strands hang free (1: they leave the head at the temple and fall straight down, clear of the cheek and the jaw, long sidelocks; 0: they lie along the cheek on the way to their line)
   // drape: tied hair hangs to its tie (a curtain from the head's widest part, gathered over the last `gather` metres) where 0 lies on the head all the way; full: how thick it lies on the head, back: thicker on the back of the head only; puff: slack, it bows out on the way and tucks in to the tie (a bulb); drop: the tie slid down the hanging hair, below the ear (m)
   ties: { kind: "none", height: 0.5, side: 0.7, offset: 0, part: "all", tight: 0.6, loose: 0, drape: 0, full: 0, back: 0, puff: 0, drop: 0, gather: 0.075, sweep: 0, swirl: 0, wild: 0, wildLength: 0.07, wildStiff: 0.4,   // sweep: the hair leaves its roots the way it's combed and bends round to the tie (arcs over the head); swirl: it winds in to the tie; wild: strands standing out of a bun or a tie, how long, soft (0) to spikes (1)   // offset: one tail round to her left (+) or right (-): a side ponytail; part: all the hair, or the top's only (the rest loose)
     // a tail: out (twin tails lean away from the neck), fan (it springs out right under the tie, as a brush), bloom (how far down it's widest), flat (it lies against the body, wide and thin), strands (how many hairs it has, 1: by its thickness)
@@ -134,8 +135,8 @@ export const STYLES = {
   daz_twin_tails: { label: "Low twin tails behind the ears, blunt fringe, long sidelocks", group: "daz",
     set: { parting: { kind: "none" }, ears: "tucked",
       ties: { kind: "twin", height: 0, side: 0.85, tight: 0, drape: 1, full: 0.33, puff: 0.12, drop: 0.033,
-        tail: { length: 0.2, thick: 0.008, spread: 2, fan: 1, bloom: 0.65, flat: 0.7, out: 0.5, taper: 0.9, strands: 2.5, stiff: 0.8, fall: "front", sway: 0.8 }, tie: { kind: "elastic", colour: "#17120f" } },
-      length: { fringe: 0.17 }, fringe: { kind: "blunt", line: 0.034, amount: 1.5, width: 52, hold: 0.7, wispy: 0.15, uneven: 0.1, choppy: 0.12, closed: 1, frame: 0.55, frameLine: -0.17, frameLocks: 1, frameStagger: 0, frameWispy: 0.6 }, texture: { clump: 0.3, strays: 20 }, look: "gloss_black" } },
+        tail: { length: 0.2, thick: 0.0105, spread: 2, fan: 0.6, bloom: 0.8, flat: 1, out: 0.5, taper: 0.9, strands: 2.5, stiff: 0.8, fall: "front", sway: 0.8 }, tie: { kind: "elastic", colour: "#17120f" } },
+      length: { fringe: 0.17 }, fringe: { kind: "blunt", line: 0.034, amount: 1.5, width: 52, hold: 0.7, wispy: 0.15, uneven: 0.1, choppy: 0.12, closed: 1, frame: 0.9, frameLine: -0.17, frameLocks: 1, frameStagger: 0, frameWispy: 0.6, frameHang: 1 }, texture: { clump: 0.3, strays: 20 }, look: "gloss_black" } },
   curls_shoulder: { label: "Shoulder-length curls", group: "women",
     set: { parting: { kind: "left", offset: 0.03, length: 0.5, width: 0.001 }, cut: { mode: "line", line: -0.14, layers: 0.4, uneven: 0.8, wispy: 0.6 }, length: { top: 0.3, sides: 0.28, back: 0.28, nape: 0.18 },
       shape: { lift: 45, volume: { top: 0.016, sides: 0.024, back: 0.024 }, turn: 0 }, texture: { clump: 0.8, clumpSize: 0.03, curl: 0.9, curlRadius: 0.011, waveStart: 0.18, frizz: 0.45, messy: 0.2, strays: 80 }, look: "deep_brown" } },
@@ -429,6 +430,7 @@ export const CONTROLS = [
     ["length.fringe", "Longest", "slide", 0.1, 40, 0.1, cm, "A swept fringe's length (cm)."],
     ["fringe.frame", "Face-framing strands", "slide", 0, 1, 0.05, 1, "Strands left hanging in front of the ears."],
     ["fringe.frameLine", "Their length", "slide", -26, 3, 0.5, cm, "The cheek (-2), the jaw (-6.6), the chin (-9.6)."],
+    ["fringe.frameHang", "Hang free", "slide", 0, 1, 0.05, 1, "0: they lie along the cheek on their way down. 1: they leave the head at the temple and hang straight down, clear of the cheek and the jaw (long sidelocks)."],
     ["fringe.frameCurl", "Ringlets", "slide", 0, 1, 0.05, 1, "The face-framing strands wound into a ringlet a side, hanging from the ears' line to their length."],
     ["fringe.frameLocks", "Tendrils", "slide", 0, 4, 1, 1, "The face-framing strands gathered into so many pointed locks a side (0: a flat sidelock)."],
     ["fringe.frameStagger", "Tendrils, uneven", "slide", 0, 1, 0.05, 1, "Each tendril its own length."],

@@ -184,6 +184,18 @@ if (!only.length) {
     { const st = settings("odango", { fringe: { frame: 0.9, frameLine: -0.125, frameLocks: 1, frameStagger: 0 } }), G = grow(base, pores, st, prep, { draft: true }).guides, e = [];
       for (let i = 0; i < G.n; i++) if (G.group[i] === 2 && G.len[i] > 0.03 && Math.abs(Math.atan2(G.pos[i * 3] - base.C[0], G.pos[i * 3 + 2] - base.C[2])) * 180 / Math.PI < 64) e.push(G.pts[(i * K + K - 1) * 3 + 1]);
       say(st.cut.line > -0.1 && e.length > 4 && e.every(v => Math.abs(v + 0.125) < 0.003), `tendrils on tied hair end at their own line (-12.5 cm), not the cut's (${(st.cut.line * 100).toFixed(0)} cm): ${e.length} strands, the shortest at ${(Math.max(...e) * 100).toFixed(1)} cm`); }
+    // (a face-framing strand that goes on below the cut's line: the ends' turn is at its own end, not the cut's. Read
+    // against the cut's line alone, a tied style's tendrils and long sidelocks began to turn in at the chin and stayed
+    // turned, drawn in under the chin to the pit of the neck. Each strand's nearest to the head's middle line, sideways,
+    // below the chin; and Hang free: the strands leave the head at the temple and fall straight, no turn at their end)
+    { const run = (hang, fix) => { const st = settings("odango", { fringe: { frame: 0.9, frameLine: -0.17, frameLocks: 1, frameStagger: 0, frameHang: hang } }), G = grow(base, pores, st, prep, { draft: true }).guides; let n = 0, near = 9, tipIn = 0, drift = 0;
+        for (let i = 0; i < G.n; i++) { if (!front(G, i) || !(G.len[i] > 0.12)) continue; n++; let lowX = 9, jawX = 0;
+          for (let k = 0; k < K; k++) { const o = (i * K + k) * 3, x = Math.abs(G.pts[o] - base.C[0]), y = G.pts[o + 1]; if (y < -0.1) lowX = Math.min(lowX, x); if (y > -0.07 && y < -0.05) jawX = Math.max(jawX, x); }
+          near = Math.min(near, lowX); if (jawX > 0) { tipIn = Math.max(tipIn, jawX - Math.abs(G.pts[(i * K + K - 1) * 3] - base.C[0])); drift = Math.max(drift, Math.abs(jawX - lowX)); } }
+        return { n, near, tipIn, drift, line: st.cut.line }; };
+      const lie = run(0), hang = run(1);
+      say(lie.line > -0.1 && lie.n > 4 && lie.near > 0.035 && lie.tipIn < 0.03, `face-framing strands that go on below the cut's line (${(lie.line * 100).toFixed(0)} cm) to 17 cm: none nearer the head's middle than ${(lie.near * 100).toFixed(1)} cm below the chin (they were drawn in to it), their tips ${(lie.tipIn * 100).toFixed(1)} cm further in than they pass the jaw at most (${lie.n} strands)`);
+      say(hang.n > 4 && hang.near > 0.06 && hang.drift < 0.012, `Hang free: the sidelocks fall straight from the temple, ${(hang.near * 100).toFixed(1)} cm from the head's middle at the nearest below the chin, no more than ${(hang.drift * 1000).toFixed(0)} mm sideways from where they pass the jaw (${hang.n} strands)`); }
     // (a strand joins a lock only if it grows beside the lock's guide: gathered from further off it hangs on its own, then jogs across to it. The high ponytail's tendril did: three strands from eight centimetres down the temple's edge)
     for (const id of ["adv_high_pony", "adv_messy_bun", "adv_half_buns"]) {
       const st = settings(id), G = grow(base, pores, st, prep, { draft: true }).guides, reach = Math.max(0.02, 1.4 * (st.texture.clumpSize || 0.018)), guides = new Set(); let members = 0, furthest = 0, plain = 0, stray = 0;
