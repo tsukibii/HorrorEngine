@@ -133,7 +133,7 @@ export const STYLES = {
   // thin sidelock a side. Held to the picture on the doll body (docs/HAIR_V2.md §10)
   daz_twin_tails: { label: "Low twin tails behind the ears, blunt fringe, long sidelocks", group: "daz",
     set: { parting: { kind: "none" }, ears: "tucked",
-      ties: { kind: "twin", height: 0, side: 0.85, tight: 0, drape: 1, full: 0.1, puff: 0.12, drop: 0.04,
+      ties: { kind: "twin", height: 0, side: 0.85, tight: 0, drape: 1, full: 0.33, puff: 0.12, drop: 0.033,
         tail: { length: 0.2, thick: 0.008, spread: 2, fan: 1, bloom: 0.65, flat: 0.7, out: 0.5, taper: 0.9, strands: 2.5, stiff: 0.8, fall: "front", sway: 0.8 }, tie: { kind: "elastic", colour: "#17120f" } },
       length: { fringe: 0.17 }, fringe: { kind: "blunt", line: 0.034, amount: 1.5, width: 52, hold: 0.7, wispy: 0.15, uneven: 0.1, choppy: 0.12, closed: 1, frame: 0.55, frameLine: -0.17, frameLocks: 1, frameStagger: 0, frameWispy: 0.6 }, texture: { clump: 0.3, strays: 20 }, look: "gloss_black" } },
   curls_shoulder: { label: "Shoulder-length curls", group: "women",

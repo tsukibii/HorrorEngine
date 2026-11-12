@@ -36,28 +36,17 @@ low twin tails behind the ears, long sidelocks) re-created 1:1, volume and curve
 aesthetic hair and apply that later to the rest of our styles", and offered a base head **v2female**, then asked
 for it ("lets create a v2female base").
 
-- **Built** (docs/HAIR_V2.md §3.7, §3.8, §10): tied hair that hangs to its tie (Drape, Gather, Puff, Fullness, Tie
-  lower), a route for it round an ear that's out, tails as brushes (Fan, Flat, lean out, Strands), a fringe closed at
-  its middle, a look that can ask more of its bake, the style `daz_twin_tails` in a group of its own, HAIR2's
-  assertions for each, the test body `v2female` in node. The older 65 styles are the same hair by hair.
-- **The rig** is scratch (her pictures stay out of git): §10 says how to rebuild it (the body, the camera, the scale
-  2.16, the roll 8.5, eye-middle on eye-middle, the outline by height).
-- **Matched:** the side from above the ear to 3 cm over the tie within 0.3 cm, the ears out, the tie's place, the
-  tails' kind and length, the fringe's line, the sidelocks' length.
-- **The look** went in after (the hair shader's `streak`: the first highlight lock by lock; `gloss_black` asks for
-  it): black with bright streak bundles in the rig. Left of it: ours is striped evenly, hers has larger dark areas
-  and a faint teal; the Studio's own shader has no `streak`.
-- **A second side** (her first picture) has a fitted camera now: 28 degrees to her left, 7 below, 14.5 px a
-  centimetre (the scratch `fitcam.mjs`: seven landmarks off `v2female`'s surface; `rig/compare2.py` maps her
-  picture into our frame and measures the edge behind the ear). The back of the head's hair hangs and is swept
-  round the head to the tie. Ours against hers there: 0.4 to 0.8 cm too narrow behind the ear's upper half, within
-  0.2 to under the lobe, 0.4 to 2 cm too wide by the tie. *Fullness at the back* (`ties.back`) is built and **not
-  used** (it costs more by the tie than it gains). **What to build:** ours carries its width too low; the hanging
-  hair should come in sooner from a fuller top (a bulb, not a pear), judged in both frames at once.
-- **The tails** leave their ties almost plumb now and the lean builds below: inside her outlines on both sides,
-  0.8 to 0.9 cm wide of hers right under the tie (from 2).
-- **Not matched, in order** (§10's list): the last 3 cm over the tie, the fringe's pieces, the sidelocks as ribbons and the plait, the red
-  streaks, strands across the ear, her first picture's view (a fuller bulb behind the ear), the back.
+- **Built for the hair** (docs/HAIR_V2.md §3.7, §3.8, §10): tied hair that hangs to its tie (Drape, Gather, Puff,
+  Fullness, Tie lower), a route for it round an ear that's out, tails as brushes (Fan, Flat, lean out, Strands), a
+  fringe closed at its middle, a look that can ask more of its bake (`streak`), the style `daz_twin_tails` in a
+  group of its own, HAIR2's assertions for each. The older 65 styles are the same hair by hair.
+- **Where the hairstyle stands, on the new head** (HAIR_V2 §10: the rig, the table): from two fitted cameras its
+  edge is within about half a centimetre of hers from the crown to the tie in both views (Fullness 0.33, the tie
+  3.3 cm lower). Not matched, in order: the tails under the ties (0.6 to 1.4 cm narrow, short at the tips), 0.7 to
+  1 cm behind the ear's top in the second view, the fringe's pieces, the sidelocks as ribbons and the plait, the
+  red streaks, the look's evenness and teal, `streak` in the Studio's own shader.
+- **The rig is scratch** (`rig2/`: her pictures stay out of git); §10 has what rebuilds it: the two views, the
+  scales and turns, how the landmarks are taken, what her head's tilt does to the comparison.
 - **The v2female base is built** (DECISIONS 2026-11-12, v2female; docs/CHARACTER_STUDIO.md §2f): a fourth base
   button and a switch in the Body tab, *what the feminine end becomes*: the feminine body, with nineteen plain
   sculpt values for the head, the neck and the shoulders (`MHR_presets.json` `sculpt.v2female`), every slider still
@@ -73,8 +62,8 @@ for it ("lets create a v2female base").
 - **It is held to two of her pictures** (the scratch `rig2/joint.mjs`: MediaPipe's points on the body and the ear
   as the sculpt finds it against the same points in each picture, a camera fitted for each): the front one from
   9.5 degrees to her right and 5 above, rolled 7.9, the points 3.4 mm off; the other from 32 to her left and 14.5
-  below, 2.8 mm. The first version's neck (-1, from a width read by eye) was too thin and the second (-0.4) too wide and flared at its top; it is -0.7 now.
-  Not matched: her right ear's lean, her larger eyes, her shoulders (lower under the chin than MHR's, but covered).
+  below, 2.8 mm. The first version's neck (-1, from a width read by eye) was too thin and the second (-0.4) too
+  wide and flared at its top; it is -0.7 now. Not matched: her right ear's lean, her larger eyes.
 - **What her head's roll means for the hair** (found while fitting, not yet used): in the front picture her head is
   rolled 8 degrees and her hair hangs by the picture's own vertical, so against her head her right tail hangs
   inward and her left outward. Ours hangs down the head's axis. Compare both sides and take the middle, or give
@@ -82,9 +71,9 @@ for it ("lets create a v2female base").
 - **A side effect**: the hair tools size a head from its top to its chin (`salonref.js` `headFrame`); v2female's
   chin is 1 cm higher, so its frame is 6.6% smaller than the feminine base's on the same skull and hair from the
   same numbers is that much smaller on it. Know it before carrying numbers tuned on v2female to other bodies.
-- **Next: the hair on the new head.** Everything in HAIR_V2 §10 was measured on the test body before the base. The
-  scratch `rig2/` (`shoot.sh`, `cmp.py`, `outline2.py`) pictures a head from both fitted cameras and measures the
-  hair's edge by height on both sides; then the hair by the tie, then §10's list.
+- **Next for the hair:** the tails on the new head (fuller lower down, their tips), then §10's list. For the
+  body: ask the user what they see in the Studio (the base's neck and shoulders were judged here on bald busts
+  from Godot, in MHR's own pose; the Studio shows a T-pose with the neck stood up, skin, eyes and hair).
 - **Then:** the other six Daz hairstyles; the
   new settings carried to the older styles (their cards made again).
 

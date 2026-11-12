@@ -399,72 +399,79 @@ head's hair 1.5 to 3 MB with its two 512 px textures.
 DECISIONS 2026-11-12, the 1:1: one hairstyle matched to its picture, to find what the system lacks. The style is
 `daz_twin_tails` (the group *From your Daz3D pictures*). The pictures stay out of git (`Saved/Hair2/daz/ref`).
 
-**The rig** (scratch scripts, not in git; the numbers are what matter). The style is grown on the body `v2female`
-(the Studio's v2female base at 1.62 m with a full bust, `grow.js` `V2FEMALE`; until item 8 below was done, the
-feminine base with a rounder face) and pictured by `tools/godot/hair2_check.py shots --origin 0,0,0 --size 1600x1200` from
-`v:-11:12:1.05:22:0:-0.07:-0.02` (11 degrees to her right, 12 above: her picture's camera as far as the ear, the
-eyes and the face's edges say). Her picture is turned level (her head is rolled 8.5 degrees), scaled 2.16 and laid
-eye-middle on eye-middle: at that one scale the ear's size, the ear-to-eye distance and the eyes' spacing agree with
-ours within a few percent (her picture is about 14 px to a centimetre). Then: side by side, her picture's edges
-over ours, and the hair's solid outer edge by height on her right side, hers against ours, in centimetres.
+**The head it is held on** is `v2female`, the Character Studio's base made for this (docs/CHARACTER_STUDIO.md §2f):
+her head and neck measured from the same two pictures. The test body adds 1.62 m and a full bust (`grow.js`
+`V2FEMALE`, `make.mjs --body v2female`). Until it existed the head was the feminine base with a rounder face, its
+neck 12 cm across at the ties where hers is 9: every number this section had before was measured on that body and
+is replaced below.
 
-**What is matched.**
-- The side, from above the ear down to 3 cm over the tie: within 0.3 cm of hers at every height (Drape 1, Fullness
-  0.1, Puff 0.12, the tie 4 cm lower, Gather 7.5 cm). Hers stands about 0.8 cm beyond the ear's rim as a solid edge
-  (1.3 with its wisps) and comes in to the tie as 1 − (1 − t)² over the last 7.3 cm: that is where Gather's number
-  and curve come from. Before: 0.4 to 2.6 cm too wide, or hidden behind the ear.
+**The rig** (scratch scripts in `rig2/`, not in git; the numbers are what matter). Two cameras, each fitted from
+landmarks, pictured by `tools/godot/hair2_check.py shots --origin 0,0,0 --size 1600x1200`:
+
+| her picture | view | the camera | her picture into our frame | landmarks land |
+|---|---|---|---|---|
+| the fifth (front) | `v:-9.5:5:1.05:22:0:-0.07:-0.02` | 9.5° to her right, 5° above | turned 7.9°, times 2.137 (29.3 px a centimetre) | 3.4 mm off (11 points) |
+| the first (her left front) | `v:32:-14.5:1.05:22:0:-0.07:-0.02` | 32° to her left, 14.5° below | turned -4.6°, times 2.091 (29.6 px a centimetre) | 2.8 mm off (10 points) |
+
+- *The landmarks*: on the body, MediaPipe's points through `Content/Studio/Bodies/MHR_landmarks.json` (the eyes'
+  middles, the nose's tip, under the nose, the mouth's corners, the chin) and the ear's top, rim and lobe as the
+  ear's own extremes in the view (the ear as `sculpt.js` finds it), the far ear's lobe where it shows; in her
+  picture, the same points read off gridded enlargements (her irises' middles for the eyes). Every turn and tilt
+  is tried on a grid and the roll, scale and shift come in closed form; the mapping that lays her picture into our
+  render comes from the same points as our camera draws them. Centimetres are the head's own (`body.js`: a head is
+  sized by its height from the top to the chin; v2female's frame is 6.6% smaller than the feminine base's on the
+  same skull, because its chin is higher: numbers tuned here are that much large for other bodies).
+- *The measure*: the hair's outer edge by height, counted in centimetres from the eyes' line (minus above it),
+  where a run of six dark pixels starts coming in from outside the head; on her right and her left in the front
+  picture, on her left in the other.
+- *Her pose, which the measure has to allow for*: her head is tilted 7.9° on her body in the front picture and
+  4.6° the other way in the other. Her hair hangs by the picture's own vertical, so against her head it hangs
+  inward on both measured sides (up to a centimetre by the tie, more down the tails), and her body under the chin
+  is turned by that much against ours in the frame. Her left side in the front picture can't be measured by its
+  edge: her sidelock hangs outermost there.
+
+**What is matched** (`daz_twin_tails`: Drape 1, Fullness 0.33, Puff 0.12, the tie 3.3 cm lower, Gather 7.5 cm).
+Ours against hers, centimetres, minus where ours is narrower:
+
+| under the eyes' line | front, her right | the other view, her left |
+|---|---|---|
+| 7 to 1 cm above | -0.3 to +0.1 | (her ears and horns: a headband, not hair) |
+| 0 to 1 | +0.2 to +0.3 | -1.0 to -0.7 |
+| 2 to 5 | 0.0 to -0.3 | -0.3 to 0.0 |
+| 6 to 8 (behind the ear's lower half) | -0.6 to -0.2 | +0.2 to -0.4 |
+| 9 to 11 (the tie) | +0.1 to -0.5 | -0.3 to -0.1 |
+| 12 to 13 | -0.3 to 0.0 | 0.0 (one row out by 1.4) |
+
+- So the hair's edge is within about half a centimetre of hers from the crown to the tie in both views. The two
+  settings that did it on the new head: **Fullness 0.33** (it was 0.1: the top and sides were 0.4 to 0.7 cm short
+  all the way round; the plain Volume sliders do nothing to tied hair, whose thickness is Fullness) and **the tie
+  7 mm higher** (Tie lower 3.3 cm, from 4: it sat 0.7 cm under hers on both sides, which read as 0.6 to 1 cm too
+  wide just over it).
 - The ears out, the hair behind them, nothing of it across the ear or the cheek.
-- The tie's place: level with hers; small and dark.
-- The tails: brushes that fan from the tie, lean out, taper to ragged tips; as long as hers.
 - The fringe's line (her lash line: 0.034), no gap down its middle, from the top of the head.
 - A long thin sidelock a side, to the chest.
 
-**What is not** (the list to work from, the biggest first):
+**What is not** (the list to work from):
 1. **The look**, in part. Under a light from the front every strand of ours lit up alike: a grey sheet, where hers
-   is black with bright strands. One term off at a time showed it was the highlight itself. The hair shader now has
-   **`streak`** (GODOT_LOOK §5p): the first highlight lock by lock, most locks dark and a few several times over,
-   about the same light in all; 0 for every other hair, 0.9 in the look `gloss_black` through its `bake`. Seen in
-   the rig: black with bright streak bundles, as hers. Still different: ours is striped evenly across the fringe
-   where hers has larger dark areas (her light is from one side; the rig's is from the front), and hers has a faint
-   teal tint in its highlights. The Studio's own shader has no `streak`: its tab shows the old sheen.
-2. **The tails right under the ties** were 0.9 to 2 cm wider than hers; leaving the tie almost plumb with the lean
-   building below, and widest further down (0.65), they are 0.8 to 0.9, and they lie inside her outlines on both
-   sides. Hers differ left and right (her head is tilted and the tails hang by gravity), ours are a pair; hers'
-   tips reach a little further out.
-3. **The last 3 cm over the tie**: 0.4 to 0.7 cm too wide, and the tie 0.6 to 0.8 cm further from the neck.
+   is black with bright strands. The hair shader has **`streak`** for that (GODOT_LOOK §5p): the first highlight
+   lock by lock; 0 for every other hair, 0.9 in the look `gloss_black` through its `bake`. Still different: ours
+   is striped evenly across the fringe where hers has larger dark areas (her light is from one side; the rig's is
+   from the front), and hers has a faint teal tint in its highlights. The Studio's own shader has no `streak`: its
+   tab shows the old sheen.
+2. **The tails under the ties.** On her right in the front picture ours are 0.6 to 1.4 cm narrower from 15 to 18 cm
+   under the eyes' line and 1 to 3 cm short at their tips. Hers hang by a vertical tilted 8° against her head and
+   are fuller lower down; ours are a pair. Not tuned on the new head yet.
+3. **Behind the ear's top, in the other view**: 0.7 to 1 cm narrow over the first centimetre under the eyes' line.
 4. **The fringe's pieces**: hers ends in locks with small steps and gaps; ours in a straighter line.
 5. **The sidelocks**: hers are flat glossy ribbons a centimetre wide that end in a point, a thin plait beside one;
    ours are thin strands, and there is no plait.
 6. **The red streaks**, the few fine strands across the ear, the flyaways: none.
-7. **From her left front**, her first picture, with a camera fitted to it. Seven points on `v2female`'s own
-   surface (the eyes, the ear's top, rim and lobe and the chin by casting the front rig's pixels onto the skin, the
-   nose's tip from the mesh) against the same points read off the picture; every turn and tilt tried, the roll,
-   scale and shift in closed form: **28 degrees to her left, 7 below, 14.5 px a centimetre** (within a pixel of
-   the best: 21 to 35, and 14 below to 1 above; the points land 7 px off, the ear's the most: her ears sit
-   higher than `v2female`'s). The scale agrees with the front picture's 14 on its own. In that frame, the hair's
-   outer edge behind her left ear, ours against hers by height: **0.4 to 0.8 cm too narrow behind the ear's upper
-   half, within 0.2 cm from its middle to under the lobe, 0.4 to 2 cm too wide by the tie.** Before the camera was
-   fitted this entry said hers stood 3.4 cm beyond the ear and ours 2: that was read by eye from 38 degrees with
-   her picture over-turned by 9, and it was wrong by about half.
-   *Fullness at the back* was held to both views and is **not used**: at 0.2 it gains 0.1 to 0.3 cm behind the
-   upper ear and loses 0.3 to 0.4 just over the tie, in both: the thickness is carried down the hanging hair into
-   the part that is already too wide. The tie moved forward under the ear's middle: worse from the front, the same
-   from here. What both views say is that ours carries its width too low (a pear, hers a bulb): the hanging hair
-   should come in sooner from a fuller top. Not built. The back is in no picture.
-8. **The head, and it is the cause of the error by the tie.** Read off her picture (14 px a centimetre), her head
-   from the front is about 11.6 cm wide at the lips, 9.1 at the tie's height and 7.5 at the neck: a small V of a
-   face on a slender neck. `v2female` is 14.0, 13.0 and 12.0 (the body's own outline at those heights): 4 cm wider
-   at the tie's height, 2 a side. The tie hangs beside it, so it sits 2 cm further out, which is the size of what
-   both views show there (0.4 to 2 cm too wide over the last centimetres and at the tie). The sculpt can't reach
-   her: with the jaw and the neck at -3 (past a person's range), the chin's width and the cheeks at -2, the same
-   three are 13.8, 12.8 and 11.8. **So a v2female base is required** (the user's condition, DECISIONS 2026-11-12,
-   the 1:1): a lower face and a neck with far more reach than the sliders have, as a base that every slider still
-   moves from. Until it exists the hair by the tie can't be judged closer than about 2 cm, and the two cameras
-   have to be fitted again on it. Her ears also sit higher on the face than `v2female`'s.
-   **Built since** (DECISIONS 2026-11-12, v2female; docs/CHARACTER_STUDIO.md §2f): the Studio's v2female base, with
-   a new control for the whole neck. On it the neck is 7.4 cm at its narrowest (the feminine base's 10.3; hers
-   about 7.5), the eyes 6.7 cm apart (5.7), the jaw narrower. `bodyByName("v2female")` is that base now, so
-   **every number above this line was measured on the body before it** and stands until the rig is fitted again.
+7. **The back** is in no picture.
+
+**What the earlier findings turned out to be.** Before the base, this section said the hair was 0.4 to 2 cm too wide
+by the tie and blamed the head: right, and more than it knew. Three things were stacked: the neck (12 cm across at
+the ties, hers 9.3: the base), the tie 0.7 cm too low (this style), and her head's tilt, which swings her hair in
+on the measured side (her pose: nothing to fix). *Fullness at the back* (`ties.back`) stays built and unused.
 
 **Not checked here:** the Studio's own tab draws the same hair, but a look's `bake` numbers are Godot's only.
 
