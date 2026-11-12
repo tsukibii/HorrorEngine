@@ -218,10 +218,11 @@ ear, with the tie by the ear, 4 cm lower, and with Drape, Fullness and Puff.
 **A tail as a brush.** **Fan**: it springs out right under the tie (0: it leaves the tie as a rope and widens
 after); **Widest at**; **Flat**: it lies against the body, wide across and thin through (its section's frame is the
 body's where it rests on it, and faces forward where it hangs in the air: the body's own way beside the neck is
-sideways, and the fan was edge-on from the front); **Tails lean out**: twin tails leave their ties turned out and
-hang a little out of plumb all the way down; **Tail strands**: how many hairs it has; **Tail stiffness**. HAIR2: 26
+sideways, and the fan was edge-on from the front); **Tails lean out**: twin tails leave their ties almost
+plumb and hang out of plumb all the way down, so the lean builds as they go (the other way round, turned out at
+the tie, was 1 to 2 cm too wide right under it against the picture and too plumb below); **Tail strands**: how many hairs it has; **Tail stiffness**. HAIR2: 26
 hairs, 66 at Strands 2.5; 1.4 cm across right under the tie, 2.1 with Fan; 4.5 cm through half way, 1.9 Flat; the
-tip 1.1 cm out from its tie, 5.0 with Out.
+tip 1.1 cm out from its tie, 4.5 with Out.
 
 An **ahoge** (Shape and volume): one lock standing up out of the top of the head and curving over to a side (`ties.js`
 `ahoge`: two thin cards facing the front).
@@ -425,30 +426,30 @@ over ours, and the hair's solid outer edge by height on her right side, hers aga
    the rig: black with bright streak bundles, as hers. Still different: ours is striped evenly across the fringe
    where hers has larger dark areas (her light is from one side; the rig's is from the front), and hers has a faint
    teal tint in its highlights. The Studio's own shader has no `streak`: its tab shows the old sheen.
-2. **The tails right under the ties** flare 0.9 to 2 cm wider than hers; hers differ left and right (her head is
-   tilted and the tails hang by gravity), ours are a pair.
+2. **The tails right under the ties** were 0.9 to 2 cm wider than hers; leaving the tie almost plumb with the lean
+   building below, and widest further down (0.65), they are 0.8 to 0.9, and they lie inside her outlines on both
+   sides. Hers differ left and right (her head is tilted and the tails hang by gravity), ours are a pair; hers'
+   tips reach a little further out.
 3. **The last 3 cm over the tie**: 0.4 to 0.7 cm too wide, and the tie 0.6 to 0.8 cm further from the neck.
 4. **The fringe's pieces**: hers ends in locks with small steps and gaps; ours in a straighter line.
 5. **The sidelocks**: hers are flat glossy ribbons a centimetre wide that end in a point, a thin plait beside one;
    ours are thin strands, and there is no plait.
 6. **The red streaks**, the few fine strands across the ear, the flyaways: none.
-7. **From her left front** (her first picture, turned level, her ear at our ear's size, beside ours from 38 degrees
-   to her left and 8 below; no matched camera yet, so by eye and by the ear as the ruler). Her hair behind the ear
-   is a round bulb that stands about 3.4 cm beyond the ear's rim at the ear's level and sweeps in under it. Ours
-   stood 1.5 cm, a flat band: only hair near the tie hung, the back of the head's still ran along the skull. With
-   the back hair hanging and swept round (§3.8) ours is fuller, about 2 cm at the ear's level and more below it, and
-   the front outline is what it was (within 0.3 cm). Still short of hers: less full at the ear's level, a squared
-   corner where it turns for the tie where hers is round, and her tie sits further forward, under the jaw. A longer
-   gather for hair from further round was tried for the corner and taken out (no rounder from here, half a
-   centimetre worse from the front). The back is in no picture.
-   **In numbers** (the strands' reach beyond the head's own outline, the ear included, at heights 1 and -1 cm, the
-   ear's level): toward the side, what the front view sees, 0.1 and 0.3 cm; toward 128 degrees round, what a camera
-   38 degrees to her left sees, 1.9 and 2.0, and 3.1 to 3.6 below the ear: ours is bottom-heavy where hers is
-   fullest at the ear. Fullness 0.4 and Puff 0.4 each add half a centimetre and more to both. *Fullness at the
-   back* 0.5 takes the second to 3.2 and 3.2, and the first to 0.7 and 0.8: body at the back of the head shows from
-   the front too. So the two pictures don't agree on my numbers, and the soft one is the second: its 3.4 cm was
-   read by eye with the ear as the ruler, at a turn of the head I assumed. **The style leaves it at 0** until that
-   picture has a fitted camera; then its value is set by both.
+7. **From her left front**, her first picture, with a camera fitted to it. Seven points on `v2female`'s own
+   surface (the eyes, the ear's top, rim and lobe and the chin by casting the front rig's pixels onto the skin, the
+   nose's tip from the mesh) against the same points read off the picture; every turn and tilt tried, the roll,
+   scale and shift in closed form: **28 degrees to her left, 7 below, 14.5 px a centimetre** (within a pixel of
+   the best: 21 to 35, and 14 below to 1 above; the points land 7 px off, the ear's the most: her ears sit
+   higher than `v2female`'s). The scale agrees with the front picture's 14 on its own. In that frame, the hair's
+   outer edge behind her left ear, ours against hers by height: **0.4 to 0.8 cm too narrow behind the ear's upper
+   half, within 0.2 cm from its middle to under the lobe, 0.4 to 2 cm too wide by the tie.** Before the camera was
+   fitted this entry said hers stood 3.4 cm beyond the ear and ours 2: that was read by eye from 38 degrees with
+   her picture over-turned by 9, and it was wrong by about half.
+   *Fullness at the back* was held to both views and is **not used**: at 0.2 it gains 0.1 to 0.3 cm behind the
+   upper ear and loses 0.3 to 0.4 just over the tie, in both: the thickness is carried down the hanging hair into
+   the part that is already too wide. The tie moved forward under the ear's middle: worse from the front, the same
+   from here. What both views say is that ours carries its width too low (a pear, hers a bulb): the hanging hair
+   should come in sooner from a fuller top. Not built. The back is in no picture.
 8. **The head.** `v2female` is near hers, not hers (her ears sit higher on the face).
 
 **Not checked here:** the Studio's own tab draws the same hair, but a look's `bake` numbers are Godot's only.

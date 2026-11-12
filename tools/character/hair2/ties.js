@@ -41,8 +41,8 @@ export function tiesOf(S, C, s) {
       for (let it = 0; it < 8; it++) { const d = dist(S, at[0], at[1], at[2]); if (Math.abs(d - off) < 0.0004 || !grad(S, at[0], at[1], at[2], g)) break; const hl = Math.hypot(g[0], g[2]) || 1; at[0] += g[0] / hl * (off - d); at[2] += g[2] / hl * (off - d); }
     }
     // the way the tail leaves the tie: out of the head, and down; a low tail that falls in front goes forward over the shoulder
-    // (Out: twin tails lean away from the neck: they leave their ties turned out and hang a little out of plumb all the way down, as tails that rest on the shoulders and the chest do)
-    const outA = twin ? clamp(tl.out ?? 0, -1, 1) : 0, dir = unit(front && twin ? [side * (0.12 + 0.6 * Math.tan(outA * 36 * D)), -0.5 - 0.1 * Math.abs(outA), 0.85 * (1 - 0.4 * Math.abs(outA))] : [n[0] * 0.75 + side * 0.6 * Math.tan(outA * 36 * D), n[1] * 0.75 - 0.55 - 0.5 * (1 - h), n[2] * 0.75]);
+    // (Out: twin tails lean away from the neck: they leave their ties almost plumb and hang out of plumb all the way down, so the lean builds as they go, as tails that rest on the shoulders and the chest do. The other way round, a strong turn out at the tie and less after, was tried first: 1 to 2 cm too wide right under the tie against the user's picture, and too plumb lower down)
+    const outA = twin ? clamp(tl.out ?? 0, -1, 1) : 0, dir = unit(front && twin ? [side * (0.12 + 0.15 * Math.tan(outA * 36 * D)), -0.5 - 0.1 * Math.abs(outA), 0.85 * (1 - 0.4 * Math.abs(outA))] : [n[0] * 0.75 + side * 0.15 * Math.tan(outA * 36 * D), n[1] * 0.75 - 0.55 - 0.5 * (1 - h), n[2] * 0.75]);
     const fall = unit([side * Math.tan(outA * 32 * D), -1, 0]);
     // a low tie by an ear that's out (tucked): its hair goes round the ear to it, over the ear's top and down behind
     // (strands.js). round: how much so (1 under or just behind the ear, 0 from the nape's side on); under: it sits

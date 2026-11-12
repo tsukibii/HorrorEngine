@@ -5,6 +5,22 @@ the fix.
 
 ## The hair editor v2.0: what took a second try (2026-11-12)
 
+- **A comparison from an assumed camera is an opinion; fit the camera.** Her second picture was laid beside ours
+  "from 38 degrees", turned level by her eye line, and read with the ear as the ruler: hers 3.4 cm beyond the ear,
+  ours 2. A setting was built on it and nearly tuned to it. Fitted from seven landmarks the camera is at 28 degrees
+  and the picture had been over-turned by 9: the gap is 0.4 to 0.8 cm, half of what was "seen", and the tuning
+  would have cost more near the tie than it gained. What gave the doubt was two numbers that could not both be
+  true (the front outline within 0.3 cm, the side short by 1.4). When two measures disagree, the one made by eye
+  is the one to redo.
+- **Print the inputs of a fit before its answer.** The first camera fit said 53 degrees with the points 74 px off.
+  The landmark printout beside it showed why at a glance: the "chin" was 67 cm down (the search had no lower
+  bound and found the belly), the "ear" was the skull behind it. With only the best turn printed it would have
+  read as a result.
+- **A model with two parts in the wrong order fits one row and breaks the next.** The tail was given a strong turn
+  out at its tie and a weaker lean after. Right under the tie it was 2 cm too wide; with less of both it was too
+  plumb lower down. Hers is the other way round: almost plumb at the tie, the lean building below, as hair
+  resting on the chest slides. Swapped, it lies inside her outline at both ends. Two rows that pull a slider
+  opposite ways are saying the shape is wrong, not the amount.
 - **One outline can be met by the wrong shape: look from a second side before calling it matched.** The side of the
   Daz twin tails was within 0.3 cm of her picture's outline at every height, from the front. Beside her other
   picture, from her left front, ours was a flat band 1.5 cm beyond the ear where hers is a round bulb of 3.4: the

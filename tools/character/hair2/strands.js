@@ -182,7 +182,7 @@ export function trace(ctx) {
       }
       if (tie && tieBack > 0) {                                           // Fullness at the back: tied hair lies thicker on the back of the head (behind the ears, below the top), where a gathered style carries its body; the sides, which the face is seen between, stay as they are
         const ex = qx - C[0], ey = qy - C[1], ez = qz - C[2], el = Math.asin(clamp(ey / (Math.hypot(ex, ey, ez) || 1), -1, 1)) / D, aq = Math.abs(Math.atan2(ex, ez)) / D;
-        Vq = V + tieBack * (1 - smooth(36, 54, el)) * smooth(104, 128, aq);
+        Vq = V + tieBack * (1 - smooth(36, 54, el)) * smooth(112, 136, aq);   // (from well behind the ear on: nearer the side it widens the head as the face is seen)
       }
       const h = GAP + Vq * (1 - Math.exp(-sAt / reach)) * jit + (draped ? 0.014 * hash(u[i], 18) : 0);   // (hair brought forward over a shoulder hangs as a lock with some body, not a sheet on the chest)
       for (let pass = 0; pass < 2; pass++) {

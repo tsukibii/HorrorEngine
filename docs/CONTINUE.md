@@ -46,15 +46,16 @@ aesthetic hair and apply that later to the rest of our styles", and offered a ba
 - **The look** went in after (the hair shader's `streak`: the first highlight lock by lock; `gloss_black` asks for
   it): black with bright streak bundles in the rig. Left of it: ours is striped evenly, hers has larger dark areas
   and a faint teal; the Studio's own shader has no `streak`.
-- **A second side** (her first picture, from her left front): there her hair is a round bulb behind the ear; ours
-  was a flat band. The back of the head's hair hangs now and is swept round the head to the tie: fuller, the front
-  outline unchanged. Still short: about 2 cm beyond the ear where hers is 3.4, a squared corner at the tie, her tie
-  further forward. That view has no matched camera yet: **fit one next** (her eyes, ear, nose and chin in the picture against the
-  same points on `v2female`), then set *Fullness at the back* (`ties.back`, built, 0 in the style: at 0.5 it gives
-  the second view its fullness at the ear's level and widens the front by half a centimetre, so its value has to be
-  set by both pictures, not by eye).
-- **Not matched, in order** (§10's list): the tails' flare under
-  the ties, the last 3 cm over the tie, the fringe's pieces, the sidelocks as ribbons and the plait, the red
+- **A second side** (her first picture) has a fitted camera now: 28 degrees to her left, 7 below, 14.5 px a
+  centimetre (the scratch `fitcam.mjs`: seven landmarks off `v2female`'s surface; `rig/compare2.py` maps her
+  picture into our frame and measures the edge behind the ear). The back of the head's hair hangs and is swept
+  round the head to the tie. Ours against hers there: 0.4 to 0.8 cm too narrow behind the ear's upper half, within
+  0.2 to under the lobe, 0.4 to 2 cm too wide by the tie. *Fullness at the back* (`ties.back`) is built and **not
+  used** (it costs more by the tie than it gains). **What to build:** ours carries its width too low; the hanging
+  hair should come in sooner from a fuller top (a bulb, not a pear), judged in both frames at once.
+- **The tails** leave their ties almost plumb now and the lean builds below: inside her outlines on both sides,
+  0.8 to 0.9 cm wide of hers right under the tie (from 2).
+- **Not matched, in order** (§10's list): the last 3 cm over the tie, the fringe's pieces, the sidelocks as ribbons and the plait, the red
   streaks, strands across the ear, her first picture's view (a fuller bulb behind the ear), the back.
 - **Then:** v2female as a base in the Studio's Body tab (GROW, GROWPAGE, STUDIO); the other six Daz hairstyles; the
   new settings carried to the older styles (their cards made again).
