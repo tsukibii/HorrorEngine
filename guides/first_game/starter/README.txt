@@ -5,7 +5,7 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            flashlight, Esc frees the mouse; it steps up a tread or a kerb; stops when the Story ends;
                            its footsteps a stride walked, the floor's own (footsteps.gd, the Sound node); its eye never
                            draws render layer 19 (what's only in mirrors); a seat sits it down, lays it down or
-                           hides it; doing(): standing, walking, running, sitting, lying or hiding; Space holds your
+                           hides it, the eye easing there over settle_secs and turning only as far as a head does; doing(): standing, walking, running, sitting, lying or hiding; Space holds your
                            breath (8 s at most, then a gasp); its steps, a run and a gasp are noises (noise.gd)
   flashlight.gd            the player's flashlight (on its Eye/Flashlight): batteries that run down, a bulb's or an
                            LED's curve, low and dead, spare sets going in by themselves; beam_on(point), weighed by
@@ -20,7 +20,10 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            the ending; holds(): what `needs` says (task:x done, on:x on the list and not done yet,
                            item:x, a fact, ! for not); the pocket counts and knows each thing's name and model
                            (give(id, name, model, count), count_of, take), shown as an HSHud's inventory row when the
-                           scene has one (Tab, the wheel); the player's cash (pay, earn: the laptop's shop)
+                           scene has one (Tab, the wheel); the player's cash (pay, earn: the laptop's shop);
+                           eating: a pocket thing made eatable (set_eatable(item, restores, secs): food.gd, a shop
+                           item marked Eatable, a Sanity node's foods) is eaten by holding the left button with it
+                           in the hand, a meter filling over its seconds (2), then it's gone; not with a gun up
   sound.gd                 the Sound node: the music by mood (music/), a room's tone, the hush before a scare; and
                            the sound physics (Woohill's): every sound it plays (play, step, shaped) traced through the
                            rooms, muffled through walls and doors, the room's reverb as rendered tails (sfx/_tails),
@@ -47,8 +50,16 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            then someone there for a moment with a sound and an animation, gone in a blink (a jump
                            scare), and/or a line, a task, a fact, the music, a target's fire()
                            (head_m: her head over her feet, 1.5 m; set it for a child or a creature)
-  seat.gd                  somewhere to sit, lie down or hide: E there and back up; its box on collision layer 2,
-                           which only E's aim finds (your body, the sound and sight pass through it)
+  seat.gd                  somewhere to sit, lie down or hide: E there and back up. It works out where your eye
+                           goes from the furniture: its own meshes, the model it's dropped onto, or what's under it
+                           (an interior's bed or chair). Lying: the middle of the bed, 0.30 m in from its head end
+                           (the headboard's), 0.22 m over where you lie, a head on a large pillow. Sitting: a seated
+                           eye over the seat, facing away from its back. View: seat_height (a stool), view_offset,
+                           view_turn_deg, flip, fit off (the eye where the node is). An interior's bed, solid as
+                           one box to its headboard, gets a truer solid so you can lie low on it. In the editor an
+                           orange camera shows the eye. Its box is on collision layer 2, which only E's aim finds
+  seat_bed.tscn, seat_chair.tscn, seat_stool.tscn
+                           a seat ready to drag onto a bed, a chair or a stool in the Scene tree
   noise.gd                 a noise: Noises.make(tree, where, how loud); your steps, a run, a door, a gasp make one,
                            and everything listening (the group hs_listener) hears it as far as its ears reach
   searcher.gd              under a copy of her: hunting by ear once armed; heard, she listens, comes for the places
@@ -110,7 +121,8 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            lying down, eating and sleep (lie on a bed); what stops sleep (a task on the list, a
                            hunt, a script); the facts sanity:uneasy, sanity:shaken, sanity:breaking for anything's
                            Needs; hunts and the night's director go faster as it falls (their sanity_sync)
-  food.gd                  something to eat or drink with E: mends your sanity
+  food.gd                  something to eat or drink: E takes it into the pocket as eatable (restores, eat_secs,
+                           count); then hold the left button to eat it (story.gd)
   close_call.gd            under the character who hunts you: she nearly has you. When she's about to catch you
                            while you reload (or your gun's just clicked empty, or the Story's words say you're busy,
                            or she'd have found you hiding), by a chance she falters: still coming, slower, lunging,

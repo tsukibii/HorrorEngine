@@ -381,6 +381,8 @@ func _find(her: Node3D) -> void:
 	var seat = pl.get("seat")
 	if seat != null and seat.has_method("leave"):
 		seat.leave()
+		if pl.has_method("snap_eye"):
+			pl.snap_eye()                              # (pulled out: no easing up)
 	var eye := pl.get_node_or_null("Eye") as Node3D
 	if eye != null:
 		var from := her.global_position - eye.global_position

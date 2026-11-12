@@ -188,6 +188,7 @@ func _initialize() -> void:
 	hud_on.call(false)                                         # (the cue comes on the way out: the pictures' list is still the way in)
 	var be := v3(cfg["bed_eye"])
 	await shot("cue", be, be + Vector3(0.342, 0.940, 0.0), 50)
+	await shot("bed_view", be, be + Vector3(1.0, 0.1, 0.12), 40)       # the same pillow, looking down the bed to its foot: where seat.gd puts your eye
 	bfig.visible = false
 	hud_on.call(true)
 	var b: Dictionary = R["r304_bath"]

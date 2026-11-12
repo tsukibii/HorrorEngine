@@ -62,6 +62,10 @@ func standin(nm: String, at: Vector3) -> Node3D:
 	return h
 
 
+func click(down: bool) -> void:                      # (headless the mouse is never captured: the Story's own hold_eat())
+	story.hold_eat(down)
+
+
 func v() -> float:
 	return float(san.get("sanity"))
 
@@ -169,7 +173,7 @@ func _initialize() -> void:
 			or bands != ["uneasy", "shaken", "breaking", "calm"]:
 		bad("the bands and their facts (%s, %s)" % [str(f), str(bands)])
 
-	# 4. eating: a thing with E, a thing out of the pocket, the key
+	# 4. eating: a thing has to be in the pocket and eatable, the left button held until the meter fills, then it's gone
 	var apple := MeshInstance3D.new()
 	apple.mesh = SphereMesh.new()
 	(apple.mesh as SphereMesh).radius = 0.05
@@ -177,27 +181,68 @@ func _initialize() -> void:
 	apple.set_script(load(S + "food.gd"))
 	apple.set("restores", 0.25)
 	apple.set("label", "an apple")
+	apple.name = "Apple"
 	main.add_child(apple)
 	apple.global_position = Vector3(1, 1, 0)
 	await frames(3)
+	var rates := {}                                      # (eating takes seconds now: nothing else moving the meter meanwhile)
+	for k in ["drain", "dark_drain", "near_drain", "hunt_drain", "light_rate"]:
+		rates[k] = san.get(k)
+		san.set(k, 0.0)
 	san.set_to(0.3)
-	apple.use(player)
-	var ap_v := v()
-	story.give("soda", "a soda", null, 2)
-	var ate1: bool = san.eat_from_pocket()
-	var so_v := v()
-	var ek := InputEventKey.new()
-	ek.physical_keycode = KEY_C
-	ek.keycode = KEY_C
-	ek.pressed = true
-	Input.parse_input_event(ek)
+	story.give("key", "a key", null, 1)                  # something that isn't food
+	click(true)
+	await secs(2.3)
+	click(false)
+	var key_kept: bool = story.has("key") and near(v(), 0.3, 0.01) and story.eating == ""
+	apple.use(player)                                    # E: into the pocket, not eaten
+	await frames(2)
+	var picked: bool = not apple.visible and story.has("apple") and story.is_eatable("apple") and near(v(), 0.3, 0.01)
+	click(true)                                          # held a second, let go: nothing eaten
+	await secs(1.0)
+	var half := float(story.eat_progress)
+	var meter_up: bool = story._eat_box.visible and story.eating == "apple"
+	var fill_px := float(story._eat_fill.size.x)
+	click(false)
 	await frames(3)
-	var key_v := v()
-	var none: bool = san.eat_from_pocket()
-	say("food", "an apple with E: 0.30 to %.2f, gone %s; a soda out of the pocket: %s, %.2f; the C key: %.2f, sodas left %d; nothing left to eat: %s" % [
-		ap_v, not apple.visible, ate1, so_v, key_v, story.count_of("soda"), not none])
-	if not near(ap_v, 0.55, 0.01) or apple.visible or not ate1 or not near(so_v, 0.65, 0.01) or not near(key_v, 0.75, 0.01) or story.count_of("soda") != 0 or none:
-		bad("eating (%.2f, %.2f, %.2f, %d sodas left, more %s)" % [ap_v, so_v, key_v, story.count_of("soda"), none])
+	var let_go: bool = story.has("apple") and float(story.eat_progress) == 0.0 and not story._eat_box.visible and near(v(), 0.3, 0.01)
+	var gun := Node.new()                                # a gun that's up: the click is the gun's
+	gun.set_script(made("extends Node\nvar owned := true\nvar raised := true\nfunc _ready() -> void:\n\tadd_to_group(\"hs_weapon\")\n"))
+	main.add_child(gun)
+	click(true)
+	await secs(2.3)
+	click(false)
+	var gun_up: bool = story.has("apple") and near(v(), 0.3, 0.01)
+	gun.set("raised", false)                             # lowered: held all the way
+	click(true)
+	var t_eat := 0.0
+	while story.has("apple") and t_eat < 4.0:
+		await physics_frame
+		t_eat += 1.0 / 60.0
+	var ap_v := v()
+	var ap_gone: bool = not story.has("apple")
+	gun.queue_free()
+	# still held after it's eaten: the next one needs a new hold. Two sodas (the Sanity node's foods)
+	story.give("soda", "a soda", null, 2)
+	await secs(2.3)
+	var one_a_hold: bool = story.count_of("soda") == 2
+	click(false)
+	await frames(2)
+	click(true)
+	await secs(2.2)
+	click(false)
+	var so_v := v()
+	var so_left: int = story.count_of("soda")
+	var by_script: bool = san.eat_item("soda")           # a script's: at once
+	var none: bool = san.eat_item("soda")
+	for k in rates:
+		san.set(k, rates[k])
+	say("food", "a key in the hand, held 2.3 s: nothing eaten %s; an apple with E: in the pocket and eatable, not eaten %s; held 1 s: the meter up %s at %.2f (%.0f px of 180), let go: nothing eaten %s; a gun up: nothing eaten %s; held: eaten after %.2f s, 0.30 to %.2f, gone from the pocket %s; still held: the sodas kept %s; a new hold: one soda, %.2f, %d left; a script's eat_item: %s, then none left %s" % [
+		key_kept, picked, meter_up, half, fill_px, let_go, gun_up, t_eat, ap_v, ap_gone, one_a_hold, so_v, so_left, by_script, not none])
+	if not key_kept or not picked or not meter_up or absf(half - 0.5) > 0.05 or absf(fill_px - 90.0) > 9.0 or not let_go or not gun_up:
+		bad("eating, what stops it (a key %s, picked %s, the meter %s at %.2f, let go %s, a gun up %s)" % [key_kept, picked, meter_up, half, let_go, gun_up])
+	if absf(t_eat - 2.0) > 0.1 or not near(ap_v, 0.55, 0.01) or not ap_gone or not one_a_hold or not near(so_v, 0.65, 0.01) or so_left != 1 or not by_script or none:
+		bad("eating (after %.2f s, %.2f, gone %s, one a hold %s, a soda %.2f, %d left, a script's %s, more %s)" % [t_eat, ap_v, ap_gone, one_a_hold, so_v, so_left, by_script, none])
 
 	# 5. rest: sitting and lying mend it to their caps, in the dark too; a hunt running: no sleep
 	torch.visible = false

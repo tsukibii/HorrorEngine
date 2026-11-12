@@ -12,3 +12,5 @@ price = 5.5
 stock = 3
 category = "FOOD & DRINK"
 model = ExtResource("1_k31bt")
+eatable = true
+restores = 0.3

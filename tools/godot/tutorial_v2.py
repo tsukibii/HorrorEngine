@@ -210,7 +210,9 @@ rr = R["r304"]
 bed, chair, desk304 = B["r304_kt_bed_double_1"], B["r304_kt_dining_chair_1"], B["r304_kt_desk_1"]
 if bed["size"][0] < bed["size"][2]:
     sys.exit("TUTORIAL2 FAILED: 304's bed should lie east to west, its head at the west wall (the hotel set's layout)")
-bed_eye = [bed["at"][0] - bed["size"][0] / 2 + 0.3, bed["top"] + 0.06, bed["at"][2]]   # lying on your back, your head by the west wall: just over the bed's collider (the export's furniture is solid to its top, 0.95 m: an ear inside it hears everything through its walls)
+BED_LIE = 0.50                                                                        # the kit's double bed: its blanket's top over the floor (seat.gd measures it from the bed's meshes; the play test holds the two together)
+bed_eye = [bed["at"][0] - bed["size"][0] / 2 + 0.3, floor_y + BED_LIE + 0.22, bed["at"][2]]   # lying on your back, your head on the pillow by the west wall: where seat.gd puts the eye (0.30 m in from the head end, 0.22 m over where you lie)
+bed_node = [bed["at"][0], bed["top"] + 0.3, bed["at"][2]]                             # the seat's node: anywhere over the bed
 chair_eye = [chair["at"][0], floor_y + 1.2, chair["at"][2]]                           # sitting at 304's desk
 chair_turn = math.degrees(math.atan2(-(desk304["at"][0] - chair["at"][0]), -(desk304["at"][2] - chair["at"][2])))   # facing it
 ceil_y = rr["at"][1] + rr["size"][1] / 2 + 0.025                                     # 304's ceiling (its volume is 0.05 short of it)
@@ -444,9 +446,8 @@ nd("Batteries", "Things", "Node3D", script="pickup", props=[f"transform = {tf(ba
 nd("Mesh", "Things/Batteries", "MeshInstance3D", props=['mesh = SubResource("pack")'])
 nd("Radio", "Things", "MeshInstance3D", props=[f"transform = {tf(radio_at, -8.0)}", 'mesh = SubResource("radiobox")'])   # someone's radio, left on: static as she nears
 nd("Grille", "Things/Radio", "MeshInstance3D", props=[f"transform = {tf([-0.04, 0.0, 0.051])}", 'mesh = SubResource("grille")'])
-nd("Bed", "Things", "Node3D", script="seat", props=[f"transform = {tf(bed_eye, -90.0)}", 'pose = "lying"', "look_up_deg = 70.0",   # 304's bed: lie on your back, looking up past its foot
-   f"reach_size = {f3([bed['size'][2], bed_eye[1] - floor_y - 0.3, bed['size'][0]])}", f"reach_at = {f3([0.0, -(bed_eye[1] - floor_y - 0.3) / 2.0, -(bed['size'][0] / 2 - 0.3)])}",
-   'say = "The sheets are cold."'])   # its box from 0.3 m up to the eye: over the bed's collider, so E finds it
+nd("Bed", "Things", "Node3D", script="seat", props=[f"transform = {tf(bed_node, -90.0)}", 'pose = "lying"', "look_up_deg = 70.0",   # 304's bed: anywhere over it; the seat finds the bed, your head on its pillow, looking up past its foot
+   'say = "The sheets are cold."'])
 nd("Chair", "Things", "Node3D", script="seat", props=[f"transform = {tf(chair_eye, chair_turn)}"])   # 304's desk chair
 nd("Hide", "Things", "Node3D", script="seat", props=[f"transform = {tf(hide_eye, hide_turn)}", 'pose = "hiding"', "reach_size = Vector3(0.6, 1.3, 0.6)",
    "reach_at = Vector3(0, -0.3, 0)", 'say = "Crouched in the corner. Space holds your breath."'])   # the linen closet's far corner, facing its doorway
@@ -592,9 +593,10 @@ nd("Story", ".", "CanvasLayer", script="story", props=['objective_text = "Room 3
    'tasks = PackedStringArray("up: Go up to the third floor", "find304: Find room 304")', 'ending_title = "Checked out"',
    'ending_text = "The fire stairs took you down to the street. Nobody ever asked who was staying in 308."'])
 nd("Sound", ".", "Node", script="sound", props=['mood = "uneasy"'])
-# sanity (§31.6): worn down by the dark, her and the scares; the desk chair and 304's bed rest you, the shop's food mends it,
+# sanity (§31.6): worn down by the dark, her and the scares; the desk chair and 304's bed rest you, the shop's food mends it
+# (its soda, water and burger are Eatable: in the pocket, the left button held eats one),
 # and sleep only once she's shot (and never while a hunt runs); the hunt and the night's director speed up as it falls
-nd("Sanity", ".", "Node", script="sanity", props=['scare_cost = 0.03', 'foods = {\n"soda": 0.12,\n"water": 0.06,\n"burger": 0.3\n}', 'no_sleep = PackedStringArray("!shot_her")',
+nd("Sanity", ".", "Node", script="sanity", props=['scare_cost = 0.03', 'no_sleep = PackedStringArray("!shot_her")',
    'cant_says = "You can\'t sleep. Not while she\'s out there."', 'slept_says = "You slept. It\'s nearly light."'])
 nd("HUD", ".", "CanvasLayer", script="hud", props=['keys = PackedStringArray("W A S D:walk", "E:use", "F:flashlight", "Tab:pocket")'])   # the UI plugin's HUD
 nd("Markers", ".", "Node3D")                                              # quest markers, each while its task is open

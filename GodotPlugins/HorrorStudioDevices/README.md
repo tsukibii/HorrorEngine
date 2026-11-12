@@ -34,6 +34,10 @@ pickup gives it; **Shells** (each one ordered: a box of five is 5) go into that 
 after all. **Tick**: a task of the starter Story's ticked when it comes (`gun`), as a pickup's Tick (and so a thing
 `needs = "task:gun"` opens).
 
+**Food and drink** (Eaten): **Eatable** on and, once it's in the pocket, the player eats one by holding the left button
+with it in the hand (the starter Story's eat meter, **Eat Secs** long, 2 by default), and it's gone; **Restores** is how
+much of the starter's Sanity meter one mends. The catalog's soda, water and burger are.
+
 **Locked until something's happened**: a thing's **Needs**, in the starter Story's words: `task:find_gun` (that task
 done), a fact set (`cellar_open`, `Story.flag("cellar_open")`), `item:key_304` (carried), `!` in front for not, several
 apart by commas. Until they hold it's a **?** in the shop: no model, `???`, LOCKED, its **Locked Text** when picked

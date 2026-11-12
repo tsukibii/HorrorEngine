@@ -886,18 +886,37 @@ not.</td></tr>
 
 <h3 id="seats">A bed and a chair</h3>
 <p>Sitting and lying need somewhere to do it. Add two <span class="node">Node3D</span>s to <code>Things</code> with
-<code>starter/seat.gd</code>, each where your eye goes when you're there, turned the way you face. E on one sits you
-there or lays you down; E again, or a step, gets you up where you stood.</p>
+<code>starter/seat.gd</code>. You don't place your eye by hand: put each one <b>anywhere over its furniture</b> and the
+seat finds the bed or the chair under it, measures it, and works out where a head would be. E on one sits you there
+or lays you down, your eye easing onto it; E again, or a step, gets you up where you stood.</p>
 <table class="vals">
-<tr><td><code>Bed</code></td><td>over 304's pillow, 1.01 m up, turned −90° (toward the bed's foot): Pose <i>lying</i>, Look Up Deg 70,
-Reach Size 1.4 × 0.71 × 2.05, Reach At (0, −0.355, −0.725) (the box E finds it by, over the mattress), Say "The sheets
-are cold."</td></tr>
-<tr><td><code>Chair</code></td><td>over the desk chair's seat, 1.2 m up, facing the desk. The rest as it is.</td></tr>
+<tr><td><code>Bed</code></td><td>anywhere over 304's bed, turned −90° (the way you'll face: toward the bed's foot): Pose <i>lying</i>,
+Look Up Deg 70, Say "The sheets are cold."</td></tr>
+<tr><td><code>Chair</code></td><td>over the desk chair. The rest as it is.</td></tr>
 </table>
-<p>Why so high in the bed: the interior's export makes each piece of furniture one solid box to its top, the bed's
-to its headboard at 0.95 m. An ear inside that box hears every sound through its walls, so the eye sits just over it,
-and the seat's box reaches above it so E finds the seat and not the bed. (Put a seat lower and the player lifts your
-eye out by itself.) The seat's box is on collision layer 2: only E's aim looks there.</p>
+<figure><img src="img/bed_view.jpg" width="1600" height="900" alt="From the pillow of room 304's bed, looking down the blanket to its foot and the room beyond"><figcaption>Lying in 304's bed, looking down it: your eye a pillow's height over the blanket, where the seat worked out your head would be.</figcaption></figure>
+<p>What the seat works out:</p>
+<table class="keys">
+<tr><td>Lying</td><td>the middle of the bed across, 0.30 m in from its head end, 0.22 m over where you lie: a head on a large pillow. The head end is the one with a headboard; with none, the end behind the way the node faces</td></tr>
+<tr><td>Sitting</td><td>the middle of the seat, a seated eye (0.75 m) over it, facing away from the chair's back. With no back (a stool, a bench) the way the node faces</td></tr>
+<tr><td>Your head</td><td>turns as a head does there: 75° to each side lying down, 125° sitting (<b>Look Limit Deg</b> for your own)</td></tr>
+</table>
+<p>And what you can set, under <b>View</b>, when it isn't quite right:</p>
+<table class="keys">
+<tr><td>Seat Height</td><td>where you sit or lie, in metres from the furniture's foot (0: measured). A bar stool that's only a tall box: 0.75</td></tr>
+<tr><td>View Offset</td><td>the eye moved from there: x to your right, y up, z back, in metres</td></tr>
+<tr><td>View Turn Deg</td><td>turned, in degrees</td></tr>
+<tr><td>Flip</td><td>a bed: your head at its other end. A seat: facing the other way</td></tr>
+<tr><td>Fit</td><td>off: the eye is exactly where the node is, its −Z the way you face (the linen closet's hiding place is set this way)</td></tr>
+</table>
+<p>In the editor a small orange camera shows where the eye will be when the furniture is a model you can see in the
+Scene tree. Three ready ones to drag from the FileSystem dock onto a model of your own (a made prop, a mesh):
+<code>res://starter/seat_bed.tscn</code>, <code>seat_chair.tscn</code>, <code>seat_stool.tscn</code>. Dropped onto a
+bed, it uses that bed.</p>
+<div class="note">An interior's export makes each piece of furniture solid as one box to its top, the bed's to its
+headboard at 0.95 m, so a head on the pillow would be inside it. The seat takes that one box out of the room's collider
+and puts a truer one in its place: solid to the mattress, and the headboard. You don't do anything; it's why you can
+lie low on this bed and still hear the room. The seat's own box is on collision layer 2: only E's aim looks there.</div>
 
 <h3 id="bedcue">Her on the ceiling</h3>
 <p>Add a <span class="node">Node3D</span> <code>BedCeiling</code> to <code>Events</code> with <code>starter/cue.gd</code>,
@@ -1283,17 +1302,21 @@ before the warning ends, or shooting her.</p>
 meter shows at the top right while it isn't full. In this night's game set:</p>
 <table class="keys">
 <tr><td>Scare Cost</td><td><code>0.03</code> (this night has a lot of scares; the default is 0.06)</td></tr>
-<tr><td>Foods</td><td><code>{"soda": 0.12, "water": 0.06, "burger": 0.3}</code>: the laptop's FOOD &amp; DRINK page. Once one's in your pocket, <kbd>C</kbd> eats it</td></tr>
 <tr><td>No Sleep</td><td>one line: <code>!shot_her</code>. While she hasn't been shot, lying in 304's bed only rests you</td></tr>
 <tr><td>Cant Says</td><td><code>You can't sleep. Not while she's out there.</code></td></tr>
 <tr><td>Slept Says</td><td><code>You slept. It's nearly light.</code></td></tr>
 </table>
+<p>Food needs nothing here: the laptop's FOOD &amp; DRINK page already sells things marked <b>Eatable</b> (an
+HSShopItem's Eaten group: Eatable, Restores, Eat Secs). To eat, a thing has to be in your pocket and in your hand (Tab
+shows the row, the wheel turns it), and you <b>hold the left button</b>: a meter under the middle of the view fills
+over two seconds, then it's gone from the pocket. Let go early and nothing's eaten. With the gun up the click is the
+gun's: <kbd>Q</kbd> lowers it first.</p>
 <p>Play: the dark corridor wears it down, the desk chair and the bed bring it back part of the way, a soda a little
 more. Lie in 304's bed before the end and you're told you can't sleep. Shoot her, lie down again, and after four
 seconds the night is over: dark, then awake with it full. How it works in general:</p>
 <table class="keys">
 <tr><td>What wears it down</td><td>the dark (your flashlight off, no lamp near), her near you in the open, a hunt running, every scare. Each has its own number; <b>Drain</b> is time itself</td></tr>
-<tr><td>What mends it</td><td>sitting (to 0.7), lying down (to 0.8), food, and sleep (to full). Food is a thing with <code>res://starter/food.gd</code> eaten with <kbd>E</kbd>, or a pocket thing listed in <b>Foods</b> (<code>{"soda": 0.1}</code>: the laptop's shop sells those) eaten with <kbd>C</kbd></td></tr>
+<tr><td>What mends it</td><td>sitting (to 0.7), lying down (to 0.8), food, and sleep (to full). Food is eaten out of the pocket by holding the left button (the Story's <b>Eat Secs</b>, 2). What makes a pocket thing eatable: <code>res://starter/food.gd</code> on a thing you pick up with <kbd>E</kbd> (its Restores, Eat Secs, Count), a shop item marked Eatable, or its name in this node's <b>Foods</b> (<code>{"noodles": 0.3}</code>)</td></tr>
 <tr><td>Sleep</td><td>lie on a bed (a seat with pose <code>lying</code>) for <b>Sleep After</b> seconds: dark, then awake with it mended. <b>No Sleep</b> is a list of the Story's words; while any holds you can't (<code>on:find304</code>: while that task is on your list). A running hunt stops it too. <b>Sleep Needs</b> is what must hold (<code>night</code>)</td></tr>
 <tr><td>At nothing</td><td><b>Zero Target</b>'s fire(), or <b>Zero Dies</b>: back at the checkpoint with half of it</td></tr>
 </table>
@@ -1372,7 +1395,7 @@ game as these steps say and plays all of it.</p>
 <tr><td><b>Scene builder</b></td><td>rooms on two floors, a dog-leg stair, doors locked by a key, windows, furniture, lamps, paint, the export: <a href="#plan">§3</a> to <a href="#export">§8</a>, or the <a href="#ready">ready-made floor</a></td></tr>
 <tr><td><b>Character Studio</b></td><td>her, a Studio export with its skin wet (a stand-in when you have none): <a href="#scene">§10</a>, <a href="#her">§20</a></td></tr>
 <tr><td><b>Look plugin</b></td><td>the look and the grade, light zones, the tube and dying bulb presets: <a href="#light">§11</a>; rain on glass, a car's lights, a CRT, a real mirror, a wet floor, blood, a light shaft, a leak and a puddle, leaves' shadows, the tape: <a href="#dress">§12</a>; the air, its dust and the beam: <a href="#air">§13</a>; lightning, breath and frost, steam writing: <a href="#intense">§22</a>; made props' effects (HSPropFX) and a liquid's level (HSLiquidFill): <a href="#breaks">§28</a>; her looks (other eyes, creature skins, the cloak), the look viewer, a switch a fact and an event turn: <a href="#looks">§30</a></td></tr>
-<tr><td><b>Starter kit</b> (44 scripts)</td><td>the player, flashlight, story, pocket and cash, sound and its physics, room tones, footsteps, notes, pickups, doors and locks, event and scare areas, lights: <a href="#story">§15</a> to <a href="#jump">§21</a>; fear, the steps behind you, her signs, the glimpse, the one closer each time, the mirror figure, the shadow, the feet, the uncanny, the night's director and its moments, her menace, the searcher, the chase, the cold, the steam: <a href="#intense">§22</a>; cues and seats: <a href="#cues">§23</a></td></tr>
+<tr><td><b>Starter kit</b> (44 scripts, 3 seats to drop)</td><td>the player, flashlight, story, pocket and cash, sound and its physics, room tones, footsteps, notes, pickups, doors and locks, event and scare areas, lights: <a href="#story">§15</a> to <a href="#jump">§21</a>; fear, the steps behind you, her signs, the glimpse, the one closer each time, the mirror figure, the shadow, the feet, the uncanny, the night's director and its moments, her menace, the searcher, the chase, the cold, the steam: <a href="#intense">§22</a>; cues and seats: <a href="#cues">§23</a></td></tr>
 <tr><td><b>Sound shelf and moods</b></td><td>the four moods, a tone for each room, every sound placed and traced through the rooms: <a href="#sound">§14</a>, <a href="#body">§22</a></td></tr>
 <tr><td><b>UI plugin</b></td><td>HSHud (the reticle, the keys, the pocket as a row of the things themselves), HSQuestMarker coming and going with the to-do list: <a href="#hud">§24</a>; HSModelSlot in the pocket's row and the shop's cards</td></tr>
 <tr><td><b>Devices plugin</b></td><td>the laptop, its terminal, the Order tab a page per category, things as files in a catalog's folder, locks shown as a ?, NEW: <a href="#laptop">§25</a>; delivery, parcels with a marker each, unboxing into the hands: <a href="#parcel">§26</a></td></tr>

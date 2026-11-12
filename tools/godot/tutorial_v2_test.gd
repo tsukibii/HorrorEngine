@@ -150,6 +150,7 @@ func _initialize() -> void:
 	root.add_child(main)
 	await frames(5)
 	player = main.get_node("Player") as CharacterBody3D
+	player.settle_secs = 0.0                                 # (onto a seat at once: SEATS plays the eye easing there)
 	story = main.get_node("Story")
 	sound = main.get_node("Sound")
 	torch = player.get_node("Eye/Flashlight") as SpotLight3D
@@ -550,19 +551,23 @@ func _initialize() -> void:
 	var bc: Node = main.get_node("Events/BedCeiling")
 	var bfig: Node3D = bc.appear
 	var bed_seat: Node3D = main.get_node("Things/Bed")
+	var bed_at: Vector3 = bed_seat.eye_transform().origin    # where the seat puts your eye: on the bed's pillow
+	var bed_cfg := Vector3(cfg["bed_eye"][0], cfg["bed_eye"][1], cfg["bed_eye"][2])
+	if bed_seat.fitted != "meshes" or not bed_seat.carved or bed_at.distance_to(bed_cfg) > 0.03:
+		bad("304's bed: the seat fitted to the bed's own meshes, its solid box swapped, the eye on the pillow (%s, carved %s, the eye %s, the builder's %s)" % [bed_seat.fitted, bed_seat.carved, str(bed_at), str(bed_cfg)])
 	var on_words := [story.holds("on:out"), story.holds("on:find304"), story.holds("on:batteries")]   # on the way out; 304 found; batteries not asked for yet
-	var by_bed := Vector3(bed_seat.global_position.x + 0.9, fl + 0.02, bed_seat.global_position.z + 1.05)
+	var by_bed := Vector3(bed_at.x + 0.9, fl + 0.02, bed_at.z + 1.05)
 	stand(by_bed, bc.where())
 	var corner_standing: bool = await aim_region(bc, "any corner")
 	await secs(3.5)
 	var standing_count: int = bc.count                       # standing: nothing, her corner in view or not
-	await use_at(by_bed, bed_seat.global_position + Vector3(0.9, -0.15, 0))   # E on the bed
+	await use_at(by_bed, bed_at + Vector3(0.9, -0.3, 0))   # E on the bed
 	await frames(3)
-	var lying_ok: bool = player.pose == "lying" and player.doing() == "lying" and eye.global_position.distance_to(bed_seat.global_position) < 0.05
+	var lying_ok: bool = player.pose == "lying" and player.doing() == "lying" and eye.global_position.distance_to(bed_at) < 0.05
 	look(bc.where())                                         # straight at her place: the middle, not a corner
 	await secs(3.5)
 	var middle_count: int = bc.count
-	player.rotation = Vector3(0, bed_seat.global_rotation.y, 0)   # the bed's own view, up past its foot
+	player.rotation = Vector3(0, bed_seat.eye_transform().basis.get_euler().y, 0)   # the bed's own view, up past its foot
 	player.pitch = deg_to_rad(70.0)
 	eye.rotation = Vector3(player.pitch, 0, 0)
 	await frames(1)
@@ -645,7 +650,7 @@ func _initialize() -> void:
 	var by_chair := Vector3(chair_seat.global_position.x - 0.75, fl + 0.02, chair_seat.global_position.z + 0.4)
 	await use_at(by_chair, chair_seat.global_position + Vector3(0, -0.6, 0))   # E on the chair
 	await frames(3)
-	var sitting_ok: bool = player.pose == "sitting" and player.doing() == "sitting" and eye.global_position.distance_to(chair_seat.global_position) < 0.05
+	var sitting_ok: bool = player.pose == "sitting" and player.doing() == "sitting" and eye.global_position.distance_to(chair_seat.eye_transform().origin) < 0.05 and chair_seat.eye_transform().origin.distance_to(chair_seat.global_position) < 0.06
 	look(v3(cfg["boxes"]["window_304"]["at"]))               # the window, not the TV
 	await secs(3.0)
 	var away_count: int = dk.count
@@ -1532,17 +1537,38 @@ func sanity_part(fl: float) -> void:
 	var facts := [story.is_set("sanity:uneasy"), story.is_set("sanity:shaken"), story.is_set("sanity:breaking")]
 	var press_hunt := float(main.get_node("Events/Hunt").pressure())
 	var meter: bool = san.report()["meter_shown"]
-	# a soda (the laptop's shop sells it) out of the pocket with C
-	story.give("soda", "Kaze orange soda", null, 1)
-	await press(KEY_C)
+	# a soda as the laptop's shop gives it (its item is Eatable): in the hand, the left button held 2 s; not while the
+	# gun's up
+	var soda: Resource = load("res://addons/horrorstudio_devices/shop/items/soda.tres")
+	soda.give_to(self, 1, player)
+	await frames(2)
+	var in_hand: String = story.in_hand()
+	var gun: Node = player.get_node("Eye/Shotgun")
+	var gun_up: bool = gun.raised
+	story.hold_eat(true)
+	await secs(2.3)
+	story.hold_eat(false)
+	var with_gun: int = story.count_of("soda")
+	if gun_up:
+		gun.set_raised(false)                             # Q
+		await until(func() -> bool: return not gun.busy, 3.0)
+	story.hold_eat(true)
+	await secs(1.0)
+	var half := float(story.eat_progress)
+	await secs(1.3)
+	story.hold_eat(false)
 	await frames(2)
 	var after_soda := float(san.sanity)
 	var soda_left: int = story.count_of("soda")
+	if gun_up:
+		gun.set_raised(true)
+		await until(func() -> bool: return not gun.busy, 3.0)
 	# 304's bed, now she's shot and nothing hunts
 	var why_now: String = san.why_not_sleep()
 	var bed_seat: Node3D = main.get_node("Things/Bed")
-	var by_bed := Vector3(bed_seat.global_position.x + 0.9, fl + 0.02, bed_seat.global_position.z + 1.05)
-	await use_at(by_bed, bed_seat.global_position + Vector3(0.9, -0.15, 0))
+	var bed_at: Vector3 = bed_seat.eye_transform().origin
+	var by_bed := Vector3(bed_at.x + 0.9, fl + 0.02, bed_at.z + 1.05)
+	await use_at(by_bed, bed_at + Vector3(0.9, -0.3, 0))
 	await frames(3)
 	var lying: bool = player.pose == "lying"
 	var asleep: bool = await until(func() -> bool: return san.sleeping, 6.0)
@@ -1556,16 +1582,16 @@ func sanity_part(fl: float) -> void:
 	var found1: bool = ch1 != null and ch1.has_method("_close") and ch1.call("_close") == cc1
 	var ch2: Node = main.get_node_or_null("Events/Stalker/HuntChase")
 	var found2: bool = ch2 != null and ch2.has_method("_close") and ch2.call("_close") == cc2
-	say("sanity", "after the night %.2f (%s, down by %s); lying in 304's bed before she was shot: no sleep %s; at 0.2: uneasy %s, shaken %s, breaking %s, its meter shown %s, the hunt's pace x%.2f; a soda with C: %.2f, %d left; she's shot: why not sleep '%s', lying %s, asleep %s, awake %s at %.2f, \"%s\", up again %s" % [
-		night, rep["band"], rep["why_down"], str(no_sleeps), facts[0], facts[1], facts[2], meter, press_hunt, after_soda, soda_left, why_now, lying, asleep, woke, after_sleep, line, player.pose])
+	say("sanity", "after the night %.2f (%s, down by %s); lying in 304's bed before she was shot: no sleep %s; at 0.2: uneasy %s, shaken %s, breaking %s, its meter shown %s, the hunt's pace x%.2f; a soda from the shop in the hand (%s), the left button held with the gun up: %d left; the gun lowered, a second in: the meter at %.2f; held: %.2f, %d left; she's shot: why not sleep '%s', lying %s, asleep %s, awake %s at %.2f, \"%s\", up again %s" % [
+		night, rep["band"], rep["why_down"], str(no_sleeps), facts[0], facts[1], facts[2], meter, press_hunt, in_hand, with_gun, half, after_soda, soda_left, why_now, lying, asleep, woke, after_sleep, line, player.pose])
 	if night >= 1.0:                                         # (the check's night is every fright there is, several times over: it may be at nothing)
 		bad("the night should have worn your sanity down (%.2f)" % night)
 	if no_sleeps.is_empty() or no_sleeps.any(func(w: String) -> bool: return w != "!shot_her" and w != "hunt"):
 		bad("lying in 304's bed before she's shot: no sleep, because she's out there (%s)" % str(no_sleeps))
 	if facts != [true, true, true] or not meter or press_hunt <= 1.0:
 		bad("sanity at 0.2: its three facts %s, its meter %s, the hunt's pace x%.2f" % [str(facts), meter, press_hunt])
-	if absf(after_soda - 0.32) > 0.01 or soda_left != 0:
-		bad("a soda with C: 0.2 and 0.12 more (%.2f), none left (%d)" % [after_soda, soda_left])
+	if in_hand != "soda" or with_gun != 1 or absf(half - 0.5) > 0.08 or absf(after_soda - 0.32) > 0.04 or soda_left != 0:
+		bad("a soda eaten by holding the left button: in the hand (%s), not with the gun up (%d left), the meter half way (%.2f), 0.2 and 0.12 more (%.2f), none left (%d)" % [in_hand, with_gun, half, after_soda, soda_left])
 	if why_now != "" or not lying or not asleep or not woke or after_sleep < 0.99 or line.find("slept") < 0 or player.pose != "standing":
 		bad("sleep in 304's bed once she's shot (why not '%s', lying %s, asleep %s, awake %s, %.2f, \"%s\", %s)" % [why_now, lying, asleep, woke, after_sleep, line, player.pose])
 	say("close calls", "under the one who hunts by ear: found by her chase %s, hiding %s, reloading %s, %d so far; under the hunt's: found by its chase %s, %d so far" % [
@@ -1593,7 +1619,7 @@ func the_hunt(fl: float, cz: float) -> void:
 	say("the hunt", "an order at the laptop: running %s (%s), stage %d, hunt:Hunt %s, on the list %s, her seen %s; her moves node %s, her spots %d" % [
 		hunt.get("running"), hunt.get("kind"), hunt.get("stage"), story.is_set("hunt:Hunt"), story.has_task("hunted"), her.visible,
 		her.get_node_or_null("Moves") != null, main.get_node("Events/HuntSpots").get_child_count()])
-	if not hunt.get("running") or int(hunt.get("stage")) != 1 or not story.is_set("hunt:Hunt") or story.has_task("hunted") or her.visible:
+	if not hunt.get("running") or int(hunt.get("stage")) != 1 or not story.is_set("hunt:Hunt") or story.has_task("hunted"):   # (she may be somewhere out of your sight by now: its first spot)
 		bad("the hunt didn't start hidden with the order (running %s, stage %d, task shown %s, her %s)" % [hunt.get("running"), hunt.get("stage"), story.has_task("hunted"), her.visible])
 		return
 	# from 304's entry, its door open, looking out: she runs past the doorway; the door shut, never

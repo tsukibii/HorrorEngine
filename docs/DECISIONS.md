@@ -2,6 +2,52 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, after the close calls (the user: the camera on a bed and a chair, and eating by holding the button)
+
+- **"can you make sure the camera adjust appropriately if we are on a chair or bed (sort of how a pov head would be,
+  maybe slightly hovering above the bed as if the persons head was on a large pillow, if we drop a bed interactable
+  on a bed prop it should calculate it based off the middle of the bed + height + length), similar with chairs though
+  since we can have stools maybe make the drop script have a height / pos adjuster for view."** The starter's
+  **`seat.gd` works the eye out from the furniture** (its `fit`, on by default; pose hiding is always as placed):
+  - **Which furniture**: its `furniture` when set; the node's own meshes (the script on the prop); the model it's a
+    child of (**`seat_bed.tscn`, `seat_chair.tscn`, `seat_stool.tscn`** to drag onto a model in the Scene tree); else
+    the furniture under it in an interior's export (its piece of meshes found by a ray down); else the solid box
+    under it.
+  - **Lying**: the middle of the bed across, 0.30 m in from its head end, 0.22 m over where you lie (the highest
+    surface in the bed's middle: the blanket), facing its foot. The head end is the one with a headboard; with none,
+    the end behind the node's own facing; `flip` the other.
+  - **Sitting**: the seat's middle, a seated eye 0.75 m over it (scaled by the player's own eye height), facing away
+    from its back (the side that stands over the seat along its whole length); no back, the node's own facing.
+  - **Adjusters** (the View group): `seat_height` (from the furniture's foot: a bar stool that's only a tall box),
+    `view_offset` (right, up, back), `view_turn_deg`, `flip`, `look_limit_deg`, `fit` off.
+  - **A head**: the eye eases onto the seat and up again (the player's `settle_secs`, 0.35), and turns only so far
+    there (75° each side and 5° down lying; 125° sitting; a stool free).
+  - **In the editor** an orange camera shows where the eye will be (the script is a `@tool`), when the furniture is
+    a model in the scene.
+  - **Found on the way**: an interior's export makes each piece of furniture solid as **one box to its top**, a bed's
+    to its headboard (0.95 m), so tutorial v2's bed had your eye 0.5 m over the mattress. A seat whose eye would be
+    inside that box now takes its twelve triangles out of the room's collider and puts a truer solid in (to where
+    you lie, plus each side that stands over it). Only when the box is found whole; otherwise the player still
+    lifts the eye over the lid, as before.
+  - Tutorial v2's bed and chair are now nodes "anywhere over" their furniture (its §23); a new picture from the
+    pillow. **SEATS** (`python tools/godot/seat_check.py`) plays all of it on furniture made of boxes.
+- **"for us to eat something it has to be in our inventory, has to be 'eatable', and we have to hold left click
+  (should be an eat meter that fills up, roughly 2 seconds to start with to eat it), once eating it should
+  disappear."** Eating is the **Story's** now (it owns the pocket): `set_eatable(item, restores, secs)` marks a
+  pocket thing; with it **in the hand** (the HUD row's middle; with no HUD row, the first eatable thing in the
+  pocket) the **left button held** fills a meter under the middle of the view over its seconds (`eat_secs`, 2), then
+  one is gone from the pocket and the Sanity node mended. Let go early: nothing. One a hold. **Not while a gun is
+  up** (the click is the gun's; Q lowers it), a card is up, or the laptop has the mouse.
+  - What makes a thing eatable: **`food.gd`** (E now takes it into the pocket instead of eating it: `restores`,
+    `eat_secs`, `count`), an **HSShopItem's Eaten group** (`eatable`, `restores`, `eat_secs`; the catalog's soda,
+    water and burger are), or a Sanity node's `foods`.
+  - **Gone**: eating a food.gd thing with E where it lies, and the Sanity node's C key (`eat_key`).
+    `sanity.eat_item(item)` is a script's instant eat.
+- **Not done**: the interior export itself still writes the one box (the scene builder's `levelexport.js`: a bed's
+  collider should be its mattress and headboard; then the seat's swap isn't needed); a prop's own box collider to its
+  headboard isn't swapped (only a room's merged collider is); no eating sound is on the shelf (`eat_sound` is empty);
+  no picture of the eat meter in the guide; Director and desk games.
+
 ## 2026-11-12, after the sanity meter (the user: sanity in the tutorial, and close calls)
 
 - **"Sure wire it to the tutorial."** Tutorial v2's game has a **Sanity** node now: its scares cost 0.03 each, the

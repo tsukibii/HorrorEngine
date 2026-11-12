@@ -69,6 +69,12 @@ a babysitting game with a grey alien needs) and for two things built (the Predat
   facts `sanity:uneasy`, `sanity:shaken`, `sanity:breaking`; SANITY, `tools/godot/sanity_check.py`). In tutorial
   v2's game since (its §31, part 6: no sleep until she's shot). Next for it if the user wants: hunger, the meter in
   the HUD's style, kept at a checkpoint.
+- **Then: seats that find the eye, and eating by holding the button** (the starter's `seat.gd` fitted to the
+  furniture, `seat_bed.tscn`, `seat_chair.tscn`, `seat_stool.tscn`, the player's eased settle and head limits; SEATS,
+  `tools/godot/seat_check.py`; the Story's `set_eatable`, `hold_eat`, its eat meter; `food.gd` a pickup; HSShopItem's
+  Eaten group). Next for it: the interior export writing a bed's collider as its mattress and headboard
+  (`tools/director/levelexport.js`; then `godot_byhand.py ready` and TUTORIAL2 fresh, on the user's machine), an
+  eating sound for the shelf, the user's feel for 0.22 m and 0.30 m in play.
 - **Then: close calls** (the starter's `close_call.gd` under whoever hunts: she falters while you reload, are busy
   or hide, by a chance, once a chase; `chase.gd` and `searcher.gd` ask it; HUNT plays it with the real double;
   tutorial v2 §31, part 7). Next for it if the user wants: more kinds of near miss (DECISIONS 2026-11-12, after the

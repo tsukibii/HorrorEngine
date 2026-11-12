@@ -33,6 +33,10 @@ extends Resource
 @export var gun := false                      ## a gun, not a thing for the pocket: the weapons plugin's gun under the player (HSDoubleBarrel, its Owned off till then) is given it and drawn up into the view, as the plugin's pickup gives it
 @export var shells := 0                       ## shells for that gun each one brings (a box of five: 5; with `gun`, those it comes with), into the gun's own pocket rather than the Story's
 @export var shell: Resource                   ## their kind: an HSShellType (the weapons plugin's shells/buckshot.tres, shells/explosive.tres); empty: the gun's normal kind
+@export_group("Eaten")
+@export var eatable := false                  ## food or drink: in the pocket, the left button held eats it (the starter Story's eat meter), and it's gone
+@export_range(0.0, 1.0) var restores := 0.15  ## how much of the starter's Sanity meter one mends
+@export var eat_secs := 2.0                   ## how long the button's held
 @export_group("")
 @export var tick := ""                        ## a task of the starter Story's it ticks off when it comes (as a pickup's tick: "gun")
 
@@ -56,6 +60,8 @@ func give_to(tree: SceneTree, n: int, player: Node = null) -> void:
 			g.add_shells(shells * n, shell)
 	elif st != null and st.has_method("give"):
 		if st.get_method_argument_count("give") >= 4:
+			if eatable and st.has_method("set_eatable"):
+				st.set_eatable(id, restores, eat_secs)
 			st.give(id, name_of(), HSModelSlot.of_scene(model) if model != null else null, n)
 		else:
 			for i in n:

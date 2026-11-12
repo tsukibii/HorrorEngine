@@ -4,7 +4,8 @@ DECISIONS 2026-11-12, the last).
 
 A `godot_byhand.py new` project with a floor, a wall, the starter's player and Story, played headless
 (`sanity_test.gd`): steady in the light; worn down by the dark, a scare, her near (not behind a wall) and a hunt
-running; its bands and their facts in the Story; food eaten with E and out of the pocket; sitting and lying mending it
+running; its bands and their facts in the Story; food taken into the pocket and eaten by holding the left button (the
+Story's eat meter); sitting and lying mending it
 up to their caps; sleep after lying down, and not while a task says no, a hunt runs, a script blocks it or its needs
 don't hold; a hunt and the director going faster as it falls, the rush a stage early when it's breaking, a hunt that
 starts only once you're shaken; at nothing its target fired, or death and back with some of it; the meter.

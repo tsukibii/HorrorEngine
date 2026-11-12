@@ -5,8 +5,9 @@
 ##
 ## Down: the dark (`dark_drain`: your flashlight off and no lamp reaching you), her near and in the open (`near_drain`),
 ## a hunt running (`hunt_drain`), every scare (`scare_cost`), time itself (`drain`), dying (`death_cost`).
-## Up: sitting (`sit_rate`, no further than `sit_to`), lying down (`lie_rate`, `lie_to`), eating (a food.gd thing with
-## E, or a pocket thing listed in `foods` with the `eat_key`), and sleep, which mends it to `sleep_to`: lie on a bed
+## Up: sitting (`sit_rate`, no further than `sit_to`), lying down (`lie_rate`, `lie_to`), eating (a thing in the pocket that's
+## eatable, the left button held until the Story's eat meter fills: a food.gd thing picked up, a shop item marked
+## Eatable, or a pocket thing listed in `foods` here), and sleep, which mends it to `sleep_to`: lie on a bed
 ## (seat.gd, pose lying) for `sleep_after` seconds, or call sleep().
 ## Not sleeping: a hunt running (`hunts_stop_sleep`), any of `no_sleep` holding (the Story's words: "on:find304" while
 ## that task is on the list, "hunt:Hunt", a fact of yours), `sleep_needs` not holding ("night"), or block_sleep("why")
@@ -47,8 +48,7 @@ signal broke                                          ## it reached nothing
 @export var lie_rate := 0.015                         ## a second lying down, awake
 @export_range(0.0, 1.0) var lie_to := 0.8
 @export var light_rate := 0.0                         ## a second standing in light (0: light only stops the dark's drain)
-@export var foods := {}                               ## pocket things you can eat: {"soda": 0.1, "noodles": 0.3}
-@export var eat_key := KEY_C                          ## eats the first food in the pocket
+@export var foods := {}                               ## pocket things made eatable and how much each mends: {"soda": 0.1, "noodles": 0.3} (hold the left button: story.gd)
 @export_group("Sleep")
 @export var sleep_after := 4.0                        ## seconds lying down before you sleep (0: only sleep() does)
 @export_range(0.0, 1.0) var sleep_to := 1.0           ## what sleep mends it to
@@ -111,6 +111,10 @@ func _hook() -> void:
 			st.died.connect(_on_died)
 		if st.has_signal("revived") and not st.revived.is_connected(_on_revived):
 			st.revived.connect(_on_revived)
+		if st.has_method("set_eatable"):                  # its foods: eatable out of the pocket (the Story's eat meter)
+			for item in foods:
+				if not st.is_eatable(str(item)):
+					st.set_eatable(str(item), float(foods[item]))
 
 
 func _on_scare() -> void:
@@ -184,42 +188,17 @@ func _facts() -> void:
 			st.unflag(str(pair[0]))
 
 
-## You ate something: better by `amount` (a food.gd thing calls this).
+## You ate something: better by `amount` (the Story calls this when its eat meter fills).
 func eat(amount: float, what := "") -> void:
 	add(amount)
 	ate.emit(what, amount)
 
 
-## Eat a thing out of the pocket (one of `foods`): false when it isn't food or isn't there.
+## A script's: one of `item` eaten out of the pocket at once, no meter (the Story's eat_up). False when it isn't
+## there or isn't eatable.
 func eat_item(item: String) -> bool:
 	var st := _story()
-	if st == null or not foods.has(item) or not st.has_method("has") or not st.has(item):
-		return false
-	var nm := str((st.get("names") as Dictionary).get(item, item)) if st.get("names") is Dictionary else item
-	st.take(item, 1)
-	eat(float(foods[item]), item)
-	if st.has_method("say"):
-		st.say("You have %s." % nm)
-	return true
-
-
-## Eat the first food in the pocket.
-func eat_from_pocket() -> bool:
-	var st := _story()
-	if st == null or not (st.get("items") is Dictionary):
-		return false
-	for item in (st.get("items") as Dictionary).keys():
-		if foods.has(item):
-			return eat_item(str(item))
-	return false
-
-
-func _unhandled_input(e: InputEvent) -> void:
-	if e is InputEventKey and e.pressed and not e.echo and (e as InputEventKey).physical_keycode == eat_key and not foods.is_empty():
-		if not eat_from_pocket():
-			var st := _story()
-			if st != null and st.has_method("say"):
-				st.say("Nothing to eat.")
+	return st != null and st.has_method("eat_up") and st.eat_up(item)
 
 
 ## No sleep until allow_sleep(why): a script's switch (a quest that keeps you up).
