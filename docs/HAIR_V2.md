@@ -310,6 +310,7 @@ head's hair 1.5 to 3 MB with its two 512 px textures.
   cards committed before this are a quarter too narrow**. Now a project for each picture size (`_hair2`,
   `_hair2_<W>x<H>`), and a render that fails and says so when a picture isn't the size asked for. Tried: 512 x 512,
   960 x 720 and 1600 x 1200 each come out that size (a window larger than xvfb's 1280 x 1024 screen is no trouble).
+  All 65 cards were made again with it the same day, from the same view, and looked at as sheets: none cropped.
 
 ## 10. Files
 

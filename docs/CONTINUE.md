@@ -63,12 +63,12 @@ a heavier fringe and its Arch both ways (HAIR_V2 §3.7, §3.8).
 - The order meant: finish and commit 1; the strand pass; the one-lock dye; then each hairstyle against its picture,
   side by side, with what still differs written down each round.
 
-**3. The styles' cards are distorted (found; the tool fixed and tried; the cards not made again when this was
-written).** `hair2_check.py` drew every picture 960 x 720 whatever `--size` said (its scratch project's window isn't
-resizable), and `thumbs` squeezes that into a square: all 59 committed cards in `Content/Studio/Hair2/thumbs/` are a
-quarter too narrow. In the tree: a project per picture size and an error when a picture isn't the size asked for;
-tried at 512 x 512, 960 x 720 and 1600 x 1200, each that size. To do: make all the cards again (the card's view was
-framed on the squeezed picture: a true square shows less to the sides, so look at wide styles first), look at them.
+**3. The styles' cards were distorted (found, fixed, made again).** `hair2_check.py` drew every picture 960 x 720
+whatever `--size` said (its scratch project's window isn't resizable), and `thumbs` squeezed that into a square: the
+59 cards committed before were a quarter too narrow. Now a project per picture size and an error when a picture
+isn't the size asked for (tried at 512 x 512, 960 x 720 and 1600 x 1200). All 65 cards in
+`Content/Studio/Hair2/thumbs/` made again and looked at: none cropped. Two of the new ones (the messy bun, the high
+ponytail) hide their bun and tail behind the head from the card's view.
 
 **Tools, as found**: `thumbs --out` still writes the tracked thumbnails. Run LOOKPLUGIN in the background with a long
 limit and no pipe: it takes over half an hour on a CPU (thirty minutes in, it was still on its first stage here and
