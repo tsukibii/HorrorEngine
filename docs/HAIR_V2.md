@@ -450,7 +450,16 @@ over ours, and the hair's solid outer edge by height on her right side, hers aga
    the part that is already too wide. The tie moved forward under the ear's middle: worse from the front, the same
    from here. What both views say is that ours carries its width too low (a pear, hers a bulb): the hanging hair
    should come in sooner from a fuller top. Not built. The back is in no picture.
-8. **The head.** `v2female` is near hers, not hers (her ears sit higher on the face).
+8. **The head, and it is the cause of the error by the tie.** Read off her picture (14 px a centimetre), her head
+   from the front is about 11.6 cm wide at the lips, 9.1 at the tie's height and 7.5 at the neck: a small V of a
+   face on a slender neck. `v2female` is 14.0, 13.0 and 12.0 (the body's own outline at those heights): 4 cm wider
+   at the tie's height, 2 a side. The tie hangs beside it, so it sits 2 cm further out, which is the size of what
+   both views show there (0.4 to 2 cm too wide over the last centimetres and at the tie). The sculpt can't reach
+   her: with the jaw and the neck at -3 (past a person's range), the chin's width and the cheeks at -2, the same
+   three are 13.8, 12.8 and 11.8. **So a v2female base is required** (the user's condition, DECISIONS 2026-11-12,
+   the 1:1): a lower face and a neck with far more reach than the sliders have, as a base that every slider still
+   moves from. Until it exists the hair by the tie can't be judged closer than about 2 cm, and the two cameras
+   have to be fitted again on it. Her ears also sit higher on the face than `v2female`'s.
 
 **Not checked here:** the Studio's own tab draws the same hair, but a look's `bake` numbers are Godot's only.
 

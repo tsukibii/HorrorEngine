@@ -22,6 +22,11 @@ The user's answers, newest first. They override the plan, the research and the d
   feminine base, a shorter rounder face, a full bust; `bodyByName("v2female")` in node). As a base to pick in the
   Character Studio's Body tab it is **not built yet**; it is the next step there, with every slider still moving
   from it.
+- **Found since, and it meets the user's condition ("if required"):** it is required. The error left by the tie in
+  both pictures is the head's: at the tie's height her head is about 9.1 cm wide and her neck 7.5, the test body
+  13.0 and 12.0, and the sculpt's jaw and neck at their furthest move that by 2 mm (HAIR_V2 §10, item 8). A base
+  with a lower face and a neck of that kind is the next piece of work; the hair by the tie is not judged closer
+  than 2 cm until it exists.
 
 ## 2026-11-12, the sides (the user, on the first whole pictures of the Daz baseline: the sides' curve and volume)
 

@@ -57,7 +57,14 @@ aesthetic hair and apply that later to the rest of our styles", and offered a ba
   0.8 to 0.9 cm wide of hers right under the tie (from 2).
 - **Not matched, in order** (§10's list): the last 3 cm over the tie, the fringe's pieces, the sidelocks as ribbons and the plait, the red
   streaks, strands across the ear, her first picture's view (a fuller bulb behind the ear), the back.
-- **Then:** v2female as a base in the Studio's Body tab (GROW, GROWPAGE, STUDIO); the other six Daz hairstyles; the
+- **Next, and it is required now:** a real **v2female base**. The error left by the tie (0.4 to 2 cm too wide, in
+  both views) is the head's, not the hair's: at the tie's height her head is about 9.1 cm wide and her neck 7.5;
+  `v2female` (the feminine base and the sculpt) is 13.0 and 12.0, and the sculpt's jaw and neck at -3 move that by
+  2 mm (HAIR_V2 §10, item 8; the scratch `headw.mjs`). It needs a lower face and a neck with real reach (new
+  fields in `sculpt.js`, or MHR's own identity shapes), as a base in the Body tab that every slider still moves
+  from: GROW, GROWPAGE, POSE, TAILOR (clothes are cut on the body), STUDIO. Then fit both cameras again on it and
+  measure again before touching the hair by the tie.
+- **Then:** the other six Daz hairstyles; the
   new settings carried to the older styles (their cards made again).
 
 ## Before that (2026-11-12, later, `claude/ecstatic-dijkstra-6ixk71`): two asks in progress, neither finished
