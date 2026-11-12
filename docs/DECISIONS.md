@@ -2,6 +2,18 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, the bed (the user: "Why does the blanket and pillows float above the bed")
+
+- **Why**: the kit's bed (`tools/director/kit.js` `bedGen`), not the seats. Measured in the hotel's export: the duvet
+  was a stiff lens 6 cm thick ending level with the mattress's rounded edge (its rim at 0.448 m, the mattress's edge
+  top at 0.449 m and falling away), so a line of shadow ran under it all round; and a pillow's pinched rim is at half
+  its height, so with its belly on the mattress its rim stood 6 to 7 cm above it.
+- **Fixed in the generator** (every bed in every set and game, on its next build or export): the duvet lies 2.5 cm
+  into the mattress and **hangs down its sides and its foot** onto the frame (three thin panels, inside the bed's own
+  size: no collider or layout changes); a pillow's rim rests 3 cm over the mattress with its belly pressed in.
+- The ready-made hotel floor was **made again** (`godot_byhand.py ready`), and the tutorial's pictures that show the
+  bed. KIT passes.
+
 ## 2026-11-12, after the intensifiers (the user: things that disappear and come back, and flags a quest can switch)
 
 - **"if we dont have already can you create a script that makes objects disappear (not deleted just disappear
