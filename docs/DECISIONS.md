@@ -2,6 +2,30 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, the very last (the user: the shells merged in, a quest for being shot with one, a pull request)
+
+- **"create a pr, merge in more-shotgun-shells into this branch"**. `more-shotgun-shells` (the love heart and water
+  shells) is merged into `claude/jolly-darwin-9t8hkc`; CLAUDE.md, CONTINUE and this file kept both sides. The pull
+  request is the branch into main.
+- **"maybe add some question or drag and drop thing that we can do quests to have npcs be hit by the easter egg love
+  shells or water shells (a way to check if someone did it), e.g. an npc gets shot with love, then it ticks that flag
+  as true"**. Built in the weapons plugin: **`HSShotWith`** (`quest/shot_with.gd`), a node to put under a character
+  (beside her HSHitReact or HSShootable) or anything with a collider. A shot of the kind it names landing on her
+  (**Shell**: heart, water, buckshot, explosive, harmless, harmful, any, or a kind of your own by its id; a **Part**
+  of her; so many **Pellets**; so many **Times**; only while its **Needs** hold) sets a **Fact** in the Story, ticks a
+  task, says a line, sets an objective, adds tasks, fires a target and turns her look (the look switch under her,
+  back after a while). Two ready-made to drag onto someone: `quest/loved.tscn`, `quest/soaked.tscn`.
+- **The way to check is the fact.** Anything's Needs takes it (a door, an area, a cue, a quest marker, a look), a
+  script asks `Story.is_set("her_loved")`, the node says `done`, `count`, `last`, and `HSShotWith.was(her)`.
+- **It listens to the guns itself**, not to HSHitReact's or HSShootable's signals: only the gun's hit records carry
+  the shell's kind when the shot hurts, so one node covers the easter eggs and the real shells, and works on
+  something with neither of the two. An explosive's blast reaching her counts as that shell.
+- **For games built by hand** (the starter's Story). A Director or desk game has no word for it: a fact such as
+  `shot:<who>:<kind>` recorded by the brain would be the way, with the runner, the check and STORY_FORMAT together.
+  Not built.
+- **SHOTWITH** (`python tools/godot/shot_with_check.py`): the real gun, shells and Story in a small by-hand project.
+- **Not in tutorial v2**: the weapons guide has it (§10, *A quest for being shot with something*).
+
 ## 2026-11-12, last (the user: how to use it, in the tutorial)
 
 - **"Add information how to use this in tutorial html"**. In **guides/tutorial_v2**, a new **§30, Her looks: other

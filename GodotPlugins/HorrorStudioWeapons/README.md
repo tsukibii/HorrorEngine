@@ -72,6 +72,7 @@ The guide for the user, with these pictures: `guides/weapons/index.html`.
 | **The maps** | `fx/` | made in code (`tools/weapon_fx.py`, WEAPONFX): `ichor_<kind>_<n>_*` (splat, drip, wound, drop: black ichor, glossy, a dark oxblood film where it's thin, embers in it, with `_emission`; a splat thrown one way, a drip running down, a wound, a drop),  `flash_noise.png` (the fire's noise, tiling), `puff.png`, `crater_<0..3>_*` (a pellet's crater from one height field: the hole, the broken cone, chips of paint gone), `blast_<0..2>_*` (pellets landing together: one ragged hole, the paper torn back in flaps, the plaster broken out, cracks), `smear_<0..1>_*` (lead flattened on a hard wall: a grey metallic splash, a shallow dent, chips), `wad_0_*` (the wad's dent: a dish, a scuffed ring, its petals' marks), each `_albedo`, `_normal` (Godot's OpenGL convention, leaning into the hole) and `_orm`; `soot_0_albedo.png` (the smoke's starburst) and `grains_0_albedo.png` (the powder's specks); `scorch_<0..1>_*` with `_emission` (an explosion's: a jagged crater, cracks, soot fanned round it, embers). Paint over them in Krita: the plugin reads whatever is there |
 | **Pickups** | `pickup.gd` (`HSWeaponPickup`, a Node3D) | `kind` double (the gun lying on its side, `shells` coming with it; an older scene's `shotgun` is the double too) or shells (the prop generator's box of five, `shells_box_5`, two spilled beside it; `lid_open` shows it open, its lid swung on its own hinge; into the gun you own); `shell` the kind of shells (none: the normal; the explosive comes in its own box, `shells_box_5_explosive`, the love hearts and the water in theirs, `shells_box_5_heart` and `shells_box_5_water`; `box_model` any other); E takes it (the starter's player uses anything with `use()`), `say` a line through the Story, `taken` to wire a scare to |
 | **Something to shoot** | `shootable.gd` (`HSShootable`, a Node) | put one under what can be shot (a character, a doll, a lamp): a shot with a pellet on its parent is a hit, `hit(info)`, and after `hits` of them `down`. Each a switch: `gone_secs` (gone at once and back after that long, its collision with it: a ghost's way; down, gone for good), `push_m` (shoved back), `cry` (a sound), `say` (a line), `target` (its `fire()`), `lights_out` (every light under it dark when it's down); a harmless shell's pellets aren't a hit: `touched(info)` instead |
+| **A quest for being shot** | `quest/shot_with.gd` (`HSShotWith`, a Node) | put one under a character (beside her HSHitReact or HSShootable) or anything with a collider: when a shot of the kind it names lands on what it's under, it sets a fact in the Story, ticks a task, says a line, fires a target, turns her look: see *A quest for being shot*. `shell` (heart, water, buckshot, explosive, harmless, harmful, any) or `shell_id` (a kind of your own), `part` (anywhere, head, torso, arm, leg), `pellets`, `times`, `needs`, `once`, `who`; then `fact`, `tick`, `say`, `objective`, `add_tasks`, `target`, `her_look`, `look_secs`; `counted(info)`, `happened(info)`, `count`, `done`, `last`, `fire()`, `reset()`, `HSShotWith.was(node)`. Ready-made: `quest/loved.tscn`, `quest/soaked.tscn` |
 | **Something that breaks** | `blowup/blow_up.gd` (`HSBlowUp`, a Node3D) | put one under any object (a made prop, a model, a MeshInstance3D): see *Things that break*. `kind` (an HSBreakKind; none: guessed, `HSBlowUp.guess_kind(node)`), `strength`, `pieces`, `whole`, `liquid`, `push`, `keep_s`, `kick`, `target`, `collider`, `preview` (its pieces drawn apart in the editor, nothing saved); `blow_up(at, dir, power, blast_at)`, `restore()`, `is_prepared()`, `report()`; `prepared`, `hit(info)`, `blown_up(pieces)`; `damage`, `is_broken`, `pieces_out`, `last` |
 | **What it's made of** | `blowup/break_kind.gd` (`HSBreakKind`, a Resource) | `blowup/kinds/`: `ceramic`, `glass`, `wood`, `metal`, `cardboard`, `plastic`, `stone`: `strength`, `pieces`, `coarse`, `grain`, `crumple_m`, `dent_m`, `dent_r_m`, `hollow`, `speed`, `spin`, `bounce`, `friction`, `areal_kg`, the inside (`inside_color`, `inside_from_surface`, `inside_roughness`, `inside_metallic`, `fibres`, `speckle`, `see_through`), the debris (`dust`, `dust_color`, `chips`, `chip_style`, `sparks`, `surface`), `sound`, `clink` |
 | **The cut** | `blowup/fracture.gd` (`HSFracture`, plain data) | a thing's surfaces cut into a tree of pieces in a worker thread: recursive plane slicing, each cut's outline chained into loops, its holes split off with Godot's polygon clipping and filled; single sheets (or a hollow kind) never filled, their backs drawn; the pieces split where they don't touch; parts made of materials the rest isn't (a box's shells) kept whole; crumpled; each piece's middle, axes, hull and which touch which. `blowup/inside.gdshader` (and `inside_glass.gdshader`) draws the broken faces in the thing's own space |
@@ -178,6 +179,36 @@ instead of the blast, is hardly heard by listeners, and leaves no ringing in the
 Signals to hang a joke on: HSHitReact's and HSShootable's `touched(info)` (`info.touch` the kind's word, `info.kind` its
 id). A kind of your own: duplicate `shells/heart.tres`, its muzzle look and its impact; `touch` can be any word, which
 reaches `touched` and nothing else.
+
+## A quest for being shot
+
+"Make her love you", "Soak the cat", "Put a love heart in his head": an **HSShotWith** (Add Node, or drag
+`quest/loved.tscn` or `quest/soaked.tscn` from the FileSystem dock onto someone) under a character, a doll, a door,
+anything a pellet can land on. It needs no script:
+
+| Its setting | What it means |
+|---|---|
+| **Shell** | the kind that counts: `heart`, `water`, `buckshot`, `explosive`; `harmless` (any kind whose damage is 0), `harmful` (any that hurts), `any`. **Shell Id**: a kind of your own by its id |
+| **Part** | where on her: anywhere, head, torso, arm, leg (her HSHitReact's hitboxes; without one, leave it anywhere) |
+| **Pellets**, **Times** | pellets of one shot on her for the shot to count; shots until it happens (a shot is one pull of the trigger) |
+| **Needs** | the Story's words (`task:<id>`, `on:<id>`, `item:<name>`, a fact, `!` for not, commas for all): counted only while they hold, so a shot before its quest is on counts nothing |
+| **Once** | it happens once (off: again every Times shots) |
+| **Who** | the one shot, when the node isn't under them |
+| Then: **Fact** | a fact set in the Story: the thing to ask afterwards |
+| **Tick**, **Say**, **Objective**, **Add Tasks** | the to-do list and the words, as the starter's areas have them |
+| **Target** | its `fire()`: a scare area, a cue, an event area, the lights |
+| **Her Look**, **Look Secs** | her look turned (the Look plugin's HSLookSwitch under her: heart eyes), back to her own after that long (0: it stays) |
+
+**Asking whether it happened**: the fact. A door's, an area's, a cue's, a quest marker's or a look's **Needs** takes it
+(`her_loved`; three people: `her_loved, him_loved, cat_loved`), a script asks `Story.is_set("her_loved")`, and the node
+itself says `done`, `count` and `last` (`HSShotWith.was(her)`: any of hers happened). Its signals `counted(info)` (each
+shot that counts: `{kind, touch, pellets, part, parts, point, dir, damage, blast, count, who}`) and `happened(info)` are
+there for anything else.
+
+It listens to the guns itself, so it knows the kind of every shot, the ones that hurt too (an HSHitReact's `hit` doesn't
+say), and an explosive shell's blast reaching her counts as that shell. Someone hidden isn't counted. A character with
+no collider of her own needs her HSHitReact: its hitboxes are what the pellets land on. For a game built by hand (the
+starter's Story); without a Story it still counts and signals.
 
 ## What a shot leaves
 
@@ -345,5 +376,6 @@ It needs Forward+ (it reads the depth buffer); HSHitReact falls back to plain de
   right a moment after each change (`hud`).
 - **The pump-action gun is gone** (DECISIONS 2026-11-09, last). `shotgun.gd` is kept only as the double under its old
   path, so a scene made before still loads; give a new gun HSDoubleBarrel.
+- `tools/godot/shot_with_check.py` (SHOTWITH) plays HSShotWith with the real gun, the real shells and the starter's Story.
 - `tools/godot/weapons_check.py` (WEAPONS) builds it into the hotel corridor of tutorial v2 and plays it headless;
   `--pictures` draws the guide's pictures (`guides/weapons/img/`).

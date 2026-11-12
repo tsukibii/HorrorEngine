@@ -285,7 +285,8 @@ sound instead of the blast, is hardly heard by anything that listens, and leaves
 <div class="card"><h4>A joke of your own</h4><p>A kind whose <b>Damage</b> is 0 is harmless. Its <b>Touch</b> is a word:
 <code>charm</code> and <code>soak</code> are the two an HSHitReact knows; any other word only reaches the
 <code>touched(info)</code> signal of the HSHitReact or the HSShootable it lands on (<code>info.touch</code>,
-<code>info.kind</code>), for a line, a blush, a door that opens. <b>Fire Sound</b> is its own shot's sound, <b>Ring
+<code>info.kind</code>), for a line, a blush, a door that opens. For a quest that asks whether someone's been shot with one,
+no script at all: <a href="#shotwith">an HSShotWith</a>. <b>Fire Sound</b> is its own shot's sound, <b>Ring
 Scale</b> the ringing in your ears. Its impact's <b>Mark</b> can be <code>heart</code> or <code>wet</code> (a print or a wet
 patch, gone after <b>Fade S</b>), with <b>Hearts</b>, <b>Droplets</b> and <b>Mist</b> thrown off and <b>Douse M</b> for what
 it puts out; its muzzle look's <b>Spark Sprite</b> is a picture each spark becomes.</p></div>
@@ -357,6 +358,37 @@ collision with it, then back: a ghost doesn't die), <b>push</b> it back, play a 
 <b>fire</b> a <b>target</b> (a scare area, a cue, the lights). Down, a gone one is gone for good. Under a lamp, tick
 <b>Lights Out</b>: shot, its lights go dark for good in a few sparks (the dark is the price of the shot). Its <code>hit</code> and
 <code>down</code> signals are there for anything else: your own scripts, an animation, the story moving on.</p>
+<h3 id="shotwith">A quest for being shot with something</h3>
+<p>"Make her love you." "Soak him twice." Put an <span class="node">HSShotWith</span> under a character (beside her
+HSHitReact or HSShootable), a doll, a door: when a shot of the kind it names lands on what it's under, it sets a
+<b>fact</b> in the Story, ticks a task, says a line. No script. Two are ready-made to drag from the FileSystem dock onto
+someone: <code>addons/horrorstudio_weapons/quest/loved.tscn</code> (love hearts) and <code>quest/soaked.tscn</code> (water).</p>
+<ol class="steps">
+  <li>Drag <code>quest/loved.tscn</code> onto her in the Scene dock (or Add Node, HSShotWith) and name it, say, <i>Loved</i>.</li>
+  <li><b>Shell</b>: <code>heart</code>. The others: <code>water</code>, <code>buckshot</code>, <code>explosive</code>,
+  <code>harmless</code> (any shell that hurts nobody), <code>harmful</code> (any that does), <code>any</code>; a kind of your
+  own by its Id in <b>Shell Id</b>.</li>
+  <li>Under <b>Then</b>, <b>Fact</b>: <code>her_loved</code>. That's the flag, true from then on. <b>Tick</b>: a task on the
+  to-do list to tick (<code>love</code>). <b>Say</b>: a line. <b>Target</b>: anything with a <code>fire()</code> (a scare
+  area, a cue, an event area). <b>Her Look</b>: a look of the HSLookSwitch under her (heart eyes), and <b>Look Secs</b>
+  how long before she's herself again.</li>
+  <li>Use the fact anywhere: a door's, an area's, a cue's, a quest marker's or a look's <b>Needs</b>
+  (<code>her_loved</code>; everyone in the house: <code>her_loved, him_loved, cat_loved</code>), or in a script
+  <code>Story.is_set("her_loved")</code>.</li>
+</ol>
+<table class="keys">
+<tr><td><b>Part</b></td><td>where on her it has to land: anywhere, head, torso, arm, leg (her HSHitReact's hitboxes)</td></tr>
+<tr><td><b>Pellets</b></td><td>pellets of one shot that must land on her (there) for the shot to count</td></tr>
+<tr><td><b>Times</b></td><td>shots that count until it happens (a shot is one pull of the trigger)</td></tr>
+<tr><td><b>Needs</b></td><td>the Story's words: counted only while they hold (<code>on:love</code>: only while that task is on the list)</td></tr>
+<tr><td><b>Once</b></td><td>it happens once; off, again every Times shots</td></tr>
+<tr><td><b>Who</b></td><td>the one shot, when the node isn't under them</td></tr>
+<tr><td><b>Objective</b>, <b>Add Tasks</b></td><td>a new objective and tasks when it happens, as the starter's areas have them</td></tr>
+</table>
+<p class="note">It hears every gun itself, so it knows the kind of a shot that hurts too, and an explosive shell's blast
+reaching her counts as that shell. Someone hidden isn't counted. A character with no collider of her own needs her
+HSHitReact (its hitboxes are what the pellets land on). The love hearts and the water still do what they do: she's
+smitten, she drips.</p>
 </section>
 
 <section id="break">
@@ -534,7 +566,9 @@ $Hallway.add_child(o)</pre>
 <code>muzzle(barrel)</code>. Where shots land: <code>HSImpacts.of(get_tree())</code> (its <code>marks</code>, its
 <code>last_shot</code>: the pellets, the torn holes, the ones alone, the soot, the grains, the wad; <code>play(impact, hit)</code>
 for a hit of your own). On an <span class="node">HSShootable</span>: <code>hit(info)</code>, <code>down</code>,
-<code>count</code>, <code>is_down</code>. On an <span class="node">HSBlowUp</span>: <code>prepared</code>, <code>hit(info)</code> (a shot
+<code>count</code>, <code>is_down</code>. On an <span class="node">HSShotWith</span>: <code>counted(info)</code>,
+<code>happened(info)</code>, <code>count</code>, <code>done</code>, <code>last</code>, <code>fire()</code>, <code>reset()</code>;
+<code>HSShotWith.was(her)</code>. On an <span class="node">HSBlowUp</span>: <code>prepared</code>, <code>hit(info)</code> (a shot
 that didn't break it), <code>blown_up(pieces)</code>; <code>is_prepared()</code>, <code>blow_up(at, dir, power, blast_at)</code>,
 <code>restore()</code>, <code>damage</code>, <code>is_broken</code>, <code>pieces_out</code>, <code>report()</code>;
 <code>HSBlowUp.guess_kind(node)</code>. On an <span class="node">HSHitReact</span>: <code>hit(info)</code> (<code>{part,
