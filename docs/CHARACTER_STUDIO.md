@@ -239,7 +239,8 @@ bigger or smaller against the rest, on MHR's own rig (a point belongs to an arm,
 - **Monster mode** (the switch over the sculpt, saved with the character): the sliders' and the circles' reach is 3
   instead of 1, the height runs 0.4 to 3.5 m, and the **Creature** group shows: Eye slant, Pointed ears, Snout, Long
   skull, Hunch (the back bent forward from the waist, the head brought back up to look ahead). New controls a person
-  can use too: **Proportions** (Head size, Neck length, Torso length, Leg length, Arm length, Hands, Feet, Fingers),
+  can use too: **Proportions** (Head size, Torso length, Leg length, Arm length, Hands, Feet, Fingers; **Neck length**
+  is one of them and is listed in Body, with the neck's other sliders, since 2026-11-12),
   Face (Face length, Round face, Eye size, Eye spacing, Deep-set eyes, Ear size, Ears out), Body (Bust, Seat).
   **Fangs** and **Pointed teeth** (Face, Mouth; teeth.js). Off, every slider comes back into a person's range and the
   creature's own go to 0 (asked first). The head's view follows a head a hunch or a long neck has carried (`HEADOFF`),
@@ -400,9 +401,10 @@ ties could not be judged closer than 2 cm while the head and the neck under it w
   | Brow ridge | -0.18 | | Forehead slope | 0.45 |
   | Chin length | -0.15 | | Chin width | -0.8 |
   | Jaw width | -0.5 | | Cheekbones | -0.2 |
-  | Neck base | -0.3 | | | |
+  | Neck base | -0.3 | | Neck length | -0.35 |
 
-  Nineteen plain values on the Sculpt's own controls: a base is a starting point, and nothing in it is locked. The
+  Twenty plain values on the Sculpt's own controls (Neck length is a proportion, `grow.js`; a base carries it the
+  same way): a base is a starting point, and nothing in it is locked. The
   character's own sliders and circles add to them (`sculptValue`: its own, its base's, its age's and Cutify's, eased
   into the control's limit), so the user's "which still allows face sculpting" holds by construction: a character on
   v2female with Eye size at -0.7 has the feminine base's eyes again.
@@ -459,6 +461,31 @@ ties could not be judged closer than 2 cm while the head and the neck under it w
   - **the rise from her shoulders to her neck is a little lower beside the neck**: Neck base -0.3 (the collar's
     line is all there is to go on; -0.6 put our skin under where hers can be).
   - The first answer's picture is not kept; the one in the repo is the base as it is.
+- **The neck's length** (the user, later the same day: "make sure we add a modifier / slider in general to make necks
+  shorter ... unrealistic turtle length necks ... a lot of Asian people don't"). There was a slider, **Neck length**
+  (`grow.js`, a proportion: the head comes down whole, the neck's skin with it by its height, the shoulders stay),
+  filed under Proportions. It is listed in **Body** now, right after Neck and Neck width (a control can name the one
+  it comes after: `after`), and its help says what it does: -1 is about 2.5 cm off an adult's neck, +1 as much
+  longer. The chin over the pit of the neck (the front's middle, where the throat meets the chest), bodies at their
+  own heights:
+
+  | | the chin over the pit of the neck | of the head's height |
+  |---|---|---|
+  | feminine | 6.6 cm | 0.32 |
+  | average | 6.2 | 0.29 |
+  | masculine | 5.3 | 0.23 |
+  | v2female as it was | 7.5 | 0.39 |
+  | **v2female now** (Neck length -0.35) | **6.7** | **0.34** |
+  | feminine, Neck length -1 / +1 | 4.2 / 8.9 | 0.20 / 0.44 |
+
+  So the long neck was this base's: *Face length* had made the lower face short by lifting the chin, and the neck
+  took up that centimetre; slim, it read longer still. By her pictures: in the front one (the fitted camera, her
+  head's tilt taken off the body) her collar's top edge on her left shoulder is at 316 px over columns 880 to 960;
+  our bare shoulder was at 330, a centimetre under it, and is at 316. The skin has to be under the cloth, so that
+  picture alone says -0.25 or so; in the three-quarter one her bare shoulder is higher than ours even at -0.4 (her
+  arm may be up: -0.4 to -0.6, or a pose). -0.35 is between them. ("Her shoulders are where MHR's are", above, was
+  read off the same collar and let the centimetre go as the cloth's thickness: the shoulders are MHR's, and the head
+  sat a centimetre high on them.) The other bases are not long by these numbers and are left as they are.
 - **Held to her pictures.** The first version (the same day) was made from proportions read off one picture by eye
   and carried Neck width at -1. Then the head was laid against two of her pictures properly (the scratch
   `rig2/joint.mjs`: landmarks on the body, MediaPipe's points through `MHR_landmarks.json` and the ear as the sculpt
@@ -489,8 +516,12 @@ ties could not be judged closer than 2 cm while the head and the neck under it w
   no triangle turned at 3 either way. Shoulder slope at 1 alone: the arm down whole by 30 mm and nothing sideways,
   13 to 17 mm halfway out, 0.00 mm within 7 cm of the middle, from the chin up and on the trunk under the armpits.
   Neck base at 1 alone: 25 mm at 9 cm out, 0.00 mm within 4.5 cm of the middle, from the shoulder's point out and
-  from the chin up. **v2female's neck base**: the top of the shoulder 9 cm out 0.7 cm lower than the feminine
-  base's, the shoulder's point where it was.
+  from the chin up. **v2female's neck base**: the top of the shoulder 9 cm out 0.7 cm lower against the
+  shoulder's point than the feminine base's, the shoulder's point as high over the pit of the neck as it was.
+  **Neck length**: at -1 and at 1 on the feminine base the chin 2.4 cm nearer the pit of the neck or further, the
+  head's own height within 3% (the body is made as tall again), the shoulder's point where it was against the pit,
+  no triangle of the neck or the shoulders turned over; **v2female's neck**: the chin 6.7 cm over the pit of the neck
+  against the feminine base's 6.6, and 7.5 without the Neck length it carries.
 - **Outside the page**: `tailor/node.mjs` `grownBody(m, { base: -1, v2: 1, ... })`; `grow.js` `V2FEMALE` is what the
   hair editor's test body adds to it (`hair2/node.mjs` `bodyByName("v2female")`: 1.62 m and a full bust, for tails to
   lie on), `node tools/character/hair2/make.mjs --body v2female`.

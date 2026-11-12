@@ -213,7 +213,8 @@
    "cheekbones": -0.2,
    "face_height": -0.8,
    "face_taper": -1.0,
-   "neck_base": -0.3
+   "neck_base": -0.3,
+   "neck_length": -0.35
   }
  }
 }

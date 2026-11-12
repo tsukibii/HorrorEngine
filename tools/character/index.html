@@ -2275,7 +2275,9 @@ const sliderSpan = id => { const r = reach(), sp = st.anime ? GW.SPAN[id] : null
 const sculptSet = {}, sculptRow = {}, sculptGroup = {};
 if (SCULPT) for (const g of SCULPT_GROUPS) {
   const d = el("details", { open: g === "Forehead" }, el("summary", { textContent: g })); sculptGroup[g] = d;
-  for (const c of SCULPT.controls.filter(c => c.group === g)) {
+  const rows = SCULPT.controls.filter(c => c.group === g && !c.after);   // (a control that names one to come after is listed there: Neck length, a proportion, with the neck's other sliders)
+  for (const c of SCULPT.controls.filter(c => c.group === g && c.after)) { const i = rows.findIndex(x => x.id === c.after); rows.splice(i < 0 ? rows.length : i + 1, 0, c); }
+  for (const c of rows) {
     sculptSet[c.id] = slider(d, c.id, c.label, -1, 1, 0.01, 0, "", (v, row) => { st.sculpt[c.id] = v; row.classList.toggle("moved", v !== 0); if (c.id === "bust") animeBust(v); changed("sculpt"); }, c.help);
     sculptRow[c.id] = d.lastElementChild;
   }

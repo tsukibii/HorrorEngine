@@ -5,6 +5,17 @@ the fix.
 
 ## The v2female base: what took a second try (2026-11-12)
 
+- **When one part is made shorter, say where the length went.** The base's lower face was made short (Face length:
+  the chin up a centimetre). Nothing said what that centimetre became: the head stayed where it was, so the neck took
+  it up, 7.5 cm from the chin to the pit of the neck where the feminine base has 6.6, on a neck just made slim. The
+  user saw it as "turtle length necks". And the picture had said so: her collar lay a centimetre over our shoulder
+  line, which I wrote off as the cloth's thickness and reported as "her shoulders are where MHR's are" (true, and
+  her head sat a centimetre lower on them). A residual that has one sign in every picture is not noise: give it a
+  cause before calling it nothing.
+- **Before adding a control, look for it where the user would look, not where it was filed.** The user asked for a
+  slider to shorten necks "if we don't already have" one. There was one, a proportion among the lengths, with the
+  help text "A longer or a shorter neck."; the neck's other three sliders were in another group. A control the user
+  can't find is half a control: it is listed with them now, and says how much it does.
 - **"It should look more feminine" is the fault described, not the brief: when there is an original, measure it
   before designing anything.** The user said the base's shoulders and neck base looked uncanny. I answered from my
   own idea of feminine (a long neck, shoulders sloped and narrowed), built two controls for it, tested and

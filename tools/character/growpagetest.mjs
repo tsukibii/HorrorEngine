@@ -168,6 +168,22 @@ try {
     say(!fem.v2 && !fem.on && v2.v2 === 1 && v2.on && v2.base === -1 && v2.neck < fem.neck - 0.8 && v2.neck > 6, `the v2female button: the neck ${fem.neck.toFixed(1)} cm at its narrowest on the feminine base, ${v2.neck.toFixed(1)} on v2female, its switch on`);
     await tog("#v2On", false); await page.waitForTimeout(2000); const off = await meas();
     say(!off.v2 && Math.abs(off.neck - fem.neck) < 0.05, `its switch off: the feminine base again (${off.neck.toFixed(1)} cm)`);
+    // the neck's length (grow.js Neck length; DECISIONS 2026-11-12, necks: "a modifier / slider in general to make necks
+    // shorter"): its row with the neck's other sliders in Body, right after Neck width, saying what it does; dragged to
+    // -1 the head comes down toward the shoulders (the top of the head over the top of the shoulder 9 cm out), and
+    // back at 0 the body is as it was
+    const rows = await B(() => { const d = [...document.querySelectorAll("#sculptRows details")].find(d => d.querySelector("summary").textContent === "Body"), p = [...document.querySelectorAll("#sculptRows details")].find(d => d.querySelector("summary").textContent === "Proportions");
+      const names = e => [...e.querySelectorAll(".row > span")].map(x => x.textContent); return { body: names(d), props: names(p), help: window.__body.sculptRow.neck_length.title || "" }; });   // (a sculpt row's help is its tooltip)
+    const at = rows.body.indexOf("Neck length");
+    say(at > 0 && rows.body[at - 1] === "Neck width" && rows.body.filter(n => n === "Neck length").length === 1 && !rows.props.includes("Neck length") && /shorter/.test(rows.help) && /cm/.test(rows.help),
+      `Neck length is in Body right after ${rows.body[at - 1]} (${rows.body.slice(Math.max(0, at - 2), at + 2).join(", ")}), not in Proportions, and says "${rows.help}"`);
+    const lift = () => B(() => { const b = window.__body, P = b.neutralBody(); let lo = Infinity, hi = -Infinity; for (let i = 1; i < P.length; i += 3) { lo = Math.min(lo, P[i]); hi = Math.max(hi, P[i]); }
+      let top = -9; for (let i = 0; i < P.length; i += 3) if (Math.abs(Math.abs(P[i]) - 0.09) < 0.005 && P[i + 1] - lo < 0.89 * (hi - lo) && P[i + 1] > top) top = P[i + 1];   // (under the ears: the shoulder's top 9 cm out)
+      return { gap: (hi - top) * 100, h: hi - lo }; });
+    const setNeck = v => B(v => { const r = window.__body.sculptRow.neck_length.querySelector("input"); r.value = v; r.oninput(); }, v);
+    const n0 = await lift(); await setNeck(-1); await page.waitForTimeout(1500); const n1 = await lift(); await setNeck(0); await page.waitForTimeout(1500); const n2 = await lift();
+    say(n0.gap - n1.gap > 1.8 && n0.gap - n1.gap < 3 && Math.abs(n2.gap - n0.gap) < 0.05 && Math.abs(n1.h - n0.h) < 0.002,
+      `the Neck length slider at -1: the head ${(n0.gap - n1.gap).toFixed(1)} cm nearer the shoulder's top (its top ${n0.gap.toFixed(1)} cm over it, then ${n1.gap.toFixed(1)}), the height as set; back at 0 as it was`);
     await B(() => document.querySelector('.bases button[data-base="0"]').click()); await page.waitForTimeout(1000); }
 
   // ---- the creatures: cards that are always there (DECISIONS 2026-11-11), a click makes the character that creature

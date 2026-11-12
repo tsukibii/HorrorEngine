@@ -2,6 +2,58 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, a T-pose reference: base bodyv2, and its hairstyle (the user, with a picture)
+
+- **"I just made this t pose reference for what the body should look like (I added clothes to keep it appropriate
+  since daz3d does show nudity), once you're done with hair and face feel free to create a base bodyv2 that aims to
+  get these exact proportions, 1:1 but don't calculate the clothing (mostly the cardigan and sneakers), as a goal try
+  recreate this exact hairstyle too so you can see if it's possible to get a 1:1, for reference this mesh is the
+  medium size (slightly chubbier side) so imagine the bust and waist width sliders around mid for this basebodyv2."**
+- **The picture:** a Daz3D character from the front in a T-pose, the whole body: a short black bob with a side-swept
+  fringe over her right eye, glasses, a brown knit cardigan to the hips, black leggings, white sneakers. Kept out of
+  git (`Saved/Body/ref/t1.jpg`: it has to be sent again in a new session).
+- **What this sets:**
+  - **A base `bodyv2`** in the Character Studio: a body base whose proportions are this picture's, measured, 1:1
+    (the head against the body, the neck, the shoulders' width and height, the arms, the torso, the hips, the legs).
+    The clothes are not the body: the cardigan's thickness and looseness and the sneakers' soles are taken off the
+    measures; the leggings are skin tight and count as the body.
+  - **Where its sliders sit:** this body is the medium size, slightly on the chubbier side. On bodyv2 that build is
+    the middle: the Bust and the waist's width at about 0 are this body, so a slimmer and a fuller character are
+    each a slider's half away.
+  - **Its hairstyle** as a hair editor v2.0 style, held to the picture the way the twin tails are: can it be 1:1.
+  - **When:** after the hair and the face in hand.
+- **And, a moment later: "Note when I say proportions for v2 I mean thighs and legs too and hands and feet."** So
+  bodyv2 is the whole body's proportions, not the torso's alone: the thighs' and the calves' widths and lengths (the
+  leggings are skin tight: what the picture shows is the leg), the hands' and the feet's size (the feet under the
+  sneakers: their length from the shoe's, less the shoe).
+- **Not decided here (my reading, to be checked with the user if it matters):** whether bodyv2 replaces v2female's
+  body or stands beside it. Built as its own base beside the others, v2female's head on it, nothing removed.
+
+## 2026-11-12, necks: a slider to make them shorter (the user)
+
+- **"If we don't already have a modifier make sure we add a modifier / slider in general to make necks shorter, I've
+  noticed most of the models look like they have unrealistic turtle length necks, which is fine since some people
+  have long necks but a lot of Asian people don't."**
+- **There was one:** *Neck length* (grow.js, a proportion: the head comes down whole and the neck's skin with it, the
+  shoulders stay). It was filed under Proportions, away from the neck's other sliders, with a help text of five
+  words. **Now:** it is listed in **Body**, right after Neck and Neck width, and says what it does: -1 is about
+  2.5 cm off an adult's neck (the chin 4.2 cm over the pit of the neck where the feminine base has 6.6), +1 as much
+  longer. Its circle on the neck's front is as it was.
+- **Measured, the chin over the pit of the neck** (bodies at their own heights): feminine 6.6 cm (0.32 of the head's
+  height), average 6.2 (0.29), masculine 5.3 (0.23), **v2female 7.5 (0.39)**. So the long one was the base I made:
+  its short lower face had raised the chin a centimetre and left that centimetre on the neck, and its neck is slim,
+  which reads longer still.
+- **v2female carries Neck length -0.35 now:** the head 0.8 cm lower, the chin 6.7 cm over the pit of the neck
+  (0.34 of its head; the feminine base 6.6). Held to the pictures, not to taste. In the front picture, by the fitted
+  camera, her collar's top edge on her left shoulder is at 316 px (columns 880 to 960); our bare shoulder was at 330,
+  a centimetre under it, and is at 316 now. The skin has to be under the cloth, so that picture alone says -0.25 or
+  so; in the three-quarter picture her bare shoulder is higher than ours even at -0.4 (her arm may be up there: it
+  says -0.4 to -0.6, or a pose). -0.35 is between the two. The T-pose reference of the same day, read roughly, has
+  the chin about 6.8 cm over the pit of the neck.
+- **The other bases are left as they are:** by these numbers they are not long, and the user's "which is fine".
+- **A rule for me from this:** when one part is made shorter, say where the length went. The lower face got shorter
+  by lifting the chin; the neck took it up and nobody asked it to.
+
 ## 2026-11-12, v2female's neck and shoulders (the user, on seeing the base, twice)
 
 - **"Could you modify the shoulders and base of neck to match that shape of the head and thinner neck, looks a bit

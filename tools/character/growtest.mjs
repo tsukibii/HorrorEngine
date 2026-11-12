@@ -306,10 +306,34 @@ const span = X => { let lo = Infinity, hi = -Infinity; for (let i = 1; i < X.len
     say(top.n > 3 && top.hi > 22 && top.hi <= 25.01 && top.side === 0 && still === 0,
       `Neck base 1: the top of the shoulder 9 cm out ${top.hi.toFixed(0)} mm higher (-1: that much lower), nothing sideways; within 4.5 cm of the middle, from the shoulder's point out, from the chin up and under 1.40 m ${still.toFixed(2)} mm`); }
   // v2female carries the Neck base at -0.3 and nothing of the slope: her pictures have the shoulders where MHR's are and
-  // the rise up to the neck lower. The top of the body 9 cm out from the middle, and at the shoulder's point (17 cm)
+  // the rise up to the neck lower. The top of the body 9 cm out from the middle, and at the shoulder's point (17 cm), each
+  // by its height over the pit of the neck (the body under the head moves whole with a neck's length: heights alone say nothing)
   const topAt = (X, x) => { let y = -9; const c = chinY(X); for (let i = 0; i < X.length; i += 3) if (Math.abs(Math.abs(X[i]) - x) < 0.005 && X[i + 1] < c - 0.015 && X[i + 1] > y) y = X[i + 1]; return y * 100; };
-  say(topAt(fem, 0.09) - topAt(v2, 0.09) > 0.4 && topAt(fem, 0.09) - topAt(v2, 0.09) < 1.5 && Math.abs(topAt(fem, 0.17) - topAt(v2, 0.17)) < 0.3 && PF.sculpt.v2female.shoulder_slope === undefined && PF.sculpt.v2female.shoulders === undefined,
-    `v2female's neck base: the top of the shoulder 9 cm out ${(topAt(fem, 0.09) - topAt(v2, 0.09)).toFixed(1)} cm lower than the feminine base's, the shoulder's point where it was (${Math.abs(topAt(fem, 0.17) - topAt(v2, 0.17)).toFixed(1)} cm); the base carries no slope and no narrowing`);
+  // the pit of the neck: down the front's middle from the chin, the point furthest back before the chest comes forward; the chin's own lowest point (within 1.2 cm of its front)
+  const front = X => { const c = landmark(M, X, 152), mid = []; for (let i = 0; i < X.length; i += 3) if (Math.abs(X[i]) < 0.004 && X[i + 2] > 0 && X[i + 1] < c[1] + 0.01 && X[i + 1] > c[1] - 0.14) mid.push([X[i + 1], X[i + 2]]);
+    let chin = c[1]; for (const m of mid) if (m[1] > c[2] - 0.012) chin = Math.min(chin, m[0]);
+    let pit = null; for (const m of mid) if (m[0] < chin - 0.02 && (!pit || m[1] < pit[1])) pit = m; return { chin: chin * 100, pit: pit[0] * 100 }; };
+  const over = (X, x) => topAt(X, x) - front(X).pit, rise = X => topAt(X, 0.09) - topAt(X, 0.17);
+  say(rise(fem) - rise(v2) > 0.4 && rise(fem) - rise(v2) < 1.5 && Math.abs(over(fem, 0.17) - over(v2, 0.17)) < 0.3 && PF.sculpt.v2female.shoulder_slope === undefined && PF.sculpt.v2female.shoulders === undefined,
+    `v2female's neck base: the top of the shoulder 9 cm out ${(rise(fem) - rise(v2)).toFixed(1)} cm lower against the shoulder's point than the feminine base's, the shoulder's point as high over the pit of the neck as it was (${Math.abs(over(fem, 0.17) - over(v2, 0.17)).toFixed(1)} cm); the base carries no slope and no narrowing`);
+
+  // ---- the neck's length (grow.js Neck length; the user, 2026-11-12: "a modifier / slider in general to make necks
+  // shorter ... unrealistic turtle length necks"). The chin over the pit of the neck, on bodies of one height
+  const gap = X => { const f = front(X); return f.chin - f.pit; }, head = X => { let t = -9; for (let i = 1; i < X.length; i += 3) t = Math.max(t, X[i]); return t * 100 - front(X).chin; };
+  const nl = v => grownBody(M, { base: -1, sculpt: { neck_length: v } }).P, nShort = nl(-1), nLong = nl(1), g0 = gap(fem);
+  const NL = byId.get("neck_length");
+  say(NL && NL.group === "Body" && NL.after === "neck_width" && NL.prop, "Neck length is listed with the neck's other sliders (Body, after Neck width) and is still a proportion");
+  say(g0 - gap(nShort) > 2 && g0 - gap(nShort) < 2.9 && gap(nLong) - g0 > 2 && gap(nLong) - g0 < 2.9 && Math.abs(head(nShort) / head(fem) - 1) < 0.03 && Math.abs(over(nShort, 0.17) - over(fem, 0.17)) < 0.3,
+    `Neck length on the feminine base: the chin ${g0.toFixed(1)} cm over the pit of the neck; at -1 ${gap(nShort).toFixed(1)} (${(g0 - gap(nShort)).toFixed(1)} shorter), at 1 ${gap(nLong).toFixed(1)}; the head's height ${head(fem).toFixed(1)} and ${head(nShort).toFixed(1)} cm (the body is made as tall again), the shoulder's point as high over the pit of the neck (${Math.abs(over(nShort, 0.17) - over(fem, 0.17)).toFixed(1)} cm)`);
+  { const tri = X => { let flipped = 0; const T = M.T; for (let t = 0; t < T.length; t += 3) { const a = T[t] * 3, b = T[t + 1] * 3, c = T[t + 2] * 3; if (fem[a + 1] < 1.30 || fem[a + 1] > 1.52) continue;
+      const n = Q => { const ux = Q[b] - Q[a], uy = Q[b + 1] - Q[a + 1], uz = Q[b + 2] - Q[a + 2], vx = Q[c] - Q[a], vy = Q[c + 1] - Q[a + 1], vz = Q[c + 2] - Q[a + 2]; return [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx]; }, n0 = n(fem), n1 = n(X);
+      if (n0[0] * n1[0] + n0[1] * n1[1] + n0[2] * n1[2] < 0) flipped++; } return flipped; };
+    say(tri(nShort) === 0 && tri(nLong) === 0, `Neck length at -1 and at 1: no triangle of the neck and the shoulders turned over (${tri(nShort)}, ${tri(nLong)})`); }
+  // v2female: its short lower face had raised the chin a centimetre and left it on the neck; the base carries the head
+  // down by it, the chin as far over the pit of the neck as on the feminine base (where her two pictures have her shoulders)
+  { const raw = grownBody(M, { base: -1, v2: 1, sculpt: { neck_length: -PF.sculpt.v2female.neck_length } }).P;
+    say(PF.sculpt.v2female.neck_length < 0 && Math.abs(gap(v2) - g0) < 0.3 && gap(raw) - gap(v2) > 0.7 && gap(raw) - gap(v2) < 1.3 && gap(v2) / head(v2) < 0.35,
+      `v2female's neck: the chin ${gap(v2).toFixed(1)} cm over the pit of the neck, the feminine base's ${g0.toFixed(1)} (${(gap(v2) / head(v2)).toFixed(2)} and ${(g0 / head(fem)).toFixed(2)} of the head's height); without the Neck length it carries (${PF.sculpt.v2female.neck_length}) ${gap(raw).toFixed(1)} cm, ${(gap(raw) / head(raw)).toFixed(2)} of its head`); }
 }
 
 if (bad) { console.log(`GROW FAIL: ${bad}`); process.exit(1); }

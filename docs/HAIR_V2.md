@@ -403,7 +403,9 @@ DECISIONS 2026-11-12, the 1:1: one hairstyle matched to its picture, to find wha
 her head and neck measured from the same two pictures. The test body adds 1.62 m and a full bust (`grow.js`
 `V2FEMALE`, `make.mjs --body v2female`). Until it existed the head was the feminine base with a rounder face, its
 neck 12 cm across at the ties where hers is 9: every number this section had before was measured on that body and
-is replaced below.
+is replaced below. (Later the same day the base's head came down 0.8 cm on its shoulders, Neck length -0.35: her
+collar had been a centimetre over our shoulder line. The hair was measured again on it: nothing below moved by more
+than 0.2 cm, and the table is that measure.)
 
 **The rig** (scratch scripts in `rig2/`, not in git; the numbers are what matter). Two cameras, each fitted from
 landmarks, pictured by `tools/godot/hair2_check.py shots --origin 0,0,0 --size 1600x1200`:
@@ -436,11 +438,11 @@ Ours against hers, centimetres, minus where ours is narrower:
 | under the eyes' line | front, her right | the other view, her left |
 |---|---|---|
 | 7 to 1 cm above | -0.3 to +0.1 | (her ears and horns: a headband, not hair) |
-| 0 to 1 | +0.2 to +0.3 | -1.0 to -0.7 |
-| 2 to 5 | 0.0 to -0.3 | -0.3 to 0.0 |
-| 6 to 8 (behind the ear's lower half) | -0.6 to -0.2 | +0.2 to -0.4 |
-| 9 to 11 (the tie) | +0.1 to -0.5 | -0.3 to -0.1 |
-| 12 to 13 | -0.3 to 0.0 | 0.0 (one row out by 1.4) |
+| 0 to 1 | +0.2 to +0.3 | -0.9 to -0.6 |
+| 2 to 5 | 0.0 to -0.3 | -0.3 to +0.1 |
+| 6 to 8 (behind the ear's lower half) | -0.6 to -0.2 | +0.1 to -0.4 |
+| 9 to 11 (the tie) | +0.1 to -0.6 | -0.3 to -0.2 |
+| 12 to 13 | -0.4 to -0.1 | -0.1 (one row out by 0.9) |
 
 - So the hair's edge is within about half a centimetre of hers from the crown to the tie in both views. The two
   settings that did it on the new head: **Fullness 0.33** (it was 0.1: the top and sides were 0.4 to 0.7 cm short
@@ -458,10 +460,10 @@ Ours against hers, centimetres, minus where ours is narrower:
    is striped evenly across the fringe where hers has larger dark areas (her light is from one side; the rig's is
    from the front), and hers has a faint teal tint in its highlights. The Studio's own shader has no `streak`: its
    tab shows the old sheen.
-2. **The tails under the ties.** On her right in the front picture ours are 0.6 to 1.4 cm narrower from 15 to 18 cm
-   under the eyes' line and 1 to 3 cm short at their tips. Hers hang by a vertical tilted 8° against her head and
+2. **The tails under the ties.** On her right in the front picture ours are 0.7 to 1.5 cm narrower from 15 to 18 cm
+   under the eyes' line and 1 to 3.4 cm short at their tips. Hers hang by a vertical tilted 8° against her head and
    are fuller lower down; ours are a pair. Not tuned on the new head yet.
-3. **Behind the ear's top, in the other view**: 0.7 to 1 cm narrow over the first centimetre under the eyes' line.
+3. **Behind the ear's top, in the other view**: 0.6 to 0.9 cm narrow over the first centimetre under the eyes' line.
 4. **The fringe's pieces**: hers ends in locks with small steps and gaps; ours in a straighter line.
 5. **The sidelocks**: hers are flat glossy ribbons a centimetre wide that end in a point, a thin plait beside one;
    ours are thin strands, and there is no plait.

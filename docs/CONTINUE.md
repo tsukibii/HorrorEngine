@@ -48,7 +48,7 @@ for it ("lets create a v2female base").
 - **The rig is scratch** (`rig2/`: her pictures stay out of git); §10 has what rebuilds it: the two views, the
   scales and turns, how the landmarks are taken, what her head's tilt does to the comparison.
 - **The v2female base is built** (DECISIONS 2026-11-12, v2female; docs/CHARACTER_STUDIO.md §2f): a fourth base
-  button and a switch in the Body tab, *what the feminine end becomes*: the feminine body, with nineteen plain
+  button and a switch in the Body tab, *what the feminine end becomes*: the feminine body, with twenty plain
   sculpt values for the head, the neck and the shoulders (`MHR_presets.json` `sculpt.v2female`), every slider still
   moving from it; and the controls it needed, **Neck width** (the whole neck about its own axis) and **Face taper**
   (the face narrowing from the eyes down, no ledge). Off for new characters (nobody asked for the default to change).
@@ -59,6 +59,19 @@ for it ("lets create a v2female base").
   straight column of about 9.3 cm. The base carries Neck width -0.7 (the field now reaches up under the ears, with
   a longer run-in at the nape) and Neck base -0.3; nothing else. Shoulder slope stays as a slider, unused by the
   base. The picture: `docs/studio_sheets/2026-11-12_v2female.jpg`.
+- **Necks** (DECISIONS 2026-11-12, necks): the user: most of the models have "turtle length necks", make sure
+  there is a slider to shorten them. There was one, Neck length, filed under Proportions: it is listed in **Body**
+  now, after Neck width, and says what it does (-1 about 2.5 cm off). Measured, the long neck was v2female's (the
+  chin 7.5 cm over the pit of the neck against the feminine base's 6.6: the short lower face had left its
+  centimetre on the neck); the base carries **Neck length -0.35** now (6.7 cm), which is also where her collar puts
+  her shoulders. GROW and GROWPAGE (`QUICK=1`) hold it.
+- **Next after the hair and the face: base `bodyv2`** (DECISIONS 2026-11-12, a T-pose reference; task: the
+  picture is `Saved/Body/ref/t1.jpg`, not in git, ask for it again in a new session): the whole body's proportions
+  1:1 from the user's Daz3D T-pose picture (the head against the body, neck, shoulders, arms, torso, hips, **thighs
+  and legs, hands and feet**), the cardigan and the sneakers taken off the measures, the leggings counted as skin;
+  the picture's build (medium, slightly chubby) is the base's middle, Bust and waist at about 0; and its hairstyle
+  (a short bob, a side-swept fringe over her right eye) as a style held to the picture. Not started: fit a camera to
+  the picture first (is it a perspective from hip height or an orthographic front?), then measure, then build.
 - **It is held to two of her pictures** (the scratch `rig2/joint.mjs`: MediaPipe's points on the body and the ear
   as the sculpt finds it against the same points in each picture, a camera fitted for each): the front one from
   9.5 degrees to her right and 5 above, rolled 7.9, the points 3.4 mm off; the other from 32 to her left and 14.5

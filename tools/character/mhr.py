@@ -174,7 +174,14 @@ SCULPT = {"feminine": {"belly": -0.7},
                        # the neck's base, as her pictures have it (the user, 2026-11-12: match the neck's shape to the
                        # shoulders as the face and the hair are matched): the rise from shoulder to neck a little lower
                        # beside the neck. Her shoulders themselves are where MHR's are: nothing else moves
-                       "neck_base": -0.3}}
+                       "neck_base": -0.3,
+                       # the neck's length (the user, 2026-11-12: "unrealistic turtle length necks"): the short lower face
+                       # had raised the chin a centimetre and left it on the neck, 7.5 cm over the pit of the neck where
+                       # the feminine base has 6.6 (0.39 of the head against 0.32). The head comes down most of that
+                       # centimetre: 6.7. By her pictures: her collar's top edge in the front one is 1 cm above where
+                       # our bare shoulder was (the skin is under it: -0.25 or so), her bare shoulder in the other is
+                       # higher than ours at -0.4 (her arm may be up); -0.35 is between them
+                       "neck_length": -0.35}}
 # a base that is another's body with a sculpt of its own: its MHR weights are that base's (clothes cut for one fit the other)
 # (written into the file by hand, 2026-11-12: `presets` fits the bodies again and no longer lands on the committed weights
 # (feminine up to 0.9 off, masculine 1.6), which every character made on a base depends on. Don't run it to add a base.)

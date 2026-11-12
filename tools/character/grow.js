@@ -88,7 +88,9 @@ export function buildGrow({ P, rig, chin, eyes = null }) {            // eyes: t
     ["legs_length", "Leg length", "Proportions", "Longer or shorter legs, hip to ankle, against the torso.", v => 0.1 * v,
       both(s => [limb(`${s}_upleg`, `${s}_upleg`, `${s}_foot`)])],
     ["torso_length", "Torso length", "Proportions", "A longer or a shorter torso, hips to shoulders.", v => 0.1 * v, [{ kind: "shift", d: torso }]],
-    ["neck_length", "Neck length", "Proportions", "A longer or a shorter neck.", v => 0.3 * v, [{ kind: "shift", d: neck }]],
+    // (listed with the neck's other sliders, in Body, after Neck width: the user looked for it there. -1 is about 2.4 cm
+    // off an adult's neck: the head comes down whole and the neck's skin with it by its height, the shoulders stay)
+    ["neck_length", "Neck length", "Body", "A shorter or a longer neck: the head sits lower on the shoulders or higher (-1 about 2.5 cm shorter, a short neck; +1 as much longer).", v => 0.3 * v, [{ kind: "shift", d: neck }], { after: "neck_width" }],
     ["hunch", "Hunch", "Creature", "The back bent forward from the waist to the shoulders, the head still looking ahead (−1: leaning back).", v => 0.26 * v,
       [{ kind: "bend", ...upper, joint: joint("c_spine1"), k: 1 }, { kind: "bend", ...headUp, joint: joint("c_head"), k: -0.72 }]],
     ["hands", "Hands", "Proportions", "Bigger or smaller hands.", v => 0.15 * v, both(s => [scaled(`${s}_wrist`, `${s}_wrist`)])],
@@ -96,7 +98,7 @@ export function buildGrow({ P, rig, chin, eyes = null }) {            // eyes: t
     ["head_size", "Head size", "Proportions", "The head against the body: +1 a head a quarter bigger for the height (a child's; the body under it is made smaller, the height stays as set), −1 smaller.", v => Math.pow(0.8, v) - 1,
       [{ kind: "scale", ...body, joint: joint("c_head") }]],
   ];
-  const controls = C.map(([id, label, group, help, gain, parts]) => {
+  const controls = C.map(([id, label, group, help, gain, parts, more]) => {   // (more: { after }: listed after that control in its group, index.html)
     // what it moves on the base at 1 (the handles' pull, the check): each part's move there
     const D = new Float32Array(N * 3), g1 = gain(1);
     for (const p of parts) {
@@ -110,7 +112,7 @@ export function buildGrow({ P, rig, chin, eyes = null }) {            // eyes: t
     const d = new Float32Array(idx.length * 3); idx.forEach((i, q) => { d[q * 3] = D[i * 3]; d[q * 3 + 1] = D[i * 3 + 1]; d[q * 3 + 2] = D[i * 3 + 2]; });
     for (const p of parts) if (p.kind === "shift") Object.assign(p, (() => { const s = []; for (let i = 0; i < N; i++) if (Math.abs(p.d[i * 3]) + Math.abs(p.d[i * 3 + 1]) + Math.abs(p.d[i * 3 + 2]) > 1e-7) s.push(i);
       const dd = new Float32Array(s.length * 3); s.forEach((i, q) => { dd[q * 3] = p.d[i * 3]; dd[q * 3 + 1] = p.d[i * 3 + 1]; dd[q * 3 + 2] = p.d[i * 3 + 2]; }); return { idx: Uint32Array.from(s), d: dd }; })());
-    return { id, label, group, help, idx: Uint32Array.from(idx), d, prop: true, gain, parts };
+    return { id, label, group, help, idx: Uint32Array.from(idx), d, prop: true, gain, parts, ...(more || {}) };
   });
 
   // the circles on the body: where each is held (a point of the base, its twin across the middle), and what it drags
