@@ -83,7 +83,7 @@ def env():
     return e
 
 
-def shoot(glb, out, tag="hair", shots=None, size="960x720", frames=20, light="reel", marker=False, origin=None, hair=None, look="balanced", frame="head", timeout=3600):
+def shoot(glb, out, tag="hair", shots=None, size="960x720", frames=20, light="reel", marker=False, origin=None, hair=None, look="balanced", frame="head", timeout=3600, drift=None):
     """the pictures of one glb: (report, error text)"""
     g = godot_bin()
     if not g:
@@ -98,7 +98,9 @@ def shoot(glb, out, tag="hair", shots=None, size="960x720", frames=20, light="re
         args.append(f"--origin={origin}")
     if hair:
         args.append(f"--hair={hair}")
-    cmd = [g, "--path", str(project(size=size)), "--rendering-driver", "vulkan", "-s", "res://hair2_shots.gd", "--"] + args
+    if drift:                                         # (DEG:N: the camera turned a little each frame after the shot, every frame kept; at a game's 60 frames a second, so the hair's dither steps as it would there)
+        args.append(f"--drift={drift}")
+    cmd = [g, "--path", str(project(size=size)), "--rendering-driver", "vulkan"] + (["--fixed-fps", "60"] if drift else []) + ["-s", "res://hair2_shots.gd", "--"] + args
     if shutil.which("xvfb-run") and not os.environ.get("DISPLAY"):
         cmd = ["xvfb-run", "-a"] + cmd
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env())
@@ -288,7 +290,7 @@ def cmd_thumbs(a):
 
 def cmd_shots(a):
     out = Path(a.out) if a.out else KEEP
-    rep, err = shoot(a.glb, out, a.tag, a.shots.split(",") if a.shots else None, a.size, a.frames, a.light, a.marker, a.origin, a.hair, a.look, a.frame)
+    rep, err = shoot(a.glb, out, a.tag, a.shots.split(",") if a.shots else None, a.size, a.frames, a.light, a.marker, a.origin, a.hair, a.look, a.frame, drift=a.drift)
     if rep is None:
         print(err)
         print("GDHAIR2 FAIL: the pictures didn't run clean")
@@ -320,6 +322,7 @@ def main():
     s.add_argument("--sheet")
     s.add_argument("--label")
     s.add_argument("--height", type=int, default=360)
+    s.add_argument("--drift", help="DEG:N: after each shot, N frames with the camera turned DEG a frame, each kept (<tag>_<shot>_dNNN.png)")
     t = sub.add_parser("sheets")
     t.add_argument("--styles", required=True)
     t.add_argument("--body", default="base")

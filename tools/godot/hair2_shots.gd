@@ -3,7 +3,7 @@
 ## the game wears hair (HSHair with the bake's records read from the file), lit like a character reel, pictured from
 ## the sides asked for. Loaded at run time (no import step), so one picture set is seconds on a graphics card.
 ##   godot --path PROJECT -s res://hair2_shots.gd -- --glb=/abs/file.glb --out=/abs/dir [--tag=NAME]
-##       [--shots=front,q,side,back,top,close,pov,v:yaw:pitch:dist:fov:x:y:z] [--size=960x720] [--frames=20]
+##       [--shots=front,q,side,back,top,close,pov,v:yaw:pitch:dist:fov:x:y:z] [--size=960x720] [--frames=20] [--drift=DEG:N]
 ##       [--look=balanced|realism] [--origin=x,y,z] [--hair=JSON] [--light=reel|front|room] [--marker] [--nohair] [--frame=head|bust]
 ## `--origin`: the point between the ears (the head's local origin); found from the skin's top when not given.
 ## `--marker`: a second picture of every shot with the hair-bearing scalp a flat magenta and the hair a flat green, and
@@ -19,6 +19,15 @@ var tag := "hair"
 var shots: Array = ["front", "q", "side", "back", "top"]
 var size := Vector2i(960, 720)
 var frames := 20
+var drift_deg := 0.0                    # --drift=DEG:N: after a shot's own picture, N more frames with the camera turned DEG a frame, each saved (<tag>_<shot>_d001.png ...): how the hair holds in motion
+var drift_n := 0
+var drift_k := 0
+var drifting := false
+var v_yaw := 0.0                        # the last view asked for (the drift turns from it)
+var v_pitch := 0.0
+var v_dist := 1.0
+var v_fov := 30.0
+var v_at := Vector3.ZERO
 var look := "balanced"
 var light := "reel"
 var origin := Vector3.ZERO
@@ -61,6 +70,10 @@ func _initialize() -> void:
 			size = Vector2i(int(p[0]), int(p[1]))
 		elif a.begins_with("--frames="):
 			frames = int(a.substr(9))
+		elif a.begins_with("--drift="):
+			var p := a.substr(8).split(":")
+			drift_deg = float(p[0])
+			drift_n = int(p[1]) if p.size() > 1 else 24
 		elif a.begins_with("--look="):
 			look = a.substr(7)
 		elif a.begins_with("--light="):
@@ -236,6 +249,15 @@ func lights(kind: String) -> void:
 
 
 func view(yaw: float, pitch: float, dist: float, fov: float, at: Vector3) -> void:
+	v_yaw = yaw
+	v_pitch = pitch
+	v_dist = dist
+	v_fov = fov
+	v_at = at
+	place(yaw, pitch, dist, fov, at)
+
+
+func place(yaw: float, pitch: float, dist: float, fov: float, at: Vector3) -> void:
 	var y := deg_to_rad(yaw)
 	var p := deg_to_rad(pitch)
 	cam.fov = fov
@@ -331,6 +353,17 @@ func _process(_d: float) -> bool:
 	n += 1
 	if n == 1:
 		shoot(shots[stage])
+	if drifting:                                     # the camera turning a little each frame, every frame kept
+		var dimg := root.get_texture().get_image()
+		dimg.save_png(out_dir.path_join("%s_%s_d%03d.png" % [tag, String(shots[stage]).replace(":", "_"), drift_k]))
+		drift_k += 1
+		if drift_k <= drift_n:
+			place(v_yaw + drift_k * drift_deg, v_pitch, v_dist, v_fov, v_at)
+			return false
+		drifting = false
+		n = 0
+		stage += 1
+		return finished()
 	if n < frames:                                   # the TAA settles (the hair's coverage is dithered frame by frame)
 		return false
 	var name: String = shots[stage]
@@ -352,7 +385,16 @@ func _process(_d: float) -> bool:
 		return false
 	else:
 		report["shots"][name] = {}
+		if drift_n > 0:                                # (its own picture is taken: now the drift, from the view it was taken from)
+			drifting = true
+			drift_k = 1
+			place(v_yaw + drift_deg, v_pitch, v_dist, v_fov, v_at)
+			return false
 		stage += 1
+	return finished()
+
+
+func finished() -> bool:
 	if stage >= shots.size():
 		report["seconds"] = (Time.get_ticks_msec() - t0) / 1000.0
 		var f := FileAccess.open(out_dir.path_join("%s.json" % tag), FileAccess.WRITE)
