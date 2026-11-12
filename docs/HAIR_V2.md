@@ -131,9 +131,16 @@ drill (`ties.js` `drills`: a ribbon round a middle line kept off the body, cards
 Since the Advanced styles (DECISIONS 2026-11-12, the very last): a fringe's **Amount** goes past 1 (a heavy fringe,
 its band up to six centimetres deep: from further back on the head) and its **Arch** both ways (shorter toward the
 temples, or longer: rounded down at its sides). **Tendrils** gathers each side's face-framing strands into one to
-four pointed locks (`engine.js`: the strands of a lock take one guide and are drawn to it, `clumpAmt`; measured, one
-lock's tips lie 0.8 mm apart where a flat sidelock's lie 10.8); **uneven** gives each lock its own line (every strand
-of a lock ends at it exactly; the left and the right are not mirrored); **wave** an S along each. **Wisps by the
+four pointed locks (`engine.js`: the strands of a lock take one guide and are drawn to it all the way, `clumpAmt`;
+measured over a lock's own strands, their tips lie 0.7 mm apart where the same strands lie 6 to 8 mm apart as a flat
+sidelock); **uneven** gives each lock its own line (every strand of a lock ends at it exactly; the left and the
+right are not mirrored); **wave** an S along each. A strand joins the nearest lock's guide on its side, and only
+within reach of it (2 cm, or 1.4 times the Lock size: 2.5 cm by default); one that grows further off stays a plain
+face-framing strand (`guides.lock` says which). The first version took every strand of an angle's band: the band
+reaches down the temple's front edge, where pores are in it by angle and six to nine centimetres from the guide, and
+those hung on their own for half their length, out of the pull's reach, then jogged across to the guide: a zigzag
+in the lock (seen plainly on the high ponytail, in a close picture, and found by one factor changed at a time; four
+styles had strands gathered from out of reach, for some hours after they were pushed). **Wisps by the
 ears** leaves some of the sideburn's own pores out of a tie as thin strands to between the lobe and the jaw. A
 tendril ends at its line or where it comes to rest on the body, whichever is first: one asked to end under the
 shoulders' tops stops on the shoulder (half a centimetre short at -15 cm on MHR's base).
@@ -294,7 +301,12 @@ head's hair 1.5 to 3 MB with its two 512 px textures.
   there, unused: long hair lies on the bare body); a tail's chain doesn't collide with the body in Godot (HSJiggle's
   springs have no colliders); the Studio's view has no temporal anti-aliasing, so the hair there is coarser at its
   edges than Godot's.
-- **The Advanced styles' faults, as they stand** (2026-11-12): streaks on hair tied into buns still show card-shaped
+- **The Advanced styles' faults, as they stand** (2026-11-12, after a close look at each from the side): the space
+  buns have no gathered tendrils at all (under their wide fringe only two face-framing strands grow a side: each
+  "lock" is one strand, hard to see from the front, where two thirds of it is edge on) and a blocky dark patch at the
+  sideburn; the messy bun's long waved tendrils still turn sharply near their tips (not looked into); the high
+  ponytail has a bare strip of scalp at its hairline under its see-through fringe, and two strands from low on the
+  temple now hang as a strand of their own across the jaw. Streaks on hair tied into buns still show card-shaped
   flecks close up (the lanes' fix above removed one cause, measured; what is left is unexplained); the underside
   colour of the long waves fans out sideways at the nape; a platinum half reads flat and chalky in Godot's picture of
   it at bust distance (the Studio's closer picture shows its strands; the two weren't taken alike); brown scalp shows at a pulled-back hairline under a see-through fringe. The coil was compared with the
@@ -308,6 +320,22 @@ head's hair 1.5 to 3 MB with its two 512 px textures.
   that a dithered one doesn't. So how the cards are drawn matters more than how many; whether a pass of real thin
   strands is needed as well is open (an earlier note here called it the finding: the first test didn't show that).
   Not there either: a way to dye one chosen lock (a single streak in a fringe).
+- **The sides of tied hair** (DECISIONS 2026-11-12, the sides: the user's Daz3D hair comes down from the crown round
+  the side of the head in a curve, widest at eye level, and tucks in to a small low tie under the ear, with the ear's
+  lower half showing). With the sliders there are, *ears covered*, the tie right at the ear and at its lowest, a thin
+  tail (8 mm) and the hair left loose come close to that from the front and from three quarters; a thick tail and a
+  tie further back make a flat-sided hood, widest at the tie (a tie stands a centimetre and the tail's thickness off
+  the skin). Not there: the ear showing. With *ears out* and a tie below the ear the tied hair is broken, in the engine as
+  pushed on 2026-11-12: the rule that keeps hair off a tucked ear (extended to tied hair that day) lifts any point
+  inside the ear's outline straight up onto its top; a tie under the ear is on the far side of the outline, so a
+  strand steps in, is lifted back, and shuttles along the outline without ever reaching its tie (printed: 401 of 469
+  tied strands on a side with points on the outline, doubling back on themselves, one 38 cm long). High ties (the
+  Advanced styles' buns and ponytail) pass above the ear and are not caught. Not fixed. The fix meant: round the
+  ear, not up (a point pushed out of the outline the way it lies from the ear's middle, so hair bound down and back
+  slides round behind the ear), and for the user's look the ear's top covered and only its lower half kept clear; a side volume that can be shaped (on tied hair only Tightness thickens it, to a centimetre at the
+  most, evenly: the Volume sliders and Sweep do nothing to it). The outline's numbers (where it's widest, how far it
+  pinches at the tie) were met once by a shape that was plainly wrong in the picture: they support a picture, they
+  don't stand in for it.
 - **The pictures' size, and the cards' pictures** (found 2026-11-12): a picture is the scratch project's window, and
   the window's size is the project's own setting, not resizable; `hair2_shots.gd`'s `root.size` doesn't change it.
   The project was written 960 x 720 once, so every picture was that size whatever `--size` said, and a style's card

@@ -160,16 +160,38 @@ if (!only.length) {
     const lines = a => [...new Set(a.map(v => Math.round(v * 1000)))].length;
     const e0 = ends({ frameLocks: 2, frameStagger: 0 }), e1 = ends({ frameLocks: 2, frameStagger: 1 });
     say(e0.L.length > 4 && e0.R.length > 4 && [...e0.L, ...e0.R].every(v => Math.abs(v + 0.09) < 0.002), "tendrils with no stagger: every strand ends at the line");
-    say(lines(e1.L) === 2 && lines(e1.R) === 2 && Math.max(...e1.L) - Math.min(...e1.L) > 0.02 && Math.max(...e1.R) - Math.min(...e1.R) > 0.02 && [...e1.L, ...e1.R].every(v => v > -0.092),
-      `two tendrils a side, staggered: two lines a side, ${((Math.max(...e1.L) - Math.min(...e1.L)) * 100).toFixed(1)} and ${((Math.max(...e1.R) - Math.min(...e1.R)) * 100).toFixed(1)} cm apart, none longer than asked`);
-    const spread = locks => { const st = settings("long_straight", { fringe: { frame: 0.9, frameLine: -0.09, frameLocks: locks, frameStagger: 0 } }), G = grow(base, pores, st, prep, { draft: true }).guides, P = []; for (let i = 0; i < G.n; i++) if (G.group[i] === 2 && G.len[i] > 0.03 && G.pos[i * 3] > base.C[0]) { const o = (i * K + K - 1) * 3; P.push([G.pts[o], G.pts[o + 2]]); }
-      const mx = P.reduce((a, p) => a + p[0], 0) / P.length, mz = P.reduce((a, p) => a + p[1], 0) / P.length; return Math.sqrt(P.reduce((a, p) => a + (p[0] - mx) ** 2 + (p[1] - mz) ** 2, 0) / P.length); };
-    const s0 = spread(0), s1 = spread(1);
-    say(s1 < 0.004 && s0 > s1 * 3, `one tendril is drawn to a point: its tips ${(s1 * 1000).toFixed(1)} mm apart, a flat sidelock's ${(s0 * 1000).toFixed(1)}`);
+    // (measured over each lock's own strands, by guides.lock: a strand that grows out of every guide's reach is left a plain face-framing strand, and isn't the lock's)
+    const front = (G, i) => G.group[i] === 2 && G.len[i] > 0.03 && Math.abs(Math.atan2(G.pos[i * 3] - base.C[0], G.pos[i * 3 + 2] - base.C[2])) * 180 / Math.PI < 64;
+    const tipOf = (G, i) => [G.pts[(i * K + K - 1) * 3], G.pts[(i * K + K - 1) * 3 + 1], G.pts[(i * K + K - 1) * 3 + 2]];
+    const apart = (G, ids) => { const P = ids.map(i => tipOf(G, i)), mx = P.reduce((q, p) => q + p[0], 0) / P.length, mz = P.reduce((q, p) => q + p[2], 0) / P.length; return Math.sqrt(P.reduce((q, p) => q + (p[0] - mx) ** 2 + (p[2] - mz) ** 2, 0) / P.length); };
+    const grown = set => { const st = settings("long_straight", { fringe: { frame: 0.9, frameLine: -0.09, ...set } }); return { st, G: grow(base, pores, st, prep, { draft: true }).guides }; };
+    const rootGap = (G, i, g) => Math.hypot(G.pos[i * 3] - G.pos[g * 3], G.pos[i * 3 + 1] - G.pos[g * 3 + 1], G.pos[i * 3 + 2] - G.pos[g * 3 + 2]);
+    { const two = grown({ frameLocks: 2, frameStagger: 1 }), G = two.G, reach = Math.max(0.02, 1.4 * (two.st.texture.clumpSize || 0.018)); let ok = true; const said = [];
+      for (const side of [1, -1]) {
+        const by = new Map(), plain = [];
+        for (let i = 0; i < G.n; i++) { if (!front(G, i) || (G.pos[i * 3] > base.C[0] ? 1 : -1) !== side) continue; if (G.lock[i] >= 0) (by.get(G.lock[i]) || by.set(G.lock[i], []).get(G.lock[i])).push(i); else plain.push(i); }
+        const guides = [...by.keys()], lines = guides.map(g => by.get(g).map(i => tipOf(G, i)[1]));
+        ok = ok && guides.length === 2 && lines.every(e => Math.max(...e) - Math.min(...e) < 0.001 && Math.min(...e) > -0.092) && Math.abs(lines[0][0] - lines[1][0]) > 0.02
+          && guides.every(g => by.get(g).every(i => rootGap(G, i, g) <= reach + 1e-6)) && plain.every(i => guides.every(g => rootGap(G, i, g) > reach));
+        said.push(`${guides.map(g => by.get(g).length).join(" and ")} strands, their lines ${guides.length === 2 ? (Math.abs(lines[0][0] - lines[1][0]) * 100).toFixed(1) : "?"} cm apart, ${plain.length} left plain`);
+      }
+      say(ok, `two tendrils a side, uneven: each lock's strands end at one line, none longer than asked, every strand within reach of a guide in its nearest lock and the plain ones out of every guide's reach (her left ${said[0]}; her right ${said[1]})`); }
+    { const one = grown({ frameLocks: 1, frameStagger: 0 }), flat = grown({ frameLocks: 0, frameStagger: 0 }); let ok = true; const said = [];
+      for (const side of [1, -1]) { const M = []; for (let i = 0; i < one.G.n; i++) if (front(one.G, i) && one.G.lock[i] >= 0 && (one.G.pos[i * 3] > base.C[0] ? 1 : -1) === side) M.push(i);
+        const a1 = apart(one.G, M), a0 = apart(flat.G, M); ok = ok && M.length >= 4 && a1 < 0.002 && a0 > 0.004; said.push(`${M.length} strands, tips ${(a1 * 1000).toFixed(1)} mm apart, ${(a0 * 1000).toFixed(1)} as a flat sidelock`); }
+      say(ok, `one tendril is drawn to a point (its own strands: her left ${said[0]}; her right ${said[1]})`); }
     // (on tied hair, where the cut's own line is left at its default above the tendrils' line: they end at theirs, not at it)
     { const st = settings("odango", { fringe: { frame: 0.9, frameLine: -0.125, frameLocks: 1, frameStagger: 0 } }), G = grow(base, pores, st, prep, { draft: true }).guides, e = [];
       for (let i = 0; i < G.n; i++) if (G.group[i] === 2 && G.len[i] > 0.03 && Math.abs(Math.atan2(G.pos[i * 3] - base.C[0], G.pos[i * 3 + 2] - base.C[2])) * 180 / Math.PI < 64) e.push(G.pts[(i * K + K - 1) * 3 + 1]);
       say(st.cut.line > -0.1 && e.length > 4 && e.every(v => Math.abs(v + 0.125) < 0.003), `tendrils on tied hair end at their own line (-12.5 cm), not the cut's (${(st.cut.line * 100).toFixed(0)} cm): ${e.length} strands, the shortest at ${(Math.max(...e) * 100).toFixed(1)} cm`); }
+    // (a strand joins a lock only if it grows beside the lock's guide: gathered from further off it hangs on its own, then jogs across to it. The high ponytail's tendril did: three strands from eight centimetres down the temple's edge)
+    for (const id of ["adv_high_pony", "adv_messy_bun", "adv_half_buns"]) {
+      const st = settings(id), G = grow(base, pores, st, prep, { draft: true }).guides, reach = Math.max(0.02, 1.4 * (st.texture.clumpSize || 0.018)), guides = new Set(); let members = 0, furthest = 0, plain = 0, stray = 0;
+      for (let i = 0; i < G.n; i++) if (front(G, i) && G.lock[i] >= 0) guides.add(G.lock[i]);
+      for (let i = 0; i < G.n; i++) { if (!front(G, i)) continue; const g = G.lock[i]; if (g === i) continue;
+        if (g >= 0) { members++; furthest = Math.max(furthest, rootGap(G, i, g)); } else { plain++; if ([...guides].some(q => (G.pos[q * 3] > base.C[0]) === (G.pos[i * 3] > base.C[0]) && rootGap(G, i, q) <= reach)) stray++; } }
+      say(guides.size >= 2 && members >= 1 && furthest <= reach + 1e-6 && !stray, `${id}: ${members} strands gathered to ${guides.size} guides, the furthest ${(furthest * 100).toFixed(1)} cm from its own (within ${(reach * 100).toFixed(1)}); ${plain} front strands left plain, none of them within a guide's reach`);
+    }
     const wisps = e => { const G = g("odango", { fringe: { frameEars: e } }).guides; let n = 0; for (let i = 0; i < G.n; i++) if (G.group[i] === 2 && G.len[i] > 0.01 && Math.abs(Math.atan2(G.pos[i * 3] - base.C[0], G.pos[i * 3 + 2] - base.C[2])) * 180 / Math.PI >= 64) n++; return n; };
     say(wisps(0) === 0 && wisps(0.6) > 6, `wisps by the ears: none, then ${wisps(0.6)}`);
   }

@@ -39,6 +39,26 @@ the fix.
   scratch folder) and after, every style grown by both and compared, took two minutes and said exactly which hairs.
   Compare hair by hair (`guides`), not point by index: one card with another point shifts every index after it, and
   a strand a centimetre longer reads as half the head moved 19 cm.
+- **A summary number is a claim about every item in it. Look at the items.** Five times in one afternoon a number
+  of mine said something other than its name. "The sharpest turn in a strand" was the root's lift off the skin, in
+  the first millimetre. "Where the outline is widest, how far it pinches" was met by a side that was a kinked detour
+  round an ear. "Strands left plain" counted the wisps by the ears with them. "The tips' spread" took in a strand the
+  lock had let go. "Three strands" came from a run with other settings. Each time, printing the strands one by one
+  (where each grows, how far from its guide, where it ends) or looking at the whole picture set it right in a
+  minute. Before a number goes to the user: what are its items, and do a few of them, looked at, say the same?
+- **Three stories for one fault, each plausible; the fourth was found by changing one thing at a time.** A zigzag in
+  a tendril: the wave (a guess), the wisps by the ears (a true measurement of something else), then a metric that
+  couldn't see it. Six pictures of the same close view, one setting off in each, showed it in a quarter of an hour:
+  only "not gathered into locks" was clean. When a fault can be seen, the picture with one factor changed is the
+  instrument; reach for it first.
+- **A rule described one way and coded another.** "A strand joins a lock only if it grows near the lock's guide" was
+  coded as near the guide of the lock its angle put it in: a strand 1.4 cm from the other lock's guide was left out.
+  Found only because the strands were printed with their distance to the nearest guide. Say the rule, then check
+  the code against the sentence on a case where the two would differ.
+- **A fix for one fault can be read as breaking the feature when the check measures the wrong set.** After the fix
+  "one tendril is drawn to a point" failed: 8.1 mm where it had been 0.8. The lock was as pointed as ever (0.7 mm
+  over its own strands); the check was measuring every face-framing strand, one of which the lock had rightly let
+  go. Neither loosen a failing check nor believe it until what it measures is looked at.
 - **One thing tested is one thing known.** Against a strand render (the user's Daz3D hair), twice the cards and
   triangles, narrow cards and 120 loose wisps changed the picture hardly at all. From that I wrote, in four documents
   and to the user, that real strands were needed. All it showed was that more cards don't help. How the cards are

@@ -2,6 +2,24 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, the sides (the user, on the first whole pictures of the Daz baseline: the sides' curve and volume)
+
+- **"You're making the bangs really good but note that I really want you to be able to emulate the curvature of the
+  sides, look at the first image screenshot you made and compare it to the curve and volume of her sides, we really
+  want to have a system that can emulate that daz3d hair look as 1:1 as possible."** Said of the baseline of the
+  fifth picture (blunt fringe, low twin tails), as it is and drawn crisply.
+- **What this sets:** the fringe's direction is right to carry on with; the sides come first now. Her hair comes down
+  from the crown round the side of the head in a curve and tucks in to a low tie; ours beside it is a wide flat
+  shape with a corner at ear level. The system has to be able to make her sides, not only this one style: a setting
+  that only happens to fit one picture isn't it.
+- **Where it stands:** nothing built for it yet; this much found. Her side, traced on her picture: out gently from
+  the top, widest at eye level, in by about a centimetre and a half to a small tie under the ear. Ours as first
+  made (a hood, widest at the tie) was my settings: a thick tail, the tie far back, pulled tight. With the sliders
+  there are (ears covered, the tie right at the ear and at its lowest, a thin tail, the hair left loose) the side
+  comes close to hers from the front and from three quarters. What it can't do: show her ear below the side hair
+  (with the ears out, the tied hair goes round the ear in a kinked detour), and shape the volume (one handle, loose
+  to tight). Those two are the work for this.
+
 ## 2026-11-12, after the very last (the user: exact replicas of their Daz3D hairstyles; be extremely critical)
 
 - **"Can you create these hairstyles. Be extremely critical, unlike the other hair styles if something is preventing

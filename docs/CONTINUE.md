@@ -31,8 +31,9 @@ not an order. Overwrite this file at the end of the next session.
 
 ## Where it stopped last (2026-11-12, later, `claude/ecstatic-dijkstra-6ixk71`): two asks in progress, neither finished
 
-Read DECISIONS 2026-11-12, "the very last" and "after the very last", first. Both are the user's; the second is the
-one they stressed ("be extremely critical ... an exact replica").
+Read DECISIONS 2026-11-12, "the very last", "after the very last" and "the sides", first. All three are the user's;
+the second is the one they stressed ("be extremely critical ... an exact replica"), and the third is where they
+pointed next: the fringe is going the right way, the **sides' curve and volume** come first now (part 3 below).
 
 **1. The Advanced category (in the tree; faults left).** Six styles (`adv_*`, group `advanced`) after the user's one
 reference (four pictures of one hairstyle at stages). New in the engine, each a setting with a slider: a second colour
@@ -68,7 +69,32 @@ a heavier fringe and its Arch both ways (HAIR_V2 §3.7, §3.8).
   strands; the fringe in locks; the one-lock dye; the sidelocks; then each hairstyle against its picture,
   side by side, with what still differs written down each round.
 
-**3. The styles' cards were distorted (found, fixed, made again).** `hair2_check.py` drew every picture 960 x 720
+**3. The sides (the user's direction; nothing built, this much found).** Her side hair (the fifth picture) comes
+out gently from the top, is widest at eye level and curves in by about a centimetre and a half to a small tie under
+the ear, a rounded lit surface, the ear's lower half showing. Found, with pictures from the front and three quarters
+beside hers (`Saved/Hair2/daz/s1/`): *ears covered*, `ties.side` 1, `ties.height` 0, a tail 8 mm thick and
+`ties.tight` 0 come close to it; a thick tail and a tie further back made the first baseline's flat-sided hood (a
+tie stands a centimetre and the tail's thickness off the skin). The two things it can't do are the work: show the
+ear (with *ears out* and a tie under the ear the tied hair is **broken in the engine as pushed**: the rule that
+keeps hair off a tucked ear, extended to tied hair in this session, lifts points straight up onto the ear's
+outline, and strands bound for a tie on its far side shuttle along the outline and never arrive: HAIR_V2 §9; high
+ties aren't caught; not fixed; the fix meant is to push a point out of the outline the way it lies from the ear's
+middle, and for her look to keep clear only the ear's lower half) and shape
+the side's volume (on tied hair only Tightness thickens it, a centimetre at the most, evenly; the Volume sliders
+and Sweep do nothing to it). Judge by pictures from both views; the outline's numbers were once met by a wrong
+shape.
+
+**4. A zigzag in the tendrils (found in the pushed Advanced styles; fixed).** Strands from far down the temple's
+edge were gathered into a lock and jogged across to it. Now a strand joins the nearest lock's guide within reach,
+or stays plain (HAIR_V2 §3.7; HAIR2 holds it; 61 of the 65 styles the same hair by hair, four with three or four
+face-framing strands moved). Left: the messy bun's waved tendrils still turn sharply near their tips; the space buns
+have no gathered tendrils (two strands a side under their wide fringe).
+
+**In the tools, not yet used for a conclusion**: `hair2_check.py shots --drift DEG:N` (after a shot, N frames with
+the camera turned DEG a frame, each kept: for seeing whether hair drawn crisply shimmers in motion). Frames were
+made once for the baseline as it is and crisp; they were not analysed (the sides came first).
+
+**5. The styles' cards were distorted (found, fixed, made again).** `hair2_check.py` drew every picture 960 x 720
 whatever `--size` said (its scratch project's window isn't resizable), and `thumbs` squeezed that into a square: the
 59 cards committed before were a quarter too narrow. Now a project per picture size and an error when a picture
 isn't the size asked for (tried at 512 x 512, 960 x 720 and 1600 x 1200). All 65 cards in

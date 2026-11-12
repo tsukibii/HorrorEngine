@@ -105,10 +105,20 @@ export function grow(body, pores, s, prep, o = {}) {
       const j = clamp(Math.floor((a - a0) / (64 - a0) * NL), 0, NL - 1), key = side * (j + 1), dd = Math.abs(a - (a0 + (j + 0.5) * (64 - a0) / NL)), gd = guide.get(key);
       lock[i] = key; if (!gd || dd < gd.d) guide.set(key, { i, d: dd });
     }
+    // (a strand joins a lock only if it grows near the lock's guide. The band is by the angle round the head, and it
+    // takes in pores down the temple's front edge that are in it by angle and eight centimetres away: gathered with the
+    // rest, they hung on their own for half their length, out of the pull's reach, then jogged across to the guide: a
+    // zigzag in the lock. Those stay plain face-framing strands, as with no locks)
+    // (the bands only choose where each lock's guide is; which lock a strand joins is the nearest guide on its side,
+    // not its band's: a strand beside one lock isn't left out because the other's guide is far)
+    const reach = Math.max(0.02, 1.4 * (tx.clumpSize || 0.018));
     for (let i = 0; i < n; i++) {
       if (!lock[i]) continue;
-      const j = Math.abs(lock[i]) - 1, k = (j * 0.618 + (lock[i] > 0 ? 0.13 : 0.47) + (s.seed || 1) * 0.31) % 1;
-      clump.of[i] = guide.get(lock[i]).i; clumpAmt[i] = clump.of[i] === i ? 0 : 0.93; fline[i] = base + stag * 0.085 * k; anyLock = true;
+      let key = 0, bd = reach;
+      for (const [q, gd] of guide) { if ((q > 0) !== (lock[i] > 0)) continue; const d = Math.hypot(pos[i * 3] - pos[gd.i * 3], pos[i * 3 + 1] - pos[gd.i * 3 + 1], pos[i * 3 + 2] - pos[gd.i * 3 + 2]); if (d <= bd) { bd = d; key = q; } }
+      if (!key) continue;
+      const gI = guide.get(key).i, j = Math.abs(key) - 1, k = (j * 0.618 + (key > 0 ? 0.13 : 0.47) + (s.seed || 1) * 0.31) % 1;
+      clump.of[i] = gI; clumpAmt[i] = gI === i ? 0 : 0.93; fline[i] = base + stag * 0.085 * k; anyLock = true;
     }
   }
   // the first row meets the line: a hair beside the parting, or by the whorl, starts at it (no bare strip a pore's
@@ -333,5 +343,7 @@ export function grow(body, pores, s, prep, o = {}) {
   lap("shells");
   stats.ms = ms; stats.total = +(now() - t0).toFixed(1);
   if (tails.length) stats.tailTriangles = tails.reduce((a, t) => a + t.geo.triangles, 0);
-  return { hair: geo, scalp, shell, tails, bands, stats, guides: { n, pts: tr.pts, len: tr.len, group: cmb.group, pos, nrm } };
+  // (guides.lock: for a strand gathered into a tendril, the strand it's gathered to; itself for that one; else -1)
+  const lockOf = new Int32Array(n).fill(-1); if (anyLock) { for (let i = 0; i < n; i++) if (clumpAmt[i] > 0) { lockOf[i] = clump.of[i]; lockOf[clump.of[i]] = clump.of[i]; } }
+  return { hair: geo, scalp, shell, tails, bands, stats, guides: { n, pts: tr.pts, len: tr.len, group: cmb.group, pos, nrm, lock: lockOf } };
 }

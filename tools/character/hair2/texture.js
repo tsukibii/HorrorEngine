@@ -54,7 +54,8 @@ export function texture(ctx) {
       for (let k = 1; k < K; k++) {
         const o = (i * K + k) * 3, q = (c * K + k) * 3, dx = src[q] - src[o], dy = src[q + 1] - src[o + 1], dz = src[q + 2] - src[o + 2];
         // (only while they travel together: a hair whose guide went another way round the head, at the whorl or by a tie, isn't dragged across the head, or the face, after it)
-        const f = amt * Math.pow(smooth(0.08, 1, TS[k]), 0.8) * (1 - smooth(far, far * 2.2, Math.hypot(dx, dy, dz)));
+        // (a tendril's own strands, which grow beside their guide (engine.js), are drawn to it all the way: the reach that follows is for hair whose guide may have gone another way, and switching it on and off along one strand is a jog in the strand)
+        const f = amt * Math.pow(smooth(0.08, 1, TS[k]), 0.8) * (ctx.clumpAmt && ctx.clumpAmt[i] > 0 ? 1 : 1 - smooth(far, far * 2.2, Math.hypot(dx, dy, dz)));
         pts[o] = src[o] + dx * f; pts[o + 1] = src[o + 1] + dy * f; pts[o + 2] = src[o + 2] + dz * f;
       }
     }
