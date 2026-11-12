@@ -7,10 +7,12 @@ extends Node
 ## for good), `push_m` (shoved back along the shot), `cry` (a sound there, through the Sound node), `say` (a line, the
 ## Story's), `target` (its fire(): a scare, a cue, the lights), `lights_out` (a lamp shot out: its lights dark and a few
 ## sparks when it's down). Listens to every gun (HSDoubleBarrel; the group hs_weapon): a pellet on it, or an explosive shell's
-## blast reaching it (its hits carry `blast` and `damage`), is a hit.
+## blast reaching it (its hits carry `blast` and `damage`), is a hit. A harmless shell's pellets (a kind whose damage is
+## 0: the love hearts, the water) aren't: nothing's counted, nothing goes down; `touched` says so (a line, a blush).
 
 signal hit(info: Dictionary)                      ## {point, normal, collider, pellet, hits (pellets on it), count}
 signal down
+signal touched(info: Dictionary)                  ## a harmless shell's pellets on it: {point, normal, collider, touch (its kind's word: charm, soak), kind, hits}
 
 @export var hits := 1                             ## hits until it's down (a hit: one shot, however many pellets)
 @export var gone_secs := 0.0                      ## gone for this long when hit (0: it stays); down, gone for good
@@ -58,6 +60,14 @@ func _on_fired(shot_hits: Array) -> void:
 		return c is Node and is_instance_valid(c) and (c == host or host.is_ancestor_of(c)))
 	if mine.is_empty():
 		return
+	var soft := mine.filter(func(h) -> bool: return not bool(h.get("blast", false)) and float(h.get("damage", 1.0)) <= 0.0)
+	if not soft.is_empty():                              # (an easter egg shell: it isn't shot)
+		var t: Dictionary = (soft[0] as Dictionary).duplicate()
+		t["hits"] = soft.size()
+		touched.emit(t)
+		mine = mine.filter(func(h) -> bool: return not soft.has(h))
+		if mine.is_empty():
+			return
 	count += 1
 	var info: Dictionary = (mine[0] as Dictionary).duplicate()
 	info["hits"] = mine.size()
@@ -108,6 +118,7 @@ func _shot_out(host: Node, at: Vector3) -> void:
 		l.set_meta("hs_lit", false)                  # (a light zone and the starter's lights turn it on by this: never again)
 		l.set_meta("hs_broken", true)
 	var sp := CPUParticles3D.new()
+	sp.emitting = false                              # (started once it's placed: emitting as it enters the tree, its sparks fly from the scene's origin)
 	sp.one_shot = true
 	sp.amount = 14
 	sp.lifetime = 0.7

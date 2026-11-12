@@ -24,11 +24,43 @@ builder's floors, the street's steel stair, climbing in Godot and on the desk; 2
 Character Studio, then the creature presets and a Studio character's face in Godot, then the Anime switch and the red
 knit dress; then on `claude/beautiful-cray-a622xx`: tutorial v2's floor ready-made; 2026-11-11 on
 `claude/compassionate-babbage-3bnfqx`: the clothing research (Cloth2Tex, ready-made garments, the fit test, the
-clothing library). Read this after CLAUDE.md's start
+clothing library); then on `more-shotgun-shells`: two easter egg shells for the shotgun. Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-11, `claude/compassionate-babbage-3bnfqx`): ready-made clothing fitted to our bodies, researched and tested, then worn in layers
+## Where it stopped last (2026-11-11, `more-shotgun-shells`, from main): two easter egg shells, love hearts and water
+
+The user: "add a couple of new goofy ammo types, love hearts (this wouldnt damage the npc but have some kind of cute
+effect), water shells (water splashes), just some fun easter egg ones" (DECISIONS 2026-11-11, after the very last).
+Built in the weapons plugin (`GodotPlugins/HorrorStudioWeapons`: its README's *The easter egg shells*, its CLAUDE.md,
+the guide's section 8):
+
+- **A harmless kind** is an HSShellType with `damage` 0: HSHitReact, HSShootable and HSBlowUp take its hits out before
+  they count anything and say `touched(info)`; a kind has `fire_sound`, `ring_scale` and a `touch` word now.
+- **Love hearts** (`shells/heart.tres`, `muzzle/heart.tres`, `impacts/heart.tres`): hearts out of the muzzle
+  (`spark_sprite`, `muzzle/sprite.gdshader`), a heart printed upright where each lands (`mark` heart, `fade_s`), hearts
+  floating up; someone hit is smitten (`HSHitReact.charm`: held with no shove for `charm_s`, hearts over her head).
+- **Water** (`shells/water.tres`, `muzzle/water.tres`, `impacts/water.tres`): a spray, drops and mist, wet patches that
+  run down a wall and dry (`mark` wet), someone soaked (`soak`), embers and flames put out (`HSImpacts.douse`).
+- **Made for it**: six prop generator recipes (PROPGEN §31; `designs.py` `shape_pts`: a heart, a drop as a hull's mark
+  and motif and a box's picture; `crimp`), `tools/weapon_fx.py`'s heart and wet maps (WEAPONFX holds them),
+  `tools/weapon_sounds.py`'s five sounds (`--only`), WEAPONS §8k, `weapons_shots.gd` `egg_shots()`.
+- **Checked here**: WEAPONFX, WEAPONS (with §8k), the check_all's offline set; the guide's eight new pictures are
+  Godot's under xvfb on the CPU. `weapons_check.py` now falls back to the ready-made hotel floor
+  (`Exports/interiors/hotel_floor`) when tutorial v2's export isn't on the machine: no desk server needed.
+
+- **A fault found and fixed on the way**: `HSImpacts._burst` placed its emitter after it had started, so every
+  impact's debris (and the ichor's droplets, a broken thing's bits, a lamp's sparks) came out at the scene's origin.
+  Placed first now. **The guide's older pictures (damage, blowup, react) were drawn with the fault**: worth redrawing on
+  the user's machine (`python tools/godot/weapons_check.py --reuse --pictures`, about a quarter of an hour on a GPU),
+  and a look at whether the debris, now seen, wants toning.
+
+**What could come next**: a box of each hidden in tutorial v2 (the user's to place: nothing sells or hides them yet),
+the laptop's shop selling them as a ? till something's done; a blush on a smitten character's skin (the skin shader's
+flush); puddles on the floor that stay a while and reflect; more kinds the same way (confetti, bubbles): a kind is three
+resources and a word.
+
+## Before that (2026-11-11, `claude/compassionate-babbage-3bnfqx`): ready-made clothing fitted to our bodies, researched and tested, then worn in layers
 
 Research and a prototype, from main (PR #21, then PR #22 merged in); nothing in the Studio changed. The user asked
 five things (DECISIONS 2026-11-11, both sections): whether Cloth2Tex could be a second clothing system, a CloV2 tab;

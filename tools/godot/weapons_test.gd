@@ -10,7 +10,8 @@
 ## and beside you; the muzzle (a star of wings of intersecting spheres, burnt; its trail); what a 12-gauge leaves on a
 ## wall at an arm's length, across a room and down a corridor, and on concrete (docs/research/shotgun_damage.md); the
 ## explosive shell in the right barrel and its blast; things that break when they're shot (HSBlowUp); someone who bleeds
-## black ichor and goes into smoke (HSHitReact); lowered and raised, the box of shells taken with E, and the gun itself
+## black ichor and goes into smoke (HSHitReact); the easter egg shells (love hearts and water: harmless, their own marks,
+## someone smitten, someone soaked, embers and flames put out); lowered and raised, the box of shells taken with E, and the gun itself
 ## picked up and drawn into view. Prints `WEAPONS <what> <how>` lines and `WEAPONS result {errors}`, quits.
 extends SceneTree
 
@@ -1606,6 +1607,313 @@ func _initialize() -> void:
 	player.global_position = spot
 	player.velocity = Vector3.ZERO
 	await until(func() -> bool: return not g("busy"), 2.0)
+
+	# 8k. the easter egg shells (DECISIONS 2026-11-11: "a couple of new goofy ammo types, love hearts (this wouldnt damage
+	# the npc but have some kind of cute effect), water shells (water splashes)"): not offered until a box is found; love
+	# hearts into both barrels: its own soft sound, a pink flash with hearts out of the muzzle, a heart printed upright
+	# where each of its seven lands and hearts floating up, nothing of the wall missing, a small kick, hardly heard, no
+	# ringing; a dummy told with no damage, an HSShootable touched and not counted, a kettle not dented; a print fades
+	# away. Water: no flash and no light, a spray, a wet patch for each of its nine running down the wall, drops and
+	# mist, a scorch's embers, a flame and a candle (an HSPropFX) near the splash put out and one far off left burning.
+	# Her: the water soaks her (no wound, no damage, no stagger: she walks on, dripping, then dry), the hearts charm her
+	# (stood where she is with hearts over her head, then walking on); a box of love hearts its own box
+	player.global_position = spot
+	player.velocity = Vector3.ZERO
+	await fill(0)
+	var e_dir := "res://addons/horrorstudio_weapons/"
+	var e_heart = load(e_dir + "shells/heart.tres")
+	var e_water = load(e_dir + "shells/water.tres")
+	var e_kinds0 := (g("kinds") as Array).map(func(kk): return str(kk.get("id")))
+	if e_heart == null or e_water == null or e_kinds0.has("heart") or e_kinds0.has("water"):
+		bad("the easter egg kinds didn't load, or the gun offers them before a box is found (%s)" % str(e_kinds0))
+	var e_panel := StaticBody3D.new()
+	e_panel.name = "EggPanel"
+	e_panel.set_meta("hs_surface", "plaster")
+	var e_pcs := CollisionShape3D.new()
+	var e_pbs := BoxShape3D.new()
+	e_pbs.size = Vector3(0.1, 2.0, 1.4)
+	e_pcs.shape = e_pbs
+	e_panel.add_child(e_pcs)
+	main.add_child(e_panel)
+	e_panel.global_position = Vector3(spot.x - 2.6, fl + 1.4, spot.z)
+	var e_aim := Vector3(spot.x - 2.55, eye.global_position.y, spot.z)
+	gun.add_shells(2, e_heart)
+	gun.set_load_kind(e_heart)
+	gun.reload()
+	await frames(2)
+	await until(func() -> bool: return not g("busy"), 5.0)
+	var e_in: Array = (g("barrel_kind") as Array).map(func(kk): return str(kk.get("id")) if kk != null else "none")
+	var e_seated: Array = (g("_in_chamber") as Array).map(func(n): return str((n as Node).scene_file_path).get_file() if n != null else "")
+	look(e_aim)
+	await frames(6)
+	var e_m0 = gun.muzzle(0)
+	var e_m1 = gun.muzzle(1)
+	var e_heard0 := (listener.get("got") as Array).size()
+	var e_ring0 := float(fear.get("_ring"))
+	var e_pitch0 := float(player.get("pitch"))
+	gun.pull()
+	await frames(1)
+	var e_kick := rad_to_deg(float(player.get("pitch")) - e_pitch0)
+	var e_rep: Dictionary = e_m0.report()
+	var e_hits: Array = g("last_hits")
+	var e_ls: Dictionary = im.get("last_shot")
+	var e_marks: Array = e_ls.get("marks", [])
+	var e_upright := 0
+	var e_glow := 0
+	var e_kinds := {}
+	for d in e_marks:
+		e_kinds[str((d as Decal).get_meta("hs_mark", ""))] = true
+		if (d as Decal).global_basis.z.dot(Vector3.DOWN) > 0.9:
+			e_upright += 1
+		if (d as Decal).texture_emission != null and (d as Decal).emission_energy > 0.0:
+			e_glow += 1
+	var e_sprite := str((((e_m0.get("sparks") as CPUParticles3D).mesh as QuadMesh).material as ShaderMaterial).shader.resource_path).get_file()
+	var e_heard: Array = (listener.get("got") as Array).slice(e_heard0)
+	var e_harm := e_hits.filter(func(h): return float(h.get("damage", 1.0)) > 0.0).size()
+	say("hearts", "two into the pocket, T's kinds %s; in the chambers %s (%s); fired: %s, %d pellets all harmless %s (touch %s); the muzzle %s with %d sparks drawn by %s; %d marks %s, %d upright, %d glowing, %d hearts floating up; the kick %.2f°, heard %s, the ears %.2f to %.2f" % [
+		str((g("kinds") as Array).map(func(kk): return str(kk.get("id")))), str(e_in), str(e_seated), str((g("last_kind") as Resource).get("id")), e_hits.size(), e_harm == 0,
+		str(e_hits[0].get("touch", "")) if not e_hits.is_empty() else "", str(e_rep["look"]), int(e_rep["sparks"]), e_sprite, e_marks.size(), str(e_kinds.keys()), e_upright, e_glow,
+		int(e_ls.get("hearts", 0)), e_kick, str(e_heard.map(func(x): return snappedf(float(x[1]), 0.01))), e_ring0, float(fear.get("_ring"))])
+	if e_in != ["heart", "heart"] or e_seated[0] != "shell_12ga_heart.glb":
+		bad("the love-heart shells didn't go into both chambers as their own model (%s, %s)" % [str(e_in), str(e_seated)])
+	if e_hits.size() != 7 or e_harm != 0 or str(e_hits[0].get("touch", "")) != "charm":
+		bad("a love-heart shell isn't seven harmless hearts (%d hits, %d that hurt)" % [e_hits.size(), e_harm])
+	if str(e_rep["look"]) != "Love hearts" or int(e_rep["sparks"]) < 10 or e_sprite != "sprite.gdshader":
+		bad("the muzzle didn't throw hearts with its pink flash (%s, drawn by %s)" % [str(e_rep), e_sprite])
+	if e_marks.size() != 7 or e_kinds.keys() != ["heart"] or e_upright != 7 or e_glow != 7 or int(e_ls.get("hearts", 0)) < 7 or not (e_ls.get("torn", []) as Array).is_empty():
+		bad("each heart didn't leave a glowing heart upright on the wall and nothing else (%d marks %s, %d upright, %d glowing, %d hearts)" % [e_marks.size(), str(e_kinds.keys()), e_upright, e_glow, int(e_ls.get("hearts", 0))])
+	if e_kick < 0.2 or e_kick > 1.3 or e_heard.is_empty() or float(e_heard[0][1]) > 1.0 or float(fear.get("_ring")) > e_ring0 + 0.01:
+		bad("a love-heart shell kicks, sounds or rings like a real one (the kick %.2f°, heard %s, the ears %.2f to %.2f)" % [e_kick, str(e_heard), e_ring0, float(fear.get("_ring"))])
+	# the left barrel at a dummy with a shootable under it and a mug that breaks: told with no damage, touched, not
+	# counted, not dented
+	var e_dum := StaticBody3D.new()
+	e_dum.name = "EggDummy"
+	e_dum.set_script(made("extends StaticBody3D\nvar got: Array = []\nfunc shot(info: Dictionary) -> void:\n\tgot.append(info)\n"))
+	var e_dcs := CollisionShape3D.new()
+	var e_dbs := BoxShape3D.new()
+	e_dbs.size = Vector3(0.3, 0.5, 0.5)
+	e_dcs.shape = e_dbs
+	e_dum.add_child(e_dcs)
+	main.add_child(e_dum)
+	e_dum.global_position = Vector3(spot.x - 2.2, eye.global_position.y, spot.z)
+	var e_sh := (load(e_dir + "shootable.gd") as GDScript).new() as Node
+	e_dum.add_child(e_sh)
+	var e_touched: Array = []
+	e_sh.connect("touched", func(info: Dictionary) -> void: e_touched.append(info))
+	var e_mug := (load(e_dir + "models/mug_stoneware.glb") as PackedScene).instantiate() as Node3D
+	e_dum.add_child(e_mug)
+	e_mug.position = Vector3(0.16, -0.05, 0.0)
+	var e_bu := HSBlowUp.new()
+	e_mug.add_child(e_bu)
+	var e_t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - e_t0 < 20000 and not e_bu.is_prepared():
+		await frames(1)
+	look(e_dum.global_position + Vector3(0.16, 0.0, 0.0))
+	await frames(4)
+	gun.pull()
+	await frames(3)
+	var e_told: Array = e_dum.get("got")
+	var e_onmug := (g("last_hits") as Array).filter(func(h): return h.get("collider") is Node and e_mug.is_ancestor_of(h["collider"])).size()
+	say("hearts harmless", "the left barrel at a dummy: told %d times, the most damage %.1f; its shootable counted %d, touched %s; %d hearts on the mug: broken %s, worn %.1f" % [
+		e_told.size(), e_told.map(func(x): return float(x.get("damage", 1.0))).max() if not e_told.is_empty() else -1.0, int(e_sh.get("count")),
+		str(e_touched.map(func(x): return [x.get("touch", ""), x.get("hits", 0)])), e_onmug, e_bu.is_broken, e_bu.damage])
+	if e_told.is_empty() or e_told.map(func(x): return float(x.get("damage", 1.0))).max() > 0.0:
+		bad("the dummy wasn't told of the hearts with no damage (%d times)" % e_told.size())
+	if int(e_sh.get("count")) != 0 or bool(e_sh.get("is_down")) or e_touched.size() != 1 or str(e_touched[0].get("touch", "")) != "charm":
+		bad("an HSShootable counted love hearts as a hit, or wasn't touched (count %d, touched %s)" % [int(e_sh.get("count")), str(e_touched)])
+	if e_bu.is_broken or e_bu.damage > 0.0 or not (e_bu.get("_dents") as Array).is_empty():
+		bad("love hearts dented or broke the mug (broken %s, worn %.1f, %d dents)" % [e_bu.is_broken, e_bu.damage, (e_bu.get("_dents") as Array).size()])
+	e_dum.queue_free()
+	# a print fades away (its impact's fade_s: a second here)
+	var e_quick := (load(e_dir + "impacts/heart.tres") as HSImpact).duplicate() as HSImpact
+	e_quick.fade_s = 1.0
+	e_quick.sound = null
+	im.call("play", e_quick, {"point": e_panel.global_position + Vector3(0.051, -0.6, 0.4), "normal": Vector3(1, 0, 0), "collider": e_panel}, false)
+	var e_fd = (im.get("last") as Dictionary).get("mark")
+	var e_was := is_instance_valid(e_fd)
+	await secs(0.7)
+	var e_half := float((e_fd as Decal).modulate.a) if is_instance_valid(e_fd) else -1.0
+	await secs(0.5)
+	say("hearts fade", "a print that fades in a second: there %s, at 0.7 s its strength %.2f, at 1.2 s gone %s" % [e_was, e_half, not is_instance_valid(e_fd)])
+	if not e_was or e_half <= 0.0 or e_half >= 1.0 or is_instance_valid(e_fd):
+		bad("a heart's print didn't fade away over its fade_s (%.2f at 0.7 s, gone %s)" % [e_half, not is_instance_valid(e_fd)])
+	# water: no flash, a spray; wet patches running down the wall; what burns near the splash put out
+	var e_exi := load(e_dir + "impacts/explosive.tres") as HSImpact
+	var e_face := e_panel.global_position.x + 0.051
+	var e_scorch: Decal = im.call("_mark", e_exi, {"point": Vector3(e_face, e_aim.y - 0.2, spot.z + 0.15), "normal": Vector3(1, 0, 0), "collider": e_panel}, im.call("surface_look", "plaster"))
+	var e_flame_src := "extends Node3D\nvar lit := true\nfunc _ready() -> void:\n\tadd_to_group(\"hs_flame\")\nfunc douse() -> void:\n\tlit = false\n"
+	var e_near := Node3D.new()
+	e_near.set_script(made(e_flame_src))
+	main.add_child(e_near)
+	e_near.global_position = Vector3(e_face + 0.05, e_aim.y + 0.2, spot.z - 0.1)
+	var e_far := Node3D.new()
+	e_far.set_script(made(e_flame_src))
+	main.add_child(e_far)
+	e_far.global_position = Vector3(spot.x + 1.5, fl + 0.1, spot.z)
+	var e_candle: Node3D = null
+	var e_fx: Node = null
+	if ResourceLoader.exists("res://addons/horrorstudio_look/nodes/prop_fx.gd"):   # (a made candle's: its flame from its glb's extras)
+		e_candle = Node3D.new()
+		e_candle.name = "EggCandle"
+		e_candle.set_meta("extras", {"propgen_fx": {"flame": {"sockets": ["flame"]}}})
+		var e_sock := Node3D.new()
+		e_sock.name = "socket_flame"
+		e_candle.add_child(e_sock)
+		e_sock.position = Vector3(0, 0.1, 0)
+		main.add_child(e_candle)
+		e_candle.global_position = Vector3(e_face + 0.12, e_aim.y - 0.25, spot.z - 0.2)
+		e_fx = (load("res://addons/horrorstudio_look/nodes/prop_fx.gd") as GDScript).new() as Node
+		e_candle.add_child(e_fx)
+	await frames(4)
+	var e_lit0 := int((e_fx.call("report") as Dictionary).get("flames", 0)) if e_fx != null else -1
+	var e_emb0 := e_scorch.emission_energy if e_scorch != null else 0.0
+	gun.add_shells(2, e_water)
+	gun.set_load_kind(e_water)
+	gun.reload()
+	await frames(2)
+	await until(func() -> bool: return not g("busy"), 5.0)
+	var e_in2: Array = (g("barrel_kind") as Array).map(func(kk): return str(kk.get("id")) if kk != null else "none")
+	look(e_aim)
+	await frames(6)
+	var e_heard1 := (listener.get("got") as Array).size()
+	var e_doused0 := int(im.get("doused"))
+	gun.pull()
+	await frames(1)
+	var e_wrep: Dictionary = e_m0.report()
+	var e_wls: Dictionary = im.get("last_shot")
+	var e_whits: Array = g("last_hits")
+	var e_wmarks: Array = e_wls.get("marks", [])
+	var e_down := 0
+	var e_wkinds := {}
+	var e_mix := 0.0
+	for d in e_wmarks:
+		e_wkinds[str((d as Decal).get_meta("hs_mark", ""))] = true
+		if (d as Decal).global_basis.z.dot(Vector3.DOWN) > 0.99:
+			e_down += 1
+		e_mix = maxf(e_mix, (d as Decal).albedo_mix)
+	await frames(4)
+	var e_lit1 := int((e_fx.call("report") as Dictionary).get("flames", 0)) if e_fx != null else -1
+	var e_heard2: Array = (listener.get("got") as Array).slice(e_heard1)
+	say("water", "in the chambers %s; fired: %s, %d pellets, %d that hurt; the muzzle %s: %d spheres, its light %.2f, %d sparks; %d wet patches %s, %d running straight down, mixed in %.2f, %d drops; heard %s; put out %d: the scorch's embers %.1f to %.1f, the flame near it lit %s, the far one %s, the candle's flames %d to %d (its switch %s)" % [
+		str(e_in2), str((g("last_kind") as Resource).get("id")), e_whits.size(), e_whits.filter(func(h): return float(h.get("damage", 1.0)) > 0.0).size(),
+		str(e_wrep["look"]), int(e_wrep["spheres"]), float(e_wrep["light"]), int(e_wrep["sparks"]), e_wmarks.size(), str(e_wkinds.keys()), e_down, e_mix,
+		int(e_wls.get("droplets", 0)), str(e_heard2.map(func(x): return snappedf(float(x[1]), 0.01))), int(im.get("doused")) - e_doused0, e_emb0,
+		e_scorch.emission_energy if is_instance_valid(e_scorch) else -1.0, e_near.get("lit"), e_far.get("lit"), e_lit0, e_lit1, e_fx.get("flame") if e_fx != null else "none"])
+	if e_in2 != ["water", "water"] or str((g("last_kind") as Resource).get("id")) != "water" or e_whits.size() < 7 or e_whits.any(func(h): return float(h.get("damage", 1.0)) > 0.0):
+		bad("a water shell isn't nine harmless splashes (%s, %d hits)" % [str(e_in2), e_whits.size()])
+	if str(e_wrep["look"]) != "Water" or int(e_wrep["spheres"]) != 0 or float(e_wrep["light"]) > 0.0 or int(e_wrep["sparks"]) < 20:
+		bad("a water shell flashed, or threw no spray (%s)" % str(e_wrep))
+	if e_wmarks.size() != e_whits.size() or e_wkinds.keys() != ["wet"] or e_down != e_wmarks.size() or e_mix > 0.6 or int(e_wls.get("droplets", 0)) < 20:
+		bad("the water didn't leave a wet patch running down the wall for each splash (%d of %d, %s, %d straight down, %d drops)" % [e_wmarks.size(), e_whits.size(), str(e_wkinds.keys()), e_down, int(e_wls.get("droplets", 0))])
+	if e_emb0 <= 0.0 or not is_instance_valid(e_scorch) or e_scorch.emission_energy > 0.0 or bool(e_near.get("lit")) or not bool(e_far.get("lit")):
+		bad("the splash didn't put out the embers and the flame beside it, and only them (embers %.1f, near lit %s, far lit %s)" % [e_scorch.emission_energy if is_instance_valid(e_scorch) else -1.0, e_near.get("lit"), e_far.get("lit")])
+	if e_fx != null and (e_lit0 != 1 or e_lit1 != 0 or bool(e_fx.get("flame"))):
+		bad("the splash didn't put out the candle's flame (%d to %d flames)" % [e_lit0, e_lit1])
+	e_near.queue_free()
+	e_far.queue_free()
+	if e_candle != null:
+		e_candle.queue_free()
+	e_panel.queue_free()
+	# her: the water soaks her and she walks on; the hearts charm her and she stands there
+	var e_at := Vector3(spot.x - 3.4, fl, spot.z)
+	var e_her := (load("res://bodies/MHR.fbx") as PackedScene).instantiate() as Node3D
+	e_her.name = "HerAgain"
+	main.add_child(e_her)
+	e_her.global_position = e_at
+	e_her.rotation.y = PI / 2.0
+	var e_sk := e_her.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
+	var e_walk := Node.new()
+	e_walk.name = "Walk"
+	e_walk.set_script(made("extends Node\nvar v := Vector3.ZERO\nvar stopped := false\nfunc _process(dt: float) -> void:\n\tif not stopped:\n\t\t(get_parent() as Node3D).global_position += v * dt\nfunc stop(_a = null, _b = null) -> void:\n\tstopped = true\n"))
+	e_her.add_child(e_walk)
+	var e_hr := HSHitReact.new()
+	e_hr.health = 60.0
+	e_hr.soak_s = 1.5
+	e_her.add_child(e_hr)
+	var e_ev: Array = []
+	e_hr.staggered.connect(func(_s: float) -> void: e_ev.append("staggered"))
+	e_hr.hit.connect(func(_i: Dictionary) -> void: e_ev.append("hit"))
+	e_hr.touched.connect(func(i: Dictionary) -> void: e_ev.append(str(i.get("touch", ""))))
+	await frames(4)
+	var e_spine: Array = e_hr._roles["spine"]
+	var e_chest := e_sk.global_transform * e_sk.get_bone_global_pose(e_spine[mini(2, e_spine.size() - 1)]).origin
+	look(e_chest)
+	await frames(4)
+	var e_way := ((player.global_position - e_her.global_position) * Vector3(1, 0, 1)).normalized()
+	e_walk.set("v", e_way * 0.5)
+	await frames(6)
+	gun.pull()                                                   # (the left barrel: the water)
+	await frames(2)
+	var e_p0 := e_her.global_position
+	var e_on := (g("last_hits") as Array).filter(func(h): return h.get("collider") is Node and e_her.is_ancestor_of(h["collider"])).size()
+	var e_r1 := e_hr.report()
+	await secs(0.5)
+	var e_walked := e_her.global_position.distance_to(e_p0)
+	await secs(1.3)
+	var e_r2 := e_hr.report()
+	say("soaked", "the water at her chest: %d splashes on her; damage %.1f, wounds %d, ichor %d, events %s; soaked %s, dripping %s; she walked on %.2f m in half a second; after its time soaked %s, dripping %s" % [
+		e_on, e_hr.damage, e_hr.wounds, e_hr.marks.size(), str(e_ev), e_r1["soaked"], e_r1["drips"], e_walked, e_r2["soaked"], e_r2["drips"]])
+	if e_on < 2 or e_hr.damage != 0.0 or e_hr.wounds != 0 or not e_hr.marks.is_empty() or e_hr.hit_count != 0 or e_ev != ["soak"]:
+		bad("the water hurt her, or didn't reach her (%d on her, damage %.1f, %d wounds, events %s)" % [e_on, e_hr.damage, e_hr.wounds, str(e_ev)])
+	if not bool(e_r1["soaked"]) or not bool(e_r1["drips"]) or e_walked < 0.15 or bool(e_r2["soaked"]) or bool(e_r2["drips"]):
+		bad("soaked, she didn't drip and walk on, or never dried (soaked %s, dripping %s, walked %.2f m; after: %s, %s)" % [e_r1["soaked"], e_r1["drips"], e_walked, e_r2["soaked"], e_r2["drips"]])
+	gun.add_shells(1, e_heart)
+	gun.set_load_kind(e_heart)
+	gun.reload()
+	await frames(2)
+	await until(func() -> bool: return not g("busy"), 5.0)
+	e_chest = e_sk.global_transform * e_sk.get_bone_global_pose(e_spine[mini(2, e_spine.size() - 1)]).origin
+	look(e_chest)
+	await frames(4)
+	e_ev.clear()
+	gun.pull()
+	await frames(2)
+	var e_c0 := e_her.global_position
+	var e_r3 := e_hr.report()
+	var e_hearts := e_hr.get("_hearts") as CPUParticles3D
+	var e_head_y := (e_sk.global_transform * e_sk.get_bone_global_pose(int(e_hr._roles["head"])).origin).y
+	var e_over := e_hearts.global_position.y - e_head_y if e_hearts != null else -1.0
+	await secs(1.5)
+	var e_stood := e_her.global_position.distance_to(e_c0)
+	var e_mid := e_hr.report()
+	await secs(1.3)
+	var e_r4 := e_hr.report()
+	var e_c1 := e_her.global_position
+	await secs(0.5)
+	var e_went := e_her.global_position.distance_to(e_c1)
+	e_walk.set("v", Vector3.ZERO)
+	say("charmed", "the hearts at her chest: damage %.1f, wounds %d, events %s; smitten %s, hearts %.2f m over her head %s; she stood (%.3f m in 1.5 s, still smitten %s); after %.1f s smitten %s, hearts %s, walking on %.2f m in half a second" % [
+		e_hr.damage, e_hr.wounds, str(e_ev), e_r3["charmed"], e_over, e_r3["hearts"], e_stood, e_mid["charmed"], e_hr.charm_s, e_r4["charmed"], e_r4["hearts"], e_went])
+	if e_hr.damage != 0.0 or e_hr.wounds != 0 or e_hr.hit_count != 0 or e_ev != ["charm"] or e_hr.is_down:
+		bad("the hearts hurt her, or didn't reach her (damage %.1f, %d wounds, events %s)" % [e_hr.damage, e_hr.wounds, str(e_ev)])
+	if not bool(e_r3["charmed"]) or not bool(e_r3["hearts"]) or e_over < 0.05 or e_stood > 0.02 or not bool(e_mid["charmed"]):
+		bad("smitten, she didn't stand where she was with hearts over her head (smitten %s, hearts %s %.2f m over her head, moved %.3f m)" % [e_r3["charmed"], e_r3["hearts"], e_over, e_stood])
+	if bool(e_r4["charmed"]) or bool(e_r4["hearts"]) or e_went < 0.15:
+		bad("she didn't get over it and walk on (smitten %s, hearts %s, %.2f m)" % [e_r4["charmed"], e_r4["hearts"], e_went])
+	if is_instance_valid(e_hr._root):
+		e_hr._root.queue_free()
+	e_her.queue_free()
+	# a box of love hearts: its own box, its own shells beside it, taken into the pocket by its kind
+	var e_box := Node3D.new()
+	e_box.set_script(load(e_dir + "pickup.gd"))
+	e_box.set("kind", "shells")
+	e_box.set("shell", e_heart)
+	e_box.set("shells", 5)
+	main.add_child(e_box)
+	e_box.global_position = Vector3(spot.x - 1.0, fl, spot.z)
+	await frames(2)
+	var e_files: Array = e_box.get_children().map(func(n): return str((n as Node).scene_file_path).get_file())
+	var e_had := int(gun.shells_of(e_heart))
+	e_box.call("use")
+	await frames(2)
+	say("hearts box", "a pickup of love hearts: its models %s; taken: %d to %d of them in the pocket" % [str(e_files.filter(func(f): return f != "")), e_had, int(gun.shells_of(e_heart))])
+	if not e_files.has("shells_box_5_heart.glb") or not e_files.has("shell_12ga_heart.glb") or int(gun.shells_of(e_heart)) != e_had + 5:
+		bad("a box of love hearts isn't its own box and shells, or wasn't taken by its kind (%s, %d to %d)" % [str(e_files), e_had, int(gun.shells_of(e_heart))])
+	gun.set_load_kind(gun.normal_kind())
+	await fill(0)
+	await fill()
+	player.global_position = spot
+	player.velocity = Vector3.ZERO
 
 	# 9. lowered: out of view, the flashlight back on the eye, no shot; raised again
 	await fill()

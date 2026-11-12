@@ -20,8 +20,9 @@ extends Node3D
 ## one with a shot(info) method told; the muzzle flashing (an HSMuzzle at each muzzle socket: the kind's
 ## HSMuzzleFlash, its light, sparks, the smoke thrown out and trailing after the muzzle), the kick and the view with it,
 ## the blast through the Sound node, a noise every listener hears and the ears ringing. Every shell has a kind
-## (HSShellType: the plugin's buckshot and explosive, `kinds`); the pocket keeps them by kind (`spare` the kind R loads,
-## `load_kind`, the others in `pocket`); T picks the kind R loads.
+## (HSShellType: the plugin's buckshot and explosive, `kinds`; its two easter eggs, love hearts and water, once a box
+## of them is picked up: harmless, their own sound instead of the blast); the pocket keeps them by kind (`spare` the
+## kind R loads, `load_kind`, the others in `pocket`); T picks the kind R loads.
 signal fired(hits: Array)                         ## after a shot: [{point, normal, collider, ...}], a pellet that hit each (and what a blast reached)
 signal shell_in(loaded: int)                      ## a shell into the gun
 signal empty                                      ## the trigger pulled on an empty chamber
@@ -586,7 +587,7 @@ func _shoot(kind: HSShellType = null, barrel := 0) -> void:
 		if hit.is_empty():
 			continue
 		var h := {"point": hit["position"], "normal": hit["normal"], "collider": hit["collider"], "pellet": i, "from": from, "dir": dir,
-			"damage": kind.damage, "kind": kind.id, "muzzle": mz_at}
+			"damage": kind.damage, "kind": kind.id, "muzzle": mz_at, "touch": kind.touch}
 		hits.append(h)
 		var c: Object = hit["collider"]
 		if c is RigidBody3D:
@@ -594,7 +595,7 @@ func _shoot(kind: HSShellType = null, barrel := 0) -> void:
 		var nd := c as Node
 		while nd != null:
 			if nd.has_method("shot"):
-				nd.shot({"point": hit["position"], "normal": hit["normal"], "dir": dir, "from": from, "pellet": i, "damage": kind.damage, "kind": kind.id})
+				nd.shot({"point": hit["position"], "normal": hit["normal"], "dir": dir, "from": from, "pellet": i, "damage": kind.damage, "kind": kind.id, "touch": kind.touch})
 				break
 			nd = nd.get_parent()
 	# what each pellet does where it lands (its mark, the surface's dust and chips; a blast's push and harm: what it
@@ -629,11 +630,11 @@ func _shoot(kind: HSShellType = null, barrel := 0) -> void:
 	var rk := recoil_deg * kind.recoil_scale
 	_turn_view(deg_to_rad(rk), deg_to_rad(randf_range(-0.12, 0.12) * rk))   # up, and a little aside
 	_recover += deg_to_rad(rk) * recover
-	_play(fire_sound, mz.global_position if mz != null else _at("muzzle"), 0.0, "event")
+	_play(kind.fire_sound if kind.fire_sound != null else fire_sound, mz.global_position if mz != null else _at("muzzle"), 0.0, "event")
 	get_tree().call_group("hs_listener", "heard", from, noise * kind.noise_scale)    # (noise.gd's way: every listener hears it)
 	var fear := get_tree().get_first_node_in_group("hs_fear")
-	if fear != null and ring_secs > 0.0 and fear.has_method("ring"):
-		fear.ring(ring_secs)
+	if fear != null and ring_secs * kind.ring_scale > 0.0 and fear.has_method("ring"):
+		fear.ring(ring_secs * kind.ring_scale)
 	fired.emit(hits)
 
 

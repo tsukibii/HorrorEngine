@@ -2,6 +2,40 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-11, after the very last (the user: two goofy kinds of shell, easter eggs; the branch `more-shotgun-shells`)
+
+- **"Look at our shotgun asset and our bullets/muzzle/eplosive types of ammo, add a couple of new goofy ammo types, love
+  hearts (this wouldnt damage the npc but have some kind of cute effect), water shells (water splashes), just some fun
+  easter egg ones. call this branch more-shotgun-shells"**. So the weapons plugin has two more kinds of shell
+  (`GodotPlugins/HorrorStudioWeapons`, its README's *The easter egg shells*; the guide's section 8):
+  - **Both are harmless**, and that is one switch: an HSShellType whose `damage` is 0. What it hits is pushed a little
+    and marked as its impact says, but an HSHitReact isn't wounded, staggered or brought nearer to going down, an
+    HSShootable doesn't count it, an HSBlowUp isn't dented or broken; each says `touched(info)` instead, with the kind's
+    `touch` word. A kind also has its own `fire_sound` (no blast) and `ring_scale` (no ringing in the ears) now.
+  - **Love hearts** (`shells/heart.tres`): seven hearts in a wide cone. A small pink flash, pink smoke and hearts out of
+    the muzzle that float up (a muzzle look's `spark_sprite`: each spark a picture, `muzzle/sprite.gdshader`). Where
+    each lands, a pink heart printed on the wall, upright, glowing a few seconds, gone after sixteen, and hearts
+    floating up from it; nothing of the wall missing. **The cute effect on someone** (`touch` "charm"): she's smitten,
+    stood where she is for `charm_s` (2.5 s: whatever moves her waits, as in a stagger, with no shove) with hearts
+    floating up over her head and a run of little bells, then comes on as before.
+  - **Water** (`shells/water.tres`): nine splashes. No flash, no light: a pale spray and mist. Each splash throws drops
+    and mist and leaves a wet patch that runs down a wall and dries in 24 s. Someone hit is soaked (`touch` "soak"): a
+    start, dripping for `soak_s`, her skin wet if she wears the Look plugin's skin. **And it puts things out** (mine,
+    not asked for: easy to take back, `douse_m` 0): an explosive's embers, a made candle's flame (HSPropFX), anything in
+    the group `hs_flame` with `douse()`, within 40 cm of a splash.
+  - **They're easter eggs**: not in a gun's kinds until some are in the pocket (a pickup with its `shell`, or
+    `add_shells`). Nothing in tutorial v2 or the laptop's shop sells them yet: the user's to place.
+  - **Their props** are the prop generator's, customizable as the others (`shell_12ga_heart`, `_heart_spent`,
+    `shells_box_5_heart`, `shell_12ga_water`, `_water_spent`, `shells_box_5_water`: PROPGEN §31; a hull's `mark` and
+    `motif` and a box's `picture` can be a heart or a drop). Their maps `tools/weapon_fx.py` (a heart, heart prints, wet
+    patches), their sounds `tools/weapon_sounds.py` (`--only` makes just the new ones). WEAPONS plays them (§8k); the
+    guide's pictures are Godot's.
+  - **Found on the way, and fixed** (not asked for; it changes what every shot looks like): every impact's dust, chips
+    and sparks, the ichor's droplets, a broken thing's bits and a shot-out lamp's sparks had been coming out at the
+    scene's origin instead of at the hit since the weapons were built (a one-shot particle emitter throws its first
+    particles as it enters the tree, before it was placed: LESSONS). They come out where the shot lands now. The
+    guide's older pictures were taken with the fault and aren't redrawn here.
+
 ## 2026-11-11, the very last (the user: fix the library garments' limits)
 
 - **"fix all the limits"**, each with its answer:
