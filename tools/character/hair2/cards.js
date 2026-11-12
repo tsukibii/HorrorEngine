@@ -36,6 +36,7 @@ function keep(pts, o, tol, least, most) {
 }
 
 // ctx: { n, pts, len, u, width (each hair's card width, m), taper, rootTaper (0..1 a hair: how much narrower it starts), wispy (0 blunt .. 1 wispy ends: one number, or one a hair), roll (each hair's turn about itself, radians: standing short hair),
+//        dye ({ w (0..1 a hair: how much of it is dyed), nat0, nat1 (the natural roots' and lengths' colour over the atlas's), dy (the dye's), dim, abs, roots, ends, tips, soft }: engine.js),
 //        tint (3 a hair, or none), shade ({ lr, lt (the roots' and the lengths' brightness), rootLength (the atlas's), abs (metres of root shade) }), S, C, tol, least, most, twist (K a hair: a card's own turn, or none), axis (3 a kept point: a curl's middle line), out (3 a kept point: the way out, for a tail) }
 export function build(ctx) {
   const { n, pts, len, u, width, S, C } = ctx, tol = ctx.tol ?? 0.0008, least = ctx.least ?? 4, most = ctx.most ?? 14;
@@ -81,9 +82,19 @@ export function build(ctx) {
       // (the atlas goes from the roots' colour to the lengths' over the first third of a card, however long the card: a 9 cm
       // fringe was all "lengths" beside 30 cm hair still in its roots' shade, and read grey. Each point is shaded to the
       // colour hair that far from its root has on a long card: the vertex colour, which HSHair and the Studio multiply in)
-      let sd = 1;
-      if (ctx.shade) { const q = ctx.shade, vt = ctx.v0 ? ctx.v0[i] + t * (ctx.v1[i] - ctx.v0[i]) : t * vEnd, kt = smooth01(vt / q.rootLength), kd = smooth01(t * len[i] / q.abs); sd = Math.min(1, (q.lr + (q.lt - q.lr) * kd) / Math.max(1e-5, q.lr + (q.lt - q.lr) * kt)); }
-      for (let e = 0; e < 2; e++) { N.push(nr[k * 3], nr[k * 3 + 1], nr[k * 3 + 2]); T.push(tn[k * 3], tn[k * 3 + 1], tn[k * 3 + 2], 1); CARD.push(i); if (tint) COL.push(tint[i * 3] * sd, tint[i * 3 + 1] * sd, tint[i * 3 + 2] * sd); else COL.push(sd, sd, sd); }
+      let sd = 1, dc = null;
+      if (ctx.dye) {                                                     // dyed hair (engine.js dyeOf): the atlas is one flat colour, and each point carries its own: the natural colour from its roots' shade to its lengths', or the dye, by its lock and by how far it is from its root and its tip
+        const q = ctx.dye, d = t * len[i], e = (1 - t) * len[i], kd = q.abs > 0 ? smooth01(d / q.abs) : 1, off = q.noEnd && q.noEnd[i]; let m = q.w[i];   // (abs 0: no roots' shade: a tail's hairs, a wisp)
+        if (m > 0) {
+          const sf = q.soft, st = (a, x) => { const lo = a * (1 - sf), hi = a * (1 + sf) + 0.002; return smooth01((x - lo) / (hi - lo)); };
+          if (q.roots > 0) m *= st(q.roots, d);                           // (grown out: the first centimetres natural)
+          if (q.ends > 0 && !off) m *= st(q.ends, e);                     // (the ends left natural)
+          if (q.tips > 0 && !off) m *= 1 - st(Math.min(q.tips, 0.45 * len[i]), e);   // (dip dye: only the ends)
+        }
+        dc = [0, 1, 2].map(c => (q.nat0[c] + (q.nat1[c] - q.nat0[c]) * kd) * (1 - m) + q.dy[c] * (q.dim + (1 - q.dim) * kd) * m);
+      }
+      else if (ctx.shade) { const q = ctx.shade, vt = ctx.v0 ? ctx.v0[i] + t * (ctx.v1[i] - ctx.v0[i]) : t * vEnd, kt = smooth01(vt / q.rootLength), kd = smooth01(t * len[i] / q.abs); sd = Math.min(1, (q.lr + (q.lt - q.lr) * kd) / Math.max(1e-5, q.lr + (q.lt - q.lr) * kt)); }
+      for (let e = 0; e < 2; e++) { N.push(nr[k * 3], nr[k * 3 + 1], nr[k * 3 + 2]); T.push(tn[k * 3], tn[k * 3 + 1], tn[k * 3 + 2], 1); CARD.push(i); if (dc) COL.push(dc[0], dc[1], dc[2]); else if (tint) COL.push(tint[i * 3] * sd, tint[i * 3 + 1] * sd, tint[i * 3 + 2] * sd); else COL.push(sd, sd, sd); }
       const vv = ctx.v0 ? ctx.v0[i] + t * (ctx.v1[i] - ctx.v0[i]) : t * vEnd;   // (v0, v1: a card's own stretch of the atlas, for cards laid end to end: a ringlet)
       UV.push(u0, vv, u0 + span, vv);
       if (rows) { const a = base + (rows - 1) * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }

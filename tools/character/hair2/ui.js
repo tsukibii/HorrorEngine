@@ -14,7 +14,7 @@
 //   H2.worn()         is it on                                         H2.ready()    a promise: the finished hair of the settings as they are, on the body as it is
 //   H2.group          what's drawn (under ctx.rig), H2.group.userData.rev counts each remake (the page's pose shift)
 import * as THREE from "three";
-import { STYLES, GROUPS, CONTROLS, FRINGES, settings, differs, lookOf } from "./styles.js";
+import { STYLES, GROUPS, CONTROLS, FRINGES, settings, differs, lookOf, drawLook } from "./styles.js";
 import { frameMatrix } from "./body.js";
 import { atlas as hairAtlas, record } from "./bake.js";
 import { tile as shellTile } from "./shell.js";
@@ -50,7 +50,7 @@ export function mountHair2(ctx) {
   const H = { on: false, style: "bob_middle", set: {} };                 // the character's record
   let S = settings(H.style, H.set);                                       // every setting in full
   const group = new THREE.Group(); group.name = "hair2"; group.matrixAutoUpdate = false; group.visible = false; group.userData.rev = 0; rig.add(group);
-  const ATL = hairAtlas(), U = hairUniforms(atlasTexture(ATL), lookOf(S));
+  const ATL = hairAtlas(), U = hairUniforms(atlasTexture(ATL), drawLook(S));
   const cardsMat = hairMaterial(U, { shade: true }); cardsMat.name = "hair_cards";
   const tileTex = (() => { const t = new THREE.DataTexture(new Uint8Array(shellTile().buffer), 256, 256, THREE.RGBAFormat, THREE.UnsignedByteType); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter; t.generateMipmaps = true; t.colorSpace = THREE.NoColorSpace; t.needsUpdate = true; return t; })();
   const shellMat = new THREE.ShaderMaterial({ uniforms: { tile: { value: tileTex }, rootC: U.rootC, tipC: U.tipC, keyDir: U.keyDir, keyC: U.keyC, ambientC: U.ambientC }, vertexShader: SHELL_VERT, fragmentShader: SHELL_FRAG, side: THREE.DoubleSide, alphaToCoverage: true });
@@ -61,7 +61,7 @@ export function mountHair2(ctx) {
   const FILE = { look: "", cards: null, shell: null };
   const tidy = g => { for (const k of ["aTangent", "aTint", "aDepth"]) if (g.attributes[k]) g.deleteAttribute(k); };
   cardsMat.userData.fileMaterial = (x, g) => {
-    tidy(g); const look = lookOf(S), key = JSON.stringify(look);
+    tidy(g); const look = drawLook(S), key = JSON.stringify(look);   // (the cards' look: dyed hair's is the flat carrier, each lock's colour on its points)
     if (FILE.look !== key || !FILE.cards) {
       FILE.look = key; FILE.cards = new THREE.MeshStandardMaterial({ name: "hair_cards", map: albedoTexture(ATL, hairAlbedo(ATL, look)), alphaTest: 0.4, side: THREE.DoubleSide, roughness: 0.55, aoMap: strandsTexture(ATL) });
       FILE.cards.userData = record(look);
@@ -166,8 +166,8 @@ export function mountHair2(ctx) {
     const now = snap(); if (now !== last) { UNDO.push(last); if (UNDO.length > 80) UNDO.shift(); REDO.length = 0; last = now; ctx.changed?.(); }
     undoB.disabled = !UNDO.length; redoB.disabled = !REDO.length;
   }
-  function changed(draft) { H.set = differs(H.style, S); applyLook(U, lookOf(S)); if (!H.on && !draft) wear(true, true); ask(draft); if (!draft) commit(); }
-  function restore(text) { const r = JSON.parse(text); H.style = STYLES[r.style] ? r.style : H.style; H.set = r.set || {}; S = settings(H.style, H.set); applyLook(U, lookOf(S)); syncs.forEach(f => f()); mark(); ask(false); last = snap(); undoB.disabled = !UNDO.length; redoB.disabled = !REDO.length; ctx.changed?.(); }
+  function changed(draft) { H.set = differs(H.style, S); applyLook(U, drawLook(S)); if (!H.on && !draft) wear(true, true); ask(draft); if (!draft) commit(); }
+  function restore(text) { const r = JSON.parse(text); H.style = STYLES[r.style] ? r.style : H.style; H.set = r.set || {}; S = settings(H.style, H.set); applyLook(U, drawLook(S)); syncs.forEach(f => f()); mark(); ask(false); last = snap(); undoB.disabled = !UNDO.length; redoB.disabled = !REDO.length; ctx.changed?.(); }
   const wearBox = el("input", { type: "checkbox" });
   wearBox.onchange = () => wear(wearBox.checked);
   box.append(el("label", { className: "tog" }, wearBox, el("span", { textContent: "Wear this hair" }, el("small", { textContent: "Hair grown from fixed pores on the scalp, shaped by the settings below: no strands to place. While it's worn, the salon's hair (the Hair tab) is hidden and stays out of an export; turn this off to wear the salon's again." }))));
@@ -208,7 +208,7 @@ export function mountHair2(ctx) {
       for (const [id, st] of Object.entries(STYLES)) if (st.group === gid) card(id, st.label, () => { H.style = id; H.set = {}; S = settings(id); after(); });
     }
   }
-  const after = () => { applyLook(U, lookOf(S)); syncs.forEach(f => f()); mark(); if (!H.on) wear(true, true); else ask(false); commit(); };
+  const after = () => { applyLook(U, drawLook(S)); syncs.forEach(f => f()); mark(); if (!H.on) wear(true, true); else ask(false); commit(); };
   const mark = () => { for (const [id, b] of Object.entries(cards)) b.classList.toggle("on", id === H.style); };
   // every setting, by section
   for (const sec of CONTROLS) {
@@ -288,11 +288,11 @@ export function mountHair2(ctx) {
     open(r) {                                                            // a character opened: its hair, or none
       UNDO.length = REDO.length = 0; lastStats = null; failed = ""; bodyKey = ""; bodySent = false;
       H.on = !!(r && r.on); H.style = r && STYLES[r.style] ? r.style : "bob_middle"; H.set = r && r.set ? clone(r.set) : {};
-      S = settings(H.style, H.set); applyLook(U, lookOf(S)); syncs.forEach(f => f()); mark(); last = snap(); undoB.disabled = redoB.disabled = true;
+      S = settings(H.style, H.set); applyLook(U, drawLook(S)); syncs.forEach(f => f()); mark(); last = snap(); undoB.disabled = redoB.disabled = true;
       for (const o of [...group.children]) { group.remove(o); o.geometry?.dispose(); }
       group.visible = H.on; wearBox.checked = H.on; ctx.onWear?.(H.on); if (H.on) ask(false); stat();
     },
-    use(style, set = {}, on = true) { H.style = STYLES[style] ? style : H.style; H.set = clone(set); S = settings(H.style, H.set); applyLook(U, lookOf(S)); syncs.forEach(f => f()); mark(); if (on && !H.on) wear(true, true); else ask(false); commit(); },
+    use(style, set = {}, on = true) { H.style = STYLES[style] ? style : H.style; H.set = clone(set); S = settings(H.style, H.set); applyLook(U, drawLook(S)); syncs.forEach(f => f()); mark(); if (on && !H.on) wear(true, true); else ask(false); commit(); },
     wear,
     bodyChanged() { if (!H.on) return; clearTimeout(bodyTimer); bodyTimer = setTimeout(() => { if (H.on && sendBody(false)) ask(false); }, 450); },
     light() { if (!H.on) return; ctx.key.getWorldPosition(_k).sub(ctx.key.target.getWorldPosition(_t)); _c.copy(ctx.key.color).multiplyScalar(ctx.key.intensity * 0.6); lightHair(U, _k, _c, _f, null); },

@@ -20,11 +20,11 @@ attribute vec4 aTint;
 attribute float aDepth;
 varying vec3 vN; varying vec3 vT; varying vec3 vW; varying vec2 vUv; varying vec4 vTint; varying float vOcc;
 #ifdef USE_SHADE
-attribute vec3 color; varying float vShade;                        // a card's own shade by vertex (the hair editor v2.0's cards: hair2/cards.js), what a file's vertex colour carries
+attribute vec3 color; varying vec3 vShade;                        // a card's own shade by vertex (the hair editor v2.0's cards: hair2/cards.js), what a file's vertex colour carries
 #endif
 void main() {
 #ifdef USE_SHADE
-  vShade = color.r;
+  vShade = color;                                                   // (all three: dyed hair's cards carry each lock's own colour over a flat atlas; plain hair's the one shade three times)
 #endif
   vOcc = 0.42 + 0.58 * smoothstep(0.002, 0.028, aDepth);          // inner layers (near the skin) in the outer ones' shade
   vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz;
@@ -40,7 +40,7 @@ uniform float uFlat, uFlatGain, uSteps, uDither;                   // the retro 
 float bayer4(vec2 p) { int i = int(mod(p.x, 4.0)) + 4 * int(mod(p.y, 4.0)); const float m[16] = float[16](0., 8., 2., 10., 12., 4., 14., 6., 3., 11., 1., 9., 15., 7., 13., 5.); return (m[i] + 0.5) / 16.0; }
 varying vec3 vN; varying vec3 vT; varying vec3 vW; varying vec2 vUv; varying vec4 vTint; varying float vOcc;
 #ifdef USE_SHADE
-varying float vShade;
+varying vec3 vShade;
 #endif
 float kk(vec3 T, vec3 H, float g) { float th = dot(T, H); return pow(sqrt(max(0.0, 1.0 - th * th)), g); }
 void main() {

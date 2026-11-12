@@ -11,7 +11,7 @@ import { readFileSync } from "fs";
 import { bodyByName, bodyFromFile, loadPores, headSkin } from "./node.mjs";
 import { place, alive } from "./pores.js";
 import { prepare, grow } from "./engine.js";
-import { settings, lookOf, STYLES } from "./styles.js";
+import { settings, lookOf, drawLook, STYLES } from "./styles.js";
 import { textures, record } from "./bake.js";
 import { linear } from "../hairtex.js";
 import { tile } from "./shell.js";
@@ -49,7 +49,7 @@ if (process.argv[1] && process.argv[1].endsWith("make.mjs")) {
   const style = kept ? (STYLES[kept.style] ? kept.style : "bob_middle") : arg("--style");
   if (style) {
     const s = settings(style, kept ? kept.set || {} : S), prep = prepare(body), look = lookOf(s), rootC = linear(look.root).map(v => Math.round(255 * Math.pow(v, 1 / 2.2)));
-    const r = grow(body, pores, s, prep, { rootColour: rootC }), tex = textures(look);
+    const r = grow(body, pores, s, prep, { rootColour: rootC }), tex = textures(drawLook(s));   // (dyed hair: a flat atlas, each lock's colour on its points)
     const mat = G.material({ name: "hair_cards", texture: G.texture(tex.albedo, tex.W, tex.H, { repeatS: true }), occlusion: G.texture(tex.strands, tex.W, tex.H, { repeatS: true }), alphaCutoff: 0.4, doubleSided: true, roughness: 0.55, extras: record(tex.look) });
     const h = r.hair;
     if (h.index.length) G.node({ name: "hair_static", mesh: G.mesh({ name: "hair_static", position: h.position, normal: h.normal, tangent: h.tangent, uv: h.uv, uv1: h.uv1, color: h.color, index: h.index, material: mat }) });   // (a cut that's all shells has no cards)

@@ -37,7 +37,8 @@ export function cutLine(c, az) {
 }
 
 // ctx: { n, pos, nrm, dir, lift, group, u, len (the length each may reach), vol (how thick the hair lies there), S (the
-//        distance grid), field(x, y, z, out), C, s (the settings), ties, limit (the hairline: its height at an angle round the head), cu (each hair's lock's own number) }
+//        distance grid), field(x, y, z, out), C, s (the settings), ties, limit (the hairline: its height at an angle round the head), cu (each hair's lock's own number),
+//        fline (a face-framing strand's own line where it has one: under 1; else 9) }
 export function trace(ctx) {
   const { n, pos, nrm, dir, lift, group, u, len, vol, S, field, C, s } = ctx;
   const cut = s.cut || {}, sh = s.shape || {}, fr = s.fringe || {}, byLine = cut.mode === "line", hasFringe = !!fr.kind && fr.kind !== "none";
@@ -50,6 +51,8 @@ export function trace(ctx) {
   // and falls behind it, on both sides or one
   const tuckL = ears === "tucked" || ears === "tucked_left", tuckR = ears === "tucked" || ears === "tucked_right", ETOP = EAR.y + EAR.dy, EBOT = EAR.y - EAR.dy - 0.004, EOUT = 1.08;
   const FRONT = (tuckL || tuckR) && (s.tuckFall || "front") === "front";
+  // tied hair's way to its tie: Sweep (it keeps its root's way at first and bends round to the tie over some centimetres: arcs over the head) and Swirl (it comes in turned, winding round the tie)
+  const tieSweep = clamp((s.ties && s.ties.sweep) || 0, 0, 1) * 0.1, tieSwirl = clamp((s.ties && s.ties.swirl) || 0, -1, 1) * 42 * D;
   for (let i = 0; i < n; i++) {
     let L = len[i]; if (!(L > 0.0015)) continue;
     const gr = group[i], steps = clamp(Math.ceil(L / 0.008), 5, MAXS), dl = L / steps, al = 1 - Math.exp(-dl / bendLen);
@@ -69,6 +72,11 @@ export function trace(ctx) {
       if (tie) {                                                          // toward its tie along the head; the last few centimetres straight to it, and it ends in it
         cx = tie.at[0] - px; cy = tie.at[1] - py; cz = tie.at[2] - pz; wc = 1; const dT = Math.hypot(cx, cy, cz);
         free = dT < 0.045; if (dT < (tie.radius || 0.012) * 0.6 + dl * 1.2) atTie = true;
+        if (!free && dT > 1e-6 && (tieSweep > 0 || tieSwirl)) {
+          cx /= dT; cy /= dT; cz /= dT;
+          if (tieSwirl && ok) { const a = tieSwirl * smooth(0.045, 0.1, dT), cs = Math.cos(a), sn = Math.sin(a), rx = g[1] * cz - g[2] * cy, ry = g[2] * cx - g[0] * cz, rz = g[0] * cy - g[1] * cx; cx = cx * cs + rx * sn; cy = cy * cs + ry * sn; cz = cz * cs + rz * sn; }
+          if (sAt < tieSweep) { const k = smooth(0, tieSweep, sAt); cx = dir[i * 3] * (1 - k) + cx * k; cy = dir[i * 3 + 1] * (1 - k) + cy * k; cz = dir[i * 3 + 2] * (1 - k) + cz * k; }
+        }
       }
       else if (own) { cx = dir[i * 3]; cy = dir[i * 3 + 1]; cz = dir[i * 3 + 2]; wc = 1 - smooth(ownHold * 0.4, ownHold + 1e-6, sAt); }
       else if (near && field(px, py, pz, c)) { cx = c[0]; cy = c[1]; cz = c[2]; wc = Math.max(smooth(0.12, 0.5, g[1]), hold * (1 - smooth(holdLen * 0.5, holdLen, sAt))); }
@@ -133,10 +141,10 @@ export function trace(ctx) {
         const want = Math.sign(qx || 1) * Math.tan((38 + 12 * hash(u[i], 9)) * D) * (qz - C[2]); qx += (want - qx) * 0.6;   // (each to its own place there, in with the hair beside the face: not all down one line)
       }
       if (ears === "clear" && !own && earIn(azq, qy) < 1.12 && dist(S, qx, qy, qz) < 0.03) done = true;   // the ear left clear: the hair is cut where it would cover it
-      if (gr === LOOSE && (qx >= C[0] ? tuckL : tuckR) && qy > EAR.y - 0.012 && earIn(azq, qy) < EOUT && dist(S, qx, qy, qz) < 0.045) {   // tucked: never across the ear; lifted back onto its outline (over the top, down behind)
+      if ((gr === LOOSE || tie) && (qx >= C[0] ? tuckL : tuckR) && qy > EAR.y - 0.012 && earIn(azq, qy) < EOUT && dist(S, qx, qy, qz) < 0.045) {   // tucked: never across the ear; lifted back onto its outline (over the top, down behind); tied hair on its way up to a tie goes over the ear's top too
         const da = Math.abs((Math.abs(azq) - EAR.az) / EAR.da);
         qy = Math.max(qy, EAR.y + EAR.dy * Math.pow(Math.max(0, Math.pow(EOUT, EAR.n) - Math.pow(da, EAR.n)), 1 / EAR.n));
-        if (Math.abs(azq) > EAR.az - EAR.da * 0.6) {                      // and on round the head to the back while it's over the ear: it comes down behind it, never in front or over its rim
+        if (!tie && Math.abs(azq) > EAR.az - EAR.da * 0.6) {              // and on round the head to the back while it's over the ear: it comes down behind it, never in front or over its rim
           const ex = qx - C[0], ez = qz - C[2], r = Math.hypot(ex, ez), a2 = Math.atan2(ex, ez) + Math.sign(ex || 1) * 2.5 * D;
           qx = C[0] + r * Math.sin(a2); qz = C[2] + r * Math.cos(a2);
         }
@@ -147,7 +155,7 @@ export function trace(ctx) {
         const level = Math.max(0, 1 - 2 * Math.max(0, py - qy) / dl), outward = Math.max(0, Math.abs(qx) - Math.abs(px));   // (and it doesn't slide out along a shoulder's slope: long hair falls in front of a shoulder or behind it, it doesn't fan over it)
         rest -= dl * (g[1] > 0.6 ? 4 : 1.5) * level + outward * 2.5; if (rest <= 0) done = true;
       }
-      if (byLine && gr !== FRINGE && !tie) {                              // cut to the line
+      if (byLine && gr !== FRINGE && gr !== FRAME && !tie) {              // cut to the line (a face-framing strand has its own, below: on tied hair nobody sets the cut's line, and its default cut every tendril at the chin whatever its own length said)
         const line = cutLine(cut, azq) + (hash(u[i], 5) - 0.5) * 0.012 * (cut.uneven ?? 0.15) + (ctx.raise ? ctx.raise[i] : 0);
         if (qy < line) { const f = clamp((py - line) / Math.max(1e-6, py - qy), 0, 1); qx = px + (qx - px) * f; qy = py + (qy - py) * f; qz = pz + (qz - pz) * f; sAt -= dl * (1 - f); done = true; }
       }
@@ -160,7 +168,7 @@ export function trace(ctx) {
         if (qy < line) { const f = clamp((py - line) / Math.max(1e-6, py - qy), 0, 1); qx = px + (qx - px) * f; qy = py + (qy - py) * f; qz = pz + (qz - pz) * f; sAt -= dl * (1 - f); done = true; }
       }
       if (gr === FRAME) {                                                 // a face-framing strand's own line (the cheek, the jaw...)
-        const line = (fr.frameCurl || 0) > 0 ? DRILL_TOP - 0.012 : (fr.frameLine ?? MARKS.jaw) + (hash(u[i], 6) - 0.5) * 0.02 * (fr.uneven ?? 0.3);   // (wound into a ringlet: they end where it begins, ties.js drills)
+        const line = ctx.fline && ctx.fline[i] < 1 ? ctx.fline[i] : (fr.frameCurl || 0) > 0 ? DRILL_TOP - 0.012 : (fr.frameLine ?? MARKS.jaw) + (hash(u[i], 6) - 0.5) * 0.02 * (fr.uneven ?? 0.3);   // (wound into a ringlet: they end where it begins, ties.js drills; fline: a tendril's lock's own line, a wisp by the ear's: engine.js)
         if (qy < line) { const f = clamp((py - line) / Math.max(1e-6, py - qy), 0, 1); qx = px + (qx - px) * f; qy = py + (qy - py) * f; qz = pz + (qz - pz) * f; sAt -= dl * (1 - f); done = true; }
       }
       tx = qx - px; ty = qy - py; tz = qz - pz; const tl = Math.hypot(tx, ty, tz); if (tl < 1e-7) break; tx /= tl; ty /= tl; tz /= tl;

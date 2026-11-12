@@ -11,14 +11,14 @@ import { buildSDF, dist, grad, withLumps } from "./sdf.js";
 import { earLumps } from "./body.js";
 import { patch, paint } from "./scalp.js";
 import { build as shells, SHELL_MAX } from "./shell.js";
-import { place, alive, hairline, EAR } from "./pores.js";
+import { place, alive, hairline, EAR, MARKS } from "./pores.js";
 import { parts, comb, ease, fieldOf, partingSide, partingShare, sagittal, LOOSE, FRINGE, FRAME, TIE } from "./flow.js";
 import { trace, hash, cutLine, K } from "./strands.js";
 import { build, coverage, join } from "./cards.js";
 import { clumpsOf, texture } from "./texture.js";
 import { tiesOf, tail, band, drills, ahoge } from "./ties.js";
 import { finish } from "./bake.js";
-import { lookOf } from "./styles.js";
+import { lookOf, drawLook, dyed } from "./styles.js";
 import { linear } from "../hairtex.js";
 
 const D = Math.PI / 180;
@@ -48,6 +48,14 @@ function skinAlong(S, C, d) {
   let r = 0.2;
   for (let i = 0; i < 60; i++) { const q = dist(S, C[0] + d[0] * r, C[1] + d[1] * r, C[2] + d[2] * r); if (q < 0.0004) break; r -= Math.max(0.0004, q * 0.9); }
   return [C[0] + d[0] * r, C[1] + d[1] * r, C[2] + d[2] * r];
+}
+
+// Dyed hair's colours over the flat atlas it's drawn with (styles.js drawLook): the natural roots' and lengths', the
+// dye's, and where along a hair the dye is (cards.js build's `dye`)
+function dyeOf(s, lk) {
+  const d = s.dye, M = linear(drawLook(s).tip), over = a => a.map((v, c) => Math.min(1, v / M[c]));
+  return { nat0: over(linear(lk.root)), nat1: over(linear(lk.tip)), dy: over(linear(d.colour || "#7b3fd6")), dim: 0.72, abs: 0.1, roots: Math.max(0, d.roots || 0), ends: Math.max(0, d.ends || 0),
+    tips: d.where === "tips" ? 0.02 + 0.2 * clamp(d.amount ?? 0.5, 0, 1) : 0, soft: clamp(d.soft ?? 0.5, 0, 1) };
 }
 
 export function grow(body, pores, s, prep, o = {}) {
@@ -83,6 +91,25 @@ export function grow(body, pores, s, prep, o = {}) {
   }
   for (let i = 0; i < n; i++) {                                          // hair lies down round the whorl (it stands up in a tuft there otherwise)
     const dc = Math.hypot(pos[i * 3] - crown[0], pos[i * 3 + 1] - crown[1], pos[i * 3 + 2] - crown[2]); if (dc < 0.045 && cmb.group[i] === LOOSE) cmb.lift[i] *= 0.2 + 0.8 * smooth(0.006, 0.045, dc);
+  }
+  // ---- tendrils: the face-framing strands gathered into pointed locks (Tendrils: so many a side), each lock its own
+  // length and its hairs drawn to its point; and the wisps by the ears, each to somewhere between the lobe and the jaw
+  const fr0 = s.fringe || {}, NL = (fr0.frameCurl || 0) > 0 ? 0 : Math.round(clamp(fr0.frameLocks || 0, 0, 4)), fline = new Float32Array(n).fill(9), clumpAmt = new Float32Array(n); let anyLock = false;
+  {
+    const a0 = fr0.kind && fr0.kind !== "none" ? Math.max(34, (fr0.width ?? 46) - 8) : 36, base = fr0.frameLine ?? MARKS.jaw, stag = clamp(fr0.frameStagger ?? 0.5, 0, 1), guide = new Map(), lock = new Int32Array(n);
+    for (let i = 0; i < n; i++) {
+      if (cmb.group[i] !== FRAME) continue;
+      const a = Math.abs(az[i]), side = pos[i * 3] >= C[0] ? 1 : -1;
+      if (a >= 64) { fline[i] = Math.max(base, MARKS.jaw - 0.012) + 0.035 * hash(u[i], 72); continue; }
+      if (!NL) continue;
+      const j = clamp(Math.floor((a - a0) / (64 - a0) * NL), 0, NL - 1), key = side * (j + 1), dd = Math.abs(a - (a0 + (j + 0.5) * (64 - a0) / NL)), gd = guide.get(key);
+      lock[i] = key; if (!gd || dd < gd.d) guide.set(key, { i, d: dd });
+    }
+    for (let i = 0; i < n; i++) {
+      if (!lock[i]) continue;
+      const j = Math.abs(lock[i]) - 1, k = (j * 0.618 + (lock[i] > 0 ? 0.13 : 0.47) + (s.seed || 1) * 0.31) % 1;
+      clump.of[i] = guide.get(lock[i]).i; clumpAmt[i] = clump.of[i] === i ? 0 : 0.93; fline[i] = base + stag * 0.085 * k; anyLock = true;
+    }
   }
   // the first row meets the line: a hair beside the parting, or by the whorl, starts at it (no bare strip a pore's
   // spacing wide: the parting is as wide as its Width says)
@@ -130,20 +157,20 @@ export function grow(body, pores, s, prep, o = {}) {
     if (wisp) L = hash(u[i], 17) < 0.5 ? Math.min(L, 0.012 + 0.03 * hash(u[i], 16)) : 0;                   // (every other one: a few wisps, not a patch of stubble)
     len[i] = L;
     vol[i] = cmb.group[i] >= TIE ? 0.0015 + 0.008 * (1 - (ctx.ties[cmb.group[i] - TIE].tight ?? 0.6)) : cmb.group[i] === FRINGE ? 0.003 + 0.012 * (fr.curve ?? 0.4) : P.top[i] * (V.top ?? 0.007) + P.sides[i] * (V.sides ?? 0.007) + (P.back[i] + P.nape[i]) * (V.back ?? 0.009);
-    width[i] = w0 * (fine ? 0.35 : wisp ? 0.4 : cmb.group[i] === FRINGE ? 0.6 + 0.4 * (fr.amount ?? 0.7) : cmb.group[i] === FRAME ? 0.75 : 1);
+    width[i] = w0 * (fine ? 0.35 : wisp ? 0.4 : cmb.group[i] === FRINGE ? 0.6 + 0.4 * Math.min(1, fr.amount ?? 0.7) : cmb.group[i] === FRAME ? (Math.abs(az[i]) >= 64 ? 0.4 : 0.75) : 1);   // (a wisp by the ear: thin)
     taper[i] = L < 0.06 ? 0.65 : (s.card.taper ?? 0.3);
     roll[i] = L < 0.05 && cmb.lift[i] > 34 * D ? (hash(u[i], 7) - 0.5) * Math.PI * smooth(34 * D, 60 * D, cmb.lift[i]) : 0;
     rootT[i] = 0.97 * (1 - smooth(0.1, 0.6, edge[i]));                                                      // at the hairline's edge a lock starts as a point (full width from a centimetre in: where the scalp's shade is full, so are the locks)
   }
   // ---- each hair traced
   const cu = new Float32Array(n); for (let i = 0; i < n; i++) cu[i] = u[clump.of[i]];                    // each hair's lock's own number (a choppy fringe cuts by the lock)
-  const tr = trace({ n, pos: root, nrm: rootN, dir: cmb.dir, lift: cmb.lift, group: cmb.group, u, len, vol, raise, S, field, C, s, ties: ctx.ties, limit: lim, cu });
+  const tr = trace({ n, pos: root, nrm: rootN, dir: cmb.dir, lift: cmb.lift, group: cmb.group, u, len, vol, raise, S, field, C, s, ties: ctx.ties, limit: lim, cu, fline });
   lap("trace");
   // ---- texture: clumps, waves, curls, frizz, strays
   // (hair tucked behind an ear: no stray wisps off it, and after the waves and the locks have moved it, back out of the ear's outline)
   let held = null;
   if (tuckL || tuckR) { held = new Uint8Array(n); for (let i = 0; i < n; i++) held[i] = cmb.group[i] === LOOSE && (pos[i * 3] >= C[0] ? tuckL : tuckR) && Math.abs(az[i]) < 126 ? 1 : 0; }
-  const tex = texture({ n, pts: tr.pts, len: tr.len, u, group: cmb.group, clump, S, C, s, spacing, held });
+  const tex = texture({ n, pts: tr.pts, len: tr.len, u, group: cmb.group, clump, S, C, s, spacing, held, clumpAmt: anyLock ? clumpAmt : null });
   if (held) for (let i = 0; i < n; i++) {
     if (cmb.group[i] !== LOOSE || !(tr.len[i] > 0) || !(pos[i * 3] >= C[0] ? tuckL : tuckR)) continue;
     for (let k = 1; k < K; k++) {
@@ -154,6 +181,51 @@ export function grow(body, pores, s, prep, o = {}) {
     }
   }
   lap("texture");
+  // ---- a second colour: which hairs are dyed. A streak is a lane the hair runs in: tied hair's bearing round its tie
+  // (every hair on a line into the tie is one colour, so the stripes run into a bun as the hair does), other hair's
+  // place round the head where it hangs (a slice of hair from the parting down, the way a colourist takes it: through
+  // all the layers). Its width is the Streak size; the share of the hairs dyed is the Amount (of what's seen, within a few points: HAIR2)
+  const DY = dyed(s) ? dyeOf(s, lookOf(s)) : null, dw = DY ? new Float32Array(n) : null, dye = s.dye || {}, tieShare = ctx.ties.map(() => 0);
+  const laneW = lerp(4, 38, clamp(dye.size ?? 0.5, 0, 1)), dsd = (dye.seed || 1) * 3.217;
+  const noise1 = (x, sd) => { const i = Math.floor(x), f = x - i, k = f * f * (3 - 2 * f); return hash(i * 0.7131 + sd, 63) * (1 - k) + hash((i + 1) * 0.7131 + sd, 63) * k; };
+  const laneNoise = (lane, sd) => 0.7 * noise1(lane / laneW, sd) + 0.3 * noise1(lane / (laneW * 0.37), sd + 5.1);
+  if (DY) {
+    const amt = clamp(dye.amount ?? 0.5, 0, 1), tieN = ctx.ties.map(() => 0), k70 = Math.round(0.7 * (K - 1));
+    let streak = null, cutAt = 0;
+    if (dye.where === "streaks") {
+      streak = new Float32Array(n);
+      const frames = ctx.ties.map(t => { const nn = t.out, a = Math.abs(nn[1]) < 0.9 ? [nn[2], 0, -nn[0]] : [1, 0, 0], al = Math.hypot(...a), aa = a.map(v => v / al); return [aa, [nn[1] * aa[2] - nn[2] * aa[1], nn[2] * aa[0] - nn[0] * aa[2], nn[0] * aa[1] - nn[1] * aa[0]]]; });
+      for (let i = 0; i < n; i++) {
+        const gI = cmb.group[i];
+        if (gI >= TIE) {
+          // (the bearing it arrives on, from its own path some 5 cm before the tie, not its root's: measured on a low bun, a root's bearing is a median 9 degrees off the one its hair comes in on, more than a lane's fine width, and a hair dyed by its root lay in its neighbour's lane)
+          let k = K - 1; while (k > 0 && (1 - tr.t[k]) * tr.len[i] < 0.05) k--;
+          const o = (i * K + k) * 3, t = ctx.ties[gI - TIE], [fa, fb] = frames[gI - TIE], rx = (tr.len[i] > 0 ? tr.pts[o] : pos[i * 3]) - t.at[0], ry = (tr.len[i] > 0 ? tr.pts[o + 1] : pos[i * 3 + 1]) - t.at[1], rz = (tr.len[i] > 0 ? tr.pts[o + 2] : pos[i * 3 + 2]) - t.at[2]; streak[i] = laneNoise(Math.atan2(rx * fb[0] + ry * fb[1] + rz * fb[2], rx * fa[0] + ry * fa[1] + rz * fa[2]) / D, dsd + 11.3 * (gI - TIE + 1));
+        }
+        else { const o = (i * K + k70) * 3; streak[i] = laneNoise(Math.atan2(tr.pts[o] - C[0], tr.pts[o + 2] - C[2]) / D * (gI === FRINGE ? 1.6 : 1), dsd + (gI === FRINGE ? 3.3 : 0)); }   // (a fringe's stripes a little narrower: it's seen close)
+      }
+      const of = Array.from(streak).sort((p, q) => p - q); cutAt = amt >= 1 ? 2 : of[Math.min(n - 1, Math.floor(amt * n))] ?? 0;
+    }
+    for (let i = 0; i < n; i++) {
+      const gI = cmb.group[i], c = clump.of[i], depth = by[i] - lim(az[i]); let w = 0;
+      switch (dye.where) {
+        case "all": w = 1; break;
+        case "streaks": w = streak[i] < cutAt ? 1 : 0; break;
+        case "under": w = gI !== FRINGE && by[i] < lerp(-0.04, 0.07, amt) + (hash(u[c], 64) - 0.5) * 0.008 ? 1 : 0; break;   // (the hair that grows low on the head: it shows under the rest, at the nape, behind the ears, in a tail)
+        case "over": w = by[i] > lerp(0.115, 0.02, amt) + (hash(u[c], 64) - 0.5) * 0.008 ? 1 : 0; break;
+        case "front": w = gI === FRAME || (Math.abs(az[i]) > 24 && Math.abs(az[i]) < lerp(40, 62, amt) && depth < lerp(0.006, 0.02, amt)) ? 1 : 0; break;   // (the strands beside the face and a narrow band of the hairline there: two pieces, never the top of the head)
+        case "fringe": w = gI === FRINGE || (gI === FRAME && amt > 0.5) ? 1 : 0; break;
+        case "split": w = pos[i * 3] >= C[0] ? 1 : 0; break;
+        case "split_r": w = pos[i * 3] < C[0] ? 1 : 0; break;
+        case "tips": w = gI === FRINGE || gI === FRAME || gI >= TIE ? 0 : 1; break;       // (a tied hair's ends are in its tail: the tail's tips are dyed)
+      }
+      dw[i] = w;
+      if (gI >= TIE) { tieShare[gI - TIE] += w; tieN[gI - TIE]++; }
+    }
+    for (let k = 0; k < tieShare.length; k++) tieShare[k] = dye.where === "tips" || dye.where === "all" ? 1 : tieN[k] ? tieShare[k] / tieN[k] : 0;
+  }
+  // (a tied hair ends in its tie: the ends' rules are its tail's)
+  const noEnd = DY ? Uint8Array.from(cmb.group, gI => (gI >= TIE ? 1 : 0)) : null;
   // ---- cards, and their finish
   const wavy = (tx.wave || 0) > 0.002 || (tx.curl || 0) > 0;
   // a card keeps points only where it bends; if that's over the detail's budget of triangles, a looser fit until it isn't
@@ -163,11 +235,12 @@ export function grow(body, pores, s, prep, o = {}) {
   const wisp = new Float32Array(n); for (let i = 0; i < n; i++) wisp[i] = cmb.group[i] === FRINGE ? (fr.wispy ?? 0.75) : cmb.group[i] === FRAME ? (fr.frameWispy ?? 0.85) : (cut.wispy ?? 0.3);
   if (tex.strays.n) {
     const sw = new Float32Array(tex.strays.n); for (let i = 0; i < sw.length; i++) sw[i] = 0.0014 + 0.002 * hash(tex.strays.u[i], 61);
-    stray = build({ n: tex.strays.n, pts: tex.strays.pts, len: tex.strays.len, u: tex.strays.u, width: sw, taper: 0.7, wispy: 1, S, C, most: 12, tol: 0.0007, shade });
+    const stw = DY ? Float32Array.from(tex.strays.src, i => dw[i]) : null;   // (a wisp is its hair's colour)
+    stray = build({ n: tex.strays.n, pts: tex.strays.pts, len: tex.strays.len, u: tex.strays.u, width: sw, taper: 0.7, wispy: 1, S, C, most: 12, tol: 0.0007, shade, dye: DY ? { ...DY, w: stw, roots: 0, ends: 0, tips: 0, abs: 0 } : null });
   }
   const room = budget * (wavy ? 1.35 : 1) - (stray ? stray.triangles : 0);   // (first a looser fit, then fewer points a card at the most: messy, frizzy hair bends at every point)
   for (let pass = 0; pass < 14; pass++) {
-    geo = build({ n, pts: tr.pts, len: tr.len, u, width, taper, rootTaper: rootT, roll, wispy: wisp, S, C, axis: tex.axis, most, tol, shade });
+    geo = build({ n, pts: tr.pts, len: tr.len, u, width, taper, rootTaper: rootT, roll, wispy: wisp, S, C, axis: tex.axis, most, tol, shade, dye: DY ? { ...DY, w: dw, noEnd } : null });
     if (geo.triangles <= room) break;
     if (tol <= (wavy ? 0.0013 : 0.003)) tol *= 1.5; else if (most > 8) most -= 2; else break;
   }
@@ -177,16 +250,26 @@ export function grow(body, pores, s, prep, o = {}) {
     const tops = [];
     for (const side of [1, -1]) { let x = 0, z = 0, m = 0; for (let i = 0; i < n; i++) if (cmb.group[i] === FRAME && tr.len[i] > 0.02 && (pos[i * 3] >= C[0] ? 1 : -1) === side) { const o = (i * K + K - 1) * 3; x += tr.pts[o]; z += tr.pts[o + 2]; m++; } if (m) tops.push({ side, x: x / m, z: z / m }); }
     const dr = drills(S, C, s, tops);
-    if (dr) geo = join(geo, build({ n: dr.n, pts: dr.pts, len: dr.len, u: dr.u, width: dr.width, taper: dr.taper, wispy: dr.wisp, v0: dr.v0, v1: dr.v1, S, C, out: dr.outv, most: 22, tol: 0.0003 }));
+    // (dyed: a ringlet is the colour of the strands wound into it; its cards are laid end to end, so it's one colour all the way down)
+    const drw = DY && dr ? Float32Array.from({ length: dr.n }, (_, h) => { const side = tops[Math.floor(h / (dr.n / tops.length))].side; let a = 0, m = 0; for (let i = 0; i < n; i++) if (cmb.group[i] === FRAME && (pos[i * 3] >= C[0] ? 1 : -1) === side) { a += dw[i]; m++; } return m && a / m > 0.5 ? 1 : 0; }) : null;
+    if (dr) geo = join(geo, build({ n: dr.n, pts: dr.pts, len: dr.len, u: dr.u, width: dr.width, taper: dr.taper, wispy: dr.wisp, v0: dr.v0, v1: dr.v1, S, C, out: dr.outv, most: 22, tol: 0.0003, dye: DY ? { ...DY, w: drw, roots: 0, ends: 0, tips: 0, abs: 0 } : null }));
   }
-  { const ah = ahoge(S, C, s); if (ah) geo = join(geo, build({ n: ah.n, pts: ah.pts, len: ah.len, u: ah.u, width: ah.width, taper: 0.85, wispy: 0.55, S, C, out: ah.outv, most: 14, tol: 0.0004 })); }
+  { const ah = ahoge(S, C, s); if (ah) geo = join(geo, build({ n: ah.n, pts: ah.pts, len: ah.len, u: ah.u, width: ah.width, taper: 0.85, wispy: 0.55, S, C, out: ah.outv, most: 14, tol: 0.0004, dye: DY ? { ...DY, w: new Float32Array(ah.n).fill(dye.where === "all" || dye.where === "over" ? 1 : 0), ends: 0, tips: 0 } : null })); }
   lap("cards");
   const fin = finish(geo, S, { draft: !!o.draft });
   lap("finish");
   // ---- tails and buns from the ties, each its own cards (they swing on their own bones in Godot), and the ties themselves
   const tails = [], bands = [];
   for (const t of ctx.ties) {
-    const tg = tail(t, { S, C, s, seed: s.seed }), tgeo = build({ n: tg.n, pts: tg.pts, len: tg.len, u: tg.u, width: tg.width, taper: tg.bun ? 0.1 : 0.45, wispy: tg.bun ? 0.2 : 0.7, S, C, out: tg.outv, most: 16, tol: 0.0008 });
+    // (dyed: a tail has its tie's share of dyed hairs, as stripes down it; a dip dye its tips; the roots' rules don't reach it, and a bun has no ends)
+    const tg = tail(t, { S, C, s, seed: s.seed }), share = tieShare[ctx.ties.indexOf(t)] || 0;
+    let tw = null;
+    if (DY) {                                                             // (its lanes: round a tail, up a bun's ball; a strand out of a bun its own)
+      const val = Float32Array.from(tg.u, (v, j) => (tg.lane ? laneNoise(tg.lane[j], dsd + 23.7 + 9.1 * ctx.ties.indexOf(t)) : hash(v + j * 0.0137 + dsd, 67))), of = Array.from(val).sort((p, q) => p - q), cutT = share >= 1 ? 2 : share <= 0 ? -1 : of[Math.min(tg.n - 1, Math.floor(share * tg.n))];
+      tw = Float32Array.from(val, v => (v < cutT ? 1 : 0));
+    }
+    const tgeo = build({ n: tg.n, pts: tg.pts, len: tg.len, u: tg.u, width: tg.width, taper: tg.taper || (tg.bun ? 0.1 : 0.45), wispy: tg.wispy || (tg.bun ? 0.2 : 0.7), S, C, out: tg.outv, most: 16, tol: 0.0008,
+      dye: DY ? { ...DY, w: tw, roots: 0, abs: 0, ...(tg.bun ? { ends: 0, tips: 0 } : {}) } : null });
     finish(tgeo, S, { draft: !!o.draft });
     // how far along the tail each point is (0 at the tie .. 1 at the tip): what its bones take it by
     const along = new Float32Array(tgeo.position.length / 3); for (let v = 0; v < along.length; v++) along[v] = tgeo.uv[v * 2 + 1] / 1.0 * (tg.len[tgeo.card[v]] / tg.length);

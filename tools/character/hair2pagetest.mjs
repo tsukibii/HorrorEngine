@@ -93,6 +93,21 @@ try {
   say(tl && tr && tl.jiggle === 5 && tr.jiggle === 5 && /along/.test(tl.attrs) && h.meshes.tie_l && h.meshes.tie_r && h.meshes.tie_l.rigid === "c_head" && !h.nan,
     `low twin tails: two tails (${tl ? tl.tris : 0} and ${tr ? tr.tris : 0} triangles) each with a chain's five joints, two ties on the head`);
   await shot("twin_tails");
+
+  // ---- a second colour: a split dye's locks carry two colours on their points over a flat atlas (the tab's own picture, not only a file's), and plain hair after it is one shade again
+  const colours = () => B(() => {
+    const G = window.__body.hair2.group, o = G.children.find(c => c.name === "hair_static"), P = o.geometry.attributes.position, C = o.geometry.attributes.color, U = o.material.uniforms; let l = 0, ln = 0, r = 0, rn = 0, grey = 0;
+    for (let i = 0; i < P.count; i++) { const lum = 0.2126 * C.getX(i) + 0.7152 * C.getY(i) + 0.0722 * C.getZ(i); if (Math.abs(C.getX(i) - C.getY(i)) < 1e-6 && Math.abs(C.getY(i) - C.getZ(i)) < 1e-6) grey++; if (P.getX(i) > 0.02) { l += lum; ln++; } else if (P.getX(i) < -0.02) { r += lum; rn++; } }
+    return { left: l / Math.max(1, ln), right: r / Math.max(1, rn), grey: grey / P.count, flat: U.rootC.value.equals(U.tipC.value), root: U.rootC.value.getHexString(), tip: U.tipC.value.getHexString() };
+  });
+  await card("adv_split_hime"); await settled();
+  const dy = await colours();
+  say(dy.left > dy.right * 4 && dy.flat && dy.grey < 0.9, `a split dye: her left's points ${(dy.left / Math.max(1e-6, dy.right)).toFixed(1)} times as bright as her right's, drawn over one flat colour (#${dy.tip}), ${(100 * (1 - dy.grey)).toFixed(0)}% of the points coloured`);
+  await shot("split_dye");
+  await card("long_straight"); await settled();
+  const pl = await colours();
+  say(pl.grey > 0.999 && !pl.flat, `plain hair after it: every point one shade again, the atlas its own roots and lengths (#${pl.root}, #${pl.tip})`);
+
   await card("m_buzz"); await settled(); h = await hair();
   say(h.meshes.hair_shell && h.meshes.hair_shell.tris > 2000 && !h.meshes.hair_static, `a buzz cut: shells alone (${h.meshes.hair_shell ? h.meshes.hair_shell.tris : 0} triangles), no cards`);
   await card("short_swept"); await settled();

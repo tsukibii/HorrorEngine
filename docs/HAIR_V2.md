@@ -128,6 +128,24 @@ longer one between the eyes), **Slant** (longer toward one side: hair over one e
 some of the temples' own pores, hanging in front of the ears to their own line; **Ringlets** winds each side's into a
 drill (`ties.js` `drills`: a ribbon round a middle line kept off the body, cards end to end).
 
+Since the Advanced styles (DECISIONS 2026-11-12, the very last): a fringe's **Amount** goes past 1 (a heavy fringe,
+its band up to six centimetres deep: from further back on the head) and its **Arch** both ways (shorter toward the
+temples, or longer: rounded down at its sides). **Tendrils** gathers each side's face-framing strands into one to
+four pointed locks (`engine.js`: the strands of a lock take one guide and are drawn to it, `clumpAmt`; measured, one
+lock's tips lie 0.8 mm apart where a flat sidelock's lie 10.8); **uneven** gives each lock its own line (every strand
+of a lock ends at it exactly; the left and the right are not mirrored); **wave** an S along each. **Wisps by the
+ears** leaves some of the sideburn's own pores out of a tie as thin strands to between the lobe and the jaw. A
+tendril ends at its line or where it comes to rest on the body, whichever is first: one asked to end under the
+shoulders' tops stops on the shoulder (half a centimetre short at -15 cm on MHR's base).
+
+A face-framing strand is cut by its own line only. Before 2026-11-12 the cut's line cut it too, and on tied hair,
+where nobody sets that line, its default ended every tendril at the chin whatever *Their length* said. What that
+changed in the 59 styles there were, grown by the engine before and after and compared hair by hair: 49 the same
+point for point; four differ only in how their bun is wound; in six a few face-framing strands are longer (the
+thinned ones, which the cut's line had been ending above their own): both ponytails (three strands, at the most
+3.1 cm), the high twin tails, the pigtails and the odango (one or two, about a centimetre), the sleek bob (one, by
+less than a millimetre). No other hair moved.
+
 A card's shade is by how far from its root it is in metres (`cards.js` `shade`, in the vertex colour): the atlas goes
 from the roots' colour to the lengths' over the first third of a card however long the card, so a 9 cm fringe was all
 "lengths" beside long hair still in its roots' shade, and read grey.
@@ -140,6 +158,16 @@ head (Height, Out to the sides, **To one side** for a side ponytail); it takes a
 the front out. From it hangs a **tail**: a spine traced from the tie with cards round it, its length, thickness,
 spread and taper, behind or over the shoulders; or a bun wound round a ball. A tail carries the five joints of a
 chain down its spine. The tie itself is an elastic or a scrunchie in a colour.
+
+Tied hair's way to its tie (the user's reference: guide curves over the scalp into a bun): **Sweep**, it leaves its
+root the way the hair there is combed, away from the parting, and bends round to the tie over up to ten centimetres
+(arcs, not straight lines; only where its own way and the tie's agree: hair at the back, combed down, goes straight
+up to a high tie, or it would hang in a loop first); **Swirl**, it comes in turned and winds round the tie. With both
+at their most, either way, every tied hair still ends in its tie (HAIR2: 761 of 761 on the twin buns). A **bun** is a
+coil: most of its hair wound the one way, a few across, a pair of buns mirrored. **Loose strands** stand out of a
+bun (`ties.js` `wildOf`: three to fourteen thin locks that leave it every way but into the head, and a halo of short
+fine hairs; **Soft or spiky**: they arc and droop, or stand straight to a point); they are the bun's own cards and
+stay out of the body.
 
 An **ahoge** (Shape and volume): one lock standing up out of the top of the head and curving over to a side (`ties.js`
 `ahoge`: two thin cards facing the front).
@@ -169,6 +197,27 @@ scalp).
   hair the dots run together into a shade; at the hairline's soft edge they're fainter; under a cut's line (a bob's,
   a bowl cut's nape) there are none; the parting's skin is left clear by its width. In place of the salon's flat
   darkened cap.
+
+### 3.11 A second colour
+
+`dye` (Colour: *A second colour*): **all of it**, **streaks**, **underneath** (the hair that grows low on the head),
+**the top layer**, **the front pieces**, **the fringe**, **one half** (her left or her right), **the ends** (a dip
+dye); its colour, how much, a streak's size, the **roots grown out** and the **ends left natural** in centimetres,
+how soft its edges are along the hair.
+
+The strand atlas is one colour times a shade, so dyed hair can't be drawn with it as it is. Its atlas is one flat
+colour instead (`styles.js` `drawLook`: the brighter of the hair's own and the dye's, channel by channel, the
+"carrier") and every point of every card carries its own colour over it in the vertex colour (`cards.js` `dye`): the
+natural colour from the roots' shade to the lengths', or the dye, by its lock and by how far it is from its root and
+its tip. Plain hair is untouched: its atlas and its one shade a point, as before (HAIR2 and HAIR2PAGE hold both).
+
+A **streak** is a lane the hair runs in, not a patch of scalp: for hair that hangs, its place round the head where
+it hangs (a slice from the parting down through all the layers, as a colourist takes it); for tied hair, the bearing
+it arrives at its tie on, read from its own path five centimetres before the tie. Not from its root: on a low bun a
+root's bearing is a median 9 degrees off the one its hair comes in on, wider than a lane's fine band, and hair dyed
+by its root lay in its neighbour's lane (LESSONS). The share dyed follows the Amount to within a few points (0.08,
+0.29, 0.46, 0.66, 0.87 of the lengths for 0.1 to 0.9). A tail has its tie's share of dyed hairs as stripes down it, a
+bun as bands round its ball, a dip dye the tail's own tips.
 
 ## 4. In the Studio
 
@@ -245,6 +294,22 @@ head's hair 1.5 to 3 MB with its two 512 px textures.
   there, unused: long hair lies on the bare body); a tail's chain doesn't collide with the body in Godot (HSJiggle's
   springs have no colliders); the Studio's view has no temporal anti-aliasing, so the hair there is coarser at its
   edges than Godot's.
+- **The Advanced styles' faults, as they stand** (2026-11-12): streaks on hair tied into buns still show card-shaped
+  flecks close up (the lanes' fix above removed one cause, measured; what is left is unexplained); the underside
+  colour of the long waves fans out sideways at the nape; a platinum half reads flat and chalky in Godot's picture of
+  it at bust distance (the Studio's closer picture shows its strands; the two weren't taken alike); brown scalp shows at a pulled-back hairline under a see-through fringe. The coil was compared with the
+  five older bun styles' cards at their size (the same), not close up.
+- **Not there, and needed for a strand render's look** (the user's Daz3D hairstyles, DECISIONS 2026-11-12, after the
+  very last): hair drawn as hairs close up. Tested: the editor at its limits (high detail, 2600 pores, narrow cards,
+  120 loose strands) reads the same as at its defaults beside a strand render. A pass of real thin strands over the
+  cards is the finding; not built. Nor is a way to dye one chosen lock (a single streak in a fringe).
+- **The pictures' size, and the cards' pictures** (found 2026-11-12): a picture is the scratch project's window, and
+  the window's size is the project's own setting, not resizable; `hair2_shots.gd`'s `root.size` doesn't change it.
+  The project was written 960 x 720 once, so every picture was that size whatever `--size` said, and a style's card
+  (asked for at 512 x 512, then made 200 x 200 without a crop) is that 4:3 picture squeezed into a square: **the 59
+  cards committed before this are a quarter too narrow**. Now a project for each picture size (`_hair2`,
+  `_hair2_<W>x<H>`), and a render that fails and says so when a picture isn't the size asked for. Tried: 512 x 512,
+  960 x 720 and 1600 x 1200 each come out that size (a window larger than xvfb's 1280 x 1024 screen is no trouble).
 
 ## 10. Files
 

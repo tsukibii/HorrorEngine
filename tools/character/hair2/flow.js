@@ -86,7 +86,7 @@ export function comb(ctx) {
     if (hasFringe && lim) {
       // the fringe is the front hairline's own band, whole: Amount is how deep the band is (a see-through fringe a shallow one, a full one deep), so
       // the hair behind it starts behind its roots and nothing crosses
-      const depth = by[i] - lim(a), wide = fr.width ?? 46, deep = (0.007 + 0.034 * clamp(fr.amount ?? 0.7, 0, 1)) * (1 - 0.5 * smooth(wide * 0.5, wide, Math.abs(a)));
+      const depth = by[i] - lim(a), wide = fr.width ?? 46, deep = (0.007 + 0.034 * clamp(fr.amount ?? 0.7, 0, 1.6)) * (1 - 0.5 * smooth(wide * 0.5, wide, Math.abs(a)));   // (past 1: a heavy fringe, from further back on the head)
       if (Math.abs(a) < wide && depth < deep) {
         const split = fr.kind === "curtain" ? (p[0] >= (fr.splitAt || 0) ? 1 : -1) * (fr.split ?? 0.6) * 55 * D : 0, sweep = (fr.sweep || 0) * D + split;
         d = turn(down, nn, sweep); group[i] = FRINGE; lf = (10 + 50 * (fr.curve ?? 0.4)) * D;
@@ -97,11 +97,15 @@ export function comb(ctx) {
       const depth = by[i] - lim(a), a0 = hasFringe ? Math.max(34, (fr.width ?? 46) - 8) : 36;   // (the temples' pores: in front of the ears, never over the eyes)
       if (depth < 0.014 && Math.abs(a) > a0 && Math.abs(a) < 64 && u[i] < fr.frame) { d = turn(down, nn, (p[0] >= 0 ? -1 : 1) * 12 * D); group[i] = FRAME; lf = 22 * D; }
     }
+    // wisps by the ears: some of the sideburn's own pores, left out of a tie to hang in front of the ear
+    if (!group[i] && (fr.frameEars || 0) > 0 && lim && Math.abs(a) >= 64 && Math.abs(a) < 90 && by[i] < ETOP + 0.014 && by[i] - lim(a) < 0.03 && u[i] < fr.frameEars) { d = down; group[i] = FRAME; lf = 14 * D; }
     // a quiff: the front stands up and goes back
     if (!group[i] && (sh.quiff || 0) > 0) { const k = smooth(8, 40, phi) * sh.quiff * P.top[i]; if (k > 0) { const b = unit(along([0, 0.3, -1], nn)) || down; d = unit([d[0] * (1 - k) + b[0] * k, d[1] * (1 - k) + b[1] * k, d[2] * (1 - k) + b[2] * k]) || d; lf = lf * (1 - k) + 78 * D * k; } }
     if (!group[i]) for (let k = 0; k < ties.length; k++) {               // a tie takes its pores (never the fringe's)
       const t = ties[k]; if (!t.takes(i, p, a, by[i], P)) continue;
-      d = unit(along([t.at[0] - p[0], t.at[1] - p[1], t.at[2] - p[2]], nn)) || down; group[i] = TIE + k; lf = (4 + 14 * (1 - (t.tight ?? 0.6))) * D; break;
+      // (Sweep: it leaves its root the way the hair there is combed, away from the parting, and bends round to its tie on the way: strands.js)
+      const to = unit(along([t.at[0] - p[0], t.at[1] - p[1], t.at[2] - p[2]], nn)) || down, sw = clamp((s.ties && s.ties.sweep) || 0, 0, 1) * 0.9 * smooth(0.05, 0.7, d[0] * to[0] + d[1] * to[1] + d[2] * to[2]);   // (only hair whose own way is the tie's way, more or less: hair at the back of the head, combed down, goes straight up to a high tie; swept, it would hang in a loop first)
+      d = sw > 0 ? unit([to[0] * (1 - sw) + d[0] * sw, to[1] * (1 - sw) + d[1] * sw, to[2] * (1 - sw) + d[2] * sw]) || to : to; group[i] = TIE + k; lf = (4 + 14 * (1 - (t.tight ?? 0.6))) * D; break;
     }
     dir[i * 3] = d[0]; dir[i * 3 + 1] = d[1]; dir[i * 3 + 2] = d[2]; lift[i] = lf;
   }

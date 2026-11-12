@@ -1292,6 +1292,13 @@ three things are its own:
   salon's roots in is right for hand-laid locks, whose roots lie under other locks; grown hair starts every lock at
   its own pore, and on 20 cm hair pulled back to a bun that 6% bared two centimetres of scalp at the temple and made
   every parting twice as wide as it was set. Only keys `BAKED` has are taken.
+  **Dyed hair** (HAIR_V2 §3.11) sets one more, `spec2_own: 1`. Its atlas is one flat colour and each lock's own
+  colour is in the vertex colour, which the shader already multiplies in (`use_vertex_color`); so that a dyed lock's
+  broad highlight is in its own colour too, the second highlight is the look's or the lock's, whichever is brighter
+  (`hair.gdshaderinc`: `max(spec2_color * 3, ALBEDO * 1.6 * spec2_own)`). It is 0 for every other bake, where the
+  line is what it was (GDHAIR2's nine styles drew the same to the figure; LOOKPLUGIN's hair stage passes). The brows'
+  and lashes' shader includes the same file: it was drawn once by hand beside the head's and one broken on purpose,
+  no check draws it without a Studio export.
 - **Short hair as shells** (`hair_shell.gdshader`): hair under 3 cm (a buzz cut, stubble, clipped sides and napes, the
   undercoat of a short cut) is a mesh named `hair_shell`: four to ten copies of the scalp lifted off the skin a
   couple of millimetres apart, leaning the way the hair is combed (the fur technique: a card standing on end can't be

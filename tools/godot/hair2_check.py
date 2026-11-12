@@ -36,12 +36,12 @@ MAKE = ROOT / "tools" / "character" / "hair2" / "make.mjs"
 VIEWS = ["front", "q", "side", "back", "top"]
 
 
-def project_text():
+def project_text(size="960x720"):
     look = "".join(f"{k[len('rendering/'):]}={'true' if v is True else 'false' if v is False else v}\n"
                    for k, v in PROJECT_LOOK.items() if k.startswith("rendering/"))
     return ('config_version=5\n\n[application]\n\nconfig/name="HorrorStudio hair check"\n'
             'config/features=PackedStringArray("4.7", "Forward Plus")\n\n[display]\n\n'
-            'window/size/viewport_width=960\nwindow/size/viewport_height=720\nwindow/size/resizable=false\n\n'
+            f'window/size/viewport_width={int(size.split("x")[0])}\nwindow/size/viewport_height={int(size.split("x")[1])}\nwindow/size/resizable=false\n\n'
             '[rendering]\n\nrenderer/rendering_method="forward_plus"\n' + look)
 
 
@@ -52,23 +52,28 @@ def godot_bin():
     return None
 
 
-def project(fresh=False):
+def project(fresh=False, size="960x720"):
     """the scratch project: the look plugin (and HumanShaders, which its skin shader includes) and the picture script;
-    imported once so the plugin's scripts and shaders load"""
-    stamp = PROJECT / ".made"
+    imported once so the plugin's scripts and shaders load. A picture is the project's window, and the window's size is
+    the project's own setting (not resizable: the script's `root.size` doesn't change it), so each picture size has a
+    project of its own. (Until 2026-11-12 there was one, 960 x 720, whatever `--size` said: a 512 x 512 thumbnail was
+    that picture squeezed into a square.)"""
+    proj = PROJECT if size == "960x720" else PROJECT.with_name(f"{PROJECT.name}_{size}")   # (the one for 960 x 720 keeps its name: the checks' own)
+    stamp = proj / ".made"
     newest = max(p.stat().st_mtime for p in list(PLUGIN.rglob("*.gd")) + list(PLUGIN.rglob("*.gdshader*")) + [Path(__file__).with_name("hair2_shots.gd")])
-    if not fresh and stamp.exists() and stamp.stat().st_mtime >= newest:
-        return PROJECT
-    if PROJECT.exists():
-        shutil.rmtree(PROJECT)
-    (PROJECT / "addons").mkdir(parents=True)
-    (PROJECT / "project.godot").write_text(project_text(), encoding="utf-8")
-    shutil.copytree(PLUGIN, PROJECT / "addons" / "horrorstudio_look")
-    shutil.copytree(HUMAN, PROJECT / "HumanShaders", ignore=shutil.ignore_patterns("*.import"))
-    shutil.copy(Path(__file__).with_name("hair2_shots.gd"), PROJECT / "hair2_shots.gd")
-    subprocess.run([godot_bin(), "--headless", "--path", str(PROJECT), "--import"], capture_output=True, text=True, timeout=900, env=env())
+    same = (proj / "project.godot").exists() and (proj / "project.godot").read_text(encoding="utf-8") == project_text(size)   # (and when its own settings changed here)
+    if not fresh and same and stamp.exists() and stamp.stat().st_mtime >= newest:
+        return proj
+    if proj.exists():
+        shutil.rmtree(proj)
+    (proj / "addons").mkdir(parents=True)
+    (proj / "project.godot").write_text(project_text(size), encoding="utf-8")
+    shutil.copytree(PLUGIN, proj / "addons" / "horrorstudio_look")
+    shutil.copytree(HUMAN, proj / "HumanShaders", ignore=shutil.ignore_patterns("*.import"))
+    shutil.copy(Path(__file__).with_name("hair2_shots.gd"), proj / "hair2_shots.gd")
+    subprocess.run([godot_bin(), "--headless", "--path", str(proj), "--import"], capture_output=True, text=True, timeout=900, env=env())
     stamp.write_text("made", encoding="utf-8")
-    return PROJECT
+    return proj
 
 
 def env():
@@ -93,7 +98,7 @@ def shoot(glb, out, tag="hair", shots=None, size="960x720", frames=20, light="re
         args.append(f"--origin={origin}")
     if hair:
         args.append(f"--hair={hair}")
-    cmd = [g, "--path", str(project()), "--rendering-driver", "vulkan", "-s", "res://hair2_shots.gd", "--"] + args
+    cmd = [g, "--path", str(project(size=size)), "--rendering-driver", "vulkan", "-s", "res://hair2_shots.gd", "--"] + args
     if shutil.which("xvfb-run") and not os.environ.get("DISPLAY"):
         cmd = ["xvfb-run", "-a"] + cmd
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env())
@@ -104,6 +109,13 @@ def shoot(glb, out, tag="hair", shots=None, size="960x720", frames=20, light="re
     line = next((l for l in text.splitlines() if l.startswith("HAIR2SHOTS {")), None)
     if bad or not line:
         return None, text[-4000:]
+    # the pictures are the size asked for, or it's said (until 2026-11-12 they were all 960 x 720, and nothing said so)
+    from PIL import Image
+    want = tuple(int(v) for v in size.split("x"))
+    for name in (shots or VIEWS):
+        f = out / f"{tag}_{name.replace(':', '_')}.png"
+        if f.exists() and Image.open(f).size != want:
+            return None, f"{f.name} is {Image.open(f).size[0]} x {Image.open(f).size[1]}, not the {size} asked for"
     return json.loads(line[len("HAIR2SHOTS "):]), ""
 
 

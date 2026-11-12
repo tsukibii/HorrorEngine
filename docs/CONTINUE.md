@@ -29,6 +29,52 @@ Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## Where it stopped last (2026-11-12, later, `claude/ecstatic-dijkstra-6ixk71`): two asks in progress, neither finished
+
+Read DECISIONS 2026-11-12, "the very last" and "after the very last", first. Both are the user's; the second is the
+one they stressed ("be extremely critical ... an exact replica").
+
+**1. The Advanced category (in the tree; faults left).** Six styles (`adv_*`, group `advanced`) after the user's one
+reference (four pictures of one hairstyle at stages). New in the engine, each a setting with a slider: a second colour
+(`dye`; HAIR_V2 §3.11), tied hair's Sweep and Swirl, a bun as a coil with loose strands, tendrils, wisps by the ears,
+a heavier fringe and its Arch both ways (HAIR_V2 §3.7, §3.8).
+- *Checked*: HAIR2 (65 styles, with lines for all of the above; `HAIR2_VERBOSE=1` shows what each measured),
+  HAIR2PAGE (with a split dye in the tab), GDHAIR2 (the nine key styles' figures the same as before the change: no
+  dyed style is among them), LOOKPLUGIN (after a new uniform in the look plugin's hair shader, `spec2_own`, 0 unless a
+  bake's record asks: a dyed lock's broad highlight in its own colour; its hair stage passes). The brows' and lashes'
+  shader includes the same file and no check draws it without a Studio export: drawn once by hand on a quad beside
+  the head's hair shader and one broken on purpose (it compiled and drew; the broken one was reported).
+- Before the push: CHECKS ok and GDPLAY ok, and HAIR2PAGE again on the tree as pushed. GDTESTROOM not run (it doesn't
+  pass in a cloud container: no recorded bodies there).
+- *Wrong, known* (HAIR_V2 §9): card-shaped flecks in the streaks of both bun styles close up (one cause found by
+  measuring and fixed, the rest unexplained); the long waves' underside colour fans out at the nape; a platinum half
+  chalky in Godot; scalp showing at a pulled-back hairline. The Studio's own shader has no own-colour highlight.
+
+**2. The user's Daz3D hairstyles, exact (not built).** Five pictures, seven hairstyles, in `Saved/Hair2/daz/ref/`
+(not in git, and `Saved/` doesn't survive a session: ask the user for them again). What's known:
+- A baseline of the last picture beside it (`Saved/Hair2/daz/r0`, `r1_strandtest.jpg`): the shape roughly, far from a
+  replica. Eight differences listed in DECISIONS and HAIR_V2 §9.
+- **Tested: the editor at its limits doesn't read as strands** (twice the triangles, hardly a change). The finding:
+  a pass of real thin strands over the cards (the fringe's ends, sidelocks, the tails' edges, flyaways). Not started.
+  `hair_fine.gdshader` (the brows' and lashes': blended at true coverage) is where to look first.
+- Also missing: a way to dye one chosen lock (a red streak in a fringe); a fringe dense above that parts into strands
+  below; a tendril that hangs on past where it meets the body (it stops on the shoulder now).
+- The tails were my setting, not the system: with `texture.wave` 0 they hang as the picture's do.
+- The order meant: finish and commit 1; the strand pass; the one-lock dye; then each hairstyle against its picture,
+  side by side, with what still differs written down each round.
+
+**3. The styles' cards are distorted (found; the tool fixed and tried; the cards not made again when this was
+written).** `hair2_check.py` drew every picture 960 x 720 whatever `--size` said (its scratch project's window isn't
+resizable), and `thumbs` squeezes that into a square: all 59 committed cards in `Content/Studio/Hair2/thumbs/` are a
+quarter too narrow. In the tree: a project per picture size and an error when a picture isn't the size asked for;
+tried at 512 x 512, 960 x 720 and 1600 x 1200, each that size. To do: make all the cards again (the card's view was
+framed on the squeezed picture: a true square shows less to the sides, so look at wide styles first), look at them.
+
+**Tools, as found**: `thumbs --out` still writes the tracked thumbnails. Run LOOKPLUGIN in the background with a long
+limit and no pipe: it takes over half an hour on a CPU (thirty minutes in, it was still on its first stage here and
+had given no verdict; that stage's own hair pictures gave lit 1.143 times dull at the crown, over the 1.05 it asks:
+my sum from its pictures, not its line).
+
 ## Where it stopped last (2026-11-12, `claude/ecstatic-dijkstra-6ixk71`): the hair editor v2.0, built
 
 From main (PR #24 merged). The user's go (DECISIONS 2026-11-11, the go): "v2 should be in the character creator studio

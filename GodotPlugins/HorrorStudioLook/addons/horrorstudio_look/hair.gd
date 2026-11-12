@@ -26,7 +26,7 @@ class_name HSHair
 const FINE_GAIN := {"lash_line": 2.2, "lashes": 1.4, "brows": 1.3}
 
 const BAKED := {"hashed": true, "density": 1.15, "root_fade": 0.06, "edge_fade": 0.85, "side_fade": 0.45, "soft": 0.6, "glints": 0.6, "transmission": 1.0, "scatter": 0.35,
-	"kajiya": 0.3, "occlusion": 1.0, "spec_gain": 2.5, "spec_cap": 0.8}
+	"kajiya": 0.3, "occlusion": 1.0, "spec_gain": 2.5, "spec_cap": 0.8, "spec2_own": 0.0}
 
 
 static func shader() -> Shader:

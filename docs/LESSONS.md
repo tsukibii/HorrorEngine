@@ -5,6 +5,46 @@ the fix.
 
 ## The hair editor v2.0: what took a second try (2026-11-12)
 
+- **Two guesses by eye, then a measurement: measure first.** Dyed streaks on hair tied into a bun came out as
+  card-shaped flecks. First guess (the hair's sweep and swirl): rendered with both off, the same. Second (stray wisps,
+  the hairline's baby hairs, the locks' pull): rendered without each, the same. Three renders spent, and one change made on the first guess that wasn't the cause.
+  Then twenty lines in node compared, for every tied hair, the bearing of its root round the tie with the bearing its
+  own path arrives on: a median 9 degrees apart on a low bun, where a streak's lane is 10 wide. A hair was dyed by a
+  lane it doesn't lie in. The guides (`grow(...).guides`) answer this kind of question in seconds; a picture only says
+  that something is wrong. And it was one cause, not all of it: flecks are left, still unexplained.
+- **A difference seen across two different crops is not a difference.** After that fix the second bun style looked
+  worse than an earlier sheet of it. Rendered like for like (the same three views, the one change switched), it was
+  the same or a little better. Before judging a change, the before and the after from the same camera.
+- **`hair2_check.py thumbs --out` still writes the tracked thumbnails.** `--out` moves only its working files; the
+  200 px picture always goes to `Content/Studio/Hair2/thumbs/`. To compare a style with its committed card, use
+  `sheets` with the thumbnail's view (`v:26:5:0.93:28:0:-0.065:0`, `--size 512x512`) into `Saved/`, and read the
+  command before trusting an option's name.
+- **A picture that comes out the wrong size says nothing. Check the size.** Every picture `hair2_check.py` made was
+  960 x 720 whatever `--size` said: its scratch project's window isn't resizable and the script's `root.size` doesn't
+  change it. Nothing failed, so nothing was noticed, and `thumbs` (512 x 512 asked, then 200 x 200 with no crop)
+  committed 59 cards a quarter too narrow. Found only because another check's pictures on the same machine were
+  1280 wide. Now a project per size, and the render fails when a picture isn't the size asked for. What a tool writes
+  should be checked for the plain things first: its size, that it isn't empty.
+- **A cause guessed and written down is still a guess.** I wrote "a window can't be larger than xvfb's screen" into
+  the tool's own error and two documents before trying it. Tried, 1600 x 1200 came out 1600 x 1200. The same hour I
+  wrote in the handover that a running check "was stopped before its verdict": it finished, and passed. Write what
+  was seen; mark the rest as expected, or leave it out.
+- **A check's exit code through a pipe is the pipe's.** `check.py | tail` exits 0 whatever the check did, and shows
+  nothing until it ends. Read the check's own last line (`<NAME> ok`); run a long one in the background unpiped.
+- **A process list cut short looks like a process gone.** `ps ... | cut -c1-90 | head -2` showed two shells and I
+  read the check as having exited. Listed whole, it was running. Don't truncate what is being counted.
+- **"Nothing existing changes" is a thing to measure, not to argue.** I listed the styles a rule's change could
+  reach, saw each one's line clear of it, and said none was affected. The rule also raises its line for thinned
+  hairs, which I hadn't looked at: six styles had a few strands change. The engine before (`git archive HEAD` into a
+  scratch folder) and after, every style grown by both and compared, took two minutes and said exactly which hairs.
+  Compare hair by hair (`guides`), not point by index: one card with another point shifts every index after it, and
+  a strand a centimetre longer reads as half the head moved 19 cm.
+- **Pushing the cards doesn't make strands.** Against a strand render (the user's Daz3D hair), twice the cards and
+  triangles, narrow cards and 120 loose wisps changed the picture hardly at all. What reads as hairs is each hair
+  drawn; more of a soft-edged card is more soft edge. Tested before building anything on the hope.
+- **A setting of my own can be the whole of a fault I put down to the system.** The first twin tails beside the
+  reference were kinked ropes: the wave I had set. With it off they hung as the picture's do. Take one's own numbers
+  out of a comparison before reading it.
 - **A shader's setting made for one kind of mesh is wrong for another, silently.** Godot's HSHair fades the first 6% of
   every strand in ("the roots grow out of the scalp"): right for the salon's hand-laid locks, whose roots are under
   other locks. Grown hair starts every lock at its own pore: on 20 cm hair pulled back to a bun that 6% is two bare

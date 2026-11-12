@@ -2,6 +2,52 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, after the very last (the user: exact replicas of their Daz3D hairstyles; be extremely critical)
+
+- **"Can you create these hairstyles. Be extremely critical, unlike the other hair styles if something is preventing
+  you from getting a 1:1 of these ones you need to update the v2 hair system so they can be achieved (or even make a
+  new v2B system), I want an exact replica of these hairstyles I made in daz3d, you can see they look similar to the
+  particle system we already use so its up to you to figure out how to actually get each of these hairstyles, they
+  should be modifiable (strands length, etc)."** Five pictures, seven hairstyles (kept in `Saved/Hair2/daz/ref/`,
+  never in git): piecey blunt bangs with a red streak, long thin sidelocks and low twin tails; long straight hair
+  with long wispy bangs and sidelocks; full blunt bangs with low twin tails and red ties; long straight hair with
+  see-through bangs and the ears out; blunt bangs with the hair gathered at the sides under red ornaments with
+  tassels, and sidelocks (that picture is small and soft: whether there are buns under the ornaments can't be seen
+  in it); a short rounded bob with full bangs; full blunt bangs with red streaks, long low twin tails in front of
+  the shoulders and thin sidelocks. Read at full size they are four kinds: the blunt fringe with low twin tails and
+  long thin sidelocks (three of them: hair from the crown with no parting, the fringe dense above and in separate
+  locks below, small ties); long loose straight hair with a see-through fringe (two); the bob; the ornaments.
+- **What this sets:** these are held to their pictures, side by side, with what still differs written down each
+  round; a likeness that is "recognisable" is not enough here. Where the system is what stands in the way, the system
+  changes. Every style stays a style of the editor: its lengths and the rest on sliders.
+- **Where it stands (not built):** a first baseline of the last picture beside the picture. The shape is roughly
+  there; it is far from a replica. Tested, not assumed: the editor pushed to its limits (high detail, 2600 pores,
+  narrow cards, 120 loose strands: twice the triangles) barely changes how the hair reads: cards with a soft dithered
+  edge don't resolve into hairs. So tuning won't reach it. What the comparison says is needed: a pass of real thin
+  strands over the cards (the fringe's ends, the sidelocks, the tails' edges, flyaways); a way to dye one chosen lock
+  (the red streak: the streaks there are put red on the sides and tails instead); a fringe that is dense above and
+  parts into strands below. The choice between changing v2 and a v2B was left to Claude; this is its finding, the
+  user hasn't seen the pictures yet. The pictures here are 960 x 720 on a CPU: some of the softness is the renderer.
+
+## 2026-11-12, the very last (the user: an Advanced category, about five intricate, aesthetic women's styles)
+
+- **"Can you experiment with more intricate/advanced pores and curves like the references (for the same hair) to get
+  more advanced hairstyles as shown in the images, have this under an advanced category. Try create maybe 5 very
+  aesthetic female hairstyles (you dont need to do the spikes but a few strands might add some realism)."** And, of
+  the four pictures: **"note the images I passed you is just 1 reference image with different in-progress angles."**
+  One hairstyle, then: its guide curves over the scalp sweeping into a bun, its long strands in front of the ear, the
+  strands standing out of a bun, and the render (violet over black, a heavy blunt fringe, two buns, long tendrils).
+- **What it asks of the editor**, each a setting with its slider: tied hair that leaves its roots the way it's combed
+  and bends round to its tie (Sweep), or winds in to it (Swirl); strands standing out of a bun, soft to spiky; the
+  face-framing strands gathered into pointed tendrils, each its own length, with an S along them; thin wisps left out
+  by the ears; a heavier fringe that can round down at its sides; and a second colour: all of it, streaks, the
+  underside, the top, the front pieces, the fringe, one half, the ends, with the roots or the ends left natural.
+- **Where it stands (in the tree, not finished, not committed as done):** six styles under *Advanced*. The second
+  colour is drawn in Godot and in the Studio's tab. By Godot's pictures two are right (half-up buns with blonde front
+  pieces; a dip-dyed ponytail), and four have faults left: both bun styles' streaks still show card-shaped flecks
+  close up, the underside colour fans out at the nape, a platinum half is flat and chalky. Spikes were not asked for;
+  the strands are.
+
 ## 2026-11-12, last (the user: long hair ends with just its tips on the shoulders)
 
 - **"Can you modify the long hairs so they're just barely on the shoulders (just the tips)."** So every long style's

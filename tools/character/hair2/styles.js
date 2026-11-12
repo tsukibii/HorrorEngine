@@ -4,7 +4,7 @@
 // base head (the head's local space: 0 the ears' line, 0.037 the brows, -0.096 the chin, -0.135 the shoulders' tops,
 // -0.30 the chest).
 import { HAIRLINE_DEFAULTS, HAIRLINES, THINNING, MARKS } from "./pores.js";
-import { LOOKS } from "../hairtex.js";
+import { LOOKS, linear } from "../hairtex.js";
 
 export const DEFAULTS = {
   seed: 1,
@@ -22,10 +22,14 @@ export const DEFAULTS = {
   under: { height: null, length: 0.012, fade: 0.02 },    // an undercut: below this height (base head) the hair is clipped to `length`
   shape: { lift: 22, volume: { top: 0.007, sides: 0.007, back: 0.009 }, turn: 0.35, turnRadius: 0.035, stiff: 0.2, quiff: 0, ahoge: 0, ahogeSide: -0.5 },   // ahoge: a lock standing up out of the top (its size; to her right or left)
   texture: { clump: 0.3, clumpSize: 0.018, wave: 0, waveLength: 0.09, waveStart: 0.3, together: 0.5, curl: 0, curlRadius: 0.012, frizz: 0.15, messy: 0.1, wet: 0, strays: 24 },
-  fringe: { kind: "none", line: MARKS.brow + 0.004, width: 46, amount: 0.7, sweep: 0, split: 0.6, curve: 0.4, arch: 0.3, hold: 0.5, uneven: 0.3, wispy: 0.75, choppy: 0, centre: 0, slant: 0, frame: 0, frameLine: MARKS.jaw, frameWispy: 0.85, frameCurl: 0 },   // choppy: each lock its own length; centre: a longer lock between the eyes; slant: longer toward her left (+) or right (-); frameCurl: the face-framing strands wound into a ringlet a side
-  ties: { kind: "none", height: 0.5, side: 0.7, offset: 0, part: "all", tight: 0.6, loose: 0,   // offset: one tail round to her left (+) or right (-): a side ponytail; part: all the hair, or the top's only (the rest loose)
+  fringe: { kind: "none", line: MARKS.brow + 0.004, width: 46, amount: 0.7, sweep: 0, split: 0.6, curve: 0.4, arch: 0.3, hold: 0.5, uneven: 0.3, wispy: 0.75, choppy: 0, centre: 0, slant: 0, frame: 0, frameLine: MARKS.jaw, frameWispy: 0.85, frameCurl: 0,
+    frameLocks: 0, frameStagger: 0.5, frameWave: 0, frameEars: 0 },   // choppy: each lock its own length; centre: a longer lock between the eyes; slant: longer toward her left (+) or right (-); frameCurl: the face-framing strands wound into a ringlet a side
+  // tendrils: frameLocks, the face-framing strands gathered into so many pointed locks a side (0: a flat sidelock), frameStagger each lock its own length, frameWave an S along them (m), frameEars thin wisps left out in front of the ears
+  ties: { kind: "none", height: 0.5, side: 0.7, offset: 0, part: "all", tight: 0.6, loose: 0, sweep: 0, swirl: 0, wild: 0, wildLength: 0.07, wildStiff: 0.4,   // sweep: the hair leaves its roots the way it's combed and bends round to the tie (arcs over the head); swirl: it winds in to the tie; wild: strands standing out of a bun or a tie, how long, soft (0) to spikes (1)   // offset: one tail round to her left (+) or right (-): a side ponytail; part: all the hair, or the top's only (the rest loose)
     tail: { length: 0.2, thick: 0.013, spread: 0.5, fall: "back", taper: 0.6, stiff: 0.4, sway: 0.5, bun: 0.035 }, tie: { kind: "elastic", colour: "#101010" } },
   look: "soft_black",
+  // a second colour: where (none, all, streaks, under, over, front, fringe, split, split_r, tips), its colour, how much (the share of locks, how far up or down, how long the ends), a streak's size, the roots and the ends left natural (m), how soft its edges along the hair
+  dye: { where: "none", colour: "#7b3fd6", amount: 0.5, size: 0.5, roots: 0, ends: 0, soft: 0.5, seed: 1 },
   card: { width: 2.3, taper: 0.3 },                      // a card's width in pore spacings; how much it narrows to its tip
   scalp: { shade: 0.95, stubble: 0 },
 };
@@ -46,6 +50,20 @@ export const LOOKS2 = {
 };
 export const ALL_LOOKS = { ...LOOKS2, ...LOOKS };
 export const lookOf = s => (typeof s.look === "object" ? s.look : ALL_LOOKS[s.look] || LOOKS2.soft_black);
+
+// A second colour (dyed hair): where it goes. A streak is a patch of the scalp, so it runs down the hair as a stripe
+export const DYES = { none: "None", all: "All of it", streaks: "Streaks", under: "Underneath (peekaboo)", over: "The top layer", front: "The front pieces (a money piece)", fringe: "The fringe", split: "One half (her left)", split_r: "One half (her right)", tips: "The ends (dip dye)" };
+export const dyed = s => !!(s.dye && s.dye.where && s.dye.where !== "none" && DYES[s.dye.where]);
+const hexOf = c => "#" + c.map(x => Math.round(255 * Math.max(0, Math.min(1, x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055))).toString(16).padStart(2, "0")).join("");
+// the look the cards are drawn with. Dyed hair can't be the strand atlas's one colour times a shade, so its atlas is one
+// flat colour (the brighter of the hair's own and the dye's, channel by channel) and every point of every card carries
+// its own colour over it (cards.js: the vertex colour, which HSHair and the Studio's shader multiply in): the natural
+// colour from the roots' shade to the lengths', or the dye
+export function drawLook(s) {
+  const k = lookOf(s); if (!dyed(s)) return k;
+  const A = linear(k.tip), B = linear(s.dye.colour || "#7b3fd6"), hex = hexOf([0, 1, 2].map(c => Math.max(A[c], B[c], 0.004)));
+  return { ...k, root: hex, tip: hex, inner: hex, innerAmount: 0, carrier: true, natural: { root: k.root, tip: k.tip }, dye: s.dye.colour || "#7b3fd6" };
+}
 
 // a fringe's kind is its numbers to start from (the style's own and the character's go over them)
 export const FRINGES = {
@@ -192,6 +210,41 @@ export const STYLES = {
   anime_low_tails: { label: "Short, two small low tails", group: "anime",
     set: { parting: { kind: "none" }, comb: { top: "forward" }, cut: { mode: "line", line: -0.07, uneven: 0.5, wispy: 0.6 }, ties: { kind: "twin", height: 0.12, side: 0.78, tight: 0.5, loose: 0.55, tail: { length: 0.085, thick: 0.013, spread: 1.3, fall: "back", taper: 0.75, sway: 0.7 }, tie: { kind: "elastic", colour: "#202020" } },
       length: { fringe: 0.12 }, shape: { lift: 26, volume: { top: 0.01, sides: 0.013, back: 0.012 }, turn: 0.3 }, fringe: { kind: "choppy", line: P.eye + 0.012, amount: 0.9, width: 52, choppy: 0.7, centre: 0.7 }, texture: { clump: 0.75, clumpSize: 0.03, strays: 0 }, card: { width: 2.6 }, look: "deep_brown" } },
+  // ---- advanced (DECISIONS 2026-11-12, latest: "more intricate/advanced pores and curves like the references ... under an
+  // advanced category ... 5 very aesthetic female hairstyles ... a few strands might add some realism"): the user's one
+  // reference (its curves over the scalp into the buns, its strands in front of the ears, its strands out of a bun, the
+  // render) and four more made with the same things: hair swept and wound into its ties, tendrils, wisps by the ears,
+  // strands out of the buns, a second colour
+  adv_space_buns: { label: "Space buns, a heavy fringe, long tendrils: violet over black", group: "advanced",
+    set: { parting: { kind: "middle", length: 1, width: 0.0008 }, length: { fringe: 0.12 }, ears: "tucked",
+      ties: { kind: "buns", height: 0.9, side: 0.58, tight: 0.7, sweep: 0.7, swirl: 0.45, wild: 0.55, wildLength: 0.075, wildStiff: 0.45, tail: { bun: 0.03 }, tie: { kind: "none" } },
+      fringe: { kind: "blunt", line: P.brow - 0.002, amount: 1.4, width: 60, arch: -0.55, curve: 0.5, wispy: 0.35, uneven: 0.2, frame: 0.85, frameLine: -0.17, frameLocks: 2, frameStagger: 0.7, frameWave: 0.005, frameWispy: 0.9, frameEars: 0.45 },
+      texture: { clump: 0.45, clumpSize: 0.016, strays: 30 }, dye: { where: "streaks", colour: "#7a2fb4", amount: 0.7, size: 0.25, ends: 0.012, soft: 0.4 } } },
+  adv_half_buns: { label: "Half-up space buns over long hair, blonde front pieces", group: "advanced",
+    set: { parting: { kind: "middle", length: 0.6, width: 0.0008 }, cut: { mode: "line", line: -0.14, uneven: 0.45, wispy: 0.5, thin: 0.12 },
+      ties: { kind: "buns", part: "top", height: 0.88, side: 0.5, tight: 0.65, sweep: 0.6, swirl: 0.35, wild: 0.35, wildLength: 0.06, wildStiff: 0.2, tail: { bun: 0.026 }, tie: { kind: "none" } },
+      shape: { lift: 20, volume: { top: 0.007, sides: 0.01, back: 0.012 }, turn: 0.2 },
+      fringe: { kind: "seethrough", line: 0.036, amount: 0.35, width: 42, frame: 0.9, frameLine: -0.115, frameLocks: 2, frameStagger: 0.5, frameWave: 0.004, frameWispy: 0.85 },
+      texture: { clump: 0.35, wave: 0.003, waveLength: 0.12, strays: 34 }, dye: { where: "front", colour: "#d6c49a", amount: 0.55, roots: 0.012, soft: 0.6 } } },
+  adv_messy_bun: { label: "Messy low bun, curtain fringe, waved tendrils: chestnut with caramel lights", group: "advanced",
+    set: { parting: { kind: "middle", length: 0.5, width: 0.001 }, ears: "tucked", length: { fringe: 0.14 },
+      ties: { kind: "bun", height: 0.3, tight: 0.2, sweep: 0.85, swirl: 0.3, wild: 0.75, wildLength: 0.085, wildStiff: 0.08, tail: { bun: 0.045 }, tie: { kind: "none" } },
+      fringe: { kind: "curtain", line: P.eye - 0.014, amount: 0.5, width: 44, split: 0.75, frame: 0.95, frameLine: -0.135, frameLocks: 2, frameStagger: 0.6, frameWave: 0.009, frameWispy: 0.9, frameEars: 0.6 },
+      texture: { clump: 0.4, frizz: 0.25, strays: 56 }, look: "chestnut_soft", dye: { where: "streaks", colour: "#b98a52", amount: 0.3, size: 0.18, roots: 0.03, soft: 0.8 } } },
+  adv_high_pony: { label: "High ponytail, see-through bangs, long sidelocks: the ends dipped rose", group: "advanced",
+    set: { parting: { kind: "none" }, comb: { top: "back", sides: "back", hold: 1 }, ears: "tucked",
+      ties: { kind: "pony", height: 0.84, tight: 0.7, sweep: 0.25, swirl: 0.3, tail: { length: 0.36, thick: 0.017, spread: 0.6, taper: 0.75, sway: 0.8 }, tie: { kind: "scrunchie", colour: "#16161a" } },
+      fringe: { kind: "seethrough", line: 0.035, amount: 0.28, width: 42, frame: 0.9, frameLine: -0.105, frameLocks: 1, frameWave: 0.005, frameWispy: 0.85, frameEars: 0.4 },
+      texture: { clump: 0.35, wave: 0.009, waveLength: 0.13, strays: 30 }, dye: { where: "tips", colour: "#c2255c", amount: 0.6, soft: 0.9 } } },
+  adv_split_hime: { label: "Split dye: one half black, one half platinum; hime sidelocks, long back", group: "advanced",
+    set: { parting: { kind: "middle", length: 1, width: 0.0008 }, cut: { mode: "line", line: -0.14, uneven: 0.25, wispy: 0.3, thin: 0.08, tiers: "front", front: -0.07, frontTo: 74, frontSoft: 0.05 },
+      shape: { lift: 16, volume: { top: 0.005, sides: 0.008, back: 0.011 }, turn: 0.1 }, fringe: { kind: "blunt", line: P.brow + 0.002, amount: 0.95, width: 44, wispy: 0.3 },
+      texture: { clump: 0.3, strays: 18 }, dye: { where: "split", colour: "#d9d4c6", roots: 0.01, soft: 0.5 } } },
+  adv_peekaboo_waves: { label: "Long waves from a side parting, one ear out, rose underneath", group: "advanced",
+    set: { parting: { kind: "left", offset: 0.035, length: 0.6, width: 0.001 }, ears: "tucked_right", cut: { mode: "line", line: -0.14, uneven: 0.5, wispy: 0.5, thin: 0.15 },
+      shape: { lift: 24, volume: { top: 0.009, sides: 0.012, back: 0.014 }, turn: 0.2 }, fringe: { frame: 0.6, frameLine: -0.1, frameLocks: 1, frameWave: 0.008 },
+      texture: { clump: 0.45, wave: 0.012, waveLength: 0.11, waveStart: 0.25, together: 0.6, strays: 40 }, look: "off_black", dye: { where: "under", colour: "#d6457a", amount: 0.55, soft: 0.5 } } },
+
   // ---- men's
   m_side_part: { label: "Side parting, short back and sides", group: "men",
     set: { parting: { kind: "left", offset: 0.045, length: 0.55, width: 0.001 }, cut: { mode: "length", wispy: 0.6, uneven: 0.3 }, length: { fringe: 0.07, top: 0.065, sides: 0.02, back: 0.022, nape: 0.01 },
@@ -246,7 +299,7 @@ export const STYLES = {
     set: { parting: { kind: "none" }, comb: { top: "forward" }, cut: { mode: "line", line: -0.055, uneven: 0.2, wispy: 0.2 }, shape: { lift: 24, volume: { top: 0.009, sides: 0.011, back: 0.012 }, turn: 0.6, turnRadius: 0.025 },
       fringe: { kind: "blunt", line: P.brow + 0.004, amount: 0.9, width: 46 }, texture: { clump: 0.25, strays: 15 } } },
 };
-export const GROUPS = { pictures: "From the pictures", women: "Women's", ears: "Women's, long with the ears out", asian: "Japanese and Korean styles", anime: "Drawn hair: the chart's twelve", men: "Men's", balding: "Balding", horror: "For our games", children: "Children's" };
+export const GROUPS = { pictures: "From the pictures", women: "Women's", ears: "Women's, long with the ears out", asian: "Japanese and Korean styles", anime: "Drawn hair: the chart's twelve", advanced: "Advanced: swept, wound, tendrils, a second colour", men: "Men's", balding: "Balding", horror: "For our games", children: "Children's" };
 
 // a style's settings: the defaults, the style it's from, its own, then what the character changed. A fringe's kind
 // brings its own numbers in under whatever is set by name
@@ -348,12 +401,12 @@ export const CONTROLS = [
   { id: "fringe", label: "Fringe", help: "The hair over the forehead, and the strands that frame the face.", rows: [
     ["fringe.kind", "Kind", "pick", opt(FRINGES)],
     ["fringe.line", "Length", "slide", -14, 7, 0.2, cm, "Where it ends: the brows (3.7), the eyes (1.5), the nose (-2), the chin (-9.6)."],
-    ["fringe.amount", "Amount", "slide", 0.05, 1, 0.05, 1, "A few hairs (see-through) to a full fringe."],
+    ["fringe.amount", "Amount", "slide", 0.05, 1.6, 0.05, 1, "A few hairs (see-through) to a full fringe; past 1 a heavy one, from further back on the head."],
     ["fringe.width", "Width", "slide", 20, 64, 1, 1, "How far round to the temples (degrees)."],
     ["fringe.sweep", "Sweep", "slide", -70, 70, 1, 1, "To her right or left (degrees)."],
     ["fringe.split", "Split", "slide", 0, 1, 0.05, 1, "A curtain: how far it parts."],
     ["fringe.curve", "Curve", "slide", 0, 1, 0.05, 1, "How it rounds off the forehead."],
-    ["fringe.arch", "Arch", "slide", 0, 1, 0.05, 1, "Longer toward the temples."],
+    ["fringe.arch", "Arch", "slide", -1, 1, 0.05, 1, "Shorter toward the temples (an arch), or longer: rounded down at its sides."],
     ["fringe.wispy", "Ends", "slide", 0, 1, 0.05, 1, "Blunt to wispy."],
     ["fringe.uneven", "Uneven", "slide", 0, 1, 0.05, 1, ""],
     ["fringe.choppy", "Choppy", "slide", 0, 1, 0.05, 1, "Each lock cut to its own length (with Locks: pointed, drawn-looking bangs)."],
@@ -363,6 +416,10 @@ export const CONTROLS = [
     ["fringe.frame", "Face-framing strands", "slide", 0, 1, 0.05, 1, "Strands left hanging in front of the ears."],
     ["fringe.frameLine", "Their length", "slide", -26, 3, 0.5, cm, "The cheek (-2), the jaw (-6.6), the chin (-9.6)."],
     ["fringe.frameCurl", "Ringlets", "slide", 0, 1, 0.05, 1, "The face-framing strands wound into a ringlet a side, hanging from the ears' line to their length."],
+    ["fringe.frameLocks", "Tendrils", "slide", 0, 4, 1, 1, "The face-framing strands gathered into so many pointed locks a side (0: a flat sidelock)."],
+    ["fringe.frameStagger", "Tendrils, uneven", "slide", 0, 1, 0.05, 1, "Each tendril its own length."],
+    ["fringe.frameWave", "Tendrils, wave", "slide", 0, 14, 0.5, mm, "An S along each tendril (mm)."],
+    ["fringe.frameEars", "Wisps by the ears", "slide", 0, 1, 0.05, 1, "Thin strands left out in front of the ears when the hair is tied up."],
   ] },
   { id: "ties", label: "Ties", help: "Ponytails, twin tails, half-up, buns.", rows: [
     ["ties.kind", "Kind", "pick", [["none", "None"], ["pony", "Ponytail"], ["twin", "Twin tails"], ["half", "Half-up"], ["twin_half", "Two side up"], ["bun", "Bun"], ["buns", "Twin buns"], ["knot", "Top knot"]]],
@@ -372,6 +429,11 @@ export const CONTROLS = [
     ["ties.part", "Takes", "pick", [["all", "All the hair"], ["top", "The top's hair only (the rest hangs loose)"]]],
     ["ties.tight", "Tightness", "slide", 0, 1, 0.05, 1, ""],
     ["ties.loose", "Left loose in front", "slide", 0, 1, 0.02, 1, "How far round from the face the hair stays out of the ties."],
+    ["ties.sweep", "Sweep", "slide", 0, 1, 0.05, 1, "The hair leaves its roots the way it's combed and bends round to the tie: arcs over the head, not straight lines."],
+    ["ties.swirl", "Swirl", "slide", -1, 1, 0.05, 1, "The hair winds in to the tie, one way or the other."],
+    ["ties.wild", "Loose strands", "slide", 0, 1, 0.05, 1, "Strands standing out of a bun or a tie."],
+    ["ties.wildLength", "Their length", "slide", 2, 16, 0.5, cm, "cm"],
+    ["ties.wildStiff", "Soft or spiky", "slide", 0, 1, 0.05, 1, "Soft strands that arc and droop, to stiff spikes."],
     ["ties.tail.length", "Tail length", "slide", 3, 45, 0.5, cm, "cm"],
     ["ties.tail.thick", "Tail thickness", "slide", 5, 28, 0.5, mm, "mm"],
     ["ties.tail.spread", "Tail spread", "slide", 0, 1.5, 0.05, 1, ""],
@@ -384,6 +446,14 @@ export const CONTROLS = [
   ] },
   { id: "colour", label: "Colour", help: "", rows: [
     ["look", "Look", "pick", opt(ALL_LOOKS)],
+    ["dye.where", "A second colour", "pick", opt(DYES)],
+    ["dye.colour", "Its colour", "colour"],
+    ["dye.amount", "How much", "slide", 0, 1, 0.05, 1, "Streaks: the share of locks. Underneath, the top, the front: how far it goes. The ends: how much of them."],
+    ["dye.size", "Streak size", "slide", 0, 1, 0.05, 1, "Fine strands to broad panels."],
+    ["dye.roots", "Roots grown out", "slide", 0, 12, 0.5, cm, "The first centimetres left natural (cm)."],
+    ["dye.ends", "Ends left natural", "slide", 0, 12, 0.5, cm, "The last centimetres left natural (cm): dark tips on a dyed fringe."],
+    ["dye.soft", "Soft edges", "slide", 0, 1, 0.05, 1, "How gradually the colour changes along the hair."],
+    ["dye.seed", "Variation", "slide", 1, 40, 1, 1, "Other locks dyed."],
     ["scalp.shade", "Shade under the hair", "slide", 0, 1, 0.05, 1, "The roots' colour on the scalp, so no skin shows between hairs."],
     ["scalp.stubble", "Stubble", "slide", 0, 1, 0.05, 1, "A shadow of stubble over the whole scalp."],
   ] },

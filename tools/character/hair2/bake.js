@@ -39,4 +39,5 @@ export function textures(look) {
   for (let i = 0; i < A.W * A.H; i++) { strands[i * 4] = 204 + Math.round(A.data[i * 4] * 0.2); strands[i * 4 + 1] = A.data[i * 4 + 1]; strands[i * 4 + 2] = A.data[i * 4 + 2]; strands[i * 4 + 3] = 255; }
   return { W: A.W, H: A.H, albedo: albedo(A, k), strands, atlas: A, look: k };
 }
-export const record = look => ({ look, shader: "tools/character/hairshader.js (Kajiya-Kay, shifted per strand; the atlas's R brightness, G strand, B clump, A coverage)", studioHair: STUDIO_HAIR });
+// (dyed hair, a look that's a carrier: each lock's broad highlight in its own colour too, where that's brighter than the look's: HSHair's spec2_own)
+export const record = look => ({ look, shader: "tools/character/hairshader.js (Kajiya-Kay, shifted per strand; the atlas's R brightness, G strand, B clump, A coverage)", studioHair: look && look.carrier ? { ...STUDIO_HAIR, settings: { ...STUDIO_HAIR.settings, spec2_own: 1 } } : STUDIO_HAIR });

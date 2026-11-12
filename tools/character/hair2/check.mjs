@@ -9,12 +9,16 @@
 //   node tools/character/hair2/check.mjs [style ...]
 import { bodyByName, loadPores } from "./node.mjs";
 import { prepare, grow, BUDGET } from "./engine.js";
-import { STYLES, GROUPS, CONTROLS, DEFAULTS, settings, differs, lookOf, FRINGES } from "./styles.js";
+import { STYLES, GROUPS, CONTROLS, DEFAULTS, settings, differs, lookOf, drawLook, dyed, DYES, FRINGES } from "./styles.js";
+import { tiesOf } from "./ties.js";
+import { K } from "./strands.js";
+import { linear } from "../hairtex.js";
 import { alive, HAIRLINES, THINNING } from "./pores.js";
 import { dist } from "./sdf.js";
 
 const bad = [], t0 = Date.now(), only = process.argv.slice(2);
-const say = (ok, what) => { if (!ok) { bad.push(what); console.log("  BAD " + what); } };
+const VERBOSE = !!process.env.HAIR2_VERBOSE;                            // (HAIR2_VERBOSE=1: every passing line too, with what it measured)
+const say = (ok, what) => { if (!ok) { bad.push(what); console.log("  BAD " + what); } else if (VERBOSE) console.log("  ok  " + what); };
 const get = (o, path) => path.split(".").reduce((q, k) => (q == null ? undefined : q[k]), o);
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -115,6 +119,60 @@ if (!only.length) {
   say(g("bob_middle", { ears: "clear" }).stats.cards > 0 && g("m_side_part", { under: { height: 0.05 } }).shell, "ears clear, an undercut: made");
   const tw = g("long_straight", { ties: { kind: "twin", height: 0.5 } });
   say(tw.tails.length === 2 && tw.bands.length === 2, "twin tails on any style");
+  // ---- a second colour. Dyed hair's atlas is one flat colour and each point carries its own over it: the dye's
+  // (dy) or the natural one (nat1 at the lengths). Which a point is, is read against those two, not by whether it's
+  // grey: with a dye brighter than the hair it's the natural points that are tinted
+  {
+    const tints = st => { const M = linear(drawLook(st).tip), over = c => linear(c).map((v, k) => Math.min(1, v / M[k])); return { dy: over(st.dye.colour), nat: over(lookOf(st).tip) }; };
+    // (lo, hi: the part of a lock looked at, by its v: by default its lengths, past the roots' shade; a lock's v runs from 0 at the root to 0.57 at a blunt tip, more at a wispy one)
+    const share = (id, set, lo = 0.45, hi = 9) => { const st = settings(id, set), r = grow(base, pores, st, prep, { draft: true }), c = r.hair.color, U = r.hair.uv, t = tints(st); let d = 0, m = 0;
+      for (let i = 0; i < c.length / 3; i++) { if (U[i * 2 + 1] < lo || U[i * 2 + 1] > hi) continue;
+        const e = k => Math.abs(c[i * 3] - k[0]) + Math.abs(c[i * 3 + 1] - k[1]) + Math.abs(c[i * 3 + 2] - k[2]); m++; if (e(t.dy) < e(t.nat)) d++; }
+      return d / Math.max(1, m); };
+    const plain = g("long_straight").hair.color; let grey = 0; for (let i = 0; i < plain.length; i += 3) if (plain[i] === plain[i + 1] && plain[i + 1] === plain[i + 2]) grey++;
+    say(!dyed(settings("long_straight")) && grey === plain.length / 3 && drawLook(settings("long_straight")) === lookOf(settings("long_straight")), "plain hair: no second colour, every point one shade, drawn with its own look");
+    say(Object.keys(DYES).every(k => k === "none" || dyed(settings("long_straight", { dye: { where: k } }))) && drawLook(settings("long_straight", { dye: { where: "all" } })).carrier, "every kind of second colour is one, drawn over a flat atlas");
+    const red = { colour: "#c02040" }, sh = [0.1, 0.3, 0.5, 0.7, 0.9].map(a => share("long_straight", { dye: { ...red, where: "streaks", amount: a } }));
+    say(sh.every((v, k) => Math.abs(v - [0.1, 0.3, 0.5, 0.7, 0.9][k]) < 0.08) && sh.every((v, k) => !k || v > sh[k - 1]), `streaks: the share of the hair dyed is the Amount (${sh.map(v => v.toFixed(2)).join(", ")} for 0.1 to 0.9)`);
+    say(share("long_straight", { dye: { ...red, where: "all" } }) > 0.98, "all of it: all of it");
+    { const st = settings("long_straight", { dye: { colour: "#d9d4c6", where: "split" } }), r = grow(base, pores, st, prep, { draft: true }), c = r.hair.color, P = r.hair.position; let l = 0, ln = 0, q = 0, qn = 0;
+      for (let i = 0; i < c.length / 3; i++) { const lum = 0.2126 * c[i * 3] + 0.7152 * c[i * 3 + 1] + 0.0722 * c[i * 3 + 2]; if (P[i * 3] > 0.02) { l += lum; ln++; } else if (P[i * 3] < -0.02) { q += lum; qn++; } }
+      say(l / ln > 8 * q / qn, `one half: her left's points ${(l / ln / (q / qn)).toFixed(0)} times as bright as her right's`); }
+    const dip = { dye: { ...red, where: "tips", amount: 0.5 } }, tipEnds = share("long_straight", dip, 0.5), tipRoots = share("long_straight", dip, 0, 0.15);
+    say(tipEnds > 0.9 && tipRoots < 0.05, `the ends (a dip dye): the ends dyed (${tipEnds.toFixed(2)}), the roots not (${tipRoots.toFixed(2)})`);
+    const under = share("long_straight", { dye: { ...red, where: "under", amount: 0.5 } }), frg = share("long_straight", { fringe: { kind: "blunt" }, dye: { ...red, where: "fringe" } });
+    say(under > 0.05 && under < 0.9 && frg > 0.01 && frg < 0.5, `the underside, the fringe: some of the hair each (${under.toFixed(2)}, ${frg.toFixed(2)})`);
+    say(share("long_straight", { dye: { ...red, where: "all", roots: 0.12 } }) < share("long_straight", { dye: { ...red, where: "all" } }) - 0.05, "Roots grown out: less of the hair dyed");
+  }
+  // ---- tied hair swept and wound in still reaches its tie; strands out of a bun stay out of the body
+  for (const [sw, sl] of [[1, 0], [1, 1], [1, -1]]) {
+    const st = settings("odango", { ties: { sweep: sw, swirl: sl } }), r = grow(base, pores, st, prep, { draft: true }), ties = tiesOf(prep.Sc, base.C, st), G = r.guides; let n = 0, ok = 0;
+    for (let i = 0; i < G.n; i++) { if (G.group[i] < 3 || !(G.len[i] > 0.06)) continue; n++; const t = ties[G.group[i] - 3], o = (i * K + K - 1) * 3; if (Math.hypot(G.pts[o] - t.at[0], G.pts[o + 1] - t.at[1], G.pts[o + 2] - t.at[2]) < 0.02) ok++; }
+    say(n > 500 && ok === n, `Sweep ${sw}, Swirl ${sl}: every tied hair ends at its tie (${ok} of ${n})`);
+  }
+  { const tris = w => { const r = g("odango", { ties: { wild: w, wildLength: 0.16 } }); let t = 0, inside = 0; for (const tl of r.tails) { t += tl.geo.triangles; const P = tl.geo.position; for (let i = 0; i < P.length; i += 3) if (dist(prep.S, P[i], P[i + 1], P[i + 2]) < -0.003) inside++; say(!tl.joints, "a bun with strands out of it still has no chain"); } return [t, inside]; };
+    const a0 = tris(0), a1 = tris(0.5), a2 = tris(1);
+    say(a1[0] > a0[0] + 200 && a2[0] > a1[0] + 200 && !a0[1] && !a1[1] && !a2[1], `strands out of a bun: more with the slider (${a0[0]}, ${a1[0]}, ${a2[0]} triangles), none of their points in the body`); }
+  // ---- tendrils: each lock's strands end at the lock's own line, on both sides; drawn to a point; wisps by the ears
+  {
+    const ends = set => { const st = settings("long_straight", { fringe: { frame: 0.9, frameLine: -0.09, ...set } }), G = grow(base, pores, st, prep, { draft: true }).guides, o = { L: [], R: [] };
+      for (let i = 0; i < G.n; i++) if (G.group[i] === 2 && G.len[i] > 0.03) o[G.pos[i * 3] > base.C[0] ? "L" : "R"].push(G.pts[(i * K + K - 1) * 3 + 1]); return o; };
+    const lines = a => [...new Set(a.map(v => Math.round(v * 1000)))].length;
+    const e0 = ends({ frameLocks: 2, frameStagger: 0 }), e1 = ends({ frameLocks: 2, frameStagger: 1 });
+    say(e0.L.length > 4 && e0.R.length > 4 && [...e0.L, ...e0.R].every(v => Math.abs(v + 0.09) < 0.002), "tendrils with no stagger: every strand ends at the line");
+    say(lines(e1.L) === 2 && lines(e1.R) === 2 && Math.max(...e1.L) - Math.min(...e1.L) > 0.02 && Math.max(...e1.R) - Math.min(...e1.R) > 0.02 && [...e1.L, ...e1.R].every(v => v > -0.092),
+      `two tendrils a side, staggered: two lines a side, ${((Math.max(...e1.L) - Math.min(...e1.L)) * 100).toFixed(1)} and ${((Math.max(...e1.R) - Math.min(...e1.R)) * 100).toFixed(1)} cm apart, none longer than asked`);
+    const spread = locks => { const st = settings("long_straight", { fringe: { frame: 0.9, frameLine: -0.09, frameLocks: locks, frameStagger: 0 } }), G = grow(base, pores, st, prep, { draft: true }).guides, P = []; for (let i = 0; i < G.n; i++) if (G.group[i] === 2 && G.len[i] > 0.03 && G.pos[i * 3] > base.C[0]) { const o = (i * K + K - 1) * 3; P.push([G.pts[o], G.pts[o + 2]]); }
+      const mx = P.reduce((a, p) => a + p[0], 0) / P.length, mz = P.reduce((a, p) => a + p[1], 0) / P.length; return Math.sqrt(P.reduce((a, p) => a + (p[0] - mx) ** 2 + (p[1] - mz) ** 2, 0) / P.length); };
+    const s0 = spread(0), s1 = spread(1);
+    say(s1 < 0.004 && s0 > s1 * 3, `one tendril is drawn to a point: its tips ${(s1 * 1000).toFixed(1)} mm apart, a flat sidelock's ${(s0 * 1000).toFixed(1)}`);
+    // (on tied hair, where the cut's own line is left at its default above the tendrils' line: they end at theirs, not at it)
+    { const st = settings("odango", { fringe: { frame: 0.9, frameLine: -0.125, frameLocks: 1, frameStagger: 0 } }), G = grow(base, pores, st, prep, { draft: true }).guides, e = [];
+      for (let i = 0; i < G.n; i++) if (G.group[i] === 2 && G.len[i] > 0.03 && Math.abs(Math.atan2(G.pos[i * 3] - base.C[0], G.pos[i * 3 + 2] - base.C[2])) * 180 / Math.PI < 64) e.push(G.pts[(i * K + K - 1) * 3 + 1]);
+      say(st.cut.line > -0.1 && e.length > 4 && e.every(v => Math.abs(v + 0.125) < 0.003), `tendrils on tied hair end at their own line (-12.5 cm), not the cut's (${(st.cut.line * 100).toFixed(0)} cm): ${e.length} strands, the shortest at ${(Math.max(...e) * 100).toFixed(1)} cm`); }
+    const wisps = e => { const G = g("odango", { fringe: { frameEars: e } }).guides; let n = 0; for (let i = 0; i < G.n; i++) if (G.group[i] === 2 && G.len[i] > 0.01 && Math.abs(Math.atan2(G.pos[i * 3] - base.C[0], G.pos[i * 3 + 2] - base.C[2])) * 180 / Math.PI >= 64) n++; return n; };
+    say(wisps(0) === 0 && wisps(0.6) > 6, `wisps by the ears: none, then ${wisps(0.6)}`);
+  }
 }
 // ---- other bodies
 if (!only.length) for (const [who, ids] of [["child8", ["bob_fringe", "twin_tails_high"]], ["masc", ["m_side_part", "m_long"]], ["goblin", ["unkempt"]], ["ogre", ["m_top_knot"]]]) {

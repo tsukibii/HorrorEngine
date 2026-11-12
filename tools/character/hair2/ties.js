@@ -103,25 +103,60 @@ export function tail(tie, ctx) {
     if (d < GAP && grad(S, pts[o], pts[o + 1], pts[o + 2], g)) { pts[o] += g[0] * (GAP - d); pts[o + 1] += g[1] * (GAP - d); pts[o + 2] += g[2] * (GAP - d); }
   }
   const joints = [0, 0.25, 0.5, 0.75, 1].map(f => at(SP, f));
-  return { name: tie.name, n: m, pts, len, u, width, outv, joints, length: L, soft: clamp(tl.sway ?? 0.5, 0, 1) };
+  const lane = Float32Array.from({ length: m }, (_, j) => ((j * 2.39996) % (2 * Math.PI)) / D);   // (where each hair is round the tail: a dyed streak's lane, engine.js)
+  return { name: tie.name, n: m, pts, len, u, width, outv, joints, lane, length: L, soft: clamp(tl.sway ?? 0.5, 0, 1) };
+}
+
+// Strands standing out of a bun (ties.wild): thin locks that leave it every way but into the head, arcing and drooping
+// (soft) or standing straight to a point (spiky), and with them a halo of short fine hairs: what makes a bun look done
+// by hand. They're the bun's own hairs (its mesh). c, R: the bun's ball
+function wildOf(tie, ctx, c, R) {
+  const t = ctx.s.ties || {}, amt = clamp(t.wild || 0, 0, 1); if (!(amt > 0)) return null;
+  const Lw = clamp(t.wildLength ?? 0.07, 0.02, 0.16), stiff = clamp(t.wildStiff ?? 0.4, 0, 1), big = Math.round(3 + amt * 11), fine = Math.round(amt * 26), m = big + fine, S = ctx.S, g = [0, 0, 0];
+  const n = tie.out, a = unit(Math.abs(n[1]) < 0.9 ? [n[2], 0, -n[0]] : [1, 0, 0]), b = [n[1] * a[2] - n[2] * a[1], n[2] * a[0] - n[0] * a[2], n[0] * a[1] - n[1] * a[0]], sd = (ctx.seed || 1) * 0.071 + (tie.side || 0) * 0.31;
+  const pts = new Float32Array(m * K * 3), len = new Float32Array(m), u = new Float32Array(m), width = new Float32Array(m), outv = new Float32Array(m * K * 3), taper = new Float32Array(m), wispy = new Float32Array(m);
+  for (let j = 0; j < m; j++) {
+    const thin = j >= big, r1 = hash((j + 1) * 0.0613 + sd, 85), r2 = hash((j + 1) * 0.0613 + sd, 86), r3 = hash((j + 1) * 0.0613 + sd, 87), r4 = hash((j + 1) * 0.0613 + sd, 88), r5 = hash((j + 1) * 0.0613 + sd, 89);
+    const el = thin ? -0.25 + 1.6 * r1 : 0.2 + 1.25 * r1, th = j * 2.39996 + r2 * 0.8, ce = Math.cos(el), se = Math.sin(el);   // (how far out of the head's surface it points: a strand never back into the head)
+    const e = unit([(a[0] * Math.cos(th) + b[0] * Math.sin(th)) * ce + n[0] * se, (a[1] * Math.cos(th) + b[1] * Math.sin(th)) * ce + n[1] * se, (a[2] * Math.cos(th) + b[2] * Math.sin(th)) * ce + n[2] * se]);
+    const L = thin ? 0.012 + 0.03 * r3 : Lw * (0.45 + 0.55 * r3), droop = (1 - stiff) * (thin ? 0.5 : 0.9), q = unit(Math.abs(e[1]) < 0.9 ? [e[2], 0, -e[0]] : [1, 0, 0]), q2 = [e[1] * q[2] - e[2] * q[1], e[2] * q[0] - e[0] * q[2], e[0] * q[1] - e[1] * q[0]];
+    const ph = r4 * 6.28, wob = (1 - stiff) * L * (thin ? 0.2 : 0.1), turns = 0.8 + 1.1 * r5, fa = r2 * 6.28, o0 = [q[0] * Math.cos(fa) + q2[0] * Math.sin(fa), q[1] * Math.cos(fa) + q2[1] * Math.sin(fa), q[2] * Math.cos(fa) + q2[2] * Math.sin(fa)];
+    let total = 0, prev = null;
+    for (let k = 0; k < K; k++) {
+      const f = TS[k], sA = f * L, w = wob * f * Math.sin(Math.PI * turns * f + ph), o = (j * K + k) * 3;
+      let x = c[0] + e[0] * (R * 0.85 + sA) + q[0] * w, y = c[1] + e[1] * (R * 0.85 + sA) + q[1] * w - droop * sA * sA / L, z = c[2] + e[2] * (R * 0.85 + sA) + q[2] * w;
+      const d = dist(S, x, y, z); if (d < GAP * 2 && grad(S, x, y, z, g)) { x += g[0] * (GAP * 2 - d); y += g[1] * (GAP * 2 - d); z += g[2] * (GAP * 2 - d); }
+      pts[o] = x; pts[o + 1] = y; pts[o + 2] = z; outv[o] = o0[0]; outv[o + 1] = o0[1]; outv[o + 2] = o0[2];
+      if (prev) total += Math.hypot(x - prev[0], y - prev[1], z - prev[2]); prev = [x, y, z];
+    }
+    len[j] = total; u[j] = r5; width[j] = thin ? 0.0016 + 0.0014 * r4 : lerp(0.0036, 0.012, stiff) * (0.7 + 0.6 * r5); taper[j] = thin ? 0.8 : lerp(0.78, 0.97, stiff); wispy[j] = thin ? 1 : lerp(0.95, 0.5, stiff);
+  }
+  return { n: m, pts, len, u, width, outv, taper, wispy };
 }
 
 // a bun: hairs wound round a ball at the tie
 function bunOf(tie, ctx) {
   const tl = (ctx.s.ties && ctx.s.ties.tail) || {}, R = clamp((tl.bun ?? 0.035), 0.015, 0.07), c = [tie.at[0] + tie.out[0] * R * 0.75, tie.at[1] + tie.out[1] * R * 0.75, tie.at[2] + tie.out[2] * R * 0.75];
-  const m = clamp(Math.round(40 + R / 0.035 * 30), 30, 110), pts = new Float32Array(m * K * 3), len = new Float32Array(m), u = new Float32Array(m), width = new Float32Array(m), outv = new Float32Array(m * K * 3);
+  const m = clamp(Math.round(40 + R / 0.035 * 30), 30, 110), pts = new Float32Array(m * K * 3), len = new Float32Array(m), u = new Float32Array(m), width = new Float32Array(m), outv = new Float32Array(m * K * 3), lane = new Float32Array(m);
   const n = tie.out, a = unit(Math.abs(n[1]) < 0.9 ? [n[2], 0, -n[0]] : [1, 0, 0]), b = [n[1] * a[2] - n[2] * a[1], n[2] * a[0] - n[0] * a[2], n[0] * a[1] - n[1] * a[0]];
   for (let j = 0; j < m; j++) {
     const r1 = hash((j + 1) * 0.0917, 81), r2 = hash((j + 1) * 0.0917, 82), lat0 = (r1 - 0.5) * 2.6, turn = 1.2 + 1.3 * r2, ph = j * 2.39996, rr = R * (0.94 + 0.1 * r2);
-    u[j] = r2; width[j] = 0.012; let L = 0, prev = null;
+    const way = (hash((j + 1) * 0.0917, 83) < 0.84 ? 1 : -1) * (tie.side < 0 ? -1 : 1);   // (a bun is a coil: most of its hair wound the one way, a few across it; a pair of buns mirrored)
+    u[j] = r2; width[j] = 0.012; lane[j] = lat0 * 46; let L = 0, prev = null;   // (a dyed streak's lane: a band round the ball)
     for (let k = 0; k < K; k++) {
-      const f = TS[k], lon = ph + turn * f * 2 * Math.PI * (j % 2 ? 1 : -1) * 0.5, lat = lat0 + (0.5 - f) * 0.5, cl = Math.cos(lat), ox = (a[0] * Math.cos(lon) + b[0] * Math.sin(lon)) * cl + n[0] * Math.sin(lat), oy = (a[1] * Math.cos(lon) + b[1] * Math.sin(lon)) * cl + n[1] * Math.sin(lat), oz = (a[2] * Math.cos(lon) + b[2] * Math.sin(lon)) * cl + n[2] * Math.sin(lat), o = (j * K + k) * 3;
+      const f = TS[k], lon = ph + turn * f * 2 * Math.PI * way * 0.5, lat = lat0 + (0.5 - f) * 0.5, cl = Math.cos(lat), ox = (a[0] * Math.cos(lon) + b[0] * Math.sin(lon)) * cl + n[0] * Math.sin(lat), oy = (a[1] * Math.cos(lon) + b[1] * Math.sin(lon)) * cl + n[1] * Math.sin(lat), oz = (a[2] * Math.cos(lon) + b[2] * Math.sin(lon)) * cl + n[2] * Math.sin(lat), o = (j * K + k) * 3;
       pts[o] = c[0] + ox * rr; pts[o + 1] = c[1] + oy * rr; pts[o + 2] = c[2] + oz * rr; outv[o] = ox; outv[o + 1] = oy; outv[o + 2] = oz;
       if (prev) L += Math.hypot(pts[o] - prev[0], pts[o + 1] - prev[1], pts[o + 2] - prev[2]); prev = [pts[o], pts[o + 1], pts[o + 2]];
     }
     len[j] = L;
   }
-  return { name: tie.name, n: m, pts, len, u, width, outv, joints: null, length: R * 2, soft: 0, bun: { c, R } };
+  const wd = wildOf(tie, ctx, c, R);
+  if (wd) {
+    const cat = (x, y) => { const o = new Float32Array(x.length + y.length); o.set(x); o.set(y, x.length); return o; };
+    return { name: tie.name, n: m + wd.n, pts: cat(pts, wd.pts), len: cat(len, wd.len), u: cat(u, wd.u), width: cat(width, wd.width), outv: cat(outv, wd.outv), taper: cat(new Float32Array(m).fill(0.1), wd.taper), wispy: cat(new Float32Array(m).fill(0.2), wd.wispy),
+      lane: cat(lane, Float32Array.from({ length: wd.n }, (_, j) => 1000 + j * 137.5)), joints: null, length: R * 2, soft: 0, bun: { c, R }, wild: wd.n };
+  }
+  return { name: tie.name, n: m, pts, len, u, width, outv, lane, joints: null, length: R * 2, soft: 0, bun: { c, R } };
 }
 
 // the tie itself: a ring round the tail where it leaves the head (an elastic thin, a scrunchie fat and gathered)

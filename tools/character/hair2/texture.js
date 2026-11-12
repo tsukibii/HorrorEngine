@@ -12,7 +12,7 @@
 //   texture(ctx)    changes ctx.pts in place; -> { axis (3 a kept point: a curl's middle line's way, zeros elsewhere), strays: { pts, len, u, n } }
 import { dist, grad } from "./sdf.js";
 import { K, TS, GAP, hash } from "./strands.js";
-import { partingSide, partingShare, sagittal } from "./flow.js";
+import { partingSide, partingShare, sagittal, FRAME } from "./flow.js";
 
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -42,15 +42,15 @@ export function clumpsOf(ctx) {
 // ctx: { n, pts, len, u, group, clump: { of }, S, C, s (settings), spacing }
 export function texture(ctx) {
   const { n, pts, len, u, S, C, clump } = ctx, tx = ctx.s.texture || {}, wet = clamp(tx.wet || 0, 0, 1);
-  const cAmt = clamp(Math.max(tx.clump ?? 0.3, wet * 0.9), 0, 0.97), wave = Math.max(0, tx.wave || 0), wl = Math.max(0.02, tx.waveLength || 0.09), ws = clamp(tx.waveStart ?? 0.3, 0, 0.9);
+  const cAmt = clamp(Math.max(tx.clump ?? 0.3, wet * 0.9), 0, 0.97), wave0 = Math.max(0, tx.wave || 0), wl = Math.max(0.02, tx.waveLength || 0.09), ws = clamp(tx.waveStart ?? 0.3, 0, 0.9);
   const curl = clamp(tx.curl || 0, 0, 1), cr = Math.max(0.003, tx.curlRadius || 0.012), frizz = clamp(tx.frizz ?? 0.15, 0, 1) * (1 - 0.8 * wet);
   const g = [0, 0, 0], axis = curl > 0 ? new Float32Array(n * K * 3) : null;
   // ---- clumps: each hair toward its clump's guide, more toward the tip
-  if (cAmt > 0) {
+  if (cAmt > 0 || ctx.clumpAmt) {
     const src = new Float32Array(pts), far = Math.max(0.02, 1.4 * (tx.clumpSize || 0.018));
     for (let i = 0; i < n; i++) {
       const c = clump.of[i]; if (c === i || !(len[i] > 0) || !(len[c] > 0)) continue;
-      const amt = cAmt * (0.75 + 0.25 * hash(u[i], 21));
+      const amt = ctx.clumpAmt && ctx.clumpAmt[i] > 0 ? ctx.clumpAmt[i] : cAmt * (0.75 + 0.25 * hash(u[i], 21));   // (clumpAmt: a tendril's hairs drawn to its point, whatever the rest of the hair does)
       for (let k = 1; k < K; k++) {
         const o = (i * K + k) * 3, q = (c * K + k) * 3, dx = src[q] - src[o], dy = src[q + 1] - src[o + 1], dz = src[q + 2] - src[o + 2];
         // (only while they travel together: a hair whose guide went another way round the head, at the whorl or by a tie, isn't dragged across the head, or the face, after it)
@@ -60,15 +60,17 @@ export function texture(ctx) {
     }
   }
   // ---- waves, curls, frizz: each kept point moved across the hair and out of it
-  if (wave > 0 || curl > 0 || frizz > 0) {
+  const fw = Math.max(0, (ctx.s.fringe && ctx.s.fringe.frameWave) || 0);   // Tendrils, wave: an S along each face-framing lock, its own
+  if (wave0 > 0 || curl > 0 || frizz > 0 || fw > 0) {
     const src = new Float32Array(pts);
     for (let i = 0; i < n; i++) {
       const L = len[i]; if (!(L > 0.02)) continue;
-      const c = clump.of[i], tg = clamp(tx.together ?? 0.5, 0, 1), o0 = i * K * 3, azr = Math.atan2(src[o0] - C[0], src[o0 + 2] - C[2]);
+      const isF = fw > 0 && ctx.group[i] === FRAME, wave = isF ? Math.max(wave0, fw) : wave0;
+      const c = clump.of[i], tg = isF ? 0 : clamp(tx.together ?? 0.5, 0, 1), o0 = i * K * 3, azr = Math.atan2(src[o0] - C[0], src[o0 + 2] - C[2]);
       // a clump's place in the wave: its own (a head of separate curls), or in step with its neighbours round the head (waves that run across the hair)
       const pc = (1 - tg) * hash(u[c], 31) * 6.2832 + tg * (1.2 * Math.sin(azr * 1.5 + 0.7) + 0.7 * (hash(u[c], 31) - 0.5)), own = (hash(u[i], 32) - 0.5) * 0.7 * (1 - 0.8 * tg), hand = hash(u[c], 33) < 0.5 ? 1 : -1;
       const f1 = 180 + 220 * hash(u[i], 34), f2 = 90 + 150 * hash(u[i], 35), p1 = hash(u[i], 36) * 6.28, p2 = hash(u[i], 37) * 6.28;
-      const lam = wl * (0.85 + 0.3 * hash(u[c], 38)), start = ws * L, pitch = 2 * Math.PI * cr * 1.25;
+      const lam = (isF ? 0.15 : wl) * (0.85 + 0.3 * hash(u[c], 38)), start = isF ? Math.min(ws * L, 0.035) : ws * L, pitch = 2 * Math.PI * cr * 1.25;
       for (let k = 1; k < K; k++) {
         const o = (i * K + k) * 3, a = (i * K + Math.max(0, k - 1)) * 3, b = (i * K + Math.min(K - 1, k + 1)) * 3, sAt = TS[k] * L;
         let tx0 = src[b] - src[a], ty0 = src[b + 1] - src[a + 1], tz0 = src[b + 2] - src[a + 2]; const tl = Math.hypot(tx0, ty0, tz0) || 1; tx0 /= tl; ty0 /= tl; tz0 /= tl;
@@ -92,9 +94,9 @@ export function texture(ctx) {
   }
   settle(pts, n, len, S);
   // ---- strays: wisps grown from hairs already there, drifting out of the surface
-  const want = Math.round((tx.strays || 0) * (1 - wet)), st = { n: 0, pts: new Float32Array(0), len: new Float32Array(0), u: new Float32Array(0) };
+  const want = Math.round((tx.strays || 0) * (1 - wet)), st = { n: 0, pts: new Float32Array(0), len: new Float32Array(0), u: new Float32Array(0), src: new Int32Array(0) };   // (src: the hair each wisp is grown from)
   if (want > 0 && n > 0) {
-    st.pts = new Float32Array(want * K * 3); st.len = new Float32Array(want); st.u = new Float32Array(want);
+    st.pts = new Float32Array(want * K * 3); st.len = new Float32Array(want); st.u = new Float32Array(want); st.src = new Int32Array(want);
     let made = 0;
     for (let q = 0; q < want * 6 && made < want; q++) {
       const i = Math.floor(hash(q * 0.6180339 % 1, 41) * n), L = len[i]; if (!(L > 0.05) || ctx.group[i] !== 0 || (ctx.held && ctx.held[i])) continue;   // (held: hair tucked behind an ear lies tight; no wisp stands off it)
@@ -114,7 +116,7 @@ export function texture(ctx) {
         const e = Math.pow(TS[k], 1.3); px += ox * lift * e + oz * side * e; py += oy * lift * e + 0.004 * e * (r1 - 0.3); pz += oz * lift * e - ox * side * e;
         st.pts[o] = px; st.pts[o + 1] = py; st.pts[o + 2] = pz; void x;
       }
-      st.len[made] = L * (to - from); st.u[made] = hash(u[i] + q * 0.031, 45); made++;
+      st.len[made] = L * (to - from); st.u[made] = hash(u[i] + q * 0.031, 45); st.src[made] = i; made++;
     }
     st.n = made; settle(st.pts, made, st.len, S);
   }
