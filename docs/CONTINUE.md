@@ -69,6 +69,9 @@ a babysitting game with a grey alien needs) and for two things built (the Predat
   facts `sanity:uneasy`, `sanity:shaken`, `sanity:breaking`; SANITY, `tools/godot/sanity_check.py`). In tutorial
   v2's game since (its §31, part 6: no sleep until she's shot). Next for it if the user wants: hunger, the meter in
   the HUD's style, kept at a checkpoint.
+- **Then: things that come and go, and flags** (the starter's `shown.gd` and `flag_switch.gd`; the Story's
+  `set_flag`, `switch_flags`, `task_flags`, `flags_start`; MIND plays them). Next for it: hiding a piece of an
+  interior's export without leaving it solid (the seat's way of taking a box out of the room's collider would do).
 - **Then: more intensifiers** (the starter's `flicker_lit.gd`, `moved.gd`, `gaslight.gd`; the look plugin's `HSPhase`
   with `creature_phase.gdshader` and `HSUnease` with `unease.gdshader`; MIND, `tools/godot/mind_check.py`; the look
   guide's Phasing and Unease). Not in tutorial v2's game. Next for it: the user's pick from the ideas in DECISIONS

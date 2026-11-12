@@ -486,5 +486,121 @@ func _initialize() -> void:
 	if a_full != 0.0 or not hidden0 or absf(a_mid - 0.5) > 0.01 or absf(shown_mid - 0.5) > 0.05 or a_low != 1.0 or a_back > 0.01 or spiked < 0.4 or fell > 0.01 or un.layer >= 5 or un.rect.visible:
 		bad("unease by sanity (%.2f, %.2f, %.2f, back %.2f; a spike %.2f then %.2f)" % [a_full, a_mid, a_low, a_back, spiked, fell])
 
+	# ---- 6. something that's there, or isn't (shown.gd), and flags switched by tasks
+	var SH: Script = load(S + "shown.gd")
+	var thing := func(nm: String, at: Vector3, props: Dictionary) -> Array:
+		var t := figure(nm, at)
+		var sb := StaticBody3D.new()
+		var cs := CollisionShape3D.new()
+		cs.shape = BoxShape3D.new()
+		sb.add_child(cs)
+		t.add_child(sb)
+		var sh := Node.new()
+		sh.name = "Shown"
+		sh.set_script(SH)
+		for k in props:
+			sh.set(k, props[k])
+		t.add_child(sh)
+		return [t, sh, sb]
+	face(Vector3(0, 1, 20))                              # (looking away from all of it)
+	var cup: Array = thing.call("Cup", Vector3(6, 0, -6), {"size_m": 1.7})
+	var late: Array = thing.call("Late", Vector3(8, 0, -6), {"shown": false, "on_fire": "show"})
+	await frames(4)
+	var start_ok: bool = cup[0].visible and cup[2].collision_layer == 1 and not late[0].visible and late[2].collision_layer == 0
+	cup[1].vanish()
+	await frames(2)
+	var gone_ok: bool = not cup[0].visible and cup[2].collision_layer == 0 and is_instance_valid(cup[0]) and cup[0].is_inside_tree()
+	cup[1].appear()
+	late[1].fire()
+	await frames(2)
+	var back_ok: bool = cup[0].visible and cup[2].collision_layer == 1 and late[0].visible and late[2].collision_layer == 1
+	cup[1].fire()                                        # toggle
+	await frames(2)
+	var toggled: bool = not cup[0].visible
+	cup[1].fire()
+	await frames(2)
+	# only while you can't see it
+	cup[1].when_unseen = true
+	face(cup[0].global_position + Vector3.UP)
+	await secs(0.3)
+	cup[1].vanish()
+	await secs(1.0)
+	var watched_there: bool = cup[0].visible and not cup[1].want
+	face(Vector3(0, 1, 20))
+	await secs(0.4)
+	var unseen_gone: bool = not cup[0].visible
+	# by the Story's words: a task ticked, a flag on and off; and one thing in another's place
+	var plate: Array = thing.call("Plate", Vector3(10, 0, -6), {"shown_when": "task:dinner", "hidden_when": "table_cleared"})
+	var laid: Array = thing.call("TableLaid", Vector3(12, 0, -6), {})
+	var bare := figure("TableBare", Vector3(12, 0, -6))
+	laid[1].swap_with = [laid[1].get_path_to(bare)] as Array[NodePath]
+	laid[1]._start()
+	story.add_task("dinner", "Make dinner")
+	await secs(0.4)
+	var before_task: bool = not plate[0].visible and laid[0].visible and not bare.visible
+	story.tick("dinner")
+	await secs(0.4)
+	var after_task: bool = plate[0].visible
+	story.set_flag("table_cleared")
+	laid[1].vanish()
+	await secs(0.4)
+	var flag_on: bool = not plate[0].visible and not laid[0].visible and bare.visible
+	story.set_flag("table_cleared", false)
+	laid[1].appear()
+	await secs(0.4)
+	var flag_off: bool = plate[0].visible and laid[0].visible and not bare.visible
+	# a fade
+	var mist: Array = thing.call("Fades", Vector3(14, 0, -6), {"fade_secs": 0.4})
+	await frames(4)
+	mist[1].vanish()
+	await secs(0.2)
+	var mid_fade := float((mist[0].get_node("Body") as MeshInstance3D).transparency)
+	var mid_vis: bool = mist[0].visible
+	await secs(0.4)
+	var faded: bool = not mist[0].visible and (mist[0].get_node("Body") as MeshInstance3D).transparency == 0.0
+	say("shown", "starts there, or not (its colliders with it) %s; vanish: hidden, not solid, still in the scene %s; appear and a late one's fire(): there and solid %s; a toggle %s; when_unseen: asked while you watch, still there %s, gone once you look away %s; shown while 'task:dinner' holds: not before %s, there after %s; hidden while a flag's on, and another table in its place %s, back with the flag off %s; a fade: half way %.2f see-through and still drawn %s, then gone %s" % [
+		start_ok, gone_ok, back_ok, toggled, watched_there, unseen_gone, before_task, after_task, flag_on, flag_off, mid_fade, mid_vis, faded])
+	if not start_ok or not gone_ok or not back_ok or not toggled or not watched_there or not unseen_gone:
+		bad("shown.gd: starting either way %s, vanish %s, appear %s, toggle %s, only while unseen %s %s" % [start_ok, gone_ok, back_ok, toggled, watched_there, unseen_gone])
+	if not before_task or not after_task or not flag_on or not flag_off or mid_fade < 0.2 or mid_fade > 0.8 or not mid_vis or not faded:
+		bad("shown.gd by the Story's words %s %s, a flag and a swap %s %s, a fade %.2f %s %s" % [before_task, after_task, flag_on, flag_off, mid_fade, mid_vis, faded])
+	# flags: a task's own, the Story's words for them, a switch dropped in the scene, flags a game starts with
+	story.task_flags = ["laundry: +washed, -dirty", "added laundry: +chores"] as PackedStringArray
+	story.set_flag("dirty")
+	story.add_task("laundry", "Do the laundry")
+	var on_add: bool = story.is_set("chores") and story.is_set("dirty") and not story.is_set("washed")
+	story.tick("laundry")
+	var on_tick: bool = story.is_set("washed") and not story.is_set("dirty")
+	story.switch_flags("+a_new_one, -washed, ~flipped")
+	var words_ok: bool = story.is_set("a_new_one") and not story.is_set("washed") and story.is_set("flipped") and story.holds("a_new_one, !washed")
+	story.toggle_flag("flipped")
+	var fs := Node.new()
+	fs.set_script(load(S + "flag_switch.gd"))
+	fs.set("flags", ["+door_seen", "-a_new_one", "~flipped"] as PackedStringArray)
+	fs.set("when", "task:bins")
+	main.add_child(fs)
+	story.add_task("bins", "Take the bins out")
+	await secs(0.4)
+	var not_yet: bool = not story.is_set("door_seen") and int(fs.times) == 0
+	story.tick("bins")
+	await secs(0.4)
+	var by_task: bool = story.is_set("door_seen") and not story.is_set("a_new_one") and story.is_set("flipped") and int(fs.times) == 1
+	fs.set("needs", "never_set")
+	fs.fire()
+	var held_back: bool = int(fs.times) == 1
+	fs.set("needs", "")
+	fs.fire()
+	var fired_again: bool = int(fs.times) == 2 and not story.is_set("flipped")
+	var st2 := CanvasLayer.new()
+	st2.set_script(load(S + "story.gd"))
+	st2.set("flags_start", ["power_on", "night_one"] as PackedStringArray)
+	main.add_child(st2)
+	var starts: bool = st2.is_set("power_on") and st2.is_set("night_one")
+	st2.queue_free()
+	say("flags", "a task put on the list switches its flags %s, ticked %s; the Story's words (+ - ~) and a new name %s; a flag switch waiting for 'task:bins': nothing before %s, done when it's ticked, once %s; its needs holding fire() back %s, then again %s; a game's flags at the start %s" % [
+		on_add, on_tick, words_ok, not_yet, by_task, held_back, fired_again, starts])
+	if not on_add or not on_tick or not words_ok or not not_yet or not by_task or not held_back or not fired_again or not starts:
+		bad("flags (a task's %s %s, the words %s, a switch %s %s %s %s, at the start %s)" % [on_add, on_tick, words_ok, not_yet, by_task, held_back, fired_again, starts])
+
 	print("MIND result " + JSON.stringify({"errors": errors}))
 	quit()

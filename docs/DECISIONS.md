@@ -2,6 +2,31 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, after the intensifiers (the user: things that disappear and come back, and flags a quest can switch)
+
+- **"if we dont have already can you create a script that makes objects disappear (not deleted just disappear
+  visually), so we can trigger an event that makes it look like the table looks different or something is missing,
+  we should also be able to make objects appear back, and be able to start them in game from either state, so I can
+  reuse the same droppable script for appearing. Appearing can be quest based or flag event based, ideally quests
+  can trigger variable flags on/off, should be easy to make new flags."** We had only pieces (a scare area's Appear
+  and Hide, `moved.gd`'s vanish). Now, in the starter kit:
+  - **`shown.gd`**, one script for both ways, on a thing or as a child of it. **`shown`** is how it starts (there or
+    not). It changes by **`fire()`** (any area's, cue's, scare's or moment's Target, or a signal: `on_fire` toggle,
+    show or hide), by **the Story's words** (`shown_when`: there while they hold: `task:key` once that task's ticked,
+    `on:key` while it's on the list, a flag's name, `!flag`; `hidden_when` the other way), or from a script
+    (`appear()`, `vanish()`, `set_shown`, `toggle`). **`when_unseen`**: only while you can't see it, so you look back
+    and it's different. **`also`**: more things with it. **`swap_with`**: things there only while it isn't (the same
+    table laid another way, in the same place). `fade_secs`. Nothing is deleted: it's hidden and its own colliders
+    are off with it.
+  - **Flags.** A flag is a fact the Story keeps, on or off; **a new one needs no list: the first thing that names
+    it makes it.** The Story got `set_flag(name, on)`, `toggle_flag`, `switch_flags("+a, -b, ~c")`, the signal
+    `unflagged`, **`flags_start`** (on when the game starts) and **`task_flags`**: what a task switches, a line each:
+    `"key: +table_gone, -lights_ok"` when it's ticked, `"added key: +searching"` when it's put on the list.
+  - **`flag_switch.gd`**, a node for the same: its `flags` (`+name`, `-name`, `~name`), done by `fire()` or by itself
+    when the Story's words come to hold (`when = "task:key"`), `again`, `needs`.
+- MIND plays them. **Not done**: a piece of an interior's export stays solid when hidden (it's part of its room's one
+  collider; a prop you placed yourself isn't); not in tutorial v2's game; Director and desk games.
+
 ## 2026-11-12, after the seats (the user: more intensifiers; a light that flickers on her, phasing, "am I going crazy")
 
 - **"an npc, if you flash a light it has a boolean that if a light faces it the light flickers (including

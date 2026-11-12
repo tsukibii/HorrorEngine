@@ -127,6 +127,17 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            flashlight when its beam is on her); never the moon, a light in the group hs_ambient or
                            one in `ignore`; flicker (three dips a second at most), dim, or die (out after a while,
                            and out a while longer once it's off her); `enabled` the switch
+  shown.gd                 on a thing (or a child of it): it's there, or it isn't. `shown` is how it starts; it comes
+                           and goes by fire() (an area's, a cue's or a moment's Target: toggle, show or hide), by the
+                           Story's words (Shown When "task:key", "on:key", a flag; Hidden When), or appear() and
+                           vanish(); when_unseen: only while you can't see it; also (more things with it), swap_with
+                           (things there only while it isn't: the table laid another way), fade_secs. Nothing is
+                           deleted: hidden, its own colliders off with it
+  flag_switch.gd           a node that switches flags: "+name" on, "-name" off, "~name" flipped; by fire(), or by
+                           itself when the Story's words come to hold (When "task:key"). A flag is just a name:
+                           type a new one and it exists; anything's Needs can ask for it ("name", "!name"). The
+                           Story does the same without a node: Task Flags ("key: +table_gone, -lights_ok";
+                           "added key: +searching") and Flags Start
   moved.gd                 on a thing: once you've seen it, and only while you can't, it changes: turned to face
                            you, moved to its next mark, nudged, tipped over or gone; a chance each time you look
                            away, its `needs` (sanity:uneasy), a cooldown, at most `times`

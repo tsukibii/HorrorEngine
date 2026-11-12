@@ -26,6 +26,7 @@ signal task_added(id: String)
 signal task_done(id: String)
 signal got(item: String)
 signal flagged(fact: String)
+signal unflagged(fact: String)                        ## a flag switched off
 signal ended(title: String)
 signal kept                                           ## a checkpoint was kept (checkpoint())
 signal died(how: String)                              ## die()
@@ -40,6 +41,8 @@ signal ate(item: String)                              ## a thing in the pocket w
 @export_multiline var ending_text := ""
 @export var accent := Color(0.88, 0.64, 0.37)         ## the list's ticks and the cards' titles
 @export var cash := 0.0                               ## the player's money: what the laptop's shop takes
+@export var flags_start: PackedStringArray = []       ## flags that are on when the game starts (a flag is just a name: type a new one anywhere)
+@export var task_flags: PackedStringArray = []        ## what a task switches: "key: +table_gone, -lights_ok" when it's ticked; "added key: +searching" when it's put on the list
 @export var pocket_row := true                        ## the pocket shown as an HSHud's inventory row (when the scene has one)
 @export var eat_secs := 2.0                           ## how long the left button is held to eat something that doesn't say
 @export var eat_sound := ""                           ## off the shelf, as something's eaten (a thing's own goes first)
@@ -81,6 +84,8 @@ func _ready() -> void:
 	add_to_group("hs_story")
 	layer = 5
 	_build()
+	for f in flags_start:
+		flag(f.strip_edges())
 	if objective_text != "":
 		objective(objective_text)
 	for t in tasks:
@@ -101,6 +106,7 @@ func add_task(id: String, text: String) -> void:
 			return
 	_tasks.append({"id": id, "text": text, "done": false})
 	_draw_list()
+	_task_flags("added " + id)
 	task_added.emit(id)
 
 
@@ -116,6 +122,7 @@ func tick(id: String) -> void:
 		if t["id"] == id and not t["done"]:
 			t["done"] = true
 			_draw_list()
+			_task_flags(id)
 			task_done.emit(id)
 			return
 
@@ -375,9 +382,46 @@ func is_set(fact: String) -> bool:
 	return flags.has(fact)
 
 
-## a fact taken back (a hunt's "it's running"; most facts are never unset)
+## a fact taken back (a hunt's "it's running"; a flag switched off)
 func unflag(fact: String) -> void:
-	flags.erase(fact)
+	if flags.has(fact):
+		flags.erase(fact)
+		unflagged.emit(fact)
+
+
+## A flag on or off by its name (a flag is a fact: anything's Needs can name it, `!name` for while it's off). New
+## flags need no list: the first thing that names one makes it.
+func set_flag(fact: String, on := true) -> void:
+	if on:
+		flag(fact)
+	else:
+		unflag(fact)
+
+
+func toggle_flag(fact: String) -> void:
+	set_flag(fact, not is_set(fact))
+
+
+## Flags written as words: "+name" (or "name") on, "-name" off, "~name" flipped; several apart by commas.
+func switch_flags(words: String) -> void:
+	for part in words.split(",", false):
+		var w := part.strip_edges()
+		if w == "":
+			continue
+		if w.begins_with("-"):
+			unflag(w.substr(1).strip_edges())
+		elif w.begins_with("~"):
+			toggle_flag(w.substr(1).strip_edges())
+		else:
+			flag(w.trim_prefix("+").strip_edges())
+
+
+# the flags a task switches (task_flags): `key` a task's id as it's ticked, "added <id>" as it's put on the list
+func _task_flags(key: String) -> void:
+	for line in task_flags:
+		var i := line.find(":")
+		if i > 0 and line.substr(0, i).strip_edges() == key:
+			switch_flags(line.substr(i + 1))
 
 
 # ---- dying, and coming back (a lethal hunt: hunt.gd) ---------------------------------------------------------------
