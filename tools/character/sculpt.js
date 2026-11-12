@@ -223,6 +223,17 @@ export function buildSculpt({ P, T, lm, lid = null }) {
     // the eyes: the skin round each (its lids, the socket's rim) bigger or smaller about the eye's own middle; the eyeball
     // and the opening follow the skin (the grafted eyes grow with it). The move's slope stays well inside 1 at any
     // slider, so the lids never fold
+    // the face narrowing from the eyes down to the chin, or widening: every point of the face's front sideways in
+    // proportion to how far out it is, more the lower it is (nothing at the eyes' line, a third of it at the mouth,
+    // all of it at the chin, easing out under it), so each height keeps its own shape and nothing is left standing
+    // over what moved. (Jaw width is a spot at the jaw's angle and Chin width a spot at the chin: pulled in far, the
+    // cheek above them is left as a ledge. A band along the jaw's own line was tried first and did the same.) With
+    // Face length it makes a small lower face, shorter and narrower together: the v2female base's. The eyes and the
+    // ears stay, as Face length's
+    ["face_taper", "Face taper", "Face", "The face narrowing from the eyes down to a small chin (a V: -1 a fifth narrower at the chin), or widening to a broad jaw. The eyes and the ears stay.",
+      p => { if (p[1] > yFace || p[1] < chin[1] - 0.05 || p[2] < 0.03) return null;
+        const t = p[1] >= chin[1] ? (yFace - p[1]) / (yFace - chin[1]) : sm(chin[1] - 0.05, chin[1], p[1]), w = 0.2 * t * t * faceFront(p[2]);
+        return w > 1e-7 ? [p[0] * w, 0, 0] : null; }],
     ["eye_size", "Eye size", "Face", "Bigger or smaller eyes: the lids and the socket round each eye about its middle (the eyeball follows).",
       p => { const w = bump(dist(p, eyeC), 0.036) * midOff(p); return w ? [0.15 * w * (p[0] - eyeC[0]), 0.15 * w * (p[1] - eyeC[1]), 0.15 * w * (p[2] - eyeC[2])] : null; }],
     ["eye_spacing", "Eye spacing", "Face", "The eyes further apart or closer together.",
@@ -330,6 +341,7 @@ export function buildSculpt({ P, T, lm, lid = null }) {
     ["mouth", "Mouth corner", ["mouth_width"], corner, true],
     ["lips", "Lips", ["lips"], L(0), false],
     ["face", "Face length", ["face_height"], [0.03, chin[1] + 0.012, chin[2] - 0.016], true],
+    ["face_side", "Face taper", ["face_taper"], pair(150, 379), true],
     ["eye", "Eye size", ["eye_size"], [eyeC[0], yFace - 0.006, eyeC[2] - 0.004], true],
     ["ear", "Ear", ["ears_size", "ears_out"], [0.087, 1.6, 0.012], true],
     ["ear_top", "Pointed ear", ["ears_point"], earTop, true],

@@ -165,7 +165,7 @@ try {
       return { neck: best * 200, v2: b.st.v2, on: document.querySelector("#v2On").checked, base: b.st.base }; });
     await B(() => document.querySelector('.bases button[data-base="-1"]').click()); await page.waitForTimeout(2000); const fem = await meas();
     await B(() => document.querySelector('.bases button[data-v2="1"]').click()); await page.waitForTimeout(2000); const v2 = await meas();
-    say(!fem.v2 && !fem.on && v2.v2 === 1 && v2.on && v2.base === -1 && v2.neck < fem.neck - 2 && v2.neck > 6, `the v2female button: the neck ${fem.neck.toFixed(1)} cm at its narrowest on the feminine base, ${v2.neck.toFixed(1)} on v2female, its switch on`);
+    say(!fem.v2 && !fem.on && v2.v2 === 1 && v2.on && v2.base === -1 && v2.neck < fem.neck - 0.8 && v2.neck > 6, `the v2female button: the neck ${fem.neck.toFixed(1)} cm at its narrowest on the feminine base, ${v2.neck.toFixed(1)} on v2female, its switch on`);
     await tog("#v2On", false); await page.waitForTimeout(2000); const off = await meas();
     say(!off.v2 && Math.abs(off.neck - fem.neck) < 0.05, `its switch off: the feminine base again (${off.neck.toFixed(1)} cm)`);
     await B(() => document.querySelector('.bases button[data-base="0"]').click()); await page.waitForTimeout(1000); }

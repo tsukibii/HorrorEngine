@@ -5,6 +5,26 @@ the fix.
 
 ## The v2female base: what took a second try (2026-11-12)
 
+- **A width read off a picture by eye went into a base; fitted, it was 2 cm out.** "Her neck is about 7.5 cm" set
+  Neck width to -1 and was committed. It came from the skin showing between two strands at one height, at a scale
+  set by eye. With a camera fitted from landmarks, both edges of the neck are in the picture and it is a quarter
+  wider than her eyes are apart, where ours had been made a tenth wider (its middle is not under the chin because
+  the head is turned on it, which is what hid the second edge the first time). The same rule as the hair's: when a number will be built on, fit the frame first and find both ends of
+  what is measured.
+- **A bald head's outline and a picture's skin are different things below the cheek.** "Ours is 1.3 cm a side wider
+  at the jaw" compared our bald silhouette (the neck and the skull behind the jaw) with her skin's edge against her
+  hair (her jaw itself). The jaw has to be compared as a jaw: the face's own oval on our mesh against her skin's
+  edge. Like for like, the upper jaw agreed within 3 mm and the whole difference was that her chin is 1 cm higher.
+- **Points can land while the face goes wrong: fit by numbers, then look.** Left to the landmarks, the fit took
+  the mouth to -1.27 and squeezed the lower face; every point was within 3 mm and the face was pinched. A fit says
+  which way and roughly how far; each value it proposes is looked at on the head before it is kept, and the worth
+  of each is measured by taking it out (three of the seven carried all the gain).
+- **A spot pulled in leaves what is above it as a ledge.** Two tries at a narrower jaw (the bottom band of the face,
+  then a band along the jaw's own line with a soft edge) both left the cheek standing over a pulled-in jaw: a shelf
+  with a shadow under it. What works is to move every point at one height in the same proportion of how far out
+  it is, growing with the depth below the eyes: each slice keeps its shape, so there is nothing to overhang.
+- **Shortening a face without narrowing it makes a heavy jaw.** Face length alone put the chin where hers is and
+  the head read as square: the same width in less height. Hers is small both ways.
 - **A face guessed from a style goes the wrong way; measure the picture in its own unit.** The first sculpt for the
   Daz characters' head was "anime": a shorter, rounder face, bigger eyes (Cutify's values). It made the lower face
   *wider*, and the hair by the ties sat 2 cm out. Her picture has no known size in it, so it was measured in eye

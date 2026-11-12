@@ -13,16 +13,22 @@ The user's answers, newest first. They override the plan, the research and the d
   under the buttons turns it on or off for a character already made. As asked ("which still allows face sculpting
   etc"), it is a starting point and nothing is locked: every identity slider, every sculpt control, the ages, Cutify,
   Monster mode, Anime, a face fitted to a picture all go on top of it, as on any base.
-- **What had to be made for it:** MHR's neck could not be slimmed. The sculpt's *Neck* is the throat under the jaw
-  alone; the neck on the feminine base is 10.3 cm across at its narrowest. A new control, **Neck width** (Body), makes
-  the whole neck slimmer or thicker about its own axis, from the shoulders to under the jaw and the skull. v2female
-  carries it at -1: 7.4 cm (the Daz character's is about 7.5).
+- **What had to be made for it:** two controls the sculpt lacked, both for anyone. MHR's neck could not be slimmed
+  (the sculpt's *Neck* is the throat under the jaw alone; the feminine base's neck is 10.3 cm across at its
+  narrowest): **Neck width** (Body) makes the whole neck slimmer or thicker about its own axis, from the shoulders
+  to under the jaw and the skull. And nothing narrowed a face toward its chin without leaving a ledge: **Face taper**
+  (Face) narrows the face from the eyes down, every height in the same proportion.
+- **Corrected the same day, and why it matters:** the first version carried Neck width at -1 (a neck of 7.4 cm), from
+  a width I had read off her picture by eye as "about 7.5". Laid against two of her pictures with fitted cameras, both
+  edges of her neck are there and it is 1.27 times as wide as her eyes are apart; ours at -1 was 1.10, and dented at
+  the nape from the side. The base carries **-0.4** (9.0 cm on a 1.70 m body, 1.34) now, a face 1 cm shorter under the eyes and narrower with it, a
+  smaller mouth. The landmarks land 3.4 and 2.8 mm off in the two pictures (4.7 and 3.7 before).
 - **Mine, not the user's:** it is **off for new characters**, which start where they always did (halfway between the
   bases). Nobody asked for the default to change; say so if every new character should start on it. Characters saved
   before are untouched (the base is kept with the character as `v2`, absent when off).
-- **Not judged yet:** how close its face is to the Daz characters' beyond the measured proportions (eye spacings: the
-  eyes' line to the chin 1.52 of them against her 1.45, the face at the lips 1.72 against 1.62, a sixth up from the
-  chin 1.45 against 1.28, the neck 1.11 against 1.05). It is one picture's proportions; the user's eye is the judge.
+- **Not judged yet:** the look of it. It is held to two pictures by the places of the eyes, the nose, the mouth, the
+  chin and the ears and by the jaw's and the neck's outlines, bald and unlit as she never is; her eyes are far larger
+  than the base's, her right ear leans more, her shoulders begin lower. The user's eye is the judge.
 
 ## 2026-11-12, the 1:1 (the user, on the first matched comparisons of the Daz twin tails: be a perfectionist; a v2female base)
 

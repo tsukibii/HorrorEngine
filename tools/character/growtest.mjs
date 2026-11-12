@@ -139,7 +139,7 @@ const span = X => { let lo = Infinity, hi = -Infinity; for (let i = 1; i < X.len
     const hit = new Uint8Array(N); for (const i of c.idx) hit[i] = 1; let n = 0;
     for (let t = 0; t < T.length; t += 3) { if (!hit[T[t]] && !hit[T[t + 1]] && !hit[T[t + 2]]) continue; const a = nrm(P, t), b = nrm(X, t); if (a[0] * b[0] + a[1] * b[1] + a[2] * b[2] < 0) n++; } return n; };
   const at = id => { const R = GW.REACH[id] || [-3.4, 3.4]; return [Math.max(-3, R[0]), Math.min(3, R[1])]; };
-  const NEW = ["face_height", "face_round", "eye_size", "eye_spacing", "eye_depth", "eye_tilt", "snout", "skull_back", "bust", "seat", "head_size", "neck_length", "torso_length", "legs_length", "arms_length", "hands", "feet", "fingers"];
+  const NEW = ["face_taper", "face_height", "face_round", "eye_size", "eye_spacing", "eye_depth", "eye_tilt", "snout", "skull_back", "bust", "seat", "head_size", "neck_length", "torso_length", "legs_length", "arms_length", "hands", "feet", "fingers"];
   const rows = NEW.map(id => [id, Math.max(...at(id).map(v => flips(id, v)))]), worst = rows.filter(r => r[1] > 0);
   say(!worst.length, `at their furthest in monster mode, ${NEW.length} of the new fields turn no triangle over` + (worst.length ? `: ${worst.map(r => r.join(" ")).join(", ")}` : ""));
   const ears = ["ears_size", "ears_out", "ears_point"].map(id => [id, Math.max(...at(id).map(v => flips(id, v)))]), hunch = flips("hunch", 3);
@@ -265,7 +265,7 @@ const span = X => { let lo = Infinity, hi = -Infinity; for (let i = 1; i < X.len
   const neck = X => { let best = 9; const c = chinY(X); for (let y = c; y > c - 0.07; y -= 0.004) { let w = 0; for (let i = 0; i < X.length; i += 3) if (Math.abs(X[i + 1] - y) < 0.004 && Math.abs(X[i]) < 0.14 && Math.abs(X[i]) > w) w = Math.abs(X[i]); if (w > 0.01) best = Math.min(best, w); } return best * 200; };
   const fem = grownBody(M, { base: -1 }).P, v2 = grownBody(M, { base: -1, v2: 1 }).P, slim = grownBody(M, { base: -1, sculpt: { neck_width: -1 } }).P;
   const nF = neck(fem), nV = neck(v2), nS = neck(slim);
-  say(nF > 10 && nS < nF - 2.5 && nS > 6 && nV < nF - 2.5 && nV > 6, `Neck width -1: the neck at its narrowest from the front ${nF.toFixed(1)} cm on the feminine base, ${nS.toFixed(1)} with it; v2female's ${nV.toFixed(1)}`);
+  say(nF > 10 && nS < nF - 2.5 && nS > 6 && nV < nF - 0.8 && nV > nS + 0.8, `Neck width -1: the neck at its narrowest from the front ${nF.toFixed(1)} cm on the feminine base, ${nS.toFixed(1)} with it; v2female, which carries it at ${PF.sculpt.v2female.neck_width}, ${nV.toFixed(1)}`);
   // the face stays: its own points (the chin, the nose's tip, the mouth's and the eyes' corners, the face's sides by the ears, the forehead's top), and the jaw's angles hardly
   const mv = i => Math.hypot(...landmark(M, slim, i).map((v, k) => v - landmark(M, fem, i)[k])) * 1000, face = Math.max(...[152, 1, 61, 291, 33, 263, 234, 454, 10].map(mv)), jawA = Math.max(mv(172), mv(397));
   let most = 0; for (let i = 0; i < fem.length; i += 3) most = Math.max(most, Math.hypot(slim[i] - fem[i], slim[i + 1] - fem[i + 1], slim[i + 2] - fem[i + 2]));
@@ -278,12 +278,23 @@ const span = X => { let lo = Infinity, hi = -Infinity; for (let i = 1; i < X.len
   const m0 = grownBody(M, { base: 1 }).P, m1 = grownBody(M, { base: 1, v2: 1 }).P, h0 = grownBody(M, { base: 0 }).P, h1 = grownBody(M, { base: 0, v2: 1 }).P; let dm = 0, dh = 0;
   for (let i = 0; i < m0.length; i++) { dm = Math.max(dm, Math.abs(m1[i] - m0[i])); dh = Math.max(dh, Math.abs(h1[i] - h0[i])); }
   const nH = neck(h1), nH0 = neck(h0);
-  say(dm === 0 && dh > 0.003 && nH < nH0 - 1 && nH > nV, `it is the feminine end's: the masculine base is the same with it to the bit, halfway the neck is ${nH0.toFixed(1)} cm without it and ${nH.toFixed(1)} with`);
-  // its face, against the feminine base's: the eyes much further apart and larger, the jaw and the chin narrower, as long from the eyes to the chin (within 3 mm)
+  say(dm === 0 && dh > 0.003 && nH < nH0 - 0.3 && nH > nV, `it is the feminine end's: the masculine base is the same with it to the bit, halfway the neck is ${nH0.toFixed(1)} cm without it and ${nH.toFixed(1)} with`);
+  // its face, against the feminine base's: the eyes much further apart and larger, a small lower face (shorter from the eyes to the chin, narrower at the jaw's angles and by the chin), a smaller mouth
   const mid = (a, c) => a.map((v, k) => (v + c[k]) / 2), eyeY = X => (landmark(M, X, 145)[1] + landmark(M, X, 374)[1]) / 2, jawW = X => Math.abs(landmark(M, X, 172)[0] - landmark(M, X, 397)[0]) * 100;
   const eyeW = X => Math.abs(landmark(M, X, 33)[0] - landmark(M, X, 133)[0]) * 1000, apart = X => Math.abs(mid(landmark(M, X, 33), landmark(M, X, 133))[0] - mid(landmark(M, X, 263), landmark(M, X, 362))[0]) * 100, long = X => (eyeY(X) - chinY(X)) * 100;
-  say(apart(v2) > apart(fem) + 0.7 && apart(v2) < 7.6 && eyeW(v2) > eyeW(fem) + 1 && jawW(v2) < jawW(fem) - 0.3 && Math.abs(long(v2) - long(fem)) < 0.3,
-    `its face: the eyes ${apart(v2).toFixed(1)} cm apart (the feminine base's ${apart(fem).toFixed(1)}), each ${eyeW(v2).toFixed(1)} mm corner to corner (${eyeW(fem).toFixed(1)}), ${jawW(v2).toFixed(1)} cm between the jaw's angles (${jawW(fem).toFixed(1)}), ${long(v2).toFixed(1)} cm from the eyes' line to the chin (${long(fem).toFixed(1)})`);
+  const across = (X, a, c) => Math.abs(landmark(M, X, a)[0] - landmark(M, X, c)[0]) * 100;
+  say(apart(v2) > apart(fem) + 0.7 && apart(v2) < 7.6 && eyeW(v2) > eyeW(fem) + 1 && jawW(v2) < jawW(fem) - 0.8 && long(v2) < long(fem) - 0.5 && long(v2) > long(fem) - 1.5 && across(v2, 150, 379) < across(fem, 150, 379) - 0.9 && across(v2, 61, 291) < across(fem, 61, 291) - 0.5,
+    `its face: the eyes ${apart(v2).toFixed(1)} cm apart (the feminine base's ${apart(fem).toFixed(1)}), each ${eyeW(v2).toFixed(1)} mm corner to corner (${eyeW(fem).toFixed(1)}), ${long(v2).toFixed(1)} cm from the eyes' line to the chin (${long(fem).toFixed(1)}), ${jawW(v2).toFixed(1)} cm between the jaw's angles (${jawW(fem).toFixed(1)}), ${across(v2, 150, 379).toFixed(1)} across the jaw by the chin (${across(fem, 150, 379).toFixed(1)}), the mouth ${across(v2, 61, 291).toFixed(1)} (${across(fem, 61, 291).toFixed(1)})`);
+  // ---- Face taper (sculpt.js): the face narrowing from the eyes down to the chin. -1: a fifth narrower at the chin, less
+  // the higher (the mouth's corners a few percent), nothing at the eyes and the ears; and no ledge: at one height every
+  // point moves in the same proportion of how far out it is, so the cheek is never left standing over the jaw
+  const c = byId.get("face_taper"), tap = grownBody(M, { base: -1, sculpt: { face_taper: -1 } }).P, mvT = i => landmark(M, tap, i).map((v, k) => (v - landmark(M, fem, i)[k]) * 1000);
+  const share = i => -mvT(i)[0] / (landmark(M, fem, i)[0] * 1000), still = Math.max(...[33, 133, 263, 362, 234, 454, 10, 168].map(i => Math.hypot(...mvT(i)))), updown = Math.max(...[150, 379, 61, 291, 172, 397].map(i => Math.hypot(mvT(i)[1], mvT(i)[2])));
+  say(!!c && share(379) > 0.14 && share(379) < 0.2 && share(291) > 0.03 && share(291) < 0.1 && share(172) > share(291) && share(172) < share(379) && Math.abs(share(150) - share(379)) < 0.01 && still < 0.5 && updown < 0.05,
+    `Face taper -1: the jaw by the chin ${(share(379) * 100).toFixed(0)}% nearer the middle, the jaw at the mouth's height ${(share(172) * 100).toFixed(0)}%, the mouth's corners ${(share(291) * 100).toFixed(0)}%, the two sides alike; the eyes, the face's sides by the ears, the forehead and the nose's root ${still.toFixed(2)} mm, nothing up, down, forward or back (${updown.toFixed(2)} mm)`);
+  { const y0 = landmark(M, P, 152)[1] + 0.012, pts = []; for (let q = 0; q < c.idx.length; q++) { const i = c.idx[q] * 3; if (Math.abs(P[i + 1] - y0) < 0.004 && Math.abs(P[i]) > 0.012 && P[i + 2] > landmark(M, P, 172)[2]) pts.push(c.d[q * 3] / P[i]); }
+    const lo = Math.min(...pts), hi = Math.max(...pts);
+    say(pts.length > 8 && hi - lo < 0.03, `no ledge: across the face's front 1.2 cm over the chin, ${pts.length} points move in between ${(lo * 100).toFixed(1)} and ${(hi * 100).toFixed(1)}% of how far out they are for each unit`); }
 }
 
 if (bad) { console.log(`GROW FAIL: ${bad}`); process.exit(1); }

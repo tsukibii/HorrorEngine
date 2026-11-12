@@ -196,21 +196,23 @@
   },
   "v2female": {
    "belly": -0.7,
-   "neck_width": -1.0,
+   "neck_width": -0.4,
    "eye_spacing": 1.6,
    "eye_size": 0.7,
    "nose_size": -0.4,
    "nose_projection": -0.22,
-   "nose_length": -0.3,
+   "nose_length": 0.35,
    "nose_bridge": -0.22,
-   "mouth_width": -0.22,
+   "mouth_width": -0.72,
    "lips": 0.13,
    "brow_ridge": -0.18,
    "forehead_slope": 0.45,
    "chin_length": -0.15,
    "chin_width": -0.8,
    "jaw_width": -0.5,
-   "cheekbones": -0.2
+   "cheekbones": -0.2,
+   "face_height": -0.8,
+   "face_taper": -1.0
   }
  }
 }

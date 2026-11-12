@@ -59,17 +59,26 @@ for it ("lets create a v2female base").
 - **Not matched, in order** (§10's list): the last 3 cm over the tie, the fringe's pieces, the sidelocks as ribbons and the plait, the red
   streaks, strands across the ear, her first picture's view (a fuller bulb behind the ear), the back.
 - **The v2female base is built** (DECISIONS 2026-11-12, v2female; docs/CHARACTER_STUDIO.md §2f): a fourth base
-  button and a switch in the Body tab, *what the feminine end becomes*: the feminine body, with sixteen plain sculpt
-  values for the head and the neck (`MHR_presets.json` `sculpt.v2female`), every slider still moving from it; and
-  the control it needed, **Neck width** (the whole neck about its own axis; the neck 10.3 cm to 7.4). GROW and
-  GROWPAGE (`QUICK=1`) hold it. Off for new characters (nobody asked for the default to change). **Ask the user
-  for a local STUDIO and GROWPAGE** (docs/RUN_LOCALLY.md): here only GROWPAGE's quick half was run.
-- **Next: the rig on the new head.** Everything in HAIR_V2 §10 was measured on the test body before the base (the
-  feminine base with a Cutify-like sculpt). Both cameras have to be fitted again (the scratch `rig2/fit.mjs`: ten
-  landmarks of her front picture, seven of the other, against the body's own: MediaPipe's points through
-  `MHR_landmarks.json`, the ear as `sculpt.js` finds it), then both outlines measured again, then the hair by the
-  tie. A first fit of the front picture on the new head: 14 degrees to her right, 8 above, rolled 7, the points
-  5.5 px off (4 mm): her eyes are still further apart than v2female's and her ear leans out more at its top.
+  button and a switch in the Body tab, *what the feminine end becomes*: the feminine body, with eighteen plain
+  sculpt values for the head and the neck (`MHR_presets.json` `sculpt.v2female`), every slider still moving from
+  it; and the two controls it needed, **Neck width** (the whole neck about its own axis) and **Face taper** (the
+  face narrowing from the eyes down, no ledge). Off for new characters (nobody asked for the default to change).
+  GROW and GROWPAGE (`QUICK=1`) hold it. **Ask the user for a local STUDIO and GROWPAGE** (docs/RUN_LOCALLY.md).
+- **It is held to two of her pictures** (the scratch `rig2/joint.mjs`: MediaPipe's points on the body and the ear
+  as the sculpt finds it against the same points in each picture, a camera fitted for each): the front one from
+  9.5 degrees to her right and 5 above, rolled 7.9, the points 3.4 mm off; the other from 32 to her left and 14.5
+  below, 2.8 mm. The first version's neck (-1, from a width read by eye) was 2 cm too thin and is -0.4 now.
+  Not matched: her right ear's lean, her larger eyes, her shoulders (lower under the chin than MHR's, but covered).
+- **What her head's roll means for the hair** (found while fitting, not yet used): in the front picture her head is
+  rolled 8 degrees and her hair hangs by the picture's own vertical, so against her head her right tail hangs
+  inward and her left outward. Ours hangs down the head's axis. Compare both sides and take the middle, or give
+  the engine a gravity direction; the old rig compared her right side alone.
+- **A side effect**: the hair tools size a head from its top to its chin (`salonref.js` `headFrame`); v2female's
+  chin is 1 cm higher, so its frame is 6.6% smaller than the feminine base's on the same skull and hair from the
+  same numbers is that much smaller on it. Know it before carrying numbers tuned on v2female to other bodies.
+- **Next: the hair on the new head.** Everything in HAIR_V2 §10 was measured on the test body before the base. The
+  scratch `rig2/` (`shoot.sh`, `cmp.py`, `outline2.py`) pictures a head from both fitted cameras and measures the
+  hair's edge by height on both sides; then the hair by the tie, then §10's list.
 - **Then:** the other six Daz hairstyles; the
   new settings carried to the older styles (their cards made again).
 
