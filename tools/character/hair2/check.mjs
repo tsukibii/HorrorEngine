@@ -229,7 +229,8 @@ if (!only.length) {
     }
     // ---- tied hair that hangs to its tie (Drape, Fullness, Puff, Tie lower), round an ear that's out; a tail as a brush; a fringe closed at its middle
     {
-      const C = base.C, DEG = 180 / Math.PI, low = set => settings("twin_tails_high", { ears: "tucked", ties: { height: 0, side: 0.85, tight: 0, tail: { thick: 0.008, fall: "front" }, ...set } });
+      const C = base.C, DEG = 180 / Math.PI, PLAIN = { spread: 0.5, taper: 0.7, fan: 0, bloom: 0.3, flat: 0, out: 0, strands: 1 },   // (a plain tail: what each slider is measured against, whatever the style it's tried on has of its own)
+        low = set => settings("twin_tails_high", { ears: "tucked", ties: { height: 0, side: 0.85, tight: 0, full: 0, tail: { thick: 0.008, fall: "front", ...PLAIN }, ...set } });
       const measure = st => { const G = grow(base, pores, st, prep, { draft: true }).guides, ties = tiesOf(prep.S, C, st), off = [], up = []; let n = 0, at = 0, across = 0;
         for (let i = 0; i < G.n; i++) { if (G.group[i] < 3 || !(G.len[i] > 0.02)) continue; n++; const t = ties[G.group[i] - 3], e = (i * K + K - 1) * 3; if (Math.hypot(G.pts[e] - t.at[0], G.pts[e + 1] - t.at[1], G.pts[e + 2] - t.at[2]) < 0.02) at++;
           for (let k = 1; k < K; k++) { const o = (i * K + k) * 3, x = G.pts[o], y = G.pts[o + 1], z = G.pts[o + 2], az = Math.abs(Math.atan2(x - C[0], z - C[2])) * DEG;
@@ -254,7 +255,7 @@ if (!only.length) {
         const b0 = lie(0), b1 = lie(0.5);
         say(b1.rear > b0.rear + 6 && Math.abs(b1.side - b0.side) < 1.5, `Fullness at the back 0.5: the tied hair lies ${b0.rear.toFixed(1)} mm thick on the back of the head, ${b1.rear.toFixed(1)} with it; at the side over the ear ${b0.side.toFixed(1)} and ${b1.side.toFixed(1)}`); }
       // a tail: Strands, Fan (wider right under the tie), Flat (thin through, wide across), Out (its tip further from the neck)
-      const tl = set => { const st = low({ tail: { thick: 0.008, fall: "front", length: 0.2, spread: 2, ...set } }), t = tiesOf(prep.S, C, st)[0], g = tail(t, { S: prep.S, C, s: st, seed: 1 });
+      const tl = set => { const st = low({ tail: { thick: 0.008, fall: "front", ...PLAIN, length: 0.2, spread: 2, ...set } }), t = tiesOf(prep.S, C, st)[0], g = tail(t, { S: prep.S, C, s: st, seed: 1 });
         const ring = f => { const k = TS.findIndex(v => v >= f); let cx = 0, cz = 0, wx = 0, wz = 0; for (let j = 0; j < g.n; j++) { cx += g.pts[(j * K + k) * 3]; cz += g.pts[(j * K + k) * 3 + 2]; } cx /= g.n; cz /= g.n;
           for (let j = 0; j < g.n; j++) { wx = Math.max(wx, Math.abs(g.pts[(j * K + k) * 3] - cx)); wz = Math.max(wz, Math.abs(g.pts[(j * K + k) * 3 + 2] - cz)); } return { cx, wx, wz }; };
         return { n: g.n, near: ring(0.05), mid: ring(0.5), tip: ring(0.9), tie: t }; };

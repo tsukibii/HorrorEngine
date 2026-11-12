@@ -96,8 +96,12 @@ And the rules live in the trace, not in a simulation after (LESSONS: a simulatio
 - **the ears**: *covered*; *clear* (the hair is cut where it would cover one: short cuts); **tucked** (both, or her
   left or right alone): the roots over the temple and above the ear are combed back, the hair runs along the hairline,
   over the ear's top and down behind it, never across it; what grows in front of the ear below its top stays as a few
-  short wisps. *Tucked hair falls* in front (it comes forward under the ear and hangs in front of the shoulder to its
-  cut) or behind the shoulders.
+  short wisps: fine hairs, a point at both ends (as short cards a third of a lock wide they read as dark shards in
+  front of the ear), with the scalp under them a light shade (§3.10). *Tucked hair falls* in front (it comes forward
+  under the ear and hangs in front of the shoulder to its cut) or behind the shoulders. **In front needs length**:
+  cut at the shoulders (every long style here, §6) the hair has eight centimetres under the ear to come forward
+  with, and it hooked round the neck as a C. The four shoulder-length styles with the ears out and the one-ear
+  waves now fall behind; in front is for hair to the collarbones and longer.
 - **the cut**: to a line (every hair cut where it crosses a height: Tilt for an A-line, Round for a U) or by length.
   **Two lengths** (`cut.tiers`): the front and sides to a shorter line of their own as far round the head as you say
   (a step or a slope), the back long; or a bob all round over a long nape (the hair that grows on the low back of the
@@ -117,7 +121,10 @@ by as much as the slider says. The ends' turn can then bring it in to the jaw: a
 temples. Without it the sides' Volume held the hair out all the way down, and a bob hung as a bell however far its
 ends turned (2 to 3 cm too wide at the jaw against the picture). Measured: 13.4 cm from the head's middle a
 centimetre over the cut at 0, 10.6 at 0.8, and the same above the eyes. The **Volume** sliders go to 60 mm (from 35):
-a full bob stands 4.5 to 5.5 cm off the head.
+a full bob stands 4.5 to 5.5 cm off the head. On a bob over a long nape (`cut.tiers: "over"`, the jellyfish cut) it
+is by each hair's own line, the bob's or the nape's. It only shapes hair that lies near the head where it ends: a
+bob cut at the lips. A chin-length bob hangs free below the cheekbone, and what rounds it is the ends' turn with a
+long radius (4 to 5 cm) over more Volume; the bobs here have both (§10c).
 
 ### 3.6 Texture
 
@@ -190,8 +197,18 @@ from the roots' colour to the lengths' over the first third of a card however lo
 **Closed middle** (`fringe.closed`, 0 by default): a fringe with no line of skin down its middle. A fringe's hair runs
 down the dome, so its two sides fan away from the middle (HAIR2: the hairs beside the middle of a heavy fringe drift
 12.5 mm out to their own side) and the skin shows between them; Closed combs the hair beside the middle, and the hair
-from far back on the top, straight forward side by side (5.1 mm). A heavy fringe from the top of the head (Amount
+from far back on the top, straight forward side by side (4.3 mm). A heavy fringe from the top of the head (Amount
 1.5) needs it, with Hold long enough to carry its hair to the forehead (0.7 of 17 cm).
+
+**And the locks' part of it** (2026-11-12, the lessons into every style). On the older fringes Closed changed
+nothing that showed: the forehead's middle stayed bare in a V. Printed, hair by hair: no fringe hair's tip ended
+within two centimetres of the middle; hairs rooted 3 mm from it ended 2.5 cm out. Not the comb: the **locks**. Each
+hair is drawn to its lock's guide, the guides are the first pores of the ranked set, none of them sits on the
+middle, and so the hair beside the middle went to the locks at either side, further the bigger the locks (drawn
+hair's are 3 cm). Closed now also makes the fringe's hairs beside the middle one lock **on** the middle (half a lock
+size to each side, its guide the hair nearest the middle at the front of the band: `engine.js`). With a choppy
+fringe's Centre lock that is the lock between the eyes it always meant. **A blunt, a choppy and a micro fringe are
+closed by their kind** (`FRINGES`): every style with one changed.
 
 ### 3.8 Ties
 
@@ -282,6 +299,13 @@ scalp).
   hair the dots run together into a shade; at the hairline's soft edge they're fainter; under a cut's line (a bob's,
   a bowl cut's nape) there are none; the parting's skin is left clear by its width. In place of the salon's flat
   darkened cap.
+- **Its shade is as it's seen** (2026-11-12). The picture is blended over the skin in linear light, where a
+  twentieth of the skin left in still reads a fifth as bright as bare skin: at the Shade of 0.95 every style had, the
+  scalp under black hair was a **brown**, and it showed as patches wherever the hair opens: behind a see-through
+  fringe's roots, at a temple pulled back to a tie, in front of a tucked ear. The full shade is now
+  1 − (1 − Shade)^2.2 (0.95 hides all but a thousandth), the soft edge keeps its own fall. The short cuts, whose look
+  was tuned with the skin showing through clipped hair, carry the Shade that draws as they were (0.745 for 0.95,
+  0.27 for the shaved head's 0.5). Under a tucked ear's wisps the shade is three tenths: a few hairs grow there.
 
 ### 3.11 A second colour
 
@@ -322,7 +346,13 @@ bun as bands round its ball, a dip dye the tail's own tips.
 call for a Studio export) finds:
 
 - the **locks** by the `studioHair` record: the salon bake's look (soft dithered coverage under TAA, tapered card
-  sides, two highlights, light through from behind), with the bake's own `settings` over it;
+  sides, two highlights, light through from behind), with the bake's own `settings` over it, and the look's own
+  `bake` over those (GODOT_LOOK §5p). Since 2026-11-12 every look of the editor's own asks for the first highlight
+  **lock by lock** (`streak`: 0.9 on the glossy black, 0.7 on the other dark looks, 0.5 to 0.6 on the light ones): a
+  fringe under a light from the front was one even grey sheet, the same on every dark style; and the light looks
+  (dark blonde, grey, white) for more light wandering through the hair and less dark between its strands
+  (`scatter` 0.6, `occlusion` 0.55), where they read as yarn. The salt and pepper of the two balding cuts is as it
+  was. The Studio's own shader has neither: its tab shows the older sheen;
 - **`hair_shell`**: `hair_shell.gdshader` (GODOT_LOOK §5p) with the look's root and tip colours;
 - **`hair_scalp`** with a texture: kept as it is, matt;
 - the tails' chains: **HSJiggle** springs every chain named `jiggle_…`, soft by the tail's Sway.
@@ -337,6 +367,12 @@ back in a scratch Godot project with the look plugin (`Saved/Godot/_hair2`). God
 Long hair ends with **just its tips on the shoulders** in every style (a cut's line at -0.14, a tail's length to
 match: DECISIONS 2026-11-12, last); longer is a slider away, down to the chest. Every style as Godot pictures it:
 `docs/godot_sheets/2026-11-12_hair_v2_styles.jpg` (the cards' own pictures, by group).
+
+**A card is pictured on the body its style is for** (2026-11-12, `hair2_check.py` `card_body`): the women's on the
+Studio's v2female base (the head and neck of the user's own characters, on the feminine base's plain body:
+`make.mjs --body v2base`), the men's and the balding cuts on the masculine base, the children's on a child of
+eight. They were all on MHR's own body, a broad neck and shoulders under every hime cut. The styles themselves
+were gone through the same day with what the two matched ones taught: §10c.
 
 | Group | Styles |
 |---|---|
@@ -360,7 +396,10 @@ head's hair 1.5 to 3 MB with its two 512 px textures.
 ## 8. Checks
 
 - `node tools/character/hair2/check.mjs`: **HAIR2** (no browser, in check_all): the pores; the styles' table; every
-  style grown on MHR's base and measured; the hairline's and thinning's pores; what sliders do; other bodies.
+  style grown on MHR's base and measured; the hairline's and thinning's pores; what sliders do; other bodies. A
+  slider is measured against a plain tie and tail the check sets itself (`PLAIN`), not against whatever the style
+  it's tried on has: the day the high twin tails were given Fullness and more strands, two of its lines failed for
+  that alone.
 - `node tools/character/hair2pagetest.mjs [--out DIR]`: **HAIR2PAGE** (the tab in a headless browser on a scratch
   character; the Studio's server running; `EXPORT=1` also exports for Godot and reads the file).
 - `python tools/godot/hair2_check.py [--styles a,b] [--quick] [--keep DIR]`: **GDHAIR2** (styles made by node, worn by
@@ -379,7 +418,9 @@ head's hair 1.5 to 3 MB with its two 512 px textures.
   there, unused: long hair lies on the bare body); a tail's chain doesn't collide with the body in Godot (HSJiggle's
   springs have no colliders); the Studio's view has no temporal anti-aliasing, so the hair there is coarser at its
   edges than Godot's.
-- **The Advanced styles' faults, as they stand** (2026-11-12, after a close look at each from the side): the space
+- **The Advanced styles' faults, as they stand** (2026-11-12, after a close look at each from the side; the first
+  three items here were then dealt with in §10c: the space buns' fringe is narrower, so their tendrils have strands,
+  and they are all violet with the roots black; brown scalp no longer shows at a pulled-back hairline): the space
   buns have no gathered tendrils at all (under their wide fringe only two face-framing strands grow a side: each
   "lock" is one strand, hard to see from the front, where two thirds of it is edge on) and a blocky dark patch at the
   sideburn; the messy bun's long waved tendrils turned sharply near their tips, and that one is found and fixed (the
@@ -551,6 +592,65 @@ at the temples and tucked in at the jaw, a fringe swept from her left over her r
   The back and the sides' depth are in no picture.
 - **Can it be 1:1?** The outline, yes, to what a 160 px head can show (half a centimetre). The locks, not from this
   picture: it does not resolve them. A close-up of the head would.
+
+## 10c. What the two matched styles taught, in every style
+
+DECISIONS 2026-11-12, the lessons into every style: "take everything you've learnt from the last hairstyles and
+enhance improve v2 hairstyles". All 67 were pictured from the front, three quarters, the side and the back **on the
+body each is for** (the women's on v2female, the men's on the masculine base, the children's on a child of eight)
+before anything was changed, changed, and pictured again from the same four sides: 67 pairs, each looked at. The
+pictures are scratch (`Saved/Hair2/imp`); the cards are the result (§6).
+
+**What they taught, as rules** (the "system for aesthetic hair" the 1:1 was for):
+
+1. **The outline first.** Hair is read by its silhouette: how far it stands off the skull at the crown and the
+   temples, where it is widest, where it comes in. Measure it; then look.
+2. **Tied hair has body and hangs.** The Volume sliders do nothing to it: its thickness is Fullness. Pulled flat
+   it is a cap painted on the skull. Low at the nape it hangs to its tie from the head's widest part, and behind
+   the ears, not across them.
+3. **A tail is a brush**: more hairs than its thickness alone gives, springing out under its tie; twin tails lean
+   out.
+4. **A fringe is closed at its middle**, from the top of the head, to the lash line.
+5. **A bob is round**: fullest at the temples, in at the jaw (the ends' turn on a long radius; Tuck under where it
+   ends near the head).
+6. **A lock that hangs past the jaw hangs free**; and what is wound from a lock begins where the lock ends (the
+   ringlets, §3.7: the user's catch).
+7. **Black hair is black with bright strands**, not a grey sheet; and what shows between the hairs is the roots'
+   colour, not the skin's.
+8. **Judge it on the body it's for, from the side as well.** On MHR's broad shoulders long hair made ledges that a
+   slender neck doesn't; and the ringlets floated in the side view alone.
+
+**What changed.** In the engine, for every style: the scalp's shade as it's seen (§3.10), a closed fringe's lock on
+the middle (§3.7), a tucked ear's wisps as fine hairs over a light shade (§3.4), ringlets as their lock wound up
+(§3.7), Tuck under by a hair's own line (§3.5), the looks' own highlights (§5). In the styles, grown by the engine
+as committed and as changed and compared hair by hair on MHR's base: **44 of the 67 have hair that moved; the
+other 23 are the same hair by hair** (the men's nine, the five balding cuts, the three for our games, the waves,
+the curls, the shaggy layers, the wolf cut, the short swept cut, the rounded bob of §10b) and differ only by the
+scalp's shade and the highlights.
+
+| What | Styles | Before, after (v2female's head, centimetres off the skin) |
+|---|---|---|
+| Tied hair with body (Fullness 0.1 to 0.3, a looser Tightness: eighteen styles with the low ties below) | the high ponytail, the high bun, the half-ups, the high twin tails, two side up, the odango, the side ponytail, the pigtails, the twin buns, the Advanced four | the high ponytail 7 and 10 cm over the ears' line: 0.9 and 0.9, now 1.5 and 1.4 (the matched twin tails: 1.8 and 2.0) |
+| Low ties that hang (Drape), behind the ears | the low ponytail, the low bun (ears out: across the ears the gathered hair's lower edge was a rim at the lobe, a helmet's), the small low tails, the low twin tails of the pictures | |
+| Tails as brushes (Strands 1.5 to 1.8, Fan 0.3 to 0.5; twin tails Flat and leaning out) | the eleven styles with tails | 28 to 40 hairs a tail, now 49 to 78 |
+| Fringes closed, to the lash line (0.035) | every blunt and choppy fringe (eighteen styles); the line on the himes, the high twin tails, two side up, the jellyfish, the split dye | no fringe hair ended within 2 cm of the middle; now the middle lock does |
+| Bobs rounder and fuller (Volume, the ends' turn on 4 to 5 cm, Tuck under 0.35 to 0.6) | the sleek bob, the chin bob, the one-eye bob, the short bob, the children's bob, the jellyfish's bob, the sides of sides-short-back-long | the short bob's sides 4 to 10 cm up: 1.9 to 2.4, now 2.8 to 3.1; its crown 1.0, now 1.3 |
+| A fuller crown on long hair (Volume 3 to 5 mm more, Lift) | long and straight, the himes, the long ears-out pair, two side up, the half-up, the Korean long, the lob, the drawn long ones, two Advanced | long and straight, 3 and 6 cm from the middle: 0.6 and 1.2, now 0.9 and 1.7 |
+| The hime's sidelocks as a step | *Hime cut* (the front cut to the cheek at -4.5 cm, the back long: its sidelocks were face-framing strands over long side hair of the same colour, and could not be seen) | |
+| Ears out, the hair behind the shoulders | the four shoulder-length ears-out styles, the peekaboo waves | §3.4 |
+| Tendrils that hang free | the Advanced five with long tendrils (Hang free 0.5 to 1); the ringlets' lock (1) | |
+| Dyes that read | the space buns (all violet, the roots black, in place of streaks that showed as card-shaped flecks on hair wound into buns), the messy bun's lights (finer, fewer) | |
+
+**The matched two.** The rounded bob is the same hair by hair. The twin tails' fringe has its middle lock: 25 fringe
+hairs moved, by a centimetre at the most; nothing else of it moved, and its four pictures before and after are the
+same to the eye. Its table (§10) was not measured again.
+
+**Not done, and seen.** The see-through fringes still begin as a row of card ends at the hairline (dark on dark
+now; a close-up shows them). Light hair is better and still striped: the strand atlas is the salon's, and the dyed
+platinum half of the split dye is drawn by its base look. The peekaboo's rose still fans a little where the nape's
+hair rests on the shoulders. Waves read as bands at the side. The short swept cut's edge round the ear is stepped.
+The Studio's own view shows none of the highlights' change (its shader has no `streak`). Nothing here was looked at
+in motion.
 
 ## 11. Files
 

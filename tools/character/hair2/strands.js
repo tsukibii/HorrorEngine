@@ -193,7 +193,7 @@ export function trace(ctx) {
       // Tuck under: a bob's rounded line. Loose hair cut to a line lies closer in toward its ends: its thickness falls
       // away from the eyes' line down to the cut, so the ends' turn can bring it in to the jaw (held out at the sides'
       // whole Volume all the way down, it hung as a bell however far its ends turned)
-      if (tuck > 0 && gr === LOOSE && byLine) { const cl = cutLine(cut, azOf(qx, qz)); if (cl < MARKS.eye) Vq *= 1 - tuck * smooth(MARKS.eye, cl, qy); }
+      if (tuck > 0 && gr === LOOSE && byLine) { const cl = cutLine(cut, azOf(qx, qz)) + (cut.tiers === "over" && ctx.raise ? ctx.raise[i] : 0); if (cl < MARKS.eye) Vq *= 1 - tuck * smooth(MARKS.eye, cl, qy); }   // (a bob over a long nape: by the hair's own line, the bob's or the nape's)
       const h = GAP + Vq * (1 - Math.exp(-sAt / reach)) * jit + (draped ? 0.014 * hash(u[i], 18) : 0);   // (hair brought forward over a shoulder hangs as a lock with some body, not a sheet on the chest)
       for (let pass = 0; pass < 2; pass++) {
         const dq = dist(S, qx, qy, qz); if (!grad(S, qx, qy, qz, g)) break;

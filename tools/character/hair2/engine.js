@@ -83,6 +83,15 @@ export function grow(body, pores, s, prep, o = {}) {
   const cmb = comb(ctx); ease(ctx, cmb); const field = fieldOf(ctx, cmb);
   // the clumps (texture.js), and Messy: a clump's way and lift knocked a little off
   const spacing = Math.sqrt((pores.header.area_cm2 * 1e-4) / (0.866 * count)), tx = s.texture || {}, clump = clumpsOf({ n, pos, group: cmb.group, s, C, spacing, size: tx.clumpSize });
+  // Closed (a fringe with no gap down its middle), the locks' part: the fringe's hairs beside the head's middle are one
+  // lock, on the middle. Left to the nearest guides they were drawn off to the locks at either side, and the forehead
+  // showed between those as a V, wider the bigger the locks (drawn hair's pointed locks: three centimetres at the eyes)
+  const frc = s.fringe || {};
+  if ((+frc.closed || 0) > 0 && frc.kind && frc.kind !== "none" && frc.kind !== "curtain" && Math.abs(frc.sweep || 0) < 15) {
+    const half = 0.5 * Math.max(spacing * 1.2, tx.clumpSize || 0.018) * clamp(+frc.closed, 0, 1); let g0 = -1, best = Infinity;
+    for (let i = 0; i < n; i++) if (cmb.group[i] === FRINGE) { const dx = Math.abs(pos[i * 3] - C[0]); if (dx < 0.006) { const q = dx + 0.3 * Math.max(0, by[i] - lim(az[i])); if (q < best) { best = q; g0 = i; } } }   // (the hair nearest the middle, at the front of the band: the lock's guide)
+    if (g0 >= 0) for (let i = 0; i < n; i++) if (cmb.group[i] === FRINGE && Math.abs(pos[i * 3] - C[0]) < half) clump.of[i] = g0;
+  }
   if (tx.messy > 0) for (let i = 0; i < n; i++) {
     const c = clump.of[i], a = (hash(u[c], 51) - 0.5) * 2 * tx.messy * 32 * D + (hash(u[i], 52) - 0.5) * tx.messy * 14 * D, cs = Math.cos(a), sn = Math.sin(a);
     const kx = nrm[i * 3], ky = nrm[i * 3 + 1], kz = nrm[i * 3 + 2], vx = cmb.dir[i * 3], vy = cmb.dir[i * 3 + 1], vz = cmb.dir[i * 3 + 2];
@@ -171,10 +180,10 @@ export function grow(body, pores, s, prep, o = {}) {
     if (wisp) L = hash(u[i], 17) < 0.5 ? Math.min(L, 0.012 + 0.03 * hash(u[i], 16)) : 0;                   // (every other one: a few wisps, not a patch of stubble)
     len[i] = L;
     vol[i] = cmb.group[i] >= TIE ? 0.0015 + 0.008 * (1 - (ctx.ties[cmb.group[i] - TIE].tight ?? 0.6)) + 0.022 * clamp((s.ties && s.ties.full) || 0, 0, 1) : cmb.group[i] === FRINGE ? 0.003 + 0.012 * (fr.curve ?? 0.4) : P.top[i] * (V.top ?? 0.007) + P.sides[i] * (V.sides ?? 0.007) + (P.back[i] + P.nape[i]) * (V.back ?? 0.009);
-    width[i] = w0 * (fine ? 0.35 : wisp ? 0.4 : cmb.group[i] === FRINGE ? 0.6 + 0.4 * Math.min(1, fr.amount ?? 0.7) : cmb.group[i] === FRAME ? (Math.abs(az[i]) >= 64 ? 0.4 : 0.75) : 1);   // (a wisp by the ear: thin)
-    taper[i] = L < 0.06 ? 0.65 : (s.card.taper ?? 0.3);
+    width[i] = w0 * (fine ? 0.35 : wisp ? 0.26 : cmb.group[i] === FRINGE ? 0.6 + 0.4 * Math.min(1, fr.amount ?? 0.7) : cmb.group[i] === FRAME ? (Math.abs(az[i]) >= 64 ? 0.4 : 0.75) : 1);   // (a wisp by the ear: thin)
+    taper[i] = wisp ? 0.9 : L < 0.06 ? 0.65 : (s.card.taper ?? 0.3);                                       // (a wisp by a tucked ear: a fine hair, a point at both its ends; as short wide cards they read as dark shards in front of the ear)
     roll[i] = L < 0.05 && cmb.lift[i] > 34 * D ? (hash(u[i], 7) - 0.5) * Math.PI * smooth(34 * D, 60 * D, cmb.lift[i]) : 0;
-    rootT[i] = 0.97 * (1 - smooth(0.1, 0.6, edge[i]));                                                      // at the hairline's edge a lock starts as a point (full width from a centimetre in: where the scalp's shade is full, so are the locks)
+    rootT[i] = wisp ? 0.97 : 0.97 * (1 - smooth(0.1, 0.6, edge[i]));                                                      // at the hairline's edge a lock starts as a point (full width from a centimetre in: where the scalp's shade is full, so are the locks)
   }
   // ---- each hair traced
   const cu = new Float32Array(n); for (let i = 0; i < n; i++) cu[i] = u[clump.of[i]];                    // each hair's lock's own number (a choppy fringe cuts by the lock)
@@ -310,13 +319,15 @@ export function grow(body, pores, s, prep, o = {}) {
     const x = all.pos[i * 3], y = all.pos[i * 3 + 1], z = all.pos[i * 3 + 2];
     let w = soft > 0 ? lerp(Math.max(0.1, 1 - soft * 1.7), 1, smooth(0.15, 0.9, Aall.edge[i])) : 1;   // (faint at the very edge: under hair pulled up off a nape or back off a temple it's all there is to see, and a full shade there reads as a shadow on the skin)
     if (byLine && !tied && un.height == null && cut.tiers !== "over") w *= smooth(-0.002, 0.008, y - cutLine(cut, Math.atan2(x - C[0], z - C[2]) / D));
+    // (tucked behind the ear: in front of the ear and below its top the hair is a few short wisps, above; the scalp under them a light shade, not the roots' full one, which read as a dark patch in front of the ear)
+    if ((x >= 0 ? tuckL : tuckR) && !tied && y < EAR.y + EAR.dy + 0.008) { const aa = Math.abs(Math.atan2(x - C[0], z - C[2]) / D); if (aa > 36 && aa < 86) w *= 0.3; }
     if (w > 0.01) { gp.push(x, y, z); gw.push(w); }
   }
   const fine = Math.sqrt((pores.header.area_cm2 * 1e-4) / (0.866 * pores.n));
   // (painted again only when what it's made of changed: the hairline, the parting, the cut's line, the colour; a slider that only shapes the hair keeps the picture)
   let scalp = null;
   if (s.scalp && s.scalp.shade > 0) {
-    const size = o.scalpSize || 512, colour = o.rootColour || [10, 9, 9], key = JSON.stringify([s.hairline, s.parting, s.scalp, byLine && !tied && un.height == null ? [cut.line, cut.tilt, cut.round, cut.tiers, cut.front, cut.frontTo, cut.frontSoft] : 0, colour, size]);
+    const size = o.scalpSize || 512, colour = o.rootColour || [10, 9, 9], key = JSON.stringify([s.hairline, s.parting, s.scalp, byLine && !tied && un.height == null ? [cut.line, cut.tilt, cut.round, cut.tiers, cut.front, cut.frontTo, cut.frontSoft] : 0, tied ? 0 : s.ears, colour, size]);
     const fresh = !prep.paint || prep.paint.key !== key;
     if (fresh) prep.paint = { key, rgba: paint(body, { n: gp.length / 3, pos: gp, weight: gw }, s, fine, colour, size) };
     scalp = { position: pt.position, normal: pt.normal, uv: pt.uv, index: pt.index, size, rgba: prep.paint.rgba, fresh };

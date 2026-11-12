@@ -10,6 +10,27 @@ the fix.
   leading into it: the user's screenshot, not mine. A thing hung beside a thing is not attached to it: what is
   wound from a lock has to begin where the lock ends, and a check should say so (it does now: HAIR2's two lines).
 
+## The hair styles gone through: what took a second try (2026-11-12)
+
+- **A setting that changes nothing in the picture isn't the cause: print where the hair ends.** Every older fringe
+  split into a bare V on the forehead. *Closed* (which straightens the comb beside the middle) was switched on, the
+  styles were pictured again, and the V was the same. Printed hair by hair: no tip within two centimetres of the
+  middle, hairs rooted 3 mm from it ending 2.5 cm out. Not the comb at all: the locks. Each hair is drawn to its
+  lock's guide, no guide sat on the middle, and the middle's hair went to the locks at either side. Before a second
+  slider is tried, ask the hairs.
+- **Judge a thing on the body it is for.** The first before pictures were on MHR's own body: the long styles ended
+  in ledges on its broad shoulders, which a slender neck doesn't have, and the women's styles sat on a man's jaw.
+  Half an hour of pictures was thrown away to make them again on the bodies the styles are worn on.
+- **Blending is in linear light.** A scalp painted at 0.95 of the roots' black leaves a twentieth of the skin in,
+  and a twentieth in linear light reads a fifth as bright: brown, not black. It had looked like "the skin showing"
+  for days. When a dark thing over a light one reads lighter than its number, convert before blaming the number.
+- **A check that measures a slider has to set what it measures against.** HAIR2's Fullness and tail lines were built
+  on a style's own settings; the day that style was given Fullness and more strands, they failed. The slider was
+  as it had been.
+- **Stopping a job stops only what you stop.** Killing the Python that was picturing styles left its Godot and its
+  X server running, and a second Godot it had already started; they were found by listing processes after.
+  And a removal by a shell variable is refused here (rightly: an empty variable is the root): give the path whole.
+
 ## The bodyv2 base: what took a second try (2026-11-12)
 
 - **A picture's scale is an unknown when both ends of the ruler are hidden.** Her height in the picture runs from a

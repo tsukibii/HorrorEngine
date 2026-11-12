@@ -61,7 +61,11 @@ export function paint(body, grown, s, spacing, colour = [10, 9, 9], size = 512) 
       if (d2 < 7) A[y * size + x] += Math.exp(-d2) * q * wt;             // (as much shade from a dot wherever it is on the chart)
     }
   }
-  const out = new Uint8ClampedArray(size * size * 4), shade = clamp(sc.shade ?? 0.85, 0, 1), pw = (s.parting && s.parting.kind !== "none" ? s.parting.width || 0 : 0) / 2;
+  // (Shade is how much of the skin the roots hide as it's seen, not as it's blended: the picture is blended in linear
+  // light, where a twentieth of the skin left in still reads a fifth as bright as bare skin, and under black hair the
+  // scalp was a brown that showed as patches wherever the hair opens: behind a see-through fringe's roots, at a temple
+  // pulled back. So the full shade is 1 - (1 - shade)^2.2; the soft edge keeps its own fall, times that)
+  const out = new Uint8ClampedArray(size * size * 4), shade = 1 - Math.pow(1 - clamp(sc.shade ?? 0.85, 0, 1), 2.2), pw = (s.parting && s.parting.kind !== "none" ? s.parting.width || 0 : 0) / 2;
   for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
     const k = y * size + x; let a = smooth(0.15, 1.6, A[k]);
     if (pw > 0 && a > 0) {                                                // the parting's skin: left clear by its width

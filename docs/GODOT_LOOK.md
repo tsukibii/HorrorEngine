@@ -1322,7 +1322,12 @@ three things are its own:
   `streak` a lock takes the highlight by its own number, cubed (most locks little, a few several times over), each
   strand in it a little more or less, the mean over the hair kept near 1 (`hair.gdshaderinc` `v_streak`). The look
   `gloss_black` asks for 0.9 with a stronger highlight: black hair with bright streak bundles. The brows' and
-  lashes' shader includes the same file and leaves it at 0.
+  lashes' shader includes the same file and leaves it at 0. **Every look of the editor's own asks for it since the
+  styles were gone through** (DECISIONS 2026-11-12, the lessons into every style; docs/HAIR_V2.md §5): 0.7 on the
+  other dark looks (soft black, off black, the browns, chestnut), where a fringe under a front light was the same
+  grey sheet; 0.5 to 0.6 on dark blonde, grey, white and dyed red, with `scatter` 0.6 and `occlusion` 0.55 on the
+  first three (light hair read as yarn: dark between its strands, where light wanders through real light hair).
+  The salt and pepper of the balding cuts, the salon's own looks and its bakes are as they were.
 
 A tail (`hair_tail…`) is skinned to a chain of bones of its own under the head, `jiggle_hair_tail…_0` … `_tip`:
 HSJiggle (§5n) springs it, soft by the tail's Sway.

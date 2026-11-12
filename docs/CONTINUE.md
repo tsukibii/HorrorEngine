@@ -24,12 +24,41 @@ builder's floors, the street's steel stair, climbing in Godot and on the desk; 2
 Character Studio, then the creature presets and a Studio character's face in Godot, then the Anime switch and the red
 knit dress; then on `claude/beautiful-cray-a622xx`: tutorial v2's floor ready-made; 2026-11-11 on
 `claude/compassionate-babbage-3bnfqx`: the clothing research (Cloth2Tex, ready-made garments, the fit test, the
-clothing library), merged; then on `claude/ecstatic-dijkstra-6ixk71`: the hair editor v2.0, planned, then built (2026-11-12).
+clothing library), merged; then on `claude/ecstatic-dijkstra-6ixk71`: the hair editor v2.0, planned, then built (2026-11-12),
+two of the user's Daz hairstyles held to their pictures, the v2female and bodyv2 bases, and the styles gone through.
 Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-12, the 1:1 and v2female, `claude/ecstatic-dijkstra-6ixk71`): one Daz hairstyle held to its picture; the v2female base
+## Where it stopped last (2026-11-12, the styles gone through, `claude/ecstatic-dijkstra-6ixk71`): what the two matched hairstyles taught, in all 67
+
+Read DECISIONS 2026-11-12, "the lessons into every style" and "the ringlets", first. The user: "take everything
+you've learnt from the last hairstyles and enhance improve v2 hairstyles"; and, with a screenshot while it was being
+done, "the curls look like they float rather than come from the head/hair".
+
+- **How it was done** (docs/HAIR_V2.md §10c): every style pictured from four sides on the body it is for (the women's
+  on v2female, the men's on the masculine base, the children's on a child), before and after: 67 pairs, each looked
+  at. The pictures are scratch (`Saved/Hair2/imp`).
+- **In the engine**: the scalp's shade as it's seen (it was a brown under black hair, showing as patches at every
+  pulled-back hairline: §3.10); a closed fringe's lock on the middle (the older fringes split into a bare V: the
+  locks, not the comb: §3.7; blunt, choppy and micro fringes are closed by their kind); a tucked ear's wisps as fine
+  hairs over a light shade; **ringlets as their lock wound up** (the user's catch: §3.7); Tuck under by a hair's own
+  line; every look of the editor's own with highlights lock by lock, the light ones with more light inside (§5).
+- **In the styles**: 44 of 67 have hair that moved (the table in §10c): tied hair with body, low ties that hang
+  behind the ears, tails with more hairs, fringes closed and to the lash line, bobs rounder, a fuller crown on long
+  hair, the hime's sidelocks as a step, ears-out hair behind the shoulders, tendrils that hang free, two dyes that
+  read. The other 23 are the same hair by hair (the men's, the balding cuts, the three for our games and six more).
+- **The cards** are made again, each on the body its style is for (`hair2_check.py` `card_body`; the women's on
+  `v2base`: v2female's head on the feminine base's plain body).
+- **Checked here**: HAIR2 (with two lines for the ringlets; its slider lines no longer lean on a style's own
+  settings), GDHAIR2 (nine styles in Godot: the scalp through the hair 0.0 to 3.3% of its outline), CHECKS. **Not
+  run here: HAIR2PAGE, STUDIO** (the tab draws the same engine; its own shader has no `streak`, so its picture of a
+  fringe is the older sheen): ask the user for a local run (docs/RUN_LOCALLY.md).
+- **Left, and seen** (§10c, the end): see-through fringes begin as a row of card ends; light hair is better and
+  still striped (the atlas is the salon's); the peekaboo's rose fans a little on the shoulders; nothing was looked
+  at in motion. Tasks still open from before: the other Daz hairstyles (d2 to d4), the twin tails' own list (§10).
+
+## Where it stopped before that (2026-11-12, the 1:1 and v2female, `claude/ecstatic-dijkstra-6ixk71`): one Daz hairstyle held to its picture; the v2female base
 
 Read DECISIONS 2026-11-12, "the 1:1", first: the user wants **one** hairstyle (the fifth Daz picture: blunt fringe,
 low twin tails behind the ears, long sidelocks) re-created 1:1, volume and curves, "to figure out the system for

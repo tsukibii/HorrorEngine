@@ -262,19 +262,28 @@ def cmd_check(a):
 THUMBS = ROOT / "Content" / "Studio" / "Hair2" / "thumbs"
 
 
+def card_body(group, style=""):
+    """the body a style's card is pictured on: the kind of character it's for (DECISIONS 2026-11-12, the lessons into
+    every style). The women's on the Studio's v2female base (the head and neck of the user's own characters, which
+    the styles are tuned on, on the feminine base's plain body: node.mjs `v2base`); the men's on the masculine base;
+    the children's on a child"""
+    return "masc" if group in ("men", "balding") else "child8" if group == "children" else "v2base"
+
+
 def cmd_thumbs(a):
-    """the styles' cards: each style on MHR's base, pictured by Godot from three quarters, kept small in
-    Content/Studio/Hair2/thumbs/<style>.jpg (the Character Studio's tab shows them)"""
+    """the styles' cards: each style on the body it's for (card_body), pictured by Godot from three quarters, kept
+    small in Content/Studio/Hair2/thumbs/<style>.jpg (the Character Studio's tab shows them)"""
     from PIL import Image
     out = Path(a.out) if a.out else ROOT / "Saved" / "Hair2" / "thumbs"
     out.mkdir(parents=True, exist_ok=True)
     THUMBS.mkdir(parents=True, exist_ok=True)
-    r = subprocess.run(["node", "-e", f"import('{(MAKE.parent / 'styles.js').as_posix()}').then(m => console.log(Object.keys(m.STYLES).join(',')))"], capture_output=True, text=True)
-    names = [s for s in (a.styles.split(",") if a.styles else r.stdout.strip().split(",")) if s]
+    r = subprocess.run(["node", "-e", f"import('{(MAKE.parent / 'styles.js').as_posix()}').then(m => console.log(Object.entries(m.STYLES).map(([k, v]) => k + ':' + v.group).join(',')))"], capture_output=True, text=True)
+    groups = dict(x.split(":") for x in r.stdout.strip().split(",") if ":" in x)
+    names = [s for s in (a.styles.split(",") if a.styles else list(groups)) if s]
     view = "v:26:5:0.93:28:0:-0.065:0"
     for st in names:
         glb = out / f"{st}.glb"
-        stats, err = make(st, glb)
+        stats, err = make(st, glb, card_body(groups.get(st, ""), st))
         if stats is None:
             print(err)
             return 1

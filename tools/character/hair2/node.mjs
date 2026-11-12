@@ -13,7 +13,8 @@ let MHR = null;
 export const mhr = () => MHR || (MHR = loadMhr());
 
 // a body by name: base (MHR's own, 1.70 m), fem, masc, v2female (grow.js V2FEMALE: the proportions of the user's own
-// Daz3D characters, what their hair pictures are matched on), child8, child12, teen15,
+// Daz3D characters, what their hair pictures are matched on), v2base (the same head on the feminine base's plain body),
+// bodyv2, child8, child12, teen15,
 // a creature (goblin, ogre...), or one of the tailor's (tailor/bodies.json)
 export function bodyByName(name = "base") {
   const m = mhr();
@@ -21,6 +22,7 @@ export function bodyByName(name = "base") {
     : name === "fem" ? grownBody(m, { base: -1 })
     : name === "masc" ? grownBody(m, { base: 1 })
     : name === "v2female" || name === "doll" ? grownBody(m, { base: -1, ...V2FEMALE })
+    : name === "v2base" ? grownBody(m, { base: -1, v2: 1, height: 1.62 })                                   // (the Studio's v2female base as its button gives it: that head and neck on the feminine base's own body, no bust added; what the women's styles' cards are pictured on)
     : name === "bodyv2" ? grownBody(m, { base: -1, ...BODYV2 })                                              // (v2female's head on the bodyv2 body: the user's T-pose reference)
     : /^child(\d+)$/.test(name) ? grownBody(m, { age: +name.slice(5), base: -0.3 })
     : /^teen(\d+)$/.test(name) ? grownBody(m, { age: +name.slice(4), base: 0.3 })
