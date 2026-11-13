@@ -3100,3 +3100,35 @@ pale one shows.
   the whole lower face the way faces differ; one weight did what the sliders stacked could not.
 - **When the user says it looks wrong, stop and look at what they are looking at.** Three corrections arrived while
   the fit was being refined; each was about the picture on the screen, not the number being chased.
+
+## A walk made from a body (2026-11-13, `animation-v2`: the Animator v2)
+
+- **A walking leg is not long enough at toe-off unless the foot rolls onto its toes.** The first plan turned the foot
+  about its ball until it left the ground; the trailing leg then had to reach further than it is, the pelvis was held
+  down by it and jumped 3 cm the moment the foot lifted. Work the geometry before the solver: over a stance the body
+  travels its landing reach, the foot's whole length and its trailing reach; the foot's length is the part that was
+  missing. The point the foot turns about now moves from the ball to the toes' tips as the heel comes up.
+- **The pelvis is within a centimetre of a leg's reach all through a walk.** Five millimetres of height is ten
+  degrees of knee. A clamp frame by frame put kinks in it; lowering the whole curve by the worst excess left the
+  knees bent 35 degrees; a soft minimum's own bias did the same in small. What worked: the pelvis takes the landing
+  leg's word from its heel strike on (the trailing leg can always bend more), so it is under the reach by
+  construction, and the limit is only a guard.
+- **A filter's lag is a posture.** The "weight on a spring" that makes a heavy body dip later and deeper also made
+  every body's knee give twice as much as planned, until its frequency was set against the stride's.
+- **Blend an angle, not two directions.** A palm blended from "facing the thigh" to "facing forward" as two vectors
+  whipped the wrist through 160 degrees in two frames where they passed opposite. And a palm asked to face along the
+  forearm says nothing about the forearm's turn: heed it by how far across the forearm it lies.
+- **A twist read off a quaternion wants wrapping.** q and -q are one turn; the angle came back near 360 degrees in a
+  deep squat and the thigh's twist bones spun.
+- **An arm sent somewhere starts from where it hangs now.** Its start was the wrist's place when she stood: sat and
+  leaning, "back to her side" was a point in front of her chest, and she seemed to pray on the way up. And the arm's
+  hang has to be the cleared one (carried out past the hips), or every act opens with a 6 degree jump.
+- **Levels found from one another fail on the body that isn't average.** The waist looked for above the hips and the
+  bust above the waist put all three at one height on the heavy woman. Each is now looked for where bodies have it.
+- **MHR's first body shape is its weight** (19 kg a unit on a 1.8 m man); the tailor's "slim" bodies are narrower,
+  not lighter. A skinny man is the masculine base with shape 0 at -0.9.
+- **Godot's editor takes "_loop" off a clip's name; its run-time loader doesn't.** The same file is `walk` in a
+  by-hand project and `walk_loop` in a game that reads bodies at run time. Look for both, everywhere.
+- **See it on the mesh early.** The walk was pictured on the skinned body in Godot (12 s a sheet) before anything
+  else was built on it; the twist bones, the shoulders and the hands were right, and only then did the rest follow.
+

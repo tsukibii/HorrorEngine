@@ -34,9 +34,37 @@ bodies as preset cards, three more heads, two more bodies, and the makeup; 2026-
 main): the user's own eye render matched in Godot (the eye's shader reworked, catchlights that stay, the eye repainted
 from sliders), eye looks as cards in the Studio and the lashes on the lid's skin; the three brought together on
 `make-up-enhanced` on 2026-11-13 (tsukibii/HorrorEngine#27, into main, merged); then on `more-body-presets` (from
-main): a fourth body card, v2 pear, and the Hips & thighs slider. Read this after CLAUDE.md's start
+main): a fourth body card, v2 pear, and the Hips & thighs slider, then two head cards after two pictures (merged,
+PR #28); and on `animation-v2` (from main): **the Animator v2**, a character's own animations made from its body
+(§0 below). Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
+
+## 0. Where `animation-v2` stopped (2026-11-13)
+
+**Built** (docs/ANIMATOR_V2.md): the Animator v2. A Studio export opened in a page (the dashboard's Animator v2 tile,
+port 8788), measured, four sliders, 24 clips made from its body and baked into its own .glb (idle, walk, run, sit,
+sleep, three ways to open a door, three reaches, with the left hand's and the other side's); soft tissue as extra
+bones; no arm through the body, thighs that squash; the face untouched. In Godot: the starter kit's `motion.gd` and
+`act.gd`, `moves.gd` on a model's own clips, the runtime's `body_move` for the Director and the desk's exports.
+Checks: ANIMATOR (in check_all), ANIMATORPAGE, GDMOTION.
+
+**The three test characters** are on this machine only (`Exports/characters/anim_skinny_man`, `anim_normal_woman`,
+`anim_chubby_woman`: `node tools/animator/people.mjs` makes them again, 18 minutes on a CPU, the Studio's server
+running). Their sheets: `docs/animator_sheets/`.
+
+**The user hasn't seen it move.** Everything was tuned on contact sheets and numbers. The first thing to ask for is
+their eye on it: `python dashboard.py`, Animator v2, each of the three, each slider. Expect notes on the walk's
+character before anything else; `core/gait.js` `params` and the keyed curves beside it are where those go.
+
+**Not built** (ANIMATOR_V2 §12), in the order I'd take them:
+1. foot and hand IK in Godot (a seat that isn't 45 cm, a handle that isn't a metre up): `TwoBoneIK3D` is in 4.7;
+2. a turn-in-place clip and a start and stop for the walk (now a blend);
+3. a carry pose for a thing in the hand; sitting on the floor; stairs;
+4. the guides: `guides/first_game` and tutorial v2 don't use `motion.gd` yet (tutorial v2's hunter still slides
+   unless her model is baked; baking her would give her a walk and a run with nothing else changed);
+5. a Director story word for the acts (sit there, open that) beyond the moves it already plays.
+
 
 ## Where it stopped last (2026-11-13, `more-body-presets`): two head cards and their hair, after two pictures
 

@@ -356,6 +356,13 @@ func _draw_right() -> void:
 		fill.pressed.connect(func(): fill_moves(a))
 		right.add_child(fill)
 		right.add_child(BuildTab._wrap(BuildTab._label("Drop a card on a move, or click it. An empty move plays another she has: run her walk; sitting, talking, listening and looking round her idle.", 11, C_MUTED)))
+		var own: Array = []
+		for m in HSActor.MOVES:
+			if a.move(m[0]) == "" and _own_clip(a, m[0]) != "":
+				own.append(str(m[1]).to_lower())
+		if not own.is_empty() or str(a.get("studio_character")) != "":
+			right.add_child(BuildTab._wrap(BuildTab._label(("Her model carries its own, baked by the Animator: %s. Left empty, the game plays hers." % ", ".join(PackedStringArray(own))) if not own.is_empty()
+				else "A Studio character baked by the Animator plays her own idle, walk, run and sitting for the moves left empty.", 11, C_TEXT if not own.is_empty() else C_MUTED)))
 		var ex := str(a.get("expression"))
 		right.add_child(BuildTab._wrap(BuildTab._label("Resting face: %s" % (ex if ex != "" else "none yet"), 13, C_TEXT if ex != "" else C_FAINT)))
 	if not playing.is_empty() or not face_play.is_empty():
@@ -421,10 +428,26 @@ func move_menu(a: Node3D, move: String, at: Vector2) -> void:
 
 
 ## the empty moves filled from the library: each the clip that suits it best (core/library.gd for_move), made hers
+## her model's own clip for a move ("": none): a character baked by the Animator carries idle, walk, run and sitting,
+## made from her body; a move left empty plays hers in the game (the runtime's play.gd `body_move`)
+const OWN := {"idle": ["idle", "idle_loop"], "walk": ["walk", "walk_loop"], "run": ["run", "run_loop"], "sitting": ["sit", "sit_loop"], "sit_down": ["sit_down"], "stand_up": ["stand_up"]}
+func _own_clip(a: Node3D, move: String) -> String:
+	if not OWN.has(move):
+		return ""
+	var names: Array = a.motion_names() if a.has_method("motion_names") else []
+	for nm in OWN[move]:
+		if names.has(nm):
+			return nm
+	return ""
+
+
 func fill_moves(a: Node3D) -> Array:
 	var done: Array = []
 	for m in HSActor.MOVES:
 		if a.move(m[0]) != "":
+			continue
+		if _own_clip(a, m[0]) != "":                     # her model has its own (baked by the Animator): left empty, the game plays hers
+			done.append("%s: her own" % m[0])
 			continue
 		var cs := HSLibrary.for_move(m[0], HSDirector.id_of(a))
 		if cs.is_empty():
