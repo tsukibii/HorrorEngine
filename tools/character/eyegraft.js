@@ -23,7 +23,7 @@ export const SHAPE_KEYS = [
   ["crease", "Crease", -1, 1, 0.01, "−1 a monolid (the upper lid full, its fold filled, as in many East Asian eyes), +1 a deep double lid (the fold set in, as in many European eyes)."],
   ["fold", "Inner fold", 0, 1, 0.01, "The upper lid's skin carried down over the inner corner (an epicanthic fold)."],
   ["tilt", "Tilt", -1, 1, 0.01, "The outer corner up (+1, a lifted almond) or down (−1), about the eye's middle (8° either way)."],
-  ["opening", "Opening", -1, 1, 0.01, "−1 narrower (the upper lid lower, the lower higher), +1 rounder."],
+  ["opening", "Opening", -2.5, 1, 0.01, "−1 narrower (the upper lid lower, the lower higher), −2.5 a heavy lid resting low over the iris (a doll's sleepy almond: eyes v3); +1 rounder."],
   ["depth", "Depth", -1, 1, 0.01, "−1 deep-set (the eye and its lids 1.2 mm back under the brow), +1 prominent."],
 ];
 export const KEYS0 = { size: 0, crease: 0, fold: 0, tilt: 0, opening: 0, depth: 0 };
@@ -130,10 +130,13 @@ export function placeAll(G, side, P, eye, blink, out, surf = null) {   // surf(x
   }
   if (blink > 0) shut(G, o, out, c, blink, mm);
   if (surf) for (let i = 0; i < n; i++) {               // over the cornea's bulge the lid rides out with it (open over the iris's top, shut over all of it), its thickness kept: never into it
-    const k = o.ring[i]; if (k < 0 || k >= 999 || !(o.seat[i] > 0 || o.blink[i])) continue;
+    const k = o.ring[i]; if (k >= 999 || !(o.seat[i] > 0 || o.blink[i])) continue;
     const qx = out[i * 3] - c[0], qy = out[i * 3 + 1] - c[1], qz = out[i * 3 + 2] - c[2], d = Math.hypot(qx, qy, qz) || 1;
     const sf = surf(qx / d, qy / d, qz / d); if (sf <= r * 1.0001) continue;   // (over the white the seat has it)
-    const want = sf + Math.max(o.height[i], 0.00012) * scale * grow;
+    // the lining too (the loops under 0, the lid's back on the eye): it rests as far under the dome as it rested under
+    // the white (a lid that lies on the iris, the eyes v3 look's lower one, left its lining on the white's sphere under
+    // the dome: a line of eyeball in front of the lid's edge, EYELIDS)
+    const want = sf + (k < 0 ? Math.min(o.height[i], 0) : Math.max(o.height[i], 0.00012)) * scale * grow;
     if (d < want) { const t = (want - d) / d; out[i * 3] += qx * t; out[i * 3 + 1] += qy * t; out[i * 3 + 2] += qz * t; }
   }
   return out;

@@ -43,8 +43,77 @@ extends Node
 @export var eye_fx_color: Color = Color(0, 0, 0, 0)        ## the look's colour in place of its own (see-through: the look's): the glow's, the hearts', the spiral's
 @export_range(0.0, 1.0) var eye_fx_amount: float = 1.0     ## how much of it: 0 her own eyes, 1 the look (set_eyes_amount while the game runs: eyes that light up)
 @export_enum("both", "L", "R") var eye_fx_side: String = "both"   ## one eye only
+@export_group("Eye paint")
+@export var eye_look: HSEyeLook = null                     ## her eyes painted again when the game runs (eyes v3: HSEyePaint): a saved eye look (the look viewer's Eye sliders save them; `eyes/` in the plugin has the ready-made ones)
+@export var eye_paint: Dictionary = {}                     ## and single numbers over it, in the Studio's words ("iris": "#1a4a8a", "pupilShape": "slit", "irisSize": 36): the sliders below write here
 @export_group("")
 var materials: Array = []
+var _own_eyes := {}                           # the export's own eye numbers (its record), read once for the Inspector's sliders
+
+
+## the eye's sliders in the Inspector (eyes v3): every number HSEyePaint takes, shown under Eye paint as "eye/<name>",
+## starting from the export's own (read from its record) and kept in `eye_paint` only where it differs
+func _get_property_list() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for c in HSEyePaint.COLOURS:
+		out.append({"name": "eye/" + c[0], "type": TYPE_COLOR, "hint": PROPERTY_HINT_COLOR_NO_ALPHA, "usage": PROPERTY_USAGE_EDITOR})
+	for ch in HSEyePaint.CHOICES:
+		out.append({"name": "eye/" + ch[0], "type": TYPE_STRING, "hint": PROPERTY_HINT_ENUM, "hint_string": ",".join(PackedStringArray(ch[2])), "usage": PROPERTY_USAGE_EDITOR})
+	for c in HSEyePaint.CONTROLS:
+		out.append({"name": "eye/" + c[0], "type": TYPE_FLOAT, "hint": PROPERTY_HINT_RANGE, "hint_string": "%s,%s,%s" % [c[2], c[3], c[4]], "usage": PROPERTY_USAGE_EDITOR})
+	return out
+
+
+## her export's own eye numbers (the left eye's record over the Studio's defaults, an eye look's over those)
+func own_eye(key: String):
+	if _own_eyes.is_empty():
+		_own_eyes = HSEyePaint.DEFAULTS.duplicate()
+		var t := character()
+		var path := glb_path if glb_path != "" else (t.scene_file_path if t != null else "")
+		if path.ends_with(".glb"):
+			var recs := HSEye.records(path)
+			for k in recs:
+				if recs[k] is Dictionary and recs[k].get("paint") is Dictionary and (str(recs[k].get("side", "L")) == "L" or recs.size() == 1):
+					_own_eyes.merge(recs[k]["paint"], true)
+	if eye_look != null and eye_look.paint.has(key):
+		return eye_look.paint[key]
+	return _own_eyes.get(key)
+
+
+func _get(prop: StringName):
+	var p := String(prop)
+	if not p.begins_with("eye/"):
+		return null
+	var key := p.substr(4)
+	var v = eye_paint.get(key, own_eye(key))
+	if v is String and Color.html_is_valid(v) and HSEyePaint.COLOURS.any(func(c): return c[0] == key):
+		return Color.html(v)
+	return v
+
+
+func _set(prop: StringName, value) -> bool:
+	var p := String(prop)
+	if not p.begins_with("eye/"):
+		return false
+	var key := p.substr(4)
+	if value is Color:
+		value = "#" + Color(value.r, value.g, value.b).to_html(false)
+	if value == own_eye(key):
+		eye_paint.erase(key)
+	else:
+		eye_paint[key] = value
+	if not Engine.is_editor_hint() and is_inside_tree():
+		set_eye_paint({key: value})
+	return true
+
+
+func _property_can_revert(prop: StringName) -> bool:
+	return String(prop).begins_with("eye/") and eye_paint.has(String(prop).substr(4))
+
+
+func _property_get_revert(prop: StringName):
+	var v = own_eye(String(prop).substr(4))
+	return Color.html(v) if v is String and Color.html_is_valid(v) and String(prop).substr(4) in ["iris", "iris2", "accent", "pupilColor", "sclera", "corner"] else v
 
 
 func character() -> Node3D:
@@ -74,6 +143,10 @@ func wear() -> void:
 		materials.append_array(HSEye.wear(t, path).values())
 	if hair:
 		materials.append_array(HSHair.wear(t, {}, path if path.ends_with(".glb") else ""))
+	if eyes and (eye_look != null or not eye_paint.is_empty()):   # her eyes painted again (eyes v3): the eye look, then the single numbers
+		var words: Dictionary = eye_look.paint.duplicate() if eye_look != null else {}
+		words.merge(eye_paint, true)
+		set_eye_paint(words)
 	if eye_fx != "none":                           # (before a cloak: it keeps what her eyes wear under it)
 		HSEyeFx.wear(t, eye_fx, {"color": eye_fx_color, "amount": eye_fx_amount, "side": eye_fx_side})
 	if creature_skin != "none":                    # over the skin's own material: what it had (its paint, its relief) kept under the look
@@ -110,6 +183,24 @@ func set_creature_amount(k: float) -> void:
 	var t := character()
 	if t != null:
 		HSCreatureSkin.set_amount(t, creature_amount)
+
+
+## her eyes' paint changed while the game runs (eyes v3: HSEyePaint's words, the Studio's: "iris", "pattern",
+## "pupilShape", "irisSize", "catchKeep"...); returns her painter (its `painted` when the new picture is on)
+func set_eye_paint(changes: Dictionary, side: String = "both") -> HSEyePaint:
+	var t := character()
+	var p := HSEyePaint.attach(t) if t != null else null
+	if p != null:
+		p.set_paint(changes, side)
+	return p
+
+
+## her export's own eyes again
+func reset_eye_paint() -> void:
+	var t := character()
+	var p := HSEyePaint.of(t) if t != null else null
+	if p != null:
+		p.reset()
 
 
 ## other eyes while the game runs ("none": her own back); `color` see-through: the look's own

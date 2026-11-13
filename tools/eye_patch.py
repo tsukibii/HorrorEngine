@@ -383,6 +383,7 @@ def order_ring(Ts, RING, k, V, c):                      # a loop's points (RING 
 # ---- what the graft does to a body (the Studio's and the export's maths, in numpy) -----------------------------------------
 
 KEYS = {"size": 0.0, "crease": 0.0, "fold": 0.0, "tilt": 0.0, "opening": 0.0, "depth": 0.0}   # the eye's shape keys (eyegraft.js SHAPE_KEYS)
+KEY_LOW = {"opening": -2.5}                             # a key whose slider runs further down than -1 (the Opening: a heavy lid, eyes v3)
 PRESETS = {"Default": {}, "East Asian": {"crease": -0.8, "fold": 0.6, "tilt": 0.25, "opening": -0.3, "depth": 0.35},
            "Caucasian": {"crease": 0.6, "opening": 0.15, "depth": -0.4}}
 
@@ -557,7 +558,7 @@ def cmd_check(a):
     for b in sorted((ROOT / "Content" / "Studio" / "People").glob("*/body.bin")):
         if b.stat().st_size == P0.size * 4: bodies[b.parent.name] = np.frombuffer(b.read_bytes(), dtype=np.float32).reshape(-1, 3).astype(np.float64)
     tries = [(n, P, {}) for n, P in list(bodies.items())[:4]] + [(f"MHR's base, {pn}", P0, pk) for pn, pk in PRESETS.items() if pk]
-    tries += [(f"MHR's base, {kk} {vv:+g}", P0, {kk: vv}) for kk in KEYS for vv in ((-1, 1) if kk != "fold" else (1,))]
+    tries += [(f"MHR's base, {kk} {vv:+g}", P0, {kk: vv}) for kk in KEYS for vv in ((KEY_LOW.get(kk, -1), 1) if kk != "fold" else (1,))]
     for name, P, keys in tries:
         for side in ("L", "R"):
             g = E[side]; lid = (g["ring"] > 0) & (g["ring"] < 999)

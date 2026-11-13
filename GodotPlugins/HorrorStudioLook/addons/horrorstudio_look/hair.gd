@@ -114,6 +114,8 @@ static func set_bake(m: ShaderMaterial, rec: Dictionary, strands: Texture2D = nu
 		for pair in [["gloss1", "gloss1"], ["gloss2", "gloss2"], ["shift1", "shift1"], ["shift2", "shift2"], ["shiftNoise", "shift_noise"], ["shine", "shine"], ["rimAmount", "rim"]]:
 			if k.has(pair[0]):
 				m.set_shader_parameter(pair[1], float(k[pair[0]]))
+		if k.has("coverage") and m.get_shader_parameter("coverage_gain") != null:   # a look's own word on how densely its fine hairs are drawn (the Studio's ink lashes: eyes v3), over the kind's
+			m.set_shader_parameter("coverage_gain", clampf(float(m.get_shader_parameter("coverage_gain")) * float(k["coverage"]), 0.5, 3.0))
 
 
 ## the darkened scalp under the hair (the salon's: its colour and its see-through by vertex, unlit in the file) and the

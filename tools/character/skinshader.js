@@ -46,6 +46,8 @@ export const FEATURES = [   // [key, label, lo, hi, step, default, help, group]
   ["waterline", "Waterline", 0, 1, 0.01, 0, "The lower lid's rim tinted and wet, corner to corner.", "Makeup"],
   ["aegyo", "Aegyo-sal", 0, 1, 0.01, 0, "The soft highlight just under the lower lashes.", "Makeup"],
   ["highlight", "Highlighter", 0, 1, 0.01, 0, "Small bright, wet-looking accents: the nose's tip and bridge, the tops of the cheekbones, the cupid's bow, the chin (a doll's finish).", "Makeup"],
+  ["lidGloss", "Lid gloss", 0, 1, 0.01, 0, "The upper lid's skin wet and shiny from the lashes up to the crease (a glossy lid).", "Makeup"],
+  ["lidGlitter", "Lid glitter", 0, 1, 0.01, 0, "Fine flakes of glitter on the upper lid just above the lashes, most over its outer half: each a tiny mirror in the glitter's colour, tilted its own way (they sparkle as the head turns).", "Makeup"],
   ["pigment", "Pigment mixing", 0, 1, 0.01, 1, "0 makeup and the photo sit on the skin like an overlay; 1 they are pigment: they filter the skin's own colour (a tint that follows the base tone), skin and lips taking more than a lid, and a little of it hiding the base like paint.", "Makeup"],
   ["pigStrength", "Pigment strength", 0, 3, 0.05, 1.4, "How much light the pigment takes out of the skin under it (its density).", "Makeup"],
   ["photo", "Photo on the face", 0, 1, 0.01, 1, "With a photo skin: how much of the picture shows inside its mask.", "Photo"],
@@ -53,8 +55,8 @@ export const FEATURES = [   // [key, label, lo, hi, step, default, help, group]
 ];
 export const COLOURS = [["freckleColor", "Freckle colour", "#8a5a3c"], ["flushColor", "Flush colour", "#c4555a"], ["blushColor", "Blush colour", "#e2737e"],
   ["lipColor", "Lip colour", "#c23a4f"], ["linerColor", "Liner colour", "#2a1c18"], ["lowerColor", "Lower liner colour", "#2a1c18"], ["shadowColor", "Eyeshadow colour", "#9a6a5a"],
-  ["underColor", "Under-eye colour", "#e49aa6"], ["cornerColor", "Inner corner colour", "#f2b4bc"], ["waterColor", "Waterline colour", "#e07f8e"]];
-export const SKIN_COLOURS = ["freckleColor", "flushColor"], MAKEUP_COLOURS = ["blushColor", "lipColor", "linerColor", "lowerColor", "shadowColor", "underColor", "cornerColor", "waterColor"];   // a preset's groups' colours
+  ["underColor", "Under-eye colour", "#e49aa6"], ["cornerColor", "Inner corner colour", "#f2b4bc"], ["waterColor", "Waterline colour", "#e07f8e"], ["glitterColor", "Glitter colour", "#dfe6f2"]];
+export const SKIN_COLOURS = ["freckleColor", "flushColor"], MAKEUP_COLOURS = ["blushColor", "lipColor", "linerColor", "lowerColor", "shadowColor", "underColor", "cornerColor", "waterColor", "glitterColor"];   // a preset's groups' colours
 // the lower liner has a colour of its own since make-up enhanced (DECISIONS 2026-11-12: the red line under the lower
 // lashes of the user's Daz3D faces); settings from before it (a saved character's, a preset's) have the upper liner's
 export const withLower = p => p && "linerColor" in p && !("lowerColor" in p) ? { ...p, lowerColor: p.linerColor } : p;
@@ -395,6 +397,20 @@ vec3 makeup(vec3 c, vec3 p) {
     float ag = exp(-pow(dl / (0.0021 * s), 2.0));
     c = mix(c, c * 1.12 + 0.02, uf_aegyo * ag * 0.6);
     skinCoat += 0.2 * uf_aegyo * ag;
+    // a glossy lid and glitter (eyes v3, DECISIONS 2026-11-12: the reference's upper lids shimmer silver over the lash
+    // line): the upper lid's skin from the lashes up to the crease, wet; the glitter's flakes cells a third of a
+    // millimetre across, a share of them there (more over the outer half): pale, mirror smooth, each tilted its own way
+    float lidg = above * (1.0 - lower) * smoothstep(0.03, 0.25, ex) * (1.0 - smoothstep(0.88, 1.0, ex)) * fr;
+    float lidm = exp(-pow(du / (0.004 * s), 2.0)) * lidg;             // the gloss: up to the crease
+    skinRough *= 1.0 - 0.55 * uf_lidGloss * lidm; skinCoat += 0.5 * uf_lidGloss * lidm;
+    if (uf_lidGlitter > 0.0) {
+      vec3 gq = p / (0.00024 * s), gi = floor(gq);
+      float gband = exp(-pow(du / (0.0022 * s), 2.0)) * lidg;          // the glitter: a band two millimetres up from the lashes
+      float gon = step(1.0 - 0.55 * uf_lidGlitter * gband * (0.45 + 0.55 * smoothstep(0.2, 0.7, ex)), h31(gi + 7.7));
+      float gm = gon * (1.0 - smoothstep(0.3, 0.5, length(fract(gq) - 0.5)));
+      c = mix(c, uc_glitterColor * (0.75 + 0.5 * h31(gi + 3.3)), gm * 0.85);
+      skinRough = mix(skinRough, 0.12, gm); skinCoat += gm; skinH += gm * 2.5 * (h31(gi + 1.9) - 0.5);
+    }
     c = tint(c, uc_lowerColor, clamp(uf_lowerLiner * lo * fr, 0.0, 1.0), 1.0);   // the lower liner in its own colour, the upper one over it where they meet
     c = tint(c, uc_linerColor, clamp(uf_liner * ln * fr, 0.0, 1.0), 1.0);
   }

@@ -77,6 +77,7 @@ func _initialize() -> void:
 		load_who()
 		if who != null:
 			stages.append("who:none")
+			stages.append("who:none_dark")                   # her own eyes with the lamp out: what a glow is counted against (lit, a red-brown iris and a rosy lid are red points too)
 			for l in looks:
 				stages.append("who:" + str(l))
 			stages.append("who:off")
@@ -89,6 +90,7 @@ func eye_material(paint: Texture2D) -> ShaderMaterial:
 	m.set_shader_parameter("occlusion", 0.0)
 	m.set_shader_parameter("socket", 0.0)
 	m.set_shader_parameter("lid_room", 0.0)
+	m.set_shader_parameter("mesh_shape", Vector3(0.5, 0.0, 1.0))   # the ball has no dome of its own (its normals a plain sphere's): the eye's axes are read from that
 	m.set_shader_parameter("fx_pupil", 0.32)             # the made-up paint's pupil: 0.16 of an iris of 0.5
 	return m
 
@@ -246,7 +248,7 @@ func is_mark(look: String, p: Color) -> bool:
 		"hearts":
 			return (p.h > 0.84 or p.h < 0.02) and p.s > 0.15 and p.v > 0.3
 		"star":
-			return p.h > 0.07 and p.h < 0.2 and p.s > 0.25 and p.v > 0.4
+			return (p.h > 0.07 and p.h < 0.2 and p.s > 0.25 and p.v > 0.4) or (p.v > 0.85 and p.s < 0.3)   # (or the lamp's glint over it: on the cornea's dome it lands on a point of the star, and isn't a gap in it)
 		"slit", "cross":
 			return lum(p) < 0.05
 	return false

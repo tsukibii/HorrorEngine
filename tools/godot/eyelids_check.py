@@ -82,10 +82,16 @@ def glb_parts(path):
     return skin, eyes
 
 
+FRONT = 0.3      # a lid's front faces out from the eye's middle by more than this (the cosine: 72 degrees); its margin stands edge-on (within it)
+
+
 def zbuf(P, T, R, o, box, facing=None):
     """the nearest surface's depth (towards the viewer, +z after R) on a grid over box, -inf where there's none; with
-    facing (an array like the grid), whether that nearest surface faces o (its winding's normal toward it: a socket's
-    lining, a lid's back on the eye)"""
+    facing (an array like the grid), whether that nearest surface is not a lid's front: it faces o (its winding's
+    normal toward it: a socket's lining, a lid's back on the eye) or stands edge-on to it (FRONT: a lid's margin, the
+    ledge between its front and its back, which runs into the eyeball by design: over the white the part of it in the
+    eye is inside the white's sphere, but under a lid that lies on the cornea the eye's surface is the dome's, further
+    out, and from above or below the dome hides the ledge's inner part as it should)"""
     Q = (P - o) @ R.T
     x0, y0, x1, y1 = box
     W, H = int((x1 - x0) / RES), int((y1 - y0) / RES)
@@ -109,7 +115,8 @@ def zbuf(P, T, R, o, box, facing=None):
         sub = Z[mny:mxy, mnx:mxx]
         z = np.where(m, w0 * a[2] + w1 * b[2] + w2 * c[2], -np.inf)
         if facing is not None:
-            nrm = np.cross(b - a, c - a); inward = float(np.dot(nrm, (a + b + c) / 3)) < 0
+            nrm = np.cross(b - a, c - a); cen = (a + b + c) / 3
+            inward = float(np.dot(nrm, cen)) < FRONT * float(np.linalg.norm(nrm) * np.linalg.norm(cen))
             fsub = facing[mny:mxy, mnx:mxx]; fsub[z > sub] = inward
         np.maximum(sub, z, out=sub)
     return Z

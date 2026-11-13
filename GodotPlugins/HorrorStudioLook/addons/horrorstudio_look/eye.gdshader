@@ -3,8 +3,14 @@
 // eyeball, with the cornea put back: the iris lies on a plane behind the cornea's dome and is read where the view
 // ray, bent at the dome by Snell's law into the eye's fluid, lands on that plane, so it sits behind glass and slides
 // against the limbus as the view turns; the cornea's own normal goes to the clear coat (real catchlights); the iris
-// under it has no shine of its own; the limbus darker seen from the side. The eye's frame comes from the mesh's own
-// tangent space (the export's tangents lie along the eye's +x), as the Unreal material reads it.
+// under it has no shine of its own; the limbus darker seen from the side.
+// Eyes v3 (docs/GODOT_LOOK.md §5v, DECISIONS 2026-11-12, eyes v3): the eye's own axes are read once per vertex from the
+// mesh's tangent space (the export's tangents lie along the eye's +x) and everything else is worked out from the eye's
+// shape per pixel: its point from the UV, its normal from the white's sphere and the cornea's dome (rounded over where
+// they meet), so the shine is a true sphere's whatever the mesh's triangles are, and the eye drawn can differ from the
+// mesh (HSEyePaint: a bigger iris); catchlights that stay (two lights that follow the camera and a wet line low on the
+// cornea, lit by whatever light reaches the eye); the eyeball's room behind the lids is a push of its vertices along
+// their view rays, so the depth test still throws out what the lids hide before this shader runs.
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx, sss_mode_skin;
 
@@ -64,15 +70,62 @@ uniform float fx_mark_size : hint_range(0.02, 1.0) = 0.5;   // its half height, 
 uniform float fx_mark_beat : hint_range(0.0, 4.0) = 0.0;    // it throbs, beats a second (a heart's double beat)
 uniform float fx_mark_glow : hint_range(0.0, 16.0) = 0.0;
 uniform float lid_room = 0.0012;      // the eyeball drawn this much (m) deeper than it is, so a lid an expression has slid up to that far into the eye still covers it (0: its own depth)
+// ---- eyes v3
+uniform vec3 mesh_shape = vec3(-1.0, 0.0, 0.0);   // the mesh's own limbus radius, dome centre and dome radius when the eye drawn isn't the mesh's (x < 0: it is): what its normals and tangents were made on, for the eye's axes
+uniform float limbus_round = 0.07;    // the crease where the cornea's dome meets the white rounded over this share of the limbus's radius (a real limbus is a soft groove)
+uniform float kept_amount = 0.0;       // catchlights that stay: two lights that follow the camera reflected in the cornea (0: only the room's own)
+uniform vec3 kept_dir1 = vec3(0.41, 0.64, 0.64);    // where each is, as the reflected ray's direction about the view ray (x right, y up, z back at the camera): HSEye.catch_dir from its place on the iris
+uniform vec3 kept_dir2 = vec3(-0.47, -0.16, 0.87);
+uniform vec2 kept_size = vec2(0.14, 0.09);          // each one's radius, as an angle of the reflected ray (rad)
+uniform vec2 kept_gain = vec2(1.0, 0.55);           // each one's strength
+uniform vec3 kept_tint2 : source_color = vec3(0.82, 0.9, 1.0);   // the second one's colour (a fill light is cooler)
+uniform float kept_halo = 0.12;      // a soft glow round each (the lens's bloom, before the game's own glow)
+uniform float kept_line = 0.0;       // the lower lid's wet line reflected low on the cornea: a thin bright arc
+uniform vec4 kept_line_at = vec4(0.0, -0.98, 0.55, 0.012);  // its direction's x and y, how far it runs to each side (the reflected ray's x), and how thick it is
+uniform float lamp_catch = 1.0;      // the room's own lamps reflected in the cornea: 1 as they are, 0 none (the catchlights that stay alone, the same in any room)
+uniform float kept_lit = 6.0;        // how brightly each lamp that reaches the eye lights them
+uniform float kept_glow = 0.0;       // and how bright they are by themselves (0: gone in the dark)
 
-varying vec3 v_eyeN;                  // the surface's frame in the eye's own units, per vertex
-varying float v_onc;
+varying vec3 v_ex;                    // the eye's own axes in view space (x across, y down the eye, z out along its gaze): the same from every vertex
+varying vec3 v_ey;
+varying vec3 v_ez;
+varying float v_kept;                 // the catchlights that stay, here
+varying vec3 v_kept_col;
+varying float v_corn;                 // on the cornea (1) or the white (0)
 varying vec3 v_bowl;                  // fragment -> light: the iris's bowl normal (view space), for its diffuse alone
 varying float v_irisw;                // how much iris this is
 varying float v_coat;                 // the wet coat's strength here, and the white's own shine
 varying float v_spec;
 
+// the eye's axes from each vertex's own frame (as the wet layer finds the eye's centre: eye_wet.gdshader): the point in
+// eye units from the UV, its normal as the export made it (the white's sphere, the cornea's dome, and on the limbus's
+// ring the two averaged), so the mesh's tangent frame maps the eye's axes into the model exactly; every vertex gives
+// the same three. Then the eyeball's room: each vertex pushed lid_room along its own view ray (the same pixel, deeper)
 void vertex() {
+	float fv = flip_v > 0.5 ? -1.0 : 1.0;
+	vec2 xy = (UV - 0.5) * 2.0;
+	xy.y = xy.y * fv;
+	float m_rho = mesh_shape.x < 0.0 ? rho : mesh_shape.x;
+	float m_zc = mesh_shape.x < 0.0 ? dome_centre : mesh_shape.y;
+	float m_rc = mesh_shape.x < 0.0 ? dome_radius : mesh_shape.z;
+	float r = length(xy);
+	float zs = sqrt(max(1.0 - r * r, 0.0));
+	float zd = m_zc + sqrt(max(m_rc * m_rc - r * r, 0.0));
+	bool crease = abs(r - m_rho) < 0.002;
+	bool onC = r < m_rho && !crease;
+	vec3 nS = vec3(xy, zs);
+	vec3 nD = normalize(vec3(xy, zd - m_zc));
+	vec3 eN = crease ? normalize(nS + nD) : (onC ? nD : nS);
+	vec3 eT = vec3(1.0 - eN.x * eN.x, -eN.x * eN.y, -eN.x * eN.z);
+	eT = dot(eT, eT) < 1e-8 ? vec3(0.0, 0.0, eN.x > 0.0 ? -1.0 : 1.0) : normalize(eT);
+	vec3 eB = cross(eN, eT) * handed;
+	mat3 toView = mat3(MODELVIEW_MATRIX) * (mat3(TANGENT, BINORMAL, NORMAL) * transpose(mat3(eT, eB, eN)));
+	v_ex = toView[0];
+	v_ey = toView[1];
+	v_ez = toView[2];
+	vec4 vp = MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
+	vp.xyz += normalize(vp.xyz) * lid_room;
+	POSITION = PROJECTION_MATRIX * vp;
 }
 
 float fx_hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -115,15 +168,16 @@ void fragment() {
 	xy.y = xy.y * fv;
 	float r2 = dot(xy, xy);
 	bool onC = r2 < rho * rho;
-	float z = onC ? dome_centre + sqrt(max(dome_radius * dome_radius - r2, 0.0)) : sqrt(max(1.0 - r2, 0.0));
-	vec3 eP = vec3(xy.x, xy.y, z);
-	vec3 eN = onC ? normalize(eP - vec3(0.0, 0.0, dome_centre)) : normalize(eP);
-	vec3 eT = vec3(1.0 - eN.x * eN.x, -eN.x * eN.y, -eN.x * eN.z);
-	eT = dot(eT, eT) < 1e-8 ? vec3(0.0, 0.0, eN.x > 0.0 ? -1.0 : 1.0) : normalize(eT);
-	vec3 eB = cross(eN, eT) * handed;
-	// the view (toward the camera) in the surface's tangent space, then in the eye's frame
-	vec3 Vt = vec3(dot(VIEW, TANGENT), dot(VIEW, BINORMAL), dot(VIEW, NORMAL));
-	vec3 eD = -normalize(Vt.x * eT + Vt.y * eB + Vt.z * eN);
+	float zd = dome_centre + sqrt(max(dome_radius * dome_radius - r2, 0.0));
+	float zs = sqrt(max(1.0 - r2, 0.0));
+	float z = onC ? zd : zs;
+	vec3 eP = vec3(xy, z);
+	// the normal: the dome's inside the limbus, the white's sphere outside, rounded over where they meet
+	float rl = sqrt(r2) / max(rho, 0.0001);
+	vec3 eN = normalize(mix(vec3(xy, zd - dome_centre) / max(dome_radius, 0.0001), vec3(xy, zs), smoothstep(1.0 - limbus_round, 1.0 + limbus_round, rl)));
+	vec3 ex = normalize(v_ex), ey = normalize(v_ey), ez = normalize(v_ez);
+	// the view ray (from the camera) in the eye's frame
+	vec3 eD = -vec3(dot(VIEW, ex), dot(VIEW, ey), dot(VIEW, ez));
 	vec2 q = xy;
 	if (onC) {
 		vec3 tr = refract(eD, eN, 1.0 / max(ior, 1.0));
@@ -200,17 +254,36 @@ void fragment() {
 	float sock = min(0.92, socket * (0.6 + 0.4 * smoothstep(-0.45, 0.55, up) + 0.3 * smoothstep(0.45, 0.95, abs(eP.x))) * (1.0 - 0.6 * irisW));
 	ALBEDO *= (1.0 - occ) * (1.0 - sock);
 	if (debug == 1) ALBEDO = vec3(q * 0.5 + 0.5, onC ? 1.0 : 0.0);
-	if (debug == 2) ALBEDO = Vt * 0.5 + 0.5;
-	if (debug == 3) ALBEDO = TANGENT * 0.5 + 0.5;
-	// the iris as a shallow bowl under the cornea (its normal in the eye's frame, back to view space through the tangent
-	// frame): its diffuse alone, in light(). The surface keeps its own normal (the white's sphere, the cornea's dome:
-	// the mesh's, exactly the eye's shape) for every shine: Godot's clear coat takes NORMAL, and on the bowl the
-	// catchlight spread into a flat white ellipse over half the iris
+	if (debug == 2) ALBEDO = -eD * 0.5 + 0.5;
+	if (debug == 3) ALBEDO = ex * 0.5 + 0.5;
+	// the surface's normal for every shine (the white's sphere, the cornea's dome: the eye's own shape, not the mesh's
+	// triangles), and the iris as a shallow bowl under the cornea for its diffuse alone, in light(): Godot's clear coat
+	// takes NORMAL, and on the bowl the catchlight spread into a flat white ellipse over half the iris
+	vec3 n_view = normalize(ex * eN.x + ey * eN.y + ez * eN.z);
+	NORMAL = n_view;
 	vec3 eBowl = normalize(mix(eN, normalize(vec3(-q / max(rho, 0.0001) * caustic * 1.4, 1.0)), irisW));
-	// in the surface's tangent space: eB is already BINORMAL's image (handed is in it), so no second handed here (with
-	// one, the bowl tilted down where it should tilt up: under a lamp above the iris's lower half went black)
-	vec3 bowl_t = vec3(dot(eBowl, eT), dot(eBowl, eB), dot(eBowl, eN));
-	v_bowl = normalize(TANGENT * bowl_t.x + BINORMAL * bowl_t.y + NORMAL * bowl_t.z);
+	v_bowl = normalize(ex * eBowl.x + ey * eBowl.y + ez * eBowl.z);
+	// catchlights that stay (docs/GODOT_LOOK.md §5v): the view ray reflected in the cornea, in the ray's own frame, against
+	// each light's direction there; soft discs with a little glow, and the lower lid's wet line as a thin arc. They're
+	// reflections, so they slide over the iris as the eye turns; light() lights them by the lamps that reach the eye
+	float kept = 0.0;
+	vec3 kept_col = vec3(1.0);
+	if (kept_amount > 0.0 && rl < 1.25) {
+		vec3 vx = normalize(cross(vec3(0.0, 1.0, 0.0), VIEW));
+		vec3 vy = cross(VIEW, vx);
+		vec3 rf = reflect(-VIEW, n_view);
+		vec3 rr = vec3(dot(rf, vx), dot(rf, vy), dot(rf, VIEW));
+		float t1 = length(rr - kept_dir1) / max(kept_size.x, 1e-4), t2 = length(rr - kept_dir2) / max(kept_size.y, 1e-4);
+		float k1 = kept_gain.x * ((1.0 - smoothstep(0.65, 1.35, t1)) + kept_halo * exp(-0.45 * t1 * t1));
+		float k2 = kept_gain.y * ((1.0 - smoothstep(0.65, 1.35, t2)) + kept_halo * exp(-0.45 * t2 * t2));
+		float ln = kept_line * exp(-pow((rr.y - kept_line_at.y) / kept_line_at.w, 2.0)) * (1.0 - smoothstep(0.4 * kept_line_at.z, kept_line_at.z, abs(rr.x - kept_line_at.x)));
+		kept = (k1 + k2 + ln) * kept_amount * (1.0 - smoothstep(1.0, 1.25, rl)) * (1.0 - occ) * (1.0 - 0.5 * sock);
+		kept_col = (vec3(k1 + ln) + kept_tint2 * k2) / max(k1 + k2 + ln, 1e-4);
+	}
+	v_kept = kept;
+	v_kept_col = kept_col;
+	v_corn = 1.0 - smoothstep(1.0, 1.15, rl);
+	EMISSION += kept_col * kept * kept_glow;
 	v_irisw = irisW;
 	ROUGHNESS = roughness;
 	SPECULAR = 0.5 * (1.0 - irisW) * (1.0 - sock);        // under the cornea: no shine of its own; the socket keeps the room off the white
@@ -220,14 +293,6 @@ void fragment() {
 	v_spec = SPECULAR;
 	AO = 1.0 - occ;
 	SSS_STRENGTH = sss * (1.0 - irisW);
-	// the eyeball drawn `lid_room` deeper than it is (GODOT_LOOK §5f): a lid that an expression has slid a little into the
-	// eye still covers it, as a lid does (the same pixel, further along its ray; nothing else of the eye changes)
-	vec4 hs_deep = PROJECTION_MATRIX * vec4(VERTEX + normalize(VERTEX) * lid_room, 1.0);
-#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
-	DEPTH = hs_deep.z / hs_deep.w * 0.5 + 0.5;
-#else
-	DEPTH = hs_deep.z / hs_deep.w;
-#endif
 }
 
 float eye_ggx(float ndh, float a) { float k = a / (1.0 - ndh * ndh + ndh * ndh * a * a); return k * k / PI; }   // Godot's own D and V
@@ -244,7 +309,8 @@ void light() {
 	vec3 H = normalize(LIGHT + VIEW);
 	float ndh = clamp(dot(NORMAL, H), 0.0, 1.0), f5 = pow(1.0 - clamp(dot(LIGHT, H), 0.0, 1.0), 5.0);
 	float ac = coat_roughness * coat_roughness + catch_size, ar = roughness * roughness + catch_size;
-	float shine = eye_ggx(ndh, ac) * eye_vis(ndl, ndv, ac) * mix(0.04, 1.0, f5) * v_coat
+	float shine = eye_ggx(ndh, ac) * eye_vis(ndl, ndv, ac) * mix(0.04, 1.0, f5) * v_coat * mix(1.0, lamp_catch, v_corn)
 		+ eye_ggx(ndh, ar) * eye_vis(ndl, ndv, ar) * mix(0.16 * v_spec * v_spec, 1.0, f5) * step(0.001, v_spec);
 	SPECULAR_LIGHT += min(shine * ndl, catch_cap) * ATTENUATION * LIGHT_COLOR * SPECULAR_AMOUNT;
+	SPECULAR_LIGHT += v_kept_col * (v_kept * kept_lit) * ATTENUATION * LIGHT_COLOR * SPECULAR_AMOUNT / PI;   // the catchlights that stay
 }

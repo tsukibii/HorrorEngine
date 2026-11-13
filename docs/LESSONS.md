@@ -24,6 +24,61 @@ the fix.
   showed them lined up: the classifier didn't count grey teeth as teeth. The sheet is kept beside every number.
 - **Paint made for a pose shows in another.** The lipstick's painted glints, placed for shut lips, slid to the
   inside of a lower lip stretched open and read as grey patches under the teeth.
+## The lashes on the skin, and the lids' check: what took a second try (2026-11-13)
+
+- **Fit a thing where it's shipped, not where it's made.** The lashes were fitted to the lids in the Studio, in each
+  state of the blink, and the export takes the Studio's states: so the file should have held fitted lashes. It held
+  499 points under the shut lid. Between the Studio's state and the file there is a step that moves each lash whole
+  with its root and keeps the root off the eyeball: right for a stiff hair, and after the fit. Measured on the file
+  (LASHFIT reads the glb, not the page), it showed at once; the fix is the same fit again as the export's last step,
+  on the file's own skin put together the way Godot puts it together. A bake is checked on what the bake wrote.
+- **Two skins pressed together have no "on top".** The bake left 366 points a tenth of a millimetre under the shut
+  lid, and more passes moved 1,500 points every time without settling: out of the lower lid's margin is into the
+  upper's. Printing which way the skin over each point faced (192 down, 174 up) said what a count never would. The
+  rule isn't a looser tolerance: a point between two skins that face each other is hidden by both, and goes onto
+  the skin it's under with no lift. (Left alone was the first answer, and wrong: a point left deep in a lid at the
+  shut weight pulled its lash under the skin half way to it. What's held at the baked weights is also what the
+  blend between them starts from.)
+- **Test the rule on the file before paying for an export.** Each export is five minutes here. The last three
+  changes of the seam rule were tried by fitting the exported file's own states again in node (ten seconds) and
+  measuring as the check does; only the one that held was exported.
+- **Before changing the geometry a third time, ask the check which triangle.** EYELIDS failed on the look by 0.39
+  mm². The cornea's bulge was halved, the eye's surface was sampled over a neighbourhood, the lining was put under
+  the dome: 0.39, 0.39, 0.065. Then the triangles under the counted pixels were printed: all of them the lower lid's
+  margin, edge-on to the eye, running into the eyeball as it's built to; the check left out what was inside the
+  white's *sphere*, and a lid lying on the cornea has the *dome* over that ledge. The plain base character failed
+  the same way (0.043) before anything of this branch touched a lid. Twenty minutes of diagnosis would have saved
+  three exports. (The lining under the dome stays: a lid's back should follow the surface the lid lies on.)
+- **A check that fails on a new kind of character may be measuring the character.** GDPEOPLE failed on the eyes v3
+  export: "the cornea doesn't move the pupil" (0.1 px). After a rework of the eye's shader that reads like a broken
+  refraction. The same check on a plain character passed (8 px): the shader was fine, and the "pupil" on the dark
+  doll eye was 9,164 px where a pupil is 3,000: the finder looks for dark, and her iris is as dark as her pupil.
+  Run the failing line on the plain case before reading the shader.
+- **A name for a view isn't its direction.** "below" in EYELIDS is the camera above, looking down on the lower lid's
+  ledge. A back-face rule written for "seen from underneath" changed nothing; the rotation's sign, worked out on one
+  normal, said why.
+
+## Eyes v3: what took a second try (2026-11-12)
+
+- **A page that never says it's ready is waiting for something: ask it what.** The first drive of the Character
+  Studio on a fresh cloud session sat for seven minutes at full CPU. The page was drawing; its module was stopped at
+  a call to the server that answered 400: MediaPipe wasn't set up (`python tools/face_mesh.py setup`), and then its
+  `libEGL.so.1` was missing (`apt-get install -y libegl1 libgl1 libgles2`). A probe that prints the page's failed
+  requests and its status line found both in a minute. A driver should wait a minute, not ten, before it asks.
+- **A scratch Godot project copies the plugin; it never links it.** Linked, Godot's importer wrote a `.uid` beside
+  every script and an `.import` beside every picture into the repository's own folder, and rewrote the tracked
+  `.import` files. The checks copy; a tuning loop must too (copy what's newer, leave Godot's own files).
+- **Two shaders that share a material share its names.** `catch_size` was already the eye shader's (a lamp's spread),
+  `uCatch` the Studio page's own (the painted catchlights' extension): both new uniforms compiled to a black eye.
+  Search the shader *and whatever extends it* for a name before taking it. The Studio's failure was silent in the
+  driver (a shader that doesn't compile is a console error, not a page error): a driver that makes pictures should
+  print the page's console errors.
+- **A halo is a share of the light, over an area.** The catchlights' soft glow was written as a wide Gaussian times
+  the same strength as the core; over the whole cornea it was a grey glare I took for my test lamp's reflection, and
+  dimmed the lamp's glints to no effect. Before blaming a light, switch the new thing off.
+- **A slider's range is part of the look.** The lids needed to come two millimetres lower; the Opening key's whole
+  travel was one. Two variants at −0.6 and −1.0 looked alike because they were alike. Measure what a slider's end
+  does in millimetres before spending renders on values inside it.
 
 ## The ringlets: the user's catch (2026-11-12)
 
