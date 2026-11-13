@@ -1,0 +1,297 @@
+# NPC markers: a character's whole part in the game, placed in the scene
+
+DECISIONS 2026-11-13, the marker system. The user's mock-up (a Godot editor: a bottom panel "NPC Path & Animation
+Sequencer", pins "1 Walk → 1-End, 2 Interact, 3 Walk, 4 Sit" joined by arrows in the room) and their words: "place
+markers in the scene for each npc ... the markers correspond with the quests ... triggered based of order, if a boolean
+flag is true ... chain them so they grab something, walk to the sofa, and sit ... the goal is that even a young child
+would know how to use it".
+
+This file is the design and the plan. §1 reads the picture and the request, §2 is what they left out, §3 to §9 the
+design, §10 the plan as checkboxes (ticked as each is built and checked), §11 what's left for later.
+
+It is a new plugin, **HorrorStudio Markers** (`GodotPlugins/HorrorStudioMarkers/addons/horrorstudio_markers/`), for
+games built by hand: `tools/godot_byhand.py` puts it in every project beside the Look, UI, Weapons and Devices plugins.
+It speaks the starter kit's Story's words (its to-do list, its flags) and uses the Animator's baked clips, and works
+without either (its own flags, a character with any clips, a stand-in with none).
+
+## 1. The picture and the request, read
+
+| In the mock-up | What it becomes |
+|---|---|
+| NPC List, "NPC: Alex (Guard)" | **Characters**: every character with markers, each a colour, an eye to show or hide its markers, solo |
+| Scene tree: "NPC: Path" beside "NPC: Alex" | an **HSNpc** node beside the character, holding her quests and markers as nodes (so they save with the scene, copy, undo) |
+| Quest dropdown, New, Delete | her **quests**: a named group of markers, in order, each with what starts it |
+| pins 1 to 4 joined by arrows | **markers** as numbered pins in the 3D view in her colour, the path between them drawn, an arrow on each for the way she faces |
+| "1 Walk" and "1-End" | a Walk marker is **where she walks to**; it starts from wherever she is (the marker before), so nothing can jump |
+| Marker Type: Walk Path, Interact, Sit, Wait, Run | the **kinds** (§4) |
+| Boolean Flags Trigger: quest_active, has_item, daytime | each marker's **Starts when** (§5): flags, quests, things carried, and a few things about her and you |
+| Start/End Position X/Y | the pin, dragged on the floor; numbers too |
+| Face Direction, a 360° dial | the pin's arrow, dragged round; a dial in the tab |
+| Add Marker, Remove Marker | a palette of cards to drop in the 3D view; Delete |
+
+And from the words: a quest that doesn't end in Disappear leaves her where she is for the next; chains; curved paths;
+only one character's markers shown, or several; walk speed, a loop's speed, how long A to B takes, easing into the
+next animation; a Disappear that costs nothing while it's on; a Kimodo dance on a marker; stairs; branching by a
+dialogue's answer with no bugs; a UI that's neither opaque nor too see-through; a tester in the viewport; jump scares;
+eye and skin shaders; later markers inheriting her state; faces per marker and by flag; a marker that's "player
+interactable" with its dialogue and answers that set flags; being shot, and whether the sequence goes on.
+
+## 2. What the request leaves out, and what's decided for each
+
+1. **Two kinds of "interact".** She interacts with things (grabs from a shelf): the **Grab** kind. You interact with
+   her (E, a conversation): **You can talk to her here**, a switch on any marker where she stays put.
+2. **Waiting has two meanings.** *Wait until* (she stays until something is so) and *only if* (skip this when it isn't
+   so). The first is a marker's **Starts when**; the second is a **Choice** with ways. One list of flags doing both is
+   where bugs come from, so they're separate things.
+3. **What she does while she waits.** She holds what she's in: standing she idles, sat she stays sat, asleep she
+   sleeps, a looping animation loops on. No marker ever leaves her frozen.
+4. **How long a marker lasts.** A walk: until she's there. A one-shot (sit down, grab, a clip): its length. Staying
+   (Wait, Sit, Sleep, a loop): **for N seconds**, **until you talk to her**, or **until the next marker can start**.
+5. **Where a quest starts when the one before was cut short.** A later quest can start while she's in the middle of an
+   earlier one (the story moved on). She's then not where the later quest expects. If you can't see her she's put
+   where it expects; if you can, she walks from where she is (§6.4).
+6. **A character who was never baked by the Animator**, or has no animations at all: clips are found by name (idle,
+   walk, run...), anything missing is skipped and she still gets there (she slides): the game never stops on a missing
+   clip, and the tab's Problems says what's missing.
+7. **Dying and checkpoints.** The starter's Story brings back its own tasks and flags; her place in her markers must
+   come back with them, or a flag and her position disagree after a death. Her state is kept at each checkpoint and
+   put back on revive.
+8. **Talking while the story moves on.** While a conversation is open nothing of hers starts (she won't walk off
+   mid-sentence), and the player stands still.
+9. **Answers given twice.** A conversation with answers plays once each time she comes to that marker (answers set
+   flags: asked again they'd contradict). Afterwards E gives her "again" line, or nothing.
+10. **The player in her way**, a floor that isn't flat, a door on the way: she waits a moment for you to move and then
+    passes; she follows the floor under her path (stairs, slopes); a door is its own marker (Grab, Open door).
+11. **Seeing why she's stuck.** In the game, F7 shows over each character her quest, her marker and what it waits for.
+    In the editor, Problems lists what can never happen (a flag nothing turns on, a way after "otherwise", markers
+    after a Repeat that never ends).
+12. **Two things moving her.** A chase, a hunt or the starter's Motion node also move a character. A marker can hand
+    her over (Event, *Let go of her*); Problems warns when a Motion node sits on the same character.
+13. **Sounds, lines, tasks.** Any marker can say a line, play a shelf sound, tick or add a task, switch flags, fire
+    other nodes.
+
+## 3. The model
+
+```
+Level
+├─ Alex                      the character (a Studio export's .glb, baked by the Animator; or any model)
+└─ Alex markers   (HSNpc)    who she is: the character, her name, her colour, what being shot down means
+   ├─ The missing book   (HSNpcQuest)     starts: at the start of the game
+   │  ├─ Start here      (HSNpcMarker, appear)
+   │  ├─ Walk            (walk)            children: bends (HSNpcBend), the points the path curves through
+   │  ├─ Talk            (wait, you can talk to her, stays until you do)
+   │  ├─ Choice          (choice)
+   │  │  ├─ if alex_kitchen   (HSNpcWay)   markers inside...
+   │  │  └─ otherwise         (HSNpcWay)
+   │  └─ Sit             (sit)
+   └─ Night two          (HSNpcQuest)     starts: when the task `night2` is on the list
+```
+
+Everything is a node, so it saves with the scene, copies, undoes, and can be read in the Scene dock. The tab and the
+3D view are how it's made; nobody has to open the Inspector (it works there too: a marker shows only the fields of
+its kind).
+
+**A marker is three things**: *Starts when* (nothing: at once) → *what she does* (its kind) → *then* (flags, a task, a
+line, a sound, things fired). Beside those, on any marker: her **face**, her **look**, whether **you can talk to her**.
+
+**Her state is carried**: where she stands and faces, standing / sat / asleep, hidden or not, what she holds, her face,
+her look, the loop she's in. A marker changes what it names and nothing else; the next marker, and the next quest,
+start from it.
+
+## 4. The kinds
+
+| Card | Kind | What she does | Its own settings |
+|---|---|---|---|
+| Start here | `appear` | is put at the pin, facing its arrow, shown | how: at once, when you're not looking, fading in |
+| Walk, Run | `walk` | goes from where she is to the pin, through its bends, then turns to the arrow | pace (walk, run, her own speed × N, or "take N seconds"), smooth or sharp corners, follow the floor, end facing the arrow or the way she came; or *to you* (stops short) |
+| Wait, Talk | `wait` | stays where she is, idling (or a loop of yours) | stays: N seconds, until you talk to her, until the next can start; faces you |
+| Sit | `sit` | walks the last step to the pin (on the seat's front edge, the arrow the way her knees point), sits, stays sat | stays (as Wait) |
+| Sleep | `sleep` | sits on the bed's edge at the pin, lies down, sleeps | which side her head goes; stays |
+| Grab, Pick up, Put down, Open door | `grab` | a hand to the pin: reaches for it; or takes the thing named into her hand; or puts what she holds at the pin; or opens the door named | which hand, the thing, the door and how it opens |
+| Animation | `animation` | plays a clip: one of her own by name, or a file (a Kimodo `.npz` in `res://animations/`, a Godot animation) | once, N times, looping (stays as Wait); speed |
+| Event | `event` | nothing with her body: what's under *then*, at once | a scare; let go of her |
+| Disappear | `disappear` | is hidden and switched off: not drawn, not animated, not processed, her colliders out of the physics; she still exists | how: at once, when you're not looking, fading out |
+| Choice | `choice` | takes the first of its ways whose flags are so | its ways, in order; "otherwise" last |
+| Repeat | `repeat` | does the markers inside it again | N times, until flags, or until the quest moves on |
+
+Every kind has: a note (shown on its pin), *Starts when*, the animation's **speed** and the **blend** into it
+(seconds), a face, a look, *then*.
+
+**A hidden character costs nothing.** Disappear sets `visible` off and `process_mode` to disabled on the character
+(Godot then takes her colliders out of the physics too) and the runner looks at her next marker's flags five times a
+second, nothing more. She comes back with **Start here** (at a new place), or by herself when a later marker needs her
+body (where she vanished).
+
+**Speed.** A walk's pace: *walk* and *run* are her own (the Animator's record says how fast each of her clips
+travels, so her feet keep step); *× N* scales it; *take N seconds* works the speed out from the path's length. The
+card shows the path's length and how long it takes. Her feet's clip plays faster or slower with her speed (between
+0.4 and 2.2 of its own rate; past that she'd slide, and Problems says so). Any loop has its own speed (a faster
+idle, a slower dance).
+
+**Easing.** She speeds up over the first 0.3 s of a walk and slows into its end, slower while she's still turning
+onto the path; every clip is blended into over the marker's *blend* (0.25 s unless set); a face and a look turn over
+their own seconds.
+
+**Curves.** A walk goes through its bends as one smooth curve (a centripetal spline: it doesn't swing wide into
+walls), or straight from bend to bend with *sharp corners*. A bend is added by clicking the + on the path, dragged
+like a pin.
+
+**Stairs.** The path gives where she is on the plan; the floor gives how high: a ray down at each step of the way,
+from just above the path to just below it, so on two storeys she follows the floor the path lies on and not the one
+under or over it; her height eased, so she glides over each riser as the player's eye does. One bend at the foot and
+one at the top of a flight is enough. Where there's no collider she keeps the path's own height.
+
+**A custom animation (a Kimodo dance).** Drop the `.npz` in `res://animations/`. On an Animation marker pick it under
+*From a file*: it's fitted onto her own skeleton the first time it's needed (the Director's Kimodo reader and
+retarget, which every by-hand project already carries in `res://kimodo/`) and kept. Her own clips (the Animator's 24,
+or whatever her model has) are in the same list by name.
+
+## 5. Starts when, and flags
+
+One small language everywhere a condition is asked (a marker's *Starts when*, a quest's, a way's, a Repeat's *until*,
+a face's rule, a conversation's): words apart by commas, all of them must be so; `!` in front for "not".
+
+| Word | So when |
+|---|---|
+| `name` | the flag `name` is on (the Story's; any name, nothing to declare) |
+| `task:id` | that task is ticked |
+| `on:id` | that task is on the to-do list and not ticked: *the quest is open* |
+| `item:name` | you carry it |
+| `@wait:3` | she's been ready for this marker for 3 seconds |
+| `@near:2`, `@far:6` | you're within 2 m of her; further than 6 m |
+| `@seen`, `@unseen` | you can see her (in view, nothing in the way); you can't |
+| `@shot`, `@down` | she's been hit; she's been shot down |
+
+The first four are the starter Story's own words (`holds`), so a flag set by a pickup, an event area or the laptop
+starts a marker, and a flag a marker sets is heard by everything else. Without a Story in the scene the plugin keeps
+the flags itself. In the tab a condition is built from a menu and shown as chips ("flag alex_kitchen", "not seen",
+"after 3 s"); nobody types the words unless they want to.
+
+**Flags she sets by herself**: `talked:<id>` when a conversation with her ends, `shot:<id>` at her first hit,
+`down:<id>` when she's shot down (`<id>` her name in small letters). Any marker's *then* switches flags
+(`+name`, `-name`, `~name`: the Story's `switch_flags`), and so does each answer of a conversation.
+
+## 6. The rules (how it runs, so nothing surprises)
+
+1. **In order.** Within a quest, markers run top to bottom. A marker starts when the one before is done and its
+   *Starts when* is so. Until then she holds (§2.3).
+2. **Quests.** Her quests are in order too. A quest with no *Starts when* starts when the one before is finished
+   (the first: when the game starts). A quest with one starts the moment it's so, even in the middle of an earlier
+   quest, which is cut short where it is. **She never goes back up the list**: once a later quest has started,
+   earlier ones never start. A quest runs once.
+3. **Carried on.** When a quest's markers run out she holds her state. The next quest starts from it (the user's rule:
+   no Disappear, the position continues).
+4. **Catching up.** A quest that starts while she isn't where it expects her (the end of the quest before): if you
+   can't see her or that place, she's put there; otherwise she walks from where she is, joining the path at its
+   nearest point.
+5. **Choice.** Each tick the first way (top to bottom) whose flags are so is taken; its markers run; then the markers
+   after the Choice. A way with no flags is "otherwise": with one, the Choice decides at once; without, she waits
+   until a way opens (the answer of a conversation). A way is taken once per visit.
+6. **Repeat.** Its markers again and again: N times, until its flags are so (looked at before each pass), or until a
+   later quest starts.
+7. **Talking.** E on her while she stays put at a marker with *You can talk to her* on: the first of the marker's
+   conversations whose flags are so (so a flag chooses what she says). Lines one at a time, then the answers; an
+   answer switches its flags, shows its face, gives her reply. While it's open she starts nothing and you stand
+   still. A marker that *stays until you talk to her* is done when it ends.
+8. **Faces.** A marker's face is worn as it starts and stays (until another marker's, or "neutral"). Its **rules**
+   ("if `gave_gift`: smile; otherwise: sad") are looked at while she's at that marker, the first that's so worn. A
+   conversation's line or answer can wear a face for that moment.
+9. **Looks.** A marker's look (a skin, eyes, a colour, or one of her look switch's named looks) is turned to as it
+   starts and stays.
+10. **Shot.** Hits and going down are heard from the weapons plugin's HSHitReact under her. What going down means is
+    hers to say (on the HSNpc): **her quest stops** (she's down until a later quest brings her back: the default),
+    **she's gone for good** (nothing of hers ever runs again), or **she can't be killed** (she's back up after a few
+    seconds and carries on: only the flags `shot:` and `down:` remember, for an ending). A later quest whose *Starts
+    when* is `down:<id>` is how "beaten early" jumps ahead.
+11. **Checkpoints.** At the Story's `kept` her quest, marker, counts and state are kept; at `revived` put back.
+12. **Never stuck in a frame.** At most 16 markers that take no time may run in one frame; a Repeat of only such
+    markers waits a frame a pass.
+
+## 7. The tab: NPC Markers
+
+A dock along the bottom (it can float), four parts, left to right:
+
+1. **Characters.** A row each: her colour, her name, an eye (her markers shown in the 3D view or not), solo (only
+   hers). *+ Character* makes an HSNpc for the model selected in the scene.
+2. **Her quests and markers.** The quest picked from a dropdown (New, Rename, Delete, its *Starts when*); under it
+   the **palette** (a card a kind, with its drawing: click one, then click the floor in the 3D view; Shift keeps it
+   armed); under that the **storyboard**: her markers in order, numbered as their pins are, each with its drawing,
+   its note, chips for what starts it and how long it takes; ways and repeats indented; dragged to reorder.
+3. **The marker picked**, as a short form in plain words: what it is (its kind can be changed), *Starts when* as
+   chips, its own settings, Animation (clip, speed, blend), Face and look, *You can talk to her* with its
+   conversations (lines, answers, each answer's flags, face and reply; *Make a way for each answer* adds the Choice),
+   *Then*. ▶ **Try it** and ▶ **From here** on top.
+4. **Problems**, a count that opens the list; each takes you to its marker.
+
+Everything it changes goes through the editor's undo.
+
+## 8. In the 3D view
+
+Drawn over the view, translucent (the room shows through; nothing is hidden behind a panel): each shown character's
+markers as **numbered pins in her colour** with the kind's drawing and note on a dark chip, **the path** between them
+as a line with chevrons in the walking direction (dashed for the ways of a Choice, each labelled with its flags),
+**an arrow** on every pin for the way she faces, a faint dashed line from where the quest before left her. The picked
+marker has handles: the pin itself (drag: it rides the floor under the mouse, a seat's top, a shelf), the arrow's tip
+(drag round: her facing), each bend, and a + on each stretch of path for a new bend. A legend in the corner: who's
+shown, in which colour; while placing, what a click will do.
+
+## 9. The tester
+
+▶ **Try it** plays the picked marker in the 3D view; ▶ **From here** it and what follows; ▶ on a quest all of it.
+A **copy** of the character is made for it (never saved; the real one is hidden meanwhile and nothing of it is
+touched), put in the state the markers before leave her in, and run by the same runner as the game with every
+*Starts when* passed after a moment (its words shown), conversations shown as captions and their first answer taken,
+the Choice's ways taken as picked in the storyboard. Nothing is fired, no flag is set, no sound played. Stop, or
+saving the scene, ends it.
+
+## 10. The plan
+
+**A. The design**
+- [x] the picture and the request read; what's missing; the design (this file); the user's words in DECISIONS
+
+**B. The runtime** (`addons/horrorstudio_markers/`)
+- [ ] the nodes: `HSNpc`, `HSNpcQuest`, `HSNpcMarker` (a kind and its fields; the Inspector shows only its kind's),
+      `HSNpcWay`, `HSNpcBend`; warnings in the Scene dock for a marker in the wrong place
+- [ ] `HSNpcCond`: the words of §5, with the Story or without; read back as plain words
+- [ ] `HSNpcFlow`: the order and numbers, where each marker starts from, the path of a walk (curve, length, time),
+      the problems
+- [ ] `HSNpcBody`: the body driven: appear and disappear (off costs nothing), walk along a path (speed, easing, the
+      floor under it, turning), stand, sit, sleep, grab / pick up / put down / open, a clip (her own, a file, Kimodo),
+      a loop's speed, the blend; a baked character, any character, a stand-in
+- [ ] `HSNpcRunner`: quests, order, *Starts when*, holding, Choice, Repeat, catching up, *then* (flags, task, line,
+      sound, fire, scare), hand over
+- [ ] talking: the E body and prompt, `HSNpcTalkBox`, conversations by flags, answers to flags, once
+- [ ] faces: presets on MHR's shapes (and ARKit's), by rule, for a line; face clips from `res://faces/`
+- [ ] looks: through the look plugin (a named look, a skin, eyes); phase and cloak for Appear and Disappear
+- [ ] shot: `shot:` and `down:` flags, the three policies
+- [ ] checkpoints: kept and put back with the Story's
+- [ ] F7: what each character is doing and waiting for
+
+**C. Checked**
+- [ ] MARKERS (`tools/godot/markers_check.py`): a by-hand project, a baked test character and a stand-in, played
+      headless: every rule of §6 and every kind of §4 measured
+
+**D. The editor**
+- [ ] the plugin and the dock: characters (colour, eye, solo, add), quests (new, rename, delete, starts when)
+- [ ] the palette and placing by a click in the 3D view; the storyboard (numbers, chips, nesting, reorder, delete)
+- [ ] the marker's form: kind, Starts when chips, its settings, animation, face and look, talk, then; picking a
+      target in the 3D view; undo everywhere
+- [ ] the 3D view: pins, paths, arrows, the legend; drag a pin, its arrow, a bend; add a bend; who's shown
+- [ ] Problems
+- [ ] the tester
+
+**E. Checked, written, shipped**
+- [ ] MARKERSEDITOR: the tab driven in the editor itself (headless), a scene made from nothing, saved clean
+- [ ] `godot_byhand.py` installs and enables it; the launcher's rows
+- [ ] the guide `guides/markers/` with pictures of the real thing; the plugin's README and CLAUDE.md; CLAUDE.md,
+      CONTINUE, GodotPlugins/README
+
+## 11. Later (not in this round)
+
+- doors opened on the way of a walk (now: an Open door marker before it)
+- a Follow marker (she keeps after you along your trail, as the starter's chase does)
+- her head and eyes turning to you while she waits (now: her body can face you)
+- feet planted on each step of a stair (now: she glides over the risers)
+- conversations drawn by the UI plugin's HUD when the scene has one (now: the plugin's own box)
+- a navigation mesh (now: the path you draw is the path she takes)
+- Director and desk games (now: games built by hand)
