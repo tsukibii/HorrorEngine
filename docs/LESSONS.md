@@ -3,6 +3,31 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## v2 pear: what took a second try (2026-11-13)
+
+- **A low-poly reference gives proportions, not an outline.** The first version was held to the picture's two width
+  ratios and reproduced its corners with them: a straight run from the waist to a point at the hip. The user saw it
+  in the first picture ("notice how sharp the angle is"). Matching numbers that say nothing of curvature will match
+  the corners too: measure the thing the eye objects to (how far the outline turns within 4 cm) beside a body that
+  reads as natural, and hold that.
+- **A sampled centre line has steps in it.** The control measured from the leg's line as sliced every centimetre; the
+  outline came out with a kink at each step. A line fitted once (two numbers and a smooth bend) has none.
+- **A short rise is a straight line.** Easing a 3 cm swell in over 20 cm draws a diagonal, and where it meets the
+  fall, a point. The rise wants to be long, the top level, the fall longer; and the seat wants to grow evenly, or it
+  comes to a point low down.
+- **Three bumps stacked are not one shape.** The first candidates pushed Hips, Seat and Thighs far enough to match
+  the picture's widths and came out with a dip under the seat and bands across the thigh: each slider swells its own
+  band. The fix was one field for the whole lower body (Hips & thighs), not more of the three.
+- **MHR's own shapes run out.** The weight fit stops at 3 on several shapes long before a waist this small or thighs
+  this thick; ask it for what it can give (the build) and leave the rest to a slider, instead of raising its targets.
+- **Measure the picture's way.** The reference is two three-quarter views; a tape round the hips said little (and
+  spans the gap between legs that stand apart). The same widths across the picture, at the same two angles, did.
+- **A row of points is thinner than the body.** GROW's first widths took the points within 6 mm of a height and read
+  the waist 4 points narrower than the viewer did; every triangle crossing the row is the measure.
+- **A field that moves the inside of a leg moves the body's middle too.** The control's first version failed GROW's
+  mirror test by 1.2 mm: about the leg's own line, the points on the middle were pulled sideways. Whatever is
+  measured from a line that isn't the middle has to fade to nothing at the middle.
+
 ## The v2 mouth: what took more than one try (2026-11-13)
 
 - **A landmark is only as good as what it sits on.** MediaPipe's inner-lip points for both lips are on MHR's lip

@@ -2,6 +2,39 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-13, more body presets: the low-poly character's physique (the user, with a picture)
+
+- **"can you make a new branch off of main, called more-body-presets. And for the body presets tab make a physique
+  that matches this low poly shape (thich t highs, skinny waist, adjustable anime style bust), note I dont want it to
+  be low poly, Im just giving you this reference because I want to creaete a higher res version of an old character
+  I made"**
+- The picture: a low-poly torso from under the bust to above the knee, seen from three quarters in front and three
+  quarters behind: a very small waist, wide hips that are widest where the thighs begin, thick thighs tapering to the
+  knee, a large round seat. Kept out of git (`Saved/Body/ref/lowpoly.png`).
+- **The branch** is `more-body-presets`, from main (which has pull request #27: the preset cards, the mouth, eyes v3).
+- **What this sets:**
+  - A fourth body card, **v2 pear**, matching the picture's proportions on a smooth body (docs/CHARACTER_STUDIO.md
+    §2m). What "matches" was held to: the picture's own measure, the waist's width against the widest row's in each
+    of its two views.
+  - **The bust is the Anime switch's**, as asked ("adjustable anime style bust"): the card turns Anime on and sets
+    the Bust slider to a start (1.5); from there it is the character's own, −2 flat to 3 very full. It is the one
+    slider a body card sets; every other body card leaves the character's sliders alone, as before.
+  - A new slider for everyone, **Hips & thighs** (Body): the lower body as one shape. The card needed it: the
+    existing Hips, Seat and Thighs each swell a band of their own and, pushed this far, leave creases between them.
+- **My readings, to be overruled if wrong:** the limbs' lengths are bodyv2's (the picture shows none of them), the
+  height 1.63 m; the legs stand apart as MHR's do (the picture's are together: a pose, not a body); new characters
+  still start on bodyv2.
+- **The user, on the first candidates' front and side pictures: "Notice how sharp the angle is aroudn the waist to
+  hips, we said we are moving away from low poly so make it more curved and natural like a realistic human body"**
+  - So: **the picture gives the proportions, not the outline.** The first version matched its two width ratios and,
+    with them, its corners: a straight run from the waist out to a point at the hip and straight back in (the outline
+    turned 34 degrees within 4 cm there; bodyv2's and v2 hourglass's turn 17 and 18).
+  - What changed: Hips & thighs is a long curve now (a long rise from the waist, a level stretch over the hip, a
+    longer fall to the knee, measured from a smooth line), the seat grows evenly so it stays round, and the body
+    carries less of the narrow Waist band and no thinned Thighs. The outline turns 17 degrees at the most; the waist
+    is 0.49 and 0.52 of the widest row (the picture's 0.47 and 0.49): a little less extreme, on purpose.
+  - GROW holds the curve (the turn), not only the ratios.
+
 ## 2026-11-13, the merge (the user, the morning after better mouths)
 
 - **"ca you merge better-mouths back into the branch it was forked from, spin up a pr, then merge eyes-v3 into it

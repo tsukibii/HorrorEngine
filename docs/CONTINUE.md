@@ -33,11 +33,33 @@ bodies as preset cards, three more heads, two more bodies, and the makeup; 2026-
 `make-up-enhanced`): the v2 mouth, the open smile, lip shapes; beside them, 2026-11-12 and 13 on `eyes-v3` (from
 main): the user's own eye render matched in Godot (the eye's shader reworked, catchlights that stay, the eye repainted
 from sliders), eye looks as cards in the Studio and the lashes on the lid's skin; the three brought together on
-`make-up-enhanced` on 2026-11-13 (tsukibii/HorrorEngine#27, into main). Read this after CLAUDE.md's start
+`make-up-enhanced` on 2026-11-13 (tsukibii/HorrorEngine#27, into main, merged); then on `more-body-presets` (from
+main): a fourth body card, v2 pear, and the Hips & thighs slider. Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-13, `make-up-enhanced`): `better-mouths` and `eyes-v3` merged in, one pull request
+## Where it stopped last (2026-11-13, `more-body-presets`): v2 pear, after the user's low-poly character
+
+Read DECISIONS 2026-11-13, "more body presets", first; docs/CHARACTER_STUDIO.md §2m is what's built and how it was
+held to the picture. The branch is from main and has no pull request yet.
+
+- **v2 pear** (Body, Presets, Bodies): a skinny waist over wide hips and thick thighs that taper to the knee, a full
+  seat. Its card turns Anime on with the Bust at 1.5; the Bust is then the character's to move.
+- **Hips & thighs** (Body, a slider for everyone; `sculpt.js` `pear`): the lower body as one curve. The stacked Hips,
+  Seat and Thighs left creases at this size.
+- **The user's correction, mid-way**: the first version had the picture's corners (a point at the hip): "make it more
+  curved and natural like a realistic human body". The picture gives the proportions, not the outline. The outline is
+  measured now (`lowpoly/outline.py`: it turns 17 degrees at the most within 4 cm, as v2 hourglass's 18; the first
+  version's 34), and GROW holds it.
+- **Held to the picture's proportions**: its waist 0.49 and 0.52 of its widest row from the picture's two sides, the
+  picture's 0.47 and 0.49 (`docs/research/bodyfit/lowpoly/`: `fitw.py`, `view34.py`; the picture is
+  `Saved/Body/ref/lowpoly.png`, out of git: **it has to be sent again in a new session**).
+- **Run here**: GROW, CHECKS, GROWPAGE (QUICK), the card's picture. **Not run**: STUDIO, TAILOR on this body, Godot.
+- **Open**: the user has seen only the first version's front and side; the seat's size is the likeliest ask next (a
+  slider); a circle on the body for Hips & thighs (it is a slider only); outfits tried on it; whether the short arms
+  of bodyv2's family suit hips this wide.
+
+## Before that (2026-11-13, `make-up-enhanced`): `better-mouths` and `eyes-v3` merged in, one pull request
 
 Read DECISIONS 2026-11-13, "the merge", first. `make-up-enhanced` now holds three pieces of work and is open as a
 pull request into main (tsukibii/HorrorEngine#27): the preset cards and the makeup (its own), the v2 mouth and lip

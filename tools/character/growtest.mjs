@@ -441,6 +441,36 @@ const span = X => { let lo = Infinity, hi = -Infinity; for (let i = 1; i < X.len
       at ? `v2athletic round at 1.63 m: ${f(at)} (bodyv2: ${f(b2)}); the shoulders ${at.sh.toFixed(1)} cm across (bodyv2's ${b2.sh.toFixed(1)}), a thigh ${at.thigh.toFixed(1)} (${b2.thigh.toFixed(1)}): leaner, the shoulders wider than its hips are against bodyv2's` : "no v2athletic body");
     say(!!hg && !hg.nan && Math.abs(hg.tall - 1.63) < 0.002 && hg.waist < b2.waist - 6 && hg.hips > b2.hips - 2 && hg.waist / hg.hips < 0.6 && hg.waist / hg.hips > 0.5 && hg.thigh > b2.thigh - 1.5,
       hg ? `v2hourglass: ${f(hg)}: the waist ${(hg.waist / hg.hips).toFixed(2)} of the hips (bodyv2's ${(b2.waist / b2.hips).toFixed(2)}), the hips and a thigh (${hg.thigh.toFixed(1)} cm) bodyv2's` : "no v2hourglass body"); }
+  // Hips & thighs (sculpt.js `pear`) and the body made with it, v2pear (DECISIONS 2026-11-13, more body presets: the
+  // user's low-poly character, "thick thighs, skinny waist, adjustable anime style bust"). The control: one shape,
+  // most where the thigh joins the hip, nothing at the waist or the knee, the thighs' insides never past the body's
+  // middle. The body: seen as the reference is, from three quarters in front and behind (55 and 150 degrees round),
+  // its waist against its widest row is the reference's (0.47 and 0.49 of it: docs/research/bodyfit/lowpoly), where
+  // v2hourglass's is 0.58; its card turns Anime on (BODIES' `anime`), a Bust the Anime slider can show
+  { const Hh = 1.63, body = o => grownBody(M, { base: -1, head: "v2female", height: Hh, ...o }).P, across = (X, t, xmax = 0.3) => { let w = 0; for (let i = 0; i < X.length; i += 3) if (Math.abs(X[i + 1] - t * Hh) < 0.006 && Math.abs(X[i]) < xmax) w = Math.max(w, Math.abs(X[i])); return w * 200; };
+    const P0 = body({}), P1 = body({ sculpt: { pear: 1 } }), P2 = body({ sculpt: { pear: 2.3 } }), grow = t => across(P1, t) - across(P0, t);
+    let inner = 9, mid = 0; for (let i = 0; i < P2.length; i += 3) { const y = P2[i + 1] / Hh; if (y > 0.3 && y < 0.47 && P0[i] > 0.004) inner = Math.min(inner, P2[i]); if (Math.abs(P0[i]) < 1e-4) mid = Math.max(mid, Math.abs(P2[i] - P0[i])); }
+    say(grow(0.5) > 2 && grow(0.5) < 7 && Math.abs(grow(0.69)) < 0.3 && Math.abs(grow(0.25)) < 0.3 && grow(0.5) > grow(0.42) && grow(0.42) > grow(0.34) && grow(0.34) > 0 && grow(0.58) > 0.5 && grow(0.58) < grow(0.5) && inner > 0 && mid < 1e-5,
+      `Hips & thighs 1: ${grow(0.5).toFixed(1)} cm wider where the thigh joins the hip, ${grow(0.58).toFixed(1)} half way up to the waist, ${grow(0.42).toFixed(1)} at mid thigh, ${grow(0.34).toFixed(1)} above the knee (a long rise and a longer taper), ${Math.abs(grow(0.69)).toFixed(2)} over the waist and ${Math.abs(grow(0.25)).toFixed(2)} under the knee; at its reach the thighs' insides still ${(inner * 1000).toFixed(1)} mm off the body's middle, the middle itself not moved`);
+    // the outline from the front between the knee and the waist: how far it turns within any 4 cm (a corner reads as
+    // one from about 25 degrees; the user, on the first v2 pear, whose hip came to a point at 34: "notice how sharp
+    // the angle is around the waist to hips ... make it more curved and natural like a realistic human body")
+    const turn = X => { const T = M.T, ys = [], W = []; for (let y = 0.36 * Hh; y < 0.74 * Hh; y += 0.0025) { let w = 0;
+        for (let k = 0; k < T.length; k += 3) { const q = [T[k] * 3, T[k + 1] * 3, T[k + 2] * 3]; if (Math.max(Math.abs(X[q[0]]), Math.abs(X[q[1]]), Math.abs(X[q[2]])) >= 0.3) continue;
+          for (let e = 0; e < 3; e++) { const a = q[e], b = q[(e + 1) % 3]; if ((X[a + 1] - y) * (X[b + 1] - y) < 0) { const f = (y - X[a + 1]) / (X[b + 1] - X[a + 1]); w = Math.max(w, Math.abs(X[a] + f * (X[b] - X[a]))); } } }
+        ys.push(y); W.push(w); }
+      const Ws = W.map((_, i) => { let s = 0; for (let j = -4; j <= 4; j++) s += W[Math.min(W.length - 1, Math.max(0, i + j))]; return s / 9; }), ang = Ws.map((_, i) => Math.atan2(Ws[Math.min(Ws.length - 1, i + 1)] - Ws[Math.max(0, i - 1)], ys[Math.min(Ws.length - 1, i + 1)] - ys[Math.max(0, i - 1)]) * 180 / Math.PI);
+      let wi = 0, m = 9; ys.forEach((y, i) => { if (y > 0.6 * Hh && y < 0.72 * Hh && Ws[i] < m) { m = Ws[i]; wi = i; } }); let most = 0; for (let i = ys.findIndex(y => y >= 0.4 * Hh); i < wi - 16; i++) most = Math.max(most, Math.abs(ang[i + 16] - ang[i])); return most; };
+    const view = (X, yaw) => { const c = Math.cos(yaw * Math.PI / 180), sn = Math.sin(yaw * Math.PI / 180), T = M.T, row = t => { let lo = 9, hi = -9; const y = t * Hh;   // (every triangle that crosses the row, its corners: a row of points alone is too thin where the mesh is coarse)
+        for (let k = 0; k < T.length; k += 3) { const a = T[k] * 3, b = T[k + 1] * 3, d = T[k + 2] * 3, y0 = Math.min(X[a + 1], X[b + 1], X[d + 1]), y1 = Math.max(X[a + 1], X[b + 1], X[d + 1]);
+          if (y0 > y + 0.005 || y1 < y - 0.005 || Math.max(Math.abs(X[a]), Math.abs(X[b]), Math.abs(X[d])) >= 0.3) continue;
+          for (const i of [a, b, d]) { const x = X[i] * c + X[i + 2] * sn; lo = Math.min(lo, x); hi = Math.max(hi, x); } } return hi - lo; };
+      let waist = 9, widest = 0; for (let t = 0.6; t <= 0.72; t += 0.005) waist = Math.min(waist, row(t)); for (let t = 0.42; t <= 0.56; t += 0.005) widest = Math.max(widest, row(t)); return waist / widest; };
+    const pr = GW.BODIES.v2pear, Pp = pr ? body({ body: "v2pear" }) : null, Ph = body({ body: "v2hourglass" }), f = Pp ? [view(Pp, -55), view(Pp, -150)] : [9, 9], h = [view(Ph, -55), view(Ph, -150)];
+    let nan = 0; if (Pp) for (let i = 0; i < Pp.length; i++) if (!Number.isFinite(Pp[i])) nan++;
+    const tp = Pp ? turn(Pp) : 99, th = turn(Ph);
+    say(!!pr && !nan && Math.abs(f[0] - 0.47) < 0.04 && Math.abs(f[1] - 0.49) < 0.04 && f[0] < h[0] - 0.06 && tp < 22 && tp < th + 3 && pr.anime > 1 && pr.anime <= GW.SPAN.bust[1] && !("bust" in (PF.sculpt.v2pear || {})),
+      pr ? `v2pear seen from three quarters: its waist ${f[0].toFixed(2)} of its widest row in front and ${f[1].toFixed(2)} behind (the reference's 0.47 and 0.49; v2hourglass's ${h[0].toFixed(2)} and ${h[1].toFixed(2)}); its outline from the front turns ${tp.toFixed(0)} degrees at the most within 4 cm between the knee and the waist (v2hourglass's ${th.toFixed(0)}: a curve, no corner at the hip); its card turns Anime on with the Bust at ${pr.anime} (the slider's ${GW.SPAN.bust[0]} to ${GW.SPAN.bust[1]}), no bust of its own carried` : "no v2pear body"); }
   const same = (a, b) => { let m = 0; for (let i = 0; i < a.length; i++) m = Math.max(m, Math.abs(a[i] - b[i])); return m; };
   const old = same(grownBody(M, { base: -1, v2: 1, body2: 1 }).P, grownBody(M, { base: -1, head: "v2female", body: "bodyv2" }).P), oldH = same(grownBody(M, { base: -1, v2: 1 }).P, grownBody(M, { base: -1, head: "v2female" }).P);
   const po = GW.presetOf({ v2: 1, b2: 1 }), pn = GW.presetOf({ headPreset: "", bodyPreset: "bodyv2", v2: 1 }), NS = GW.NEW_START;

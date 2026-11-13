@@ -333,6 +333,22 @@ export function buildSculpt({ P, T, lm, lid = null }) {
     ["seat", "Seat", "Body", "A rounder or a flatter seat.",
       (p, m) => { if (p[2] > 0 || p[1] < 0.76 || p[1] > 1.0) return null;
         const w = bump(Math.hypot((p[0] - 0.085) / 0.1, (p[1] - 0.885) / 0.11), 1) * sm(-0.1, -0.6, m[2]); return w > 1e-6 ? [0, 0, -0.014 * w] : null; }],
+    // (more body presets, DECISIONS 2026-11-13: the user's low-poly character: thick thighs under a skinny waist. Hips,
+    // Seat and Thighs each swell their own band, and stacked far enough they leave a dip under the seat and a bulge
+    // at mid thigh; this is the lower body as one shape: widest where the thigh joins the hip, easing up into the
+    // waist and tapering all the way down to the knee, more to the back (the seat) than to the front, the thighs'
+    // insides hardly moved so they don't run into each other)
+    ["pear", "Hips & thighs", "Body", "The lower body fuller as one shape: round hips running into thick thighs that taper to the knee, the seat with them (a pear), or slimmer.",
+      p => { const y = p[1]; if (y < 0.42 || y > 1.18) return null;
+        // (a long rise from the waist, a level stretch over the hip and the thigh's top, a longer fall to the knee:
+        // a body's outline is a curve, and a short rise draws a straight line out to a point at the hip. The user, on
+        // the first v2 pear: "notice how sharp the angle is around the waist to hips ... make it more curved")
+        const lo = sm(0.42, 0.8, y) * sm(0.3, 0.25, p[0]), w = sm(1.16, 0.9, y) * lo, wb = sm(1.18, 0.98, y) * lo; if (w < 1e-6 && wb < 1e-6) return null;   // (wb: to the back the whole seat grows alike, so it stays the round thing it is: with the sides' long rise it came to a point low down)
+        // about the leg's own line, and the hip joint's above it: a line fitted to MHR's base (the thigh's middle is
+        // 10.5 cm out at the hip and 14.9 at the knee, the legs standing apart; 1.2 cm forward and 6 back), bent
+        // smoothly where the legs join. (The sampled line, LEG, steps from slice to slice: the outline had its kinks)
+        const u = 0.8 - y, r = u > 0.05 ? u : u < -0.05 ? 0 : (u + 0.05) * (u + 0.05) / 0.2, dx = p[0] - (0.105 + 0.122 * r), dz = p[2] - (0.012 - 0.2 * r);
+        return [0.3 * dx * (dx < 0 ? 0.1 * sm(0, 0.02, p[0]) : 1) * w, 0, dz < 0 ? 0.22 * dz * wb : 0.1 * dz * w]; }],   // (nothing sideways at the body's middle)
     ["upper_arms", "Upper arms", "Body", "Thicker or thinner upper arms.",
       p => { const a = armW(p[0], p[1]); if (a < 0.5 || p[1] < 1.0) return null; const c = along(ARM, p[0]); if (!c) return null;
         const w = bump(Math.abs(p[0] - 0.31), 0.12) * a; return w ? [0, 0.3 * (p[1] - c[0]) * w, 0.3 * (p[2] - c[1]) * w] : null; }],

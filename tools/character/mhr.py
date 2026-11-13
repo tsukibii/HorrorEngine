@@ -204,7 +204,12 @@ SCULPT = {"feminine": {"belly": -0.7},
           # toned, the shoulders wider than bodyv2's, a small waist and narrow hips, firm calves, arms and seat.
           # v2hourglass: bodyv2's hips and thighs under a small waist, a fuller bust and seat
           "v2athletic": {"legs_length": -0.33, "torso_length": -0.47, "arms_length": -1.75, "neck_length": -0.1, "thighs": 0.3, "calves": 0.35, "waist": -0.2, "upper_arms": 0.25, "forearms": 0.15, "shoulders": 0.2, "seat": 0.4, "bust": -0.3},
-          "v2hourglass": {"legs_length": -0.33, "torso_length": -0.47, "arms_length": -1.75, "neck_length": -0.1, "thighs": 0.7, "calves": -0.09, "waist": -0.3, "upper_arms": -0.11, "shoulders": -0.27, "hips": 0.25, "seat": 0.35, "bust": 0.6}}
+          "v2hourglass": {"legs_length": -0.33, "torso_length": -0.47, "arms_length": -1.75, "neck_length": -0.1, "thighs": 0.7, "calves": -0.09, "waist": -0.3, "upper_arms": -0.11, "shoulders": -0.27, "hips": 0.25, "seat": 0.35, "bust": 0.6},
+          # v2pear (DECISIONS 2026-11-13, more body presets; docs/CHARACTER_STUDIO.md §2m): after the user's low-poly
+          # character: a skinny waist over wide hips and thick thighs, bodyv2's lengths. The lower body is one
+          # control, Hips & thighs (sculpt.js `pear`: a curve from the waist over the hip to the knee), a little Seat
+          # and Waist with it; no bust of its own (its card turns Anime on: grow.js BODIES)
+          "v2pear": {"legs_length": -0.33, "torso_length": -0.47, "arms_length": -1.75, "neck_length": -0.1, "pear": 1.2, "calves": -0.05, "waist": -0.35, "belly": -0.3, "upper_arms": -0.11, "shoulders": -0.4, "seat": 0.5}}
 # a base that is another's body with a sculpt of its own: its MHR weights are that base's (clothes cut for one fit the other)
 # (written into the file by hand, 2026-11-12: `presets` fits the bodies again and no longer lands on the committed weights
 # (feminine up to 0.9 off, masculine 1.6), which every character made on a base depends on. Don't run it to add a base.)
@@ -217,7 +222,8 @@ SAME_BODY = {"v2female": "feminine"}
 # hands' weights are the feminine base's
 # (v2athletic and v2hourglass: bodyv2's weights moved to measures of their own, fit_measures from bodyv2's: the shoulders,
 # the chest, the bust, the waist, the belly, the hips, the seat, the thighs and the neck; kept as fitted, as bodyv2's are)
-FITTED = ("bodyv2", "v2athletic", "v2hourglass")
+# (v2pear: the same way, toward narrower shoulders and chest, a smaller waist and a fuller seat: docs/research/bodyfit/lowpoly)
+FITTED = ("bodyv2", "v2athletic", "v2hourglass", "v2pear")
 # a base's head (changes from MHR's average, cm), fitted only for a base the file doesn't have yet
 HEADS = {"feminine": dict(head_w=-0.6, skull=-0.4, jaw=-1.2, brow=-0.3, nose=-0.2, chin=-0.2),
          "masculine": dict(head_w=0.4, jaw=0.8, brow=0.3, chin=0.2)}

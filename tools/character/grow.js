@@ -243,6 +243,10 @@ export const BODIES = {
   bodyv2: { label: "bodyv2", about: "After the T-pose reference: a medium, fuller build, wide hips, full thighs, a soft waist, short arms.", height: 1.63 },
   v2athletic: { label: "v2 athletic", about: "bodyv2's proportions, lean and toned: wider shoulders, a small waist, narrow hips, firm arms, calves and seat.", height: 1.63 },
   v2hourglass: { label: "v2 hourglass", about: "bodyv2's hips and thighs under a small waist, with a fuller bust and seat.", height: 1.63 },
+  // (more body presets, DECISIONS 2026-11-13: the user's low-poly character, "thick thighs, skinny waist, adjustable
+  // anime style bust". `anime`: its card also turns Anime on and sets the Bust slider there, the one thing a body card
+  // does to a slider of the character's own: the bust is the character's to move from it, -2 flat to 3)
+  v2pear: { label: "v2 pear", about: "After the low-poly character: a skinny waist over wide round hips and thick thighs that taper to the knee, a full seat. Turns Anime on: the Bust slider is yours, flat to very full.", height: 1.63, anime: 1.5 },
 };
 // ---- lip shapes (DECISIONS 2026-11-13, better mouths: "a new v2 lip shape too that resembles the daz3d lips (create some
 // variations) ... only focus on female"): the sculpt's five lip controls set together (sculpt.js: Upper lip, Lower

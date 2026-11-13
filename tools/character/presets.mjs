@@ -100,7 +100,8 @@ try {
     await page.click('#views button[data-v="body"]', { noWaitAfter: true }); await page.click('#views button[data-yaw="0"]', { noWaitAfter: true });
     const h = Math.min(box.height - 60, 900), w = Math.round(h * 0.4), clip = { x: Math.round(box.x + (box.width - w) / 2), y: Math.round(box.y + 46), width: w, height: h };
     for (const c of bodies) {
-      await B(([k, top]) => { const b = window.__body; b.usePreset("body", k); b.st.clothes = [{ design: "leggings", color: "#23252b" }, { design: top, color: "#3a4352" }]; b.dress(); b.orbit.zoom = 1; b.orbit.pan.set(0, 0, 0); b.orbit.yaw = 0; b.orbit.pitch = 0.02; }, [c[1], TOP]);
+      await B(([k, top]) => { const b = window.__body; if (b.st.anime) { b.setAnime(false); delete b.st.sculpt.bust; }   // (a card before this one may have turned Anime on: grow.js BODIES' `anime`)
+        b.usePreset("body", k); b.st.clothes = [{ design: "leggings", color: "#23252b" }, { design: top, color: "#3a4352" }]; b.dress(); b.orbit.zoom = 1; b.orbit.pan.set(0, 0, 0); b.orbit.yaw = 0; b.orbit.pitch = 0.02; }, [c[1], TOP]);
       await settle(); await page.waitForTimeout(1500); await dressed(2); if (HAIR !== "none") await hairDone();
       await page.waitForTimeout(2500);
       for (let i = 0; i < 8; i++) { const f = await fit(clip, true, 0.93); if (i > 1 && Math.abs(f.k - 1) < 0.01 && Math.hypot(f.dx, f.dy) < 0.002) break; await page.waitForTimeout(400); }
