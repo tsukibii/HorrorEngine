@@ -43,6 +43,7 @@ export function buildSculpt({ P, T, lm, lid = null }) {
   const round = pair(192, 416);                                             // the lower cheek, beside the mouth's corner
   const jaw = pair(172, 397), chin = L(152), chinFront = mid(L(175), L(152)), tip = L(1), bridge = L(6), ala = pair(98, 327);
   const corner = pair(61, 291), lips = mid(L(0), L(17)), lowerLip = L(17);
+  const lipTop = L(0), seam = L(13);                                      // the upper lip's top edge at the middle, the mouth's own line (where the lips meet)
   // the upper lid's fold: the upper lid's own line (the opening's, inner corner to outer; MediaPipe's ring, 2 mm below
   // it on MHR's face, without it) and the brow's lower row (medial to lateral) on the left, each a height by x; a point's
   // height over the line, and ex where it is along the eye (0 the inner corner, 1 the outer)
@@ -215,6 +216,23 @@ export function buildSculpt({ P, T, lm, lid = null }) {
       p => { const w = bump(dist(p, corner), 0.018); return w ? [0.005 * w, 0, 0] : null; }],
     ["lips", "Lips", "Face", "Fuller or thinner lips.",
       (p, m) => { const w = bump(Math.hypot(p[0] / 0.028, (p[1] - lips[1]) / 0.012, (p[2] - lips[2]) / 0.02), 1); return w ? m.map(v => 0.0035 * w * v) : null; }],
+    // ---- the lips' own shape (DECISIONS 2026-11-13, better mouths: "a new v2 lip shape too that resembles the daz3d
+    // lips (create some variations)"). MHR's lips are thick and even; the pictures' are a thin, defined upper lip over
+    // a fuller lower one, a clear cupid's bow, corners that turn up. Each lip's red taller or thinner about the mouth's
+    // own line (the seam stays: the teeth and the opening are set by it), the bow, the corners, the pout
+    ["lip_upper", "Upper lip", "Face", "The upper lip's red taller and fuller, or thinner (its top edge drawn down toward the mouth's line).",
+      p => { const h = lipTop[1] - seam[1], u = (p[1] - seam[1]) / h; if (u < 0 || p[1] > lipTop[1] + 0.007 || p[2] < lips[2] - 0.022) return null;
+        const w = bump(p[0], 0.031) * (u <= 1 ? sm(0, 1, u) : 1 - sm(lipTop[1], lipTop[1] + 0.007, p[1])); return w ? [0, 0.34 * h * w, 0.0011 * w] : null; }],
+    ["lip_lower", "Lower lip", "Face", "The lower lip's red taller and fuller, or thinner (its bottom edge drawn up toward the mouth's line).",
+      p => { const h = seam[1] - lowerLip[1], u = (seam[1] - p[1]) / h; if (u < 0 || p[1] < lowerLip[1] - 0.008 || p[2] < lips[2] - 0.022) return null;
+        const w = bump(p[0], 0.031) * (u <= 1 ? sm(0, 1, u) : 1 - sm(lowerLip[1], lowerLip[1] - 0.008, p[1])); return w ? [0, -0.3 * h * w, 0.0012 * w] : null; }],
+    ["lip_bow", "Cupid's bow", "Face", "The upper lip's two peaks higher and the dip between them deeper: a defined bow (−1: a flat upper edge).",
+      p => { if (p[2] < lips[2] - 0.02) return null; const pk = bump(Math.hypot(p[0] - 0.0055, p[1] - lipTop[1]), 0.0055), dp = bump(Math.hypot(p[0], p[1] - lipTop[1]), 0.0045);
+        const w = pk - 0.8 * dp; return w ? [0, 0.0011 * w, 0] : null; }],
+    ["lip_corners", "Lip corners", "Face", "The mouth's corners turned up (+) or down.",
+      p => { const w = bump(dist(p, corner), 0.013); return w ? [0, 0.0028 * w, 0] : null; }],
+    ["lip_pout", "Pout", "Face", "Both lips forward, their middle most (a pout), or flatter against the teeth.",
+      p => { const w = bump(Math.hypot(p[0] / 0.024, (p[1] - lips[1]) / 0.013, (p[2] - lips[2]) / 0.02), 1); return w ? [0, 0, 0.003 * w] : null; }],
     // the face from the eyes down as one: its length toward the eyes' line (the nose, the mouth, the jaw and the chin
     // together: a child's face is short under its eyes, a long face is a horse's or a ghoul's), whole across the front,
     // easing out toward the ears (they stay) and, under the chin, down the neck

@@ -64,6 +64,21 @@ try {
       `a new character starts on the feminine base with ${n.head}'s head on ${n.body}'s body, ${n.h} m, their cards marked, saved so (base ${n.base}, head ${n.head}, body ${n.body}, ${n.tall.toFixed(3)} m tall)`);
     say(n.tabs.join() === "Heads,Bodies,Monsters" && n.shown.join() === "true,false,false" && n.heads[0] === "" && n.bodies[0] === "" && n.H.every(k => n.heads.includes(k)) && n.B.every(k => n.bodies.includes(k)) && !n.pics.length,
       `the presets in three categories (${n.tabs.join(", ")}), the heads shown first: ${n.heads.length} head cards and ${n.bodies.length} body cards, Plain first, each with its picture${n.pics.length ? " (NO PICTURE: " + n.pics.join(", ") + ")" : ""}`);
+    // the v2 mouth and the lips a new character starts on (grow.js NEW_START; DECISIONS 2026-11-13, better mouths), the
+    // lip shapes' chips (Face, Mouth), the mouth's style picker
+    { const wait = () => page.waitForTimeout(2500);
+      const read = () => B(() => { const b = window.__body, s = b.st, M = b.MOUTHPARTS.parts; return { style: s.teeth.style, pick: document.querySelector("#teethStyle").value, chips: [...document.querySelectorAll("#lipShapes button")].map(c => c.dataset.lips), on: [...document.querySelectorAll("#lipShapes button.on")].map(c => c.dataset.lips),
+        lips: b.GW.LIP_IDS.map(id => s.sculpt[id] || 0), top: (b.lmk(0)[1] - b.lmk(13)[1]) * 1000 / b.scale, n: M["lower-tongue"].geometry.attributes.position.count, uv: !!M["lower-tongue"].geometry.attributes.uv, want: b.GW.NEW_START, all: Object.keys(b.GW.LIPS) }; });
+      const m0 = await read();
+      await B(() => document.querySelector('#lipShapes button[data-lips="v2_full"]').click()); await wait(); const m1 = await read();
+      await B(() => document.querySelector('#lipShapes button[data-lips=""]').click()); await wait(); const m2 = await read();
+      const pick = v => B(v => { const e = document.querySelector("#teethStyle"); e.value = v; e.dispatchEvent(new Event("change")); }, v);   // (the picker is on the Face tab, not the one shown)
+      await pick("classic"); await wait(); const m3 = await read();
+      await pick("v2"); await B(w => document.querySelector(`#lipShapes button[data-lips="${w}"]`).click(), m0.want.lips); await wait(); const m4 = await read();
+      say(m0.style === m0.want.teeth && m0.pick === m0.style && m0.uv && m0.on.join() === m0.want.lips && n.file.teeth?.style === m0.style && m0.chips[0] === "" && m0.all.every(k => m0.chips.includes(k)),
+        `a new character's mouth is the ${m0.style} one (the picker on it, its tongue with its papillae's layout, saved so) and its lips ${m0.on.join()} (its chip marked; ${m0.chips.length} chips, Own first)`);
+      say(m1.on.join() === "v2_full" && Math.abs(m1.top - m0.top) > 0.15 && m2.on.join() === "" && m2.lips.every(v => v === 0) && Math.abs(m2.top - m0.top) > 0.15 && m3.style === "classic" && m3.n !== m0.n && !m3.uv && m4.style === "v2" && m4.n === m0.n && m4.on.join() === m0.want.lips && m4.lips.join() === m0.lips.join(),
+        `a lip shape's chip sets the five lip sliders (the upper lip's red ${m0.top.toFixed(1)} mm high on ${m0.on.join()}, ${m1.top.toFixed(1)} on v2_full, ${m2.top.toFixed(1)} on Own with all five at 0); the mouth's style picked: classic (its tongue ${m3.n} points, no layout on it), v2 again (${m4.n} points); the lips back as they started`); }
     // a file from before the cards (the two switches: v2: 1, b2: 1) opens on the same two presets
     await B(async name => { const f = await (await fetch(`api/people/${name}`)).json(); delete f.headPreset; delete f.bodyPreset; f.v2 = 1; f.b2 = 1; await fetch(`api/people/${name}`, { method: "POST", body: JSON.stringify(f) }); }, NAME);
     await page.reload(); await page.waitForFunction(() => window.__body && window.__body.SCULPT, null, { timeout: 180000 });

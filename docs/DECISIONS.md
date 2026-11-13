@@ -2,6 +2,32 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-13, better mouths: a v2 mouth interior, a real tongue, little gum, v2 lips (the user, with a picture)
+
+- **"Can you branch off thr current branch you've been working on and call it better-mouths . Your goal is make a v2
+  mouth interior that's more feminine and looks 1:1 with the image shared, even the person realistic tongue, note i
+  hate gummy smiles, so for the big smile gums shouldn't be visible too much ( a little is okay), see if you can
+  build. A new v2 lip shape too that rumbles the daz3d lips (vreate some variations) again only focus on female. If
+  your overplayed open mouth matches the image 1:1  in 3d model shape, and is close in texture  then you can pass this
+  new branch and will merge it into the current branch in the morning"**
+- The picture: the neon reference's mouth close up, in a big open smile (the upper teeth showing under the lip, a
+  rose tongue filling the mouth behind the lower teeth's tips, no gum). Kept out of git (`Saved/Mouth/ref/m1.jpg`).
+- **The branch** is `better-mouths`, from `make-up-enhanced`.
+- **What this sets:**
+  - A **v2 mouth**: a young woman's teeth, a gum that a smile hardly shows ("i hate gummy smiles": a little is
+    fine), a tongue that looks like one. New characters wear it; a character from before keeps its mouth.
+  - **v2 lip shapes** after the Daz3D lips, with variations. Women's only.
+  - **The test that passes the branch**: the open mouth laid over the picture matches it in shape, and is close in
+    texture. So the branch carries the overlay and its numbers, not my word for it.
+- **My readings, to be overruled if wrong:** "rumbles" is "resembles"; "overplayed" is "overlaid"; the open smile is
+  also wanted as an expression to pick (it is what the overlay is made with).
+- **Where the overlay got** (docs/CHARACTER_STUDIO.md §2j has the table; under the picture's light, ours laid on hers
+  by the lips' outer points with nothing stretched): the lips' outer points within 1.8 mm, the opening 56.4 x 18.9 mm
+  on hers 56.6 x 18.4 with the outlines sharing 0.82, teeth 25% and tongue 66% of the opening on her 22% and 63%, the
+  teeth 45.7 mm across on her 45.1, no gum in either. Not 1:1: her smile is a little crooked and ours even, her
+  teeth's edges run together, her skin and light are a render's. **Whether that passes is the user's call**: the
+  side by side was sent to them, not kept in git (her picture isn't).
+
 ## 2026-11-12, make-up enhanced: presets as cards, three more heads, two more bodies, then the makeup (the user)
 
 - **"Create a new branch called make-up enhanced. before you research and work on the make up, is there any reason we

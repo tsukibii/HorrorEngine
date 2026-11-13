@@ -444,32 +444,46 @@
    "eyeLookUpLeft": 0.8,
    "eyeLookUpRight": 0.8
   },
-  "あ a": {
+  "\u3042 a": {
    "jawOpen": 0.55
   },
-  "い i": {
+  "\u3044 i": {
    "mouthStretchLeft": 0.5,
    "mouthStretchRight": 0.5,
    "jawOpen": 0.15
   },
-  "う u": {
+  "\u3046 u": {
    "mouthPucker": 0.7,
    "mouthFunnel": 0.3,
    "jawOpen": 0.1
   },
-  "え e": {
+  "\u3048 e": {
    "mouthStretchLeft": 0.35,
    "mouthStretchRight": 0.35,
    "jawOpen": 0.3
   },
-  "お o": {
+  "\u304a o": {
    "mouthFunnel": 0.6,
    "jawOpen": 0.4
   },
-  "ん n": {
+  "\u3093 n": {
    "mouthPressLeft": 0.4,
    "mouthPressRight": 0.4,
    "mouthClose": 0.2
+  }
+ },
+ "mhr_presets": {
+  "open smile": {
+   "about": "After the user's picture (DECISIONS 2026-11-13, better mouths): a big open smile, the upper teeth showing under a lip at rest, the lower teeth's tips and the tongue behind them. The lips' shapes fitted to the picture's lips, the jaw and the lower lip by what the picture shows of the lower teeth (docs/research/mouthfit).",
+   "shapes": {
+    "jawDrop": 0.33,
+    "lowerLipDepressor": 0.7,
+    "lipCornerPuller": 0.45,
+    "lipStretcher": 0.5,
+    "dimpler": 0.5,
+    "upperLipRaiser": 0.05,
+    "cheekRaiser": 0.3
+   }
   }
  }
 }
