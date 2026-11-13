@@ -110,7 +110,7 @@ TOOLS = [
     ("Pages", "Street paint (paint a street's surfaces from the material library, lay decals, bake it in Blender)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/paint.html"}),
     ("Pages", "Face mesh: photos to a head", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/face.html"}),
     ("Pages", "Character Studio (body, face, skin, hair in the salon, clothes)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793"}),
-    ("Pages", "Animator v2 (a Studio character's own animations: walk, run, sit, sleep, open, reach, made from its body by four sliders and baked into its file)", "tools/animator/serve.py", {"url": "http://127.0.0.1:8788"}),
+    ("Pages", "Animator v2 (a Studio character's own animations: walk, run, sit, sleep, open, reach, made from its body by five sliders and baked into its file)", "tools/animator/serve.py", {"url": "http://127.0.0.1:8788"}),
     ("Pages", "Salon (hair as locks: strands, sheets, bundles, against a locked reference video)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/salon.html"}),
     ("Pages", "Wardrobe (outfits made quickly on a plain dummy, saved to My outfits for the Character Studio)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/wardrobe.html"}),
     ("Pages", "Kit maker (room things from numbers)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/kit.html"}),

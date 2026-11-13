@@ -1,7 +1,7 @@
 // Animator v2: the bake, from the command line (docs/ANIMATOR_V2.md §8).
 //
 //   node tools/animator/bake.mjs <character.glb> [--out FILE.glb] [--style -1..1] [--strength 0..1] [--weight -1..1]
-//                                [--soft 0..1.5] [--settings FILE.json] [--only walk,run] [--report FILE.json]
+//                                [--soft 0..1.5] [--bounce 0..1] [--settings FILE.json] [--only walk,run] [--report FILE.json]
 //                                [--preview]
 //
 // The character's clips made from its own body and written into the file (in place when no --out; a file baked
@@ -16,9 +16,9 @@ import { animate } from "./core/animate.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", ".."), args = process.argv.slice(2), opt = (k, d = null) => { const i = args.indexOf(k); return i < 0 ? d : args[i + 1]; };
 const file = args.find(a => !a.startsWith("--") && args[args.indexOf(a) - 1]?.startsWith("--") !== true) || args[0];
-if (!file || file.startsWith("--")) { console.log("node tools/animator/bake.mjs <character.glb> [--out FILE.glb] [--style -1..1] [--strength 0..1] [--weight -1..1] [--soft 0..1.5] [--settings FILE.json] [--only walk,run]"); process.exit(1); }
+if (!file || file.startsWith("--")) { console.log("node tools/animator/bake.mjs <character.glb> [--out FILE.glb] [--style -1..1] [--strength 0..1] [--weight -1..1] [--soft 0..1.5] [--bounce 0..1] [--settings FILE.json] [--only walk,run]"); process.exit(1); }
 const set = opt("--settings") ? JSON.parse(readFileSync(opt("--settings"), "utf8")) : {};
-for (const k of ["style", "strength", "weight", "soft"]) if (opt("--" + k) != null) set[k] = +opt("--" + k);
+for (const k of ["style", "strength", "weight", "soft", "bounce"]) if (opt("--" + k) != null) set[k] = +opt("--" + k);
 const rigFile = join(ROOT, "Content", "Studio", "Bodies", "MHR_lod1_rig.bin"), rb = existsSync(rigFile) ? readFileSync(rigFile) : null;
 const t0 = Date.now(), glb = parseGlb(readFileSync(file));
 try {

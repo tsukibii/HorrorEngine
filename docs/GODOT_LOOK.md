@@ -1194,7 +1194,8 @@ The user, on the Studio's animal ears: "create it in a way that when I export it
   cat's ear) to 1.2 (a lop's), the drag from 0.5 to 0.3, by the chain's softness (the export's word, else the chain's
   length over 13 cm); `gravity` 0.12 times the softness (an ear is made in the shape it hangs in: a little is enough);
   `amount` scales how lively (0 holds them still, 2 very floppy; `set_amount` while the game runs); `reset()` after a
-  teleport. `HSJiggle.attach(node)` adds one when a skeleton under the node has such chains: `HSEye.wear` calls it, so
+  teleport. `HSJiggle.attach(node)` adds one when a skeleton under the node has such chains (or the Animator's soft
+  bones: §5w): `HSEye.wear` calls it, so
   the game's cast and anything that wears a Studio export's eyes jiggles by itself, and `HSCharacterLook` has **Jiggle**
   and **Jiggle amount**. Dropped by hand under any character it springs every chain of bones named with its `prefix`:
   a tail or a strand of hair as well as an ear.
@@ -1634,6 +1635,55 @@ EYESV3 (`python tools/godot/eyes_v3_check.py`; a character made by `node tools/c
 white; the catchlights' places against the iris on both eyes), Godot's picture of her record against the Studio's bake,
 the catchlights off, moved, in the dark and glowing, another iris, a pattern, a slit pupil, a bigger and a smaller
 iris, reset; headless the picker, the node and a saved eye look; the sheet beside the reference.
+
+## 5w. Soft tissue, swung live: the Animator's soft bones as jiggle bones (`soft_jiggle.gd`, `HSSoftJiggle`; `HSJiggle`; DECISIONS 2026-11-13, the hands and the jiggle)
+
+The user, on the Animator's baked soft tissue: "For soft jiggle see if you can emulate the following free open source
+plugins style": JiggleBones (the asset library's 1595; BauxiteDev, Cory Petkovsek, Yael Atletl; MIT).
+
+- **What a baked character carries** (docs/ANIMATOR_V2.md §7): up to nine bones its flesh hangs from (`soft_bust_l`,
+  `soft_bust_r`, `soft_belly`, `soft_seat_l/r`, `soft_hip_l/r`, `soft_thigh_l/r`), each at the joint where the flesh
+  is rooted; in every clip, how each swings in that clip (its turn) and where it is pressed or squashed (its shift);
+  and in its record on the skin's node (`hsMotion.soft`) each bone's rod (`axis`, `length`), JiggleBones' two numbers
+  for it (`stiffness`, `damping`), how much gravity moves where it rests, how much of its swing shows (`gain`) and
+  its `limit`.
+- **`HSSoftJiggle`** is a `SkeletonModifier3D` under her skeleton: it runs after her animation each frame and swings
+  the same bones as the game plays, JiggleBones' way, written again (none of its code): the weight at the rod's end
+  is a point in the world that keeps going as it was going, is pulled each tick toward where the rod points at rest
+  (times stiffness), loses a share of its speed (damping), and is put back at the rod's length from the joint; the
+  bone is turned to point at it. Sixty ticks a second whatever the frame rate (several in a slow frame, the joint
+  brought along evenly; between ticks the weight is shown as it stood from its joint at the last two). It takes over
+  the soft bones' **turn** (a clip's own swing is left out: nothing doubles) and leaves their **shift**. So she
+  jiggles when the game stops her, turns her, blends her into another clip, or plays a clip of your own that has
+  nothing in it for the soft bones.
+- **What isn't the plugin's**: where the flesh rests follows which way is down (`use_gravity`: lying on her back it
+  leans toward her head); the swing shown is the swing worked out times the bone's `gain` and the node's `amount`,
+  under a limit; and **`damping` slows the weight against its joint, not against the world** (on the plugin's rod
+  of a whole unit a drag against the world is nothing; on a rod of a few centimetres it would lean every soft bone
+  back at walking pace). With the joint still it is the plugin's rule exactly: its default bone (stiffness 1,
+  damping 0) rings at 3.67 Hz and halves in 0.15 s by `ring_of`.
+- **Its numbers**: `amount` (0 holds them still, 1 as her bake has it, 2 twice), `stiffness` and `damping` (times
+  each bone's own), `use_gravity`, `prefix`. `setup(record)` reads the record; a soft bone the record doesn't name
+  gets made-up numbers. `reset()` after a teleport (it also resets itself when a joint has gone more than 60 cm in a
+  frame, or after a stall).
+- **Who puts it on**: `HSJiggle.attach(node)` (§5n) now adds its node when a skeleton has chains **or soft bones**,
+  and makes one `HSSoftJiggle` a skeleton that has them (`soft`, on; `amount` shared with the chains'). `HSEye.wear`
+  and `HSCharacterLook` call it, so the game's cast and any character that wears her look has it; the starter kit's
+  Motion node calls it too (`live_jiggle`). Not `@tool`: it's made only when the game runs.
+- **JIGGLE** (`python tools/godot/jiggle_check.py`, after the chains' part; `demo/soft_jiggle.gd`, headless at 60
+  frames a second): a skeleton made as the Animator leaves one (a breast and a buttock named in the record, a third
+  soft bone it doesn't name): one modifier, a bone each; **its tick the Animator's** (the same weight after 10, 20
+  and 30 ticks as `tools/animator/core/soft.js` gives: -0.15485, 0.07460, -0.03247 rad; ANIMATOR holds soft.js to
+  the same three); still, they rest; a weight let go from 18 degrees rings at 2.75 Hz and halves in 0.20 s (the rule
+  says 2.79 and 0.19 for its numbers) and comes to rest; shoved 15 cm in three frames, the weight stays behind and
+  settles; turned 40 degrees in a tenth of a second, it lags; **carried along evenly at 3.2 m/s, nothing leans**
+  (0.00 degrees; 42 before the weight was shown from its joint at the tick); laid on her back, where it rests leans
+  32 degrees the way down has gone, and with gravity off rests as stood; at amount 0 nothing; a clip that turns a
+  soft bone 30 degrees and shifts it a centimetre: the turn left out, the shift kept, and with the modifier off the
+  clip's turn shows; put 5 m away in a frame, no swing. GDMOTION (`python tools/godot/motion_check.py`) has it on a
+  baked character in a by-hand project: 9 bones by her bake's numbers; running, her breast's bone swings 19.7
+  degrees live where her run's clip carries 19.3; 16 just after she stops, 1 three seconds on; a clip that only
+  hops her, 14 degrees live and nothing without.
 
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 

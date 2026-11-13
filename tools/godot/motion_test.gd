@@ -45,6 +45,13 @@ func bone_at(h: Node3D, nm: String) -> Vector3:
 	return sk.global_transform * sk.get_bone_global_pose(sk.find_bone(nm)).origin
 
 
+func rep_soft(h: Node3D) -> Array:                       # the bake's record of her soft bones
+	for mi in h.find_children("*", "MeshInstance3D", true, false):
+		if mi.has_meta("extras") and mi.get_meta("extras") is Dictionary and (mi.get_meta("extras") as Dictionary).has("hsMotion"):
+			return (mi.get_meta("extras")["hsMotion"] as Dictionary).get("soft", [])
+	return []
+
+
 func made(src: String) -> GDScript:
 	var s := GDScript.new()
 	s.source_code = src
@@ -122,15 +129,31 @@ func _initialize() -> void:
 	var hi := -1e9
 	var chest := sk.find_bone("c_spine3")
 	var bust := sk.find_bone("soft_bust_l")
+	var rod := Vector3(0, -0.4, 0.9) * 0.07                 # the breast's rod: from its bone (where it's rooted) to its weight, by the bake's record
+	for item in rec.get("soft", []):
+		if item is Dictionary and item.get("bone") == "soft_bust_l" and item.get("axis") is Array:
+			rod = Vector3(item["axis"][0], item["axis"][1], item["axis"][2]) * float(item.get("length", 0.07))
+	var shift := 0.0
+	var rest_at := sk.get_bone_rest(bust).origin if bust >= 0 else Vector3.ZERO
 	for i in 70:
 		await physics_frame
 		if bust >= 0:
-			var rel := (sk.get_bone_global_pose(chest).affine_inverse() * sk.get_bone_global_pose(bust)).origin.y
-			lo = min(lo, rel)
-			hi = max(hi, rel)
-	if bust >= 0 and (hi - lo < 0.002 or hi - lo > 0.06):
-		bad("the breast's bone moves %.1f mm against the chest over a stride" % ((hi - lo) * 1000.0))
+			var rel := (sk.get_bone_global_pose(chest).affine_inverse() * sk.get_bone_global_pose(bust))
+			var tip := (rel * rod).y                          # (it swings from its root: its weight's end rises and falls, its bone stays where it is)
+			lo = min(lo, tip)
+			hi = max(hi, tip)
+			shift = maxf(shift, rel.origin.distance_to(rest_at))
+	if bust >= 0 and (hi - lo < 0.002 or hi - lo > 0.06 or shift > 0.001):
+		bad("the breast's weight moves %.1f mm against the chest over a stride, its bone %.2f mm from where it's rooted" % [(hi - lo) * 1000.0, shift * 1000.0])
 	notes["bust_mm"] = snappedf((hi - lo) * 1000.0, 0.1)
+	# what her run's clip itself carries: the breast's bone's widest turn over a stride (for the live swing below)
+	ap.play("run_loop")
+	var baked_run := 0.0
+	for i in 60:
+		await physics_frame
+		if bust >= 0 and i > 6:
+			baked_run = maxf(baked_run, rad_to_deg(sk.get_bone_pose_rotation(bust).angle_to(sk.get_bone_rest(bust).basis.get_rotation_quaternion())))
+	notes["baked_run_deg"] = snappedf(baked_run, 0.1)
 	a.queue_free()
 	await frames(2)
 
@@ -356,6 +379,91 @@ func _initialize() -> void:
 	if mv.resolve("stalk") != "walk" or mv.resolve("lunge") != "run":
 		bad("moves.gd: stalk falls back to %s, lunge to %s" % [mv.resolve("stalk"), mv.resolve("lunge")])
 	say("moves.gd with nothing set: her own idle, walk and run; a walk at 0.65 m/s played at %.2f of its pace; stalk falls back to her walk" % rate)
+
+	# ---- I. her soft tissue swung live (the look plugin's HSJiggle, put on by Motion): JiggleBones' way ---------------------
+	mv.queue_free()
+	m.idle()
+	await frames(30)
+	var jig: Node = her.get_node_or_null("HSJiggle")
+	var sk2 := her.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
+	var bust2 := sk2.find_bone("soft_bust_l")
+	if jig == null or (jig.softs as Array).size() != 1 or bust2 < 0:
+		bad("Motion didn't put the look plugin's live jiggle on her soft bones (%s)" % [jig])
+	else:
+		var sj: Node = jig.softs[0]
+		var named := 0
+		for b in sj.bones:
+			for item in rep_soft(her):
+				if item.get("bone") == b["name"] and absf(float(item.get("length", 0)) - float(b["length"])) < 1e-6:
+					named += 1
+		if (sj.bones as Array).size() < 7 or named != (sj.bones as Array).size():
+			bad("the live jiggle: %d bones, %d of them by her bake's own numbers" % [(sj.bones as Array).size(), named])
+		var swing := [0.0]
+		var rest_q := sk2.get_bone_rest(bust2).basis.get_rotation_quaternion()
+		sk2.skeleton_updated.connect(func() -> void: swing[0] = rad_to_deg(sk2.get_bone_pose_rotation(bust2).angle_to(rest_q)))
+		await frames(120)
+		var still := 0.0
+		for i in 60:
+			await physics_frame
+			still = maxf(still, swing[0])
+		m.run_to(her.global_position + Vector3(0, 0, 14.0))
+		await frames(70)
+		var running := 0.0
+		for i in 60:
+			await physics_frame
+			running = maxf(running, swing[0])
+		m.stop()
+		m.idle()
+		await frames(20)                                # (the clips have blended to her idle: what swings now is what carried on)
+		var after := 0.0
+		for i in 18:
+			await physics_frame
+			after = maxf(after, swing[0])
+		await frames(150)
+		var settled := 0.0
+		for i in 30:
+			await physics_frame
+			settled = maxf(settled, swing[0])
+		var carried: float = notes.get("baked_run_deg", 0.0)
+		if running < 4.0 or running > 2.2 * maxf(carried, 3.0) or running < 0.45 * carried:
+			bad("the live jiggle: running, her breast's bone swings %.1f degrees (her run's clip carries %.1f)" % [running, carried])
+		if after < 1.2 or settled > maxf(1.0, still + 0.5) or still > 2.5:
+			bad("the live jiggle: %.1f degrees standing, %.1f just after she stops, %.1f three seconds on" % [still, after, settled])
+		say("soft tissue live (JiggleBones' way): %d bones by her bake's numbers; her breast swings %.1f degrees running (her clip carries %.1f), still %.1f just after she stops, %.1f once settled" % [(sj.bones as Array).size(), running, carried, after, settled])
+		# a clip of your own with nothing for the soft bones in it: she hops; live her breast swings, and with the live jiggle off it doesn't
+		var hop := Animation.new()
+		hop.length = 1.0
+		hop.loop_mode = Animation.LOOP_LINEAR
+		var apx := her.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+		var ht := hop.add_track(Animation.TYPE_POSITION_3D)
+		hop.track_set_path(ht, NodePath("%s:root" % String(apx.get_node(apx.root_node).get_path_to(sk2))))
+		var at0 := sk2.get_bone_rest(sk2.find_bone("root")).origin
+		for k in 9:
+			hop.position_track_insert_key(ht, k / 8.0, at0 + Vector3(0, 0.03 * sin(TAU * 2.0 * k / 8.0), 0))
+		ResourceSaver.save(hop, "res://animations/hop.res")
+		m.more = {"hop": "res://animations/hop.res"}
+		m.setup()
+		await frames(4)
+		m.play("hop", true)
+		await frames(60)
+		var span := func() -> float:                       # how far the bone's turn ranges over a second
+			var least := 1e9
+			var widest := -1e9
+			for i in 60:
+				await physics_frame
+				least = minf(least, swing[0])
+				widest = maxf(widest, swing[0])
+			return widest - least
+		var live: float = await span.call()
+		jig.soft = false
+		jig.wear()
+		await frames(30)
+		var dead: float = await span.call()                 # (no track for it in the clip and nothing swinging it: it stays as the last clip left it)
+		jig.soft = true
+		jig.wear()
+		if live < 2.0 or dead > 0.05:
+			bad("a clip of your own with no soft tracks: her breast's swing ranges %.1f degrees live, %.2f with the live jiggle off" % [live, dead])
+		say("a clip of your own that hops her (nothing in it for the soft bones): her breast's swing ranges %.1f degrees live; without the live jiggle it doesn't move (%.2f)" % [live, dead])
 
 	print("MOTION result " + JSON.stringify({"errors": errors, "notes": notes}))
 	quit()

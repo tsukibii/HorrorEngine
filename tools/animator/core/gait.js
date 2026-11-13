@@ -1,8 +1,9 @@
 // Animator v2: walking and running, made from a body (docs/ANIMATOR_V2.md §5). Nothing here is a recorded motion: a
 // gait is planned on the ground first (where each foot lands, rolls from heel to toe and leaves, at this body's step
-// length and pace), the pelvis rides over the planted leg at the height its bending knee gives, and the rest of the
-// body answers: the hips list and turn, the chest counters them, the arms swing against the legs. How wide, how
-// loose, how heavy: from the three sliders (style, strength, weight) and from the body's own measures.
+// length and pace), the pelvis rides over the planted leg at the height its bending knee gives (a walk) or bounces as
+// a weight on a spring does (a run), and the rest of the body answers: the hips list and turn, the chest counters
+// them, the arms swing against the legs. How wide, how loose, how heavy: from the three sliders (style, strength,
+// weight) and from the body's own measures.
 import { V, DEG, clamp, lerp, sm, sm2, wrap01, curve } from "./m.js";
 import { ankleAt } from "./pose.js";
 
@@ -41,8 +42,8 @@ export function gait(rig, body, set, kind = "walk") {
   // ---- the plan on the ground: pace, step, how long a foot stays down ---------------------------------------------
   const Fr = run ? clamp(1.15 + 0.2 * p.pw - 0.3 * p.heavy + 0.05 * p.light, 0.7, 1.5) : clamp(0.2 + 0.035 * p.pw - 0.05 * p.heavy + 0.015 * p.light, 0.11, 0.3);
   const v0 = Math.sqrt(Fr * p.g * L), stepK = run ? clamp(1.24 + 0.08 * p.pw - 0.12 * p.heavy - 0.03 * p.fem, 0.95, 1.4) : clamp(0.79 + 0.05 * p.pw - 0.075 * p.heavy - 0.03 * p.fem + 0.02 * p.masc, 0.55, 0.9);
-  const S = 2 * L * stepK, N = Math.max(14, Math.round(S / v0 * FPS)), T = N / FPS, v = S / T;
-  const beta = run ? clamp(0.4 + 0.035 * p.heavy - 0.02 * p.pw, 0.34, 0.47) : clamp(0.62 + 0.03 * p.heavy - 0.015 * p.pw, 0.58, 0.68);
+  const S = 2 * L * stepK, N = Math.max(14, 2 * Math.round(S / v0 * FPS / 2)), T = N / FPS, v = S / T;   // (an even count of frames: the two steps of a stride are then the same frames, mirrored)
+  const beta = run ? clamp(0.36 + 0.045 * p.heavy - 0.02 * p.pw, 0.3, 0.45) : clamp(0.62 + 0.03 * p.heavy - 0.015 * p.pw, 0.58, 0.68);
   const width = p.sc * (run ? clamp(0.05 - 0.02 * p.style + 0.035 * p.heavy, 0.02, 0.13) : clamp(0.085 - 0.03 * p.style + 0.03 * p.heavy - 0.008 * p.light, 0.04, 0.16));
   const toeOut = (run ? 4 - 2 * p.style + 3 * p.heavy : 6 - 3 * p.style + 3 * p.heavy) * DEG;
   const pHS = (run ? clamp(7 + 3 * p.pw - 5 * p.heavy, 0, 12) : clamp(16 + 3 * p.pw - 6 * p.heavy, 6, 20)) * DEG;      // toes up at heel strike
@@ -50,7 +51,7 @@ export function gait(rig, body, set, kind = "walk") {
   const ff = run ? 0.05 : clamp(0.085 - 0.02 * p.heavy, 0.05, 0.1), ho = run ? beta * 0.5 : clamp(0.335 + 0.04 * p.heavy - 0.02 * p.pw, 0.28, 0.42), sw = 1 - beta;
   const pitchOf = curve([[0, pHS], [ff, 0], [ho, 0], [ho + 0.45 * (beta - ho), -0.2 * pTO], [ho + 0.8 * (beta - ho), -0.58 * pTO], [beta, -pTO],
     [beta + 0.2 * sw, (run ? -1.05 : -0.68) * pTO], [beta + 0.45 * sw, (run ? -0.6 : -0.2) * pTO], [beta + 0.72 * sw, run ? -0.05 * pTO : 0.35 * pHS]], 1);
-  const zHS = (run ? 0.3 : 0.44) * S / 2;                                    // the foot's place ahead of the pelvis when it lands
+  const zHS = (run ? 0.22 : 0.44) * S / 2;                                   // the foot's place ahead of the pelvis when it lands (a runner's lands nearly under her)
   const ground = (g, psi) => [g * width / 2, 0, zHS - S * psi];             // a planted foot's place: carried back under the body
   const lift = clamp(1 + 0.12 * p.pw + 0.06 * p.light - 0.16 * p.heavy, 0.75, 1.2);
   const stance = (g, psi) => ankleAt(F, aH, ground(g, psi), g * toeOut, pitchOf(psi));
@@ -75,49 +76,62 @@ export function gait(rig, body, set, kind = "walk") {
   const tilt0 = (3 * p.fem - 1 * p.masc + (run ? 5 : 0)) * DEG, Atilt = 1.2 * DEG;
   const pelvisXZ = phi => [Ax * Math.cos(2 * Math.PI * (phi - (run ? 0.2 : 0.3) - lag * 0.5)), Az * Math.cos(4 * Math.PI * (phi - 0.12))];
   const pelvisTurn = phi => ({ yaw: -Arot * Math.cos(2 * Math.PI * (phi - 0.02)), roll: Alist * Math.cos(2 * Math.PI * (phi - (run ? 0.1 : 0.17) - lag * 0.4)), pitch: tilt0 + Atilt * Math.cos(4 * Math.PI * (phi - 0.1)) });
-  // the height: each planted leg says how high the hip may be for the knee it should have; the pelvis takes the
-  // leading leg's word through its stance, the two blended while both feet are down
-  const kneeOf = run ? curve([[-0.05, 16 * DEG], [0, (17 + 4 * p.heavy) * DEG], [beta * 0.45, (40 + 6 * p.heavy - 5 * p.pw) * DEG], [beta, 18 * DEG], [beta + 0.06, 30 * DEG]])
-    : curve([[-0.05, 5 * DEG], [0, 5 * DEG], [0.13, clamp(13 + 5 * p.heavy - 4 * p.pw + 1.5 * p.light, 8, 22) * DEG], [0.4, (5 + 3 * p.heavy + 2 * p.weak) * DEG], [0.5, 10 * DEG], [0.56, 20 * DEG], [0.62, 36 * DEG], [0.7, 44 * DEG]]);
+  // the height. Walking: each planted leg says how high the hip may be for the knee it should have; the pelvis takes
+  // the leading leg's word through its stance, the two blended while both feet are down. (Running it is a bounce
+  // drawn as one, below; the knees then bend as that height has them.)
+  const kneeOf = curve([[-0.05, 5 * DEG], [0, 5 * DEG], [0.13, clamp(13 + 5 * p.heavy - 4 * p.pw + 1.5 * p.light, 8, 22) * DEG], [0.4, (5 + 3 * p.heavy + 2 * p.weak) * DEG], [0.5, 10 * DEG], [0.56, 20 * DEG], [0.62, 36 * DEG], [0.7, 44 * DEG]]);
   const hipOff = (g, phi) => { const t = pelvisTurn(phi);                 // the hip joint from the pelvis joint, turned as the pelvis is (small angles)
     const hp = rig.leg(g > 0 ? "l" : "r").hip; return [hp[0] * Math.cos(t.yaw) + hp[2] * Math.sin(t.yaw) - hp[1] * Math.sin(t.roll), hp[1] + hp[0] * Math.sin(t.roll) - hp[2] * Math.sin(t.pitch), hp[2] * Math.cos(t.yaw) - hp[0] * Math.sin(t.yaw) + hp[1] * Math.sin(t.pitch)]; };
   const implied = (g, phi, knee) => { const A = ankle(g, phi), xz = pelvisXZ(phi), o = hipOff(g, phi), dx = A[0] - (xz[0] + o[0]), dz = A[2] - (xz[1] + o[2]), d = legLen(l1, l2, knee);
     return A[1] + Math.sqrt(Math.max(1e-6, d * d - dx * dx - dz * dz)) - o[1]; };
-  const M = N * 4, raw = new Float64Array(M), cap = new Float64Array(M), lead0 = run ? -0.05 : -0.1, lead1 = 0, out0 = run ? beta - 0.05 : 0.4, out1 = run ? beta : 0.5;
+  const M = N * 4, raw = new Float64Array(M), cap = new Float64Array(M), lead0 = run ? -0.05 : -0.1, lead1 = 0, out0 = run ? beta - 0.05 : 0.4, out1 = run ? beta : 0.5, straight = (run ? 13 : 3) * DEG;
   for (let i = 0; i < M; i++) {
     const phi = i / M; let sum = 0, wt = 0, top = 1e9;
     for (const g of [1, -1]) {
       let psi = wrap01(g > 0 ? phi : phi + 0.5); if (psi > out1 + 0.02) psi -= 1;
       const w = sm2(lead0, lead1, psi) * (1 - sm2(out0, out1, psi));
-      if (w > 1e-4) { sum += w * implied(g, phi, kneeOf(Math.max(psi, 0))); wt += w; }
-      if (psi <= beta || psi > 0.86 || psi < 0) top = Math.min(top, implied(g, phi, 3 * DEG));   // (no leg, planted or reaching for the ground, ever asked to be longer than it is)
+      if (w > 1e-4 && !run) { sum += w * implied(g, phi, kneeOf(Math.max(psi, 0))); wt += w; }
+      if (psi <= beta || psi > 0.86 || psi < 0) top = Math.min(top, implied(g, phi, straight));   // (no leg, planted or reaching for the ground, ever asked to be longer than it is; a runner's never quite straight)
     }
     raw[i] = wt > 0 ? sum / wt : NaN; cap[i] = top;
   }
-  if (run) {                                                                // in the air between steps: the height carried over (a short flight, nearly level)
-    for (let lap = 0; lap < 2; lap++) for (let i = 0; i < M; i++) if (Number.isNaN(raw[i])) { let a = i; while (Number.isNaN(raw[(a + M - 1) % M])) a = (a + M - 1) % M; let b = i; while (Number.isNaN(raw[(b + 1) % M])) b = (b + 1) % M;
-      const ya = raw[(a + M - 1) % M], yb = raw[(b + 1) % M], len = ((b - a + M) % M) + 2, t = (((i - a + M) % M) + 1) / len; raw[i] = ya + (yb - ya) * t + 0.5 * p.g * (T * len / M) ** 2 * t * (1 - t); }
-  }
-  // smooth, and never above what a leg can reach. The reach itself is made a smooth curve that lies under it (its
-  // lowest within a little while, then smoothed by less than that), and the height is brought under that softly: a
-  // clamp frame by frame would put a kink in the pelvis, and a kink there is a twitch in both knees
+  // never above what a leg can reach. The reach itself is made a smooth curve that lies under it (its lowest within a
+  // little while, then smoothed by less than that), and the height is brought under that softly: a clamp frame by
+  // frame would put a kink in the pelvis, and a kink there is a twitch in both knees
   const r = Math.ceil(M * 0.014), lowest = new Float64Array(M); for (let i = 0; i < M; i++) { let m = 1e9; for (let k = -r; k <= r; k++) m = Math.min(m, cap[((i + k) % M + M) % M]); lowest[i] = m; }
   const capS = smoothLoop(lowest, M * 0.004), softMin = (a, b, k = 0.001) => Math.min(a, b) - k * Math.log(1 + Math.exp(-Math.abs(a - b) / k));
   const under = a => { let over = 0; for (let i = 0; i < M; i++) over = Math.max(over, a[i] - (cap[i] - 0.0005)); if (over > 0) for (let i = 0; i < M; i++) a[i] -= over; return a; };
-  let ys = smoothLoop(raw, M * (run ? 0.012 : 0.012)); for (let i = 0; i < M; i++) ys[i] = softMin(ys[i], capS[i] - 0.0005);
-  ys = follow(ys, T / M, clamp((run ? 8 : 7) - 2.6 * p.heavy + 1.2 * p.pw + 0.8 * p.light, 3.2, 10), 0.7);
-  for (let i = 0; i < M; i++) ys[i] = softMin(ys[i], capS[i] - 0.0005); ys = under(ys);
+  let ys;
+  if (run) {
+    // Running, the body is a weight on a spring: lowest in the middle of each foot's time on the ground, highest in
+    // the middle of each flight, one smooth rise and fall a step. (Read off the knees as the walk's is, it rose into
+    // each take-off and fell 3 cm in the one frame of the landing: a jolt a step, and worse in everything soft that
+    // hangs from the pelvis.) How far: what gravity gives a bounce at this step rate, less for a heavy body, which
+    // runs closer to the ground. How high: as high as the legs reach at landing and take-off, and no higher than
+    // leaves the knee its give in mid-stance.
+    const B = clamp(0.8 + 0.15 * p.pw - 0.3 * p.heavy + 0.05 * p.light, 0.4, 1.05) * p.g * T * T / (8 * Math.PI * Math.PI), shape = i => -(B / 2) * Math.cos(4 * Math.PI * (i / M - beta / 2));
+    let y0 = implied(1, beta / 2, (40 + 6 * p.heavy - 5 * p.pw) * DEG) + B / 2; for (let i = 0; i < M; i++) y0 = Math.min(y0, capS[i] - 0.0005 - shape(i));
+    ys = new Float64Array(M); for (let i = 0; i < M; i++) ys[i] = y0 + shape(i);
+  } else {
+    ys = smoothLoop(raw, M * 0.012); for (let i = 0; i < M; i++) ys[i] = softMin(ys[i], capS[i] - 0.0005);
+    ys = follow(ys, T / M, clamp(7 - 2.6 * p.heavy + 1.2 * p.pw + 0.8 * p.light, 3.2, 10), 0.7);
+    for (let i = 0; i < M; i++) ys[i] = softMin(ys[i], capS[i] - 0.0005); ys = under(ys);
+  }
   const pelvisY = phi => { const x = wrap01(phi) * M, i = Math.floor(x), t = x - i; return ys[i % M] * (1 - t) + ys[(i + 1) % M] * t; };
   // ---- the upper body and the arms ----------------------------------------------------------------------------------
   const kc = clamp(0.55 + 0.35 * p.masc - 0.15 * p.fem + (run ? 0.25 : 0), 0.2, 1.1), swag = (0.6 + 1.6 * p.masc + 1.2 * p.heavy - 0.3 * p.fem) * DEG;
   const lean = (run ? 9 + 3 * p.pw - 2 * p.heavy : 2 + 4 * p.weak - 2 * p.strong - 2.5 * p.heavy) * DEG, headDown = (6 * p.weak - 1 * p.strong + (run ? -4 : 0)) * DEG;
-  const aF = (run ? 34 + 6 * p.pw - 6 * p.heavy : 16 + 6 * p.masc - 3 * p.fem + 3 * p.pw - 3 * p.heavy) * DEG, aB = (run ? 30 + 4 * p.pw - 6 * p.heavy : 14 + 3 * p.masc + 1 * p.fem - 2 * p.heavy) * DEG;
-  const e0 = (run ? 78 + 8 * p.fem - 6 * p.masc : 10 + 6 * p.masc - 2 * p.fem + 5 * p.heavy) * DEG, eDyn = (run ? 14 : 12 + 6 * p.fem) * DEG;
-  const abd0 = (4 + 5 * p.masc + 1 * p.fem + 2 * p.heavy + (run ? 3 : 0)) * DEG, rot0 = (run ? 20 + 8 * p.masc : 8 + 10 * p.masc - 4 * p.fem) * DEG, pron = (25 + 25 * p.masc - 12 * p.fem + (run ? 10 : 0)) * DEG;
-  const curl = clamp(0.28 + 0.22 * p.masc - 0.08 * p.fem + (run ? 0.3 : 0), 0.1, 0.9), armLag = 0.03 + 0.04 * p.heavy - 0.01 * p.pw;
+  // The arms. Walking, they hang and swing from the shoulder, the elbow giving as the hand comes forward, the palm to
+  // the thigh. Running, they are carried bent and driven back further than they come forward: the hand goes from
+  // beside the hip to in front of the chest, the forearm a little across the body in front, in a loose fist with the
+  // thumb on top and the palm to the body (never to the ground: pose.js counts the hand's turn from the body)
+  const aF = (run ? 20 + 5 * p.pw - 4 * p.heavy : 16 + 6 * p.masc - 3 * p.fem + 3 * p.pw - 3 * p.heavy) * DEG, aB = (run ? 38 + 5 * p.pw - 8 * p.heavy : 14 + 3 * p.masc + 1 * p.fem - 2 * p.heavy) * DEG;
+  const e0 = (run ? 84 + 6 * p.fem - 4 * p.masc : 10 + 6 * p.masc - 2 * p.fem + 5 * p.heavy) * DEG, eDyn = (run ? 12 : 12 + 6 * p.fem) * DEG, eBack = (run ? 20 : 0) * DEG;
+  const abd0 = (4 + 5 * p.masc + 1 * p.fem + 2 * p.heavy + (run ? 3 : 0)) * DEG, rot0 = (run ? 16 + 6 * p.masc : 8 + 10 * p.masc - 4 * p.fem) * DEG, pron = (run ? 14 + 6 * p.masc - 4 * p.fem : 20 + 14 * p.masc - 8 * p.fem) * DEG;
+  const curl = run ? 1.3 + 0.1 * p.masc - 0.05 * p.fem : clamp(0.5 + 0.12 * p.masc - 0.05 * p.fem, 0.3, 0.75), armLag = 0.03 + 0.04 * p.heavy - 0.01 * p.pw, flex0 = (run ? -4 : -2 + 3 * p.weak) * DEG;
   const arm = (g, phi) => { const sw_ = Math.cos(2 * Math.PI * (phi - (g > 0 ? 0.5 : 0) - armLag)), vel = -Math.sin(2 * Math.PI * (phi - (g > 0 ? 0.5 : 0) - armLag)), fwd = sm(-0.3, 1, sw_), back = sm(0, 1, -sw_);
-    return { flex: (-2 + 3 * p.weak) * DEG + (run ? 6 * DEG : 0) + lerp(aB, aF, (sw_ + 1) / 2) * sw_, elbow: e0 + eDyn * fwd - (run ? 16 * DEG * back : 0), abd: abd0 + 6 * DEG * p.fem * back, rot: rot0 + (run ? 14 : 6) * DEG * Math.max(0, sw_),
-      pron, wrist: (run ? 3 : 5 + 4 * p.fem) * DEG * vel, curl, hang: 0.7 }; };
+    return { flex: flex0 + lerp(aB, aF, (sw_ + 1) / 2) * sw_, elbow: e0 + eDyn * fwd - eBack * back, abd: abd0 + 6 * DEG * p.fem * back, rot: rot0 + (run ? 14 : 6) * DEG * Math.max(0, sw_),
+      pron, wrist: run ? (-8 + 3 * vel) * DEG : (5 + 4 * p.fem) * DEG * vel, curl, hang: 0.7 }; };
   const ctrl = f => {
     const phi = wrap01(f / N), xz = pelvisXZ(phi), pt = pelvisTurn(phi), c = { phase: phi };
     c.pelvis = { pos: [xz[0], pelvisY(phi), xz[1]], ...pt };

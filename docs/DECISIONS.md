@@ -2,6 +2,28 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-13, the hands and the jiggle: the Animator's first feedback (the user, with a screenshot)
+
+- **"Very good, some feedback. Enhance the hand positioning in walk and run animations (and any others), as you can
+  see in the screenshot for running the palms arent really rotated correctly, when you run the palms would be towards
+  the body not towards the ground."** (The screenshot: the chubby woman in the Animator's page, running, her hands
+  flat in front of her hips with the palms down.)
+- **"For soft jiggle see if you can emulate the following free open source plugins style
+  https://godotengine.org/asset-library/asset/1595"** (the asset library's 1595 is **JiggleBones (4.0)**: BauxiteDev,
+  Cory Petkovsek, Yael Atletl; MIT. Its page couldn't be opened from the cloud session (godotengine.org isn't in the
+  session's allowed hosts); its repository's README and script were read.)
+- **What it settles**: a hand's turn is counted from the body, so a palm faces the body however the arm is carried;
+  a hand at rest is a hand at rest (not a rig's rest pose) and a running hand a loose fist; a runner's arms are
+  driven back, the hand from the hip to the chest; a bent arm's forearm is turned to point ahead before the whole
+  arm is carried out. The run's rise and fall became a smooth bounce on the way (it fell 3 cm in one frame at each
+  landing: found by what hung from it). Each soft bone is a **jiggle bone**, JiggleBones' way written again (a rod
+  from where the flesh is rooted, a weight that keeps going, stiffness, damping, the bone turned to point at it),
+  baked into the clips and swung **live in Godot** by the look plugin (`HSSoftJiggle`), so it answers a stop, a turn
+  and a clip of the user's own. One departure from the plugin, on purpose: damping is against the body, not the
+  world (on a rod of a few centimetres a drag against the world leans every soft bone back at walking pace). A fifth
+  slider, **Bounce**: the plugin's damping. None of the plugin's code is in the project; it's named where its way is
+  used. docs/ANIMATOR_V2.md §4 to §7 and §10, docs/GODOT_LOOK.md §5w.
+
 ## 2026-11-13, animation v2: our own animation system, made from each character's body (the user)
 
 - **"I merged in main. I'm not actually a fan of kimodo animations. Realistically I don't need that many animations

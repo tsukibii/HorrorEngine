@@ -2,8 +2,9 @@
 ## game reads a body at run time (GLTFDocument), a clip held at a moment, the whole body in the frame:
 ##   -- --glb=FILE --out=DIR --tag=NAME --plan=JSON [--size=WxH] [--frames=N] [--wear] [--light=reel|room]
 ## plan: [{"clip": "walk_loop", "t": 0.25, "view": "side"|"front"|"q"|"back"|"top", "name": "walk_3", "at": [x,y,z], "dist": 3.2}, ...]
-## (t in seconds; "f": a share of the clip's length instead). Prints MOTIONSHOTS {json}: the clips the file has, their
-## lengths and loop modes, each picture's file.
+## (t in seconds; "f": a share of the clip's length instead; "bone": a bone to look at instead of `at`, where it is at
+## that moment, for a close-up of a hand: "l_wrist", with "dist" some 0.6; "yaw", "pitch", "fov" the camera's own).
+## Prints MOTIONSHOTS {json}: the clips the file has, their lengths and loop modes, each picture's file.
 extends SceneTree
 
 var glb := ""
@@ -126,6 +127,14 @@ func pose(s: Dictionary) -> void:
 	var at := Vector3(0, tall * 0.5, 0)
 	if s.has("at"):
 		at = Vector3(s["at"][0], s["at"][1], s["at"][2])
+	if s.has("bone"):                                               # where a bone is in this pose (a hand's close-up)
+		for sk in who.find_children("*", "Skeleton3D", true, false):
+			var bi: int = sk.find_bone(String(s["bone"]))
+			if bi >= 0:
+				at = sk.global_transform * sk.get_bone_global_pose(bi).origin
+				if s.has("off"):
+					at += Vector3(s["off"][0], s["off"][1], s["off"][2])
+				break
 	var dist: float = float(s.get("dist", tall * 2.35))
 	var yaw := 0.0
 	var pitch := 4.0

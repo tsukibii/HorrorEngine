@@ -64,7 +64,7 @@ def characters():
                 j = glb_json(f)
                 rec = ((j.get("scenes") or [{}])[j.get("scene", 0)].get("extras") or {}).get("hsMotion") if j else None
                 if rec:
-                    info.update(baked=bool(rec.get("clips")), settings=rec.get("settings"), clips=sorted((rec.get("clips") or {}).keys()))
+                    info.update(baked=bool(rec.get("clips")), settings=rec.get("settings"), clips=sorted((rec.get("clips") or {}).keys()), version=rec.get("version", 1))
                 info["studio"] = bool(j and ((j.get("scenes") or [{}])[j.get("scene", 0)].get("extras") or {}).get("studio"))
             except Exception as e:                            # (a broken file is listed, and says so)
                 info["error"] = str(e)

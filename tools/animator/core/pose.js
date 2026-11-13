@@ -4,7 +4,7 @@
 // the arms by angles from the shoulder or by IK to a wrist), and each bone's turn is the one that takes its rest
 // direction and hinge onto the posed ones, so the same controls give the same pose on any rest pose. A limb's twist is
 // shared out along its twist bones.
-import { V, Q, rx, ry, rz, clamp } from "./m.js";
+import { V, Q, rx, ry, rz, clamp, sm } from "./m.js";
 import { SIDES, SGN } from "./rig.js";
 
 const I4 = [0, 0, 0, 1], UP = [0, 1, 0], SPINE_F = [0.15, 0.4, 0.72, 1];
@@ -56,7 +56,11 @@ export function ankleAt(F, ankleH, o, yaw, pitch) {
     c.chest  { yaw, roll, pitch | q }           the chest's turn in the world; the spine bends between the two
     c.head   { yaw, roll, pitch | q }           the head's turn in the world; the neck half way
     c.legs.l/.r { ankle, yaw, pitch, roll, toe, knee }   the ankle's place, the foot's heading, pitch (toes up) and roll, the toes' bend, the knee turned out
-    c.arms.l/.r { flex, abd, rot, elbow, pron, wrist, curl, spread, hang }   angles from the hanging arm; or { hand: [x,y,z], pole, palm, ... } the wrist's place
+    c.arms.l/.r { flex, abd, rot, elbow, pron, wrist, curl, hang }   angles from the hanging arm; or { hand: [x,y,z], pole, palm, ... } the wrist's place
+                `pron`: the hand's turn about the forearm, counted from the body (0: the palm to the body's middle; rising: turned over,
+                toward the back when the arm hangs, toward the floor when the forearm points ahead; with `pronArm`, counted from the
+                elbow's own axis instead); `curl`: 0 a flat hand, 0.45 a hand at rest, 1.3 a loose fist with the thumb laid along
+                the first finger
     c.clav.l/.r { up, fwd } */
 export function build(rig, c) {
   const R = rig, pose = new Pose(rig), Dp = ypr(c.pelvis), Dc = ypr(c.chest || {}), Dh = ypr(c.head || {});
@@ -84,7 +88,7 @@ export function build(rig, c) {
     info["knee_" + s] = Math.acos(clamp(V.dot(dt, ds), -1, 1)); info["kneeAt_" + s] = K;
   }
   // ---- the arms ---------------------------------------------------------------------------------------------------
-  const cyaw = Math.atan2(2 * (Dc[3] * Dc[1] + Dc[0] * Dc[2]), 1 - 2 * (Dc[1] * Dc[1] + Dc[0] * Dc[0])), Dup = ry(cyaw);
+  const cyaw = Math.atan2(2 * (Dc[3] * Dc[1] + Dc[0] * Dc[2]), 1 - 2 * (Dc[1] * Dc[1] + Dc[0] * Dc[0])), Dup = ry(cyaw), sideAx = Q.rot(Dc, [-1, 0, 0]);   // (sideAx: the chest's own side-to-side axis)
   for (const s of SIDES) {
     const A = R.arm(s), g = SGN[s], ac = c.arms[s], S = at(A.up); let du, df, h;
     if (ac.hand) {                                             // to a wrist's place: two-bone IK, the elbow toward `pole`
@@ -98,7 +102,14 @@ export function build(rig, c) {
       du = Q.rot(Rs, [0, -1, 0]); h = Q.rot(Rs, [-1, 0, 0]); df = turn(du, h, ac.elbow || 0);
     }
     const Du = Q.frame(A.du0, A.h0, du, h), Dl = Q.frame(A.df0, A.h0, df, h), b = V.cross(df, h);
+    // The hand's turn about the forearm is counted from the body, not from the arm. An arm carried wide of a broad
+    // waist, or turned in at the shoulder, tips its elbow's own axis toward the floor; a turn counted from that axis
+    // tips the palm to the floor with it (a runner with the palms down, like paws). Counted from the body's own
+    // side-to-side axis, seen square to the forearm, 0 is the palm to the body's middle wherever the arm has got to.
+    // Where the forearm lies along that axis there is no "toward the middle" square to it, and the elbow's axis is
+    // what's left to count from.
     let pron = ac.pron ?? 0.4;
+    if (!ac.pronArm) { const hb = V.perp(sideAx, df), lie = V.len(hb), off = Math.atan2(V.dot(hb, b), V.dot(hb, h)); pron += g * off * sm(0.25, 0.6, lie) * (1 - sm(1.9, 2.8, Math.abs(off))); }   // (pronArm: `pron` is already from the elbow's axis: an arm taken somewhere by its wrist starts from the turn it had hanging, info.pron_*)
     if (ac.palm) {                                           // the palm turned to face a direction, as far as a forearm turns
       // The turn is read about the middle of the forearm's own range (-70 .. 150 degrees). A palm asked to face along
       // the forearm says nothing about its turn, and one asked to face where no forearm can turn it is past one end
@@ -115,12 +126,26 @@ export function build(rig, c) {
     const tw = Q.twist(Q.mul(Q.conj(pose.D[A.clav]), Du), A.du0);
     for (const t of A.upTw) pose.D[t.j] = Q.mul(Du, Q.axis(A.du0, -(1 - t.f) * tw));
     for (const t of A.lowTw) pose.D[t.j] = Q.mul(Dl, Q.axis(A.df0, t.f * dTw));
-    // the fingers: each joint curled toward the palm about the knuckles' own axis; the thumb half as much
-    const curl = ac.curl ?? 0.3, nh = Q.rot(Dhand, A.palm0);
-    A.fingers.forEach((chain, fi) => { if (!chain.length) return; const first = chain.find(j => /[1-3]$/.test(R.J[j].name)) ?? chain[0], kid = R.J[first].kids[0];
-      const d0 = kid != null ? V.norm(V.sub(R.J[kid].at, R.J[first].at)) : A.handDir, k = V.norm(V.cross(Q.rot(Dhand, d0), nh)), amt = fi === 0 ? curl * 0.45 : curl * (1 + 0.12 * (fi - 2)); let Dq = Dhand, acc = 0;
-      for (const j of chain) { if (/0$/.test(R.J[j].name) && fi !== 0) { pose.D[j] = Dhand; continue; } acc += amt * (/1$/.test(R.J[j].name) ? 0.9 : /2$/.test(R.J[j].name) ? 1.15 : 0.7); pose.D[j] = Q.mul(Q.axis(k, acc), Dhand); } });
-    info["elbowAt_" + s] = V.add(S, V.mul(du, A.upper)); info["wristAt_" + s] = V.add(info["elbowAt_" + s], V.mul(df, A.fore)); info["handDir_" + s] = Q.rot(Dhand, A.handDir); info["palm_" + s] = nh;
+    // The fingers: each joint curled toward the palm about the knuckles' own axis, the little finger's side a little
+    // more than the first finger's, and the fingers drawn together (a rig's rest pose holds them apart and flat; a
+    // hand at rest is neither). The thumb is laid in by the first finger: turned toward the way the fingers point,
+    // its two end joints bent a little further the same way, and brought round in front of the palm only slightly;
+    // closed to a fist (`fist`) it lies along the side of the first finger, where a runner's thumb rests, and not
+    // across the fingers that are curling into the palm.
+    const curl = ac.curl ?? 0.45, open = sm(0.1, 0.45, curl), fist = sm(0.75, 1.25, curl), nh = Q.rot(Dhand, A.palm0), along = Q.rot(Dhand, A.handDir);
+    const dirOf = chain => { const first = chain.find(j => /[1-3]$/.test(R.J[j].name)) ?? chain[0], kid = R.J[first].kids[0]; return Q.rot(Dhand, kid != null ? V.norm(V.sub(R.J[kid].at, R.J[first].at)) : A.handDir); };
+    const mid = A.fingers[2] && A.fingers[2].length ? dirOf(A.fingers[2]) : along;
+    A.fingers.forEach((chain, fi) => { if (!chain.length) return; const d0 = dirOf(chain); let k = V.norm(V.cross(d0, nh)), acc = 0;
+      if (fi === 0) {                                          // the thumb
+        const ka = V.cross(d0, along), la = V.len(ka), room = Math.asin(Math.min(1, la)), add = 0.5 * fist + 0.38 * open * (1 - fist), bend = 0.3 * open * (1 - 0.6 * fist), amt = 0.07 * open + 0.105 * fist;
+        for (const j of chain) { const nm = R.J[j].name, Da = la > 1e-4 ? Q.axis(V.mul(ka, 1 / la), Math.min(add + bend * (/2$/.test(nm) ? 0.5 : /3$/.test(nm) ? 1 : 0), room + 0.3)) : [0, 0, 0, 1];
+          acc += amt * (/1$/.test(nm) ? 0.9 : /2$/.test(nm) ? 1.15 : 0.7) + fist * (/2$/.test(nm) ? 0.3 : /3$/.test(nm) ? 0.5 : 0);   // (a fist's thumb bends down over the first finger at its end joints)
+          pose.D[j] = Q.mul(Q.axis(Q.rot(Da, k), acc), Q.mul(Da, Dhand)); }
+        return; }
+      const kg = V.cross(d0, mid), lg = V.len(kg), base = fi !== 2 && lg > 1e-4 ? Q.mul(Q.axis(V.mul(kg, 1 / lg), 0.7 * open * Math.asin(Math.min(1, lg))), Dhand) : Dhand, amt = curl * (1 + 0.12 * (fi - 2));
+      if (base !== Dhand) k = V.norm(V.cross(Q.rot(base, Q.rot(Q.conj(Dhand), d0)), nh));
+      for (const j of chain) { if (/0$/.test(R.J[j].name)) { pose.D[j] = Dhand; continue; } acc += amt * (/1$/.test(R.J[j].name) ? 0.9 : /2$/.test(R.J[j].name) ? 1.15 : 0.7); pose.D[j] = Q.mul(Q.axis(k, acc), base); } });
+    info["elbowAt_" + s] = V.add(S, V.mul(du, A.upper)); info["wristAt_" + s] = V.add(info["elbowAt_" + s], V.mul(df, A.fore)); info["handDir_" + s] = along; info["palm_" + s] = nh; info["pron_" + s] = pron;
   }
   return pose;
 }

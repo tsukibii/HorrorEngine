@@ -16,6 +16,9 @@
 ##   a handle        a Marker3D at the handle, its blue arrow pointing into the door (the way she faces to open it)
 ##   anything else   wherever it is
 ## Her clips move her body's bones only: her face (expressions, blinks) and her hair's springs play over any of them.
+## Her soft tissue (bust, belly, seat, hips, thighs) swings in every baked clip; with `live_jiggle` and the look plugin
+## in the project it's swung as the game runs instead (JiggleBones' way), so it also answers a stop, a turn and a
+## clip of your own.
 ## A character that wasn't baked still walks if her model has animations called idle, walk and run.
 extends Node
 
@@ -31,6 +34,7 @@ signal event(name: String)                            ## a clip's own moments: "
 @export var start_with := "idle"                      ## what she does when the game starts ("": nothing)
 @export_flags_3d_physics var floor_mask := 1          ## what she stands on (0: she keeps her height)
 @export var more := {}                                ## clips of your own: {"dance": "res://animations/dance.res"}
+@export var live_jiggle := true                       ## her soft tissue swung as the game runs (the look plugin's HSJiggle, when the project has it); off: only what her clips carry
 
 var record := {}                                      ## the Animator's record of her clips (empty: she wasn't baked)
 var now := ""                                         ## what she's doing: "", "idle", "walk", "run", "turn", a clip's name
@@ -96,6 +100,8 @@ func setup() -> void:
 		problems.append("she has no animations: bake her .glb in the Animator (dashboard: Animator v2)")
 	elif record.is_empty():
 		problems.append("her .glb wasn't baked by the Animator: only what her model calls idle, walk and run will play")
+	elif int(record.get("version", 1)) < 2:
+		problems.append("her .glb was baked by an older Animator (before her hands and her soft tissue were reworked): open her in the Animator and Bake again")
 	for n in _names:
 		var a := _ap.get_animation(_names[n])
 		a.loop_mode = Animation.LOOP_LINEAR if String(n).ends_with("_loop") else Animation.LOOP_NONE
@@ -112,6 +118,8 @@ func setup() -> void:
 				lib.add_animation(str(k), r)
 			else:
 				problems.append("%s: %s isn't an animation" % [k, src])
+	if live_jiggle and ResourceLoader.exists("res://addons/horrorstudio_look/jiggle.gd"):   # (attach: one under her if she has soft bones or chains, or the one already there)
+		load("res://addons/horrorstudio_look/jiggle.gd").attach(h)
 	for p in problems:
 		push_warning("motion.gd (%s): %s" % [h.name, p])
 	_ready_now = true

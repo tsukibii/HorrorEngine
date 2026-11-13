@@ -27,7 +27,7 @@ function stance0(rig, body, p) {
   const width = p.sc * clamp(0.16 - 0.05 * p.fem + 0.07 * p.masc + 0.05 * p.heavy, 0.09, 0.3), toe = (8 - 4 * p.style + 3 * p.heavy) * DEG;
   const lean = (1.5 + 5 * p.weak - 2 * p.strong - 2 * p.heavy) * DEG, head = (5 * p.weak - 1 * p.strong) * DEG;
   const arm = { flex: (-1 + 3 * p.weak) * DEG, elbow: (11 + 6 * p.masc - 2 * p.fem + 5 * p.heavy) * DEG, abd: (4 + 5 * p.masc + 1 * p.fem + 2 * p.heavy) * DEG, rot: (8 + 10 * p.masc - 4 * p.fem) * DEG,
-    pron: (25 + 25 * p.masc - 12 * p.fem) * DEG, wrist: 0, curl: clamp(0.28 + 0.22 * p.masc - 0.08 * p.fem, 0.1, 0.9), hang: 0.8 };
+    pron: (20 + 14 * p.masc - 8 * p.fem) * DEG, wrist: 0, curl: clamp(0.5 + 0.12 * p.masc - 0.05 * p.fem, 0.3, 0.75), hang: 0.8 };   // (the palm to the thigh, turned a little to the back: pose.js counts it from the body)
   return { width, toe, lean, head, arm, tilt: (3 * p.fem - 1 * p.masc) * DEG };
 }
 /** the pelvis joint's height for a leg planted at `ankle`, the hip over `at` (x, z of the pelvis), the knee bent `knee` */
@@ -75,7 +75,7 @@ function armTo(home, s, to, k, o = {}) {
   const W0 = home.info["wristAt_" + s], E0 = home.info["elbowAt_" + s], S0 = home.shoulder[s], g = s === "l" ? 1 : -1, out = o.via || [(W0[0] + to[0]) / 2 + g * 0.04, (W0[1] + to[1]) / 2 + 0.02, (W0[2] + to[2]) / 2 + 0.05];
   const pole0 = V.sub(E0, S0), pole1 = o.pole || [g * 0.5, -0.75, -0.45], palm1 = o.palm || [0, -1, 0];
   // (the palm: the hanging arm's own turn, and `k` of the way to facing where it's asked: an angle blended, never two directions, which whip round when they face opposite ways)
-  return { hand: bez(W0, out, to, k), pole: turnV(pole0, pole1, ease(k)), pron: home.c.arms[s].pron ?? 0.4, palm: V.norm(palm1), palmK: ease(k), curl: lerp(home.c.arms[s].curl ?? 0.3, o.curl ?? 0.35, k), wrist: (o.wrist || 0) * k, free: true };
+  return { hand: bez(W0, out, to, k), pole: turnV(pole0, pole1, ease(k)), pron: home.info["pron_" + s], pronArm: true, palm: V.norm(palm1), palmK: ease(k), curl: lerp(home.c.arms[s].curl ?? 0.45, o.curl ?? 0.45, k), wrist: (o.wrist || 0) * k, free: true };
 }
 // the base pose (the idle's first frame) built once
 function basePose(rig, body, set, X) { const c = idle(rig, body, set, X).ctrl(0), h = homeOf(rig, c); return { ...h, pelvis: c.pelvis.pos.slice() }; }
@@ -88,11 +88,17 @@ function seated(rig, body, p, S, H) {
   const hp = Q.rot(rx(tilt), rig.legL.hip);
   return { pos: [0, hipY - hp[1], -back * 0.96 - hp[2] + 0.02 * p.sc], tilt, chest: (2 + 9 * p.weak - 3 * p.strong) * DEG - 2 * DEG, head: (6 * p.weak) * DEG, flesh };
 }
-// the hands' places on the thighs when sat (the wrist over the thigh's top, a little behind the knee)
-function onThighs(rig, body, pose, p) {
-  const out = {}, { P } = pose.solve();
+// the hands' places on the thighs (the wrist over the thigh's top, a little behind the knee) and which way each palm
+// faces there: at the thigh. "Top" is the thigh's own (the side its knee bends toward), not the world's: as she gets
+// up and the thigh comes upright the hand stays on its front with the palm to it, and from there back to her side.
+// (A palm simply asked to face the floor would, on an arm coming down toward the knee, face away from the leg.)
+function onThighs(rig, body, pose, p, legs) {
+  const out = {}, { P, D } = pose.solve(), fwd = Q.rot(D[rig.pelvis], [0, 0, 1]);
   for (const s of ["l", "r"]) { const g = s === "l" ? 1 : -1, K = pose.info["kneeAt_" + s], L = rig.leg(s), H = [P[L.up * 3], P[L.up * 3 + 1], P[L.up * 3 + 2]], along = V.norm(V.sub(H, K));
-    const r = (body.limbs["thigh_" + s].bins[4].front || 0.06) + 0.01; out[s] = V.add(V.add(K, V.mul(along, (0.4 + 0.08 * p.fem) * body.thigh)), [g * (-0.02 * p.fem + 0.01 * p.masc), r + 0.022, 0]); }
+    const bent = V.perp(V.sub(K, V.lerp(H, legs[s].ankle, 0.5)), along), lb = V.len(bent), top = V.norm(V.add(V.mul(bent, sm(0.02, 0.1, lb) / (lb || 1)), V.mul(V.norm(V.perp(fwd, along)), 1 - sm(0.02, 0.1, lb))));
+    const r = (body.limbs["thigh_" + s].bins[4].front || 0.06) + 0.01, side = V.norm(V.cross(top, along));   // (side: toward her left)
+    out[s] = V.add(V.add(K, V.mul(along, (0.4 + 0.08 * p.fem) * body.thigh)), V.add(V.mul(side, g * (-0.02 * p.fem + 0.01 * p.masc)), V.mul(top, r + 0.022)));
+    out["palm_" + s] = V.norm(V.add(V.mul(top, -1), V.mul(along, -0.1))); }
   return out;
 }
 const baseLegs = base => ({ l: { ankle: base.c.legs.l.ankle.slice(), yaw: base.c.legs.l.yaw, pitch: 0 }, r: { ankle: base.c.legs.r.ankle.slice(), yaw: base.c.legs.r.yaw, pitch: 0 } });   // the feet where the idle has them: no act shuffles them
@@ -105,8 +111,8 @@ function sitFrame(rig, body, p, S, base, Z, a) {              // a: { down 0..1 
   c.head = { yaw: 0, roll: base.c.head.roll * (1 - dn), pitch: lerp(S.head, Z.head, dn) + 0.35 * (a.lean || 0) + (a.look || 0) };
   const hang = s => ({ ...S.arm, flex: S.arm.flex + 0.5 * (a.lean || 0) + 10 * DEG * dn, elbow: S.arm.elbow + 18 * DEG * dn, hang: 0.85 });
   c.arms = { l: hang("l"), r: hang("r") };
-  if (a.hands > 0.001) { const home = homeOf(rig, c), T = onThighs(rig, body, home.pose, p);
-    for (const s of ["l", "r"]) c.arms[s] = armTo(home, s, T[s], a.hands, { palm: [0, -1, 0.1], pole: [s === "l" ? 0.8 : -0.8, -0.35, -0.5], curl: 0.3 }); }
+  if (a.hands > 0.001) { const home = homeOf(rig, c), T = onThighs(rig, body, home.pose, p, c.legs);
+    for (const s of ["l", "r"]) c.arms[s] = armTo(home, s, T[s], a.hands, { palm: T["palm_" + s], pole: [s === "l" ? 0.8 : -0.8, -0.35, -0.5], curl: 0.35 }); }
   return c;
 }
 /** sitting down, sitting, standing up: { sit_down, sit_loop, stand_up } for a seat `H` m high (set.seat, 0.45) */
@@ -248,7 +254,7 @@ export function reaching(rig, body, set, X = null) {
       c.arms.r = armTo(home, "r", hand, k, { palm: lvl === "low" ? [0, -1, 0.15] : lvl === "mid" ? [0.2, -0.9, 0.3] : [0, -0.2, 1], pole: lvl === "high" ? [-0.9, -0.1, -0.4] : [-0.7, -0.6, -0.3], curl: lerp(0.25, 0.95, hold),
         via: lvl === "high" ? [tgt[0] - 0.08, sy - 0.05, 0.3 * p.sc] : null });
       if (back > 0 && back < 1) c.arms.r.hand = mixA(c.arms.r.hand, carry, 0.5 * hump(0, 1, back));     // (what it took is brought back close to the body)
-      if (lvl === "low" && effort > 0.3) { const T2 = onThighs(rig, body, home.pose, p).l; c.arms.l = armTo(home, "l", T2, sm(0.1, tg * 0.8, t) * (1 - sm(tb - 0.2, T - 0.1, t)), { palm: [0, -1, 0.1], pole: [0.8, -0.3, -0.5], curl: 0.4 }); }
+      if (lvl === "low" && effort > 0.3) { const T2 = onThighs(rig, body, home.pose, p, c.legs); c.arms.l = armTo(home, "l", T2.l, sm(0.1, tg * 0.8, t) * (1 - sm(tb - 0.2, T - 0.1, t)), { palm: T2.palm_l, pole: [0.8, -0.3, -0.5], curl: 0.4 }); }
       return c; };
     return { name: "reach_" + lvl, loop: false, n, fps: FPS, secs: (n - 1) / FPS, ctrl, events: [{ t: tg, name: "grab" }, { t: tb + 0.12, name: "put_away" }], meta: { reach: { hand: "r", at: tgt.map(v => +v.toFixed(3)), level: lvl } } };
   };

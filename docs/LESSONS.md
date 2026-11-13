@@ -3,6 +3,38 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The hands and the jiggle: what the user's eye found, and what took a second try (2026-11-13, `animation-v2`)
+
+- **An angle counted from a moving part goes where the part goes.** The hand's turn was counted from the elbow's own
+  axis. Carry the arm wide of a broad waist, or turn it in at the shoulder, and that axis tips toward the floor: the
+  palm tipped with it, and a runner's palms faced the ground (0.84 to 0.98 downward on every test body). Count a
+  thing's facing from what it should face: the body. Measured before it was touched (`palm · down`, `palm · toward
+  the body`), so the fix had a number to move and a check to hold it.
+- **Stills pass what motion fails.** The first round was tuned on contact sheets and "no arm inside the body"; the
+  hands were right by every number there was and wrong to the eye in a second. A check now says where a palm faces,
+  how closed a hand is and where a thumb lies. When something is judged in motion, write down what the eye would
+  ask, and measure that.
+- **A rig's rest pose is not a hand at rest.** Fingers apart and flat, the thumb well off the hand: curled a little,
+  that reads as a claw. A resting hand has its fingers together and its thumb by the first finger; a fist's thumb
+  lies along the first finger, not across the fingers curling into the palm.
+- **Clear a thing by the move that costs nothing first.** A runner's forearms crossed the chubby woman's belly, and
+  the fix carried her whole arms 22 degrees wide: chicken wings. Turning the forearm to point ahead clears the same
+  forearm and moves the upper arm nowhere (29 degrees of turn, 8 of carrying).
+- **What hangs from a curve shows its kinks.** The run's hips fell 3 cm in the single frame of each landing (their
+  height was read off the knees, which rise into take-off and drop at the next heel). No still showed it. A soft
+  bone on the pelvis did: it slammed 37 degrees in a frame. Before tuning a spring to hide a slam, look at what is
+  driving it. The run's rise and fall is now a bounce drawn as one (lowest mid-stance, highest mid-flight).
+- **A borrowed rule carries its scale with it.** JiggleBones damps a weight's speed against the world, on a rod a
+  whole unit long: at a character's pace that drag is nothing. On a rod of 7 cm the same rule leaned a breast back 7
+  degrees at a walk and would have laid it flat at a run. In place clips never showed it (nothing travels); the first
+  measure with the character carried along did. Damp against the joint instead: with the joint still it is the same
+  rule to the last digit.
+- **A point in the world, shown against a joint that has moved on, is a wrong angle.** Between ticks the weight was
+  shown from the joint as it is now; at a run the joint is 5 cm on from where it was at the tick, most of a rod's
+  length: 42 degrees of lean from nothing. Show the weight as it stood from its joint at the tick.
+- **A palm asked to face "down" faces away from the leg on an arm coming down to it.** The hand pushing off a thigh
+  flipped as she rose. What it should face is the thigh: the thigh's own top, which turns with the thigh.
+
 ## v2 pear: what took a second try (2026-11-13)
 
 - **A low-poly reference gives proportions, not an outline.** The first version was held to the picture's two width

@@ -15,6 +15,7 @@ import { parseGlb } from "./core/glb.js";
 import { prepare, attach, animate, makers, makeClip, settingsFor } from "./core/animate.js";
 import { measure, meshPoints, summary } from "./core/measure.js";
 import { unbake, baked, record } from "./core/bake.js";
+import { jiggleTick, ringOf, stiffOf, softUse, TICK } from "./core/soft.js";
 import { isBodyBone } from "./core/clips.js";
 import { skinned, partKind } from "./core/rig.js";
 import { Q, V, DEG } from "./core/m.js";
@@ -124,11 +125,61 @@ ok(walkOf.chubby_woman.width < 0.16, "but not wide: the thighs squash instead", 
   ok(drop(sw) > drop(ss) + 0.25 && sw.sit_down.secs > ss.sit_down.secs, "strength: a weak, heavy body is still dropping as it meets the seat, a strong one sets itself down; and the weak one takes longer over it", `${drop(sw).toFixed(2)} and ${drop(ss).toFixed(2)} m/s, ${sw.sit_down.secs.toFixed(1)} and ${ss.sit_down.secs.toFixed(1)} s`);
   const s0 = f({ soft: 0 }), s1 = f({ soft: 1 }), s2 = f({ soft: 1.5 }), b = c => c.walk_loop.stats.soft.soft_bust_l;
   ok(b(s0) < 0.3 && b(s1) > 3 && b(s1) < 22 && b(s2) > b(s1) * 1.2, "softness: none at 0, a bust that moves at 1, more at 1.5", `${b(s0)}, ${b(s1)}, ${b(s2)} mm`);
+  const b0 = f({ bounce: 0 }), b1 = f({ bounce: 1 });
+  ok(b(b1) > b(s1) * 1.03 && b(b0) < b(s1) * 0.85, "bounce: a bust that settles at once moves less in the walk, one left to ring moves more", `${b(b0)}, ${b(s1)}, ${b(b1)} mm`);
+}
+
+// ---- 5b. the soft bones are jiggle bones (JiggleBones' way: DECISIONS 2026-11-13, the hands and the jiggle) -------------------
+{ // the plugin's rule itself: its default bone (stiffness 1, damping 0) at 60 ticks a second
+  const d = ringOf(1, 0); ok(Math.abs(d.f - 3.669) < 0.01 && Math.abs(d.half - 0.1526) < 0.001, "JiggleBones' default bone (stiffness 1, damping 0) rings at 3.67 Hz and halves in 0.15 s by the rule as written here", `${d.f.toFixed(2)} Hz, ${d.half.toFixed(3)} s`);
+  ok(Math.abs(ringOf(stiffOf(2.8), 0).f - 2.8) < 0.01 && ringOf(1, 30).f < ringOf(1, 0).f && ringOf(1, 30).half < ringOf(1, 0).half, "a stiffness is found for the rate a bone should ring at; damping shortens the ringing");
+  // a weight let go 0.3 rad off with its joint still: measured, it rings and dies as the rule's own solution says
+  const rest = V.norm([0, -0.47, 0.88]), len = 0.074, stiff = 0.5567, damp = 2, st = { x: V.mul(Q.rot(Q.axis([1, 0, 0], 0.3), rest), len), xp: null }, ang = []; st.xp = st.x.slice();
+  for (let t = 0; t < 120; t++) { jiggleTick(st, [0, 0, 0], rest, len, stiff, damp); const dd = V.norm(st.x); ang.push(Math.atan2(V.dot(V.cross(rest, dd), [1, 0, 0]), V.dot(rest, dd))); }
+  const cross = [], peaks = []; for (let i = 1; i < ang.length; i++) { if ((ang[i - 1] < 0) !== (ang[i] < 0)) cross.push(i - 1 + Math.abs(ang[i - 1]) / (Math.abs(ang[i - 1]) + Math.abs(ang[i]))); if (i < ang.length - 1 && Math.abs(ang[i]) > Math.abs(ang[i - 1]) && Math.abs(ang[i]) >= Math.abs(ang[i + 1]) && Math.abs(ang[i]) > 3e-4) peaks.push([i, Math.abs(ang[i])]); }
+  const hz = (cross.length - 1) / (2 * (cross[cross.length - 1] - cross[0]) * TICK), half = (peaks[peaks.length - 1][0] - peaks[0][0]) * TICK * Math.log(0.5) / Math.log(peaks[peaks.length - 1][1] / peaks[0][1]), want = ringOf(stiff, damp);
+  ok(Math.abs(hz / want.f - 1) < 0.03 && Math.abs(half / want.half - 1) < 0.1 && Math.abs(V.len(st.x) - len) < 1e-9, "a weight let go rings at the rate and dies in the time the rule gives, and stays on its rod", `${hz.toFixed(2)} Hz, half in ${half.toFixed(3)} s (${want.f.toFixed(2)}, ${want.half.toFixed(3)})`);
+  ok(Math.abs(ang[9] + 0.154851) < 1e-5 && Math.abs(ang[19] - 0.074595) < 1e-5 && Math.abs(ang[29] + 0.032468) < 1e-5, "the same weight after 10, 20 and 30 ticks as Godot's HSSoftJiggle is held to (JIGGLE)", `${ang[9].toFixed(6)}, ${ang[19].toFixed(6)}, ${ang[29].toFixed(6)}`);
+  // each soft bone a rod from where the flesh is rooted to its middle: the joint deeper in the body than the middle
+  for (const [n, ctx] of Object.entries(ctxs)) { const bad = [], rig = ctx.rig;
+    for (const x of ctx.plan) { const j = rig.J[x.j].at, ax = x.kind === "thigh" ? x.axis : null, out = p => Math.hypot(p[0], p[2] - rig.J[rig.pelvis].at[2]);
+      // (a thigh's is rooted across its bone from its middle, inside the thigh; the others nearer the trunk's own line than their middles)
+      const inside = ax ? V.len(V.perp(V.sub(x.pivot, ax.a), ax.d)) < 0.9 * ctx.body.r.thigh && V.dot(V.sub(x.pivot, ax.a), x.medial) < 0 && V.dot(V.sub(x.at, ax.a), x.medial) > 0 : out(x.pivot) < out(x.at) - 0.01;
+      if (V.dist(j, x.pivot) > 1e-6 || x.len < 0.04 || x.len > 0.15 || Math.abs(V.len(x.dir) - 1) > 1e-9 || !inside) bad.push(`${x.name} (rod ${(x.len * 100).toFixed(1)} cm)`); }
+    ok(!bad.length, `${n}: each soft bone's joint is where its flesh is rooted, deeper in the body than its middle, a rod of 4 to 15 cm between`, bad.join(", ") || ctx.plan.filter(x => x.side >= 0).map(x => `${x.name.replace("soft_", "")} ${(x.len * 100).toFixed(1)}`).join(", ") + " cm"); }
+  // baked as a swing: the bone turns; it isn't shifted (a breast's only by its breath)
+  { const c = clips.normal_woman.walk_loop, tr = trackOf(W.rig, c, "soft_bust_l"); let turn = 0, shift = 0;
+    for (let k = 0; k < c.keys; k++) { turn = Math.max(turn, 2 * Math.acos(Math.min(1, Math.abs(tr.r[k * 4 + 3])))); shift = Math.max(shift, Math.hypot(tr.t[k * 3] - tr.t[0], tr.t[k * 3 + 1] - tr.t[1], tr.t[k * 3 + 2] - tr.t[2])); }
+    ok(tr.r && turn > 4 * DEG && turn < 30 * DEG && shift < 0.0005, "baked as a swing about its root: a breast's bone turns in the walk and isn't shifted", `${(turn / DEG).toFixed(1)} degrees, ${(shift * 1000).toFixed(2)} mm`); }
+  // it carries on after the body has stopped: sitting down, the breast still swings after she has landed, and settles
+  { const c = clips.normal_woman.sit_down, bj = W.plan.find(x => x.name === "soft_bust_l"), sw = k => { const fr = c.frames[k], D = fr.pose.D[bj.j]; return D ? Q.angle(Q.mul(D, Q.conj(fr.solved.D[bj.parent]))) : 0; };
+    const k0 = Math.round(c.maker.events.find(e => e.name === "seated").t * 30); let after = 0; for (let k = k0 + 2; k < Math.min(c.frames.length, k0 + 14); k++) after = Math.max(after, sw(k)); let end = 0; for (let k = c.frames.length - 4; k < c.frames.length; k++) end = Math.max(end, sw(k));
+    ok(after > 1.2 * DEG && end < 0.45 * after, "it carries on after the body has stopped: sat down, her bust still swings, then settles", `${(after / DEG).toFixed(1)} degrees in the moments after she lands, ${(end / DEG).toFixed(1)} at the clip's end`); }
+  const use = softUse(W.plan.find(x => x.name === "soft_bust_l"), { soft: 1, bounce: 0.5 }), ring = ringOf(use.stiff, use.damp);
+  ok(ring.f > 2.2 && ring.f < 3.6 && ring.half > 0.12 && ring.half < 0.3, "a breast rings a few times and stops, as the plugin's own default does", `${ring.f.toFixed(1)} Hz, half its swing gone in ${ring.half.toFixed(2)} s`);
 }
 
 // ---- 6. nothing through itself, and what moves ----------------------------------------------------------------------------------
 for (const [n, ctx] of Object.entries(ctxs)) for (const c of ["idle_loop", "walk_loop", "run_loop"]) ok(clips[n][c].stats.armInside <= 1, `${n} ${c}: no arm inside the body`, `${clips[n][c].stats.armInside} mm`);
 ok(clips.chubby_woman.walk_loop.stats.arm_l > clips.skinny_man.walk_loop.stats.arm_l + 4, "the chubby woman carries her arms further out than the skinny man", `${clips.chubby_woman.walk_loop.stats.arm_l} and ${clips.skinny_man.walk_loop.stats.arm_l} degrees`);
+// the hands (the user's screenshot, DECISIONS 2026-11-13, the hands: a runner's palms faced the ground): where the palms
+// face, counted against the chest's own side-to-side axis; how closed the hand is; where the thumb is; a runner's fist
+// going from beside the hip to in front of the chest
+{ const hands = (n, c) => { const rig = ctxs[n].rig, o = { in: 9, down: -9, tip: 0, thumb: 0, zBack: 9, zFront: -9, yBack: 0, yFront: 0, k: 0 }, at = (P, j) => [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]];
+    for (const fr of clips[n][c].frames) for (const sd of ["l", "r"]) { const g = sd === "l" ? 1 : -1, A = rig.arm(sd), P = fr.solved.P, pn = fr.pose.info["palm_" + sd], W = at(P, A.hand), ix = j => rig.ix.get(`${sd}_${j}`);
+      o.in = Math.min(o.in, V.dot(pn, V.mul(Q.rot(fr.solved.D[rig.chest], [-1, 0, 0]), g))); o.down = Math.max(o.down, -pn[1]);
+      o.tip += V.dist(at(P, ix("middle_null")), W) / A.handLen; o.thumb += V.dist(at(P, ix("thumb_null")), at(P, ix("index2"))) / A.handLen; o.k++;
+      const z = W[2] - P[rig.pelvis * 3 + 2]; if (z < o.zBack) { o.zBack = z; o.yBack = W[1] - at(P, rig.leg(sd).up)[1]; } if (z > o.zFront) { o.zFront = z; o.yFront = W[1] - at(P, A.up)[1]; } }
+    o.tip /= o.k; o.thumb /= o.k; return o; };
+  const rest = (() => { const rig = ctxs.normal_woman.rig, A = rig.armL, at = nm => rig.J[rig.ix.get(nm)].at; return V.dist(at("l_thumb_null"), at("l_index2")) / A.handLen; })();
+  for (const n of Object.keys(ctxs)) { const i = hands(n, "idle_loop"), w = hands(n, "walk_loop"), r = hands(n, "run_loop"), sc = ctxs[n].body.leg / 0.87;
+    ok(i.in > 0.75 && w.in > 0.75 && i.down < 0.3 && w.down < 0.3, `${n}: standing and walking, the palms face the body (1: square to it), none toward the floor`, `${i.in.toFixed(2)} and ${w.in.toFixed(2)}; down ${i.down.toFixed(2)} and ${w.down.toFixed(2)}`);
+    ok(r.in > 0.6 && r.down < 0.55, `${n}: running, the palms face the body and not the ground`, `${r.in.toFixed(2)}, down ${r.down.toFixed(2)} at the most`);
+    ok(w.tip > 0.72 && w.tip < 0.97 && r.tip < 0.62, `${n}: a walking hand is at rest (neither flat nor closed), a running one a loose fist`, `the fingertip ${w.tip.toFixed(2)} and ${r.tip.toFixed(2)} of the hand's length from the wrist`);
+    ok(w.thumb < 0.62 * rest && r.thumb < 0.62 * rest, `${n}: the thumb lies in by the first finger, not held off the hand as the rig's rest pose has it`, `${(w.thumb / rest).toFixed(2)} and ${(r.thumb / rest).toFixed(2)} of the rest pose's gap`);
+    ok(r.zBack < 0.06 * sc && Math.abs(r.yBack) < 0.2 * sc && r.zFront > 0.2 * sc && r.yFront > -0.3 * sc && r.yFront < 0.02, `${n}: a runner's fist goes from beside the hip to in front of the chest`, `${(r.zBack * 100).toFixed(0)} cm ahead of the pelvis at its hindmost, ${(r.yBack * 100).toFixed(0)} cm over the hip joint; ${(r.zFront * 100).toFixed(0)} cm ahead, ${(-r.yFront * 100).toFixed(0)} cm under the shoulder`); }
+  const t = clips.chubby_woman.run_loop.stats;
+  ok(t.turn_l > 15 && t.arm_l < 14, "the chubby woman's forearms are turned to point ahead past her belly when she runs, her arms hardly carried wider for it", `turned ${t.turn_l} degrees, carried out ${t.arm_l}`); }
 { const t = clips.chubby_woman.walk_loop.stats.soft.thighs, tm = clips.skinny_man.walk_loop.stats.soft.thighs;
   ok(t.before > 8 && t.after < 0.5 * t.before && tm.before < 3, "the chubby woman's thighs would overlap and are squashed instead; the skinny man's never meet", `${t.before} mm, ${t.after} left; his ${tm.before}`); }
 { const s = n => clips[n].walk_loop.stats.soft, r = n => clips[n].run_loop.stats.soft;
@@ -150,6 +201,8 @@ ok(clips.chubby_woman.walk_loop.stats.arm_l > clips.skinny_man.walk_loop.stats.a
   const m = j.meshes[j.nodes[skinNode].mesh]; ok(m.primitives[0].targets.length === 1 && m.weights[0] === 0.25 && m.extras.targetNames[0] === "jawDrop", "baked: the skin's face shape and its weight as they were");
   ok(j.nodes.every(n => !(n.matrix && joints.has(j.nodes.indexOf(n)))) && j.skins.every(s => s.joints.length === j.skins[0].joints.length), "baked: the bones carry translations (glTF allows no matrix on an animated node), every skin the same bones");
   const rec = record(back), pub = j.nodes[skinNode].extras.hsMotion; ok(rec && rec.clips.walk_loop.speed > 1 && rec.clips.sit_down.seat && rec.clips.open_push.door && rec.clips.reach_low.reach && rec.palm && pub && pub.clips && !pub.undo, "baked: its record (speeds, events, where a seat, a handle and a reach are) in the scene and on the skin's node");
+  ok(rec.version === 2 && pub.soft.length === 9 && pub.soft.every(b => b.axis.length === 3 && Math.abs(Math.hypot(...b.axis) - 1) < 1e-3 && b.length > 0.04 && b.stiffness > 0.1 && b.damping >= 0 && b.gain > 0 && b.limit > 0) && pub.settings.bounce === 0.5,
+    "baked: each soft bone's rod and JiggleBones' numbers for it in the record, for whoever swings it live", pub.soft.filter(b => /_l$|belly/.test(b.bone)).map(b => `${b.bone.replace("soft_", "")} ${b.stiffness.toFixed(2)}/${b.damping.toFixed(1)}`).join(", "));
   const again = parseGlb(out); animate(again, { mhrRig: MHR, settings: { strength: 0.9 } }); const out2 = again.write();
   ok(Math.abs(out2.length - out.length) < 0.02 * out.length && record(parseGlb(out2)).settings.strength === 0.9 && record(parseGlb(out2)).settings.style === rec.settings.style, "baked again with another slider: no bigger, the new setting, the others kept", `${out.length} and ${out2.length} bytes`);
   const same = parseGlb(withFace); animate(same, { mhrRig: MHR }); const o3 = same.write(); let diff = o3.length !== out.length; for (let i = 0; !diff && i < out.length; i++) if (o3[i] !== out[i]) diff = true;

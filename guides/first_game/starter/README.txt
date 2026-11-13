@@ -125,7 +125,10 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            own numbers put her hand on the handle, gets up first when she's sat; done(what) after.
                            A seat, a bed, a handle: a Marker3D (a seat's on its front edge at sitting height, its
                            blue arrow the way she'll face; a handle's at the handle, its blue arrow into the door).
-                           `more`: clips of your own by name ({"dance": "res://animations/dance.res"})
+                           `more`: clips of your own by name ({"dance": "res://animations/dance.res"});
+                           `live_jiggle` (on): her soft tissue swung as the game runs by the look plugin (HSJiggle
+                           under her: its Amount), so it answers a stop, a turn and your own clips, not only what
+                           each baked clip carries
   act.gd                   one thing a character does, when: who, what (walk_to, run_to, sit, stand_up, sleep,
                            wake_up, open, reach, pick_up, play, face), the target; by itself when the Story's words
                            hold (needs) or by fire(); then a task ticked, a flag, a line, the next act (then): a

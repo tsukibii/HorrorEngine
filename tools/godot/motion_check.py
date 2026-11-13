@@ -14,7 +14,7 @@
         a baked character's clip pictured at n moments on the real mesh in a scratch project, as one sheet
     python tools/godot/motion_check.py sheets [--out docs/animator_sheets]
         the three test characters (tools/animator/people.mjs, baked) pictured wearing the look: their walks from the
-        side and the front, and the normal woman's acts
+        side and the front, their runs, their hands close up (standing, walking, running), and the normal woman's acts
 
 Godot is $GODOT, else godot; under xvfb when there's no display to draw on (the pictures).
 """
@@ -201,6 +201,28 @@ def doc_sheets(out_dir):
             rows += [KEEP / who / f for f in rep["shots"]]
         sheet(rows, out_dir / f"2026-11-13_{name}.jpg", cols=n, height=420)
         print(f"  {out_dir / f'2026-11-13_{name}.jpg'}")
+    # the runs, from the side and the front (the arms carried bent, the fists going from the hip to the chest, the palms to the body)
+    rows = []
+    for view in ["side", "front"]:
+        for who, label in people:
+            plan = [{"clip": "run_loop", "f": i / n, "view": view, "name": f"run_{view}_{i:02d}"} for i in range(n)]
+            rep, err = shoot(files[who], plan, KEEP / who, who, "400x520", 5, True)
+            if rep is None:
+                sys.exit(err)
+            rows += [KEEP / who / f for f in rep["shots"]]
+    sheet(rows, out_dir / "2026-11-13_three_runs.jpg", cols=n, height=380)
+    print(f"  {out_dir / '2026-11-13_three_runs.jpg'}")
+    # the hands close up: standing, three moments of the walk, three of the run (her left hand, seen from in front and to her left)
+    rows = []
+    for who, label in people:
+        plan = [{"clip": c, "f": f, "bone": "l_middle1", "yaw": 55, "pitch": 8, "dist": 0.62, "fov": 26, "name": f"hand_{c}_{k}"} for k, (c, f) in enumerate(
+            [("idle_loop", 0.0), ("walk_loop", 0.0), ("walk_loop", 0.25), ("walk_loop", 0.5), ("run_loop", 0.0), ("run_loop", 0.25), ("run_loop", 0.5), ("run_loop", 0.75)])]
+        rep, err = shoot(files[who], plan, KEEP / who, who + "_hands", "400x400", 5, True)
+        if rep is None:
+            sys.exit(err)
+        rows += [KEEP / who / f for f in rep["shots"]]
+    sheet(rows, out_dir / "2026-11-13_hands.jpg", cols=8, labels=(["standing", "walking", "", "", "running", "", "", ""] * 3), height=300)
+    print(f"  {out_dir / '2026-11-13_hands.jpg'}")
     who = "anim_normal_woman"
     acts = [("sit_down", "q"), ("lie_down", "q"), ("open_push", "side"), ("reach_low", "q"), ("reach_high", "q"), ("run_loop", "side")]
     plan = [{"clip": c, "f": i / (n - 1) * 0.999, "view": v, "name": f"{c}_{i:02d}", "at": [0, 0.8, -0.15], "dist": 4.4} for c, v in acts for i in range(n)]

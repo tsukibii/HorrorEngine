@@ -71,7 +71,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   <ol>
     <li><a href="#what">What it is</a></li>
     <li><a href="#export">Export her, open her</a></li>
-    <li><a href="#sliders">The four sliders</a></li>
+    <li><a href="#sliders">The five sliders</a></li>
     <li><a href="#clips">The clips</a></li>
     <li><a href="#bake">Bake</a></li>
     <li><a href="#godot">In Godot: Motion</a></li>
@@ -100,8 +100,12 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
 <p>The three it's tested on: a skinny man (60 kg on 1.80 m), a normal woman (56 kg on 1.63 m) and a chubby woman
 (73 kg on 1.60 m), each walking her own walk in Godot. The man's stride is longest; the heavier woman's steps are
 shorter and slower, her arms carried out past her hips, her thighs pressing together instead of her feet going wide.</p>
-<figure><img src="img/three_walks.jpg" alt="Three characters walking, from the side"><figcaption>One stride each, in Godot. Top to bottom: 1.39, 1.29 and 1.12 metres a second.</figcaption></figure>
+<figure><img src="img/three_walks.jpg" alt="Three characters walking, from the side"><figcaption>One stride each, in Godot. Top to bottom: 1.35, 1.34 and 1.12 metres a second.</figcaption></figure>
 <figure><img src="img/three_walks_front.jpg" alt="Three characters walking, from the front"><figcaption>From the front: how wide each sets the feet, how far the arms hang out.</figcaption></figure>
+<p>Running, her arms are carried bent and driven back: her fists go from beside her hips to in front of her chest, her
+palms to her body. A broad body's forearms point ahead past its belly instead of across it.</p>
+<figure><img src="img/three_runs.jpg" alt="Three characters running, from the side and the front"><figcaption>One stride of each one's run, from the side and from the front.</figcaption></figure>
+<figure><img src="img/hands.jpg" alt="Hands close up: standing, walking, running"><figcaption>Her left hand close up: standing, three moments of the walk, four of the run. A hand at rest has its thumb in by the first finger; a running hand is a loose fist with the thumb on top.</figcaption></figure>
 </section>
 
 <section id="export">
@@ -120,7 +124,7 @@ own unclothed body, which every Studio export carries inside it: a thick jumper 
 </section>
 
 <section id="sliders">
-<h2><span class="n">3</span>The four sliders</h2>
+<h2><span class="n">3</span>The five sliders</h2>
 <table class="keys">
 <tr><td><b>Walk style</b></td><td>Masculine to feminine. A masculine walk sets the feet wide, squares the stride and swings the shoulders; a
 feminine one sets them nearly in line, lets the hips list and turn, keeps the shoulders quiet. It starts from her body.</td></tr>
@@ -129,10 +133,17 @@ line. Weak: she sags, drops the last of the way down, rocks, and pushes up off h
 <tr><td><b>Weight</b></td><td>Her weight is measured. This moves it either way: slower, a little wider and deeper into each step, or
 quicker and lighter.</td></tr>
 <tr><td><b>Softness</b></td><td>How much her bust, belly, seat, hips and thighs move as she does. Her clothes move with them.</td></tr>
+<tr><td><b>Bounce</b></td><td>How long they go on swinging once they've been set going. At the left they settle at once; in the
+middle, a few swings and they're still; at the right they keep ringing.</td></tr>
 </table>
+<p><b>How her soft tissue moves.</b> Each soft part swings from where it's rooted, as a jiggle bone does (the way of the
+JiggleBones plugin for Godot): it lags when she starts, carries on when she stops, and rings a few times. Softness is
+how much of that shows; Bounce is how long it lasts. <span class="ui">Soft bones</span> over the view shows where each
+part is rooted.</p>
 <p>Every slider changes what you're watching at once. <span class="ui">Start again from the body</span> puts them back.</p>
-<div class="tip"><b>Under "This clip"</b> the page says what the clip needed: how far her arms were carried out to clear her
-body, how much her thighs would have overlapped and how much is left after they squash, how far each soft part moves.</div>
+<div class="tip"><b>Under "This clip"</b> the page says what the clip needed: how far her forearms were turned and her arms
+carried out to clear her body, how much her thighs would have overlapped and how much is left after they squash, how
+far each soft part moves.</div>
 </section>
 
 <section id="clips">
@@ -156,6 +167,8 @@ list then says <b>baked</b>. Bake again any time with other sliders: the file is
 <figure><img src="img/page_baked.jpg" alt="A baked character in the page"><figcaption>Baked: 24 clips in her file.</figcaption></figure>
 <div class="note">If you export her again from the Studio (new clothes), her file is fresh again. Open her here: the sliders
 start where she was last baked. Bake.</div>
+<div class="note">A character baked before the hands and the jiggle were reworked (13 November) wants baking again: open
+her, Bake.</div>
 <p>From the command line:</p>
 <pre>node tools/animator/bake.mjs Exports/characters/anna/anna.glb --style 0.6 --strength 0.5</pre>
 </section>
@@ -225,6 +238,19 @@ Act 3   act sit       target Kitchen/Chair/Seat  tick aoi_sat</pre>
 </ul>
 <p>The hunt's <code>moves.gd</code> uses her own clips too: a baked character stalks and chases with her own walk and run with
 nothing set.</p>
+<h3>Her soft tissue in Godot</h3>
+<p>Every baked clip carries how her soft tissue swings in that clip. A clip can't know what your game does with her:
+that she stops, turns, or plays a dance of yours that has nothing in it for those parts. So in Godot the same swing
+is worked out <b>as the game runs</b>: her Motion node turns it on by itself (<b>Live Jiggle</b>, on), and so does an
+<code>HSCharacterLook</code> under her. Nothing to set up. She jiggles when she pulls up from a run, and in your own
+clips too.</p>
+<table class="keys">
+<tr><td>Less, more, off</td><td>Once the game runs she has an <code>HSJiggle</code> node under her: its <b>Amount</b> (0 none, 1 as
+baked, 2 twice). <b>Soft</b> off: only what her clips carry.</td></tr>
+<tr><td>From a script</td><td><code>$Her/HSJiggle.set_amount(0.5)</code>; after you move her somewhere at once,
+<code>$Her/HSJiggle.reset()</code>.</td></tr>
+<tr><td>No look plugin in the project</td><td>She still has what her clips carry.</td></tr>
+</table>
 </section>
 
 <section id="director">
@@ -242,6 +268,7 @@ rest from the library as before, or leave them.</p>
   <li><b>She walks in straight lines</b> between the places you give her (<code>m.go([a, b, c])</code> for a way round something).</li>
   <li><b>What she picks up is put away</b> (hidden) as she straightens, unless you say keep it in her hand.</li>
   <li><b>The left hand's clips start with her weight on the other leg</b>: the blend into them is a small shift of weight.</li>
+  <li><b>A hand closes, it doesn't hold</b>: at a handle or round a thing her hand is a fist; her fingers aren't placed on it.</li>
 </ul>
 <div class="notyet"><b>Not there yet</b>: hands and feet corrected in Godot to reach exactly; a turn on the spot; walking up
 stairs; carrying something.</div>

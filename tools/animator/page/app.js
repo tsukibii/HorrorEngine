@@ -4,7 +4,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "/vendor/GLTFLoader.js";
 import { parseGlb } from "/core/glb.js";
-import { attach, makers, makeClip, settingsFor, DEFAULTS } from "/core/animate.js";
+import { attach, makers, makeClip, settingsFor, DEFAULTS, VERSION } from "/core/animate.js";
 import { summary } from "/core/measure.js";
 import { params } from "/core/gait.js";
 
@@ -64,10 +64,11 @@ async function load(name) {
     scene.add(S.model); for (const d of S.dots) scene.remove(d); S.dots = S.ctx.plan.map(() => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.014, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffb060, depthTest: false })); m.renderOrder = 9; m.visible = false; scene.add(m); return m; });
     orbit.at.set(0, S.ctx.body.height * 0.52, 0); orbit.dist = S.ctx.body.height * 3.1; place();
     sliders(); readout(); await show(S.kind);
-    status(`${name}: ${info.baked ? `baked (${info.clips.length} clips)` : info.last ? "exported again since its bake: Bake to put its clips back" : "not baked yet"} · ${info.where || ""}`, info.baked ? "good" : "");
+    const stale = info.baked && (info.version || 1) < VERSION;   // (baked before the hands and the jiggle were reworked: what plays here is the new; her file still has the old)
+    status(`${name}: ${stale ? `baked by an older Animator (${info.clips.length} clips): Bake again for what you see here` : info.baked ? `baked (${info.clips.length} clips)` : info.last ? "exported again since its bake: Bake to put its clips back" : "not baked yet"} · ${info.where || ""}`, info.baked && !stale ? "good" : "");
   } catch (e) { status(`${name}: ${e.message}`, "bad"); console.error(e); }
 }
-function sliders() { for (const k of ["style", "strength", "weight", "soft"]) $("#" + k).value = S.set[k]; }
+function sliders() { for (const k of ["style", "strength", "weight", "soft", "bounce"]) $("#" + k).value = S.set[k]; }
 function readout() {
   const b = summary(S.ctx.body), p = params(S.ctx.body, S.set), word = p.build < -0.25 ? "light" : p.build < 0.35 ? "ordinary" : p.build < 1.25 ? "heavy" : "very heavy";
   $("#body").innerHTML = `<div><b>${b.height} cm</b>, about <b>${b.weight} kg</b> <span class="dim">(${b.from === "recipe" ? "from her own unclothed body" : "from her meshes"})</span></div>
@@ -95,7 +96,8 @@ function chips() {
 function info(ms) {
   const c = S.list.find(x => x.name === S.clip); if (!c) return; const st = c.stats || {}, sf = st.soft || {};
   const rows = [`<div><b>${c.name}</b> · ${c.secs.toFixed(2)} s${c.loop ? ", a loop" : ""}${c.speed ? ` · ${c.speed.toFixed(2)} m/s, ${(120 / c.secs).toFixed(0)} steps a minute` : ""}</div>`];
-  if (st.arm_l != null) rows.push(`<div>Arms carried ${Math.max(st.arm_l, st.arm_r).toFixed(0)}° further out to clear the body${st.armInside > 0 ? ` <span class="dim">(${st.armInside} mm still inside)</span>` : ""}</div>`);
+  if (st.arm_l != null) { const turned = Math.max(st.turn_l || 0, st.turn_r || 0);
+    rows.push(`<div>${turned >= 1 ? `Forearms turned ${turned.toFixed(0)}° to point ahead past the body, arms` : "Arms"} carried ${Math.max(st.arm_l, st.arm_r).toFixed(0)}° further out to clear it${st.armInside > 0 ? ` <span class="dim">(${st.armInside} mm still inside)</span>` : ""}</div>`); }
   if (sf.thighs && sf.thighs.before > 0) rows.push(`<div>Thighs would overlap ${sf.thighs.before} mm: squashed, ${sf.thighs.after} mm left</div>`);
   const mv = Object.entries(sf).filter(([k]) => k !== "thighs").map(([k, v]) => `${k.replace("soft_", "").replace("_", " ")} ${v}`); if (mv.length) rows.push(`<div class="dim">Soft tissue moves (mm): ${mv.join(", ")}</div>`);
   if (c.events && c.events.length) rows.push(`<div class="dim">Events: ${c.events.map(e => `${e.name} at ${e.t.toFixed(2)} s`).join(", ")}</div>`);
@@ -129,7 +131,7 @@ requestAnimationFrame(frame);
 
 // ---- the controls -------------------------------------------------------------------------------------------------------
 let wait = 0;
-for (const k of ["style", "strength", "weight", "soft"]) $("#" + k).addEventListener("input", e => { S.set[k] = +e.target.value; clearTimeout(wait); wait = setTimeout(() => { if (S.ctx) { readout(); show(S.kind, true); } }, 40); });
+for (const k of ["style", "strength", "weight", "soft", "bounce"]) $("#" + k).addEventListener("input", e => { S.set[k] = +e.target.value; clearTimeout(wait); wait = setTimeout(() => { if (S.ctx) { readout(); show(S.kind, true); } }, 40); });
 $("#reset").onclick = () => { S.set = { ...DEFAULTS, style: S.auto }; sliders(); readout(); show(S.kind, true); };
 $("#play").onclick = () => { S.playing = !S.playing; $("#play").textContent = S.playing ? "❚❚" : "▶"; };
 $("#scrub").addEventListener("input", e => { const c = S.list.find(x => x.name === S.clip); if (c) { S.playing = false; $("#play").textContent = "▶"; S.t = +e.target.value * c.secs; } });

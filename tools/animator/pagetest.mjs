@@ -2,7 +2,8 @@
 // (the three test bodies bodies.mjs builds, laid out as Exports/characters is), driven in a headless browser: the
 // characters listed; one opened, measured and shown, its soft bones in the page's skeleton; the walk made in the page
 // and playing (its bones moving, the feet never under the floor); each slider changing what it should (a feminine
-// walk narrower than a masculine one, a heavier one slower, softness scaling the soft bones' motion); every kind of
+// walk narrower than a masculine one, a heavier one slower, softness scaling the soft bones' motion, bounce how long
+// it rings); every kind of
 // clip made; Bake: the file baked in place with every clip and its record, listed as baked, and baked again from the
 // page with other sliders. --out <folder> keeps pictures of the page there.
 //   node tools/animator/pagetest.mjs [--out docs/animator_sheets]
@@ -57,14 +58,16 @@ const places = [PLACE, ...(REAL ? [path.join(ROOT, "Exports", "characters")] : [
     const w = await walk(); return `${w.speed.toFixed(2)} m/s, a stride every ${w.secs.toFixed(2)} s`;
   });
   await shot("animator_page");
-  await step("the sliders: a feminine walk is narrower than a masculine one, a heavier body slower, a strong one quicker, softness scales the soft bones", async () => {
+  await step("the sliders: a feminine walk is narrower than a masculine one, a heavier body slower, a strong one quicker, softness scales the soft bones, bounce how long they ring", async () => {
     await slide("style", 1); const fem = await stepWidth(); await slide("style", -1); const masc = await stepWidth(); if (!(masc > fem + 0.03)) throw new Error(`step width ${fem.toFixed(3)} feminine, ${masc.toFixed(3)} masculine`);
     await slide("style", 0.6); const w0 = await walk(); await slide("weight", 1); const w1 = await walk(); if (!(w1.speed < w0.speed - 0.08)) throw new Error(`heavier: ${w0.speed} -> ${w1.speed} m/s`);
     await slide("weight", 0); await slide("strength", 1); const w2 = await walk(); if (!(w2.speed > w0.speed + 0.03)) throw new Error(`stronger: ${w0.speed} -> ${w2.speed} m/s`);
     await slide("strength", 0.5); await slide("soft", 0); const s0 = await walk(); await slide("soft", 1.5); const s1 = await walk();
-    if (!(s0.soft.soft_seat_l < 0.5 && s1.soft.soft_seat_l > 4)) throw new Error(`the seat moves ${s0.soft.soft_seat_l} mm at none, ${s1.soft.soft_seat_l} at most`);
-    await slide("soft", 1); await page.click("#reset"); await page.waitForTimeout(250);
-    return `step ${fem.toFixed(2)} m feminine, ${masc.toFixed(2)} m masculine; ${w0.speed.toFixed(2)} m/s, heavier ${w1.speed.toFixed(2)}, stronger ${w2.speed.toFixed(2)}`;
+    if (!(s0.soft.soft_bust_l < 0.5 && s1.soft.soft_bust_l > 6)) throw new Error(`the bust moves ${s0.soft.soft_bust_l} mm at none, ${s1.soft.soft_bust_l} at most`);
+    await slide("soft", 1); await slide("bounce", 0); const b0 = await walk(); await slide("bounce", 1); const b1 = await walk();
+    if (!(b1.soft.soft_bust_l > b0.soft.soft_bust_l * 1.2)) throw new Error(`bounce: the bust moves ${b0.soft.soft_bust_l} mm settling at once, ${b1.soft.soft_bust_l} left to ring`);
+    await page.click("#reset"); await page.waitForTimeout(250);
+    return `step ${fem.toFixed(2)} m feminine, ${masc.toFixed(2)} m masculine; ${w0.speed.toFixed(2)} m/s, heavier ${w1.speed.toFixed(2)}, stronger ${w2.speed.toFixed(2)}; the bust ${s0.soft.soft_bust_l} to ${s1.soft.soft_bust_l} mm by softness, ${b0.soft.soft_bust_l} to ${b1.soft.soft_bust_l} by bounce`;
   });
   await step("every kind of clip made in the page: idle, run, sit, sleep, open, reach", async () => {
     const seen = [];
