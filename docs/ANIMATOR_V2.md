@@ -165,8 +165,12 @@ trunk or a thigh, the arm is carried further out from the shoulder, as a broad o
 a frame at a time, then made one smooth amount over the clip (its upper envelope, smoothed), so nothing twitches.
 With the character's clothes measured too, a jacket's thickness is kept clear, up to 3 cm.
 
-On the test bodies: the skinny man's arms need 1 degree more, the normal woman's 10, the chubby woman's 12; no ball
-ends inside the body in any frame of idle, walk or run.
+The elbow and the forearm are kept a finger's width clear; **the wrist and the hand may brush the body** (and its
+clothes): arms hang with the hands at the thighs, not held off them.
+
+On the test bodies: the skinny man's arms need nothing more in his walk, the normal woman's 7 degrees, the chubby
+woman's 14 (her hips are 10 cm wider than her shoulders: her arms hang out past them, as such arms do); no ball ends
+inside the body in any frame of idle, walk or run.
 
 ## 7. Soft tissue (`core/soft.js`)
 

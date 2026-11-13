@@ -38,6 +38,7 @@ var busy := false                                     ## something asked of her 
 var seated := false
 var asleep := false
 var problems: Array = []                              ## what's missing, in words
+var serial := 0                                       ## goes up each time she's asked for something (an act knows it was interrupted)
 
 var _ap: AnimationPlayer
 var _names := {}                                      # the record's clip name -> the name her player knows it by
@@ -114,7 +115,9 @@ func setup() -> void:
 	for p in problems:
 		push_warning("motion.gd (%s): %s" % [h.name, p])
 	_ready_now = true
-	if start_with == "idle":
+	if not _queue.is_empty():                             # asked for something before her clips were found (a script's _ready): now
+		_next()
+	elif start_with == "idle":
 		idle()
 	elif start_with != "":
 		play(start_with, true)
@@ -381,6 +384,7 @@ func _begin(steps: Array) -> void:
 		pre.append({"k": "done", "what": "stand"})
 	_queue = pre + steps
 	_step = {}
+	serial += 1
 	busy = not _queue.is_empty()
 	if not _ready_now:
 		return

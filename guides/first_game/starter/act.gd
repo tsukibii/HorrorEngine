@@ -107,11 +107,20 @@ func fire(_a = null, _b = null) -> void:
 			what = "face"
 		"idle":
 			m.idle()
-	if what != "":
-		while true:
-			var got: String = await m.done
-			if got == what:
-				break
+	if what != "":                                        # till she's done it; asked for something else meanwhile, this act is over and nothing follows
+		var got := [false]
+		var heard := func(w: String) -> void:
+			if w == what:
+				got[0] = true
+		m.done.connect(heard)
+		var mine: int = m.serial
+		while not got[0] and m.serial == mine and is_instance_valid(m):
+			await get_tree().process_frame
+		if is_instance_valid(m) and m.done.is_connected(heard):
+			m.done.disconnect(heard)
+		if not got[0]:
+			running = false
+			return
 	running = false
 	var st := _story()
 	if st != null:
