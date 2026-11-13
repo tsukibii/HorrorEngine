@@ -33,11 +33,55 @@ bodies as preset cards, three more heads, two more bodies, and the makeup; 2026-
 `make-up-enhanced`): the v2 mouth, the open smile, lip shapes; beside them, 2026-11-12 and 13 on `eyes-v3` (from
 main): the user's own eye render matched in Godot (the eye's shader reworked, catchlights that stay, the eye repainted
 from sliders), eye looks as cards in the Studio and the lashes on the lid's skin; the three brought together on
-`make-up-enhanced` on 2026-11-13 (tsukibii/HorrorEngine#27, into main). Read this after CLAUDE.md's start
+`make-up-enhanced` on 2026-11-13 (tsukibii/HorrorEngine#27, into main, merged); then on `more-body-presets` (from
+main): a fourth body card, v2 pear, and the Hips & thighs slider. Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-13, `make-up-enhanced`): `better-mouths` and `eyes-v3` merged in, one pull request
+## Where it stopped last (2026-11-13, `more-body-presets`): two head cards and their hair, after two pictures
+
+- **Asked** (DECISIONS 2026-11-13, two heads): two head presets matching two pictures' head shape, with their
+  hairstyles as separate hair editor v2.0 styles; references built first; 1:1 for the proportions, the second
+  picture (a side view) most of all. Then, on the first versions: head presets mean eyelid, nose and lip shape too;
+  the faces were parody distortions; a hooked nose neither picture has; two different people; and last: match the
+  picture's own angle and profile 1:1, every other angle by common sense: no disfigured heads.
+- **Built**: head cards **v2 fox** and **v2 pixie** (CHARACTER_STUDIO §2n): MHR head weights of their own plus
+  v2female's sculpt moved a little; **a head card now sets the lids' shape and a lip shape** (all six cards);
+  sliders **Nose base** and **Jaw line**; lip shapes v2 fox and v2 pixie; hair styles **fox_long** and
+  **pixie_tail** (HAIR_V2 §10d) and the dye **One streak in the fringe**; the references read by hand in
+  `docs/research/headfit/two_heads.md` with the tools that draw a head over a side picture (`profile.py`,
+  `profit.mjs`, `pover.py`), measure one (`direct.mjs`, `headshapes.mjs`) and picture one in the Studio
+  (`tools/character/headshots.mjs`).
+- **Checks run**: GROW, HAIR2, CHECKS, GROWPAGE (QUICK). **Not run**: STUDIO, HAIR2PAGE, the Godot checks.
+- **For the user to look at** (the Studio's Body tab, Presets, Heads; the Hair editor v2.0's first group after the
+  Daz one): do the two heads read as the two people? v2 pixie's profile is held to the picture (1.7 mm rms); v2 fox
+  is the picture's kind of face made well formed, not its numbers (its lower face is slimmer than v2female's, not
+  as narrow as the picture's). The lids, the nose and the lips are where a second pass would pay most: say which.
+- **Could come next**: the same pass for the four older head cards (weights of their own: they are all v2female's
+  skull); a pony tied below the nape without its side hair looping; a finer fringe streak; an ear's tilt slider.
+
+## Where it stopped last (2026-11-13, `more-body-presets`): v2 pear, after the user's low-poly character
+
+Read DECISIONS 2026-11-13, "more body presets", first; docs/CHARACTER_STUDIO.md §2m is what's built and how it was
+held to the picture. The branch is from main and has no pull request yet.
+
+- **v2 pear** (Body, Presets, Bodies): a skinny waist over wide hips and thick thighs that taper to the knee, a full
+  seat. Its card turns Anime on with the Bust at 1.5; the Bust is then the character's to move.
+- **Hips & thighs** (Body, a slider for everyone; `sculpt.js` `pear`): the lower body as one curve. The stacked Hips,
+  Seat and Thighs left creases at this size.
+- **The user's correction, mid-way**: the first version had the picture's corners (a point at the hip): "make it more
+  curved and natural like a realistic human body". The picture gives the proportions, not the outline. The outline is
+  measured now (`lowpoly/outline.py`: it turns 17 degrees at the most within 4 cm, as v2 hourglass's 18; the first
+  version's 34), and GROW holds it.
+- **Held to the picture's proportions**: its waist 0.49 and 0.52 of its widest row from the picture's two sides, the
+  picture's 0.47 and 0.49 (`docs/research/bodyfit/lowpoly/`: `fitw.py`, `view34.py`; the picture is
+  `Saved/Body/ref/lowpoly.png`, out of git: **it has to be sent again in a new session**).
+- **Run here**: GROW, CHECKS, GROWPAGE (QUICK), the card's picture. **Not run**: STUDIO, TAILOR on this body, Godot.
+- **Open**: the user has seen only the first version's front and side; the seat's size is the likeliest ask next (a
+  slider); a circle on the body for Hips & thighs (it is a slider only); outfits tried on it; whether the short arms
+  of bodyv2's family suit hips this wide.
+
+## Before that (2026-11-13, `make-up-enhanced`): `better-mouths` and `eyes-v3` merged in, one pull request
 
 Read DECISIONS 2026-11-13, "the merge", first. `make-up-enhanced` now holds three pieces of work and is open as a
 pull request into main (tsukibii/HorrorEngine#27): the preset cards and the makeup (its own), the v2 mouth and lip

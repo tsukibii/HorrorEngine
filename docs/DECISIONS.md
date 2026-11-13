@@ -2,6 +2,71 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-13, two heads: two head cards and their hairstyles after two pictures (the user, with two pictures)
+
+- **"Create two head presets that match the head shape and hairstyle (seperate hthe hairstyle preset into the hair v2
+  tab) , for both images. Start by analyzing the images and building strong references that make it easy for you to
+  use as references for the presets. Then build them. Be as 1:1 as possible for the proprtions, especialyl with the
+  2nd image since it gives a good side/quater view."**
+- **"btw when Is ay head presets i mean eyelid shape and nose and lip shape too"**: a head card is the whole face. It
+  now sets the lids' shape (the grafted eye's shape keys) and a lip shape when it's picked, beside the skull, jaw
+  and nose it carries; every head card, the four older ones too (each with the lip shape made after the same face).
+- The first heads were fitted by machine (a face detector on the front picture, an outline match on the side one).
+  The user, on seeing them: **"From a reference Id dont think youve analyzed the original images well enough, the
+  faces you make look like parody distortions"**. Then: **"just note You are allowed to change the head and neck
+  shpes to make it match better for rhtese presets"**; **"I dont know if you realise this (but you made ah ookked
+  nose which neither images have),k but the 2 images are different people"**; and on a slim-jawed version held to
+  the front picture's numbers: **"this looks too disformed , instead of doing 1:1, try match teh angle and profile
+  only 1:1, but for the other angles use common sense and asthetisism, you dont want disfigured ooking female
+  heads"**.
+- **What that settles, for any head made from a picture**: read the picture by hand (and a picture of a head we
+  already have, the same way) before any fit; match a picture **from its own angle only** (a front picture's front,
+  a side picture's profile); from every other angle the head is judged as a head: well formed, attractive, no slider
+  at an extreme. No hooked nose: a longer nose in a profile is a tip that stands out, never one pulled down. Two
+  pictures of two people are two heads, not one base twice.
+- **Built** (branch `more-body-presets`: no branch was named; it is the open presets branch): the head cards **v2
+  fox** (the front picture: a slim oval face to a small chin, long half-lidded lifted eyes, a small straight nose, a
+  sharp bow over a full lower lip) and **v2 pixie** (the side picture, held to its profile: a small nose turned up
+  over a short upper lip, big round eyes, full lips set forward, a small chin set back, a soft jaw line), each with
+  MHR head weights of its own (a slimmer lower face: the first heads to have them) and v2female's sculpt moved a
+  little; two sliders the profile asked for, **Nose base** and **Jaw line**; the lip shapes v2 fox and v2 pixie;
+  the hair editor v2.0 styles **fox_long** and **pixie_tail** in a group of their own, and a second colour as **one
+  streak in the fringe**. docs/CHARACTER_STUDIO.md §2n, docs/HAIR_V2.md §10d, docs/research/headfit/two_heads.md.
+- The pictures stay out of git (`Saved/Heads/ref/h1.png`, `h2.png`).
+
+## 2026-11-13, more body presets: the low-poly character's physique (the user, with a picture)
+
+- **"can you make a new branch off of main, called more-body-presets. And for the body presets tab make a physique
+  that matches this low poly shape (thich t highs, skinny waist, adjustable anime style bust), note I dont want it to
+  be low poly, Im just giving you this reference because I want to creaete a higher res version of an old character
+  I made"**
+- The picture: a low-poly torso from under the bust to above the knee, seen from three quarters in front and three
+  quarters behind: a very small waist, wide hips that are widest where the thighs begin, thick thighs tapering to the
+  knee, a large round seat. Kept out of git (`Saved/Body/ref/lowpoly.png`).
+- **The branch** is `more-body-presets`, from main (which has pull request #27: the preset cards, the mouth, eyes v3).
+- **What this sets:**
+  - A fourth body card, **v2 pear**, matching the picture's proportions on a smooth body (docs/CHARACTER_STUDIO.md
+    §2m). What "matches" was held to: the picture's own measure, the waist's width against the widest row's in each
+    of its two views.
+  - **The bust is the Anime switch's**, as asked ("adjustable anime style bust"): the card turns Anime on and sets
+    the Bust slider to a start (1.5); from there it is the character's own, −2 flat to 3 very full. It is the one
+    slider a body card sets; every other body card leaves the character's sliders alone, as before.
+  - A new slider for everyone, **Hips & thighs** (Body): the lower body as one shape. The card needed it: the
+    existing Hips, Seat and Thighs each swell a band of their own and, pushed this far, leave creases between them.
+- **My readings, to be overruled if wrong:** the limbs' lengths are bodyv2's (the picture shows none of them), the
+  height 1.63 m; the legs stand apart as MHR's do (the picture's are together: a pose, not a body); new characters
+  still start on bodyv2.
+- **The user, on the first candidates' front and side pictures: "Notice how sharp the angle is aroudn the waist to
+  hips, we said we are moving away from low poly so make it more curved and natural like a realistic human body"**
+  - So: **the picture gives the proportions, not the outline.** The first version matched its two width ratios and,
+    with them, its corners: a straight run from the waist out to a point at the hip and straight back in (the outline
+    turned 34 degrees within 4 cm there; bodyv2's and v2 hourglass's turn 17 and 18).
+  - What changed: Hips & thighs is a long curve now (a long rise from the waist, a level stretch over the hip, a
+    longer fall to the knee, measured from a smooth line), the seat grows evenly so it stays round, and the body
+    carries less of the narrow Waist band and no thinned Thighs. The outline turns 17 degrees at the most; the waist
+    is 0.49 and 0.52 of the widest row (the picture's 0.47 and 0.49): a little less extreme, on purpose.
+  - GROW holds the curve (the turn), not only the ratios.
+
 ## 2026-11-13, the merge (the user, the morning after better mouths)
 
 - **"ca you merge better-mouths back into the branch it was forked from, spin up a pr, then merge eyes-v3 into it

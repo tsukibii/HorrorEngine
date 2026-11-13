@@ -652,6 +652,28 @@ hair rests on the shoulders. Waves read as bands at the side. The short swept cu
 The Studio's own view shows none of the highlights' change (its shader has no `streak`). Nothing here was looked at
 in motion.
 
+## 10d. The two head cards' own hair: fox_long and pixie_tail (DECISIONS 2026-11-13, two heads)
+
+Two styles in a group of their own (`refs`: "From your pictures: the head cards' own hair"), each after the hair of
+one of the two pictures the head cards v2 fox and v2 pixie are after (docs/research/headfit/two_heads.md §3 takes
+the hair apart), each pictured on its own head (`node.mjs` `bodyByName("head:v2fox")`: a head card on the bodyv2
+body with its lip shape; `hair2_check.py` `card_body`).
+
+- **fox_long** (from `ears_long`): no parting, a heavy fringe to the eyes cut blunt and broken into chunks (Choppy
+  0.4, Clump 0.55) with a wider lock between the eyes (Centre lock 0.5), her right ear out with the hair behind it
+  (`ears: tucked_right`) and one strand in front of it, the hair on her left hanging in front of the shoulder, to the
+  chest. A fringe wider than 44 or heavier than 1 hangs its outer hairs over the ear that should be out.
+- **pixie_tail** (from `ponytail_low`): a blunt fringe to the upper lid, one long thin strand a side hanging free
+  past the chin, the ears out with a bunch of wisps in front of each, the back full (Fullness 0.5, at the back 0.5,
+  Puff 0.25) and gathered into a short tail at the nape; one pink streak in the fringe over her left eye.
+- **One streak in the fringe** (`dye.where: "fringe_streak"`, `dye.at`): the fringe's hairs that grow within a few
+  degrees of a place round the head (her left +), the Amount its width (1.5 to 13 degrees either way; pixie_tail's is 0: the
+  narrowest, about a centimetre of fringe, where the picture's is a few hairs).
+- **Not there**: the picture's tail is tied a few centimetres under the nape's hairline. A pony tied that low (its
+  height under 0.18, or by its Drop, which is the twin tails') stands its side hair off the head in loops: the tie
+  is at the nape. fox_long's strand in front of the ear is thin and short where the picture's is a pointed lock to
+  the mouth.
+
 ## 11. Files
 
 | File | What |

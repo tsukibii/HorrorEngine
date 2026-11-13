@@ -32,7 +32,7 @@ export const DEFAULTS = {
     tail: { length: 0.2, thick: 0.013, spread: 0.5, fall: "back", taper: 0.6, stiff: 0.4, sway: 0.5, bun: 0.035, out: 0, fan: 0, bloom: 0.3, flat: 0, strands: 1 }, tie: { kind: "elastic", colour: "#101010" } },
   look: "soft_black",
   // a second colour: where (none, all, streaks, under, over, front, fringe, split, split_r, tips), its colour, how much (the share of locks, how far up or down, how long the ends), a streak's size, the roots and the ends left natural (m), how soft its edges along the hair
-  dye: { where: "none", colour: "#7b3fd6", amount: 0.5, size: 0.5, roots: 0, ends: 0, soft: 0.5, seed: 1 },
+  dye: { where: "none", colour: "#7b3fd6", amount: 0.5, size: 0.5, roots: 0, ends: 0, soft: 0.5, seed: 1, at: 20 },   // at: where round the head a streak in the fringe is (degrees from the middle, her left +)
   card: { width: 2.3, taper: 0.3 },                      // a card's width in pore spacings; how much it narrows to its tip
   scalp: { shade: 0.95, stubble: 0 },
 };
@@ -58,7 +58,7 @@ export const ALL_LOOKS = { ...LOOKS2, ...LOOKS };
 export const lookOf = s => (typeof s.look === "object" ? s.look : ALL_LOOKS[s.look] || LOOKS2.soft_black);
 
 // A second colour (dyed hair): where it goes. A streak is a patch of the scalp, so it runs down the hair as a stripe
-export const DYES = { none: "None", all: "All of it", streaks: "Streaks", under: "Underneath (peekaboo)", over: "The top layer", front: "The front pieces (a money piece)", fringe: "The fringe", split: "One half (her left)", split_r: "One half (her right)", tips: "The ends (dip dye)" };
+export const DYES = { none: "None", all: "All of it", streaks: "Streaks", under: "Underneath (peekaboo)", over: "The top layer", front: "The front pieces (a money piece)", fringe: "The fringe", fringe_streak: "One streak in the fringe", split: "One half (her left)", split_r: "One half (her right)", tips: "The ends (dip dye)" };
 export const dyed = s => !!(s.dye && s.dye.where && s.dye.where !== "none" && DYES[s.dye.where]);
 const hexOf = c => "#" + c.map(x => Math.round(255 * Math.max(0, Math.min(1, x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055))).toString(16).padStart(2, "0")).join("");
 // the look the cards are drawn with. Dyed hair can't be the strand atlas's one colour times a shade, so its atlas is one
@@ -137,6 +137,22 @@ export const STYLES = {
       ties: { kind: "twin", height: 0, side: 0.85, tight: 0, drape: 1, full: 0.33, puff: 0.12, drop: 0.033,
         tail: { length: 0.2, thick: 0.0105, spread: 2, fan: 0.6, bloom: 0.8, flat: 1, out: 0.5, taper: 0.9, strands: 2.5, stiff: 0.8, fall: "front", sway: 0.8 }, tie: { kind: "elastic", colour: "#17120f" } },
       length: { fringe: 0.17 }, fringe: { kind: "blunt", line: 0.034, amount: 1.5, width: 52, hold: 0.7, wispy: 0.15, uneven: 0.1, choppy: 0.12, closed: 1, frame: 0.9, frameLine: -0.17, frameLocks: 1, frameStagger: 0, frameWispy: 0.6, frameHang: 1 }, texture: { clump: 0.3, strays: 20 }, look: "gloss_black" } },
+  // (two heads, DECISIONS 2026-11-13: the hair of the two pictures the head cards v2 fox and v2 pixie are after, each
+  // pictured on its own head; docs/research/headfit/two_heads.md §3 takes them apart. fox_long: no parting, a heavy
+  // fringe to the eyes cut blunt and broken into chunks with a wider lock between the eyes, her right ear out with
+  // the hair behind it and one strand in front of it, the hair on her left hanging in front of the shoulder, to the
+  // chest. pixie_tail: a blunt fringe to the upper lid with one pink streak over her left eye, a long thin strand a
+  // side hanging free past the chin, the ears out, a bunch of wisps in front of each, the back full and gathered
+  // into a short tail at the nape (a pony tied lower than that, by its height or its drop, stands its side hair off
+  // the head in loops: the tie is at the nape's hairline where the picture's hangs a few centimetres under it))
+  fox_long: { label: "Long, a chunky fringe with a centre lock, one ear out", group: "refs", from: "ears_long",
+    set: { parting: { kind: "none" }, ears: "tucked_right", cut: { line: -0.24 }, length: { fringe: 0.17 },
+      fringe: { kind: "blunt", line: 0.018, amount: 1, width: 44, choppy: 0.4, centre: 0.5, wispy: 0.35, uneven: 0.35, frame: 0.6, frameLine: -0.05, frameLocks: 1, frameHang: 1, frameWispy: 0.9 },
+      texture: { clump: 0.55, clumpSize: 0.028 }, look: "gloss_black" } },
+  pixie_tail: { label: "Blunt fringe with a pink streak, wisps by the ears, a short low tail", group: "refs", from: "ponytail_low",
+    set: { parting: { kind: "none" }, ears: "tucked", ties: { height: 0.18, drape: 1, full: 0.5, back: 0.5, puff: 0.25, tail: { length: 0.13, thick: 0.012 } }, length: { fringe: 0.17 },
+      fringe: { kind: "blunt", line: 0.024, amount: 1.1, frame: 0.6, frameLine: -0.14, frameLocks: 1, frameHang: 1, frameEars: 1 },
+      dye: { where: "fringe_streak", colour: "#d8527a", amount: 0, at: 22 }, look: "gloss_black" } },
   // (the user's T-pose reference, DECISIONS 2026-11-12, a T-pose reference: a short rounded bob, fullest at the temples and
   // tucked in at the jaw, a fringe swept from her left over her right eye. Held to the picture's head: docs/HAIR_V2.md §10b)
   daz_bob: { label: "Rounded short bob, the fringe swept over one eye", group: "daz",
@@ -318,7 +334,7 @@ export const STYLES = {
     set: { parting: { kind: "none" }, comb: { top: "forward" }, cut: { mode: "line", line: -0.055, uneven: 0.2, wispy: 0.2 }, shape: { lift: 28, volume: { top: 0.014, sides: 0.018, back: 0.017 }, turn: 0.8, turnRadius: 0.04, tuck: 0.6 },
       fringe: { kind: "blunt", line: P.brow + 0.004, amount: 0.9, width: 46 }, texture: { clump: 0.25, strays: 15 } } },
 };
-export const GROUPS = { daz: "From your Daz3D pictures", pictures: "From the pictures", women: "Women's", ears: "Women's, long with the ears out", asian: "Japanese and Korean styles", anime: "Drawn hair: the chart's twelve", advanced: "Advanced: swept, wound, tendrils, a second colour", men: "Men's", balding: "Balding", horror: "For our games", children: "Children's" };
+export const GROUPS = { daz: "From your Daz3D pictures", refs: "From your pictures: the head cards' own hair", pictures: "From the pictures", women: "Women's", ears: "Women's, long with the ears out", asian: "Japanese and Korean styles", anime: "Drawn hair: the chart's twelve", advanced: "Advanced: swept, wound, tendrils, a second colour", men: "Men's", balding: "Balding", horror: "For our games", children: "Children's" };
 
 // a style's settings: the defaults, the style it's from, its own, then what the character changed. A fringe's kind
 // brings its own numbers in under whatever is set by name
@@ -488,6 +504,7 @@ export const CONTROLS = [
     ["dye.ends", "Ends left natural", "slide", 0, 12, 0.5, cm, "The last centimetres left natural (cm): dark tips on a dyed fringe."],
     ["dye.soft", "Soft edges", "slide", 0, 1, 0.05, 1, "How gradually the colour changes along the hair."],
     ["dye.seed", "Variation", "slide", 1, 40, 1, 1, "Other locks dyed."],
+    ["dye.at", "A fringe streak's place", "slide", -45, 45, 1, 1, "One streak in the fringe: where it is, degrees round the head from the middle (her left +). How much: its width."],
     ["scalp.shade", "Shade under the hair", "slide", 0, 1, 0.05, 1, "The roots' colour on the scalp, so no skin shows between hairs."],
     ["scalp.stubble", "Stubble", "slide", 0, 1, 0.05, 1, "A shadow of stubble over the whole scalp."],
   ] },

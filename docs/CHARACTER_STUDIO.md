@@ -1011,6 +1011,119 @@ blink.) The points in the seam are counted apart, and there are none while the e
 tenths shut. On the eyes v3 character before the fit: 2,440 of 21,398 points under at rest, 3,794 shut (1.2 mm
 deep), 54 of the lash line's 330.
 
+## 2m. v2 pear: a skinny waist over thick thighs, and Hips & thighs as one slider (DECISIONS 2026-11-13, more body presets)
+
+The user, with a picture of an old low-poly character of theirs (a torso from three quarters in front and behind):
+*"make a physique that matches this low poly shape (thick thighs, skinny waist, adjustable anime style bust), note I
+dont want it to be low poly"*.
+
+- **The card**: Body, Presets, Bodies, **v2 pear** (`grow.js` `BODIES.v2pear`). As every body card it changes the body
+  only (the head's card stays). Its weights are MHR's own, fitted from bodyv2's toward narrower shoulders and chest
+  and a smaller waist (`MHR_presets.json` `presets.v2pear`); the sliders it carries (`sculpt.v2pear`): bodyv2's
+  lengths, Hips & thighs 1.2, Seat 0.5, Waist −0.35, Belly −0.3, Shoulders −0.4, Calves −0.05.
+- **The bust**: none of its own. The card turns **Anime** on and sets the Bust slider to 1.5 (`BODIES`' `anime`);
+  from there it is the character's: Body, Anime, Bust, −2 flat to 3 very full (§2e). It is the one slider a body card
+  sets. Picking another body card afterwards leaves Anime as it is.
+- **Hips & thighs** (`sculpt.js` `pear`, Body; a slider for everyone): the lower body fuller or slimmer as one shape.
+  To the sides: a long rise from the waist, a level stretch over the hip and the thigh's top, a longer fall to the
+  knee. To the back: the whole seat alike, so it stays round, easing in from the small of the back. Measured from a
+  smooth line fitted to MHR's leg (the hip joint's above it), the thighs' insides hardly moved, nothing at the body's
+  middle. At 1: 5.5 cm wider where the thigh joins the hip, 3.3 half way up to the waist, 3.9 at mid thigh, 1.2 above
+  the knee. Why it exists: Hips, Seat and Thighs each swell their own band, and the first candidates made by stacking
+  them had a dip under the seat and bands across the thigh.
+- **A curve, not the picture's corners.** The user, on the first version: *"Notice how sharp the angle is around the
+  waist to hips, we said we are moving away from low poly so make it more curved and natural like a realistic human
+  body"*. That version matched the picture's widths with a straight run from the waist out to a point at the hip. What
+  is measured now (`lowpoly/outline.py`): the outline from the front between the knee and the waist, how far it turns
+  within any 4 cm:
+
+  | | bodyv2 | v2 hourglass | the first v2 pear | v2 pear |
+  |---|---|---|---|---|
+  | the front's outline turns, at the most | 17° | 18° | 34° (at the hip) | 17° |
+  | the back's, from the side | 27° | 31° | 44° (the seat's point) | 33° (the fold under the seat) |
+
+- **The picture's proportions** (`docs/research/bodyfit/lowpoly/view34.py`): ours seen from its two sides (55 and 150
+  degrees round), the waist's width against the widest row's:
+
+  | | the picture | v2 pear | v2 hourglass |
+  |---|---|---|---|
+  | three quarters in front: waist / widest | 0.47 | 0.49 | 0.56 |
+  | three quarters behind: waist / widest | 0.49 | 0.52 (0.51 by the viewer) | 0.59 |
+
+  A little less extreme than the picture, on purpose: the last of it was only reachable with the corners. At 1.63 m:
+  the waist 62 cm round and 24.9 across, the hips 47.5 across (bodyv2's 41.6), a thigh 21.8 (bodyv2's 19.6), the
+  shoulders 43.4.
+- **What isn't the picture's**:
+  - Its outline: the picture's hip is a shelf and a point; ours is a curve (above).
+  - Its legs are together; MHR's stand apart, so below the widest row ours is wider (0.94, 0.85 and 0.76 of the
+    widest going down, the picture's 0.88, 0.73, 0.58). That is a pose.
+  - Its seat is a bigger ball than ours: Seat and Hips & thighs go further by hand (they are sliders).
+  - Nothing above the bust or below the knee is in the picture: the shoulders, arms, calves and lengths are
+    bodyv2's family's, guessed.
+- **Pictures**: its card (`Content/Studio/Presets/thumbs/body_v2pear.jpg`: `presets.mjs thumbs --only body_v2pear`);
+  `docs/studio_sheets/2026-11-13_v2pear.jpg` (the cards of bodyv2, v2 hourglass and v2 pear; the three outlines; v2
+  pear from the front, the side and the picture's two sides). The side by side with the picture isn't in git
+  (`view34.py --ref` makes it).
+- **Checks**: GROW (the slider's shape; the body's two ratios and its outline's turn), GROWPAGE (the card, Anime on,
+  the slider's row). **Not run**: TAILOR on this body (the outfits are cut on nine other bodies; its card's tee and
+  leggings were cut on it without trouble), STUDIO, anything in Godot.
+
+## 2n. Two heads after two pictures: v2 fox and v2 pixie; a head card is the whole face (DECISIONS 2026-11-13, two heads)
+
+**A head card is the whole face.** The user: *"when I say head presets I mean eyelid shape and nose and lip shape
+too"*. Picking a head card (index.html `usePreset`) now also sets the lids' shape (`st.eyes.shape`: the grafted eye's
+shape keys, §2c; `grow.js` `HEADS.<id>.eyes`, none: the plain lids) and a lip shape (`HEADS.<id>.lips`: one of
+`LIPS`, §2j; none: no shape). Those two are the character's own sliders, set the way a lip shape's chip and the eye
+shape's sliders set them, so they are still the character's to move; the skull, the jaw and the nose are what the
+card carries (MHR_presets.json), as before. The four older cards got the lip shape made after the same face (v2female:
+v2 soft bow, v2 elegant: v2 full, v2 doll: v2 doll pout, v2 soft: v2 thin). Plain: the plain lids, no lip shape.
+
+**Two more people.** Each is after one picture (kept out of git, `Saved/Heads/ref/`), read by hand
+(docs/research/headfit/two_heads.md: the proportions, each feature, the hair), and each has **MHR head weights of its
+own** (`presets.v2fox`, `presets.v2pixie`: the feminine base's with MHR's head shapes 20, 23 and 24 moved: a slimmer
+lower face, which no slider reaches: the face's outline at the mouth's height is the cheek over the jaw, not the
+jaw's angle) under v2female's sculpt moved a little:
+
+| | v2female | v2 fox | v2 pixie |
+|---|---|---|---|
+| across the face at the mouth's height | 128 mm | 111 | 120 |
+| the eyes over the chin | 99 mm | 94 | 93 |
+| the nose's tip over where it meets the lip | 11.4 mm | 11.5 | 14.5 |
+| lids (the eye's shape keys) | plain | opening -1.5, tilt 0.5, crease 0.4 | size 0.5, opening 0.2 |
+| lips | v2 soft bow | v2 fox: a thin upper lip, a sharp bow, a full lower | v2 pixie: both forward, a short upper lip |
+
+- **v2 fox** (the front picture): a slim oval to a small chin, long half-lidded eyes lifted at the outer corners, a
+  small straight nose, a slightly wider mouth.
+- **v2 pixie** (the side picture): held to its **profile**: the head seen by the picture's camera lies 1.7 mm rms
+  from the traced outline from the forehead to the chin (v2female: 2.4), its nose as long and as far out as hers
+  within 3% of the face's height. A small nose turned up over a short upper lip, big round eyes, full lips set
+  forward, a small chin set back, a jaw line that rises to the ear.
+
+**Two sliders the profile asked for** (sculpt.js, Face): **Nose base** (where the nose meets the lip, and its
+nostrils, lower toward the mouth, the tip a quarter as far, a little forward: a nose turned up over a short upper
+lip; at 1: 4 mm under the nose, 0.3 at the tip, the lips' line not at all) and **Jaw line** (the jaw's lower border
+by its angle higher: a jaw line that rises more steeply from the chin to the ear).
+
+**How they were made, and what went wrong first.** The first versions were fitted by machine and were caricatures
+(the user: *"the faces you make look like parody distortions"*; *"you made a hooked nose which neither images
+have"*; *"this looks too disformed ... try match the angle and profile only 1:1, but for the other angles use common
+sense and aestheticism"*). What is kept from that (docs/LESSONS.md): the picture is read by hand, and a picture of a
+head we already have the same way; a picture is matched from its own angle only; from every other angle the head is
+judged as a head. The tools draw ours over the picture, they don't choose the values: `docs/research/headfit/`
+`profile.py` (a side picture's traced outline and its measures), `profit.mjs` + `pover.py` (ours seen by its camera,
+over it), `direct.mjs` (a head's front proportions straight off its mesh), `tools/character/headshots.mjs` (the
+Studio's own page from the pictures' angles, the head wearing its hair and a makeup look, through a long lens).
+
+**Checks**: GROW (every head card's lids within the eye keys' sliders and its lips a lip shape; a head's own weights
+the head's group alone; Nose base and Jaw line; v2 fox slimmer than v2female at the mouth's height and no longer,
+v2 pixie's nose turned up and not hooked, every front proportion of both within a fifth of v2female's). **Run**:
+GROW, HAIR2, CHECKS, GROWPAGE (QUICK). **Not run**: STUDIO, HAIR2PAGE (the tab has one more dye and two more
+styles), anything in Godot beyond the hair's pictures. **Not matched, said plainly**: v2 fox's lower face is slimmer
+than v2female's but not as narrow as the picture's (0.7 of the eyes' span there; ours about 1.0 read the same way):
+held to the number it was the head the user called deformed. v2 pixie's ear is MHR's (hers leans back 15 degrees
+more), her eye is taller than ours in profile, and the picture's exact angle is a guess between 65 and 80 degrees
+round, which trades against the nose's length.
+
 ## 3. Each stage against the rule (as of this branch)
 
 | Stage | Sources kept | Bakes | Gaps |

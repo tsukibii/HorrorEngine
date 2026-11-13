@@ -267,7 +267,8 @@ def card_body(group, style=""):
     every style). The women's on the Studio's v2female base (the head and neck of the user's own characters, which
     the styles are tuned on, on the feminine base's plain body: node.mjs `v2base`); the men's on the masculine base;
     the children's on a child"""
-    return "masc" if group in ("men", "balding") else "child8" if group == "children" else "v2base"
+    own = {"fox_long": "head:v2fox", "pixie_tail": "head:v2pixie"}   # (a head card's own hair, on that head: DECISIONS 2026-11-13, two heads)
+    return own.get(style) or ("masc" if group in ("men", "balding") else "child8" if group == "children" else "v2base")
 
 
 def cmd_thumbs(a):

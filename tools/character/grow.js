@@ -233,16 +233,29 @@ export const BODYV2 = { v2: 1, body2: 1, height: 1.63 };
 // The rule that keeps them apart (GROW holds every preset to it): a head preset lists only the head's and the neck's
 // controls and only the head's weights (MHR's "head" group), a body preset only the body's controls and weights; the
 // one control both may list is Neck length (how high the body carries the head: the body's word wins)
+// (two heads, DECISIONS 2026-11-13: "when I say head presets I mean eyelid shape and nose and lip shape too". A head
+// card is the whole face: beside what it carries (the skull, the jaw, the nose: MHR_presets.json), picking it sets
+// the lids' shape (`eyes`: the grafted eye's shape keys, eyegraft.js SHAPE_KEYS; none: the plain lids) and the lips'
+// (`lips`: a lip shape below, LIPS; none: no shape). Those two are the character's own sliders, set as a lip shape's
+// chip and the eye shape's sliders set them: still yours to move from there)
 export const HEADS = {
-  v2female: { label: "v2female", about: "After the twin-tail reference: a slender, straight neck, a short, narrow lower face, larger eyes set wider, a smaller nose and mouth." },
-  v2elegant: { label: "v2 elegant", about: "After the Christmas reference's left face: narrower eyes lifted at the outer corners, a wider mouth with fuller lips, a firmer jaw." },
-  v2doll: { label: "v2 doll", about: "After the Christmas reference's right face: big lifted eyes set wide, round cheeks over a small jaw, a short turned-up nose, a small full mouth." },
-  v2soft: { label: "v2 soft", about: "After the T-pose reference's own face: a rounder, softer face, heavier lids, a broader nose, a wider mouth." },
+  v2female: { label: "v2female", about: "After the twin-tail reference: a slender, straight neck, a short, narrow lower face, larger eyes set wider, a smaller nose and mouth.", lips: "v2_soft" },
+  v2elegant: { label: "v2 elegant", about: "After the Christmas reference's left face: narrower eyes lifted at the outer corners, a wider mouth with fuller lips, a firmer jaw.", lips: "v2_full" },
+  v2doll: { label: "v2 doll", about: "After the Christmas reference's right face: big lifted eyes set wide, round cheeks over a small jaw, a short turned-up nose, a small full mouth.", lips: "v2_doll" },
+  v2soft: { label: "v2 soft", about: "After the T-pose reference's own face: a rounder, softer face, heavier lids, a broader nose, a wider mouth.", lips: "v2_thin" },
+  v2fox: { label: "v2 fox", about: "After the red turtleneck reference: a slim oval face to a small chin, long half-lidded eyes lifted at the outer corners, a small straight nose, a sharp bow over a full lower lip.",
+    lips: "v2_fox", eyes: { size: 0.3, crease: 0.4, fold: 0.1, tilt: 0.5, opening: -1.5, depth: 0 } },
+  v2pixie: { label: "v2 pixie", about: "After the side-view reference, held to its profile: a small nose turned up over a short upper lip, big round eyes, full lips set forward, a small chin, a soft jaw line that rises to the ear.",
+    lips: "v2_pixie", eyes: { size: 0.5, crease: 0.3, fold: 0, tilt: 0.2, opening: 0.2, depth: 0.1 } },
 };
 export const BODIES = {
   bodyv2: { label: "bodyv2", about: "After the T-pose reference: a medium, fuller build, wide hips, full thighs, a soft waist, short arms.", height: 1.63 },
   v2athletic: { label: "v2 athletic", about: "bodyv2's proportions, lean and toned: wider shoulders, a small waist, narrow hips, firm arms, calves and seat.", height: 1.63 },
   v2hourglass: { label: "v2 hourglass", about: "bodyv2's hips and thighs under a small waist, with a fuller bust and seat.", height: 1.63 },
+  // (more body presets, DECISIONS 2026-11-13: the user's low-poly character, "thick thighs, skinny waist, adjustable
+  // anime style bust". `anime`: its card also turns Anime on and sets the Bust slider there, the one thing a body card
+  // does to a slider of the character's own: the bust is the character's to move from it, -2 flat to 3)
+  v2pear: { label: "v2 pear", about: "After the low-poly character: a skinny waist over wide round hips and thick thighs that taper to the knee, a full seat. Turns Anime on: the Bust slider is yours, flat to very full.", height: 1.63, anime: 1.5 },
 };
 // ---- lip shapes (DECISIONS 2026-11-13, better mouths: "a new v2 lip shape too that resembles the daz3d lips (create some
 // variations) ... only focus on female"): the sculpt's five lip controls set together (sculpt.js: Upper lip, Lower
@@ -255,6 +268,8 @@ export const LIPS = {
   v2_doll: { label: "v2 doll pout", about: "After the Christmas reference's right face: a small pouting mouth, a sharp bow, a round lower lip.", sculpt: { lip_upper: -0.25, lip_lower: 0.3, lip_bow: 0.9, lip_corners: 0.1, lip_pout: 0.7 } },
   v2_smile: { label: "v2 smile", about: "After the neon reference: a thin upper lip that stretches flat in a smile, a medium lower lip, the corners well up.", sculpt: { lip_upper: -0.75, lip_lower: -0.2, lip_bow: 0.2, lip_corners: 0.6, lip_pout: 0 } },
   v2_thin: { label: "v2 thin", about: "After the T-pose reference's face: both lips thin and quiet, hardly a bow.", sculpt: { lip_upper: -0.6, lip_lower: -0.35, lip_bow: 0.1, lip_corners: 0, lip_pout: -0.1 } },
+  v2_fox: { label: "v2 fox", about: "After the red turtleneck reference: a thin upper lip with a sharp, pointed bow over a full, round lower lip, a small closed mouth.", sculpt: { lip_upper: -0.5, lip_lower: 0.35, lip_bow: 0.8, lip_corners: -0.1, lip_pout: 0.3 } },
+  v2_pixie: { label: "v2 pixie", about: "After the side-view reference: a short upper lip that stands out and turns up, a full lower lip under it, both forward.", sculpt: { lip_upper: 0.05, lip_lower: -0.2, lip_bow: 0.5, lip_corners: 0.1, lip_pout: 0.35 } },
 };
 // what a new character starts as (the Studio's New; DECISIONS 2026-11-12, make-up enhanced: "a thumbnail preset that we
 // default to"): the feminine base with v2female's head on bodyv2's body, at that body's height

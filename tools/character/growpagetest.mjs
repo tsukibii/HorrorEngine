@@ -242,6 +242,13 @@ try {
     const faceMoved = Math.max(...b2b.face.map((v, i) => Math.abs(v - v2b.face[i]))) * 1000;
     say(!v2b.body && v2b.on === "" && b2b.body === "bodyv2" && b2b.on === "bodyv2" && b2b.head === "v2female" && b2b.hips > v2b.hips + 4 && b2b.reach < v2b.reach - 2 && Math.abs(b2b.h - v2b.h) < 0.003 && faceMoved < 0.05,
       `bodyv2's card: the hips ${v2b.hips.toFixed(1)} cm across before it, ${b2b.hips.toFixed(1)} on bodyv2, the hands ${(v2b.reach - b2b.reach).toFixed(1)} cm nearer the body, as tall as set, the head still v2female's and not moved (${faceMoved.toFixed(3)} mm in its own measures)`);
+    // v2pear's card (DECISIONS 2026-11-13, more body presets): the hips wider still, and the one body card that sets
+    // something of the character's own: Anime on, the Bust at its start, the Anime row's slider showing it
+    { await preset("body", "v2pear"); await page.waitForTimeout(2500); const pb = await build();
+      const pa = await B(() => { const b = window.__body; return { anime: b.st.anime, bust: b.st.sculpt.bust, want: b.GW.BODIES.v2pear.anime, box: document.querySelector("#animeOn").checked, rows: !document.querySelector("#animeRows").hidden, slider: +document.querySelector("#animeRows input").value }; });
+      say(pb.body === "v2pear" && pb.on === "v2pear" && pb.head === "v2female" && pb.hips > b2b.hips + 2 && Math.abs(pb.h - v2b.h) < 0.003 && pa.anime && pa.box && pa.rows && pa.bust === pa.want && Math.abs(pa.slider - pa.want) < 0.011,
+        `v2pear's card: the hips ${pb.hips.toFixed(1)} cm across (bodyv2's ${b2b.hips.toFixed(1)}), as tall as set, the head still v2female's; Anime switched on with the Bust at ${pa.bust}, its own row shown with the slider there (${pa.slider})`);
+      await B(() => { const b = window.__body; b.setAnime(false); delete b.st.sculpt.bust; b.changed("body"); }); await page.waitForTimeout(1500); }   // (as it was, for what follows)
     await preset("body", ""); await page.waitForTimeout(2000); const offb = await build();
     say(!offb.body && offb.head === "v2female" && Math.abs(offb.hips - v2b.hips) < 0.05, `Plain: the feminine base's body under v2female's head again (${offb.hips.toFixed(1)} cm)`);
     await preset("head", "");

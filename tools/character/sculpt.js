@@ -43,6 +43,9 @@ export function buildSculpt({ P, T, lm, lid = null }) {
   const round = pair(192, 416);                                             // the lower cheek, beside the mouth's corner
   const jaw = pair(172, 397), chin = L(152), chinFront = mid(L(175), L(152)), tip = L(1), bridge = L(6), ala = pair(98, 327);
   const corner = pair(61, 291), lips = mid(L(0), L(17)), lowerLip = L(17);
+  const chinSide = pair(148, 377);                             // under the nose, where it meets the lip; the chin's side on the jaw's border
+  let lobeY = Infinity; for (let i = 0; i < N; i++) if (P[i * 3] > 0.062 && Math.abs(P[i * 3 + 2] - jaw[2]) < 0.03 && P[i * 3 + 1] > jaw[1] + 0.012 && P[i * 3 + 1] < jaw[1] + 0.06 && P[i * 3] > jaw[0] + 0.004) lobeY = Math.min(lobeY, P[i * 3 + 1]);   // the ear lobe's lowest point (the ear stands out of the head over the jaw's angle)
+  if (!isFinite(lobeY)) lobeY = jaw[1] + 0.03;
   const lipTop = L(0), seam = L(13);                                      // the upper lip's top edge at the middle, the mouth's own line (where the lips meet)
   // the upper lid's fold: the upper lid's own line (the opening's, inner corner to outer; MediaPipe's ring, 2 mm below
   // it on MHR's face, without it) and the brow's lower row (medial to lateral) on the left, each a height by x; a point's
@@ -212,6 +215,19 @@ export function buildSculpt({ P, T, lm, lid = null }) {
       p => { const w = bump(dist(p, [0, ala[1], ala[2]]), 0.026); return w ? [0.3 * p[0] * w, 0, 0] : null; }],
     ["nose_bridge", "Nose bridge", "Face", "A higher or a flatter bridge.",
       p => { const w = bump(dist(p, bridge), 0.018) * bump(p[0], 0.012); return w ? [0, 0, 0.004 * w] : null; }],
+    // (two heads, DECISIONS 2026-11-13: a profile picture showed what no slider reached. Nose length moves the tip
+    // alone: turned far it is a spike over a nose base that hasn't moved. Her nose joins the lip low, over a short
+    // upper lip, and its underside rises from there to the tip: where it meets the lip and the nostrils lower, the tip
+    // a quarter as far, is a doll's turned-up nose seen from the side)
+    ["nose_base", "Nose base", "Face", "Where the nose meets the lip, and its nostrils, lower toward the mouth, the tip hardly: a nose turned up over a short upper lip (a doll's); or higher: a long upper lip under a nose that points down. The lips stay.",
+      p => { if (p[1] > bridge[1] || p[1] < lipTop[1] - 0.002 || p[2] < ala[2] - 0.016) return null;
+        const w = (p[1] >= subn[1] ? sm(tip[1] + 0.014, subn[1], p[1]) : sm(lipTop[1] - 0.002, subn[1], p[1])) * sm(ala[0] + 0.02, ala[0] + 0.005, p[0]) * sm(ala[2] - 0.016, ala[2] - 0.006, p[2]) * (1 - 0.75 * sm(subn[2] + 0.002, tip[2], p[2]));
+        return w ? [0, -0.004 * w, 0.0015 * w] : null; }],                 // (and a little forward: the lip's top under a low nose base stands further out)
+    // (the same picture: her jaw's line rises from the chin to the ear more steeply than MHR's. The jaw's angle under
+    // the ear higher, the border between it and the chin with it, most at the angle: a small jaw with a short back)
+    ["jaw_angle", "Jaw line", "Face", "The jaw's angle under the ear higher: the jaw's line rises more steeply from the chin to the ear (a small, soft jaw); or lower: a strong, square angle. The chin and the ear stay.",
+      p => { const dx = jaw[0] - chinSide[0], dy = jaw[1] - chinSide[1], dz = jaw[2] - chinSide[2], L2 = dx * dx + dy * dy + dz * dz, t = Math.max(0, Math.min(1, ((p[0] - chinSide[0]) * dx + (p[1] - chinSide[1]) * dy + (p[2] - chinSide[2]) * dz) / L2));
+        const w = bump(dist(p, [chinSide[0] + t * dx, chinSide[1] + t * dy, chinSide[2] + t * dz]), 0.034) * sm(0.1, 1, t) * sm(lobeY, lobeY - 0.012, p[1]); return w ? [0, 0.006 * w, 0] : null; }],
     ["mouth_width", "Mouth width", "Face", "A wider or a smaller mouth.",
       p => { const w = bump(dist(p, corner), 0.018); return w ? [0.005 * w, 0, 0] : null; }],
     ["lips", "Lips", "Face", "Fuller or thinner lips.",
@@ -333,6 +349,22 @@ export function buildSculpt({ P, T, lm, lid = null }) {
     ["seat", "Seat", "Body", "A rounder or a flatter seat.",
       (p, m) => { if (p[2] > 0 || p[1] < 0.76 || p[1] > 1.0) return null;
         const w = bump(Math.hypot((p[0] - 0.085) / 0.1, (p[1] - 0.885) / 0.11), 1) * sm(-0.1, -0.6, m[2]); return w > 1e-6 ? [0, 0, -0.014 * w] : null; }],
+    // (more body presets, DECISIONS 2026-11-13: the user's low-poly character: thick thighs under a skinny waist. Hips,
+    // Seat and Thighs each swell their own band, and stacked far enough they leave a dip under the seat and a bulge
+    // at mid thigh; this is the lower body as one shape: widest where the thigh joins the hip, easing up into the
+    // waist and tapering all the way down to the knee, more to the back (the seat) than to the front, the thighs'
+    // insides hardly moved so they don't run into each other)
+    ["pear", "Hips & thighs", "Body", "The lower body fuller as one shape: round hips running into thick thighs that taper to the knee, the seat with them (a pear), or slimmer.",
+      p => { const y = p[1]; if (y < 0.42 || y > 1.18) return null;
+        // (a long rise from the waist, a level stretch over the hip and the thigh's top, a longer fall to the knee:
+        // a body's outline is a curve, and a short rise draws a straight line out to a point at the hip. The user, on
+        // the first v2 pear: "notice how sharp the angle is around the waist to hips ... make it more curved")
+        const lo = sm(0.42, 0.8, y) * sm(0.3, 0.25, p[0]), w = sm(1.16, 0.9, y) * lo, wb = sm(1.18, 0.98, y) * lo; if (w < 1e-6 && wb < 1e-6) return null;   // (wb: to the back the whole seat grows alike, so it stays the round thing it is: with the sides' long rise it came to a point low down)
+        // about the leg's own line, and the hip joint's above it: a line fitted to MHR's base (the thigh's middle is
+        // 10.5 cm out at the hip and 14.9 at the knee, the legs standing apart; 1.2 cm forward and 6 back), bent
+        // smoothly where the legs join. (The sampled line, LEG, steps from slice to slice: the outline had its kinks)
+        const u = 0.8 - y, r = u > 0.05 ? u : u < -0.05 ? 0 : (u + 0.05) * (u + 0.05) / 0.2, dx = p[0] - (0.105 + 0.122 * r), dz = p[2] - (0.012 - 0.2 * r);
+        return [0.3 * dx * (dx < 0 ? 0.1 * sm(0, 0.02, p[0]) : 1) * w, 0, dz < 0 ? 0.22 * dz * wb : 0.1 * dz * w]; }],   // (nothing sideways at the body's middle)
     ["upper_arms", "Upper arms", "Body", "Thicker or thinner upper arms.",
       p => { const a = armW(p[0], p[1]); if (a < 0.5 || p[1] < 1.0) return null; const c = along(ARM, p[0]); if (!c) return null;
         const w = bump(Math.abs(p[0] - 0.31), 0.12) * a; return w ? [0, 0.3 * (p[1] - c[0]) * w, 0.3 * (p[2] - c[1]) * w] : null; }],
