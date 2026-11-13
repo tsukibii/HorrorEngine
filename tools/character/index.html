@@ -76,6 +76,11 @@
   #creatureCards .card img, #creatureCards .card i { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; display: block; background: #2a2d34; }
   #creatureCards .card span { display: block; font-size: 10.5px; padding: 3px 4px; line-height: 1.25; color: var(--ink); }
   #creatureCards .card.on { border-color: var(--gold); } #creatureCards .card.on span { color: var(--gold); }
+  #eyeLookCards { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 6px; margin: 6px 0; }   /* the eye looks as pictures (eyelooks.mjs thumbs) */
+  #eyeLookCards .card { padding: 0; overflow: hidden; text-align: center; display: flex; flex-direction: column; background: #151619; }
+  #eyeLookCards .card img, #eyeLookCards .card i { width: 100%; aspect-ratio: 2 / 1; object-fit: cover; display: block; background: #2a2d34; }
+  #eyeLookCards .card span { display: block; font-size: 10.5px; padding: 3px 4px; line-height: 1.25; color: var(--ink); }
+  #eyeLookCards .card.on { border-color: var(--gold); } #eyeLookCards .card.on span { color: var(--gold); }
 </style></head>
 <body>
 <header>
@@ -94,7 +99,7 @@
 <main>
   <div id="view">
     <div id="viewHelp">drag or middle-drag: turn · Shift+drag: pan · wheel: zoom · double-click: centre</div>
-    <div id="views"><button data-v="body">Body</button><button data-v="head">Head</button><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button><button id="splitBtn" title="Two views side by side, front and side, each its own camera (the pane you touch is the one the buttons and the wheel move); drag the line between them, double-click it to even them; Split again for one view">Split</button><button data-v="pov" title="The player's eye: 1.65 m up, the game's 90° lens, at the shot's distance">POV</button><select id="povShot" title="How far the face is from the player's eye (docs/DIRECTING.md)"><option value="0.7">MCU 0.7 m</option><option value="1.2" selected>MS 1.2 m</option><option value="2.2">FS 2.2 m</option></select><select id="poseSel" title="The pose the body is shown in: a T-pose (arms level, legs straight, like a modeller's reference) or MHR's own A-pose. Only the view: the character is shaped, dressed, saved and exported in MHR's pose"><option value="t">T-pose</option><option value="rest">A-pose</option></select><select id="lightSel" title="The light: the studio, or the game's kinds of light"><option value="studio">studio</option><option value="lamp">warm lamp</option><option value="night">cold night</option><option value="torch">flashlight</option><option value="reference" title="The skin v2 reference: a soft key from the side, a rim, a dark ground and the film curve (docs/research/skin_v2.md)">reference (film)</option></select></div>
+    <div id="views"><button data-v="body">Body</button><button data-v="head">Head</button><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button><button id="splitBtn" title="Two views side by side, front and side, each its own camera (the pane you touch is the one the buttons and the wheel move); drag the line between them, double-click it to even them; Split again for one view">Split</button><button data-v="pov" title="The player's eye: 1.65 m up, the game's 90° lens, at the shot's distance">POV</button><select id="povShot" title="How far the face is from the player's eye (docs/DIRECTING.md)"><option value="0.7">MCU 0.7 m</option><option value="1.2" selected>MS 1.2 m</option><option value="2.2">FS 2.2 m</option></select><select id="poseSel" title="The pose the body is shown in: a T-pose (arms level, legs straight, like a modeller's reference) or MHR's own A-pose. Only the view: the character is shaped, dressed, saved and exported in MHR's pose"><option value="t">T-pose</option><option value="rest">A-pose</option></select><select id="lightSel" title="The light: the studio, or the game's kinds of light"><option value="studio">studio</option><option value="lamp">warm lamp</option><option value="night">cold night</option><option value="torch">flashlight</option><option value="reference" title="The skin v2 reference: a soft key from the side, a rim, a dark ground and the film curve (docs/research/skin_v2.md)">reference (film)</option><option value="beauty" title="The eyes v3 reference: a big soft light from the front and a little above, a rosy room, the film curve: what the eye looks' cards are pictured under">beauty (front, film)</option></select></div>
     <div id="hud"></div>
   </div>
   <aside>
@@ -132,6 +137,11 @@
     <section data-tab="face" hidden>
       <h3>Look</h3>
       <div id="lookRows"></div>
+      <h3>Eye looks</h3>
+      <p class="note">The eye alone, set together: the iris, the pupil and the white, the catchlights, the lashes, and (with the two switches) the eye's shape and the makeup on its lids. A start: every one is a slider afterwards (Skin, Eyes; Brows &amp; lashes; Skin, Procedural skin, Makeup; Body, Face).</p>
+      <div id="eyeLookCards"></div>
+      <label class="tog"><input type="checkbox" id="eyeLookShape" checked><span>With its eye shape<small>The grafted lids' shape (size, crease, inner fold, tilt, opening) and the sculpt's eye controls. Off: the paint, the lashes and the makeup on this character's own eye shape.</small></span></label>
+      <label class="tog"><input type="checkbox" id="eyeLookMakeup" checked><span>With its lids' makeup<small>The liner, the shadow, the under-eye, the inner corner, the waterline, the lid's gloss and glitter. The rest of the face's makeup (foundation, blush, lips) is left as it is.</small></span></label>
       <h3>Pictures</h3>
       <div id="slots"></div>
       <p class="note">Optional. A front picture shapes the face; a side picture (or a three-quarter one: MediaPipe needs to find the face, so up to about 70°) gives its depth. With none, the base and the head sliders make the face.</p>
@@ -233,6 +243,7 @@ import * as TEETH from "./teeth.js";
 import * as LIPS from "./lips.js";
 import * as NAILS from "./nails.js";
 import * as LOOKS from "./looks.js";
+import * as EL from "./eyelooks.js";
 import * as ACCS from "./accessories.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import * as LOOK from "./tailor/look.js";
@@ -1206,6 +1217,9 @@ const LIGHTS = {   // key: colour, intensity, place (the camera's frame: x right
   // the user's reference stills (docs/research/skin_v2.md §1, §4 step 1): a soft key from one side and above, three stops
   // over the shadow, a cool rim from behind, a dark blue-grey ground; the film curve (AgX) so highlights roll off
   reference: { key: [0xfff3e8, 2.6, [-1.8, 1.0, 0.4]], hemi: [0x9ea8b8, 0x2a2420, 0.45], env: 0.7, torch: 0, bg: 0x0f1215, rim: [0xdde6ff, 1.6, [1.6, 0.9, -2.6]], film: true },
+  // the eyes v3 reference (DECISIONS 2026-11-12): a beauty light, big and soft from the front and a little above, the
+  // room dim and rosy; the film curve. What the eye looks' cards are pictured under (eyelooks.mjs)
+  beauty: { key: [0xfff1f0, 2.0, [0.5, 0.9, 2.4]], hemi: [0xf0dce0, 0x503a3e, 0.8], env: 0.8, torch: 0, bg: 0x181214, film: true },
 };
 const LIGHT = { name: "studio", env: 1 };
 function setLight(name) {
@@ -2647,6 +2661,33 @@ function useLook(name) {
   sel.onchange = tell; go.onclick = () => { useLook(sel.value); status(`${sel.value}: applied, every setting still yours to move (Save keeps it)`, "ok"); };
   $("#lookRows").append(el("div", { className: "row" }, el("span", { textContent: "Look" }), sel, go), about); tell();
 }
+// ---- eye looks (eyelooks.js; DECISIONS 2026-11-12, eyes v3): the eye alone as a preset on a card with its picture: the
+// eyeball's paint and catchlights, the lashes, and with the two switches the eye's shape (the graft's shape keys, the
+// sculpt's eye controls) and the makeup on its lids. It only sets what the sliders show; the card worn is marked
+// (st.eyes.look, kept with the character: what its eyes started as)
+function useEyeLook(key, o = {}) {                     // o.shape (true): with its eye shape; o.makeup (true): with its lids' makeup
+  const L = EL.EYE_LOOKS[key]; if (!L) return;
+  Object.assign(st.eyes, L.eyes || {}, { look: key });
+  if (o.shape !== false) {
+    if (L.shape) st.eyes.shape = { ...EG.KEYS0, ...L.shape };
+    for (const id of EL.EYE_SCULPT) if (L.sculpt && id in L.sculpt && SCULPT?.controls.some(c => c.id === id)) st.sculpt[id] = L.sculpt[id];
+    sculptAll();
+  }
+  eyeSet.all(); paintEyes();
+  if (L.lash) Object.assign(st.lash, L.lash.style ? BL.styleOf(L.lash.style) : {}, L.lash.set || {}, { on: L.lash.on !== false, look: L.lash.look || st.lash.look });
+  if (o.makeup !== false && L.makeup) { st.skin.proc.on = true; Object.assign(st.skin.proc, EL.eyeMakeup(L)); procSet.all(); }
+  if (L.lash && BL_READY) { blSet.all(); browLash(); }
+  skinLook(); eyeLookMark(); UNSAVED = true; changed(o.shape !== false ? "body" : "expr");
+  status(`${L.label}: a start, every slider still yours (Skin, Eyes; Brows & lashes; Makeup)`, "ok");
+}
+function eyeLookMark() { for (const c of document.querySelectorAll("#eyeLookCards .card")) c.classList.toggle("on", c.dataset.look === st.eyes.look); }
+$("#eyeLookCards").append(...Object.entries(EL.EYE_LOOKS).map(([k, L]) => {
+  const pic = el("img", { src: `api/eyelooks/thumbs/${k}.jpg`, alt: L.label, loading: "lazy" }), b = el("button", { className: "card", title: L.about || L.label }, pic, el("span", { textContent: L.label }));
+  pic.onerror = () => { const i = el("i"); i.style.background = L.eyes?.iris || "#2a2d34"; pic.replaceWith(i); };   // (no picture yet: its iris's colour; node tools/character/eyelooks.mjs thumbs makes them)
+  b.dataset.look = k;
+  b.onclick = () => useEyeLook(k, { shape: $("#eyeLookShape").checked, makeup: $("#eyeLookMakeup").checked });
+  return b;
+}));
 // ---- accessories (accessories.js): glasses, piercings, stickers, an eyepatch, a choker: plain settings in the file ----
 st.accessories = [];
 WEAR = new ACCS.Accessories({ rig, POS: SHOW, TRIS, BASEP, normals: shownNormals, lmk, LMK, scale: () => SCALE, eyes: EYES, shelf: () => SHELF,   // on the body as it's shown
@@ -3525,7 +3566,7 @@ async function open(name) {
   st.drape = c.drape !== false; drapeTog.checked = st.drape;
   BAKES = WHO ? await loadDrape(WHO) : {}; TAILOR_W.postMessage({ bakes: BAKES });   // the clothes as they hung when saved
   if (me !== OPENING) return;
-  Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEFIT, { lidLine: lidDefault(), shape: {} }, c.eyes || {}); st.eyes.showLid = false; delete st.eyes.graft;   // (the grafted eyes on every character: an older file's switch dropped; its shape only if it has one)
+  Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEFIT, { lidLine: lidDefault(), shape: {}, look: "" }, c.eyes || {}); st.eyes.showLid = false; delete st.eyes.graft; eyeLookMark();   // (the grafted eyes on every character: an older file's switch dropped; its shape only if it has one)
   if (st.eyes.lidLine?.base !== "mesh") st.eyes.lidLine = lidDefault();   // an older line was offsets from MediaPipe's ring: start again on the model's delete st.eyes.plane; delete st.eyes.lowerLid; eyeSet.all(); paintEyes();
   Object.assign(st.teeth, TEETH.TEETH_DEFAULTS, c.teeth || {}); teethSet.all();
   Object.assign(st.lips, LIPS.LIPS_DEFAULTS, c.lips || {}); st.lips.guide = false; lipSet.all();
@@ -4259,7 +4300,7 @@ $("#poseSel").onchange = () => { POSE = $("#poseSel").value; try { localStorage.
 $("#povShot").onchange = () => { orbit.focus = "pov"; repose(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, on: graftOn() }), EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, useCreature, creatureLook, setAnime, GW, SKINSH, loadSalon, get salonHair() { return SALONH; }, get hair2() { return HAIR2; }, get headBase() { return HEADBASE; }, get hairStale() { return HAIRSTALE; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, on: graftOn() }), EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, useCreature, creatureLook, useEyeLook, EL, setLight, setAnime, GW, SKINSH, loadSalon, get salonHair() { return SALONH; }, get hair2() { return HAIR2; }, get headBase() { return HEADBASE; }, get hairStale() { return HAIRSTALE; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

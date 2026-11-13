@@ -19,7 +19,7 @@ import { makeAtlas } from "./hairtex.js";
 import { rng } from "./salonlib.js";
 
 export const LASH_DEFAULTS = { on: false, count: 110, length: 8.5, curl: 0.55, lift: 0.45, sweep: 0, innerLength: 0.5, clump: 0.3, spikes: 0, vary: 0.15, under: 0.35, cross: 0.35, width: 0.5, flare: 0.5,
-  lower: true, lowerCount: 30, lowerLength: 4, lowerDrop: 0.25, line: 0.4, look: "lash_black" };
+  lower: true, lowerCount: 30, lowerLength: 4, lowerDrop: 0.25, lowerSpikes: 0, line: 0.4, look: "lash_black" };
 export const BROW_DEFAULTS = { on: false, shape: "natural", count: 1100, length: 6.5, width: 1, arch: 0, tail: 1, soft: 0.5, powder: 0.45, look: "brow_dark_brown" };
 export const LASH_CONTROLS = [   // [key, label, lo, hi, step, help]
   ["count", "Upper lashes", 20, 240, 1, "Upper lashes on each eye (a natural lid about 110, an older man's 40, a fluffy mink set 200)."], ["length", "Length (mm)", 4, 14, 0.1, "The longest upper lash."],
@@ -34,6 +34,7 @@ export const LASH_CONTROLS = [   // [key, label, lo, hi, step, help]
   ["width", "Thickness", 0.2, 1.2, 0.01, "Each hair's thickness: about a tenth of a millimetre at 0.5."], ["flare", "Outer flare", 0, 1, 0.01, "Longer and swept out at the outer corner (a cat eye)."],
   ["lowerCount", "Lower lashes", 0, 80, 1, "On each lower lid, one hair each."], ["lowerLength", "Lower length (mm)", 1.5, 7, 0.1, "The longest lower lash."],
   ["lowerDrop", "Lower lashes down", 0, 1, 0.01, "Where the lower lashes point: 0 out from the lid, 1 down along the skin under the eye (wisps that show from the front)."],
+  ["lowerSpikes", "Lower lashes in points", 0, 1, 0.01, "The lower lashes in small clusters whose tips draw together into a point, their roots apart (little downward spikes, as wet lashes and drawn eyes have them): 0.34 two hairs a point, 0.67 three, 1 four. 0: one hair each (or as Spiky clumps says)."],
   ["line", "Lash line", 0, 1, 0.01, "A dark line along the upper lid's edge where the lashes grow (a tight liner)."]];
 export const BROW_CONTROLS = [
   ["count", "Hairs", 200, 2400, 1, "Hairs on each brow."], ["length", "Length (mm)", 3, 11, 0.1, "Each hair's length."],
@@ -79,6 +80,12 @@ export const LASH_STYLES = {   // presets for the lashes' own settings, after th
           lowerCount: 50, lowerLength: 6, lowerDrop: 0.3, line: 0.5 },
   dollVolume: { label: "Doll volume (swept up, long lower)", group: "Lash sets, after the second reference", count: 175, length: 13, curl: 0.8, lift: 0.55, sweep: 0.45, innerLength: 0.55, clump: 0.6, spikes: 0.15, vary: 0.25, under: 0.6, cross: 0.2, width: 0.6, flare: 0.7,
                 lowerCount: 50, lowerLength: 6.5, lowerDrop: 0.4, line: 1 },
+  // eyes v3 (DECISIONS 2026-11-12, eyes v3: the user's own render, two close pictures of a doll's dark eyes): the upper
+  // lashes short, fine and lying down over the top of the eye, a dark band along the lid more than hairs, a few longer
+  // ones swept out at the outer corner; the lower lashes long and sparse, in points of two or three hairs straight down
+  // the skin, the outer ones leaning out
+  v3: { label: "Eyes v3 (a soft band above, points below)", group: "Eyes v3, after the user's render", count: 130, length: 5, curl: 0.05, lift: -0.45, sweep: 0.3, innerLength: 0.55, clump: 0.3, spikes: 0, vary: 0.35, under: 0.7, cross: 0.45, width: 0.36, flare: 0.35,
+        lowerCount: 36, lowerLength: 5.2, lowerDrop: 0.8, lowerSpikes: 0.67, line: 1 },
   naturalMedium: { label: "Natural medium (separated)", group: "Lash sets, after the second reference", count: 110, length: 8, curl: 0.5, lift: 0.45, sweep: 0, innerLength: 0.5, clump: 0.05, spikes: 0, vary: 0.15, under: 0.3, cross: 0.3, width: 0.45, flare: 0.3,
                    lowerCount: 24, lowerLength: 3, lowerDrop: 0.25, line: 0.25 },
 };
@@ -245,7 +252,8 @@ function eyeLashes(G, B, lid, o, F, U, S, side, seed) {
     // the upper lid's clusters of three to eight; a lower lash one hair (a real one is a single fibre, and two or three
     // side by side read as a comb), or with Spiky clumps up (a doll's eye) two to four from one spot drawn together: one
     // thicker spike each
-    const per = upper ? 3 + Math.round(o.clump * 5) : sp > 0.5 ? 2 + Math.round(o.clump * 2) : 1, groups = Math.max(1, Math.round(n / per)), hairs = [], gl = [], glean = [];
+    const lsp = o.lowerSpikes ?? 0;                                         // (Lower lashes in points: clusters of two to four whose roots stay apart)
+    const per = upper ? 3 + Math.round(o.clump * 5) : lsp > 0 ? 1 + Math.round(3 * lsp) : sp > 0.5 ? 2 + Math.round(o.clump * 2) : 1, groups = Math.max(1, Math.round(n / per)), hairs = [], gl = [], glean = [];
     for (let g = 0; g < groups; g++) {
       const rk = r();
       gl.push(g % 3 === 0 ? 1 - vary * 0.1 * rk : g % 3 === 1 ? 1 - vary * (0.15 + 0.2 * rk) : 1 - vary * (0.3 + 0.35 * rk));   // long, medium and short clusters in turn, by Long and short
@@ -253,7 +261,7 @@ function eyeLashes(G, B, lid, o, F, U, S, side, seed) {
     }
     for (let g = 0; g < groups; g++) {
       // the cluster's roots over its share, or gathered (spikes); the lower lashes one each, a little unevenly spaced
-      const tc = (g + 0.5) / groups, span = (upper ? 1 - 0.7 * sp : per > 1 ? 0.12 : 0.5) / groups, gn = g === groups - 1 ? n - g * per : per;
+      const tc = (g + 0.5) / groups, span = (upper ? 1 - 0.7 * sp : lsp > 0 ? 0.5 : per > 1 ? 0.12 : 0.5) / groups, gn = g === groups - 1 ? n - g * per : per;
       for (let j = 0; j < gn; j++) hairs.push({ t: tc + span * ((j + 0.15 + 0.7 * r()) / gn - 0.5), len: gl[g] * (0.92 + 0.08 * r()), lean: glean[g] + (r() - 0.5) * (upper ? 0.12 : 0.08), g });   // (the sweep is added per hair below: it grows toward the outer corner)
       if (upper) G.glen.push(gl[g]);
     }

@@ -23,7 +23,7 @@ export const SHAPE_KEYS = [
   ["crease", "Crease", -1, 1, 0.01, "−1 a monolid (the upper lid full, its fold filled, as in many East Asian eyes), +1 a deep double lid (the fold set in, as in many European eyes)."],
   ["fold", "Inner fold", 0, 1, 0.01, "The upper lid's skin carried down over the inner corner (an epicanthic fold)."],
   ["tilt", "Tilt", -1, 1, 0.01, "The outer corner up (+1, a lifted almond) or down (−1), about the eye's middle (8° either way)."],
-  ["opening", "Opening", -1, 1, 0.01, "−1 narrower (the upper lid lower, the lower higher), +1 rounder."],
+  ["opening", "Opening", -2.5, 1, 0.01, "−1 narrower (the upper lid lower, the lower higher), −2.5 a heavy lid resting low over the iris (a doll's sleepy almond: eyes v3); +1 rounder."],
   ["depth", "Depth", -1, 1, 0.01, "−1 deep-set (the eye and its lids 1.2 mm back under the brow), +1 prominent."],
 ];
 export const KEYS0 = { size: 0, crease: 0, fold: 0, tilt: 0, opening: 0, depth: 0 };

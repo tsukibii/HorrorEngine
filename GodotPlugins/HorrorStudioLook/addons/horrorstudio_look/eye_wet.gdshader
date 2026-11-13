@@ -57,6 +57,12 @@ void vertex() {
 	v_centre = (MODELVIEW_MATRIX * vec4(VERTEX - eye_radius * (toModel * eP), 1.0)).xyz;
 	v_axis = normalize((MODELVIEW_MATRIX * vec4(toModel * vec3(0.0, 0.0, 1.0), 0.0)).xyz);
 	VERTEX += NORMAL * lift;
+	// the eyeball drawn `lid_room` deeper than it is (GODOT_LOOK §5f, as eye.gdshader's vertex()): each vertex pushed
+	// along its own view ray, the same pixel further off, so the layer lies where the eye is drawn and the depth test
+	// still throws out what the lids hide before the eight searches below are run (a depth written per pixel can't)
+	vec4 vp = MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
+	vp.xyz += normalize(vp.xyz) * lid_room;
+	POSITION = PROJECTION_MATRIX * vp;
 }
 
 // the nearest hit of a ray from the eye (the camera at the origin) on a sphere, or -1
@@ -132,12 +138,4 @@ void fragment() {
 	if (debug == 1)
 		ALBEDO = vec3(rim, hood, 0.0);
 	ALPHA = 1.0;
-	// the eyeball drawn `lid_room` deeper than it is (GODOT_LOOK §5f): a lid that an expression has slid a little into the
-	// eye still covers it, as a lid does (the same pixel, further along its ray; nothing else of the eye changes)
-	vec4 hs_deep = PROJECTION_MATRIX * vec4(VERTEX + normalize(VERTEX) * lid_room, 1.0);
-#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
-	DEPTH = hs_deep.z / hs_deep.w * 0.5 + 0.5;
-#else
-	DEPTH = hs_deep.z / hs_deep.w;
-#endif
 }

@@ -6,14 +6,21 @@
 ## every skin and eye look toggled at once, their colours and amounts, Default, and Save as a look: an HSLookPreset
 ## in `res://looks/`, to drag into a switch's Looks in your game. Above her: the lamp (off: what glows of itself), what's
 ## behind her (dark, grey, stripes: the cloak wants something to bend), walking (the cloak shows when she moves), turning.
-## Drag to look round her, the wheel to come closer, Face and Body to frame her.
-##   godot --path PROJECT res://addons/horrorstudio_look/tools/look_viewer.tscn -- [--glb=FILE] [--look=JSON] [--behind=stripes] [--lamp=off] [--view=body] [--shot=FILE.png]
+## Drag to look round her, the wheel to come closer, Face, Eyes and Body to frame her. Eye sliders (eyes v3: §5v) opens
+## the eye picker (eye_picker.gd) on the right: her iris's colours, its pattern, the pupil's shape, the sizes, the white
+## and the catchlights that stay as sliders, changed on her as they move; Save as eyes keeps them as an HSEyeLook in
+## `res://looks/eyes/`, for an HSCharacterLook's Eye Look.
+##   godot --path PROJECT res://addons/horrorstudio_look/tools/look_viewer.tscn -- [--glb=FILE] [--look=JSON] [--behind=stripes] [--lamp=off] [--view=body|eyes] [--eyes=JSON] [--panel=eyes] [--shot=FILE.png]
 extends Node3D
 
 const DIRS := ["res://exports/characters", "res://game/people", "res://characters"]
 var who: Node3D = null
 var sw: HSLookSwitch = null
 var picker: HSLookPicker = null
+var eye_picker: HSEyePicker = null
+var eye_scroll: ScrollContainer = null
+var eye_paint := {}                   # her eyes' numbers asked for on the command line (--eyes=JSON: HSEyePaint's words)
+var view := "face"
 var env: Environment
 var cam: Camera3D
 var key: SpotLight3D
@@ -109,7 +116,14 @@ func _ready() -> void:
 	_ui()
 	behind(str(args.get("behind", "dark")))
 	lamp(str(args.get("lamp", "on")) != "off")
-	face_view = str(args.get("view", "face")) != "body"
+	view = str(args.get("view", "face"))
+	face_view = view != "body"
+	if args.has("eyes"):
+		var ep = JSON.parse_string(str(args["eyes"]))
+		if ep is Dictionary:
+			eye_paint = ep
+	if str(args.get("panel", "")) == "eyes":
+		eye_scroll.visible = true
 	find_characters()
 	var first := str(args.get("glb", ""))
 	load_character(first if first != "" else (files[1] if files.size() > 1 else ""))
@@ -159,10 +173,33 @@ func _ui() -> void:
 	fb.text = "Face"
 	fb.pressed.connect(frame.bind(true))
 	bar.add_child(fb)
+	var eb := Button.new()
+	eb.text = "Eyes"
+	eb.pressed.connect(frame_eyes)
+	bar.add_child(eb)
 	var bb := Button.new()
 	bb.text = "Body"
 	bb.pressed.connect(frame.bind(false))
 	bar.add_child(bb)
+	# the eye picker on the right (eyes v3): her eyes' sliders, shown by Eye sliders
+	eye_scroll = ScrollContainer.new()
+	eye_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	eye_scroll.set_anchors_and_offsets_preset(Control.PRESET_RIGHT_WIDE)
+	eye_scroll.offset_left = -352
+	eye_scroll.offset_right = -10
+	eye_scroll.offset_top = 48
+	eye_scroll.offset_bottom = -10
+	eye_scroll.visible = false
+	layer.add_child(eye_scroll)
+	eye_picker = HSEyePicker.new()
+	eye_scroll.add_child(eye_picker)
+	var es := CheckButton.new()
+	es.text = "Eye sliders"
+	es.toggled.connect(func(v):
+		eye_scroll.visible = v
+		if v:
+			frame_eyes())
+	bar.add_child(es)
 
 
 func _walk(on: bool) -> void:
@@ -271,6 +308,12 @@ func _ready_her() -> void:
 		first = false
 	tall = maxf(bb.size.y, 0.3) if not first else 1.7
 	frame(face_view)
+	eye_picker.setup(who)                             # her eyes' sliders (her painter: only on the Studio's eyes)
+	if not eye_paint.is_empty() and eye_picker.painter != null:
+		eye_picker.painter.set_paint(eye_paint)
+		eye_picker.setup(who)
+	if view == "eyes":
+		frame_eyes()
 	if not shot_look.is_empty():                      # a look asked for on the command line: on her, and in the picker
 		sw.show(shot_look, 0.0)
 		picker.setup([sw])
@@ -285,6 +328,23 @@ func frame(face: bool) -> void:
 	else:
 		aim = Vector3(0, tall * 0.52, 0)
 		dist = tall * 1.9
+
+
+## the camera close on her eyes (their middles found by her eye meshes' names; the face's upper part when she has none)
+func frame_eyes() -> void:
+	face_view = true
+	var mid := Vector3.ZERO
+	var n := 0
+	if who != null:
+		for mi in who.find_children("*", "MeshInstance3D", true, false):
+			if String(mi.name).contains("_eye_") and mi.mesh != null:
+				mid += ((mi as MeshInstance3D).global_transform * (mi as MeshInstance3D).get_aabb()).get_center()
+				n += 1
+	aim = mid / n if n > 0 else Vector3(0, tall * 0.93, 0.08)
+	aim -= Vector3(who.position.x if who != null else 0.0, 0.0, 0.0)
+	dist = 0.24
+	yaw = 0.0
+	pitch = 0.0
 
 
 ## with no character: a skin (a body's ball and a head's) and two plain eyes, named as a character's are
@@ -325,7 +385,7 @@ func _unhandled_input(e: InputEvent) -> void:
 		if e.button_index == MOUSE_BUTTON_LEFT or e.button_index == MOUSE_BUTTON_RIGHT:
 			_drag = e.pressed
 		elif e.button_index == MOUSE_BUTTON_WHEEL_UP and e.pressed:
-			dist = maxf(0.25, dist * 0.9)
+			dist = maxf(0.14, dist * 0.9)
 		elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN and e.pressed:
 			dist = minf(8.0, dist * 1.1)
 	elif e is InputEventMouseMotion and _drag:

@@ -2,6 +2,52 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-12, eyes v3 (the user, with two pictures of their own render)
+
+- **"Create a new branch called eyes-v3, see if you can re-create in our studio creator -> godot (including optimizing
+  our already use of the godot eye shader we made) and re-create this eye look 1:1 > Its a screenshot of what I was
+  able to create in Unity + Blender. Your objective is to create that exact eye look including the eyelashes and
+  eyelids and exact eyes (Pupils, the whites), your goal is to get as close to 1:1. For the new eye worker I want you
+  to create a thumbnail icon for it similar to the icons we have in our monster presets. Once you accomplish this eye
+  look, make it easy to modify some things via sliders (different iris shape / patterns, colors etc). Your main
+  objective is to get this exact eye look in godot, for the eye preset try get the exact eye shape too on the
+  metahuman. I gave you image 2 in case you want to reference the face / head shape too in your quest to get that eye
+  look."**
+- **The pictures** (kept out of git, `Saved/Eyes/ref/eyes.png` and `face.png`: they have to be sent again in a new
+  session): both eyes close, and the face. Big, very dark red-brown irises the pupil melts into; on each two crisp
+  catchlights (a big one up and to the picture's right of the pupil, a small cool one across from it, the same side in
+  both eyes) and a thin bright arc low on the cornea, just above the lower lid; cool, bluish whites shaded under the
+  upper lid, a pink inner corner; a long almond opening, its outer corner a little higher, the upper lid resting low
+  over the iris with a thin fold close above the lashes; the upper lashes a soft dark band more than hairs, a silver
+  shimmer on the lid above them; the lower lashes long, fine and sparse, in little points down the skin; rose round
+  the eye, a wet pink waterline. The face: porcelain skin, a blunt black fringe and two tails.
+- **What this sets:**
+  - **The look is to be matched in Godot**, from a character made in the Character Studio and exported: the eyeball
+    (iris, pupil, white, catchlights), the lids' shape and the lashes. Godot is the objective; the Studio is where it
+    is made.
+  - **The eye look is a preset in the Studio with a picture on a card**, as the creatures are.
+  - **Sliders afterwards**: the iris's colours, its pattern, the pupil's shape and the rest changed easily, in the
+    Studio (it has them) and in Godot.
+  - **The Godot eye shader may be reworked** for it, and made cheaper where it can be.
+- **My readings** (to be overruled if wrong): "the new eye worker" is the eye look's preset (the card); "the
+  metahuman" is our own MHR character (the v2female base: the picture's face is the Daz character's the hair editor's
+  twin tails were matched on); the sliders are wanted in Godot too, since Godot is the objective.
+- **Built the same day and the next, on `eyes-v3`** (docs/GODOT_LOOK.md §5v, docs/CHARACTER_STUDIO.md §2h):
+  - **Godot's eye shader, v3**: the eye's axes read once per vertex and everything else worked out from the eye's own
+    shape per pixel (a true sphere's shine whatever the mesh, an eye drawn that can differ from the mesh); **catchlights
+    that stay** (two lights that follow the camera reflected in the cornea, the lower lid's wet line under them, lit by
+    whatever light reaches the eye, or glowing by themselves); the room's own lamps dimmed in the cornea when asked;
+    the white's brightness and warmth (cool below 0); the eyeball's room behind the lids as a push of its vertices, so
+    the depth test throws out what the lids hide before the shader runs (it wrote its depth per pixel before).
+  - **`HSEyePaint`**: the Studio's own paint (iris, pupil, limbus, white) ported to Godot's shading language and held
+    to the Studio's by a check; a change to any number draws the eye's picture again, once, into a small viewport, so
+    the eye costs what it cost. **`HSEyePicker`**: the sliders (the look viewer's Eye sliders), `HSEyeLook` a saved
+    eye, the HSCharacterLook node's Eye paint in the Inspector.
+  - **The Studio**: eye looks as cards with pictures (Face, Eye looks: `eyelooks.js`, `eyelooks.mjs thumbs`), the
+    first of them **Eyes v3 (dark doll)**; a lash style of its own (a soft band above, points below: Lower lashes in
+    points); lid gloss and lid glitter in the makeup; the Opening shape key down to -2.5 (a heavy lid); the beauty
+    light.
+
 ## 2026-11-12, the ringlets (the user, with a screenshot, while the styles were being gone through)
 
 - **"Not sure if you caught it but the curls look like they float rather than come from the head/hair"**, with the
