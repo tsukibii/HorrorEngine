@@ -61,7 +61,7 @@ character before anything else; `core/gait.js` `params` and the keyed curves bes
 1. foot and hand IK in Godot (a seat that isn't 45 cm, a handle that isn't a metre up): `TwoBoneIK3D` is in 4.7;
 2. a turn-in-place clip and a start and stop for the walk (now a blend);
 3. a carry pose for a thing in the hand; sitting on the floor; stairs;
-4. the guides: `guides/first_game` and tutorial v2 don't use `motion.gd` yet (tutorial v2's hunter still slides
+4. the guides: `guides/animator` is its own guide; `guides/first_game` and tutorial v2 don't use `motion.gd` yet (tutorial v2's hunter still slides
    unless her model is baked; baking her would give her a walk and a run with nothing else changed);
 5. a Director story word for the acts (sit there, open that) beyond the moves it already plays.
 
