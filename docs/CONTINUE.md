@@ -43,7 +43,8 @@ Read DECISIONS 2026-11-12, "make-up enhanced", first; docs/CHARACTER_STUDIO.md ย
 - **Heads**: v2female, and v2 elegant, v2 doll, v2 soft after the user's other Daz faces (one picture each, measured
   against v2female's own picture; not the many-round 1:1 v2female got: ยง2h says how far).
 - **Bodies**: bodyv2, and v2 athletic (97, 63, 102 round at 1.63 m) and v2 hourglass (98, 65, 116).
-- **Run here**: GROW, CHECKS, and the cards' pictures (`presets.mjs thumbs`). **Not run here**: STUDIO (50 minutes on
+- **Run here**: GROW, LOOKS, CHECKS, GROWPAGE (QUICK, after the makeup too), the cards' pictures (`presets.mjs thumbs`)
+  and the looks' (`makeupshots.mjs`: `docs/studio_sheets/2026-11-13_makeup_looks.jpg`). **Not run here**: STUDIO (50 minutes on
   the CPU; its scratch character now says it starts plain, which should leave it as it was: a local run is the proof).
 - **Open**: an outfit on the two new bodies; the sports bra's straps on bodyv2; muscle relief for the athletic body
   (a normal map: not built); a second pass on each new head with outlines read off its picture.

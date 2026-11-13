@@ -803,6 +803,8 @@ The user: "For makeup, I want better makeup, analyze the daz images I shared ear
   - The lashes are the nearest existing sets (separate, defined, round doll, glam, natural), not drawn lash by lash
     from the pictures. The brows are mostly under each picture's fringe: straight or arched, dark, guessed.
   - The eyes' size on the face is the head's (v2female's are smaller than the pictures' drawn eyes: §2f).
+- **Picture**: `docs/studio_sheets/2026-11-13_makeup_looks.jpg` (the five looks on v2female's head under the studio
+  light: the face, the eyes, the lips; bald, so nothing hides the brows).
 - **Checks**: LOOKS; GROWPAGE and STUDIO unchanged by it (the new settings default to 0).
 
 ## 3. Each stage against the rule (as of this branch)
