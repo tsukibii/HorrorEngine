@@ -106,7 +106,7 @@ export const LOOKS = {
                       lowerLiner: 0.85, lowerWidth: 0.55, lowerReach: 0.9, lowerColor: "#8a2c2c", shadow: 0.3, shadowPlace: 0.6, shadowColor: "#b87a78", under: 0.35, underColor: "#e8a0a4",
                       waterline: 0.2, waterColor: "#b85a5a", aegyo: 0.3, highlight: 0.6 } },
     lash: { style: "naturalMedium", look: "lash_black" },
-    brow: { shape: "straight", look: "brow_dark_brown" },
+    brow: { shape: "straight", set: { width: 0.72, length: 5, soft: 0.8, powder: 0.35 }, look: "brow_dark_brown" },   // (thin and soft: the pictures' brows are a faint line under a fringe)
   },
   "red satin": {
     about: "After the Christmas reference's left face: warm skin with a peach flush on the cheekbones; a true red lip, darker at the seam, satin with one soft glint; a winged dark liner, a red line under the lower lashes and a red-brown shadow at the outer corner; grey eyes.",
@@ -119,7 +119,7 @@ export const LOOKS = {
                       lowerLiner: 0.85, lowerWidth: 0.6, lowerReach: 0.75, lowerColor: "#8e2424", shadow: 0.45, shadowPlace: 0.7, shadowColor: "#b05048", under: 0.4, underColor: "#e08a80",
                       waterline: 0.2, waterColor: "#a84840", aegyo: 0.25, highlight: 0.5 } },
     lash: { style: "defined", look: "lash_black" },
-    brow: { shape: "arched", look: "brow_dark_brown" },
+    brow: { shape: "arched", set: { width: 0.7, arch: 0.4, length: 5, soft: 0.6, powder: 0.35 }, look: "brow_dark_brown" },
   },
   "wine doll": {
     about: "After the Christmas reference's right face: a strong pink flush across the nose and under the eyes; a wine lip nearly black-red at the seam, very wet, sharp glints; red all round the eye (a wine lower liner, a rose shadow and wash, a tinted waterline), doll lashes; big pale grey eyes.",
@@ -132,7 +132,7 @@ export const LOOKS = {
                       lowerLiner: 0.95, lowerWidth: 0.7, lowerReach: 1, lowerColor: "#9a2434", shadow: 0.5, shadowPlace: 0.3, shadowSize: 1.2, shadowColor: "#c06070", under: 0.6, underColor: "#e88a98",
                       corner: 0.3, cornerColor: "#f4b4bc", waterline: 0.3, waterColor: "#b04050", aegyo: 0.4, highlight: 0.7 } },
     lash: { style: "roundDoll", look: "lash_black" },
-    brow: { shape: "straight", look: "brow_dark_brown" },
+    brow: { shape: "straight", set: { width: 0.72, length: 5, soft: 0.8, powder: 0.35 }, look: "brow_dark_brown" },   // (thin and soft: the pictures' brows are a faint line under a fringe)
   },
   "neon wing": {
     about: "After the neon reference: a bright pink-red wing drawn out from the outer corner over a pink shadow and under-eye wash, a coral-red lip with a broad wet gloss, dewy skin with highlights on the nose and cheeks; violet-blue eyes, glam lashes.",
@@ -145,7 +145,7 @@ export const LOOKS = {
                       lowerLiner: 0.5, lowerWidth: 0.5, lowerReach: 0.6, lowerColor: "#e03a6a", shadow: 0.8, shadowPlace: 0.6, shadowSize: 1.4, shadowColor: "#e85a8a", under: 0.6, underColor: "#f07a9a",
                       corner: 0.4, cornerColor: "#f8c0cc", waterline: 0.3, waterColor: "#e07a90", aegyo: 0.5, highlight: 0.85 } },
     lash: { style: "glam", look: "lash_black" },
-    brow: { shape: "straight", look: "brow_dark_brown" },
+    brow: { shape: "straight", set: { width: 0.72, length: 5, soft: 0.8, powder: 0.35 }, look: "brow_dark_brown" },   // (thin and soft: the pictures' brows are a faint line under a fringe)
   },
   "smoky nude": {
     about: "After the T-pose reference's face: pale matte skin, hardly a flush; a brown nude lip, matte, darker at the seam; a smoky grey-brown eye, lined above and below; grey-green eyes.",
@@ -158,7 +158,7 @@ export const LOOKS = {
                       lowerLiner: 0.65, lowerWidth: 0.9, lowerReach: 0.9, lowerColor: "#2a2220", shadow: 0.7, shadowPlace: 0.3, shadowSize: 1.5, shadowColor: "#6a5a58", under: 0.5, underColor: "#7a6a6a",
                       waterline: 0.3, waterColor: "#5a4a48", aegyo: 0, highlight: 0 } },
     lash: { style: "natural", look: "lash_black" },
-    brow: { shape: "natural", look: "brow_dark_brown" },
+    brow: { shape: "natural", set: { width: 0.8, length: 5.5, soft: 0.6, powder: 0.4 }, look: "brow_dark_brown" },
   },
 };
 export const NEW_LOOK = "soft cinematic";                  // what a new character starts from
