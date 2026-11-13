@@ -1577,7 +1577,9 @@ view ray in the eye's frame, and it **sets NORMAL itself**. What that buys:
 before it runs: the eye's shader ran for every pixel of the eyeball's front half, lids or no lids (about twice what
 shows), and the wet layer's eight searches of the depth buffer with it. Now each vertex is moved `lid_room` along its
 own view ray in `vertex()` (`POSITION`), which lands on the same pixel, and the fragment writes no depth: what the
-lids hide is rejected first. GDFACES and EYELIDS hold the lids as before.
+lids hide is rejected first. GDFACES and EYELIDS hold the lids as before. (No frame time was taken for it: the cloud
+machine draws on the CPU, where a timing says little about a graphics card. What's said here is what the shader no
+longer does, not a measured saving.)
 
 **Catchlights that stay.** With a refracting cornea the room's lamps make the catchlights, so an eye in a dim room has
 none, and the reference's two crisp dots are a look, not a room. Above 0, `kept_amount` (the Studio's *Catchlights
@@ -1619,6 +1621,13 @@ both, Her own eyes, **Save as eyes** (an `HSEyeLook` in `res://looks/eyes/`), Co
 Inspector the same sliders, each starting from the export's own value (read from its record) and kept only where it
 differs; `set_eye_paint(changes)` and `reset_eye_paint()` while the game runs. `eyes/eyes_v3.tres` is the eyes v3
 look's own eyeball, for any character's eyes (the lids and lashes are geometry: the Studio's).
+
+**The lashes.** A fine-hair look can say how densely its hairs are drawn (`coverage` in the export's `look` record, times
+the kind's own `FINE_GAIN`: §5f): the Studio's *Ink black* lashes ask for a quarter more, so the eyes v3 look's fine
+lower lashes are dark lines and not a brown wash over the skin. Nothing changes for a look that doesn't say. Where the
+lashes lie is the export's: its last step fits them and the lash line to the file's own skin at rest and in each
+state of the blink and writes their blink targets from that (docs/CHARACTER_STUDIO.md §2i, LASHFIT), so HSBlink plays
+lashes that are on the lid at every weight it holds, with nothing worked out in the game.
 
 EYESV3 (`python tools/godot/eyes_v3_check.py`; a character made by `node tools/character/eyelooks.mjs make --only v3
 --hair daz_twin_tails --export`): her eyes pictured as the reference frames them and measured (the iris, the pupil, the

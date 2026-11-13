@@ -3,6 +3,35 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The lashes on the skin, and the lids' check: what took a second try (2026-11-13)
+
+- **Fit a thing where it's shipped, not where it's made.** The lashes were fitted to the lids in the Studio, in each
+  state of the blink, and the export takes the Studio's states: so the file should have held fitted lashes. It held
+  499 points under the shut lid. Between the Studio's state and the file there is a step that moves each lash whole
+  with its root and keeps the root off the eyeball: right for a stiff hair, and after the fit. Measured on the file
+  (LASHFIT reads the glb, not the page), it showed at once; the fix is the same fit again as the export's last step,
+  on the file's own skin put together the way Godot puts it together. A bake is checked on what the bake wrote.
+- **Two skins pressed together have no "on top".** The bake left 366 points a tenth of a millimetre under the shut
+  lid, and more passes moved 1,500 points every time without settling: out of the lower lid's margin is into the
+  upper's. Printing which way the skin over each point faced (192 down, 174 up) said what a count never would. The
+  rule isn't a looser tolerance: a point between two skins that face each other is hidden by both, and goes onto
+  the skin it's under with no lift. (Left alone was the first answer, and wrong: a point left deep in a lid at the
+  shut weight pulled its lash under the skin half way to it. What's held at the baked weights is also what the
+  blend between them starts from.)
+- **Test the rule on the file before paying for an export.** Each export is five minutes here. The last three
+  changes of the seam rule were tried by fitting the exported file's own states again in node (ten seconds) and
+  measuring as the check does; only the one that held was exported.
+- **Before changing the geometry a third time, ask the check which triangle.** EYELIDS failed on the look by 0.39
+  mm². The cornea's bulge was halved, the eye's surface was sampled over a neighbourhood, the lining was put under
+  the dome: 0.39, 0.39, 0.065. Then the triangles under the counted pixels were printed: all of them the lower lid's
+  margin, edge-on to the eye, running into the eyeball as it's built to; the check left out what was inside the
+  white's *sphere*, and a lid lying on the cornea has the *dome* over that ledge. The plain base character failed
+  the same way (0.043) before anything of this branch touched a lid. Twenty minutes of diagnosis would have saved
+  three exports. (The lining under the dome stays: a lid's back should follow the surface the lid lies on.)
+- **A name for a view isn't its direction.** "below" in EYELIDS is the camera above, looking down on the lower lid's
+  ledge. A back-face rule written for "seen from underneath" changed nothing; the rotation's sign, worked out on one
+  normal, said why.
+
 ## Eyes v3: what took a second try (2026-11-12)
 
 - **A page that never says it's ready is waiting for something: ask it what.** The first drive of the Character

@@ -2,6 +2,37 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-13, the lashes (the user, with a marked picture, while eyes v3 was being checked)
+
+- **"Once you're done I want you to fix the eyebrow issues that all eyelashes have where they don't sit on top of the
+  skin (light clipping in the red circles), come up with a solution that knows how to place the eyelashes in more
+  realistic manner and then bakes it for godot, eyelids only ever close / blink so it shouldn't be too intricate with
+  the eyelid motions."**
+- **The picture:** EYESV3's sheet on a phone, the eyes v3 character's eye in Godot, two red rings on the upper lid:
+  a patch of skin showing in the dark lash band toward the outer corner, and along the lid's middle the band broken,
+  a line of light skin between it and the eye.
+- **My reading:** "eyebrow" is the eyelashes (the rings are on the lash line; the brows aren't in the picture). The
+  ask is for every lash set, not only eyes v3's: lashes and the lash line that are on top of the lid's skin, placed
+  from the skin itself, and baked into the export so Godot has nothing to work out; the lids only blink, so the
+  blink's steps are all that has to be held.
+- **What it was** (looked at close, with the lashes hidden and shown; measured on the export): the lashes are built
+  from a few lines along each lid and swung with the lid as it shuts, while the skin they stand on is a mesh bent its
+  own way by the eye's shape keys, the sculpt and the blink. A lash's root sat under the skin, so the hair seemed to
+  start in mid air a millimetre down the lid; the lash line's strip cut chords under the lid's rounded rim. On the
+  eyes v3 character 2,440 of the lashes' 21,398 points near the skin were under it at rest, 3,794 with the eye shut
+  (1.2 mm deep), and 54 of the lash line's 330.
+- **Built the same day** (`tools/character/lashfit.js`, docs/CHARACTER_STUDIO.md §2i): after the lashes are made they
+  are fitted to the lids' own skin as it is in that state: the lash line's every point put on the nearest skin, a
+  hair's breadth off it; every point of a lash that is under the skin (or nearer than a hair's breadth) lifted out to
+  it, the rest of the lash left as made. **Baked for Godot as the export's last step** (`bakeLashFit`): the file's
+  own skin round the eyes is put together in each state of the blink as Godot will put it together, the file's lashes
+  and lash line are fitted to it there, and their blink targets written again from the fitted states, so each target
+  holds lashes lying on the lid as it is at that weight: nothing for Godot to do. (The Studio's own fit per state
+  wasn't enough: a file moves each lash whole with its root through the blink, which put some back under the shut
+  lid.) Where the two lids' margins press together, shut, a lash between them has no place a hair's breadth off
+  either and is hidden by both: it's put on the skin it's under, between the two, and counted. LASHFIT (`node tools/character/lashfit_check.mjs [--person NAME]`)
+  holds it on a made-up lid and on an export, at rest and at every twentieth of the blink.
+
 ## 2026-11-12, eyes v3 (the user, with two pictures of their own render)
 
 - **"Create a new branch called eyes-v3, see if you can re-create in our studio creator -> godot (including optimizing

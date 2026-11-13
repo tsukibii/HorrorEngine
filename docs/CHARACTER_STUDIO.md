@@ -173,7 +173,13 @@ it; within 15 mm of the eye's centre the base mesh has 4,391 points at its secon
   and lies in it (the lining, the lids' backs on the eye), reaches 2.5 mm behind the eye's front (the base mesh's lids are 2 to 3
   mm thick: farther is the far lid's rim through the opening) and takes contact within 0.1 mm as the lids' touch:
   `_graftedeyes` (a copy of `_studiotest` with the grafted eyes) at most 0.008 mm² through the blink, shut nothing, held shut in
-  Godot nothing.
+  Godot nothing. Since eyes v3 (2026-11-13) it also leaves out a lid's **margin** where it stands edge-on to the eye
+  (its facing within 72° of square to the line from the eye's middle, `FRONT`): the ledge between a lid's front and
+  its back runs into the eyeball by design. Over the white the part of it in the eye was inside the white's sphere
+  and never counted; under a lid that lies on the cornea (eyes v3's lower lid at rest, any lid as it blinks across
+  the iris) the eye's surface is the dome's, further out, and the dome hiding the ledge's inner part read as the eye
+  through a lid: 0.043 mm² on a plain v2female character, 0.39 on the eyes v3 one, with nothing wrong in either
+  picture. Held to the lid's front alone they measure 0.010 and 0.013.
 - **Not yet**: the eyelid-line handles on the graft; a lighter waterline along the shut lash line (the bake carries a
   little of its pink to the lid's front).
 
@@ -680,14 +686,14 @@ is a face's makeup, lips and skin, an eye look can go on any of them.
 | a long almond opening, the outer corner a little higher, the upper lid resting low over the iris | the shape keys: Tilt, Inner fold, **Opening** well under −1 (its slider now runs to −2.5: at −1 the lid moved a millimetre, not enough to rest on the iris), Eye size |
 | a thin fold close above the lashes | Hooded lids (the sculpt's) |
 | the upper lashes a soft dark band along the lid, hardly hairs | the lash style **Eyes v3**: short (5 mm), no curl, Lift below 0 (down over the eye), the lash line at 1 |
-| the lower lashes long, fine, sparse, in little points down the skin | **Lower lashes in points** (new, `lowerSpikes`): clusters of two to four whose roots stay apart and whose tips draw together; Lower lashes down |
+| the lower lashes long, fine, sparse, in little points down the skin | **Lower lashes in points** (new, `lowerSpikes`): clusters of two to four whose roots stay apart and whose tips draw together; Lower lashes down; the lash look **Ink black** (new: hardly a sheen, and `coverage`, how much denser a game draws each fine hair than its width alone gives, which Godot's HSHair reads from the export: a fine lash is a dark line, not a brown wash over the skin) |
 | a silver shimmer on the lid above the lashes | **Lid gloss** and **Lid glitter** (new, Makeup): the lid wet up to the crease; flakes a quarter of a millimetre across in a band two millimetres up from the lashes, each pale, mirror smooth and tilted its own way (colour, roughness and relief: all three are baked into the export) |
 | rose all round the eye, a wet pink waterline, a lit under-eye | Eyeshadow, Under-eye shadow, Inner corner, Waterline, Aegyo-sal |
 
 **The new controls** are in the tables they belong to, so every character has them and an export carries them:
 tools/shared/eye.js `EYE_CONTROLS` (Catchlights that stay, Second's size / across / up, Wet line in the cornea, Room
 lights in the cornea (game), Catchlights in the dark, White brightness (game), White warmth (game); all at values
-that change nothing on a character saved before them), browlash.js (`lowerSpikes`), skinshader.js (`lidGloss`,
+that change nothing on a character saved before them), browlash.js (`lowerSpikes`, the look `lash_ink`), skinshader.js (`lidGloss`,
 `lidGlitter`, `glitterColor`), eyegraft.js (Opening from −2.5; EYEPATCH tries its new end too). The export's eye record
 also says the fit's Lid shadow and Eye occlusion now (Godot's wet layer shades by them). The **beauty** light (the
 view bar): big and soft from the front and a little above, a rosy room, the film curve: what the cards are pictured
@@ -704,6 +710,74 @@ under.
 EYELOOKS (`node tools/character/eyelooks_check.mjs`, in check_all) holds every name in a look to a control that
 exists, within its slider, and Godot's port of the eye's paint to this side's. EYESV3 (docs/GODOT_LOOK.md §5v) is the
 look in Godot.
+
+## 2i. Lashes on top of the lid's skin, through the blink (DECISIONS 2026-11-13, the lashes)
+
+The user's marked picture: skin showing in the dark lash band, the lower lashes starting in mid air under the lid.
+"They don't sit on top of the skin ... a solution that knows how to place the eyelashes in more realistic manner and
+then bakes it for godot, eyelids only ever close / blink."
+
+**Why they were under it.** The lashes are built from a few lines along each lid (browlash.js: the lid's edge and
+three points over its rim, seventeen places a lid, straight between them) and swung with the lid as it shuts about
+the eyeball's middle. The skin they stand on is the grafted lids' mesh, bent its own way by the eye's shape keys,
+the sculpt (a hooded fold, a bigger eye) and the blink, and lifted over the cornea. Between the two a lash's root sat
+up to a millimetre under the skin, the lash line's strip cut chords under the rounded rim, and a fold lay over both.
+
+**The fit** (`lashfit.js`, run by `browLash()` as its last step: `lashFit`). The lids' skin as it is now (the graft's
+points and triangles, its lining left out: the lid's back on the eye isn't skin to stand on) goes into a grid, and:
+
+- **the lash line**: every point is put on the nearest skin, 0.09 mm off it. It is the skin's own dark edge;
+- **a lash**: every point of it that is under the skin, or nearer than 0.06 mm, is lifted out to that; the rest of
+  it, out in the air, is left as it was made. So a lash lies along the skin from its root until it leaves it, as a
+  hair does, and its tip is where its style put it.
+
+Twice over (a point lifted out of one face of a fold can land in the other). The way out is the nearest triangle's
+facing; where two are as near (over an edge) the one the point is more squarely behind decides. About forty
+milliseconds for both eyes' lashes.
+
+**The seam.** Shut, the upper lid's margin lies on the lower's: two skins facing each other with nothing between
+them, and the first stretch of every lash runs between the two (a lash is rooted at the margin's back and lies over
+it to its front edge). There is no place a hair's breadth off the skin there: out of one lid is into the other, and
+a fit that tries goes back and forth (the first bake left 366 points a tenth of a millimetre in one lid or the
+other). It isn't wanted either: both lids hide what's between them. So a point that is under one skin and, put out
+of it, behind another that faces against it, or nearer to it than a hair can lie, no deeper than 0.35 mm (`inSeam`:
+a lid's own back is a lid's thickness away, not that), goes **onto the skin it's under, with no lift**: between the
+two. (Left where the blink had put it, deep in one lid, it pulled its lash under the skin on the way there, between
+two weights.) The fit's last pass settles what's left the same way (`settle`: a place off one skin that is under
+another, where the lids meet at an angle at the eye's corners). Where the lash comes out in front of the seam it lies
+on the skin as anywhere.
+
+**Through the blink, baked.** The lids only blink. The Studio makes the lashes again in each state of the lids, and an
+export takes them at each of the blink's nine weights (`blinkShapes`: the blink's own target and its eight
+in-betweens). That alone wasn't enough: a file's lashes aren't quite the Studio's. In a file each lash is moved whole
+with its root through the blink and its root kept off the eyeball (`blinkTargets`' cards: a lash is a stiff hair, it
+doesn't bend as the lid does), which put some of them back under the shut lid's skin (measured on the first export
+with the fit: none under at rest, 499 points shut). So the export's last step is the same fit again on the file's
+own geometry (`bakeLashFit` in the package): the file's skin round the eyes, its lining left out, is put together in
+each state as Godot will put it together (the rest, the shut target's share and that weight's in-between), the
+file's lashes and lash line are fitted to it there, and their targets are written again from the fitted states. Each
+of the export's blink targets then holds lashes lying on the lid as it is at that weight. Godot's HSBlink plays them
+as it always did; there is nothing to work out in the game. What it did is in the file's extras (`lashFit`: the
+states fitted, the points that were under and how deep, the points moved).
+
+**Off**: `st.lash.fit: false` in a character's file (no switch in the tab: there's no look that wants lashes under the
+skin).
+
+LASHFIT (`node tools/character/lashfit_check.mjs`, in check_all): on a made-up lid (a rounded rim, a margin, a lining)
+the signed distance against the slow way, a lash line laid as chords under the rim put on it, lashes rooted under the
+skin lifted out and left alone in the air, nothing on the lining, the same twice, shut: lashes between two margins
+pressed together left as made and lifted where they come out in front, twenty thousand points in a fifth of a second.
+With `--person NAME` (or `--glb FILE`) an export's lashes and lash line against its skin as Godot puts the targets
+together. The skin is the skin a lash can lie on: the file says which of its triangles are the lids' lining (the
+skin node's extras, `lining`: runs of first and how many), and they're left out as the fit leaves them out. **At
+rest and at each weight the file holds a target for** (the nine of the blink): no point under the skin by more than a
+twentieth of a millimetre. **At every twentieth between them**, where Godot blends two fitted states: no more than a thousandth of the points,
+none 0.3 mm deep. (That much is left, and is what a blend of two states is: a lash moves whole with its root while
+the lid bends, so its place on the rim's top at one weight and on the rim's front at the next are joined by a
+straight line through the rim's rounded corner. Ten points of 24,352 on the eyes v3 character, for a frame of a
+blink.) The points in the seam are counted apart, and there are none while the eye is under nine
+tenths shut. On the eyes v3 character before the fit: 2,440 of 21,398 points under at rest, 3,794 shut (1.2 mm
+deep), 54 of the lash line's 330.
 
 ## 3. Each stage against the rule (as of this branch)
 

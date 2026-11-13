@@ -244,6 +244,7 @@ import * as LIPS from "./lips.js";
 import * as NAILS from "./nails.js";
 import * as LOOKS from "./looks.js";
 import * as EL from "./eyelooks.js";
+import * as LF from "./lashfit.js";
 import * as ACCS from "./accessories.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import * as LOOK from "./tailor/look.js";
@@ -1945,10 +1946,22 @@ function openings() {
 function eyeSurf(side) {                              // how far the eyeball's surface is from its centre along a way (the head's space): its white's sphere, or the cornea's dome where it bulges past it
   const m = EYES[side], sh = eyeShapeOf(side); m.updateMatrix();
   const R = new THREE.Matrix3().setFromMatrix4(m.matrix), Rt = R.clone().transpose(), s = m.scale.x, e = new THREE.Vector3();
-  return (x, y, z) => {
+  const one = (x, y, z) => {
     e.set(x, y, z).applyMatrix3(Rt).divideScalar(s).normalize();   // the way in the eye's own frame (its pole forward)
     const b = sh.zc * e.z, q = b * b - sh.zc * sh.zc + sh.rc * sh.rc; if (q < 0) return s;
     const t = b + Math.sqrt(q); return t * e.z >= sh.zl ? s * Math.max(1, t) : s;
+  };
+  // the dome's shoulder: the cornea rises steeply from the limbus, and a lid's triangle (a millimetre across) with one
+  // corner on the white and one on the dome cut a chord through it (a third of a millimetre of eyeball through the lid's
+  // edge wherever a lid rests on the iris: EYELIDS, on the eyes v3 look, whose lids both do). So the surface a lid rides
+  // is the highest within about a millimetre round where it is: it starts out before it reaches the dome
+  const D = 0.075, u = new THREE.Vector3(), v = new THREE.Vector3(), w = new THREE.Vector3();
+  return (x, y, z) => {
+    let m = one(x, y, z);
+    w.set(x, y, z); u.set(1, 0, 0); if (Math.abs(x) > 0.8) u.set(0, 1, 0);
+    u.addScaledVector(w, -u.dot(w)).normalize(); v.crossVectors(w, u);
+    for (const [a, b] of [[D, 0], [-D, 0], [0, D], [0, -D]]) m = Math.max(m, one(x + a * u.x + b * v.x, y + a * u.y + b * v.y, z + a * u.z + b * v.z));
+    return m;
   };
 }
 function eyeDraw(graft) {                              // the eyeballs through the stencil (the cut openings) or, with the grafted eyes, behind real lids
@@ -2978,10 +2991,28 @@ function browLash() {
     r.lashes.dispose(); r.lashes = BL.strandCards(G.lashes, "lashes");
     r.brows.dispose(); r.brows = BL.strandCards(G.brows, "brows");
   }
+  r.cards.fit = lashFit(r);                             // the lash line and the lashes kept on top of the lids' skin as it is now (lashfit.js)
   BLU.brow.atlas.value = fineBrows() ? FINEATLAS : BLATLAS;   // a brow hair to a card for the ones by hand, the clumps' atlas for ours
   for (const [k, g] of [["lash", r.lashes], ["line", r.line], ["brow", r.brows], ["fill", r.fill]]) { BLM[k].geometry.dispose(); BLM[k].geometry = g; }
   if (st.groom.on) BLM.fill.visible = false;            // (no fill under the brows by hand: the skin shows between their hairs)
   BLNOW = r.cards;
+}
+// the lashes on the skin (lashfit.js; DECISIONS 2026-11-13, the lashes): the lash line's strip and every lash fitted to
+// the grafted lids' own skin as it is in this state (their shape keys, the sculpt, the blink): the strip put on the
+// skin, a hair's breadth off it; a lash's points lifted out where they're in it, so it lies along the skin from its
+// root until it leaves it. Run each time the lashes are made, so once a state of the blink in an export (blinkShapes):
+// every blink target holds lashes fitted to the lid as it is there. The lining (the lid's back, on the eye) isn't skin
+// to stand on. Twice: a point lifted out of one face of a fold can land in the other
+function lashFit(r) {
+  if (!(graftOn() && GRAFT && GRAFTV.L && GRAFTV.R) || st.lash.fit === false) return null;
+  const mm = 0.001 * SCALE, out = { near: 0, moved: 0, under: 0, deepest: 0 };
+  const skins = ["L", "R"].map(side => { const ring = GRAFT.sides[side].ring; return LF.makeSkin(GRAFTV[side], GRAFT.sides[side].faces, { skip: i => ring[i] < 0, cell: 1.2 * mm }); });
+  for (const [g, o] of [[r.line, { lift: 0.09 * mm, reach: 2.5 * mm, all: true, within: 0.35 * mm }], [r.lashes, { lift: 0.06 * mm, reach: 2 * mm, within: 0.35 * mm }]]) {
+    const pos = g.attributes.position; if (!pos || !pos.count) continue;
+    for (let pass = 0; pass < 2; pass++) for (const S of skins) { const f = LF.conform(pos.array, S, pass ? { ...o, settle: true } : o); if (!pass) { out.near += f.near; out.under += f.under; out.deepest = Math.max(out.deepest, f.deepest / mm); } out.moved += f.moved; }
+    pos.needsUpdate = true; g.computeBoundingSphere();
+  }
+  return out;                                          // (how many points were near the skin, were under it and how deep (mm) before, were moved: the checks read it)
 }
 // a lid's rim: MHR's lid line runs along its back edge, where the lid meets the eye, and the lashes grow from its front
 // edge (in the upper lid's middle 2.4 mm forward and 1.5 mm out from the line, in the lower's about 0.9 and 1); the rim
@@ -3859,8 +3890,18 @@ function exportSkin(SH = null) {
     }, null, true, [Float32Array.from(nrm), st => shading(st.show)]);
     g.morphAttributes.position = tg; if (tg.normals?.length === tg.length) g.morphAttributes.normal = tg.normals;
   }
+  if (graft) {                                          // which corners are the lids' lining (the graft's loops under 0: the lid's back, on the eye): not skin for a lash to lie on (bakeLashFit)
+    const nL = graft.geometry.userData.nL, n = pos.length / 3, lining = new Uint8Array(n);
+    for (let c = nM; c < n; c++) { const v = gIdx[c - nM]; if ((v < nL ? GRAFT.sides.L.ring[v] : GRAFT.sides.R.ring[v - nL]) < 0) lining[c] = 1; }
+    g.userData.lining = lining;
+  }
   const m = new THREE.Mesh(g, skinFileMaterial());
-  m.name = `${WHO}_skin`; m.userData.srcI = srcI; m.userData.srcW = srcW;   // each corner's three MHR points and their shares (its weights)
+  m.name = `${WHO}_skin`; m.userData.srcI = srcI; m.userData.srcW = srcW;
+  if (g.userData.lining) {                              // (the file's extras: which of the skin's triangles are the lids' lining, as runs [first, how many, ...]: a reader that asks what skin a lash can lie on leaves them out, LASHFIT)
+    const L = g.userData.lining, runs = [];
+    for (let t = 0, nt = L.length / 3; t < nt; t++) if (L[t * 3] || L[t * 3 + 1] || L[t * 3 + 2]) { if (runs.length && runs[runs.length - 2] + runs[runs.length - 1] === t) runs[runs.length - 1]++; else runs.push(t, 1); }
+    if (runs.length) m.userData.lining = runs;
+  }   // each corner's three MHR points and their shares (its weights)
   if (under) m.userData.underClothes = under;          // (the file's extras: how many of MHR's triangles the clothes hide, left out)
   if (graft) m.userData.eyeGraft = true;                // (the file's extras: the grafted eyes, their lining inside the eyeballs: EYELIDS)
   g.setAttribute("mhrp", new THREE.Float32BufferAttribute(srcI, 3)); g.setAttribute("mhrw", new THREE.Float32BufferAttribute(srcW, 3));   // the same in the file (_MHRP, _MHRW): the desk plays MHR's face shapes through them (tools/shared/face.js)
@@ -4136,8 +4177,10 @@ function exportRig(root, parts, SH = null) {
     g.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(idx, 4)); g.setAttribute("skinWeight", new THREE.Float32BufferAttribute(sk.weight, 4));
     const m = new THREE.SkinnedMesh(g, mat); m.name = name; m.frustumCulled = false; root.add(m); m.bind(skel, I); return m;
   };
+  let FITSKIN = null; const FITLASH = [];              // the file's skin and its lashes, for the last step (bakeLashFit)
   for (const [o, how] of parts) {
     if (how === "skin") {                               // MHR's own weights, by each corner's points (blended where a triangle was split along an opening)
+      FITSKIN = o.geometry;
       const I = o.userData.srcI, F = o.userData.srcW, n = I.length / 3, idx = new Uint16Array(n * 4), w = new Float32Array(n * 4), acc = new Map();
       for (let c = 0; c < n; c++) {
         acc.clear();
@@ -4146,7 +4189,7 @@ function exportRig(root, parts, SH = null) {
         top.forEach(([b, x], k) => { idx[c * 4 + k] = b; w[c * 4 + k] = x / sum; });
       }
       // (studioScale: the Studio's metres to one of MHR's on the head, what the 72 face shapes' moves are times here: a reader sized them by the body's height, which a child's or a creature's head doesn't follow)
-      wear(o.geometry, o.material, o.name, { index: idx, weight: w }).userData = { studioScale: +SCALE.toFixed(6), ...(o.userData.openings ? { openings: o.userData.openings } : {}), ...(o.userData.eyeGraft ? { eyeGraft: true } : {}), ...(o.userData.underClothes ? { underClothes: o.userData.underClothes } : {}) }; continue;
+      wear(o.geometry, o.material, o.name, { index: idx, weight: w }).userData = { studioScale: +SCALE.toFixed(6), ...(o.userData.openings ? { openings: o.userData.openings } : {}), ...(o.userData.eyeGraft ? { eyeGraft: true } : {}), ...(o.userData.lining ? { lining: o.userData.lining } : {}), ...(o.userData.underClothes ? { underClothes: o.userData.underClothes } : {}) }; continue;
     }
     const own = o.parent === rig;                       // the Studio's own (drawn in the world: back to the rig's space), or made for the file (in it already)
     if (!own) o.updateMatrixWorld(true);
@@ -4173,13 +4216,53 @@ function exportRig(root, parts, SH = null) {
           const out = Float32Array.from(q); for (let i = 0; i < out.length; i += 3) { v.set(out[i], out[i + 1], out[i + 2]).applyMatrix4(M); out[i] = v.x; out[i + 1] = v.y; out[i + 2] = v.z; }
           return liftWith(out, rides);
         }, o === BLM.lash || o === BLM.line ? cardsOf(g) : null);
+      if (o === BLM.lash || o === BLM.line) FITLASH.push([g, o === BLM.line]);
       const worn = wear(g, fileLook(x, g), x.name || o.name, chain ? chained(g, chain) : bone !== undefined ? rigid(P.count, bone) : WEIGHTS.transfer(K, P.array));
       if (chain) worn.userData = { jiggle: { chain: `jiggle_${chain.name}`, bones: chain.n, soft: chain.soft } };
       g.deleteAttribute("along");
     }
   }
   if (CH.size) root.userData.jiggle = [...CH.values()].map(c => ({ chain: `jiggle_${c.name}`, bones: c.n, soft: c.soft }));   // every chain in the file, for a reader that looks there
+  const fit = bakeLashFit(FITSKIN, FITLASH); if (fit) root.userData.lashFit = fit;   // the file's lashes on the file's own skin, at rest and in each state of the blink
   return skel;
+}
+// the lashes baked onto the file's skin (lashfit.js; DECISIONS 2026-11-13, the lashes: "then bakes it for godot, eyelids
+// only ever close / blink"). The Studio fits the lashes to the lids each time it makes them (lashFit), but a file's
+// lashes aren't quite the Studio's: each lash is moved whole with its root through the blink and kept off the eyeball
+// (blinkTargets' cards), which left some of them under the shut lid's skin. So, last of all, the file's lashes and
+// lash line are fitted to the file's own skin (the lids' lining left out) at rest and in each of the blink's states
+// (each eye at each of BLINKW), and their targets written again from the fitted states: a state is the rest, the shut
+// target's share and its in-between (the sum Godot's HSBlink makes), so in every state Godot shows at a baked weight
+// the lashes lie on top of the lid as it is there
+function bakeLashFit(sg, list) {
+  if (!sg || !list.length || st.lash.fit === false) return null;
+  const mm = 0.001 * SCALE, SP = sg.attributes.position.array, lining = sg.userData.lining || null, named = g => Object.fromEntries((g.morphAttributes.position || []).map(a => [a.name, a.array]));
+  const ST = named(sg), lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9], pad = 0.012 * SCALE;
+  for (const [g] of list) { const P = g.attributes.position.array; for (let i = 0; i < P.length; i += 3) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], P[i + a]); hi[a] = Math.max(hi[a], P[i + a]); } }
+  const near = c => SP[c * 3] > lo[0] - pad && SP[c * 3] < hi[0] + pad && SP[c * 3 + 1] > lo[1] - pad && SP[c * 3 + 1] < hi[1] + pad && SP[c * 3 + 2] > lo[2] - pad && SP[c * 3 + 2] < hi[2] + pad;
+  const ix = sg.index ? sg.index.array : null, nt = (ix ? ix.length : SP.length / 3) / 3, faces = [];   // the skin's triangles round the eyes (a file's skin is corners in order)
+  for (let t = 0; t < nt; t++) { const a = ix ? ix[t * 3] : t * 3, b = ix ? ix[t * 3 + 1] : t * 3 + 1, c = ix ? ix[t * 3 + 2] : t * 3 + 2;
+    if (near(a) && near(b) && near(c) && !(lining && (lining[a] || lining[b] || lining[c]))) faces.push(a, b, c); }
+  if (!faces.length) return null;
+  const stateOf = (R, T, side, w) => {                   // a part's places with one eye shut by w (a baked weight): what its targets sum to there
+    const S = T[inName(side, 1)]; if (!S) return null; if (w === 1) return S;
+    const I = T[inName(side, w)]; if (!I) return null;
+    const X = new Float32Array(R.length); for (let k = 0; k < X.length; k++) X[k] = I[k] + w * (S[k] - R[k]); return X;
+  };
+  const skins = new Map(), skinAt = (side, w) => { const key = side + w; if (!skins.has(key)) skins.set(key, LF.makeSkin(side ? stateOf(SP, ST, side, w) || SP : SP, faces, { cell: 1.2 * mm })); return skins.get(key); };
+  const out = { states: 0, moved: 0, under: 0, deepest: 0, seam: 0 };
+  const fit = (X, S, line) => { for (let pass = 0; pass < 2; pass++) { const f = LF.conform(X, S, { ...(line ? { lift: 0.09 * mm, reach: 2.5 * mm, all: true } : { lift: 0.06 * mm, reach: 2 * mm }), within: 0.35 * mm, settle: pass === 1 });
+    if (!pass) { out.under += f.under; out.deepest = Math.max(out.deepest, f.deepest / mm); out.seam += f.seam; } out.moved += f.moved; } out.states++; return X; };
+  for (const [g, line] of list) {
+    const R0 = g.attributes.position.array, T = named(g), was = Float32Array.from(R0), R = fit(Float32Array.from(R0), skinAt("", 0), line), X = {};
+    for (const side of BLINKS) for (const w of BLINKW) { const x = stateOf(was, T, side, w); if (x) X[side + w] = fit(Float32Array.from(x), skinAt(side, w), line); }
+    for (const side of BLINKS) { const S = X[side + 1]; if (!S) continue;
+      for (const w of BLINKW) if (w < 1 && X[side + w]) { const I = T[inName(side, w)], x = X[side + w]; for (let k = 0; k < I.length; k++) I[k] = x[k] - w * (S[k] - R[k]); }
+      T[inName(side, 1)].set(S); }
+    R0.set(R); g.attributes.position.needsUpdate = true; g.computeBoundingSphere();
+  }
+  out.deepest = +out.deepest.toFixed(3);
+  return out;                                          // (the file's extras: how many states were fitted, how many points were under the skin before and how deep (mm), how many were moved)
 }
 // an eyeball for a file: its paint baked flat in the eye's own layout (the export's texture: what a plain viewer shows),
 // its shape and paint in the material's extras (studioEye), its points in eye units (_EYELOCAL): the desk (wearEye) and
