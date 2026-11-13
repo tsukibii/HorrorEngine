@@ -48,7 +48,8 @@ LOCK = threading.RLock()
 
 # the tools to start the day from: shown first, as tiles (labels as in launch.py's TOOLS)
 START_HERE = ["Writers' room (write a game's story as a flowchart: its points, choices, secrets, endings)", "Director's desk",
-              "Character Studio (body, face, skin, hair in the salon, clothes)", "Score room (music)", "Kimodo demo",
+              "Character Studio (body, face, skin, hair in the salon, clothes)",
+              "Animator v2 (a Studio character's own animations: walk, run, sit, sleep, open, reach, made from its body by five sliders and baked into its file)", "Score room (music)", "Kimodo demo",
               "Scene builder (floor plans)", "Street builder (the streets and the outsides of buildings: the map the enterable buildings go into)",
               "Prop generator (every recipe as its picture: open one, change it, drag your pictures onto its texture in the picture editor, PBR sets, make it and its variations, see it in 3D, keep it)"]
 

@@ -552,6 +552,7 @@ func enter_level(lid: String) -> void:
 
 	by_node = {}
 	anim_players = {}
+	body_moves = {}
 	for id in by_id:
 		by_node[by_id[id]["node"]] = by_id[id]
 	if collide != null:
@@ -2504,15 +2505,54 @@ const RUN_SPEED := 2.2                     # m/s: a behaviour this fast plays he
 const LOOK_POSES := ["look", "search", "check"]   # a route point's pose where she looks round (her look_around)
 
 
-## the motion a role plays on her: her own move, else what it falls back to (`fall` false: hers only), else null
+## A body's own clips (DECISIONS 2026-11-13, animation v2: "director tool will use the animations the model comes with
+## rather than the current ones"): a character baked by the Animator (docs/ANIMATOR_V2.md) carries her idle, walk, run
+## and sitting in her own .glb, made from her body. A role the cast gives no motion plays her own clip for it. The names
+## as the file has them (read at run time) and as the editor's importer leaves them (a loop's "_loop" taken off)
+const BODY_MOVES := {"idle": ["idle_loop", "idle"], "walk": ["walk_loop", "walk"], "run": ["run_loop", "run"], "sitting": ["sit_loop", "sit"],
+	"sit_down": ["sit_down"], "stand_up": ["stand_up"]}
+var body_moves: Dictionary = {}            # cid|role -> her own clip's name ("": she has none)
+
+
+## the motion a role plays on her: her own move, else her body's own clip for it, else what it falls back to (`fall`
+## false: hers only), else null
 func move_of(cid: String, role: String, fall: bool = true) -> Variant:
 	var mv = story.cast.get(cid, {}).get("moves") if story.cast.get(cid) is Dictionary else null
 	var r := role
 	while r != "":
 		if mv is Dictionary and str(mv.get(r, "")) != "":
 			return str(mv[r])
+		var own := body_move(cid, r)
+		if own != "":
+			return own
 		r = str(MOVE_FALLBACK.get(r, "")) if fall else ""
 	return null
+
+
+## her body's own clip for a role ("": none), found once
+func body_move(cid: String, role: String) -> String:
+	if not BODY_MOVES.has(role) or not cast_nodes.has(cid):
+		return ""
+	var key := cid + "|" + role
+	if body_moves.has(key):
+		return body_moves[key]
+	var got := ""
+	for nm in BODY_MOVES[role]:
+		if player_with(cast_nodes[cid], nm) != null:
+			got = nm
+			break
+	body_moves[key] = got
+	return got
+
+
+## what the Animator wrote of a body's clips (on its skin's node, from the .glb): how fast its walk travels; or {}
+func body_record(node: Node) -> Dictionary:
+	for mi in node.find_children("*", "MeshInstance3D", true, false):
+		if mi.has_meta("extras"):
+			var ex = mi.get_meta("extras")
+			if ex is Dictionary and ex.get("hsMotion") is Dictionary:
+				return ex["hsMotion"]
+	return {}
 
 
 ## what a cast member plays now, [motion, loops] (STORY_FORMAT §4 behave's `motion` and `rest`, §2 her `moves`): a move
@@ -2750,6 +2790,14 @@ func npc_motion(cid: String, n: Dictionary, node: Node3D) -> void:
 			elif not bool(w[1]):
 				a.loop_mode = Animation.LOOP_NONE            # a move played once (sitting down, getting up)
 		ap.play(nm, 0.3)
+	# her own walk keeps step with how fast she's really going (the Animator says how fast it travels as made)
+	var pace := 1.0
+	if bool(n.get("walking", false)) and nm != "":
+		var info: Dictionary = (body_record(node).get("clips", {}) as Dictionary).get(str(want) if str(want).ends_with("_loop") else str(want) + "_loop", {})
+		if float(info.get("speed", 0.0)) > 0.05:
+			pace = clampf(float((n["s"] as Dictionary).get("speed", 1.1)) / float(info["speed"]), 0.4, 2.2)
+	if ap.speed_scale != pace:
+		ap.speed_scale = pace
 
 
 ## the AnimationPlayer under a node that has a motion (a model's own player and the Kimodo imports' can both be there)
@@ -3594,6 +3642,12 @@ func standin_body(cid: String) -> void:
 	if people:
 		HSEye.wear(body, file)
 	standins[cid] = body
+	for k in body_moves.keys():                      # (her own clips are looked for again on this body)
+		if str(k).begins_with(cid + "|"):
+			body_moves.erase(k)
+	for k in anim_players.keys():
+		if str(k).begins_with(cid + "|"):
+			anim_players.erase(k)
 	var mesh_names: Array = []                       # said once a body, so a stand-in wearing the wrong file or an unskinned mesh can be read off the console
 	for mi in body.find_children("*", "MeshInstance3D", true, false):
 		mesh_names.append(str(mi.name))

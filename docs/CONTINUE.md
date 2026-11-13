@@ -34,9 +34,50 @@ bodies as preset cards, three more heads, two more bodies, and the makeup; 2026-
 main): the user's own eye render matched in Godot (the eye's shader reworked, catchlights that stay, the eye repainted
 from sliders), eye looks as cards in the Studio and the lashes on the lid's skin; the three brought together on
 `make-up-enhanced` on 2026-11-13 (tsukibii/HorrorEngine#27, into main, merged); then on `more-body-presets` (from
-main): a fourth body card, v2 pear, and the Hips & thighs slider. Read this after CLAUDE.md's start
+main): a fourth body card, v2 pear, and the Hips & thighs slider, then two head cards after two pictures (merged,
+PR #28); and on `animation-v2` (from main): **the Animator v2**, a character's own animations made from its body
+(§0 below). Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
+
+## 0. Where `animation-v2` stopped (2026-11-13, after the user's first feedback)
+
+**Built** (docs/ANIMATOR_V2.md): the Animator v2. A Studio export opened in a page (the dashboard's Animator v2 tile,
+port 8788), measured, five sliders, 24 clips made from its body and baked into its own .glb (idle, walk, run, sit,
+sleep, three ways to open a door, three reaches, with the left hand's and the other side's); soft tissue as extra
+bones; no arm through the body, thighs that squash; the face untouched. In Godot: the starter kit's `motion.gd` and
+`act.gd`, `moves.gd` on a model's own clips, the runtime's `body_move` for the Director and the desk's exports.
+Checks: ANIMATOR (in check_all), ANIMATORPAGE, GDMOTION, JIGGLE.
+
+**The user's first feedback, done** (DECISIONS 2026-11-13, the hands and the jiggle):
+- *the palms*: a hand's turn is counted from the body (`pose.js`); resting hands and a runner's loose fists; the
+  run's arms driven back, hip to chest; a bent arm's forearm turned ahead before the arm is carried out (`clear.js`);
+  a hand on a thigh faces the thigh. ANIMATOR holds where palms face, how closed a hand is, where the thumb lies;
+- *the jiggle*, JiggleBones' way (the asset library's 1595, MIT; written again, none of its code): each soft bone a
+  rod from its root, a weight that keeps going, stiffness, damping (`soft.js`); baked as the bone's turn; **live in
+  Godot** by the look plugin's `HSSoftJiggle` (`HSJiggle.attach`; the starter's Motion node's `live_jiggle`); a
+  fifth slider, Bounce;
+- *found on the way*: the run's hips fell 3 cm in one frame at each landing; its rise and fall is now a bounce.
+
+**The three test characters** are on this machine only (`Exports/characters/anim_skinny_man`, `anim_normal_woman`,
+`anim_chubby_woman`: `node tools/animator/people.mjs` makes them again, 18 minutes on a CPU, the Studio's server
+running; then `node tools/animator/bake.mjs` on each). Their sheets: `docs/animator_sheets/` (walks, runs, hands
+close up, acts: `python tools/godot/motion_check.py sheets`, 8 minutes on a CPU).
+
+**Still judged in stills here.** The user's eye on it moving found the palms; expect more of the same kind (the
+walk's character, how much the jiggle shows: *Softness* and *Bounce* are theirs to set, `soft.js` `softPlan` has
+each part's rate, damping and share). A character baked before this must be **baked again** (the soft bones moved to
+their roots: `VERSION` 2); the page does it, or `bake.mjs`.
+
+**Not built** (ANIMATOR_V2 §12), in the order I'd take them:
+1. foot and hand IK in Godot (a seat that isn't 45 cm, a handle that isn't a metre up): `TwoBoneIK3D` is in 4.7;
+2. a turn-in-place clip and a start and stop for the walk (now a blend; the live jiggle already answers them);
+3. a carry pose for a thing in the hand, fingers placed on a handle; sitting on the floor; stairs;
+4. the guides: `guides/animator` is its own guide; `guides/first_game` and tutorial v2 don't use `motion.gd` yet (tutorial v2's hunter still slides
+   unless her model is baked; baking her would give her a walk and a run with nothing else changed);
+5. a Director story word for the acts (sit there, open that) beyond the moves it already plays;
+6. the live jiggle's own switches in the Director's panel and on HSCharacterLook (now: `HSJiggle`'s `soft`,
+   `HSSoftJiggle`'s amount, stiffness, damping in the Inspector once the game runs).
 
 ## Where it stopped last (2026-11-13, `more-body-presets`): two head cards and their hair, after two pictures
 

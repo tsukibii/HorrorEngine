@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Animator v2: a character's own animations</title>
+<!-- The Animator v2 (tools/animator; docs/ANIMATOR_V2.md; DECISIONS 2026-11-13, animation v2). Nothing loads from
+     outside: the pictures in img/ are the page's own test's (node tools/animator/pagetest.mjs --out) and Godot's
+     (python tools/godot/motion_check.py sheets): the three test characters made by tools/animator/people.mjs. -->
+<style>
+:root{--bg:#121214;--panel:#1b1b1f;--panel2:#232329;--line:#33333b;--text:#e6e3dc;--dim:#9a978f;--accent:#e0a25a;--warn:#e0a030;--cue:#9fd39a}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{display:grid;grid-template-columns:250px minmax(0,1fr);max-width:1240px;margin:0 auto}
+nav.toc{position:sticky;top:0;height:100vh;overflow:auto;padding:28px 18px 28px 22px;border-right:1px solid var(--line);font-size:13.5px}
+nav.toc .brand{font-weight:700;letter-spacing:.06em;color:var(--accent);font-size:12px;text-transform:uppercase;margin-bottom:14px}
+nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:s}
+nav.toc li{counter-increment:s}
+nav.toc li a{display:flex;gap:8px;padding:4px 8px;border-radius:6px;color:var(--text)}
+nav.toc li a::before{content:counter(s);color:var(--dim);min-width:18px;text-align:right;font-variant-numeric:tabular-nums}
+nav.toc li a:hover,nav.toc li a.on{background:var(--panel2);text-decoration:none}
+nav.toc li a.on{color:var(--accent)}
+nav.toc .back{display:block;margin-top:18px;color:var(--dim);font-size:12.5px}
+main{padding:34px 44px 90px;min-width:0}
+header.hero{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:10px}
+header.hero h1{font-size:34px;line-height:1.15;margin:0 0 10px;letter-spacing:-.01em}
+header.hero p{color:var(--dim);font-size:16.5px;margin:0;max-width:740px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--dim);background:var(--panel)}
+section{padding-top:30px;max-width:920px}
+h2{font-size:24px;margin:16px 0 6px;display:flex;align-items:baseline;gap:12px}
+h2 .n{color:var(--accent);font-size:15px;font-variant-numeric:tabular-nums;font-weight:600}
+h3{font-size:16.5px;margin:22px 0 4px}
+p{margin:8px 0}
+ul,ol.steps{padding-left:22px;margin:8px 0}
+li{margin:3px 0}
+kbd{font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:2px 6px;color:var(--text);white-space:nowrap}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow:auto;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ui{font-weight:600;color:#f2e6cc}
+.node{font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfe3f2}
+figure{margin:16px 0 20px;max-width:100%}
+figure img{display:block;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.45);background:var(--panel)}
+figcaption{color:var(--dim);font-size:13px;margin-top:7px}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;margin:14px 0}
+.pair figure{margin:0}
+.tip{border-left:3px solid var(--accent);background:linear-gradient(90deg,rgba(224,162,90,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.tip b{color:var(--accent)}
+.note{border-left:3px solid var(--cue);background:linear-gradient(90deg,rgba(159,211,154,.08),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet{border-left:3px solid var(--warn);background:linear-gradient(90deg,rgba(224,160,48,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet b{color:var(--warn)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:12px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h4{margin:0 0 4px;font-size:14px}
+.card p{margin:0;color:var(--dim);font-size:13.5px}
+table.keys{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+table.keys td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.keys td:first-child{white-space:nowrap;width:1%}
+.tree{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;overflow:auto}
+.tree i{color:var(--dim);font-style:normal}
+footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:var(--dim);font-size:13px}
+@media (max-width:900px){.wrap{display:block}nav.toc{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 16px}nav.toc ol{columns:2;column-gap:14px}main{padding:22px 16px 60px}header.hero h1{font-size:27px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc">
+  <div class="brand">Animator v2</div>
+  <ol>
+    <li><a href="#what">What it is</a></li>
+    <li><a href="#export">Export her, open her</a></li>
+    <li><a href="#sliders">The five sliders</a></li>
+    <li><a href="#clips">The clips</a></li>
+    <li><a href="#bake">Bake</a></li>
+    <li><a href="#godot">In Godot: Motion</a></li>
+    <li><a href="#marks">Seats, beds, handles</a></li>
+    <li><a href="#acts">Acts: by a quest's words</a></li>
+    <li><a href="#own">Clips of your own</a></li>
+    <li><a href="#director">In the Director</a></li>
+    <li><a href="#rules">Good to know</a></li>
+  </ol>
+  <a class="back" href="../first_game/index.html">← Your first game, by hand</a>
+  <a class="back" href="../index.html">← All guides</a>
+</nav>
+<main>
+<header class="hero">
+  <h1>Animator v2</h1>
+  <p>A character's own animations, made from her body. Export her from the Character Studio, open her here, move four
+  sliders, bake. Her walk, her run, how she sits, sleeps, opens a door and picks something up are written into her own
+  file, ready for Godot. Nothing is recorded motion: a tall thin man and a short heavy woman get different walks
+  because they have different bodies.</p>
+  <div class="chips"><span class="chip">the dashboard's Animator v2 tile</span><span class="chip">24 clips</span><span class="chip">bones only: any expression over any clip</span>
+  <span class="chip">Godot 4.7</span><span class="chip">motion.gd</span><span class="chip">act.gd</span></div>
+</header>
+
+<section id="what">
+<h2><span class="n">1</span>What it is</h2>
+<p>The three it's tested on: a skinny man (60 kg on 1.80 m), a normal woman (56 kg on 1.63 m) and a chubby woman
+(73 kg on 1.60 m), each walking her own walk in Godot. The man's stride is longest; the heavier woman's steps are
+shorter and slower, her arms carried out past her hips, her thighs pressing together instead of her feet going wide.</p>
+<figure><img src="img/three_walks.jpg" alt="Three characters walking, from the side"><figcaption>One stride each, in Godot. Top to bottom: 1.35, 1.34 and 1.12 metres a second.</figcaption></figure>
+<figure><img src="img/three_walks_front.jpg" alt="Three characters walking, from the front"><figcaption>From the front: how wide each sets the feet, how far the arms hang out.</figcaption></figure>
+<p>Running, her arms are carried bent and driven back: her fists go from beside her hips to in front of her chest, her
+palms to her body. A broad body's forearms point ahead past its belly instead of across it.</p>
+<figure><img src="img/three_runs.jpg" alt="Three characters running, from the side and the front"><figcaption>One stride of each one's run, from the side and from the front.</figcaption></figure>
+<figure><img src="img/hands.jpg" alt="Hands close up: standing, walking, running"><figcaption>Her left hand close up: standing, three moments of the walk, four of the run. A hand at rest has its thumb in by the first finger; a running hand is a loose fist with the thumb on top.</figcaption></figure>
+</section>
+
+<section id="export">
+<h2><span class="n">2</span>Export her, open her</h2>
+<ol class="steps">
+  <li>In the <b>Character Studio</b>: <span class="ui">Export for Godot</span>. Her file lands in <code>Exports/characters/&lt;name&gt;/&lt;name&gt;.glb</code>.</li>
+  <li>On the dashboard (<code>python dashboard.py</code>): <span class="ui">Animator v2</span>, Start, Open. Or by itself:
+  <pre>python tools/animator/serve.py</pre> then <code>http://127.0.0.1:8788</code>.</li>
+  <li>Pick her in <span class="ui">Character</span>. A file from somewhere else: <span class="ui">Open a .glb…</span></li>
+</ol>
+<figure><img src="img/page.jpg" alt="The Animator's page"><figcaption>The page: her in 3D, the clips under her, the sliders and what was measured of her beside her.</figcaption></figure>
+<p>She is <b>measured</b> as she opens: her height, a weight, her bust, waist and hips, her thigh, her legs. From her
+own unclothed body, which every Studio export carries inside it: a thick jumper doesn't make her heavy.</p>
+<p>Drag to turn the view, the wheel to come closer, right-drag to move it. <kbd>Space</kbd> plays and pauses.
+<span class="ui">Slow</span> plays at a quarter speed. <span class="ui">Soft bones</span> shows where her soft tissue hangs from.</p>
+</section>
+
+<section id="sliders">
+<h2><span class="n">3</span>The five sliders</h2>
+<table class="keys">
+<tr><td><b>Walk style</b></td><td>Masculine to feminine. A masculine walk sets the feet wide, squares the stride and swings the shoulders; a
+feminine one sets them nearly in line, lets the hips list and turn, keeps the shoulders quiet. It starts from her body.</td></tr>
+<tr><td><b>Strength</b></td><td>How well she carries her own weight. Strong: she stands tall, lowers herself onto a seat and rises in one
+line. Weak: she sags, drops the last of the way down, rocks, and pushes up off her thighs.</td></tr>
+<tr><td><b>Weight</b></td><td>Her weight is measured. This moves it either way: slower, a little wider and deeper into each step, or
+quicker and lighter.</td></tr>
+<tr><td><b>Softness</b></td><td>How much her bust, belly, seat, hips and thighs move as she does. Her clothes move with them.</td></tr>
+<tr><td><b>Bounce</b></td><td>How long they go on swinging once they've been set going. At the left they settle at once; in the
+middle, a few swings and they're still; at the right they keep ringing.</td></tr>
+</table>
+<p><b>How her soft tissue moves.</b> Each soft part swings from where it's rooted, as a jiggle bone does (the way of the
+JiggleBones plugin for Godot): it lags when she starts, carries on when she stops, and rings a few times. Softness is
+how much of that shows; Bounce is how long it lasts. <span class="ui">Soft bones</span> over the view shows where each
+part is rooted.</p>
+<p>Every slider changes what you're watching at once. <span class="ui">Start again from the body</span> puts them back.</p>
+<div class="tip"><b>Under "This clip"</b> the page says what the clip needed: how far her forearms were turned and her arms
+carried out to clear her body, how much her thighs would have overlapped and how much is left after they squash, how
+far each soft part moves.</div>
+</section>
+
+<section id="clips">
+<h2><span class="n">4</span>The clips</h2>
+<figure><img src="img/acts.jpg" alt="Sitting down, lying down, opening a door, reaching low and high, running"><figcaption>The normal woman in Godot: sitting down, lying down, pushing a door, taking something from the floor and from a shelf, running.</figcaption></figure>
+<table class="keys">
+<tr><td><code>idle</code></td><td>Standing: breathing, her weight on one leg as her style has it.</td></tr>
+<tr><td><code>walk</code>, <code>run</code></td><td>In place, one stride each. Godot moves her; each clip knows how fast it travels.</td></tr>
+<tr><td><code>sit_down</code>, <code>sit</code>, <code>stand_up</code></td><td>Onto a seat 45 cm high; sat, her hands on her thighs; up again.</td></tr>
+<tr><td><code>lie_down</code>, <code>sleep</code>, <code>get_up</code></td><td>She sits on the bed's edge, turns and lies back, her head to her left. Asleep. Up again. (<code>_r</code>: her head to her right.)</td></tr>
+<tr><td><code>open_push</code>, <code>open_pull</code>, <code>open_slide</code></td><td>A hand to a handle a metre up, and the door moved. (<code>_l</code>: her left hand.)</td></tr>
+<tr><td><code>reach_low</code>, <code>reach_mid</code>, <code>reach_high</code></td><td>Taking something from the floor, a table, a shelf. (<code>_l</code>: her left hand.)</td></tr>
+</table>
+<figure><img src="img/page_sit.jpg" alt="Sit, played as the whole of it"><figcaption>Sit and Sleep also play as <span class="ui">the whole of it</span>: down, there a while, up.</figcaption></figure>
+</section>
+
+<section id="bake">
+<h2><span class="n">5</span>Bake</h2>
+<p><span class="ui">Bake into the file</span> writes all 24 clips into her own <code>.glb</code>, in place, in about three seconds. The
+list then says <b>baked</b>. Bake again any time with other sliders: the file isn't any bigger for it.</p>
+<figure><img src="img/page_baked.jpg" alt="A baked character in the page"><figcaption>Baked: 24 clips in her file.</figcaption></figure>
+<div class="note">If you export her again from the Studio (new clothes), her file is fresh again. Open her here: the sliders
+start where she was last baked. Bake.</div>
+<div class="note">A character baked before the hands and the jiggle were reworked (13 November) wants baking again: open
+her, Bake.</div>
+<p>From the command line:</p>
+<pre>node tools/animator/bake.mjs Exports/characters/anna/anna.glb --style 0.6 --strength 0.5</pre>
+</section>
+
+<section id="godot">
+<h2><span class="n">6</span>In Godot: Motion</h2>
+<p>Drop her <code>.glb</code> into your project (<code>python tools/godot_byhand.py exports &lt;your project&gt;</code> brings every
+exported character in). Her clips are in her <span class="node">AnimationPlayer</span> already. To have her do things:</p>
+<ol class="steps">
+  <li>Put her in the scene. Add a <span class="node">Node</span> under her, name it <b>Motion</b>, and give it the script
+  <code>res://starter/motion.gd</code>.</li>
+  <li>From any script:</li>
+</ol>
+<pre>var m := $Her/Motion
+m.walk_to($Hall/ByTheDoor)        # she walks there, turning as she goes
+m.run_to($Kitchen)
+m.sit($Chair/Seat)                # walks to it and sits; m.stand() gets her up
+m.sleep($Bed/Edge, $Bed/Pillow)   # sits on the edge, lies down; m.wake() gets her up
+m.open($Door/Handle, $Door)       # her hand to the handle; the door's own use() as she pushes
+m.pick_up($Key)                   # walks to it, takes it: from the floor, a table or a shelf by how high it is
+await m.done                      # "walk", "sit", "sleep", "open", "pick_up"...</pre>
+<p>She moves at the speed her walk was made for, so her feet keep step. Asked for something while she's sat or asleep,
+she gets up first. Each call takes the place of the one before.</p>
+<div class="tip"><b>Her face is free.</b> The clips move her body's bones only. An expression, a blink, her eyes and her hair's
+springs play over any of them, as they always did.</div>
+</section>
+
+<section id="marks">
+<h2><span class="n">7</span>Seats, beds, handles</h2>
+<p>For <code>sit</code>, <code>sleep</code> and <code>open</code> she needs to know where. A <span class="node">Marker3D</span>:</p>
+<table class="keys">
+<tr><td><b>A seat</b></td><td>On its front edge, at the height you sit at. Its blue arrow (+Z) the way she'll face when she's sat.</td></tr>
+<tr><td><b>A bed</b></td><td>On the edge she gets in from, at the mattress's height, its blue arrow pointing away from the bed. A second
+marker where her head should be (the pillow) picks which way she lies.</td></tr>
+<tr><td><b>A handle</b></td><td>At the handle, its blue arrow pointing into the door (the way she faces to open it).</td></tr>
+</table>
+<p>She walks to where the clip needs her to stand, so her hand comes down on the handle and her hips on the seat.</p>
+</section>
+
+<section id="acts">
+<h2><span class="n">8</span>Acts: by a quest's words</h2>
+<p>The same without a script. Add a <span class="node">Node</span> anywhere with <code>res://starter/act.gd</code>:</p>
+<table class="keys">
+<tr><td><b>Who</b></td><td>The character (her Motion node is found under her).</td></tr>
+<tr><td><b>Act</b></td><td>walk_to, run_to, sit, stand_up, sleep, wake_up, open, reach, pick_up, play, face.</td></tr>
+<tr><td><b>Target</b></td><td>Where, or what: a marker, a seat's, a handle's, a thing. <b>Also</b>: the door for open, the pillow for sleep.</td></tr>
+<tr><td><b>Needs</b></td><td>The Story's words. She does it by herself when they come to hold: <code>task:key</code> (that task ticked),
+<code>on:find_key</code> (on your list), a flag's name.</td></tr>
+<tr><td><b>Then</b></td><td>Another act to fire when she's done. <b>Tick</b>, <b>Flag</b>, <b>Say</b>: a task ticked, flags switched, a line.</td></tr>
+</table>
+<p>A row of these is a routine. "When the power's back she walks to the kitchen, takes the kettle, then sits":</p>
+<pre>Act 1   act walk_to   target Kitchen/ByTheHob   needs task:power   then Act 2
+Act 2   act pick_up   target Kitchen/Kettle                        then Act 3
+Act 3   act sit       target Kitchen/Chair/Seat  tick aoi_sat</pre>
+<p>Anything with a <code>fire()</code> can start one too: an event area, a cue, a scare.</p>
+</section>
+
+<section id="own">
+<h2><span class="n">9</span>Clips of your own</h2>
+<p>A dance, a wave, a scare's own move: anything that isn't one of hers.</p>
+<ul>
+  <li>An animation file: on her Motion node, <b>More</b>: <code>{"dance": "res://animations/dance.res"}</code>. Then
+  <code>m.play("dance")</code>, or an act with <b>Act</b> play and <b>Clip</b> dance.</li>
+  <li>An animation her model already has: just its name.</li>
+  <li>A Kimodo motion (an <code>.npz</code>): a <b>Moves</b> node beside Motion (<code>res://starter/moves.gd</code>) with it in
+  <b>More</b>; <code>m.play("dance")</code> finds it there.</li>
+</ul>
+<p>The hunt's <code>moves.gd</code> uses her own clips too: a baked character stalks and chases with her own walk and run with
+nothing set.</p>
+<h3>Her soft tissue in Godot</h3>
+<p>Every baked clip carries how her soft tissue swings in that clip. A clip can't know what your game does with her:
+that she stops, turns, or plays a dance of yours that has nothing in it for those parts. So in Godot the same swing
+is worked out <b>as the game runs</b>: her Motion node turns it on by itself (<b>Live Jiggle</b>, on), and so does an
+<code>HSCharacterLook</code> under her. Nothing to set up. She jiggles when she pulls up from a run, and in your own
+clips too.</p>
+<table class="keys">
+<tr><td>Less, more, off</td><td>Once the game runs she has an <code>HSJiggle</code> node under her: its <b>Amount</b> (0 none, 1 as
+baked, 2 twice). <b>Soft</b> off: only what her clips carry.</td></tr>
+<tr><td>From a script</td><td><code>$Her/HSJiggle.set_amount(0.5)</code>; after you move her somewhere at once,
+<code>$Her/HSJiggle.reset()</code>.</td></tr>
+<tr><td>No look plugin in the project</td><td>She still has what her clips carry.</td></tr>
+</table>
+</section>
+
+<section id="director">
+<h2><span class="n">10</span>In the Director</h2>
+<p>A character whose model was baked plays her own idle, walk, run and sitting wherever a move is left empty, and her
+walk keeps step with how fast a behaviour moves her. The Animate tab says which moves her model carries; fill the
+rest from the library as before, or leave them.</p>
+</section>
+
+<section id="rules">
+<h2><span class="n">11</span>Good to know</h2>
+<ul>
+  <li><b>A seat that isn't 45 cm high</b>: she's raised or lowered to meet it, up to 12 cm. Her feet float or sink by that much.</li>
+  <li><b>A handle that isn't a metre up, a thing between two heights</b>: she stands so her hand lands near it; it can be off by a few centimetres.</li>
+  <li><b>She walks in straight lines</b> between the places you give her (<code>m.go([a, b, c])</code> for a way round something).</li>
+  <li><b>What she picks up is put away</b> (hidden) as she straightens, unless you say keep it in her hand.</li>
+  <li><b>The left hand's clips start with her weight on the other leg</b>: the blend into them is a small shift of weight.</li>
+  <li><b>A hand closes, it doesn't hold</b>: at a handle or round a thing her hand is a fist; her fingers aren't placed on it.</li>
+</ul>
+<div class="notyet"><b>Not there yet</b>: hands and feet corrected in Godot to reach exactly; a turn on the spot; walking up
+stairs; carrying something.</div>
+</section>
+
+<footer>The Animator v2 (<code>tools/animator</code>, <code>docs/ANIMATOR_V2.md</code>). The page's pictures are its own test's
+(<code>node tools/animator/pagetest.mjs --out</code>), Godot's are <code>python tools/godot/motion_check.py sheets</code>: the three test
+characters, made by <code>node tools/animator/people.mjs</code>.</footer>
+</main>
+</div>
+<script>
+// the contents follow the reading: the section on screen is lit
+const links = [...document.querySelectorAll("nav.toc ol a")], secs = links.map(a => document.querySelector(a.getAttribute("href")));
+const lit = () => { let at = 0; secs.forEach((s, i) => { if (s && s.getBoundingClientRect().top < 140) at = i; }); links.forEach((a, i) => a.classList.toggle("on", i === at)); };
+addEventListener("scroll", lit, { passive: true }); lit();
+</script>
+</body>
+</html>

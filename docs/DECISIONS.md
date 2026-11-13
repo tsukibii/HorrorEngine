@@ -2,6 +2,68 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-13, the hands and the jiggle: the Animator's first feedback (the user, with a screenshot)
+
+- **"Very good, some feedback. Enhance the hand positioning in walk and run animations (and any others), as you can
+  see in the screenshot for running the palms arent really rotated correctly, when you run the palms would be towards
+  the body not towards the ground."** (The screenshot: the chubby woman in the Animator's page, running, her hands
+  flat in front of her hips with the palms down.)
+- **"For soft jiggle see if you can emulate the following free open source plugins style
+  https://godotengine.org/asset-library/asset/1595"** (the asset library's 1595 is **JiggleBones (4.0)**: BauxiteDev,
+  Cory Petkovsek, Yael Atletl; MIT. Its page couldn't be opened from the cloud session (godotengine.org isn't in the
+  session's allowed hosts); its repository's README and script were read.)
+- **What it settles**: a hand's turn is counted from the body, so a palm faces the body however the arm is carried;
+  a hand at rest is a hand at rest (not a rig's rest pose) and a running hand a loose fist; a runner's arms are
+  driven back, the hand from the hip to the chest; a bent arm's forearm is turned to point ahead before the whole
+  arm is carried out. The run's rise and fall became a smooth bounce on the way (it fell 3 cm in one frame at each
+  landing: found by what hung from it). Each soft bone is a **jiggle bone**, JiggleBones' way written again (a rod
+  from where the flesh is rooted, a weight that keeps going, stiffness, damping, the bone turned to point at it),
+  baked into the clips and swung **live in Godot** by the look plugin (`HSSoftJiggle`), so it answers a stop, a turn
+  and a clip of the user's own. One departure from the plugin, on purpose: damping is against the body, not the
+  world (on a rod of a few centimetres a drag against the world leans every soft bone back at walking pace). A fifth
+  slider, **Bounce**: the plugin's damping. None of the plugin's code is in the project; it's named where its way is
+  used. docs/ANIMATOR_V2.md §4 to §7 and §10, docs/GODOT_LOOK.md §5w.
+
+## 2026-11-13, animation v2: our own animation system, made from each character's body (the user)
+
+- **"I merged in main. I'm not actually a fan of kimodo animations. Realistically I don't need that many animations
+  so I want you to create an extremely unique, original, animation system for my godot games that has animations for
+  walking, running, opening, reaching, sitting, sleeping, idle."**
+- **"Ideally you make a very simple UI for the animation system that as some basic slider for users, for neatural to
+  feminine walking."**
+- **"This new original system should be able to see the character we created in studio, and each characters
+  animartion slightly differs based off their weight, proportions etc, so a bustier female character walks different
+  than a skinny woman, same for men, the most important think about this semi produceral system is that the
+  characters feel like theyre effected by the physics of their weight (aswell as a slider for strength), and they
+  avoid clipping against their own body. I dont need the animation to be fully procudural since that is intensive to
+  calculate, however maybe a new tool with a new tab in dashboard where we can import the exported godot model into
+  animatorv2, and choose the modfiers."**
+- **"My ideal workflow is that the exported characters once in blender, will utilize their own custom aniamtions
+  which we can just event in like walk from here to here, pick this up, etcc , that are synced to quests . However we
+  still can import ustom animations for certain events (tat wont be related to walking, more like dancing, or stuff
+  like that)."** ("in blender" is read as "in Godot": there is no Blender step in this.)
+- **"First thik about how you could do this smartly, I assume in the animation craetor it will check the body
+  proportions and calcualte the animations based of feminine, masculine, strength, weight (proportions) to avoid hand
+  clipping and thigh clipping, maybe we can even consider baking in more generic physics for the fat etc into the
+  animations so if the chasracter has a bit of chub wer have some light squishyness (that effects clothing too etc),
+  or thifck thighs rather than making the characters walk really wide an unrealistic we would add some squish between
+  the thighs as they pass through."**
+- **"I imagine how we would work this is, I export my studio godot character, then the animation new tool lets me
+  import them and modify the sliders etc, then we bake all the animations in (ready for the godot horror engine to
+  use out of the box), then we can either import the characterd irectly into godot or if we use director tool ,
+  director tool will use the animations the model comes with rather than the curren tones."**
+- **"You dont need to simulate for mathematical realism, just for asthetic trickery, as in it looks like theyre real
+  people, almost like we are watching dark anthology series (without the mocap) . Call this new branch animation-v2 .
+  Think of the best way to acheive our goalss. For testing just do a skinny man, normal woman, chubby woman. Add some
+  soft light physics to bust and hips too"**
+- And while it was being built: **"make sure to keep facial epressions as a seperate entity how we alradyu handle (so
+  we can mix and match body aniamtions with expressions)"**: a body clip moves bones only (the body's and the soft
+  tissue's), never a face shape, a blink or an eye bone; ANIMATOR holds every baked clip to that.
+- **What it settles**: the branch is `animation-v2` (from main, which has pull request #28). Kimodo is no longer the
+  way a character gets its everyday moves: those are made here, per character, from its own body, and baked into
+  its file; Kimodo's reader stays for anyone's own clips. A clip from somewhere else (a dance) is still brought in
+  by name. The test characters are a skinny man, a normal woman and a chubby woman. docs/ANIMATOR_V2.md.
+
 ## 2026-11-13, two heads: two head cards and their hairstyles after two pictures (the user, with two pictures)
 
 - **"Create two head presets that match the head shape and hairstyle (seperate hthe hairstyle preset into the hair v2

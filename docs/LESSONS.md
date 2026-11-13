@@ -3,6 +3,38 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The hands and the jiggle: what the user's eye found, and what took a second try (2026-11-13, `animation-v2`)
+
+- **An angle counted from a moving part goes where the part goes.** The hand's turn was counted from the elbow's own
+  axis. Carry the arm wide of a broad waist, or turn it in at the shoulder, and that axis tips toward the floor: the
+  palm tipped with it, and a runner's palms faced the ground (0.84 to 0.98 downward on every test body). Count a
+  thing's facing from what it should face: the body. Measured before it was touched (`palm · down`, `palm · toward
+  the body`), so the fix had a number to move and a check to hold it.
+- **Stills pass what motion fails.** The first round was tuned on contact sheets and "no arm inside the body"; the
+  hands were right by every number there was and wrong to the eye in a second. A check now says where a palm faces,
+  how closed a hand is and where a thumb lies. When something is judged in motion, write down what the eye would
+  ask, and measure that.
+- **A rig's rest pose is not a hand at rest.** Fingers apart and flat, the thumb well off the hand: curled a little,
+  that reads as a claw. A resting hand has its fingers together and its thumb by the first finger; a fist's thumb
+  lies along the first finger, not across the fingers curling into the palm.
+- **Clear a thing by the move that costs nothing first.** A runner's forearms crossed the chubby woman's belly, and
+  the fix carried her whole arms 22 degrees wide: chicken wings. Turning the forearm to point ahead clears the same
+  forearm and moves the upper arm nowhere (29 degrees of turn, 8 of carrying).
+- **What hangs from a curve shows its kinks.** The run's hips fell 3 cm in the single frame of each landing (their
+  height was read off the knees, which rise into take-off and drop at the next heel). No still showed it. A soft
+  bone on the pelvis did: it slammed 37 degrees in a frame. Before tuning a spring to hide a slam, look at what is
+  driving it. The run's rise and fall is now a bounce drawn as one (lowest mid-stance, highest mid-flight).
+- **A borrowed rule carries its scale with it.** JiggleBones damps a weight's speed against the world, on a rod a
+  whole unit long: at a character's pace that drag is nothing. On a rod of 7 cm the same rule leaned a breast back 7
+  degrees at a walk and would have laid it flat at a run. In place clips never showed it (nothing travels); the first
+  measure with the character carried along did. Damp against the joint instead: with the joint still it is the same
+  rule to the last digit.
+- **A point in the world, shown against a joint that has moved on, is a wrong angle.** Between ticks the weight was
+  shown from the joint as it is now; at a run the joint is 5 cm on from where it was at the tick, most of a rod's
+  length: 42 degrees of lean from nothing. Show the weight as it stood from its joint at the tick.
+- **A palm asked to face "down" faces away from the leg on an arm coming down to it.** The hand pushing off a thigh
+  flipped as she rose. What it should face is the thigh: the thigh's own top, which turns with the thigh.
+
 ## v2 pear: what took a second try (2026-11-13)
 
 - **A low-poly reference gives proportions, not an outline.** The first version was held to the picture's two width
@@ -3100,3 +3132,35 @@ pale one shows.
   the whole lower face the way faces differ; one weight did what the sliders stacked could not.
 - **When the user says it looks wrong, stop and look at what they are looking at.** Three corrections arrived while
   the fit was being refined; each was about the picture on the screen, not the number being chased.
+
+## A walk made from a body (2026-11-13, `animation-v2`: the Animator v2)
+
+- **A walking leg is not long enough at toe-off unless the foot rolls onto its toes.** The first plan turned the foot
+  about its ball until it left the ground; the trailing leg then had to reach further than it is, the pelvis was held
+  down by it and jumped 3 cm the moment the foot lifted. Work the geometry before the solver: over a stance the body
+  travels its landing reach, the foot's whole length and its trailing reach; the foot's length is the part that was
+  missing. The point the foot turns about now moves from the ball to the toes' tips as the heel comes up.
+- **The pelvis is within a centimetre of a leg's reach all through a walk.** Five millimetres of height is ten
+  degrees of knee. A clamp frame by frame put kinks in it; lowering the whole curve by the worst excess left the
+  knees bent 35 degrees; a soft minimum's own bias did the same in small. What worked: the pelvis takes the landing
+  leg's word from its heel strike on (the trailing leg can always bend more), so it is under the reach by
+  construction, and the limit is only a guard.
+- **A filter's lag is a posture.** The "weight on a spring" that makes a heavy body dip later and deeper also made
+  every body's knee give twice as much as planned, until its frequency was set against the stride's.
+- **Blend an angle, not two directions.** A palm blended from "facing the thigh" to "facing forward" as two vectors
+  whipped the wrist through 160 degrees in two frames where they passed opposite. And a palm asked to face along the
+  forearm says nothing about the forearm's turn: heed it by how far across the forearm it lies.
+- **A twist read off a quaternion wants wrapping.** q and -q are one turn; the angle came back near 360 degrees in a
+  deep squat and the thigh's twist bones spun.
+- **An arm sent somewhere starts from where it hangs now.** Its start was the wrist's place when she stood: sat and
+  leaning, "back to her side" was a point in front of her chest, and she seemed to pray on the way up. And the arm's
+  hang has to be the cleared one (carried out past the hips), or every act opens with a 6 degree jump.
+- **Levels found from one another fail on the body that isn't average.** The waist looked for above the hips and the
+  bust above the waist put all three at one height on the heavy woman. Each is now looked for where bodies have it.
+- **MHR's first body shape is its weight** (19 kg a unit on a 1.8 m man); the tailor's "slim" bodies are narrower,
+  not lighter. A skinny man is the masculine base with shape 0 at -0.9.
+- **Godot's editor takes "_loop" off a clip's name; its run-time loader doesn't.** The same file is `walk` in a
+  by-hand project and `walk_loop` in a game that reads bodies at run time. Look for both, everywhere.
+- **See it on the mesh early.** The walk was pictured on the skinned body in Godot (12 s a sheet) before anything
+  else was built on it; the twist bones, the shoulders and the hands were right, and only then did the rest follow.
+

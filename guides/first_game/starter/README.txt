@@ -115,7 +115,24 @@ res://starter/ by tools/godot_byhand.py. Yours to change.
                            custom; each by its own rule of what you can see; her move or animation there
   moves.gd                 under a character: a clip for each thing she does (idle, walk, run, stalk, watch, peek,
                            lunge...): a Kimodo .npz from res://animations/ put onto her own skeleton when the game
-                           starts, an animation file, or one her model has by name; played by how fast she goes
+                           starts, an animation file, or one her model has by name; played by how fast she goes;
+                           a move given no clip uses her model's own (a character baked by the Animator has idle,
+                           walk and run)
+  motion.gd                under a character baked by the Animator (the dashboard's Animator v2: her own idle, walk,
+                           run, sit, sleep, open and reach, made from her body): walk_to(marker), run_to, go([..]),
+                           sit(seat), stand(), sleep(bed, pillow), wake(), open(handle, door, "push"), reach(thing),
+                           pick_up(thing), play("dance"); she moves at her walk's own speed, stands where the clip's
+                           own numbers put her hand on the handle, gets up first when she's sat; done(what) after.
+                           A seat, a bed, a handle: a Marker3D (a seat's on its front edge at sitting height, its
+                           blue arrow the way she'll face; a handle's at the handle, its blue arrow into the door).
+                           `more`: clips of your own by name ({"dance": "res://animations/dance.res"});
+                           `live_jiggle` (on): her soft tissue swung as the game runs by the look plugin (HSJiggle
+                           under her: its Amount), so it answers a stop, a turn and your own clips, not only what
+                           each baked clip carries
+  act.gd                   one thing a character does, when: who, what (walk_to, run_to, sit, stand_up, sleep,
+                           wake_up, open, reach, pick_up, play, face), the target; by itself when the Story's words
+                           hold (needs) or by fire(); then a task ticked, a flag, a line, the next act (then): a
+                           row of these is a routine synced to your quests
   checkpoint.gd            an area: the Story keeps where you are and what you've done; dying puts you back there
   sanity.gd                a sanity meter: worn down by the dark, her near, a hunt, every scare; mended by sitting,
                            lying down, eating and sleep (lie on a bed); what stops sleep (a task on the list, a

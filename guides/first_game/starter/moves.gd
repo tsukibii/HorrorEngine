@@ -9,8 +9,10 @@
 ##     character;
 ##   - an animation file (.res, .tres, .anim) made for her skeleton;
 ##   - the name of an animation her model already has (on any AnimationPlayer under her).
-## A move with no clip falls back (stalk to walk, lunge to run, watch to idle...) and then to nothing: she slides, as the
-## starter's searcher does, and everything still works. Walks are made in place (the script that moves her does the
+## A move you give no clip uses her model's own animation of that name when it has one (a character baked by the
+## Animator has idle, walk and run, each knowing how fast it travels: DECISIONS 2026-11-13, animation v2), then falls
+## back (stalk to walk, lunge to run, watch to idle...) and then to nothing: she slides, as the starter's searcher
+## does, and everything still works. Walks are made in place (the script that moves her does the
 ## travelling) and looped, and played faster or slower by how fast she's really going, so her feet don't skate.
 ## What to make in Kimodo for a hunter is in guides/tutorial_v2 (The hunt): idle, walk, run, stalk, watch, peek, lunge.
 extends Node
@@ -83,10 +85,38 @@ func make() -> void:
 		if c.is_empty():
 			continue
 		clips[m] = c
+	# her model's own clips for the moves that were given none: by the move's name (the Animator's loops are <move>_loop)
+	var rec := _record(h)
+	for m in MOVES:
+		if clips.has(m):
+			continue
+		for cand in [m, m + "_loop", m + "-loop"]:
+			var found := false
+			for ap in h.find_children("*", "AnimationPlayer", true, false):
+				if ap != _own and (ap as AnimationPlayer).has_animation(cand):
+					var a := (ap as AnimationPlayer).get_animation(cand)
+					if loops.has(m):
+						a.loop_mode = Animation.LOOP_LINEAR
+					var info: Dictionary = (rec.get("clips", {}) as Dictionary).get(m + "_loop", (rec.get("clips", {}) as Dictionary).get(m, {}))
+					clips[m] = {"player": ap, "name": cand, "secs": a.length, "speed": float(info.get("speed", 0.0)), "own": true}
+					found = true
+					break
+			if found:
+				break
 	ready_now = true
 	for p in problems:
 		push_warning("moves.gd (%s): %s" % [h.name, p])
 	made.emit(clips.size())
+
+
+## what the Animator wrote of her clips (on her skin's node, from the .glb), or {}
+func _record(h: Node3D) -> Dictionary:
+	for mi in h.find_children("*", "MeshInstance3D", true, false):
+		if mi.has_meta("extras"):
+			var ex = mi.get_meta("extras")
+			if ex is Dictionary and ex.get("hsMotion") is Dictionary:
+				return ex["hsMotion"]
+	return {}
 
 
 func _script_at(paths: Array) -> GDScript:

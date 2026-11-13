@@ -6,6 +6,14 @@ lag and the long ear's further than the short one's; left alone they settle back
 lower; at amount 0 nothing moves. Then on a Studio export with ears, when there is one (`--glb FILE`, `--person NAME`,
 else the first export under Content/Studio/People whose skeleton has such bones): its chains under `c_head`, its ears'
 meshes skinned to them, each chain's softness read from the file, a jerk moving the tips and their settling back.
+
+Then her soft tissue (docs/GODOT_LOOK.md §5w, DECISIONS 2026-11-13, the hands and the jiggle): HSSoftJiggle on a
+skeleton made as the Animator leaves a baked character's (a breast and a buttock named in the bake's record, a third
+soft bone it doesn't name): one modifier, a bone each, the record's numbers read; its tick the Animator's own (the
+same weight after 10, 20 and 30 ticks as tools/animator/core/soft.js gives); still, they rest; a weight let go rings
+at the rate and dies in the time JiggleBones' rule gives for its stiffness and damping; shoved, the weight stays
+behind and settles; turned, it lags; carried along evenly, nothing leans; laid on her back, where it rests leans the way down has gone; at amount 0 nothing;
+a clip's own turn of a soft bone left out and its shift kept; put 5 m away in a frame, no swing.
 Ends "JIGGLE ok".
 
     python tools/godot/jiggle_check.py [--glb FILE | --person NAME] [--keep DIR]
@@ -155,6 +163,52 @@ def main():
             wk, tn = real.get("walk") or {}, real.get("turn") or {}
             say(wk and all(0.0003 < v < 0.06 for v in wk.values()), "walking, each ear's tip moves against the head (%s mm); a 60 degree turn swings them %s mm" % (
                 ", ".join("%s %.1f" % (k, mm(v)) for k, v in sorted(wk.items())), ", ".join("%s %.1f" % (k, mm(v)) for k, v in sorted(tn.items()))))
+    # ---- her soft tissue: HSSoftJiggle -------------------------------------------------------------------------------
+    try:
+        r = subprocess.run([g, "--headless", "--fixed-fps", "60", "--path", str(OUT), "-s", "res://addons/horrorstudio_look/demo/soft_jiggle.gd", "--", f"--out={keep}"], capture_output=True, text=True, timeout=300)
+        text = r.stdout + r.stderr
+    except subprocess.TimeoutExpired as e:
+        text = (e.stdout or b"").decode("utf-8", "replace") + (e.stderr or b"").decode("utf-8", "replace") + "\n(stopped after 300 s)"
+    text = "\n".join(l for l in text.splitlines() if l and "ALSA" not in l and "snd_" not in l)
+    bad = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "Parse Error" in l or "SOFTJIGGLE FAIL" in l]
+    if bad or "SOFTJIGGLE {" not in text:
+        print(text[-3000:])
+        print("JIGGLE FAIL: the soft bones' demo didn't run clean")
+        return 1
+    sr = json.loads((keep / "soft_jiggle.json").read_text(encoding="utf-8"))
+    m = sr.get("made") or {}
+    bones = {b["name"]: b for b in m.get("bones", [])}
+    say(m.get("modifiers") == 1 and set(bones) == {"soft_bust_l", "soft_seat_l", "soft_other"}, "soft tissue: one HSSoftJiggle on the skeleton, a bone for each soft bone (%s)" % ", ".join(sorted(bones)))
+    b, st, o = bones.get("soft_bust_l", {}), bones.get("soft_seat_l", {}), bones.get("soft_other", {})
+    say(abs(b.get("length", 0) - 0.074) < 1e-6 and abs(st.get("length", 0) - 0.11) < 1e-6 and abs(o.get("length", 0) - 0.08) < 1e-6,
+        "the bake's record read for the two it names (rods of %.1f and %.1f cm), the third's numbers made up (%.1f cm)" % (100 * b.get("length", 0), 100 * st.get("length", 0), 100 * o.get("length", 0)))
+    want = [-0.154851, 0.074595, -0.032468]                # tools/animator/core/soft.js jiggleTick, the same weight let go
+    got = m.get("ticks") or [9, 9, 9]
+    say(len(got) == 3 and max(abs(a - w) for a, w in zip(got, want)) < 2e-4, "its tick is the Animator's: the same weight after 10, 20 and 30 ticks (%s rad)" % ", ".join("%.5f" % v for v in got))
+    pl = m.get("plugin") or {}
+    say(abs(pl.get("f", 0) - 3.669) < 0.01 and abs(pl.get("half", 0) - 0.1526) < 0.001, "JiggleBones' own default (stiffness 1, damping 0) rings at %.2f Hz and halves in %.2f s by this rule" % (pl.get("f", 0), pl.get("half", 0)))
+    say((sr.get("rest") or {}).get("most", 9) < 0.02, "standing still, every soft bone as it rests (%.3f degrees off)" % (sr.get("rest") or {}).get("most", 9))
+    rg = sr.get("ring") or {}
+    wt = rg.get("want") or {"f": 1, "half": 1}
+    say(abs(rg.get("first", 0)) > 12 and rg.get("crossings", 0) >= 4 and abs(rg.get("hz", 0) / wt["f"] - 1) < 0.08 and abs(rg.get("half", 0) / wt["half"] - 1) < 0.25 and rg.get("end", 9) < 0.2,
+        "a weight let go from %.0f degrees rings at %.2f Hz and halves in %.2f s, as the rule says for its numbers (%.2f Hz, %.2f s), and comes to rest" % (abs(rg.get("first", 0)), rg.get("hz", 0), rg.get("half", 0), wt["f"], wt["half"]))
+    jk = sr.get("jerk") or {}
+    say(jk.get("most", 0) > 3 and jk.get("lag", 0) < -0.02 and jk.get("settled", 9) < 0.2 and jk.get("seat", 0) > 0.5 and jk.get("other", 0) > 0.5,
+        "shoved 15 cm sideways in three frames: the weight stays behind (the breast's bone turns %.1f degrees against the shove, the seat's %.1f, the unnamed one %.1f) and settles back (%.2f)" % (
+            jk.get("most", 0), jk.get("seat", 0), jk.get("other", 0), jk.get("settled", 9)))
+    tn = sr.get("turn") or {}
+    say(tn.get("most", 0) > 2 and tn.get("settled", 9) < 0.2, "turned 40 degrees in a tenth of a second: it lags %.1f degrees and settles" % tn.get("most", 0))
+    sd = sr.get("steady") or {}
+    say(sd.get("most", 9) < 0.3, "carried along evenly at 3.2 m/s: once going, no soft bone leans (%.2f degrees: its damping is against the body, not the air)" % sd.get("most", 9))
+    gv = sr.get("gravity") or {}
+    say(gv.get("angle", 0) > 4 and gv.get("lean", 0) > 0.05 and gv.get("off", 9) < 0.3, "laid on her back, where it rests has leaned %.1f degrees the way down has gone against her body; with gravity off, as stood (%.2f)" % (gv.get("angle", 0), gv.get("off", 9)))
+    of = sr.get("off") or {}
+    say(of.get("most", 9) < 0.01 and of.get("modifiers") == 1, "at amount 0 the same shove moves nothing (%.4f degrees)" % of.get("most", 9))
+    cl = sr.get("clip") or {}
+    say(cl.get("angle", 9) < 0.5 and abs(cl.get("shift", 0) - 0.01) < 1e-4 and abs(cl.get("without", 0) - 30) < 1,
+        "a clip that turns a soft bone 30 degrees and shifts it a centimetre: the turn left out (%.2f degrees: the live swing takes its place), the shift kept (%.1f mm); the modifier off, the clip's turn shows (%.1f)" % (
+            cl.get("angle", 9), 1000 * cl.get("shift", 0), cl.get("without", 0)))
+    say((sr.get("teleport") or {}).get("most", 9) < 0.5, "put 5 m away in one frame: no swing (%.2f degrees)" % (sr.get("teleport") or {}).get("most", 9))
     if not ok:
         print("JIGGLE FAIL")
         return 1

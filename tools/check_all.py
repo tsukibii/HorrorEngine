@@ -24,7 +24,8 @@ STUDIO = [["pbr.py", "check"], ["sfx.py", "check"], ["face_capture.py", "check"]
           ["character/tailor/librarytest.mjs"],                                                                         # the library garments' fit to a body, in layers (LIBRARY),
           ["character/hair2/check.mjs"],                                                                                # the hair editor v2.0's engine: every style grown, measured (HAIR2),
           ["character/eyelooks_check.mjs"],                                                                             # the eye looks, and Godot's eye paint held to the Studio's (EYELOOKS),
-          ["character/lashfit_check.mjs"]]                                                                              # the lashes kept on top of the lid's skin, on a made-up lid (LASHFIT)
+          ["character/lashfit_check.mjs"],                                                                              # the lashes kept on top of the lid's skin, on a made-up lid (LASHFIT)
+          ["animator/check.mjs"]]                                                                                       # the Animator v2: the clips made on three test bodies, measured, baked and unbaked (ANIMATOR)
 game, _ = L.pick_game(sys.argv[1:])
 bad = 0
 for g in ([game] if game else L.games()):

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Animator v2 · HorrorStudio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/page/app.css">
+<script type="importmap">{ "imports": { "three": "/vendor/three.module.min.js" } }</script>
+</head>
+<body>
+<header>
+  <h1>Animator <span>v2</span></h1>
+  <label class="pick">Character <select id="who"></select></label>
+  <button id="open" title="A character exported from the Character Studio that isn't in Exports/characters: its .glb from anywhere on your disk">Open a .glb…</button>
+  <input id="file" type="file" accept=".glb" hidden>
+  <span id="status" class="status">…</span>
+  <a class="help" href="#" id="helpBtn">What is this?</a>
+</header>
+<main>
+  <section id="stage">
+    <div id="view"></div>
+    <div id="hud"></div>
+    <div class="views">
+      <button data-view="q">¾</button><button data-view="front">Front</button><button data-view="side">Side</button><button data-view="back">Back</button>
+      <label><input type="checkbox" id="slow"> Slow</label>
+      <label><input type="checkbox" id="softDots"> Soft bones</label>
+    </div>
+    <div class="bar">
+      <div id="kinds" class="kinds"></div>
+      <div id="clips" class="chips"></div>
+      <div class="play">
+        <button id="play" title="Space">❚❚</button>
+        <input id="scrub" type="range" min="0" max="1" step="0.001" value="0">
+        <span id="time">0.00 s</span>
+      </div>
+    </div>
+  </section>
+  <aside>
+    <h2>How she moves</h2>
+    <div class="slider"><label for="style">Walk style</label><div class="ends"><span>masculine</span><span>neutral</span><span>feminine</span></div>
+      <input id="style" type="range" min="-1" max="1" step="0.05"><p>How the hips, the shoulders and the arms carry the walk: a wide, squared stride with swinging shoulders, or a narrow one with the hips leading. Starts from the body.</p></div>
+    <div class="slider"><label for="strength">Strength</label><div class="ends"><span>weak</span><span></span><span>strong</span></div>
+      <input id="strength" type="range" min="0" max="1" step="0.05"><p>How well the body carries its own weight: a strong one stands tall, lowers itself onto a seat and rises in one line; a weak one sags, drops the last of the way and pushes up off its thighs.</p></div>
+    <div class="slider"><label for="weight">Weight</label><div class="ends"><span>lighter</span><span>as measured</span><span>heavier</span></div>
+      <input id="weight" type="range" min="-1" max="1" step="0.05"><p>The body's weight is measured from its shape. This moves it either way: slower, wider and deeper into each step, or quicker and lighter.</p></div>
+    <div class="slider"><label for="soft">Softness</label><div class="ends"><span>firm</span><span></span><span>soft</span></div>
+      <input id="soft" type="range" min="0" max="1.5" step="0.05"><p>How much the bust, the belly, the seat, the hips and the thighs move with the body. Skin and clothes alike.</p></div>
+    <div class="slider"><label for="bounce">Bounce</label><div class="ends"><span>settles at once</span><span></span><span>keeps ringing</span></div>
+      <input id="bounce" type="range" min="0" max="1" step="0.05"><p>How long soft tissue goes on swinging once it's been set going: each part swings from where it's rooted, as a jiggle bone does. In the middle, a few swings and it's still.</p></div>
+    <div class="row"><button id="reset">Start again from the body</button></div>
+    <h2>Her body, as measured</h2>
+    <div id="body" class="readout"></div>
+    <h2>This clip</h2>
+    <div id="clipInfo" class="readout"></div>
+    <h2>Bake</h2>
+    <p class="note">Writes every clip into the character's own file, ready for Godot: the body's bones only, so any expression plays over any of them.</p>
+    <div class="row"><button id="bake" class="primary">Bake into the file</button></div>
+    <pre id="log"></pre>
+  </aside>
+</main>
+<dialog id="help">
+  <h2>Animator v2</h2>
+  <p>Export a character from the Character Studio (<b>Export for Godot</b>), pick it here, move the sliders, then <b>Bake</b>. The clips are made from the character's own body: its leg length sets the step, its weight the pace and how deep it sinks into each step, its width how far the arms are carried from the body. Nothing is recorded motion.</p>
+  <p>The baked file (<code>Exports/characters/&lt;name&gt;/&lt;name&gt;.glb</code>) carries idle, walk, run, sitting, lying down to sleep, opening a door and reaching, each a named animation. In Godot the starter kit's <code>motion.gd</code> plays them: walk to a marker, sit, sleep, open, pick up, by a quest's own words.</p>
+  <p>Drag to turn the view, the wheel to come closer, right-drag to move it. Space plays and pauses.</p>
+  <form method="dialog"><button>Close</button></form>
+</dialog>
+<script type="module" src="/page/app.js"></script>
+</body>
+</html>

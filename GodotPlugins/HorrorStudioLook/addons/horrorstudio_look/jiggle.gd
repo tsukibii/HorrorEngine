@@ -7,6 +7,12 @@
 ## `HSJiggle.attach(node)` adds one under a character whose skeleton has such chains (HSEye.wear and HSCharacterLook
 ## do, so every Studio export that wears its look jiggles); dropped under any character by hand it springs every chain
 ## of bones named so (`prefix`), a tail or a strand of hair as well as an ear.
+##
+## And her soft tissue (docs/ANIMATOR_V2.md §7, GODOT_LOOK §5w, DECISIONS 2026-11-13, the hands and the jiggle): a
+## character baked by the Animator has bones its flesh hangs from (`soft_bust_l`, `soft_belly`...). HSJiggle puts an
+## HSSoftJiggle (soft_jiggle.gd) on a skeleton that has them, which swings each one live as JiggleBones swings a
+## bone, by the numbers in her bake's record: so she jiggles when the game stops her, turns her or plays a clip of
+## your own, not only as her clips were baked. `soft` off leaves them to her clips.
 class_name HSJiggle
 extends Node
 
@@ -14,8 +20,12 @@ extends Node
 @export_range(0.0, 2.0) var amount: float = 1.0    ## how lively as a whole: 0 holds them still, 1 as made, 2 very floppy
 @export_range(0.0, 1.0) var gravity: float = 0.12  ## how much they hang (times each chain's softness; an ear is made in the shape it hangs in: a little is enough)
 @export var prefix: String = "jiggle_"             ## a chain is the bones <prefix><name>_0 ... <prefix><name>_tip
+@export var soft := true                           ## her soft tissue too (the Animator's soft_ bones), swung live; off: only what her clips carry
+@export var soft_prefix: String = "soft_"          ## the Animator's soft bones are named so
 var springs: Array = []                            # the SpringBoneSimulator3D made, one a skeleton
+var softs: Array = []                              # the HSSoftJiggle made, one a skeleton that has soft bones
 const NAME := "HSJiggleSprings"
+const SOFT_NAME := "HSSoftJiggle"
 
 
 func character() -> Node3D:
@@ -44,13 +54,33 @@ static func attach(node: Node, settings: Dictionary = {}) -> HSJiggle:
 	if node is Skeleton3D:
 		skels.append(node)
 	for item in skels:
-		if not chains_of(item as Skeleton3D, j.prefix).is_empty():
+		if not chains_of(item as Skeleton3D, j.prefix).is_empty() or (j.soft and not soft_bones_of(item as Skeleton3D, j.soft_prefix).is_empty()):
 			any = true
 	if not any:
 		j.free()
 		return null
 	node.add_child(j)                              # (its _ready springs them)
 	return j
+
+
+## a skeleton's soft bones (the Animator's): their names
+static func soft_bones_of(sk: Skeleton3D, pre: String = "soft_") -> Array:
+	var out := []
+	for b in sk.get_bone_count():
+		if sk.get_bone_name(b).begins_with(pre) and sk.get_bone_parent(b) >= 0:
+			out.append(sk.get_bone_name(b))
+	return out
+
+
+## the Animator's record a baked character carries on its skin's node (hsMotion: its soft bones' numbers among it), or {}
+static func record_of(node: Node) -> Dictionary:
+	for mi in node.find_children("*", "MeshInstance3D", true, false):
+		if not mi.has_meta("extras"):
+			continue
+		var ex = mi.get_meta("extras")
+		if ex is Dictionary and ex.get("hsMotion") is Dictionary:
+			return ex["hsMotion"]
+	return {}
 
 
 ## a skeleton's chains: [{name, root, tip, bones: [names, the tip last], length}], each from <prefix><name>_0 down its
@@ -100,19 +130,33 @@ func _ready() -> void:
 
 ## the springs on every skeleton under the character (made again: what was there goes)
 func wear() -> void:
-	for s in springs:
+	for s in springs + softs:
 		if is_instance_valid(s):
 			s.queue_free()
 	springs.clear()
+	softs.clear()
 	var t := character()
 	if t == null:
 		return
-	var soft := softness(t)
+	var soft_of := softness(t)
 	var skels: Array = t.find_children("*", "Skeleton3D", true, false)
 	if t is Skeleton3D:
 		skels.append(t)
+	var rec := record_of(t)
 	for item in skels:
 		var sk := item as Skeleton3D
+		if soft and not soft_bones_of(sk, soft_prefix).is_empty():   # her soft tissue: one modifier a skeleton, each bone by her bake's numbers
+			var was: Node = sk.get_node_or_null(SOFT_NAME)
+			if was != null:
+				sk.remove_child(was)
+				was.queue_free()
+			var sj := HSSoftJiggle.new()
+			sj.name = SOFT_NAME
+			sj.prefix = soft_prefix
+			sj.amount = amount
+			sk.add_child(sj)
+			sj.setup(rec)
+			softs.append(sj)
 		var chains := chains_of(sk, prefix)
 		if chains.is_empty():
 			continue
@@ -127,7 +171,7 @@ func wear() -> void:
 		for i in chains.size():
 			var c: Dictionary = chains[i]
 			# how floppy: the export's word for the chain, else from its length (a 4 cm ear stiff, a 12 cm one soft)
-			var s: float = soft.get(prefix + c["name"], clampf(c["length"] / 0.13, 0.2, 1.0))
+			var s: float = soft_of.get(prefix + c["name"], clampf(c["length"] / 0.13, 0.2, 1.0))
 			sim.set_root_bone_name(i, c["root"])
 			sim.set_end_bone_name(i, c["tip"])
 			sim.set_stiffness(i, lerpf(4.0, 1.2, s) / maxf(0.15, amount))    # (stiff enough that an upright ear stands as it was made, soft enough that a hanging one swings)
@@ -147,15 +191,18 @@ func set_amount(v: float) -> void:
 
 ## back to rest at once (after a teleport: a chain flung across the level settles slowly otherwise)
 func reset() -> void:
-	for s in springs:
+	for s in springs + softs:
 		if is_instance_valid(s):
 			s.reset()
 
 
 func report() -> Dictionary:
-	var out := {"springs": springs.size(), "chains": []}
+	var out := {"springs": springs.size(), "chains": [], "soft": []}
 	for s in springs:
 		if is_instance_valid(s):
 			for i in s.setting_count:
 				out["chains"].append({"root": s.get_root_bone_name(i), "tip": s.get_end_bone_name(i), "stiffness": s.get_stiffness(i), "drag": s.get_drag(i), "gravity": s.get_gravity(i)})
+	for s in softs:
+		if is_instance_valid(s):
+			out["soft"].append_array(s.report())
 	return out
