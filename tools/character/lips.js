@@ -8,6 +8,7 @@
 // under the lower lip: [0] and [10] the corners, [4] and [6] the cupid's bow's peaks, [5] its dip, [15] the lower middle
 export const LIP_RING = [61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291, 375, 321, 405, 314, 17, 84, 181, 91, 146];
 export const LIPS_DEFAULTS = { on: false, colour: "#d9606c", amount: 0.8, gradient: 0.5, soft: 0.4, gloss: 0.6, lines: 0.3,
+                               colour2: "#7a1830", inner: 0, shine: 0,   // (make-up enhanced, DECISIONS 2026-11-12: a deeper colour where the lips meet, painted wet glints; 0: as it was)
                                over: 0, upper: 0, lower: 0, corners: 0, bow: 0, guide: false };
 // [key, label, lo, hi, step, help]
 export const LIP_PAINT = [
@@ -16,6 +17,8 @@ export const LIP_PAINT = [
   ["soft", "Soft edge", 0, 1, 0.01, "How softly the colour stops at its border (0.3 mm to 2.5 mm)."],
   ["gloss", "Gloss", 0, 1, 0.01, "Wet and shiny: lower roughness and a clear coat."],
   ["lines", "Lip lines", 0, 1, 0.01, "The fine creases across the lips, a little darker and less glossy."],
+  ["inner", "Inner colour", 0, 1, 0.01, "How much of the second, deeper colour shows where the lips meet, fading out toward the border (a two-tone lip: wine at the seam under a rose)."],
+  ["shine", "Wet shine", 0, 1, 0.01, "Painted glints of a wet gloss, whatever the light: two on the lower lip and a thin one on the cupid's bow."],
 ];
 export const LIP_SHAPE = [
   ["over", "Overline (mm)", -2, 2, 0.05, "The whole outline out over the lips' border (+) or inside it (−)."],

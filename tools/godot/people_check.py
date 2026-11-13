@@ -139,7 +139,22 @@ def main():
         print(("  ok  " if eyes_on else "  BAD ") + "the eyes on the Studio's eye shader: " + ", ".join(rep.get("eyes", [])))
         ok = ok and eyes_on
         a, b, c = pupil("people_eye_front.png"), pupil("people_eye_slant.png"), pupil("people_eye_slant_flat.png")
-        if a and b and c:
+        # a pupil is found by its darkness: on an iris as dark as the pupil (the eyes v3 look's, nearly black) the blot
+        # found is the whole iris, whose edge is the limbus, on the eye's surface, where the cornea bends nothing. The
+        # file's own record says so (its iris's two colours as PIL's grey, times its Iris brightness): then it isn't
+        # measured here (EYESV3 holds such an eye's drawing; a plain character holds the cornea's bending)
+        def iris_grey():
+            import struct
+            f = glb.read_bytes(); n = struct.unpack("<I", f[12:16])[0]
+            rec = next((m["extras"]["studioEye"].get("paint") or {} for m in json.loads(f[20:20 + n]).get("materials", []) if (m.get("extras") or {}).get("studioEye")), None)
+            if not rec:
+                return None
+            grey = lambda h: (0.299 * int(h[1:3], 16) + 0.587 * int(h[3:5], 16) + 0.114 * int(h[5:7], 16)) / 255.0
+            return max(grey(rec.get("iris", "#808080")), grey(rec.get("iris2", rec.get("iris", "#808080")))) * float(rec.get("irisBright", 1.0))
+        ig = iris_grey()
+        if ig is not None and ig < 0.12:
+            print("  ok  at a slant the cornea moves the iris: not measured on this character (its iris is as dark as its pupil, %.2f grey against the pupil's 0.06: the dark blot found is the whole iris, %d px)" % (ig, a[2] if a else 0))
+        elif a and b and c:
             shift = ((b[0] - c[0]) ** 2 + (b[1] - c[1]) ** 2) ** 0.5
             bent = shift > 1.0
             print(("  ok  " if bent else "  BAD ") + "at a slant the cornea moves the iris: the pupil's centre %.1f px from where IOR 1 reads it (front %d px of pupil, slant %d)" % (shift, a[2], b[2]))

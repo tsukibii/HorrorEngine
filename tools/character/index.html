@@ -71,11 +71,18 @@
   #outfitGrid .card img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; display: block; background: #2a2d34; }
   #outfitGrid .card span { display: block; font-size: 10.5px; padding: 3px 4px; line-height: 1.25; color: var(--ink); }
   #outfitGrid .card.on { border-color: var(--gold); } #outfitGrid .card.on span { color: var(--gold); }
-  #creatureCards { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; margin: 6px 0; }   /* the creatures as pictures (creatures.mjs thumbs) */
-  #creatureCards .card { padding: 0; overflow: hidden; text-align: center; display: flex; flex-direction: column; background: #151619; }
-  #creatureCards .card img, #creatureCards .card i { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; display: block; background: #2a2d34; }
-  #creatureCards .card span { display: block; font-size: 10.5px; padding: 3px 4px; line-height: 1.25; color: var(--ink); }
-  #creatureCards .card.on { border-color: var(--gold); } #creatureCards .card.on span { color: var(--gold); }
+  #creatureCards, .pcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; margin: 6px 0; }   /* the creatures as pictures (creatures.mjs thumbs) */
+  #creatureCards .card, .pcards .card { padding: 0; overflow: hidden; text-align: center; display: flex; flex-direction: column; background: #151619; }
+  #creatureCards .card img, #creatureCards .card i, .pcards .card img, .pcards .card i { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; display: block; background: #2a2d34; }
+  #creatureCards .card span, .pcards .card span { display: block; font-size: 10.5px; padding: 3px 4px; line-height: 1.25; color: var(--ink); }
+  #creatureCards .card.on, .pcards .card.on { border-color: var(--gold); } #creatureCards .card.on span, .pcards .card.on span { color: var(--gold); }
+  #bodyCards .card img, #bodyCards .card i { aspect-ratio: 2 / 5; }   /* a body's card is the whole figure */
+  #presetTabs { margin: 4px 0 2px; }
+  #eyeLookCards { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 6px; margin: 6px 0; }   /* the eye looks as pictures (eyelooks.mjs thumbs) */
+  #eyeLookCards .card { padding: 0; overflow: hidden; text-align: center; display: flex; flex-direction: column; background: #151619; }
+  #eyeLookCards .card img, #eyeLookCards .card i { width: 100%; aspect-ratio: 2 / 1; object-fit: cover; display: block; background: #2a2d34; }
+  #eyeLookCards .card span { display: block; font-size: 10.5px; padding: 3px 4px; line-height: 1.25; color: var(--ink); }
+  #eyeLookCards .card.on { border-color: var(--gold); } #eyeLookCards .card.on span { color: var(--gold); }
 </style></head>
 <body>
 <header>
@@ -94,7 +101,7 @@
 <main>
   <div id="view">
     <div id="viewHelp">drag or middle-drag: turn · Shift+drag: pan · wheel: zoom · double-click: centre</div>
-    <div id="views"><button data-v="body">Body</button><button data-v="head">Head</button><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button><button id="splitBtn" title="Two views side by side, front and side, each its own camera (the pane you touch is the one the buttons and the wheel move); drag the line between them, double-click it to even them; Split again for one view">Split</button><button data-v="pov" title="The player's eye: 1.65 m up, the game's 90° lens, at the shot's distance">POV</button><select id="povShot" title="How far the face is from the player's eye (docs/DIRECTING.md)"><option value="0.7">MCU 0.7 m</option><option value="1.2" selected>MS 1.2 m</option><option value="2.2">FS 2.2 m</option></select><select id="poseSel" title="The pose the body is shown in: a T-pose (arms level, legs straight, like a modeller's reference) or MHR's own A-pose. Only the view: the character is shaped, dressed, saved and exported in MHR's pose"><option value="t">T-pose</option><option value="rest">A-pose</option></select><select id="lightSel" title="The light: the studio, or the game's kinds of light"><option value="studio">studio</option><option value="lamp">warm lamp</option><option value="night">cold night</option><option value="torch">flashlight</option><option value="reference" title="The skin v2 reference: a soft key from the side, a rim, a dark ground and the film curve (docs/research/skin_v2.md)">reference (film)</option></select></div>
+    <div id="views"><button data-v="body">Body</button><button data-v="head">Head</button><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button><button id="splitBtn" title="Two views side by side, front and side, each its own camera (the pane you touch is the one the buttons and the wheel move); drag the line between them, double-click it to even them; Split again for one view">Split</button><button data-v="pov" title="The player's eye: 1.65 m up, the game's 90° lens, at the shot's distance">POV</button><select id="povShot" title="How far the face is from the player's eye (docs/DIRECTING.md)"><option value="0.7">MCU 0.7 m</option><option value="1.2" selected>MS 1.2 m</option><option value="2.2">FS 2.2 m</option></select><select id="poseSel" title="The pose the body is shown in: a T-pose (arms level, legs straight, like a modeller's reference) or MHR's own A-pose. Only the view: the character is shaped, dressed, saved and exported in MHR's pose"><option value="t">T-pose</option><option value="rest">A-pose</option></select><select id="lightSel" title="The light: the studio, or the game's kinds of light"><option value="studio">studio</option><option value="lamp">warm lamp</option><option value="night">cold night</option><option value="torch">flashlight</option><option value="reference" title="The skin v2 reference: a soft key from the side, a rim, a dark ground and the film curve (docs/research/skin_v2.md)">reference (film)</option><option value="beauty" title="The eyes v3 reference: a big soft light from the front and a little above, a rosy room, the film curve: what the eye looks' cards are pictured under">beauty (front, film)</option></select></div>
     <div id="hud"></div>
   </div>
   <aside>
@@ -103,10 +110,24 @@
       <h3>View</h3>
       <div id="studioRows"></div>
       <h3>Base</h3>
-      <div class="bases"><button data-base="-1">Feminine</button><button data-base="0">Average</button><button data-base="1">Masculine</button><button data-base="-1" data-v2="1" title="The feminine base with v2female's head and neck">v2female</button><button data-base="-1" data-v2="1" data-b2="1" title="v2female's head on the bodyv2 body: a medium, fuller build after the T-pose reference">bodyv2</button></div>
+      <div class="bases"><button data-base="-1">Feminine</button><button data-base="0">Average</button><button data-base="1">Masculine</button></div>
       <div id="baseRows"></div>
-      <label class="tog"><input type="checkbox" id="v2On"><span>v2female<small>What the feminine end of the base becomes: a slender, straight neck, a short, narrow lower face, larger eyes, a smaller nose and mouth. Every slider still moves from it; toward masculine it fades out.</small></span></label>
-      <label class="tog"><input type="checkbox" id="b2On"><span>bodyv2<small>What the feminine end's body becomes: a medium, fuller build after the T-pose reference (wide hips, full thighs, a soft waist, short arms), with the Bust and the waist at their middle. Every slider still moves from it; toward masculine it fades out.</small></span></label>
+      <h3>Presets</h3>
+      <div id="presetTabs" class="chips"><button data-kind="head" class="on">Heads</button><button data-kind="body">Bodies</button><button data-kind="monster">Monsters</button></div>
+      <div id="headBox">
+        <div id="headCards" class="pcards"></div>
+        <p class="note">A head: what the feminine base's head and neck become. The body stays as it is, and every slider still moves from it; toward the masculine base it fades out. Plain is MHR's own feminine head.</p>
+      </div>
+      <div id="bodyBox" hidden>
+        <div id="bodyCards" class="pcards"></div>
+        <p class="note">A body: what the feminine base's body becomes. The head and the face stay as they are, and every slider still moves from it; toward the masculine base it fades out. Plain is the slim feminine base.</p>
+      </div>
+      <div id="creatureBox" hidden>
+        <div id="creatureCards"></div>
+        <label class="tog"><input type="checkbox" id="creatureLook" checked><span>With its look<small>Its skin colour, eyes, lips and horns as well as its shape and teeth. Off: the shape and the teeth alone, on this character's own skin and eyes.</small></span></label>
+        <label class="tog"><input type="checkbox" id="creatureFace"><span>Face only<small>Its head on this character's own body: the face's and the head's controls and the teeth (and the look), not the height, the build or the proportions.</small></span></label>
+        <p class="note">A click makes this character that creature and switches Monster mode on. It only sets sliders: every one is still yours to move. More horns, ears and fangs: Accessories, and Face, Mouth.</p>
+      </div>
       <h3>Age</h3>
       <div id="ageRows"></div>
       <p class="note" id="ageNote"></p>
@@ -116,13 +137,6 @@
       <div id="animeRows"></div>
       <h3>Sculpt <button id="resetSculpt" title="Every sculpt slider back to 0">Reset</button></h3>
       <label class="tog"><input type="checkbox" id="monsterOn"><span>Monster mode<small>For creatures: every sculpt slider and circle goes three times as far, the height from 0.4 to 3.5 m, and the Creature controls show (pointed ears, slanted eyes, a snout, a long skull, a hunch). Off, a slider past a person's range comes back into it.</small></span></label>
-      <div id="creatureBox">
-        <h4>Creatures</h4>
-        <div id="creatureCards"></div>
-        <label class="tog"><input type="checkbox" id="creatureLook" checked><span>With its look<small>Its skin colour, eyes, lips and horns as well as its shape and teeth. Off: the shape and the teeth alone, on this character's own skin and eyes.</small></span></label>
-        <label class="tog"><input type="checkbox" id="creatureFace"><span>Face only<small>Its head on this character's own body: the face's and the head's controls and the teeth (and the look), not the height, the build or the proportions.</small></span></label>
-        <p class="note">A click makes this character that creature and switches Monster mode on. It only sets sliders: every one is still yours to move. More horns, ears and fangs: Accessories, and Face, Mouth.</p>
-      </div>
       <label class="tog"><input type="checkbox" id="handlesOn" checked><span>Handles on the body<small>Drag a circle to shape what's under it, both sides at once (Body shows the body's circles, Head the face's); the sliders it moves light up green while you hold it.</small></span></label>
       <div id="sculptRows"></div>
       <h3>Shape <button id="resetShape" title="Every shape slider back to the base">Reset</button></h3>
@@ -132,6 +146,11 @@
     <section data-tab="face" hidden>
       <h3>Look</h3>
       <div id="lookRows"></div>
+      <h3>Eye looks</h3>
+      <p class="note">The eye alone, set together: the iris, the pupil and the white, the catchlights, the lashes, and (with the two switches) the eye's shape and the makeup on its lids. A start: every one is a slider afterwards (Skin, Eyes; Brows &amp; lashes; Skin, Procedural skin, Makeup; Body, Face).</p>
+      <div id="eyeLookCards"></div>
+      <label class="tog"><input type="checkbox" id="eyeLookShape" checked><span>With its eye shape<small>The grafted lids' shape (size, crease, inner fold, tilt, opening) and the sculpt's eye controls. Off: the paint, the lashes and the makeup on this character's own eye shape.</small></span></label>
+      <label class="tog"><input type="checkbox" id="eyeLookMakeup" checked><span>With its lids' makeup<small>The liner, the shadow, the under-eye, the inner corner, the waterline, the lid's gloss and glitter. The rest of the face's makeup (foundation, blush, lips) is left as it is.</small></span></label>
       <h3>Pictures</h3>
       <div id="slots"></div>
       <p class="note">Optional. A front picture shapes the face; a side picture (or a three-quarter one: MediaPipe needs to find the face, so up to about 70°) gives its depth. With none, the base and the head sliders make the face.</p>
@@ -233,6 +252,8 @@ import * as TEETH from "./teeth.js";
 import * as LIPS from "./lips.js";
 import * as NAILS from "./nails.js";
 import * as LOOKS from "./looks.js";
+import * as EL from "./eyelooks.js";
+import * as LF from "./lashfit.js";
 import * as ACCS from "./accessories.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import * as LOOK from "./tailor/look.js";
@@ -300,7 +321,7 @@ const FACE = [   // face_mesh.py's settings (its DEFAULTS), plus how much of the
 ];
 const st = { base: 0, height: 1.7, shape: new Array(H.shapes).fill(0), face: Object.fromEntries(FACE.map(f => [f[0], f[5]])),
              expr: new Float32Array(ENAMES.length), exprAmt: 1, sculpt: {},   // sculpt: the named controls' values (sculpt.js, grow.js)
-             age: { age: GW.AGE_ADULT, face: 1 }, cute: { on: false, amount: 0.6 }, monster: false, anime: false, v2: 0, b2: 0 };   // grow.js: the age (18: the adult), Cutify, monster mode, Anime (the Bust's long slider); v2: the v2female base (1: the feminine end is it); b2: the bodyv2 base (1: the feminine end's body is it)
+             age: { age: GW.AGE_ADULT, face: 1 }, cute: { on: false, amount: 0.6 }, monster: false, anime: false, headPreset: "", bodyPreset: "" };   // grow.js: the age (18: the adult), Cutify, monster mode, Anime (the Bust's long slider); headPreset, bodyPreset: what the feminine end's head and body are (grow.js HEADS, BODIES: the Presets cards; "": the plain feminine base's)
 let WHO = null, DELTA = null, PICS = [], REPORT = null, FACEBAKE = null, LAY = null, WEAR = null, NAILAT = null;   // LAY: the paint layers (layersui.js); WEAR: the accessories (accessories.js); NAILAT: the fingernails' places (nails.js)
 
 const fmt = (v, step) => (+v).toFixed(step < 0.01 ? 3 : step < 1 ? 2 : 0);
@@ -329,9 +350,7 @@ for (const [g, [a, b]] of Object.entries(INFO.groups)) {
     shapeSet[i] = slider(d, i, `${i}: ${INFO.labels[i] || ""}`, -3, 3, 0.05, 0, "", (v, row) => { st.shape[i] = v; row.classList.toggle("moved", v !== 0); changed("body"); }, INFO.labels[i]);
   $("#shapeRows").append(d);
 }
-for (const b of document.querySelectorAll(".bases button")) b.onclick = () => { st.base = +b.dataset.base; st.v2 = b.dataset.v2 ? 1 : 0; st.b2 = b.dataset.b2 ? 1 : 0; $("#v2On").checked = !!st.v2; $("#b2On").checked = !!st.b2; set.base(st.base); changed("body"); };
-$("#b2On").onchange = () => { st.b2 = $("#b2On").checked ? 1 : 0; changed("body"); };   // the bodyv2 base (MHR_presets.json: weights of its own and the sliders it carries): what the feminine end's body is
-$("#v2On").onchange = () => { st.v2 = $("#v2On").checked ? 1 : 0; changed("body"); };   // the v2female base (MHR_presets.json: its weights and the sculpt it carries): what the feminine end is
+for (const b of document.querySelectorAll(".bases button")) b.onclick = () => { st.base = +b.dataset.base; set.base(st.base); changed("body"); };   // (the base alone: the presets, what its feminine end is, stay as picked)
 $("#resetShape").onclick = () => { st.shape.fill(0); shapeSet.forEach(f => f(0)); document.querySelectorAll(".row.moved").forEach(r => r.classList.remove("moved")); changed("body"); };
 
 function weights() {                                   // the base blended in, the sliders on top
@@ -339,7 +358,7 @@ function weights() {                                   // the base blended in, t
   // one picked, MHR's own at 0, as they always were (faces, photo fits and hair made on them stay)
   // (a child's: the two builds part at puberty, grow.js: at eight the body is halfway between them whichever base is
   // picked, the head and the hands most of the way to MHR's own)
-  const sx = AGE.sexed, t = st.base * sx, f0 = PRESETS.feminine || [], f2 = st.v2 && PRESETS.v2female ? PRESETS.v2female : f0, f3 = st.b2 && PRESETS.bodyv2 ? PRESETS.bodyv2 : f0, f = f0.map((v, i) => v + ((f2[i] ?? v) - v) * (st.v2 || 0) + ((f3[i] ?? v) - v) * (st.b2 || 0)), m = PRESETS.masculine || [], [a, b] = (INFO.groups || H.groups || {}).body || [0, 0], hk = Math.abs(st.base) * (0.4 + 0.6 * sx);
+  const sx = AGE.sexed, t = st.base * sx, f = femEnd().weights, m = PRESETS.masculine || [], [a, b] = (INFO.groups || H.groups || {}).body || [0, 0], hk = Math.abs(st.base) * (0.4 + 0.6 * sx);
   return st.shape.map((v, i) => v + (i >= a && i < b ? (f[i] || 0) * (1 - t) / 2 + (m[i] || 0) * (1 + t) / 2 : hk * ((st.base < 0 ? f : m)[i] || 0)));
 }
 // the age's build (grow.js ageOf: what a child's body and face add to the sculpt, how far the builds have parted), worked
@@ -347,7 +366,10 @@ function weights() {                                   // the base blended in, t
 let AGE = { sculpt: {}, young: 0, sexed: 1 }, GROW = null;
 function agedNow() { AGE = GROW && st.age.age < GW.AGE_ADULT ? GW.ageOf(st.age.age, st.base, GROW, st.age.face) : { sculpt: {}, young: 0, sexed: 1 }; }
 // the sculpt a base carries, blended as its body is; the character's own sculpt (the sliders, the circles) goes on top
-const femSculpt = id => { const a = BASE_SCULPT.feminine?.[id] || 0, B2 = BASE_SCULPT.bodyv2; return a + ((BASE_SCULPT.v2female?.[id] || 0) - a) * (st.v2 || 0) + (st.b2 && B2 && id in B2 ? (B2[id] - a) * st.b2 : 0); };   // (the feminine end's: v2female's when that base is picked; bodyv2 changes only what it lists, the body's)
+// (the feminine end: its head's and its body's presets, grow.js femEnd: a head preset changes only the head's and the neck's weights and controls, a body preset only the body's)
+let FEM = null, FEMKEY = "";
+const femEnd = () => { const k = st.headPreset + "|" + st.bodyPreset; if (k !== FEMKEY) { FEMKEY = k; FEM = GW.femEnd({ presets: PRESETS, sculpt: BASE_SCULPT }, { head: st.headPreset, body: st.bodyPreset, groups: INFO.groups || H.groups }); } return FEM; };
+const femSculpt = id => femEnd().sculpt(id);
 const baseSculpt = id => femSculpt(id) * (1 - st.base) / 2 + (BASE_SCULPT.masculine?.[id] || 0) * (1 + st.base) / 2;
 // a control's whole value: the character's own slider, its base's, its age's and Cutify's, kept within reach (a person's
 // sliders run to 1, a monster's to 3: their sums ease into a limit a little past that, so a small nose made smaller by
@@ -407,6 +429,9 @@ function setExpr(w) {
   changed("expr");
 }
 function markPreset(name) { document.querySelectorAll("#exprPresets button").forEach(b => b.classList.toggle("on", b.textContent === name)); }
+// (and presets written in MHR's own shapes, `mhr_presets`: an expression fitted to a picture has no ARKit curves)
+const mhrPreset = o => { const w = new Float32Array(ENAMES.length); for (const [k, v] of Object.entries(o)) for (const n of ENAMES.includes(k) ? [k] : [k + "_L", k + "_R"]) { const i = ENAMES.indexOf(n); if (i >= 0) w[i] = v; } return w; };
+for (const [name, o] of Object.entries(AMAP.mhr_presets || {})) { const b = el("button", { textContent: name, title: o.about || name }); b.onclick = () => { setExpr(mhrPreset(o.shapes)); markPreset(name); }; $("#exprPresets").append(b); }
 const PRESET_NAMES = Object.keys(AMAP.presets || {});
 for (const name of PRESET_NAMES) {
   const b = el("button", { textContent: name, title: Object.entries(AMAP.presets[name]).map(([k, v]) => `${k} ${v}`).join(", ") || "all zero" });
@@ -541,7 +566,7 @@ let skinPreset = null;                                 // a preset into the skin
   const usePreset = (pre, groups, colours) => {   // the preset's groups start from the defaults: nothing left over from before
     for (const f of SKINSH.FEATURES) if (groups.includes(f[7])) st.skin.proc[f[0]] = f[5];
     for (const c of colours) st.skin.proc[c] = SKINSH.DEFAULTS[c];
-    for (const [k, v] of Object.entries(pre)) { if (k === "rough") { st.skin.rough = v; set.rough(v); } else st.skin.proc[k] = v; }
+    for (const [k, v] of Object.entries(SKINSH.withLower(pre))) { if (k === "rough") { st.skin.rough = v; set.rough(v); } else st.skin.proc[k] = v; }   // (withLower: a preset from before the lower liner's own colour)
     st.skin.proc.on = true; procSet.all(); skinLook();
   };
   skinPreset = usePreset;
@@ -790,7 +815,7 @@ function libRows(c) {                                  // a worn library garment
 }
 const grownKey = () => { const a = st.age.age < GW.AGE_ADULT ? [st.age.age, st.age.face] : 0, c = st.cute.on && st.cute.amount ? st.cute.amount : 0, an = st.anime && Math.abs(sculptValue("bust")) > 1;   // (Anime only where it changes the body: the Bust past the plain slider's ends)
   return a || c || st.monster || an ? [[a, c, st.monster ? 1 : 0, ...(an ? ["anime"] : [])]] : []; };
-const bodyKey = () => JSON.stringify([weights().map(v => +v.toFixed(4)), st.height, DELTA ? DELTA.idx.length : 0, st.face?.strength, st.sculpt, st.v2 || 0, st.b2 || 0, ...grownKey()]);   // (the sculpt too: neutralBody carries it; the age, Cutify and monster mode when set; the v2female base: its weights are the feminine base's, only the sculpt it carries differs)
+const bodyKey = () => JSON.stringify([weights().map(v => +v.toFixed(4)), st.height, DELTA ? DELTA.idx.length : 0, st.face?.strength, st.sculpt, st.headPreset, st.bodyPreset, ...grownKey()]);   // (the sculpt too: neutralBody carries it; the age, Cutify and monster mode when set; the v2female base: its weights are the feminine base's, only the sculpt it carries differs)
 function dress() {                                     // the worker makes every garment worn, on the body as it is now
   if (!Object.keys(DESIGNS).length) return;
   const list = st.clothes.filter(c => DESIGNS[c.design]).map(c => [c.design, c.color, lookOf(c), c.edit]), id = ++TAILOR_JOB, key = bodyKey();
@@ -1206,6 +1231,9 @@ const LIGHTS = {   // key: colour, intensity, place (the camera's frame: x right
   // the user's reference stills (docs/research/skin_v2.md §1, §4 step 1): a soft key from one side and above, three stops
   // over the shadow, a cool rim from behind, a dark blue-grey ground; the film curve (AgX) so highlights roll off
   reference: { key: [0xfff3e8, 2.6, [-1.8, 1.0, 0.4]], hemi: [0x9ea8b8, 0x2a2420, 0.45], env: 0.7, torch: 0, bg: 0x0f1215, rim: [0xdde6ff, 1.6, [1.6, 0.9, -2.6]], film: true },
+  // the eyes v3 reference (DECISIONS 2026-11-12): a beauty light, big and soft from the front and a little above, the
+  // room dim and rosy; the film curve. What the eye looks' cards are pictured under (eyelooks.mjs)
+  beauty: { key: [0xfff1f0, 2.0, [0.5, 0.9, 2.4]], hemi: [0xf0dce0, 0x503a3e, 0.8], env: 0.8, torch: 0, bg: 0x181214, film: true },
 };
 const LIGHT = { name: "studio", env: 1 };
 function setLight(name) {
@@ -1931,10 +1959,22 @@ function openings() {
 function eyeSurf(side) {                              // how far the eyeball's surface is from its centre along a way (the head's space): its white's sphere, or the cornea's dome where it bulges past it
   const m = EYES[side], sh = eyeShapeOf(side); m.updateMatrix();
   const R = new THREE.Matrix3().setFromMatrix4(m.matrix), Rt = R.clone().transpose(), s = m.scale.x, e = new THREE.Vector3();
-  return (x, y, z) => {
+  const one = (x, y, z) => {
     e.set(x, y, z).applyMatrix3(Rt).divideScalar(s).normalize();   // the way in the eye's own frame (its pole forward)
     const b = sh.zc * e.z, q = b * b - sh.zc * sh.zc + sh.rc * sh.rc; if (q < 0) return s;
     const t = b + Math.sqrt(q); return t * e.z >= sh.zl ? s * Math.max(1, t) : s;
+  };
+  // the dome's shoulder: the cornea rises steeply from the limbus, and a lid's triangle (a millimetre across) with one
+  // corner on the white and one on the dome cut a chord through it (a third of a millimetre of eyeball through the lid's
+  // edge wherever a lid rests on the iris: EYELIDS, on the eyes v3 look, whose lids both do). So the surface a lid rides
+  // is the highest within about a millimetre round where it is: it starts out before it reaches the dome
+  const D = 0.075, u = new THREE.Vector3(), v = new THREE.Vector3(), w = new THREE.Vector3();
+  return (x, y, z) => {
+    let m = one(x, y, z);
+    w.set(x, y, z); u.set(1, 0, 0); if (Math.abs(x) > 0.8) u.set(0, 1, 0);
+    u.addScaledVector(w, -u.dot(w)).normalize(); v.crossVectors(w, u);
+    for (const [a, b] of [[D, 0], [-D, 0], [0, D], [0, -D]]) m = Math.max(m, one(x + a * u.x + b * v.x, y + a * u.y + b * v.y, z + a * u.z + b * v.z));
+    return m;
   };
 }
 function eyeDraw(graft) {                              // the eyeballs through the stencil (the cut openings) or, with the grafted eyes, behind real lids
@@ -2026,12 +2066,13 @@ function mouthReach() {                                // how far up and down th
 // the seal's reach at rest: MHR's lips overlap there (the lower one up inside the upper's curl) and the lower lip's
 // curl parts them a little; neither is an open mouth, so the opening counts from it (half off each side)
 const MOUTHREST = new Float32Array(16);
+let MOUTHOPEN = 0;                                     // how open the mouth is now, against its width (mouthCut)
 function mouthRest() {                                 // on the neutral face, before the expressions
   MOUTHREST.fill(0); if (!LMK || !MEMBRANE.length) return;
   const { n, top, bot } = mouthReach(); for (let k = 0; k < n; k++) if (top[k]) MOUTHREST[k] = top[k][1] - bot[k][1];
 }
 function mouthCut() {
-  const off = () => { SKU.uMouthOn.value = 0; BAG.visible = false; MOUTHRING = null; };
+  const off = () => { SKU.uMouthOn.value = 0; BAG.visible = false; MOUTHRING = null; MOUTHOPEN = 0; };
   if (!LMK || !MEMBRANE.length) return off();
   const { L, R, n, xs, top, bot } = mouthReach(), up = [], lo = [];
   for (let k = 1; k < n - 1; k++) if (top[k]) { const r = MOUTHREST[k] / 2; top[k][1] -= r; bot[k][1] += r; }
@@ -2044,7 +2085,7 @@ function mouthCut() {
     const c = line.map(p => [...p]); for (let k = 1; k < n - 1; k++) for (let a = 1; a < 3; a++) line[k][a] = (c[k - 1][a] + 2 * c[k][a] + c[k + 1][a]) / 4;
   }
   let gap = 0; for (let k = 0; k < n; k++) { up[k][0] = lo[k][0] = xs[k]; if (lo[k][1] > up[k][1]) lo[k][1] = up[k][1]; gap = Math.max(gap, up[k][1] - lo[k][1]); }
-  mouthLight(gap / (Math.abs(R[0] - L[0]) || 1));     // how open, against the mouth's width
+  MOUTHOPEN = gap / (Math.abs(R[0] - L[0]) || 1); mouthLight(MOUTHOPEN);   // how open, against the mouth's width
   if (gap < 0.0003) return off();                      // closed
   const ring = [...up, ...lo.slice().reverse()];       // 32 points round the opening
   MOUTHRING = ring;
@@ -2073,6 +2114,7 @@ function lipstick() {
   SKU.uLipBox.value.set(Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys));
   SKU.uLipZ.value = o.zmin - 6 * mm; SKU.uLipC.value.set(o.c[0], o.c[1]); SKU.uLipCol.value.set(L.colour);
   SKU.uLipAmt.value = L.amount; SKU.uLipGrad.value = L.gradient; SKU.uLipGloss.value = L.gloss; SKU.uLipLines.value = L.lines;
+  SKU.uLipCol2.value.set(L.colour2 || LIPS.LIPS_DEFAULTS.colour2); SKU.uLipInner.value = L.inner || 0; SKU.uLipShine.value = (L.shine || 0) * (1 - Math.min(1, Math.max(0, (MOUTHOPEN - 0.03) / 0.09)));   // the deeper colour at the seam, the painted glints (painted for lips that are shut: they go as the mouth opens, where a stretched lower lip would carry them into the mouth)
   SKU.uLipSoft.value = (0.3 + 2.2 * L.soft) * mm; SKU.uLipDepth.value = Math.max(1.5 * mm, 0.3 * o.height);   // full colour this far inside the border
   SKU.uLipFar.value = 3 * o.height; SKU.uLipN.value = 2 * Math.PI * 3 * o.height / (1.1 * mm);   // the creases' fan: a point three lip-heights away, one every 1.1 mm
   if (!L.guide) return;
@@ -2086,12 +2128,15 @@ const MOUTH = { teeth: mouthMat(0xf0ece2, 0.35, 1), gums: mouthMat(0xa65c5a, 0.4
 // the teeth, gums and tongue's meshes (teeth.js), made again when the teeth's own shape changes (a creature's fangs, its
 // pointed teeth: Face, Mouth)
 function mouthBuild(t = TEETH.TEETH_DEFAULTS) {
-  const key = `${t.fangs || 0}|${t.points || 0}`; if (MOUTH.key === key) return; MOUTH.key = key;
-  const B = TEETH.buildMouth({ fangs: t.fangs || 0, points: t.points || 0 });
+  const key = `${t.fangs || 0}|${t.points || 0}|${t.style || "classic"}`; if (MOUTH.key === key) return; MOUTH.key = key;
+  const B = TEETH.buildMouth({ fangs: t.fangs || 0, points: t.points || 0, style: t.style || "classic" });   // (style: the classic mouth, or the v2 one: teeth.js)
   for (const [jaw, grp] of [["upper", MOUTH.upper], ["lower", MOUTH.lower]]) for (const [part, d] of Object.entries(B[jaw])) {
     const g = new THREE.BufferGeometry(), name = `${jaw}-${part}`;
     g.setAttribute("position", new THREE.Float32BufferAttribute(d.pos, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(d.col, 3));
+    if (d.uv) g.setAttribute("uv", new THREE.Float32BufferAttribute(d.uv, 2));   // (the v2 tongue's: its papillae's bump)
     g.setIndex(d.idx); g.computeVertexNormals();
+    if (t.style === "v2" && name === "upper-teeth") { const N = g.attributes.normal.array;   // (teeth.js V2.lean: the upper teeth's shading leans up a little)
+      for (let i = 0; i < N.length; i += 3) { const y = N[i + 1] + TEETH.V2.lean, l = Math.hypot(N[i], y, N[i + 2]) || 1; N[i] /= l; N[i + 1] = y / l; N[i + 2] /= l; } }
     if (MOUTH.parts[name]) { MOUTH.parts[name].geometry.dispose(); MOUTH.parts[name].geometry = g; continue; }
     const m = new THREE.Mesh(g, MOUTH[part]); m.renderOrder = 2; m.frustumCulled = false; m.userData.noShadow = true; m.name = name;
     grp.add(m); MOUTH.parts[m.name] = m;
@@ -2134,18 +2179,35 @@ const MW0 = (() => { if (!LMK) return 0.05; const lb = i => { const t = LMK.tri[
 st.teeth = { ...TEETH.TEETH_DEFAULTS };
 st.lips = { ...LIPS.LIPS_DEFAULTS };
 st.nails = { ...NAILS.NAIL_DEFAULTS };
+// the v2 tongue's papillae: a small tiling picture of soft dots (the fine ones close together, a few bigger toward the
+// back), read as a bump by the tongue's material; made once
+let PAPILLAE = null;
+function tonguePapillae() {
+  if (PAPILLAE) return PAPILLAE;
+  const n = 256, c = document.createElement("canvas"); c.width = c.height = n; const g = c.getContext("2d"); g.fillStyle = "#808080"; g.fillRect(0, 0, n, n);
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 2600; i++) { const x = rnd() * n, y = rnd() * n, r = 1.6 + 1.8 * rnd(), k = 150 + Math.floor(70 * rnd());
+    for (const [ox, oy] of [[0, 0], [n, 0], [-n, 0], [0, n], [0, -n]]) { const gr = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r); gr.addColorStop(0, `rgba(${k},${k},${k},0.9)`); gr.addColorStop(1, "rgba(128,128,128,0)"); g.fillStyle = gr; g.beginPath(); g.arc(x + ox, y + oy, r, 0, 6.3); g.fill(); } }
+  PAPILLAE = new THREE.CanvasTexture(c); PAPILLAE.wrapS = PAPILLAE.wrapT = THREE.RepeatWrapping; PAPILLAE.repeat.set(5, 8);
+  return PAPILLAE;
+}
 function placeTeeth() {                                // from the neutral face, before the expressions
   const on = !!LMK && !!JAW && st.teeth.on;
   MOUTH.upper.visible = MOUTH.jaw.visible = on; if (!on) return;
   mouthBuild(st.teeth);                                // (as they're shaped now: fangs, points)
   MOUTH.parts["lower-tongue"].visible = st.teeth.tongue !== false;
   const a = lmk(13), b = lmk(14), w = Math.abs(lmk(291)[0] - lmk(61)[0]), mm = 0.001 * w / MW0;   // a millimetre on this face
-  const k = mm * (st.teeth.size || 1); MOUTH.mm = mm;
-  MOUTH.upper.matrix.makeScale(k, k, k).setPosition((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + (st.teeth.up - 3.5) * mm, (a[2] + b[2]) / 2 + (st.teeth.forward - 6) * mm);
+  const v2 = st.teeth.style === "v2";                  // the v2 mouth (teeth.js V2): higher under the lip, a pink gum, a rose tongue with its papillae
+  // (the v2 mouth's own size: a mouth narrower than MHR's for its head shrinks the teeth by its square root, not all the
+  // way: a small mouth has smaller teeth, but not by as much: V2.fit; the head's own scale counts whole)
+  const kv = v2 ? 0.001 * SCALE * Math.pow(Math.max(0.2, w / (MW0 * SCALE)), TEETH.V2.fit) : mm;
+  const k = kv * (st.teeth.size || 1); MOUTH.mm = mm;
+  MOUTH.upper.matrix.makeScale(k, k, k).setPosition((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + (st.teeth.up - 3.5 - (v2 ? TEETH.V2.down : 0)) * kv, (a[2] + b[2]) / 2 + (st.teeth.forward - 6) * mm);
   MOUTH.lower.matrix.copy(MOUTH.upper.matrix);
   const c = JAW.c; c.fill(0); for (const v of JAW.v) for (let q = 0; q < 3; q++) c[q] += POS[v * 3 + q] / JAW.v.length;   // the jaw's middle on this face
   const sh = new THREE.Color(0xf3f3f1).lerp(new THREE.Color(0xe2d3b4), st.teeth.shade);   // a bright neutral white to ivory: the enamel's own tints are in the teeth's colours (teeth.js)
-  MOUTH.base = { teeth: sh.clone(), gums: new THREE.Color(0xa65c5a), tongue: new THREE.Color(0x9e4a4e) };
+  MOUTH.base = { teeth: sh.clone(), gums: new THREE.Color(v2 ? TEETH.V2.gum : 0xa65c5a), tongue: new THREE.Color(v2 ? TEETH.V2.tongue : 0x9e4a4e) };
+  const T = MOUTH.tongue; T.bumpMap = v2 ? tonguePapillae() : null; T.bumpScale = v2 ? 0.6 : 1; T.roughness = v2 ? 0.42 : 0.55; T.clearcoat = v2 ? 0.55 : 0.25; T.clearcoatRoughness = v2 ? 0.18 : 0.06; T.needsUpdate = true;   // a wet, softly pebbled tongue
 }
 function mouthLight(open) {                            // less light gets into a mouth barely open: the teeth, gums and tongue darker
   if (!MOUTH.base) return;
@@ -2324,6 +2386,49 @@ function setAnime(on) {
   monsterUI(); UNSAVED = true; compose(); hud();           // (compose's refit cuts the clothes again when the body under them changed)
 }
 $("#animeOn").onchange = () => setAnime($("#animeOn").checked);
+// ---- heads and bodies as presets (grow.js HEADS, BODIES; DECISIONS 2026-11-12, make-up enhanced): cards in categories
+// beside the creatures'. A head card is what the feminine end's head and neck become, a body card what its body
+// becomes; neither touches the other, nor the character's own sliders. The feminine base is what they are made on:
+// picked on another base, the base goes to Feminine (said in the status line)
+function presetMark() {
+  for (const c of document.querySelectorAll("#headCards .card")) c.classList.toggle("on", c.dataset.preset === st.headPreset);
+  for (const c of document.querySelectorAll("#bodyCards .card")) c.classList.toggle("on", c.dataset.preset === st.bodyPreset);
+}
+function usePreset(kind, key) {                        // kind: "head" or "body"; key: a preset's name, or "" for the plain base's
+  const T = kind === "head" ? GW.HEADS : GW.BODIES; if (key && !T[key]) return;
+  if (kind === "head") st.headPreset = key; else st.bodyPreset = key;
+  const moved = key && st.base > -1; if (moved) { st.base = -1; set.base(-1); }
+  presetMark(); UNSAVED = true; changed("body"); hud();
+  status(`${key ? T[key].label : "Plain"}: the ${kind === "head" ? "head and neck" : "body"}${kind === "head" ? ", the body as it was" : ", the head as it was"}${moved ? " (the base set to Feminine: the presets are made on it)" : ""}`, "ok");
+}
+for (const [kind, T, plain] of [["head", GW.HEADS, "MHR's own feminine head and neck."], ["body", GW.BODIES, "The slim feminine base's body."]])
+  $(kind === "head" ? "#headCards" : "#bodyCards").append(...[["", { label: "Plain", about: plain }], ...Object.entries(T)].map(([k, m]) => {
+    const pic = el("img", { src: `api/presets/thumbs/${kind}_${k || "plain"}.jpg`, alt: m.label, loading: "lazy" }), b = el("button", { className: "card", title: m.about || m.label }, pic, el("span", { textContent: m.label }));
+    pic.onerror = () => pic.replaceWith(el("i"));        // (no picture yet: node tools/character/presets.mjs thumbs makes them)
+    b.dataset.preset = k; b.onclick = () => usePreset(kind, k);
+    return b;
+  }));
+for (const b of document.querySelectorAll("#presetTabs button")) b.onclick = () => {
+  for (const x of document.querySelectorAll("#presetTabs button")) x.classList.toggle("on", x === b);
+  $("#headBox").hidden = b.dataset.kind !== "head"; $("#bodyBox").hidden = b.dataset.kind !== "body"; $("#creatureBox").hidden = b.dataset.kind !== "monster";
+};
+function lipsMark() { const now = k => GW.LIP_IDS.every(id => (st.sculpt[id] || 0) === ((GW.LIPS[k]?.sculpt || {})[id] || 0)); for (const b of document.querySelectorAll("#lipShapes button")) b.classList.toggle("on", now(b.dataset.lips)); }
+function useLips(key, quiet = false) {                 // a lip shape: the five lip sliders as it has them ("": back to 0)
+  const m = GW.LIPS[key]; if (key && !m) return;
+  for (const id of GW.LIP_IDS) { const v = m ? m.sculpt[id] || 0 : 0; if (v) st.sculpt[id] = v; else delete st.sculpt[id]; }
+  monsterUI(); lipsMark(); if (quiet) return;
+  UNSAVED = true; changed("body"); hud(); status(`${m ? m.label : "Own"}: the lips' shape (five sliders in Sculpt, Face: still yours to move)`, "ok");
+}
+// what a new character starts as (grow.js NEW_START: v2female's head on bodyv2's body, the feminine base). The checks
+// that measure from MHR's plain halfway base say so before they make one (window.__plainNew)
+function newStart() {
+  if (window.__plainNew) return;
+  const N = GW.NEW_START; st.base = N.base; set.base(st.base); st.height = N.height; set.height(st.height);
+  st.headPreset = GW.HEADS[N.head] ? N.head : ""; st.bodyPreset = GW.BODIES[N.body] ? N.body : ""; presetMark();
+  st.teeth.style = TEETH.TEETH_STYLES[N.teeth] ? N.teeth : "classic"; teethSet.all();   // the v2 mouth (teeth.js) and the v2 soft bow's lips (DECISIONS 2026-11-13, better mouths)
+  useLips(GW.LIPS[N.lips] ? N.lips : "", true);
+  agedNow(); changed("body");
+}
 // ---- the creatures: monster mode's presets as cards (grow.js MONSTERS; DECISIONS 2026-11-11: "add presets for the
 // monster-ish shapes you made so I can use them"). A card makes the character that creature: its sculpt, its height,
 // its base and build, its teeth, and with "With its look" its skin, eyes, lips and horns; "Face only" gives its head
@@ -2355,7 +2460,7 @@ function useCreature(key, o = {}) {                    // o.look (true): with it
   } else {
     st.sculpt = { ...m.sculpt }; if (m.height) st.height = m.height;
     if (st.age.age < GW.AGE_ADULT) { st.age.age = GW.AGE_ADULT; ageSet.age(st.age.age); ageUI(); }   // (a creature is shaped from the adult: an imp is small, not a child; the age is still yours after)
-    if (m.base !== undefined) { st.base = m.base; set.base(st.base); st.v2 = 0; $("#v2On").checked = false; st.b2 = 0; $("#b2On").checked = false; }
+    if (m.base !== undefined) { st.base = m.base; set.base(st.base); st.headPreset = st.bodyPreset = ""; presetMark(); }   // (a creature is shaped from the plain bases)
     st.shape.fill(0); for (const [i, v] of Object.entries(m.shape || {})) st.shape[+i] = v;   // its build from MHR's own shapes
     st.shape.forEach((v, i) => shapeSet[i](v)); document.querySelectorAll("#shapeRows .row").forEach((r, i) => r.classList.toggle("moved", st.shape[i] !== 0));
   }
@@ -2399,7 +2504,7 @@ function ageUI() {
 $("#cuteOn").onchange = () => { st.cute.on = $("#cuteOn").checked; cuteUI(); UNSAVED = true; changed("sculpt"); };
 const cuteSet = slider($("#cuteRows"), "cuteAmount", "Cuteness", 0, 1.5, 0.05, 0.6, "How much: 0.6 soft and young-looking, 1 a doll's face, past it a cartoon's.", v => { st.cute.amount = v; UNSAVED = true; changed("sculpt"); });
 function cuteUI() { $("#cuteOn").checked = !!st.cute.on; $("#cuteRows").hidden = !st.cute.on; cuteSet(st.cute.amount); }
-function grownUI() { ageSet.age(st.age.age); ageSet.face(st.age.face); ageUI(); cuteUI(); $("#animeOn").checked = !!st.anime; monsterUI(); }
+function grownUI() { ageSet.age(st.age.age); ageSet.face(st.age.face); ageUI(); cuteUI(); $("#animeOn").checked = !!st.anime; monsterUI(); lipsMark(); }
 grownUI();
 const HANDLES = { box: el("div", { id: "handles" }), list: [], drag: null };
 view.append(HANDLES.box);
@@ -2605,6 +2710,10 @@ const teethSet = {};
   tongue.onchange = () => { st.teeth.tongue = tongue.checked; changed("expr"); };
   box.append(el("label", { className: "tog" }, on, el("span", {}, "Teeth", el("small", { textContent: "An adult's average teeth and gums, as wide as this mouth's corners and set behind the lips. The upper ones stay with the skull, the lower ones ride the jaw. They show only through the opening between the lips, never through the lips or cheeks, whatever the face does." }))),
              el("label", { className: "tog" }, tongue, el("span", {}, "Tongue", el("small", { textContent: "A simple one, lying in the lower arch and riding the jaw." }))));
+  const style = el("select", { id: "teethStyle", title: "Classic: an adult's average teeth, a simple tongue. v2: a young woman's (even, rounded, on a narrower arch, set high under the lip with the gum's edge far up so a smile shows no gum) and a real tongue." });
+  style.append(...Object.entries(TEETH.TEETH_STYLES).map(([k, label]) => el("option", { value: k, textContent: label })));
+  style.onchange = () => { st.teeth.style = style.value; UNSAVED = true; changed("expr"); };
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Mouth" }), style, el("output")));
   const rows = [["shade", "Shade", 0, 1, 0.01, TEETH.TEETH_DEFAULTS.shade, "White to ivory."],
                 ["size", "Size", 0.85, 1.15, 0.01, 1, "Bigger or smaller teeth for this mouth."],
                 ["forward", "Forward (mm)", -3, 3, 0.1, 0, "Toward the lips (+) or back into the mouth."],
@@ -2621,7 +2730,7 @@ const teethSet = {};
     if (open) document.querySelector('#views button[data-v="head"]').click();
   };
   box.append(el("div", { className: "bases" }, say));
-  teethSet.all = () => { on.checked = st.teeth.on; tongue.checked = st.teeth.tongue !== false; for (const [k] of rows) teethSet[k](st.teeth[k]); };
+  teethSet.all = () => { on.checked = st.teeth.on; tongue.checked = st.teeth.tongue !== false; style.value = TEETH.TEETH_STYLES[st.teeth.style] ? st.teeth.style : "classic"; for (const [k] of rows) teethSet[k](st.teeth[k]); };
 }
 // ---- whole looks (looks.js): the eyes, the lips, the teeth and the skin together; a new character starts from one ----
 function useLook(name) {
@@ -2647,6 +2756,33 @@ function useLook(name) {
   sel.onchange = tell; go.onclick = () => { useLook(sel.value); status(`${sel.value}: applied, every setting still yours to move (Save keeps it)`, "ok"); };
   $("#lookRows").append(el("div", { className: "row" }, el("span", { textContent: "Look" }), sel, go), about); tell();
 }
+// ---- eye looks (eyelooks.js; DECISIONS 2026-11-12, eyes v3): the eye alone as a preset on a card with its picture: the
+// eyeball's paint and catchlights, the lashes, and with the two switches the eye's shape (the graft's shape keys, the
+// sculpt's eye controls) and the makeup on its lids. It only sets what the sliders show; the card worn is marked
+// (st.eyes.look, kept with the character: what its eyes started as)
+function useEyeLook(key, o = {}) {                     // o.shape (true): with its eye shape; o.makeup (true): with its lids' makeup
+  const L = EL.EYE_LOOKS[key]; if (!L) return;
+  Object.assign(st.eyes, L.eyes || {}, { look: key });
+  if (o.shape !== false) {
+    if (L.shape) st.eyes.shape = { ...EG.KEYS0, ...L.shape };
+    for (const id of EL.EYE_SCULPT) if (L.sculpt && id in L.sculpt && SCULPT?.controls.some(c => c.id === id)) st.sculpt[id] = L.sculpt[id];
+    sculptAll();
+  }
+  eyeSet.all(); paintEyes();
+  if (L.lash) Object.assign(st.lash, L.lash.style ? BL.styleOf(L.lash.style) : {}, L.lash.set || {}, { on: L.lash.on !== false, look: L.lash.look || st.lash.look });
+  if (o.makeup !== false && L.makeup) { st.skin.proc.on = true; Object.assign(st.skin.proc, SKINSH.withLower(EL.eyeMakeup(L))); procSet.all(); }   // (withLower: an eye look names one liner colour; its lower liner is that colour too, as it was made)
+  if (L.lash && BL_READY) { blSet.all(); browLash(); }
+  skinLook(); eyeLookMark(); UNSAVED = true; changed(o.shape !== false ? "body" : "expr");
+  status(`${L.label}: a start, every slider still yours (Skin, Eyes; Brows & lashes; Makeup)`, "ok");
+}
+function eyeLookMark() { for (const c of document.querySelectorAll("#eyeLookCards .card")) c.classList.toggle("on", c.dataset.look === st.eyes.look); }
+$("#eyeLookCards").append(...Object.entries(EL.EYE_LOOKS).map(([k, L]) => {
+  const pic = el("img", { src: `api/eyelooks/thumbs/${k}.jpg`, alt: L.label, loading: "lazy" }), b = el("button", { className: "card", title: L.about || L.label }, pic, el("span", { textContent: L.label }));
+  pic.onerror = () => { const i = el("i"); i.style.background = L.eyes?.iris || "#2a2d34"; pic.replaceWith(i); };   // (no picture yet: its iris's colour; node tools/character/eyelooks.mjs thumbs makes them)
+  b.dataset.look = k;
+  b.onclick = () => useEyeLook(k, { shape: $("#eyeLookShape").checked, makeup: $("#eyeLookMakeup").checked });
+  return b;
+}));
 // ---- accessories (accessories.js): glasses, piercings, stickers, an eyepatch, a choker: plain settings in the file ----
 st.accessories = [];
 WEAR = new ACCS.Accessories({ rig, POS: SHOW, TRIS, BASEP, normals: shownNormals, lmk, LMK, scale: () => SCALE, eyes: EYES, shelf: () => SHELF,   // on the body as it's shown
@@ -2750,17 +2886,28 @@ function accClick(e) {                                 // Place by clicking: whe
 // ---- the lipstick's controls (lips.js) ------------------------------------------------------------------------------
 const lipSet = {};
 {
-  const box = $("#lipRows"), on = el("input", { type: "checkbox" }), guide = el("input", { type: "checkbox" }), col = el("input", { type: "color", value: LIPS.LIPS_DEFAULTS.colour });
+  const box = $("#lipRows"), on = el("input", { type: "checkbox" }), guide = el("input", { type: "checkbox" }), col = el("input", { type: "color", value: LIPS.LIPS_DEFAULTS.colour }), col2 = el("input", { type: "color", value: LIPS.LIPS_DEFAULTS.colour2, title: "The deeper colour where the lips meet (Inner colour sets how much of it shows)" });
   on.onchange = () => { st.lips.on = on.checked; skinLook(); changed("expr"); };
   guide.onchange = () => { st.lips.guide = guide.checked; changed("expr"); };
   col.oninput = () => { st.lips.colour = col.value; changed("expr"); };
+  col2.oninput = () => { st.lips.colour2 = col2.value; changed("expr"); };
+  // the lips' shape (grow.js LIPS; DECISIONS 2026-11-13, better mouths): the sculpt's five lip sliders set together,
+  // after the lips of the user's pictures; Own takes them back to 0 (the head's own lips)
+  const shapes = el("div", { className: "chips", id: "lipShapes" });
+  for (const [k, m] of [["", { label: "Own", about: "The head's own lips: the five lip sliders back to 0.", sculpt: {} }], ...Object.entries(GW.LIPS)]) {
+    const b = el("button", { textContent: m.label, title: m.about }); b.dataset.lips = k;
+    b.onclick = () => useLips(k);
+    shapes.append(b);
+  }
+  box.append(el("h4", { textContent: "Lip shape" }), shapes, el("p", { className: "note", textContent: "Sets the sculpt's lip sliders (Body, Sculpt, Face: Upper lip, Lower lip, Cupid's bow, Lip corners, Pout); each is still yours to move." }));
   box.append(el("h4", { textContent: "Lipstick" }),
     el("label", { className: "tog" }, on, el("span", {}, "Lipstick", el("small", { textContent: "Colour painted inside the lips' outline (the guide), over the photo skin or the procedural one: soft at its border, a gradient from the middle, gloss and fine lip lines. It follows the lips through every expression." }))),
-    el("div", { className: "row" }, el("span", { textContent: "Colour" }), col, el("output")));
+    el("div", { className: "row" }, el("span", { textContent: "Colour" }), col, el("output")),
+    el("div", { className: "row" }, el("span", { textContent: "Inner colour" }), col2, el("output")));
   for (const [k, label, lo, hi, step, help] of LIPS.LIP_PAINT) lipSet[k] = slider(box, "lip_" + k, label, lo, hi, step, LIPS.LIPS_DEFAULTS[k], help, v => { st.lips[k] = v; changed("expr"); });
   box.append(el("label", { className: "tog" }, guide, el("span", {}, "Show the guide", el("small", { textContent: "The lipstick's outline over the face (pink) through the lips' own points (yellow, MediaPipe's outer lip ring; on a photo face, the photo's lips): shape it with the sliders below." }))));
   for (const [k, label, lo, hi, step, help] of LIPS.LIP_SHAPE) lipSet[k] = slider(box, "lip_" + k, label, lo, hi, step, 0, help, v => { st.lips[k] = v; changed("expr"); });
-  lipSet.all = () => { on.checked = !!st.lips.on; guide.checked = !!st.lips.guide; col.value = st.lips.colour; for (const [k] of [...LIPS.LIP_PAINT, ...LIPS.LIP_SHAPE]) lipSet[k](st.lips[k]); };
+  lipSet.all = () => { on.checked = !!st.lips.on; guide.checked = !!st.lips.guide; col.value = st.lips.colour; col2.value = st.lips.colour2 || LIPS.LIPS_DEFAULTS.colour2; for (const [k] of [...LIPS.LIP_PAINT, ...LIPS.LIP_SHAPE]) lipSet[k](st.lips[k]); };
 }
 // ---- the fingernails' controls (nails.js) ---------------------------------------------------------------------------
 const nailSet = {};
@@ -2915,6 +3062,33 @@ Object.entries({ lash: "lashes", line: "lash_line", brow: "brows", fill: "brow_f
 for (const m of Object.values(BLM)) { m.renderOrder = 3; m.frustumCulled = false; m.visible = false; rig.add(m); }   // after the eyeballs, which draw over what's in the openings
 const fillColour = () => BLM.fill.material.color.set(BL.LOOKS[st.brow.look].tip);
 const BROWROWS = { R: { upper: [107, 66, 105, 63, 70], lower: [55, 65, 52, 53, 46] }, L: { upper: [336, 296, 334, 293, 300], lower: [285, 295, 282, 283, 276] } };
+// the skin under the brows, for browlash.js to lay their hairs on (the band between MediaPipe's brow rows is straight
+// lines between ten points; the face's own brow stands out of them by up to a millimetre on a wide-eyed head, and the
+// hairs were under the skin: DECISIONS 2026-11-12, make-up enhanced): the triangles within 14 mm of the brows' points,
+// and for a point and the way out of the head there, how far out the outermost skin is, within 9 mm either way
+function browSkin(brows) {
+  const mm = 0.001 * SCALE, lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9], pad = 14 * mm;
+  for (const side of ["L", "R"]) for (const p of [...brows[side].upper, ...brows[side].lower]) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], p[a] - pad); hi[a] = Math.max(hi[a], p[a] + pad); }
+  const box = i => POS[i * 3] > lo[0] && POS[i * 3] < hi[0] && POS[i * 3 + 1] > lo[1] && POS[i * 3 + 1] < hi[1] && POS[i * 3 + 2] > lo[2] && POS[i * 3 + 2] < hi[2], tris = [];
+  for (let t = 0; t < TRIS.length; t += 3) if (box(TRIS[t]) && box(TRIS[t + 1]) && box(TRIS[t + 2])) {
+    const a = TRIS[t] * 3, b = TRIS[t + 1] * 3, d = TRIS[t + 2] * 3;
+    tris.push(POS[a], POS[a + 1], POS[a + 2], POS[b], POS[b + 1], POS[b + 2], POS[d], POS[d + 1], POS[d + 2], (POS[a] + POS[b] + POS[d]) / 3, (POS[a + 1] + POS[b + 1] + POS[d + 1]) / 3, (POS[a + 2] + POS[b + 2] + POS[d + 2]) / 3);
+  }
+  const R = 9 * mm, R2 = (R + 6 * mm) ** 2;
+  return (q, d) => {
+    const ox = q[0] - d[0] * R, oy = q[1] - d[1] * R, oz = q[2] - d[2] * R; let best = -Infinity;
+    for (let t = 0; t < tris.length; t += 12) {
+      if ((tris[t + 9] - q[0]) ** 2 + (tris[t + 10] - q[1]) ** 2 + (tris[t + 11] - q[2]) ** 2 > R2) continue;   // only the triangles near the ray
+      const ax = tris[t], ay = tris[t + 1], az = tris[t + 2], e1x = tris[t + 3] - ax, e1y = tris[t + 4] - ay, e1z = tris[t + 5] - az, e2x = tris[t + 6] - ax, e2y = tris[t + 7] - ay, e2z = tris[t + 8] - az;
+      const hx = d[1] * e2z - d[2] * e2y, hy = d[2] * e2x - d[0] * e2z, hz = d[0] * e2y - d[1] * e2x, det = e1x * hx + e1y * hy + e1z * hz;
+      if (Math.abs(det) < 1e-14) continue;
+      const sx = ox - ax, sy = oy - ay, sz = oz - az, u = (sx * hx + sy * hy + sz * hz) / det; if (u < 0 || u > 1) continue;
+      const qx = sy * e1z - sz * e1y, qy = sz * e1x - sx * e1z, qz = sx * e1y - sy * e1x, v = (d[0] * qx + d[1] * qy + d[2] * qz) / det; if (v < 0 || u + v > 1) continue;
+      const at = (e2x * qx + e2y * qy + e2z * qz) / det; if (at >= 0 && at <= 2 * R) best = Math.max(best, at - R);
+    }
+    return best > -Infinity ? best : 0;                    // (no skin found there: the band's own line, as it was)
+  };
+}
 function browLash() {
   BLM.lash.visible = BLM.line.visible = !!LMK && st.lash.on; BLM.brow.visible = BLM.fill.visible = !!LMK && st.brow.on;
   if (!LMK || (!st.lash.on && !st.brow.on)) { BLNOW = null; return; }
@@ -2931,16 +3105,34 @@ function browLash() {
     brows[side] = { upper: BROWROWS[side].upper.map(lmk), lower: BROWROWS[side].lower.map(lmk) };
   }
   const C = v(234).add(v(454)).multiplyScalar(0.5);
-  const r = BL.build({ lids, brows, F: F.toArray(), U: U.toArray(), C: C.toArray(), scale: SCALE }, st.groom.on ? { ...st.lash, line: st.groom.lash.line ?? 0.22 } : st.lash, st.brow); BLLIDS = lids;   // (by hand: the lash line's own darkness)
+  const r = BL.build({ lids, brows, F: F.toArray(), U: U.toArray(), C: C.toArray(), scale: SCALE, skin: st.brow.on ? browSkin(brows) : null }, st.groom.on ? { ...st.lash, line: st.groom.lash.line ?? 0.22 } : st.lash, st.brow); BLLIDS = lids;   // (by hand: the lash line's own darkness)
   if (st.groom.on) {                                     // the brows and lashes by hand (groom.js) in place of the clumped ones: made on the face as it is now
     const G = groomNow(lids, brows, F, U, X);
     r.lashes.dispose(); r.lashes = BL.strandCards(G.lashes, "lashes");
     r.brows.dispose(); r.brows = BL.strandCards(G.brows, "brows");
   }
+  r.cards.fit = lashFit(r);                             // the lash line and the lashes kept on top of the lids' skin as it is now (lashfit.js)
   BLU.brow.atlas.value = fineBrows() ? FINEATLAS : BLATLAS;   // a brow hair to a card for the ones by hand, the clumps' atlas for ours
   for (const [k, g] of [["lash", r.lashes], ["line", r.line], ["brow", r.brows], ["fill", r.fill]]) { BLM[k].geometry.dispose(); BLM[k].geometry = g; }
   if (st.groom.on) BLM.fill.visible = false;            // (no fill under the brows by hand: the skin shows between their hairs)
   BLNOW = r.cards;
+}
+// the lashes on the skin (lashfit.js; DECISIONS 2026-11-13, the lashes): the lash line's strip and every lash fitted to
+// the grafted lids' own skin as it is in this state (their shape keys, the sculpt, the blink): the strip put on the
+// skin, a hair's breadth off it; a lash's points lifted out where they're in it, so it lies along the skin from its
+// root until it leaves it. Run each time the lashes are made, so once a state of the blink in an export (blinkShapes):
+// every blink target holds lashes fitted to the lid as it is there. The lining (the lid's back, on the eye) isn't skin
+// to stand on. Twice: a point lifted out of one face of a fold can land in the other
+function lashFit(r) {
+  if (!(graftOn() && GRAFT && GRAFTV.L && GRAFTV.R) || st.lash.fit === false) return null;
+  const mm = 0.001 * SCALE, out = { near: 0, moved: 0, under: 0, deepest: 0 };
+  const skins = ["L", "R"].map(side => { const ring = GRAFT.sides[side].ring; return LF.makeSkin(GRAFTV[side], GRAFT.sides[side].faces, { skip: i => ring[i] < 0, cell: 1.2 * mm }); });
+  for (const [g, o] of [[r.line, { lift: 0.09 * mm, reach: 2.5 * mm, all: true, within: 0.35 * mm }], [r.lashes, { lift: 0.06 * mm, reach: 2 * mm, within: 0.35 * mm }]]) {
+    const pos = g.attributes.position; if (!pos || !pos.count) continue;
+    for (let pass = 0; pass < 2; pass++) for (const S of skins) { const f = LF.conform(pos.array, S, pass ? { ...o, settle: true } : o); if (!pass) { out.near += f.near; out.under += f.under; out.deepest = Math.max(out.deepest, f.deepest / mm); } out.moved += f.moved; }
+    pos.needsUpdate = true; g.computeBoundingSphere();
+  }
+  return out;                                          // (how many points were near the skin, were under it and how deep (mm) before, were moved: the checks read it)
 }
 // a lid's rim: MHR's lid line runs along its back edge, where the lid meets the eye, and the lashes grow from its front
 // edge (in the upper lid's middle 2.4 mm forward and 1.5 mm out from the line, in the lower's about 0.9 and 1); the rim
@@ -3503,7 +3695,7 @@ async function open(name) {
   FACEBAKE = null; const baked = WHO ? await loadFaceBake(WHO) : null;
   if (me !== OPENING) return;
   if (baked) { FACEBAKE = baked.head; DELTA = baked.delta; }   // its face baked: kept, its pictures not needed
-  st.base = c.base ?? 0; st.height = c.height ?? 1.7; st.v2 = c.v2 ? 1 : 0; $("#v2On").checked = !!st.v2; st.b2 = c.b2 ? 1 : 0; $("#b2On").checked = !!st.b2;
+  st.base = c.base ?? 0; st.height = c.height ?? 1.7; { const p = GW.presetOf(c); st.headPreset = GW.HEADS[p.head] ? p.head : ""; st.bodyPreset = GW.BODIES[p.body] ? p.body : ""; presetMark(); }   // (a file from before the cards: v2 and b2, the two switches)
   st.shape = (c.shape || []).concat(new Array(H.shapes).fill(0)).slice(0, H.shapes).map(Number);
   Object.assign(st.face, Object.fromEntries(FACE.map(f => [f[0], f[5]])), c.face || {});
   $("#relative").checked = c.relative !== false;
@@ -3516,7 +3708,7 @@ async function open(name) {
   st.hairHead = c.hairHead?.base?.C ? c.hairHead : null; HAIRINFO = null;   // the head its hair was baked on (placeHair)
   grownUI();
   Object.assign(st.skin, { tone: "#c9b3a2", rough: 0.62, photo: false, size: 2048 }, c.skin || {});
-  st.skin.proc = { ...SKINSH.DEFAULTS, ...(c.skin?.proc || {}) }; procSet.all();
+  st.skin.proc = { ...SKINSH.DEFAULTS, ...SKINSH.withLower(c.skin?.proc || {}) }; procSet.all();   // (a character from before the lower liner had a colour of its own: its liner's)
   st.skin.lit = { ...SKIN_LIT, ...(c.skin?.lit || {}) }; litSet.all();
   toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
   SKIN = null; await loadSkin(); await LAY.load();
@@ -3525,7 +3717,7 @@ async function open(name) {
   st.drape = c.drape !== false; drapeTog.checked = st.drape;
   BAKES = WHO ? await loadDrape(WHO) : {}; TAILOR_W.postMessage({ bakes: BAKES });   // the clothes as they hung when saved
   if (me !== OPENING) return;
-  Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEFIT, { lidLine: lidDefault(), shape: {} }, c.eyes || {}); st.eyes.showLid = false; delete st.eyes.graft;   // (the grafted eyes on every character: an older file's switch dropped; its shape only if it has one)
+  Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEFIT, { lidLine: lidDefault(), shape: {}, look: "" }, c.eyes || {}); st.eyes.showLid = false; delete st.eyes.graft; eyeLookMark();   // (the grafted eyes on every character: an older file's switch dropped; its shape only if it has one)
   if (st.eyes.lidLine?.base !== "mesh") st.eyes.lidLine = lidDefault();   // an older line was offsets from MediaPipe's ring: start again on the model's delete st.eyes.plane; delete st.eyes.lowerLid; eyeSet.all(); paintEyes();
   Object.assign(st.teeth, TEETH.TEETH_DEFAULTS, c.teeth || {}); teethSet.all();
   Object.assign(st.lips, LIPS.LIPS_DEFAULTS, c.lips || {}); st.lips.guide = false; lipSet.all();
@@ -3541,7 +3733,7 @@ async function open(name) {
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
   if (me === OPENING && WHO) detect();
 }
-const character = () => ({ base: st.base, v2: st.v2 || undefined, b2: st.b2 || undefined, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), age: st.age, cute: st.cute, monster: st.monster, anime: st.anime || undefined, creature: st.monster && st.creature ? st.creature : undefined, hairHead: st.hairHead || undefined, hair2: HAIR2?.record(), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, drape: st.drape, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, groom: st.groom, accessories: st.accessories,
+const character = () => ({ base: st.base, headPreset: st.headPreset || undefined, bodyPreset: st.bodyPreset || undefined, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), age: st.age, cute: st.cute, monster: st.monster, anime: st.anime || undefined, creature: st.monster && st.creature ? st.creature : undefined, hairHead: st.hairHead || undefined, hair2: HAIR2?.record(), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, drape: st.drape, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, groom: st.groom, accessories: st.accessories,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
@@ -3550,7 +3742,7 @@ $("#make").onclick = async () => {
   const exists = [...$("#who").options].some(o => o.value === n);
   if (exists && !confirm(`${n} exists: start it again from the defaults? (its pictures and a baked face stay)`)) return;
   await api(`api/people/${encodeURIComponent(n)}`, {}); $("#newName").value = "";   // a fresh character: the defaults
-  await people(n); await open(n); useLook(LOOKS.NEW_LOOK);   // a new character starts from the studio's look
+  await people(n); await open(n); newStart(); useLook(LOOKS.NEW_LOOK);   // a new character starts from the studio's look, on the studio's own head and body (the Presets cards)
   await api(`api/people/${encodeURIComponent(n)}`, character()); UNSAVED = false;
   status(`${n}: drop a front picture, or just shape the body (it starts from the ${LOOKS.NEW_LOOK} look: Face, Look)`, "ok");
 };
@@ -3818,8 +4010,18 @@ function exportSkin(SH = null) {
     }, null, true, [Float32Array.from(nrm), st => shading(st.show)]);
     g.morphAttributes.position = tg; if (tg.normals?.length === tg.length) g.morphAttributes.normal = tg.normals;
   }
+  if (graft) {                                          // which corners are the lids' lining (the graft's loops under 0: the lid's back, on the eye): not skin for a lash to lie on (bakeLashFit)
+    const nL = graft.geometry.userData.nL, n = pos.length / 3, lining = new Uint8Array(n);
+    for (let c = nM; c < n; c++) { const v = gIdx[c - nM]; if ((v < nL ? GRAFT.sides.L.ring[v] : GRAFT.sides.R.ring[v - nL]) < 0) lining[c] = 1; }
+    g.userData.lining = lining;
+  }
   const m = new THREE.Mesh(g, skinFileMaterial());
-  m.name = `${WHO}_skin`; m.userData.srcI = srcI; m.userData.srcW = srcW;   // each corner's three MHR points and their shares (its weights)
+  m.name = `${WHO}_skin`; m.userData.srcI = srcI; m.userData.srcW = srcW;
+  if (g.userData.lining) {                              // (the file's extras: which of the skin's triangles are the lids' lining, as runs [first, how many, ...]: a reader that asks what skin a lash can lie on leaves them out, LASHFIT)
+    const L = g.userData.lining, runs = [];
+    for (let t = 0, nt = L.length / 3; t < nt; t++) if (L[t * 3] || L[t * 3 + 1] || L[t * 3 + 2]) { if (runs.length && runs[runs.length - 2] + runs[runs.length - 1] === t) runs[runs.length - 1]++; else runs.push(t, 1); }
+    if (runs.length) m.userData.lining = runs;
+  }   // each corner's three MHR points and their shares (its weights)
   if (under) m.userData.underClothes = under;          // (the file's extras: how many of MHR's triangles the clothes hide, left out)
   if (graft) m.userData.eyeGraft = true;                // (the file's extras: the grafted eyes, their lining inside the eyeballs: EYELIDS)
   g.setAttribute("mhrp", new THREE.Float32BufferAttribute(srcI, 3)); g.setAttribute("mhrw", new THREE.Float32BufferAttribute(srcW, 3));   // the same in the file (_MHRP, _MHRW): the desk plays MHR's face shapes through them (tools/shared/face.js)
@@ -4095,8 +4297,10 @@ function exportRig(root, parts, SH = null) {
     g.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(idx, 4)); g.setAttribute("skinWeight", new THREE.Float32BufferAttribute(sk.weight, 4));
     const m = new THREE.SkinnedMesh(g, mat); m.name = name; m.frustumCulled = false; root.add(m); m.bind(skel, I); return m;
   };
+  let FITSKIN = null; const FITLASH = [];              // the file's skin and its lashes, for the last step (bakeLashFit)
   for (const [o, how] of parts) {
     if (how === "skin") {                               // MHR's own weights, by each corner's points (blended where a triangle was split along an opening)
+      FITSKIN = o.geometry;
       const I = o.userData.srcI, F = o.userData.srcW, n = I.length / 3, idx = new Uint16Array(n * 4), w = new Float32Array(n * 4), acc = new Map();
       for (let c = 0; c < n; c++) {
         acc.clear();
@@ -4105,7 +4309,7 @@ function exportRig(root, parts, SH = null) {
         top.forEach(([b, x], k) => { idx[c * 4 + k] = b; w[c * 4 + k] = x / sum; });
       }
       // (studioScale: the Studio's metres to one of MHR's on the head, what the 72 face shapes' moves are times here: a reader sized them by the body's height, which a child's or a creature's head doesn't follow)
-      wear(o.geometry, o.material, o.name, { index: idx, weight: w }).userData = { studioScale: +SCALE.toFixed(6), ...(o.userData.openings ? { openings: o.userData.openings } : {}), ...(o.userData.eyeGraft ? { eyeGraft: true } : {}), ...(o.userData.underClothes ? { underClothes: o.userData.underClothes } : {}) }; continue;
+      wear(o.geometry, o.material, o.name, { index: idx, weight: w }).userData = { studioScale: +SCALE.toFixed(6), ...(o.userData.openings ? { openings: o.userData.openings } : {}), ...(o.userData.eyeGraft ? { eyeGraft: true } : {}), ...(o.userData.lining ? { lining: o.userData.lining } : {}), ...(o.userData.underClothes ? { underClothes: o.userData.underClothes } : {}) }; continue;
     }
     const own = o.parent === rig;                       // the Studio's own (drawn in the world: back to the rig's space), or made for the file (in it already)
     if (!own) o.updateMatrixWorld(true);
@@ -4132,13 +4336,53 @@ function exportRig(root, parts, SH = null) {
           const out = Float32Array.from(q); for (let i = 0; i < out.length; i += 3) { v.set(out[i], out[i + 1], out[i + 2]).applyMatrix4(M); out[i] = v.x; out[i + 1] = v.y; out[i + 2] = v.z; }
           return liftWith(out, rides);
         }, o === BLM.lash || o === BLM.line ? cardsOf(g) : null);
+      if (o === BLM.lash || o === BLM.line) FITLASH.push([g, o === BLM.line]);
       const worn = wear(g, fileLook(x, g), x.name || o.name, chain ? chained(g, chain) : bone !== undefined ? rigid(P.count, bone) : WEIGHTS.transfer(K, P.array));
       if (chain) worn.userData = { jiggle: { chain: `jiggle_${chain.name}`, bones: chain.n, soft: chain.soft } };
       g.deleteAttribute("along");
     }
   }
   if (CH.size) root.userData.jiggle = [...CH.values()].map(c => ({ chain: `jiggle_${c.name}`, bones: c.n, soft: c.soft }));   // every chain in the file, for a reader that looks there
+  const fit = bakeLashFit(FITSKIN, FITLASH); if (fit) root.userData.lashFit = fit;   // the file's lashes on the file's own skin, at rest and in each state of the blink
   return skel;
+}
+// the lashes baked onto the file's skin (lashfit.js; DECISIONS 2026-11-13, the lashes: "then bakes it for godot, eyelids
+// only ever close / blink"). The Studio fits the lashes to the lids each time it makes them (lashFit), but a file's
+// lashes aren't quite the Studio's: each lash is moved whole with its root through the blink and kept off the eyeball
+// (blinkTargets' cards), which left some of them under the shut lid's skin. So, last of all, the file's lashes and
+// lash line are fitted to the file's own skin (the lids' lining left out) at rest and in each of the blink's states
+// (each eye at each of BLINKW), and their targets written again from the fitted states: a state is the rest, the shut
+// target's share and its in-between (the sum Godot's HSBlink makes), so in every state Godot shows at a baked weight
+// the lashes lie on top of the lid as it is there
+function bakeLashFit(sg, list) {
+  if (!sg || !list.length || st.lash.fit === false) return null;
+  const mm = 0.001 * SCALE, SP = sg.attributes.position.array, lining = sg.userData.lining || null, named = g => Object.fromEntries((g.morphAttributes.position || []).map(a => [a.name, a.array]));
+  const ST = named(sg), lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9], pad = 0.012 * SCALE;
+  for (const [g] of list) { const P = g.attributes.position.array; for (let i = 0; i < P.length; i += 3) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], P[i + a]); hi[a] = Math.max(hi[a], P[i + a]); } }
+  const near = c => SP[c * 3] > lo[0] - pad && SP[c * 3] < hi[0] + pad && SP[c * 3 + 1] > lo[1] - pad && SP[c * 3 + 1] < hi[1] + pad && SP[c * 3 + 2] > lo[2] - pad && SP[c * 3 + 2] < hi[2] + pad;
+  const ix = sg.index ? sg.index.array : null, nt = (ix ? ix.length : SP.length / 3) / 3, faces = [];   // the skin's triangles round the eyes (a file's skin is corners in order)
+  for (let t = 0; t < nt; t++) { const a = ix ? ix[t * 3] : t * 3, b = ix ? ix[t * 3 + 1] : t * 3 + 1, c = ix ? ix[t * 3 + 2] : t * 3 + 2;
+    if (near(a) && near(b) && near(c) && !(lining && (lining[a] || lining[b] || lining[c]))) faces.push(a, b, c); }
+  if (!faces.length) return null;
+  const stateOf = (R, T, side, w) => {                   // a part's places with one eye shut by w (a baked weight): what its targets sum to there
+    const S = T[inName(side, 1)]; if (!S) return null; if (w === 1) return S;
+    const I = T[inName(side, w)]; if (!I) return null;
+    const X = new Float32Array(R.length); for (let k = 0; k < X.length; k++) X[k] = I[k] + w * (S[k] - R[k]); return X;
+  };
+  const skins = new Map(), skinAt = (side, w) => { const key = side + w; if (!skins.has(key)) skins.set(key, LF.makeSkin(side ? stateOf(SP, ST, side, w) || SP : SP, faces, { cell: 1.2 * mm })); return skins.get(key); };
+  const out = { states: 0, moved: 0, under: 0, deepest: 0, seam: 0 };
+  const fit = (X, S, line) => { for (let pass = 0; pass < 2; pass++) { const f = LF.conform(X, S, { ...(line ? { lift: 0.09 * mm, reach: 2.5 * mm, all: true } : { lift: 0.06 * mm, reach: 2 * mm }), within: 0.35 * mm, settle: pass === 1 });
+    if (!pass) { out.under += f.under; out.deepest = Math.max(out.deepest, f.deepest / mm); out.seam += f.seam; } out.moved += f.moved; } out.states++; return X; };
+  for (const [g, line] of list) {
+    const R0 = g.attributes.position.array, T = named(g), was = Float32Array.from(R0), R = fit(Float32Array.from(R0), skinAt("", 0), line), X = {};
+    for (const side of BLINKS) for (const w of BLINKW) { const x = stateOf(was, T, side, w); if (x) X[side + w] = fit(Float32Array.from(x), skinAt(side, w), line); }
+    for (const side of BLINKS) { const S = X[side + 1]; if (!S) continue;
+      for (const w of BLINKW) if (w < 1 && X[side + w]) { const I = T[inName(side, w)], x = X[side + w]; for (let k = 0; k < I.length; k++) I[k] = x[k] - w * (S[k] - R[k]); }
+      T[inName(side, 1)].set(S); }
+    R0.set(R); g.attributes.position.needsUpdate = true; g.computeBoundingSphere();
+  }
+  out.deepest = +out.deepest.toFixed(3);
+  return out;                                          // (the file's extras: how many states were fitted, how many points were under the skin before and how deep (mm), how many were moved)
 }
 // an eyeball for a file: its paint baked flat in the eye's own layout (the export's texture: what a plain viewer shows),
 // its shape and paint in the material's extras (studioEye), its points in eye units (_EYELOCAL): the desk (wearEye) and
@@ -4259,7 +4503,7 @@ $("#poseSel").onchange = () => { POSE = $("#poseSel").value; try { localStorage.
 $("#povShot").onchange = () => { orbit.focus = "pov"; repose(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, on: graftOn() }), EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, useCreature, creatureLook, setAnime, GW, SKINSH, loadSalon, get salonHair() { return SALONH; }, get hair2() { return HAIR2; }, get headBase() { return HEADBASE; }, get hairStale() { return HAIRSTALE; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, on: graftOn() }), EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, useCreature, usePreset, useLips, newStart, changed, mhrPreset, AMAP, setExpr, get MOUTHPARTS() { return MOUTH; }, creatureLook, useEyeLook, EL, setLight, setAnime, GW, SKINSH, loadSalon, get salonHair() { return SALONH; }, get hair2() { return HAIR2; }, get headBase() { return HEADBASE; }, get hairStale() { return HAIRSTALE; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

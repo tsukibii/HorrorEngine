@@ -36,7 +36,13 @@ One line, for the user to give Claude on their machine, for example:
    | STUDIO | `GPU=1 node tools/character/studiotest.js` | Studio |
    | SALON | `GPU=1 node tools/character/salontest.js` | Studio |
    | HAIR2PAGE | `GPU=1 node tools/character/hair2pagetest.mjs` | Studio (the Hair editor v2.0 tab on a scratch character, `_hair2test`; `EXPORT=1` in front also exports for Godot and reads the file. On the cloud's CPU it takes four and a half minutes: timed 2026-11-12) |
-   | GROWPAGE | `GPU=1 node tools/character/growpagetest.mjs` | Studio (ages, Cutify, monster mode, horns and ears on a scratch character, `_growtest`; it runs JIGGLE on its export when Godot is there) |
+   | EYELOOKPAGE | `GPU=1 node tools/character/eyelooks.mjs make --only v3 --hair daz_twin_tails --shots Saved/Eyes/studio --export` | Studio (a character wearing the eyes v3 look, `eyes_v3`, pictured and exported: what EYESV3 needs; `eyelooks.mjs thumbs` makes the cards' pictures. On the cloud's CPU about seven minutes) |
+   | EYESV3 | `python tools/godot/eyes_v3_check.py` | none (Godot; needs `eyes_v3`'s export) |
+   | LASHFIT | `node tools/character/lashfit_check.mjs --person eyes_v3` | none (no browser; an export's lashes against its skin through the blink: any character exported since 2026-11-13; without `--person`, the made-up lid alone, which check_all runs) |
+   | EYELIDS | `python tools/godot/eyelids_check.py --person eyes_v3` | none (Godot; the eyes behind the lids through the blink) |
+   | GROWPAGE | `GPU=1 node tools/character/growpagetest.mjs` | Studio (a new character's start and the preset cards, its v2 mouth and lip shapes, ages, Cutify, monster mode, horns and ears on a scratch character, `_growtest`; it runs JIGGLE on its export when Godot is there) |
+   | PRESETS | `GPU=1 node tools/character/presets.mjs thumbs` | Studio (the head and body presets' cards pictured again into `Content/Studio/Presets/thumbs/`; only when a preset changed) |
+   | MOUTHSHOTS | `GPU=1 node tools/character/mouthshots.mjs --out Saved/Mouth/shots --pitch 8 --key front --lips '{"shine": 0}' --sculpt '{"lip_upper": -0.75, "lip_lower": -0.2, "lip_bow": 0.2, "lip_corners": 0.6}' --shapes` | Studio (the open smile on a scratch character, `_mouth`, from the user's picture's side and under its light, and each lip shape at rest; then `python3 docs/research/mouthfit/compare.py Saved/Mouth/shots` lays it over the picture, `Saved/Mouth/ref/m1.jpg`, and prints the overlay's numbers: needs `docs/research/mouthfit/out/d3.json`, the picture's landmarks, from `docs/research/headfit/lm.py`; only when the mouth changes) |
    | UEEYE | `GPU=1 node tools/character/ueeye.mjs` | none |
    | PLAY | `GPU=1 node tools/director/playtest.js` | desk |
    | TESTROOM | `GPU=1 node tools/director/testroom.mjs` | desk |

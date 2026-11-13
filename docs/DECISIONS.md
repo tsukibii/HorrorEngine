@@ -2,6 +2,153 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-13, the merge (the user, the morning after better mouths)
+
+- **"ca you merge better-mouths back into the branch it was forked from, spin up a pr, then merge eyes-v3 into it
+  too,"**
+- `better-mouths` merged into `make-up-enhanced` (the branch it came from); the pull request is `make-up-enhanced`
+  into `main` (tsukibii/HorrorEngine#27); `eyes-v3` (from `main`, beside the other two) merged into `make-up-enhanced`
+  as well, so the one pull request carries all three.
+- **My reading, to be overruled if wrong:** the pull request is into `main`, and it is not merged: that is the
+  user's to do.
+- **What the merge had to reconcile:** both sides added Studio doc sections numbered 2h and 2i: eyes v3's are now
+  **§2k** (eye looks) and **§2l** (the lashes on the skin), make-up enhanced's stay §2h and §2i, the mouth §2j. The
+  skin's makeup keeps both sides' additions (the highlighter and the lower liner's own colour; the lid's gloss and
+  glitter): the lower liner is drawn in its own colour under the upper one, after the lid's gloss and glitter.
+
+## 2026-11-13, better mouths: a v2 mouth interior, a real tongue, little gum, v2 lips (the user, with a picture)
+
+- **"Can you branch off thr current branch you've been working on and call it better-mouths . Your goal is make a v2
+  mouth interior that's more feminine and looks 1:1 with the image shared, even the person realistic tongue, note i
+  hate gummy smiles, so for the big smile gums shouldn't be visible too much ( a little is okay), see if you can
+  build. A new v2 lip shape too that rumbles the daz3d lips (vreate some variations) again only focus on female. If
+  your overplayed open mouth matches the image 1:1  in 3d model shape, and is close in texture  then you can pass this
+  new branch and will merge it into the current branch in the morning"**
+- The picture: the neon reference's mouth close up, in a big open smile (the upper teeth showing under the lip, a
+  rose tongue filling the mouth behind the lower teeth's tips, no gum). Kept out of git (`Saved/Mouth/ref/m1.jpg`).
+- **The branch** is `better-mouths`, from `make-up-enhanced`.
+- **What this sets:**
+  - A **v2 mouth**: a young woman's teeth, a gum that a smile hardly shows ("i hate gummy smiles": a little is
+    fine), a tongue that looks like one. New characters wear it; a character from before keeps its mouth.
+  - **v2 lip shapes** after the Daz3D lips, with variations. Women's only.
+  - **The test that passes the branch**: the open mouth laid over the picture matches it in shape, and is close in
+    texture. So the branch carries the overlay and its numbers, not my word for it.
+- **My readings, to be overruled if wrong:** "rumbles" is "resembles"; "overplayed" is "overlaid"; the open smile is
+  also wanted as an expression to pick (it is what the overlay is made with).
+- **Where the overlay got** (docs/CHARACTER_STUDIO.md §2j has the table; under the picture's light, ours laid on hers
+  by the lips' outer points with nothing stretched): the lips' outer points within 1.8 mm, the opening 56.4 x 18.9 mm
+  on hers 56.6 x 18.4 with the outlines sharing 0.82, teeth 25% and tongue 66% of the opening on her 22% and 63%, the
+  teeth 45.7 mm across on her 45.1, no gum in either. Not 1:1: her smile is a little crooked and ours even, her
+  teeth's edges run together, her skin and light are a render's. **Whether that passes is the user's call**: the
+  side by side was sent to them, not kept in git (her picture isn't).
+
+## 2026-11-13, the lashes (the user, with a marked picture, while eyes v3 was being checked)
+
+- **"Once you're done I want you to fix the eyebrow issues that all eyelashes have where they don't sit on top of the
+  skin (light clipping in the red circles), come up with a solution that knows how to place the eyelashes in more
+  realistic manner and then bakes it for godot, eyelids only ever close / blink so it shouldn't be too intricate with
+  the eyelid motions."**
+- **The picture:** EYESV3's sheet on a phone, the eyes v3 character's eye in Godot, two red rings on the upper lid:
+  a patch of skin showing in the dark lash band toward the outer corner, and along the lid's middle the band broken,
+  a line of light skin between it and the eye.
+- **My reading:** "eyebrow" is the eyelashes (the rings are on the lash line; the brows aren't in the picture). The
+  ask is for every lash set, not only eyes v3's: lashes and the lash line that are on top of the lid's skin, placed
+  from the skin itself, and baked into the export so Godot has nothing to work out; the lids only blink, so the
+  blink's steps are all that has to be held.
+- **What it was** (looked at close, with the lashes hidden and shown; measured on the export): the lashes are built
+  from a few lines along each lid and swung with the lid as it shuts, while the skin they stand on is a mesh bent its
+  own way by the eye's shape keys, the sculpt and the blink. A lash's root sat under the skin, so the hair seemed to
+  start in mid air a millimetre down the lid; the lash line's strip cut chords under the lid's rounded rim. On the
+  eyes v3 character 2,440 of the lashes' 21,398 points near the skin were under it at rest, 3,794 with the eye shut
+  (1.2 mm deep), and 54 of the lash line's 330.
+- **Built the same day** (`tools/character/lashfit.js`, docs/CHARACTER_STUDIO.md §2l): after the lashes are made they
+  are fitted to the lids' own skin as it is in that state: the lash line's every point put on the nearest skin, a
+  hair's breadth off it; every point of a lash that is under the skin (or nearer than a hair's breadth) lifted out to
+  it, the rest of the lash left as made. **Baked for Godot as the export's last step** (`bakeLashFit`): the file's
+  own skin round the eyes is put together in each state of the blink as Godot will put it together, the file's lashes
+  and lash line are fitted to it there, and their blink targets written again from the fitted states, so each target
+  holds lashes lying on the lid as it is at that weight: nothing for Godot to do. (The Studio's own fit per state
+  wasn't enough: a file moves each lash whole with its root through the blink, which put some back under the shut
+  lid.) Where the two lids' margins press together, shut, a lash between them has no place a hair's breadth off
+  either and is hidden by both: it's put on the skin it's under, between the two, and counted. LASHFIT (`node tools/character/lashfit_check.mjs [--person NAME]`)
+  holds it on a made-up lid and on an export, at rest and at every twentieth of the blink.
+
+## 2026-11-12, make-up enhanced: presets as cards, three more heads, two more bodies, then the makeup (the user)
+
+- **"Create a new branch called make-up enhanced. before you research and work on the make up, is there any reason we
+  dont have the new face shape as a preset thumbnail similar to the monster presets ?If w can have it as a thumbnail
+  preset that we default to just do that, same with the body (body preset shouldnt override the face), maybe create
+  some thumbnail categories for, monster as we have now (untouched), heads, and bodies. For heads can you look through
+  our previous daz references (I think there were 4 heads) and make an aligned one for 3 of them . For bodies, keep the
+  new v2, but also create alterations of the v2 where its more skinny (sports muscular woman), and more hourglass one.
+  I dont need any male presets , just focus on feminity. For makeup, I want better makeup, analyze the daz images I
+  shared earlier and re-create those makeup looks 1:1 (the same lip gloss, shines etc, )"**
+- **The branch** is `make-up-enhanced` (a branch's name can't hold a space), from main after pull request 26.
+- **The answer to "is there any reason":** no good one. v2female and bodyv2 were built as two more Base buttons with
+  a switch each, off for new characters, because when they were made nobody had asked for the default to change
+  (DECISIONS 2026-11-12, v2female; a T-pose reference). Nothing technical stood in the way of cards.
+- **What this sets:**
+  - The Body tab has **Presets** in three categories: **Heads**, **Bodies**, **Monsters**. Monsters are the creature
+    cards as they were, nothing about them changed. The two Base buttons and the two switches are gone: their
+    presets are cards.
+  - **A head preset changes the head and the neck only; a body preset changes the body only.** Neither sets a
+    slider of the character's own. Each category has a *Plain* card (MHR's feminine base).
+  - **New characters start on v2female's head and bodyv2's body**, on the feminine base, 1.63 m. Characters saved
+    before keep what they had (a file with the old `v2` and `b2` opens on the same two presets).
+  - **Heads:** three more, each held to one of the other Daz faces as v2female was to hers.
+  - **Bodies:** bodyv2 stays; two alterations of it: slimmer and athletic (a sporty, toned woman), and more
+    hourglass. **No male presets**: femininity only.
+  - **Makeup** after that: the Daz pictures' makeup looks re-created 1:1 (the lip gloss, the shines).
+- **My readings, to be overruled if wrong:** the presets are what the *feminine end* of the base becomes, so picking
+  a card on the Average or Masculine base moves the base to Feminine (and says so); a body card doesn't change the
+  height you set; Neck length is the one slider a body preset may carry (how high it carries the head): bodyv2 has
+  it from its picture.
+## 2026-11-12, eyes v3 (the user, with two pictures of their own render)
+
+- **"Create a new branch called eyes-v3, see if you can re-create in our studio creator -> godot (including optimizing
+  our already use of the godot eye shader we made) and re-create this eye look 1:1 > Its a screenshot of what I was
+  able to create in Unity + Blender. Your objective is to create that exact eye look including the eyelashes and
+  eyelids and exact eyes (Pupils, the whites), your goal is to get as close to 1:1. For the new eye worker I want you
+  to create a thumbnail icon for it similar to the icons we have in our monster presets. Once you accomplish this eye
+  look, make it easy to modify some things via sliders (different iris shape / patterns, colors etc). Your main
+  objective is to get this exact eye look in godot, for the eye preset try get the exact eye shape too on the
+  metahuman. I gave you image 2 in case you want to reference the face / head shape too in your quest to get that eye
+  look."**
+- **The pictures** (kept out of git, `Saved/Eyes/ref/eyes.png` and `face.png`: they have to be sent again in a new
+  session): both eyes close, and the face. Big, very dark red-brown irises the pupil melts into; on each two crisp
+  catchlights (a big one up and to the picture's right of the pupil, a small cool one across from it, the same side in
+  both eyes) and a thin bright arc low on the cornea, just above the lower lid; cool, bluish whites shaded under the
+  upper lid, a pink inner corner; a long almond opening, its outer corner a little higher, the upper lid resting low
+  over the iris with a thin fold close above the lashes; the upper lashes a soft dark band more than hairs, a silver
+  shimmer on the lid above them; the lower lashes long, fine and sparse, in little points down the skin; rose round
+  the eye, a wet pink waterline. The face: porcelain skin, a blunt black fringe and two tails.
+- **What this sets:**
+  - **The look is to be matched in Godot**, from a character made in the Character Studio and exported: the eyeball
+    (iris, pupil, white, catchlights), the lids' shape and the lashes. Godot is the objective; the Studio is where it
+    is made.
+  - **The eye look is a preset in the Studio with a picture on a card**, as the creatures are.
+  - **Sliders afterwards**: the iris's colours, its pattern, the pupil's shape and the rest changed easily, in the
+    Studio (it has them) and in Godot.
+  - **The Godot eye shader may be reworked** for it, and made cheaper where it can be.
+- **My readings** (to be overruled if wrong): "the new eye worker" is the eye look's preset (the card); "the
+  metahuman" is our own MHR character (the v2female base: the picture's face is the Daz character's the hair editor's
+  twin tails were matched on); the sliders are wanted in Godot too, since Godot is the objective.
+- **Built the same day and the next, on `eyes-v3`** (docs/GODOT_LOOK.md §5v, docs/CHARACTER_STUDIO.md §2k):
+  - **Godot's eye shader, v3**: the eye's axes read once per vertex and everything else worked out from the eye's own
+    shape per pixel (a true sphere's shine whatever the mesh, an eye drawn that can differ from the mesh); **catchlights
+    that stay** (two lights that follow the camera reflected in the cornea, the lower lid's wet line under them, lit by
+    whatever light reaches the eye, or glowing by themselves); the room's own lamps dimmed in the cornea when asked;
+    the white's brightness and warmth (cool below 0); the eyeball's room behind the lids as a push of its vertices, so
+    the depth test throws out what the lids hide before the shader runs (it wrote its depth per pixel before).
+  - **`HSEyePaint`**: the Studio's own paint (iris, pupil, limbus, white) ported to Godot's shading language and held
+    to the Studio's by a check; a change to any number draws the eye's picture again, once, into a small viewport, so
+    the eye costs what it cost. **`HSEyePicker`**: the sliders (the look viewer's Eye sliders), `HSEyeLook` a saved
+    eye, the HSCharacterLook node's Eye paint in the Inspector.
+  - **The Studio**: eye looks as cards with pictures (Face, Eye looks: `eyelooks.js`, `eyelooks.mjs thumbs`), the
+    first of them **Eyes v3 (dark doll)**; a lash style of its own (a soft band above, points below: Lower lashes in
+    points); lid gloss and lid glitter in the makeup; the Opening shape key down to -2.5 (a heavy lid); the beauty
+    light.
+
 ## 2026-11-12, the ringlets (the user, with a screenshot, while the styles were being gone through)
 
 - **"Not sure if you caught it but the curls look like they float rather than come from the head/hair"**, with the

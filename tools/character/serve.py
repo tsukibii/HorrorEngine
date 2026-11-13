@@ -64,7 +64,9 @@ def clean(n):
     return n if n and not n.startswith(".") and all(ch.isalnum() or ch in "_-." for ch in n) else None
 
 
+EYELOOKS = ROOT / "Content" / "Studio" / "Eyes"                   # the eye looks' pictures (eyelooks.js EYE_LOOKS; eyelooks.mjs thumbs)
 CREATURES = ROOT / "Content" / "Studio" / "Creatures"            # the creature presets' pictures (grow.js MONSTERS; creature_thumbs.mjs)
+PRESET_THUMBS = ROOT / "Content" / "Studio" / "Presets" / "thumbs"   # the head and body presets' pictures (grow.js HEADS, BODIES; presets.mjs thumbs)
 HAIR = ROOT / "Content" / "Studio" / "Hair"                     # hairstyles to start from (the salon's Save as a hairstyle)
 SALON_FILES = {"salon.json", "salon_bake.json", "salon.glb", "salon_base.glb"}   # the salon's hair: People/<name>/salon/ or Hair/<style>/
 HAIR_FILES = SALON_FILES
@@ -319,9 +321,15 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:3] == ["api", "clothes", "prints"] and len(parts) == 4 and clean(parts[3]) and parts[3].lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
             f = CLOTHES / "prints" / clean(parts[3])
             return self.send(200, f.read_bytes(), {".png": "image/png", ".webp": "image/webp"}.get(f.suffix.lower(), "image/jpeg")) if f.is_file() else self.send(404, {"error": "no such print"})
+        if parts[:3] == ["api", "presets", "thumbs"] and len(parts) == 4 and clean(parts[3]) and parts[3].endswith(".jpg"):   # a head or body preset's picture (presets.mjs thumbs)
+            f = PRESET_THUMBS / clean(parts[3])
+            return self.send(200, f.read_bytes(), "image/jpeg") if f.is_file() else self.send(404, {"error": "no picture yet: node tools/character/presets.mjs thumbs"})
         if parts[:3] == ["api", "creatures", "thumbs"] and len(parts) == 4 and clean(parts[3]) and parts[3].endswith(".jpg"):   # a creature preset's picture (creature_thumbs.mjs)
             f = CREATURES / "thumbs" / clean(parts[3])
             return self.send(200, f.read_bytes(), "image/jpeg") if f.is_file() else self.send(404, {"error": "no picture yet: node tools/character/creature_thumbs.mjs"})
+        if parts[:3] == ["api", "eyelooks", "thumbs"] and len(parts) == 4 and clean(parts[3]) and parts[3].endswith(".jpg"):   # an eye look's picture (eyelooks.mjs thumbs)
+            f = EYELOOKS / "thumbs" / clean(parts[3])
+            return self.send(200, f.read_bytes(), "image/jpeg") if f.is_file() else self.send(404, {"error": "no picture yet: node tools/character/eyelooks.mjs thumbs"})
         if parts[:3] == ["api", "clothes", "thumbs"] and len(parts) == 4 and clean(parts[3]) and parts[3].endswith((".jpg", ".png")):   # an outfit's or a design's picture (tailor/thumbs.mjs)
             f = CLOTHES / "thumbs" / clean(parts[3])
             return self.send(200, f.read_bytes(), "image/jpeg" if f.suffix == ".jpg" else "image/png") if f.is_file() else self.send(404, {"error": "no picture yet: node tools/character/tailor/thumbs.mjs"})

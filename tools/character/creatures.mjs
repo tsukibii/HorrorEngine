@@ -38,6 +38,7 @@ const fresh = async name => {                            // a character made (or
 const exists = name => B(n => [...document.querySelector("#who").options].some(o => o.value === n), name);
 const openIt = async name => { await page.selectOption("#who", name); await page.waitForFunction(n => window.__body.who === n, name, { timeout: 300000 }); await settle(); };
 try {
+  await page.addInitScript(() => { window.__plainNew = true; });   // (a new character from MHR's plain halfway base, as this was written on: not the Studio's own start, grow.js NEW_START)
   await page.goto(URL, { waitUntil: "load" });
   await page.waitForFunction(() => window.__body && window.__body.SCULPT, null, { timeout: 300000 });
   if (mode === "thumbs") {

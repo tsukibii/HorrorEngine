@@ -45,6 +45,7 @@ const slide = (label, v, commit = true) => B(([label, v, commit]) => { const r =
 const pick = (label, v) => B(([label, v]) => { const r = [...document.querySelectorAll("#hair2Rows .pick")].find(x => x.firstChild.textContent === label), s = r.querySelector("select"); s.value = v; s.onchange(); }, [label, v]);
 const card = id => B(id => document.querySelector(`#hair2Grid .card[data-style="${id}"]`).click(), id);
 try {
+  await page.addInitScript(() => { window.__plainNew = true; });   // (a new character from MHR's plain halfway base, as this was written on: not the Studio's own start, grow.js NEW_START)
   await page.goto(URL);
   await page.waitForFunction(() => window.__body && window.__body.N > 10000 && window.__body.hair2, null, { timeout: 180000 });
   await page.fill("#newName", NAME); await page.click("#make");

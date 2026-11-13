@@ -28,11 +28,147 @@ clothing library), merged; then on `claude/ecstatic-dijkstra-6ixk71`: the hair e
 two of the user's Daz hairstyles held to their pictures, the v2female and bodyv2 bases, and the styles gone through;
 beside it on `more-shotgun-shells`: two easter egg shells for the shotgun; and 2026-11-12 on
 `claude/jolly-darwin-9t8hkc` (merged first, PR #25): the ghost events plan, the cloak and creepy eyes, the hunt, sanity
-and the kit's bed, with `more-shotgun-shells` merged in. Read this after CLAUDE.md's start
+and the kit's bed, with `more-shotgun-shells` merged in; then on `make-up-enhanced` (from main after PR #26): heads and
+bodies as preset cards, three more heads, two more bodies, and the makeup; 2026-11-13 on `better-mouths` (from
+`make-up-enhanced`): the v2 mouth, the open smile, lip shapes; beside them, 2026-11-12 and 13 on `eyes-v3` (from
+main): the user's own eye render matched in Godot (the eye's shader reworked, catchlights that stay, the eye repainted
+from sliders), eye looks as cards in the Studio and the lashes on the lid's skin; the three brought together on
+`make-up-enhanced` on 2026-11-13 (tsukibii/HorrorEngine#27, into main). Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-12, the styles gone through, `claude/ecstatic-dijkstra-6ixk71`): what the two matched hairstyles taught, in all 67
+## Where it stopped last (2026-11-13, `make-up-enhanced`): `better-mouths` and `eyes-v3` merged in, one pull request
+
+Read DECISIONS 2026-11-13, "the merge", first. `make-up-enhanced` now holds three pieces of work and is open as a
+pull request into main (tsukibii/HorrorEngine#27): the preset cards and the makeup (its own), the v2 mouth and lip
+shapes (`better-mouths`), and eyes v3 with the lashes on the skin (`eyes-v3`). Each has its section below, as its
+own session left it.
+
+- **Reconciled in the merge**: the Studio doc's sections (make-up enhanced's §2h and §2i, the mouth's §2j, eyes
+  v3's now §2k and §2l, with every reference moved); the skin's makeup (`skinshader.js`: the highlighter and the lower
+  liner's own colour beside the lid's gloss and glitter); the page's cards' styles and what it hands the checks
+  (`window.__body`); CLAUDE.md's Character Studio and plugins lines and the checks list.
+- **Run here after the merge**: CHECKS (with GROW, LOOKS, MOUTH, EYELOOKS and LASHFIT in it) and GROWPAGE (QUICK) on
+  the merged page. **Not run here after the merge**: STUDIO, EYELOOKPAGE (an eye look worn and exported from the
+  merged page) and anything in Godot (EYESV3, EYELIDS, GDPEOPLE). A local run is the proof (docs/RUN_LOCALLY.md).
+- **One thing changed for the two to agree**: an eye look names one liner colour, and since make-up enhanced the
+  lower liner has a colour of its own; an eye look's lower liner takes its liner's colour (`useEyeLook`, `withLower`),
+  as it was made.
+- **Worth a look together**: a new character now starts on v2female's head, bodyv2's body, the v2 mouth and lips; an
+  eye look's card and a whole look both set the eyes (the last one clicked wins); the five Daz3D makeup looks were
+  made before the lid's gloss and glitter existed and don't use them.
+
+## In it (2026-11-13, `better-mouths`): the v2 mouth, the open smile, lip shapes
+
+Read DECISIONS 2026-11-13, "better mouths", first; docs/CHARACTER_STUDIO.md §2j is what's built and how far the
+overlay got. The branch is from `make-up-enhanced` and waits for the user to merge it there.
+
+- **The v2 mouth** (Face, Mouth, Teeth & tongue, *Style*; a new character's; a character from before keeps the
+  classic one, unchanged to the bit): a young woman's teeth on a narrower arch, the gum's edge high (no gum in an
+  open or a full smile), a broad domed tongue with papillae. `teeth.js` `V2` holds every number the overlay set.
+- **The open smile**: an expression preset (Expressions) of MHR's own shapes, fitted to the picture's lips.
+- **Lip controls and shapes**: five sculpt sliders (Upper lip, Lower lip, Cupid's bow, Lip corners, Pout) and five
+  shapes as chips in Face, Mouth (v2 soft bow a new character's, v2 full, v2 doll pout, v2 smile, v2 thin).
+- **The overlay** (`docs/research/mouthfit/`, `mouthshots.mjs`, `compare.py`): the lips' outer points within 1.8 mm,
+  the opening 56.4 x 18.9 mm on hers 56.6 x 18.4, the outlines sharing 0.82, teeth 25% and tongue 66% of it on her
+  22% and 63%, no gum. The side by side isn't in git (her picture isn't); ours alone is
+  `docs/studio_sheets/2026-11-13_open_mouth.jpg`, the lips `2026-11-13_lip_shapes.jpg`.
+- **Run here**: GROW, LOOKS, MOUTH, CHECKS, GROWPAGE (QUICK). **Not run here**: STUDIO (its scratch character starts
+  plain, on the classic mouth: it should be as it was), anything in Godot (an export with the v2 mouth hasn't been
+  looked at there: the tongue's bump map doesn't go with it).
+- **Open**: her smile is a little crooked and the preset is even (untie the sides for the last of the outline); the
+  teeth's edges could be rounder and run together; the tongue is rigid on the jaw (no rise, curl or sticking out);
+  the Studio's key lamp comes from steeply above in a head close-up (a head view's own key would help every face
+  picture); the lip shapes are read by eye from the pictures, not fitted; a lip shape isn't part of a head card.
+
+## In it (2026-11-13, `eyes-v3`): the user's eye render matched in Godot; eye looks as cards; eye sliders; lashes on the skin
+
+Read DECISIONS 2026-11-12, "eyes v3", first. The user, with two pictures of their own render (Unity and Blender):
+"re-create this eye look 1:1 ... including the eyelashes and eyelids and exact eyes (pupils, the whites) ... create a
+thumbnail icon for it similar to the icons we have in our monster presets ... make it easy to modify some things via
+sliders (different iris shape / patterns, colors etc). Your main objective is to get this exact eye look in godot."
+The pictures are kept out of git (`Saved/Eyes/ref/eyes.png`, `face.png`: **they have to be sent again in a new
+session**, and EYESV3's sheet puts the reference beside Godot's only when they're there).
+
+- **Godot** (docs/GODOT_LOOK.md §5v): `eye.gdshader` reworked (the eye's axes once per vertex, everything else from
+  the eye's own shape per pixel, NORMAL set by the shader; the eyeball's room behind the lids a push of its vertices
+  instead of a depth written per pixel), **catchlights that stay** and the lower lid's wet line, the room's lamps
+  dimmed in the cornea, a white that can be cool; `HSEyePaint` (the Studio's paint ported, an export's eyes repainted
+  once a change), `HSEyePicker` (the sliders: the look viewer's Eye sliders), `HSEyeLook` (a saved eye;
+  `eyes/eyes_v3.tres` ready-made), the HSCharacterLook node's Eye Look, Eye paint and Inspector sliders.
+- **The Studio** (docs/CHARACTER_STUDIO.md §2k): Face, **Eye looks**: cards with pictures (`eyelooks.js`); the first,
+  **Eyes v3 (dark doll)**; new controls where they belong (the eye's catchlights and whites, *Lower lashes in
+  points*, *Lid gloss* and *Lid glitter*, the Opening shape key down to −2.5, the lash look *Ink black*, the beauty
+  light); `eyelooks.mjs thumbs | make`.
+- **How it was matched**: a character (`eyes_v3`: v2female, the look, the hair editor's twin tails) made by
+  `eyelooks.mjs make`, exported, and pictured in Godot framed as the reference frames her (`demo/eyes_v3.gd`, the
+  `pair` shot), the two stacked and looked at; the eyeball tuned in Godot by `--paint=JSON` (40 s a try), the lids and
+  lashes in the Studio (`--variants`, about three minutes a try on the cloud's CPU; an export five).
+- **Where the match stands** (looked at, not measured against the reference: it's a picture of another engine under
+  another light): the iris, the pupil, both catchlights' places and sizes, the wet line, the whites' tone, the eye's
+  size in the face, its tilt, the lid resting on the iris, the soft dark band above and the points below are there.
+  **Not matched**: the skin's rosy, wetter look round the eye (the reference is lit pink and her skin is wet with
+  tears: the skin's wetness is HSSkin's, not the eye look's); the lid's glitter is a band of fine flakes, the
+  reference's a brighter patch; the fringe of the test character ends higher than the reference's (the hair editor's
+  twin tails as they are); the reference's upper lashes show a few long hairs at the corners.
+- **The lashes on the skin** (DECISIONS 2026-11-13, the lashes; docs/CHARACTER_STUDIO.md §2l): the user's second ask,
+  with EYESV3's sheet marked: skin showing in the lash band, lashes starting in mid air. `tools/character/lashfit.js`:
+  the lash line put on the lid's own skin, every point of a lash that's under it lifted out, in the Studio each time
+  the lashes are made (`lashFit`) and **again as the export's last step on the file's own skin, in each state of the
+  blink** (`bakeLashFit`: the targets written again from the fitted states; a point between the two lids' margins
+  pressed together goes onto the skin it's under). On the eyes v3 export: 2,440 points under the skin at rest before,
+  3,794 shut; now none at rest or at any of the blink's nine weights, at most 12 of 24,352 (0.25 mm) at a twentieth
+  between two of them. It is for every lash set, not eyes v3's alone; **an export made before this has to be made
+  again to get it** (Export for Godot in the Studio).
+- **EYELIDS' rule changed** (docs/CHARACTER_STUDIO.md §2c's note): a lid's margin, edge-on to the eye, is no longer
+  counted as a lid the eye stands through where the cornea's dome hides its inner part. It failed that way on a plain
+  v2female character (0.043 mm², the limit 0.02) before this branch touched a lid, and on the eyes v3 one (0.39):
+  both pass now (0.010, 0.013). The graft's lining also rides the cornea's dome now (`eyegraft.js placeAll`).
+- **Checked here** (all on the last export of `eyes_v3`): CHECKS (check_all, with EYELOOKS and LASHFIT's made-up lid
+  in it), EYEPATCH (the Opening's new end), LASHFIT on the export, EYELIDS (file and Godot), EYESV3, EYEFX, GDFACES,
+  LOOKSWITCH, GDPLAY; GDPEOPLE on her and on a plain v2female character (`_eyesv3`): the cornea's bending is held on
+  the plain one (the pupil 8 px from where IOR 1 reads it) and said to be not measured on her, whose iris is as dark
+  as her pupil (the check finds a pupil by its darkness, and found her whole iris: its rule reads the file's record
+  now); GDTESTROOM with the desk's bake made first: every station but 13, which fails as on
+  any fresh container (its made props need Blender; the stations after it run with `--from n_bath`). **Not run
+  here**: STUDIO, GROOM, GROWPAGE, TAILOR's page checks and the other browser checks (the Studio's eye code, its skin
+  shader, the lash builder and the export changed: ask the user for a local run, docs/RUN_LOCALLY.md), and
+  LOOKPLUGIN's whole demo.
+- **Not measured**: whether the reworked eye shader is cheaper to draw. It does less per pixel by construction (the
+  eye's axes once a vertex, no depth written per pixel so the lids' depth can throw hidden pixels out before the
+  shader runs), but no frame time was taken: this machine draws on the CPU, where a timing says little about a
+  graphics card. Worth a look on the user's 3090 if eyes ever show up in a profile.
+- **Left, and seen**: the catchlights that stay are lit by the lamps that reach the eye, so a lamp behind her with no
+  shadows on lights her catchlights too; the eye picker has no key of its own in a game (call
+  `HSEyePicker.toggle(tree)`; the look viewer has the button); an HSLookPreset doesn't carry an eye's paint yet (a
+  look that turns her iris another colour for a quest: `HSEyePaint.set_paint` from a script, or an HSCharacterLook's
+  `set_eye_paint`); a Director or desk game has no story word for it.
+## Before that (2026-11-12, `make-up-enhanced`): preset cards for heads and bodies, then the makeup
+
+Read DECISIONS 2026-11-12, "make-up enhanced", first; docs/CHARACTER_STUDIO.md §2h is what's built.
+
+- **Presets as cards** (the Body tab, under Base): Heads, Bodies, Monsters (the creatures, untouched). A head card
+  changes the head and neck only, a body card the body only; new characters start on v2female's head and bodyv2's
+  body. The two Base buttons and switches are gone; old files open the same.
+- **Heads**: v2female, and v2 elegant, v2 doll, v2 soft after the user's other Daz faces (one picture each, measured
+  against v2female's own picture; not the many-round 1:1 v2female got: §2h says how far).
+- **Bodies**: bodyv2, and v2 athletic (97, 63, 102 round at 1.63 m) and v2 hourglass (98, 65, 116).
+- **Run here**: GROW, LOOKS, CHECKS, GROWPAGE (QUICK, after the makeup too), the cards' pictures (`presets.mjs thumbs`)
+  and the looks' (`makeupshots.mjs`: `docs/studio_sheets/2026-11-13_makeup_looks.jpg`). **Not run here**: STUDIO (50 minutes on
+  the CPU; its scratch character now says it starts plain, which should leave it as it was: a local run is the proof).
+- **Open**: an outfit on the two new bodies; the sports bra's straps on bodyv2; muscle relief for the athletic body
+  (a normal map: not built); a second pass on each new head with outlines read off its picture.
+- **The makeup** (CHARACTER_STUDIO §2i, `docs/research/makeup_reference.md`): the lipstick has an *Inner colour* (a
+  deeper colour where the lips meet) and a *Wet shine* (painted glints), the skin's makeup a *Lower liner colour* and
+  a *Highlighter*; five looks after the five faces (porcelain berry, red satin, wine doll, neon wing, smoky nude);
+  the brows lie on the skin (a straight or arched brow's middle had been pulled inside or off the head: the arch was
+  applied in depth too). `makeupshots.mjs` pictures looks close up; LOOKS (in check_all) holds every look's names.
+- **Open on the makeup**: nothing of it has been seen in Godot or on the user's machine; the neon look's long pink
+  wing is only a short flick (the liner's wing is 5 mm at most: a wing length wants its own slider); the eyes' lid
+  shape is not part of a look (the East Asian preset in Face, Eyes brings them nearer the pictures); the skin's tone
+  is the character's (the pictures are paler and pinker); head cards could be pictured again wearing a look.
+
+## Before that (2026-11-12, the styles gone through, `claude/ecstatic-dijkstra-6ixk71`): what the two matched hairstyles taught, in all 67
 
 Read DECISIONS 2026-11-12, "the lessons into every style" and "the ringlets", first. The user: "take everything
 you've learnt from the last hairstyles and enhance improve v2 hairstyles"; and, with a screenshot while it was being

@@ -12,6 +12,7 @@ const browser = await req("../browser.cjs").launch(chromium);
 const page = await (await browser.newContext({ viewport: { width: 1300, height: 1100 } })).newPage();
 page.on("dialog", d => d.accept()); const errors = []; page.on("pageerror", e => errors.push(e.message));
 page.on("console", m => { if (m.type() === "error" && /shader|WebGL|THREE/i.test(m.text())) errors.push(m.text().slice(0, 200)); });   // (a material that doesn't compile says so here)
+await page.addInitScript(() => { window.__plainNew = true; });   // (a new character from MHR's plain halfway base, as this was written on: not the Studio's own start, grow.js NEW_START)
 await page.goto(URL);
 await page.waitForFunction(() => window.__body && window.__body.N > 10000, null, { timeout: 180000 });
 await page.waitForFunction(async () => (await (await fetch("api/library")).json()).garments?.length > 0, null, { timeout: 30000 });

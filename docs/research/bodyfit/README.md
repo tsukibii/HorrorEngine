@@ -21,3 +21,12 @@ because the first picture shows the front alone.
 
 `fit.mjs` gives the body being tried to `grownBody` as `trial: { weights, sculpt }` with `body2: 1`; with a `bodyv2` in
 the presets file the same call without `trial` is the base itself.
+
+## alter/: the two alterations of bodyv2 (DECISIONS 2026-11-12, make-up enhanced)
+
+`alter/fitw.py ['{"name": {measure: cm, ...}}']`: MHR body weights from target measures, starting from bodyv2's
+(`mhr.py` `fit_measures`; the head's measures held), into `alter/out/weights.json`. `alter/meas.mjs [cand.json]`:
+each candidate (`{name: {weights: "<name in weights.json>" | "bodyv2", sculpt: {...}}}`; `alter/cand.json` is the
+last one tried) made as the Studio makes it on v2female's head at 1.63 m: the tape round the bust, the waist and
+the hips, the shoulders and a thigh across, and its triangles for `alter/sil.py name ...`, which draws each from the
+front and the side. v2athletic and v2hourglass are the second fit (docs/CHARACTER_STUDIO.md §2h).

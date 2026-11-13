@@ -45,6 +45,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
   const openSteps = () => ev(() => document.querySelectorAll("details.step").forEach(d => { d.open = true; }));   // the side panel's dropdowns
   const drag = async pts => { await page.mouse.move(...pts[0]); await page.mouse.down(); for (let i = 1; i < pts.length; i++) for (let k = 1; k <= 5; k++) await page.mouse.move(pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * k / 5, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * k / 5); await page.mouse.up(); };
 
+  await page.addInitScript(() => { window.__plainNew = true; });   // (a new character from MHR's plain halfway base, as this was written on: not the Studio's own start, grow.js NEW_START)
   await page.goto(BASE + "salon.html?ref=minimax_wig");
   await step("the salon loads the head and the reference", async () => {
     await page.waitForFunction(() => window.__salon && window.__salon.ready, null, { timeout: 90000 });

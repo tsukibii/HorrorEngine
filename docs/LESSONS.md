@@ -3,6 +3,83 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The v2 mouth: what took more than one try (2026-11-13)
+
+- **A landmark is only as good as what it sits on.** MediaPipe's inner-lip points for both lips are on MHR's lip
+  membrane at one place: the expression fit could not open the mouth however far the jaw dropped. The opening is the
+  membrane's own edges (the triangles that stretch when the jaw drops); they were found by printing what each shape
+  moves, not by trying another weight.
+- **Say which way a camera's pitch goes before the first picture.** "8 degrees below" was passed as -8 and looked
+  down: the teeth's arch came out upside down and a render was spent finding out.
+- **Read the lamp before blaming the mesh.** The upper teeth were grey and the lower white. Normals, colours, winding
+  and shadows were each suspected; a probe of the scene's lights showed the Studio's key aims at the floor's middle,
+  so in a close-up of the head it comes from steeply above. A comparison with a picture is made under the picture's
+  light (`mouthshots.mjs --key front`), and the Studio's own light is pictured beside it.
+- **Two things that move the same landmark can't both be fitted from it.** A dropped jaw and a lower lip pulled down
+  open the mouth alike; the lips can't tell them apart. What shows of the lower teeth decides.
+- **Size by what the thing is, not by what's near it.** Teeth sized by the mouth's width were a fifth too small on a
+  head with a small mouth; the overlay's teeth count across the smile (fourteen where hers has ten) said so before
+  any number did.
+- **A measure made of colours needs a look at the picture too.** The teeth's shared share read 0.01 while the sheet
+  showed them lined up: the classifier didn't count grey teeth as teeth. The sheet is kept beside every number.
+- **Paint made for a pose shows in another.** The lipstick's painted glints, placed for shut lips, slid to the
+  inside of a lower lip stretched open and read as grey patches under the teeth.
+## The lashes on the skin, and the lids' check: what took a second try (2026-11-13)
+
+- **Fit a thing where it's shipped, not where it's made.** The lashes were fitted to the lids in the Studio, in each
+  state of the blink, and the export takes the Studio's states: so the file should have held fitted lashes. It held
+  499 points under the shut lid. Between the Studio's state and the file there is a step that moves each lash whole
+  with its root and keeps the root off the eyeball: right for a stiff hair, and after the fit. Measured on the file
+  (LASHFIT reads the glb, not the page), it showed at once; the fix is the same fit again as the export's last step,
+  on the file's own skin put together the way Godot puts it together. A bake is checked on what the bake wrote.
+- **Two skins pressed together have no "on top".** The bake left 366 points a tenth of a millimetre under the shut
+  lid, and more passes moved 1,500 points every time without settling: out of the lower lid's margin is into the
+  upper's. Printing which way the skin over each point faced (192 down, 174 up) said what a count never would. The
+  rule isn't a looser tolerance: a point between two skins that face each other is hidden by both, and goes onto
+  the skin it's under with no lift. (Left alone was the first answer, and wrong: a point left deep in a lid at the
+  shut weight pulled its lash under the skin half way to it. What's held at the baked weights is also what the
+  blend between them starts from.)
+- **Test the rule on the file before paying for an export.** Each export is five minutes here. The last three
+  changes of the seam rule were tried by fitting the exported file's own states again in node (ten seconds) and
+  measuring as the check does; only the one that held was exported.
+- **Before changing the geometry a third time, ask the check which triangle.** EYELIDS failed on the look by 0.39
+  mm². The cornea's bulge was halved, the eye's surface was sampled over a neighbourhood, the lining was put under
+  the dome: 0.39, 0.39, 0.065. Then the triangles under the counted pixels were printed: all of them the lower lid's
+  margin, edge-on to the eye, running into the eyeball as it's built to; the check left out what was inside the
+  white's *sphere*, and a lid lying on the cornea has the *dome* over that ledge. The plain base character failed
+  the same way (0.043) before anything of this branch touched a lid. Twenty minutes of diagnosis would have saved
+  three exports. (The lining under the dome stays: a lid's back should follow the surface the lid lies on.)
+- **A check that fails on a new kind of character may be measuring the character.** GDPEOPLE failed on the eyes v3
+  export: "the cornea doesn't move the pupil" (0.1 px). After a rework of the eye's shader that reads like a broken
+  refraction. The same check on a plain character passed (8 px): the shader was fine, and the "pupil" on the dark
+  doll eye was 9,164 px where a pupil is 3,000: the finder looks for dark, and her iris is as dark as her pupil.
+  Run the failing line on the plain case before reading the shader.
+- **A name for a view isn't its direction.** "below" in EYELIDS is the camera above, looking down on the lower lid's
+  ledge. A back-face rule written for "seen from underneath" changed nothing; the rotation's sign, worked out on one
+  normal, said why.
+
+## Eyes v3: what took a second try (2026-11-12)
+
+- **A page that never says it's ready is waiting for something: ask it what.** The first drive of the Character
+  Studio on a fresh cloud session sat for seven minutes at full CPU. The page was drawing; its module was stopped at
+  a call to the server that answered 400: MediaPipe wasn't set up (`python tools/face_mesh.py setup`), and then its
+  `libEGL.so.1` was missing (`apt-get install -y libegl1 libgl1 libgles2`). A probe that prints the page's failed
+  requests and its status line found both in a minute. A driver should wait a minute, not ten, before it asks.
+- **A scratch Godot project copies the plugin; it never links it.** Linked, Godot's importer wrote a `.uid` beside
+  every script and an `.import` beside every picture into the repository's own folder, and rewrote the tracked
+  `.import` files. The checks copy; a tuning loop must too (copy what's newer, leave Godot's own files).
+- **Two shaders that share a material share its names.** `catch_size` was already the eye shader's (a lamp's spread),
+  `uCatch` the Studio page's own (the painted catchlights' extension): both new uniforms compiled to a black eye.
+  Search the shader *and whatever extends it* for a name before taking it. The Studio's failure was silent in the
+  driver (a shader that doesn't compile is a console error, not a page error): a driver that makes pictures should
+  print the page's console errors.
+- **A halo is a share of the light, over an area.** The catchlights' soft glow was written as a wide Gaussian times
+  the same strength as the core; over the whole cornea it was a grey glare I took for my test lamp's reflection, and
+  dimmed the lamp's glints to no effect. Before blaming a light, switch the new thing off.
+- **A slider's range is part of the look.** The lids needed to come two millimetres lower; the Opening key's whole
+  travel was one. Two variants at −0.6 and −1.0 looked alike because they were alike. Measure what a slider's end
+  does in millimetres before spending renders on values inside it.
+
 ## The ringlets: the user's catch (2026-11-12)
 
 - **Look at every part from the side; the user did.** The ringlets were looked at from the front and three
@@ -2936,3 +3013,44 @@ pale one shows.
   rounder than a thrown liquid's (the thin spikes soaked in).
 - **A muzzle flash's light at a few metres' range tints the whole corridor**: the hearts' pink light at 0.3 of the
   gun's made one frame of the picture all pink. A coloured flash wants a tenth.
+
+## Heads from a picture's landmarks (2026-11-12, `make-up-enhanced`: three head presets after the Daz faces)
+
+- **A face detector draws every outline toward an average face.** Sliders fitted to MediaPipe's points alone, on
+  v2female's own picture, found her eyes, nose, mouth and face length and left her narrow jaw out (Face taper -0.27
+  where the hand-made head has -1.0, Chin width +0.18 for -0.8): the detector's face oval is a guess it smooths. The
+  first values for the new heads came out with broad jaws for that reason. **Measure a new face against a known one
+  with the same fit on both, and add the difference to the known head**: the detector's habits cancel.
+- **The same girl from two angles gave two different fits** (her picture turned 32 degrees: Face length -0.27; from
+  the front: -0.92). One picture's depth is a guess; a turned view reads lengths wrong. Trust the frontal picture,
+  take differences by half for what a front view can't read, and say how far the result is from a 1:1.
+- **Draw the head over the picture before believing the numbers.** The outline, eye rings, nose base and lips from
+  the fitted camera, over the crop: it showed in one look that all three faces' jaws already sit on v2female's
+  outline, which the residuals (3 mm, mostly the detector's own outline) could not.
+- **A waist fitted by measures and then pulled in by a slider was pulled in twice**: the first hourglass came out at
+  49 cm (0.41 of the hips). Measure the body as the Studio makes it (weights, sliders, height), not the weights alone.
+- **A preset's card needs a neutral dress.** The tailor's sports bra stood off bodyv2's shoulders, a high bun's
+  face-framing strands crossed the cheek, a ponytail's fringe hid the forehead a head preset is about. A cropped tee,
+  leggings and a buzz cut show the shape and nothing else.
+
+## The makeup after the Daz faces (2026-11-13, `make-up-enhanced`)
+
+- **Look at what's there before adding to it.** The first close-up of the look every new character wears showed the
+  upper lip nearly bare (the lipstick's outline sits inside the lip's edge and a strong gradient thins it further),
+  no brows, and a frown from the reference light's side key. Half of "better makeup" was the old settings: the
+  outline a third of a millimetre out, a low gradient, the studio light to judge by.
+- **A look that names something that isn't there throws when it's worn, not when it's written.** "brow_dark" (the
+  colours are `brow_dark_brown`, `brow_black`...) passed every check and broke the page at `useLook`. LOOKS now
+  reads the tables from their source and holds every look to them. A table of names wants a check the day a second
+  table starts naming into it.
+- **The brows: two guesses, then a probe.** A straight brow drew as a few hairs at each end. First guess: the band
+  between the detector's brow points sinks a little on a wide-eyed head; a snap to the skin within 5 mm changed one
+  brow and not the other. Second guess: the highlight washes the hairs out. A probe in the page, each hair against
+  the skin under it by distance along the brow, said 5 to 8 mm deep in the middle and right at both ends: the shape's
+  Arch was scaling the brow's depth as well as its height, toward a chord that runs through the head. Measure where
+  the thing is before reasoning about why it can't be seen. And: a shape applied "toward a line" in 3D moves in
+  every direction that line differs in; say which direction is meant.
+- **A gloss in a render is its lamps.** A clear coat gives the scene's own highlights: none in a dark room, broad
+  ones under soft panels. The references' glints are small and always there, so they are painted, with the coat
+  left under them. Say which it is: painted is a look, not physics.
+

@@ -173,7 +173,13 @@ it; within 15 mm of the eye's centre the base mesh has 4,391 points at its secon
   and lies in it (the lining, the lids' backs on the eye), reaches 2.5 mm behind the eye's front (the base mesh's lids are 2 to 3
   mm thick: farther is the far lid's rim through the opening) and takes contact within 0.1 mm as the lids' touch:
   `_graftedeyes` (a copy of `_studiotest` with the grafted eyes) at most 0.008 mm² through the blink, shut nothing, held shut in
-  Godot nothing.
+  Godot nothing. Since eyes v3 (2026-11-13) it also leaves out a lid's **margin** where it stands edge-on to the eye
+  (its facing within 72° of square to the line from the eye's middle, `FRONT`): the ledge between a lid's front and
+  its back runs into the eyeball by design. Over the white the part of it in the eye was inside the white's sphere
+  and never counted; under a lid that lies on the cornea (eyes v3's lower lid at rest, any lid as it blinks across
+  the iris) the eye's surface is the dome's, further out, and the dome hiding the ledge's inner part read as the eye
+  through a lid: 0.043 mm² on a plain v2female character, 0.39 on the eyes v3 one, with nothing wrong in either
+  picture. Held to the lid's front alone they measure 0.010 and 0.013.
 - **Not yet**: the eyelid-line handles on the graft; a lighter waterline along the shut lash line (the bake carries a
   little of its pink to the lid's front).
 
@@ -646,6 +652,364 @@ width sliders around mid", and: "I mean thighs and legs too and hands and feet")
 - **Not yet**: no outfit has been looked at on it (the tailor cuts on any body; nobody has looked); the wardrobe's
   dummy and the outfits' cards are the plain bodies; the Studio's own view of it has been seen by nobody but the
   page check.
+
+## 2h. Heads and bodies as preset cards (DECISIONS 2026-11-12, make-up enhanced)
+
+The user: "is there any reason we dont have the new face shape as a preset thumbnail similar to the monster presets?
+If w can have it as a thumbnail preset that we default to just do that, same with the body (body preset shouldnt
+override the face), maybe create some thumbnail categories for, monster as we have now (untouched), heads, and
+bodies." There was no good reason: v2female and bodyv2 had been built as two more Base buttons with a switch each
+(§2f, §2g), off for new characters, because nobody had asked for the default to change.
+
+- **What it is.** The Body tab has **Presets** under Base, in three categories picked by chips: **Heads**,
+  **Bodies**, **Monsters**. Monsters are the creature cards of §2d, moved under their chip and otherwise untouched
+  (their two switches, their note, `useCreature`). A head card and a body card are each *what a part of the feminine
+  end of the base becomes*, as v2female and bodyv2 always were; the two older Base buttons and the two switches are
+  gone. Each category starts with **Plain** (MHR's own feminine head; the slim feminine base's body).
+- **A head changes the head and the neck only, a body the body only.** `grow.js` `femEnd` puts the feminine end
+  together: MHR's identity weights of the *head* group from the head preset, of the *body* group from the body
+  preset, the rest the feminine base's; the sculpt a preset carries only for the controls it lists. A head preset
+  may list the Face and Forehead groups' controls, the Creature group's but the hunch, and the neck's (`headOwns`); a
+  body preset everything else, and **Neck length**: how high the body carries the head is the body's word, and
+  bodyv2 has it from its picture. GROW holds every preset to that and measures it: a head preset moves nothing under
+  the shoulders; a body preset leaves the face's 468 points and the skull within half a millimetre against the crown
+  (0.42 mm at the jaw's edge, where the neck's skin that Neck length stretches begins; the face itself 0.001 mm).
+  Neither sets a slider of the character's own: every slider still moves from it.
+- **A new character starts on v2female's head and bodyv2's body**, on the feminine base at 1.63 m (`grow.js`
+  `NEW_START`, the page's `newStart`). A character saved before keeps what it had: a file with the two switches'
+  `v2: 1` and `b2: 1` opens on the same two presets (`presetOf`); a file with neither opens plain. A character
+  saves `headPreset` and `bodyPreset`.
+- **Picked on another base**, a card moves the base to Feminine and says so: the presets are made on the feminine
+  end and fade out toward the masculine one, so at Average a card would be half itself. A body card doesn't change
+  the height that's set. A creature card clears both (a creature is shaped from the plain bases), as it cleared the
+  two switches.
+- **The heads** (`sculpt.<name>` in `MHR_presets.json`; `grow.js` `HEADS`): **v2female** (§2f), and three more after
+  the user's other Daz3D faces ("look through our previous daz references ... and make an aligned one for 3 of
+  them"):
+  - **v2 elegant** (`v2elegant`): the Christmas picture's left face. Narrower eyes lifted at the outer corners
+    (Eye size -0.1, Eye slant 0.3, set closer than v2female's: 1.05), a wider mouth with fuller lips (-0.45, 0.4),
+    a firmer jaw (-0.2), a little more nose.
+  - **v2 doll** (`v2doll`): its right face. Big lifted eyes set wide (0.5, 0.5, 1.6), round cheeks (0.3) over a
+    small jaw (-0.9), a short turned-up nose, a small full mouth.
+  - **v2 soft** (`v2soft`): the T-pose reference's own face (bodyv2's picture). A rounder, softer face (Round face
+    0.3, Cheeks 0.2), heavier lids (Hooded lids 0.4), a broader nose, a wider mouth.
+  - All three carry v2female's neck (its width, its base, its length).
+- **How the three were aligned, and how far.** MediaPipe's 468 points on each picture against the same points on
+  the head (`MHR_landmarks.json`), under a camera fitted with the sliders (a turn, a scale, a shift; across and down
+  the picture trusted, depth hardly; the mouth and the brows trusted less where her expression moves them, the
+  forehead under her fringe hardly). On v2female's own picture that fit finds her eyes, nose, mouth and face length
+  in the right direction and **misses how narrow her jaw is** (the detector draws every face's outline toward an
+  average one: 2.1 mm left). So each new face was measured *against hers* with the same fit on both, and what
+  differs was added to the hand-made v2female (the controls a front view reads well in full, the rest by half);
+  then the head's outline, eyes, nose base and lips were drawn over the picture from the fitted camera and looked
+  at. All three faces' jaws and chins sit on v2female's outline already (one artist's style); what separates them
+  is the eyes, the nose, the mouth and the cheeks. **This is not the perfectionist's 1:1 that v2female got** (two
+  pictures, outlines read by hand, many rounds): one picture each, 2.8 to 3.5 mm rms left across the picture, most
+  of it the detector's outline and its eye rings on drawn eyes. The scripts as they were run: `docs/research/headfit/`. A
+  second pass per head, with outlines read off the picture, is what would tighten them.
+  - Not made: the neon picture's face (she is laughing, mouth open: her jaw and cheeks can't be read at rest), and
+    the two small faces of the fourth picture (60 px between the eyes, puckered).
+- **The bodies** (`presets.<name>` and `sculpt.<name>`; `grow.js` `BODIES`): **bodyv2** (§2g), and two alterations
+  of it ("more skinny (sports muscular woman), and more hourglass one"; no male presets: "just focus on feminity").
+  Both keep bodyv2's proportions (the lengths of its legs, torso, arms and neck); their MHR weights are bodyv2's
+  moved to measures of their own (`mhr.py` `fit_measures` from bodyv2's weights; `docs/research/bodyfit/alter/`), with
+  sliders on top. Round each
+  at 1.63 m (a tape: the hull's length, the arms left out):
+
+  | | bust | waist | hips | waist / hips | shoulders across | a thigh |
+  |---|---|---|---|---|---|---|
+  | bodyv2 | 104 | 76 | 113 | 0.68 | 43.2 | 19.6 |
+  | **v2 athletic** (`v2athletic`) | 97 | 63 | 102 | 0.62 | 47.5 | 16.0 |
+  | **v2 hourglass** (`v2hourglass`) | 98 | 65 | 116 | 0.56 | 44.8 | 19.8 |
+
+  - v2 athletic: lean and toned; the shoulders wider, a small waist, narrow hips, firmer arms, calves and seat
+    (Upper arms 0.25, Forearms 0.15, Calves 0.35, Seat 0.4, Shoulders 0.2). **"Muscular" is build, not
+    definition**: MHR's shapes and the sculpt give no muscle relief (no abs, no cut of the deltoid); that would be
+    a normal map on the skin, not built.
+  - v2 hourglass: bodyv2's hips and thighs under a small waist, a fuller bust and seat (Bust 0.6, Hips 0.25, Seat
+    0.35). A first fit pinched the waist to 49 cm (0.41 of the hips), a cartoon's; this one is 0.56.
+- **The cards' pictures**: `node tools/character/presets.mjs thumbs` (the Studio's page driven headless, as the
+  creatures' are: PRESETS) into `Content/Studio/Presets/thumbs/head_<id>.jpg` and `body_<id>.jpg`, served at
+  `api/presets/thumbs/`. A head: a character as the Studio starts one, in a buzz cut (the hair editor's `m_buzz`:
+  the head's shape, forehead and hairline are what the card is for), a little from the side. A body: the whole
+  figure from the front on v2female's head, in a cropped tee and leggings the tailor cuts on that body (the trunk
+  and legs fill the card: the arms, out in MHR's pose, run off it).
+- **Picture**: `docs/studio_sheets/2026-11-12_presets.jpg` (the nine cards: five heads, four bodies).
+- **The checks start plain.** The page checks that make a scratch character (STUDIO, GROWPAGE, HAIR2PAGE,
+  LIBRARYPAGE, SALON, the creatures' and the library's pictures) were written on MHR's halfway base at 1.7 m and
+  say so before they make one (`window.__plainNew`): what they measure is unchanged. GROWPAGE also makes one as the
+  Studio does and holds the start.
+- **Checks**: GROW (every card's numbers in the file, the rule kept and measured, the older words the same bodies
+  to the bit, the start, the two alterations' tapes against bodyv2's), GROWPAGE (the start and its cards marked,
+  saved so; the three categories and each card's picture; a file from before the cards; v2female's card on the
+  halfway base: the base to Feminine, the neck slender, the hips as they were; bodyv2's card: the hips wider, the
+  hands nearer, the head not moved; Plain; the creatures under Monsters).
+- **Not yet**: no outfit has been looked at on the two new bodies beyond the cards' tee and leggings; the sports
+  bra's straps stand off bodyv2's shoulders (seen while the cards were tried: the tailor's, not looked into); the
+  wardrobe's dummy and the outfits' cards are still the plain bodies; hair made on one head is not re-fitted when
+  another head card is picked (the hair editor v2.0 grows again by itself; the salon's bake rides the head).
+
+## 2i. The makeup of the Daz3D faces: two-tone lips, wet glints, a red lower line, a highlighter (DECISIONS 2026-11-12, make-up enhanced)
+
+The user: "For makeup, I want better makeup, analyze the daz images I shared earlier and re-create those makeup looks
+1:1 (the same lip gloss, shines etc, )". What each picture's makeup is, part by part, is in
+`docs/research/makeup_reference.md` (the pictures stay out of git). What it took:
+
+- **What the pictures have that the Studio could not draw.**
+  - **A two-tone lip**: the deepest colour where the lips meet, a lighter one toward a soft border. The lipstick had
+    one colour whose amount faded outward. Now `lips.colour2` and `lips.inner` (Face, Mouth: *Inner colour*, its
+    colour and how much): the second colour takes over toward the outline's deepest line, the seam
+    (`skinshader.js`, the lipstick's block; `lips.js` `LIP_PAINT`).
+  - **Wet gloss that reads at any size and in any light**: small hard white glints, one broad and one small on the
+    lower lip a little to her left, a thin one on the cupid's bow. A clear coat alone shows only what the scene's
+    lamps give. Now `lips.shine` (*Wet shine*): the glints painted, their edges a little uneven, the coat at its
+    smoothest under them (so a real light still adds its own). They are the references' look, not physics: they stay
+    where they are drawn.
+  - **A red line under the lower lashes** under a dark upper liner. The lower liner used the liner's colour. Now
+    `lowerColor` (Skin, Makeup: *Lower liner colour*); the upper liner is drawn over it where they meet. Settings
+    from before it, a saved character's or a preset's, take the liner's colour (`skinshader.js` `withLower`: nothing
+    that existed changes).
+  - **Small shines on the skin**: the nose's tip and bridge, the tops of the cheekbones, the cupid's bow, the chin.
+    Dewy is a broad glow. Now `highlight` (*Highlighter*): a little lighter there, and a coat that catches the light.
+  - All four are off (0) unless a look or a slider sets them: a character from before is as it was.
+- **Five looks after the five faces** (`looks.js`; Face, Look): **porcelain berry** (the twin-tail reference),
+  **red satin** and **wine doll** (the Christmas picture's two faces), **neon wing** (the neon picture), **smoky
+  nude** (the T-pose reference's face). Each sets the eyes (pale grey irises, a dark limbal ring), the lips (both
+  colours, the gloss, the glints, the outline a little over the lip's own edge so the upper lip is full to its
+  cupid's bow), the skin's makeup (the flush high over the nose, the liners, the shadow and wash, the waterline, the
+  highlighter), separate dark lashes and soft dark brows. The table of which part came from which picture is in the
+  research note.
+- **The brows lie on the skin now.** Worn with a look, a *straight* brow drew as a few hairs at each end. A probe in
+  the page (each brow hair against the skin under it) found its middle 5 to 8 mm inside the head: a shape's Arch
+  scaled the brow's whole offset from the line between its two ends, depth included, and that line runs through the
+  head, the forehead being round (an *arched* brow stood off the face the same way). The arch is now applied up and
+  down the face only (`browlash.js` `brow`), and the page hands the builder the skin under the brows (`browSkin`: the
+  triangles within 14 mm, a ray out of the head through each point, 9 mm either way), so each hair's root, middle
+  and tip, and the fill, are set on the skin before the lift. The brows by hand (groom.js) are placed their own way
+  and were not touched.
+- **Into Godot**: the export bakes what the skin's shader draws (`albedo.js`: the colour, and the roughness in the
+  ORM), so the two-tone lip, the glints, the lower line and the highlighter's lightening and gloss are in the file's
+  maps. The clear coat itself is not a map: in Godot the glints are the painted ones, and the lips' shine is their
+  low roughness.
+- **Tools**: `node tools/character/makeupshots.mjs --out DIR [--looks a,b] [--light studio]` pictures looks close up
+  on a scratch character (the face from the front and three quarters, the eyes, the lips), `--set` laying settings
+  over a look to try a value. `node tools/character/lookscheck.mjs` (LOOKS, in check_all): every look names only
+  what exists (a look that named a brow colour that isn't there threw in the page when worn), every setting within
+  its slider, the new parts off by default.
+- **How near, and what's left** (seen in the Studio's own view under its studio light; nothing of it has been seen
+  in Godot or on the user's machine):
+  - The lips' two colours, their fullness and the glints' places are the pictures'. The glints are white dabs: under
+    a dim lamp they dim with the lip, where a render's reflection would stay bright.
+  - The references' skin is a render's (subsurface light, a soft key from the front); the Studio's view is flatter.
+    The colours were read by eye through each picture's own light and grade.
+  - **neon wing is the furthest off**: her wing is a centimetre long and thick; the liner's wing is a flick of 5 mm
+    at most, and under glam lashes it hardly shows. A wing length of its own is not built.
+  - The lids' shape is the character's (a look doesn't set it): the pictures' eyes are lifted almonds with the upper
+    lid over the iris's top, ours open rounder. Face, Eyes, the *East Asian* shape preset brings them nearer.
+  - The lashes are the nearest existing sets (separate, defined, round doll, glam, natural), not drawn lash by lash
+    from the pictures. The brows are mostly under each picture's fringe: straight or arched, dark, guessed.
+  - The eyes' size on the face is the head's (v2female's are smaller than the pictures' drawn eyes: §2f).
+- **Picture**: `docs/studio_sheets/2026-11-13_makeup_looks.jpg` (the five looks on v2female's head under the studio
+  light: the face, the eyes, the lips; bald, so nothing hides the brows).
+- **Checks**: LOOKS; GROWPAGE and STUDIO unchanged by it (the new settings default to 0).
+
+## 2j. The v2 mouth: teeth, a gum a smile hardly shows, a real tongue; lip shapes (DECISIONS 2026-11-13, better mouths)
+
+The user, with a close-up of the neon reference's open smile: *"make a v2 mouth interior that's more feminine and
+looks 1:1 with the image shared, even the person realistic tongue, note i hate gummy smiles ... A new v2 lip shape too
+that [resembles] the daz3d lips (create some variations) ... If your [overlaid] open mouth matches the image 1:1 in 3d
+model shape, and is close in texture then you can pass this new branch"*.
+
+- **A style, not a replacement.** Face, Mouth, Teeth & tongue has a *Style* picker: `classic` (the mouth as it was,
+  to the bit: MOUTH holds its checksum) and `v2` (`teeth.js` `TEETH_STYLES`, `V2`). A character from before keeps
+  `classic`; a new one starts on `v2` (`grow.js` `NEW_START.teeth`).
+- **The v2 teeth** (`UPPER2`, `LOWER2`): a young woman's: even, the laterals 0.7 mm short of the centrals (a smile's
+  line), rounded corners (`shapeAt`'s `soft`), whiter. On a narrower, more tapered arch (`V2.arch` 0.85: 55 mm across
+  where the classic's is 63), so a smile has dark corners beside the teeth. **Sized less by a small mouth**
+  (`V2.fit`): the classic mouth scales with the mouth's width, which made v2female's teeth a fifth too small (her
+  mouth at rest is 40 mm, MHR's 50); v2 scales by the square root of that.
+- **The gum** (`pushGum`, `V2.margin`, `V2.scallop`): its edge at 0.95 of a crown's height (the classic 0.78), up over
+  each tooth and down between two, 10.6 mm above the incisors' biting edge. With the lip at rest 8.3 mm above the
+  lips' line. A smile raises the upper lip's edge 1.7 mm (the open smile) to 5.9 mm (a full one: both the corner
+  puller and the cheek raiser at 1): **no gum in either**; the classic shows 1.2 mm in the full one. With the upper
+  lip raised as well (a snarl: the raiser at 0.5) 1.2 mm shows, the classic's 4.8. Nothing holds the lip down: it is
+  where the gum is.
+- **The tongue** (`pushTongue2`): broad (44 mm), lying over the lower side teeth, domed across with a faint groove
+  down its middle, sloping down to a thin round tip behind the lower incisors, so from the front its top shows and
+  not a front wall; rose (`V2.tongue`), darker toward the root; a bump map of papillae made in the page
+  (`tonguePapillae`), wetter (a clear coat). It rides the jaw, rigid, as the lower teeth do.
+- **How they sit** (set by the overlay): the frame 1.5 mm higher under the lip than the classic's (`V2.down`: only
+  the lower third of her upper teeth shows in the smile), the lower teeth's edges 1.9 mm under the upper's at rest
+  (`V2.over`: only their tips show), the tongue's top just under the upper teeth's edges in the open smile
+  (`V2.tongueTop`). The upper teeth's shading leans up a little (`V2.lean`): enamel scatters light, and under a lamp
+  from above flat fronts read grey.
+- **The open smile**: an expression preset of MHR's own shapes (`arkit_mhr.json` `mhr_presets`, a button under
+  Expressions): the jaw 0.33, the lower lip's depressor 0.7, the corner puller 0.45, the stretcher 0.5, the dimpler
+  0.5, the cheek raiser 0.3, the upper lip's raiser 0.05. Fitted to the picture's lips (docs/research/mouthfit).
+- **Lip controls** (`sculpt.js`, Face): *Upper lip* and *Lower lip* (each lip's red taller or thinner about the line
+  where they meet, which doesn't move: the teeth and the opening are set by it), *Cupid's bow*, *Lip corners*, *Pout*.
+- **Lip shapes** (`grow.js` `LIPS`, chips in Face, Mouth; each only those five sliders, still yours to move): *v2 soft
+  bow* (the twin-tail reference; a new character's), *v2 full*, *v2 doll pout* (the Christmas reference's two faces),
+  *v2 smile* (the neon reference), *v2 thin* (the T-pose reference). Read from the pictures by eye, not fitted.
+  `docs/studio_sheets/2026-11-13_lip_shapes.jpg`.
+- **The lipstick's painted glints fade as the mouth opens** (`MOUTHOPEN`): they are painted for shut lips; on a lower
+  lip stretched open they slid to its inner edge as grey patches.
+- **The overlay** (docs/research/mouthfit; the picture's light, `--key front`; the lips *v2 smile*, the look *neon
+  wing* without its painted glints): ours laid on the picture by the lips' twenty outer points, nothing stretched:
+
+  | | hers | ours |
+  |---|---|---|
+  | the lips' outer points | | within 1.8 mm (rms) |
+  | the opening, across and high | 56.6 x 18.4 mm | 56.4 x 18.9 mm |
+  | the two openings' outlines | | share 0.82 of what they cover |
+  | of the opening: teeth, tongue, dark | 22%, 63%, 15% | 25%, 66%, 9% |
+  | the teeth across | 45.1 mm | 45.7 mm |
+  | the upper teeth showing in the middle | 2.5 mm | 3.3 mm |
+  | gum showing | none | none |
+  | the tongue's colour | (180, 101, 137) | (188, 109, 138) |
+  | the teeth's colour | (211, 183, 218) | (200, 196, 193) |
+
+  Pixel for pixel the tongue is in the same place over 0.62 of what the two cover, the teeth over 0.34 (counted by
+  colour: ours show 0.8 mm more and have a dark line between two teeth where hers run together).
+- **What isn't 1:1**:
+  - Her smile is a little crooked (the opening's lower edge is higher on her left); the preset's sides are tied, so
+    ours is even. That is most of the 0.18 the outlines don't share.
+  - Her teeth's edges are rounder and run into each other; ours are separate teeth with a line between.
+  - The picture is lit pink from the front and her skin is a render's; the Studio's lamp is white and comes from
+    above in a close-up of the head, so there the upper teeth are greyer than the lower.
+  - Her lower lip sparkles with gloss; ours has the look's own gloss, without the painted glints while open.
+  - The tongue doesn't change shape (it doesn't rise, curl or stick out): rigid on the jaw.
+  - In an export the mouth's meshes carry their colours and the leaning normals; the tongue's bump map does not go.
+- **Pictures**: `docs/studio_sheets/2026-11-13_open_mouth.jpg` (ours alone: the picture's light, the Studio's own, the
+  face); the side by side with the picture is not kept in git (the picture isn't): `compare.py` makes it.
+- **Checks**: MOUTH (`tools/character/mouthcheck.mjs`, in check_all: the classic mouth as it was, the v2 mouth well
+  formed, its arch, gum, tongue, the open smile's shapes all MHR's, the gum a smile uncovers), GROW (the lip shapes:
+  only the five lip controls, the lips' line not moved by them), GROWPAGE.
+## 2k. Eye looks: the eye alone as a preset on a card, and Eyes v3 (DECISIONS 2026-11-12, eyes v3)
+
+The user's own render (Unity and Blender; both eyes close, and the face; kept out of git in `Saved/Eyes/ref/`) is to be
+matched 1:1 in Godot from a character made here, "including the eyelashes and eyelids and exact eyes (pupils, the
+whites)", with "a thumbnail icon for it similar to the icons we have in our monster presets", and sliders afterwards.
+
+**An eye look** (`eyelooks.js` `EYE_LOOKS`; Face, **Eye looks**: cards, each with its picture) is the eye and nothing
+else, set together:
+
+| Part | What it sets | Where its sliders are |
+|---|---|---|
+| `eyes` | the eyeball's paint and fit: the iris's colours, pattern and size, the pupil, the limbal ring, the white, the catchlights that stay, Lid shadow, Eye occlusion, Tear line | Skin, Eyes |
+| `shape` | the grafted lids' shape keys (size, crease, inner fold, tilt, opening, depth: §2c) | Skin, Eyes, Eye shape |
+| `sculpt` | the sculpt's eye controls only (`EYE_SCULPT`: Eye size, Eye spacing, Deep-set eyes, Eye slant, Hooded lids) | Body, Face |
+| `lash` | a lash style, its own settings over it, a look | Brows & lashes |
+| `makeup` | the eye's makeup only (`EYE_MAKEUP`: liner, shadow, under-eye, inner corner, waterline, aegyo-sal, lid gloss, lid glitter); what a look doesn't name is taken off the eye | Skin, Procedural skin, Makeup |
+
+A card sets them (`useEyeLook`); two switches leave the eye's shape or the lids' makeup as the character has them.
+Everything is a plain slider afterwards; the face, the lips, the skin, the brows and the hair aren't touched. The card
+worn is marked (`st.eyes.look`, kept with the character: what its eyes started as). Where a whole look (`looks.js`)
+is a face's makeup, lips and skin, an eye look can go on any of them.
+
+**Eyes v3 (dark doll)**, the reference taken apart and where each part is made:
+
+| In the reference | Here |
+|---|---|
+| big, very dark red-brown irises, the pupil melting in, no fibres to see, a soft edge | `iris` `#170807`, `iris2` `#2c100c`, Pupil 0.42, Fibres 0.12, a wide soft limbus, Iris brightness 0.8, Iris size up |
+| two crisp catchlights on each eye, a big one up and to the picture's right of the pupil and a small cool one across from it, the same side in both eyes | **Catchlights that stay** (new): two lights that follow the camera, reflected in the cornea (they slide over the iris as the eye turns), at *Catchlight across / up* and *Second across / up* |
+| a thin bright arc low on the cornea | **Wet line in the cornea** (new): the lower lid's tear film reflected |
+| cool, bluish whites, never paper, shaded under the upper lid | Sclera `#dfe6f2`, **White warmth** below 0 and **White brightness** (new: what Godot draws; the Studio the same), Lid shadow 0.7 |
+| a long almond opening, the outer corner a little higher, the upper lid resting low over the iris | the shape keys: Tilt, Inner fold, **Opening** well under −1 (its slider now runs to −2.5: at −1 the lid moved a millimetre, not enough to rest on the iris), Eye size |
+| a thin fold close above the lashes | Hooded lids (the sculpt's) |
+| the upper lashes a soft dark band along the lid, hardly hairs | the lash style **Eyes v3**: short (5 mm), no curl, Lift below 0 (down over the eye), the lash line at 1 |
+| the lower lashes long, fine, sparse, in little points down the skin | **Lower lashes in points** (new, `lowerSpikes`): clusters of two to four whose roots stay apart and whose tips draw together; Lower lashes down; the lash look **Ink black** (new: hardly a sheen, and `coverage`, how much denser a game draws each fine hair than its width alone gives, which Godot's HSHair reads from the export: a fine lash is a dark line, not a brown wash over the skin) |
+| a silver shimmer on the lid above the lashes | **Lid gloss** and **Lid glitter** (new, Makeup): the lid wet up to the crease; flakes a quarter of a millimetre across in a band two millimetres up from the lashes, each pale, mirror smooth and tilted its own way (colour, roughness and relief: all three are baked into the export) |
+| rose all round the eye, a wet pink waterline, a lit under-eye | Eyeshadow, Under-eye shadow, Inner corner, Waterline, Aegyo-sal |
+
+**The new controls** are in the tables they belong to, so every character has them and an export carries them:
+tools/shared/eye.js `EYE_CONTROLS` (Catchlights that stay, Second's size / across / up, Wet line in the cornea, Room
+lights in the cornea (game), Catchlights in the dark, White brightness (game), White warmth (game); all at values
+that change nothing on a character saved before them), browlash.js (`lowerSpikes`, the look `lash_ink`), skinshader.js (`lidGloss`,
+`lidGlitter`, `glitterColor`), eyegraft.js (Opening from −2.5; EYEPATCH tries its new end too). The export's eye record
+also says the fit's Lid shadow and Eye occlusion now (Godot's wet layer shades by them). The **beauty** light (the
+view bar): big and soft from the front and a little above, a rosy room, the film curve: what the cards are pictured
+under.
+
+**The cards' pictures and a character wearing a look** (`eyelooks.mjs`, in the Studio's own page, as the creatures'):
+
+    node tools/character/eyelooks.mjs thumbs                       # Content/Studio/Eyes/thumbs/<id>.jpg (kept in the project)
+    node tools/character/eyelooks.mjs make --only v3 --hair daz_twin_tails --shots DIR --export
+        # People/eyes_v3: the v2female base, the look, the hair editor's twin tails (the reference's fringe); the
+        # Studio's own pictures (both eyes framed as the reference, her left eye, the face); Export for Godot
+    ... --variants FILE     # {tag: {eyes, shape, sculpt, lash, makeup}}: each worn over the look and pictured (tuning)
+
+EYELOOKS (`node tools/character/eyelooks_check.mjs`, in check_all) holds every name in a look to a control that
+exists, within its slider, and Godot's port of the eye's paint to this side's. EYESV3 (docs/GODOT_LOOK.md §5v) is the
+look in Godot.
+
+## 2l. Lashes on top of the lid's skin, through the blink (DECISIONS 2026-11-13, the lashes)
+
+The user's marked picture: skin showing in the dark lash band, the lower lashes starting in mid air under the lid.
+"They don't sit on top of the skin ... a solution that knows how to place the eyelashes in more realistic manner and
+then bakes it for godot, eyelids only ever close / blink."
+
+**Why they were under it.** The lashes are built from a few lines along each lid (browlash.js: the lid's edge and
+three points over its rim, seventeen places a lid, straight between them) and swung with the lid as it shuts about
+the eyeball's middle. The skin they stand on is the grafted lids' mesh, bent its own way by the eye's shape keys,
+the sculpt (a hooded fold, a bigger eye) and the blink, and lifted over the cornea. Between the two a lash's root sat
+up to a millimetre under the skin, the lash line's strip cut chords under the rounded rim, and a fold lay over both.
+
+**The fit** (`lashfit.js`, run by `browLash()` as its last step: `lashFit`). The lids' skin as it is now (the graft's
+points and triangles, its lining left out: the lid's back on the eye isn't skin to stand on) goes into a grid, and:
+
+- **the lash line**: every point is put on the nearest skin, 0.09 mm off it. It is the skin's own dark edge;
+- **a lash**: every point of it that is under the skin, or nearer than 0.06 mm, is lifted out to that; the rest of
+  it, out in the air, is left as it was made. So a lash lies along the skin from its root until it leaves it, as a
+  hair does, and its tip is where its style put it.
+
+Twice over (a point lifted out of one face of a fold can land in the other). The way out is the nearest triangle's
+facing; where two are as near (over an edge) the one the point is more squarely behind decides. About forty
+milliseconds for both eyes' lashes.
+
+**The seam.** Shut, the upper lid's margin lies on the lower's: two skins facing each other with nothing between
+them, and the first stretch of every lash runs between the two (a lash is rooted at the margin's back and lies over
+it to its front edge). There is no place a hair's breadth off the skin there: out of one lid is into the other, and
+a fit that tries goes back and forth (the first bake left 366 points a tenth of a millimetre in one lid or the
+other). It isn't wanted either: both lids hide what's between them. So a point that is under one skin and, put out
+of it, behind another that faces against it, or nearer to it than a hair can lie, no deeper than 0.35 mm (`inSeam`:
+a lid's own back is a lid's thickness away, not that), goes **onto the skin it's under, with no lift**: between the
+two. (Left where the blink had put it, deep in one lid, it pulled its lash under the skin on the way there, between
+two weights.) The fit's last pass settles what's left the same way (`settle`: a place off one skin that is under
+another, where the lids meet at an angle at the eye's corners). Where the lash comes out in front of the seam it lies
+on the skin as anywhere.
+
+**Through the blink, baked.** The lids only blink. The Studio makes the lashes again in each state of the lids, and an
+export takes them at each of the blink's nine weights (`blinkShapes`: the blink's own target and its eight
+in-betweens). That alone wasn't enough: a file's lashes aren't quite the Studio's. In a file each lash is moved whole
+with its root through the blink and its root kept off the eyeball (`blinkTargets`' cards: a lash is a stiff hair, it
+doesn't bend as the lid does), which put some of them back under the shut lid's skin (measured on the first export
+with the fit: none under at rest, 499 points shut). So the export's last step is the same fit again on the file's
+own geometry (`bakeLashFit` in the package): the file's skin round the eyes, its lining left out, is put together in
+each state as Godot will put it together (the rest, the shut target's share and that weight's in-between), the
+file's lashes and lash line are fitted to it there, and their targets are written again from the fitted states. Each
+of the export's blink targets then holds lashes lying on the lid as it is at that weight. Godot's HSBlink plays them
+as it always did; there is nothing to work out in the game. What it did is in the file's extras (`lashFit`: the
+states fitted, the points that were under and how deep, the points moved).
+
+**Off**: `st.lash.fit: false` in a character's file (no switch in the tab: there's no look that wants lashes under the
+skin).
+
+LASHFIT (`node tools/character/lashfit_check.mjs`, in check_all): on a made-up lid (a rounded rim, a margin, a lining)
+the signed distance against the slow way, a lash line laid as chords under the rim put on it, lashes rooted under the
+skin lifted out and left alone in the air, nothing on the lining, the same twice, shut: lashes between two margins
+pressed together left as made and lifted where they come out in front, twenty thousand points in a fifth of a second.
+With `--person NAME` (or `--glb FILE`) an export's lashes and lash line against its skin as Godot puts the targets
+together. The skin is the skin a lash can lie on: the file says which of its triangles are the lids' lining (the
+skin node's extras, `lining`: runs of first and how many), and they're left out as the fit leaves them out. **At
+rest and at each weight the file holds a target for** (the nine of the blink): no point under the skin by more than a
+twentieth of a millimetre. **At every twentieth between them**, where Godot blends two fitted states: no more than a thousandth of the points,
+none 0.3 mm deep. (That much is left, and is what a blend of two states is: a lash moves whole with its root while
+the lid bends, so its place on the rim's top at one weight and on the rim's front at the next are joined by a
+straight line through the rim's rounded corner. Ten points of 24,352 on the eyes v3 character, for a frame of a
+blink.) The points in the seam are counted apart, and there are none while the eye is under nine
+tenths shut. On the eyes v3 character before the fit: 2,440 of 21,398 points under at rest, 3,794 shut (1.2 mm
+deep), 54 of the lash line's 330.
 
 ## 3. Each stage against the rule (as of this branch)
 

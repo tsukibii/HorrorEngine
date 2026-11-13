@@ -46,11 +46,23 @@ export const EYE_CONTROLS = [   // [key, label, lo, hi, step, default, help]
   ["limbal", "Limbal ring", 0, 1, 0.01, 0.5, "The dark band at the iris's edge."],
   ["limbalWidth", "Limbal width", 0.05, 0.45, 0.01, 0.18, "As a share of the iris."],
   ["limbalSoft", "Iris edge softness", 0, 1, 0.01, 0.6, "How the iris melts into the white: 0 a crisp line, 1 a wide soft shadow (the limbus seen through the cornea)."],
-  ["catch1", "Catchlight", 0, 1, 0.01, 0.9, "The main highlight, painted on the eye (with the refracting cornea off: on, the cornea reflects the lights themselves)."],
-  ["catchSize", "Catchlight size", 0.05, 0.45, 0.01, 0.17, "As a share of the iris."],
-  ["catchX", "Catchlight across", -0.8, 0.8, 0.01, -0.35, "Left to right on the iris."],
+  // the catchlights that stay (eyes v3, DECISIONS 2026-11-12: the user's reference has two crisp dots on every iris, a
+  // big one up and to one side and a small one across from it, and a thin bright arc low on the cornea): two lights
+  // that follow the camera, seen as reflections in the cornea, and the lower lid's wet line reflected under them
+  ["catchKeep", "Catchlights that stay", 0, 2, 0.01, 0, "With the refracting cornea the room's own lights make the catchlights, so an eye in a dim room has none. Above 0, the two catchlights below are always there: reflections in the cornea of two lights that follow the camera (they slide over the iris as the eye turns, as real ones do), as bright in a game as the light that reaches the eye. 1: as the reference."],
+  ["catch1", "Catchlight", 0, 1, 0.01, 0.9, "The main highlight's strength (one that stays; with the refracting cornea off, painted on the eye)."],
+  ["catchSize", "Catchlight size", 0.02, 0.45, 0.005, 0.17, "Its width as a share of the iris's."],
+  ["catchX", "Catchlight across", -0.8, 0.8, 0.01, -0.35, "Left to right on the iris, as the eye is seen straight on (the same side in both eyes: a light, not a mirror)."],
   ["catchY", "Catchlight up", -0.8, 0.8, 0.01, 0.4, "Down to up on the iris."],
-  ["catch2", "Second catchlight", 0, 1, 0.01, 0.5, "A smaller one on the other side."],
+  ["catch2", "Second catchlight", 0, 1, 0.01, 0.5, "A smaller, cooler one (a fill light's)."],
+  ["catch2Size", "Second's size", 0.2, 1.5, 0.01, 0.6, "Against the first's."],
+  ["catch2X", "Second across", -0.8, 0.8, 0.01, 0.3, "Where the second one sits: left to right on the iris."],
+  ["catch2Y", "Second up", -0.8, 0.8, 0.01, -0.1, "Down to up on the iris."],
+  ["catchLine", "Wet line in the cornea", 0, 1, 0.01, 0, "The lower lid's wet edge reflected low on the cornea: a thin bright arc just above the lower lid (with Catchlights that stay)."],
+  ["catchRoom", "Room lights in the cornea (game)", 0, 1, 0.01, 1, "In a game the room's own lamps reflect in the cornea too, each a small glint. 1: as they are; lower, they're dimmed there, so with the catchlights that stay the eye reads the same in any room (0: those alone)."],
+  ["catchGlow", "Catchlights in the dark", 0, 4, 0.01, 0, "In a game the catchlights that stay are lit by the lamps that reach the eye, and gone in the dark. Above 0 they also glow by themselves: eyes that glint out of the dark."],
+  ["whiteBright", "White brightness (game)", 0.2, 1.2, 0.01, 0.58, "How bright the white is drawn in a game against its paint (0.58: a white that sits in the face, never paper; higher for a doll's bright whites)."],
+  ["whiteWarm", "White warmth (game)", -0.8, 0.8, 0.01, 0.35, "The white's tint in a game: above 0 warm and pinker toward the corners (a real eye's), below 0 cool and bluish (a porcelain doll's)."],
   ["scleraShade", "Sclera shading", 0, 1, 0.01, 0.4, "Darker toward the rim of the eyeball, so it sits in the socket."],
   ["socket", "Socket shade", 0, 1, 0.01, 0.35, "The eye in its socket: the white and its shine darker all over, most toward the brow and into the corners, the iris a little (the brow, the lids and the cheek keep the light off it). MetaHuman's whites, measured in a face, are about a fifth as bright as a white card under the same light: the skin's brightness or darker, never paper (docs/research/eyes.md §7)."],
   ["cornerPink", "Corner pink", 0, 1, 0.01, 0.35, "The inner corner (and a little of the outer) and the waterline."],
@@ -156,6 +168,10 @@ uniform vec4 uShape2;    // the iris's plane, 1 / IOR, caustic, the iris's brigh
 uniform vec4 uPat;       // the iris's pattern (EYE_CHOICES' order: 0 natural), its strength, the burst's reach, detail
 uniform vec4 uPup;       // the pupil's shape (EYE_CHOICES' order: 0 round), its turn (rad)
 uniform vec4 uSock;      // the socket's shade
+uniform vec4 uKept;     // the catchlights that stay: how much, the first's and the second's size (rad), the wet line
+uniform vec4 uKeptG;    // the first's and the second's strength, the line's height, their brightness
+uniform vec3 uKeptD1, uKeptD2;                               // where they are: the reflected ray's direction about the view ray
+uniform vec4 uWhite;     // the white as a game draws it: its brightness against 0.58, its warmth past 0.35
 uniform vec3 uAccent, uPupilCol;                               // sRGB
 float eyeSm(float a, float b, float x) { float t = clamp((x - a) / (b - a), 0.0, 1.0); return t * t * (3.0 - 2.0 * t); }
 float eyeH2(float x, float y) { return fract(sin(x * 127.1 + y * 311.7) * 43758.5453); }
@@ -313,7 +329,18 @@ function eyeUniforms() {
            uPaint: { value: new THREE.Vector4() }, uPaint2: { value: new THREE.Vector4() }, uPaint3: { value: new THREE.Vector4() },
            uShape: { value: new THREE.Vector4(0.5, 0.86, 0.4, 0.65) }, uShape2: { value: new THREE.Vector4(0.86, 1 / 1.336, 0.6, 1) },
            uPat: { value: new THREE.Vector4(0, 1, 0.55, 0.5) }, uPup: { value: new THREE.Vector4() }, uAccent: { value: new THREE.Color() }, uPupilCol: { value: new THREE.Color() },
-           uSock: { value: new THREE.Vector4() } };
+           uSock: { value: new THREE.Vector4() },
+           uKept: { value: new THREE.Vector4() }, uKeptG: { value: new THREE.Vector4() }, uKeptD1: { value: new THREE.Vector3(0, 0, 1) }, uKeptD2: { value: new THREE.Vector3(0, 0, 1) },
+           uWhite: { value: new THREE.Vector4(1, 0, 0, 0) } };
+}
+// a catchlight's direction for its place on the iris (x, y in iris radii as the eye is seen straight on, y up): the view
+// ray reflected at that point of the cornea's dome, about the view ray (x right, y up, z back at the camera); the
+// same as Godot's HSEye.catch_dir
+export function catchDir(x, y, s) {
+  let nx = x * s.rho / s.rc, ny = y * s.rho / s.rc; const l = Math.hypot(nx, ny);
+  if (l > 0.98) { nx *= 0.98 / l; ny *= 0.98 / l; }
+  const nz = Math.sqrt(1 - nx * nx - ny * ny);
+  return [2 * nz * nx, 2 * nz * ny, 2 * nz * nz - 1];
 }
 const srgb = (c, hex) => { c.set(hex); c.convertLinearToSRGB(); };   // THREE.Color keeps linear; the paint works in sRGB, as eyes.js did
 function setUniforms(u, p, s, side) {
@@ -327,6 +354,14 @@ function setUniforms(u, p, s, side) {
   u.uPat.value.set(Math.max(0, PATTERNS.indexOf(p.pattern)), p.patternAmt ?? 1, p.burst ?? 0.55, p.detail ?? 0.5);
   u.uPup.value.set(Math.max(0, PUPILS.indexOf(p.pupilShape)), (p.pupilTurn ?? 0) * Math.PI / 180, 0, 0);
   u.uSock.value.set(p.socket ?? 0, 0, 0, 0);
+  // the catchlights that stay: how much, each one's size (the reflected ray's angle: twice the normal's), the line; their
+  // strengths, the line's height, their brightness here (the Studio's lights are always on: about a lamp's worth)
+  const size = 2 * (p.catchSize ?? 0.17) * s.rho / s.rc, real = p.real !== false;
+  u.uKept.value.set(real ? p.catchKeep ?? 0 : 0, size, size * (p.catch2Size ?? 0.6), p.catchLine ?? 0);
+  u.uKeptG.value.set(p.catch1 ?? 0.9, p.catch2 ?? 0.5, catchDir(0, p.catchLineY ?? -0.86, s)[1], 3 + (p.catchGlow ?? 0));
+  u.uKeptD1.value.set(...catchDir(p.catchX ?? -0.35, p.catchY ?? 0.4, s)); u.uKeptD2.value.set(...catchDir(p.catch2X ?? 0.3, p.catch2Y ?? -0.1, s));
+  // the white as a game draws it (Godot's HSEye: White brightness and warmth), against the 0.58 and 0.35 it always had
+  u.uWhite.value.set((p.whiteBright ?? 0.58) / 0.58, (p.whiteWarm ?? 0.35) - 0.35, 0, 0);
 }
 
 // a physical material wearing the eye; `extend(shader)` adds what a page needs on top (the Studio: the lids' shadow)
@@ -357,12 +392,27 @@ export function eyeMaterial(side, extend = null, key = "") {
   }
   float eyeIrisW = uPaint3.w * eyeOnC * (1.0 - eyeSm(0.95, 1.08, length(eyeQ) / uShape.x));
   diffuseColor.rgb *= eyeLin(eyePaint(eyeQ, eyeP, eyeGraze)) * mix(1.0, uShape2.w, eyeIrisW);
+  // the white as a game draws it (Godot's eye.gdshader: sclera_bright and sclera_warm), so a brighter or cooler white
+  // set here is the one Godot shows; at their defaults nothing
+  diffuseColor.rgb *= mix(vec3(uWhite.x) * mix(vec3(1.0), vec3(1.0, 0.95, 0.9), uWhite.y / 0.35 * 0.6) * mix(vec3(1.0), vec3(1.0, 0.84, 0.78), uWhite.y * eyeSm(0.3, 0.95, abs(eyeP.x))), vec3(1.0), eyeIrisW);
   // the socket (Socket shade): the white darker all over, more toward the brow (+y) and into the corners, the iris a
   // little; its shine too (below). Lighting, not paint: the bake leaves it out and a reader puts it back (Godot's HSEye)
   float eyeSock = min(0.92, uSock.x * (0.6 + 0.4 * eyeSm(-0.45, 0.55, eyeP.y) + 0.3 * eyeSm(0.45, 0.95, abs(eyeP.x))) * (1.0 - 0.6 * eyeIrisW));
   diffuseColor.rgb *= 1.0 - eyeSock;
   vec3 eyeB = normalize(mix(eyeN, normalize(vec3(-eyeQ / uShape.x * uShape2.z * 1.4, 1.0)), eyeIrisW));   // the iris: a shallow bowl
-  vec3 eyeBaseV = normalize(eyeX * eyeB.x + eyeY * eyeB.y + eyeF * eyeB.z), eyeCoatV = normalize(eyeX * eyeN.x + eyeY * eyeN.y + eyeF * eyeN.z);`)
+  vec3 eyeBaseV = normalize(eyeX * eyeB.x + eyeY * eyeB.y + eyeF * eyeB.z), eyeCoatV = normalize(eyeX * eyeN.x + eyeY * eyeN.y + eyeF * eyeN.z);
+  // the catchlights that stay (Godot's eye.gdshader, the same sums): the view ray reflected in the cornea, in the ray's
+  // own frame, against each light's direction there; soft discs with a little glow, the wet line a thin arc
+  float eyeKept = 0.0; vec3 eyeKeptCol = vec3(1.0);
+  if (uKept.x > 0.0 && eyeOnC > 0.5) {
+    vec3 kv = -eyeDv, kx = normalize(cross(vec3(0.0, 1.0, 0.0), kv)), ky = cross(kv, kx), kf = reflect(eyeDv, eyeCoatV), kr = vec3(dot(kf, kx), dot(kf, ky), dot(kf, kv));
+    float t1 = length(kr - uKeptD1) / max(uKept.y, 1e-4), t2 = length(kr - uKeptD2) / max(uKept.z, 1e-4);
+    float k1 = uKeptG.x * ((1.0 - eyeSm(0.65, 1.35, t1)) + 0.12 * exp(-0.45 * t1 * t1)), k2 = uKeptG.y * ((1.0 - eyeSm(0.65, 1.35, t2)) + 0.12 * exp(-0.45 * t2 * t2));
+    float kl = uKept.w * exp(-pow((kr.y - uKeptG.z) / 0.012, 2.0)) * (1.0 - eyeSm(0.136, 0.34, abs(kr.x)));
+    eyeKept = (k1 + k2 + kl) * uKept.x * (1.0 - 0.5 * eyeSock);
+    eyeKeptCol = (vec3(k1 + kl) + vec3(0.82, 0.9, 1.0) * k2) / max(k1 + k2 + kl, 1e-4);
+  }`)
+      .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n  totalEmissiveRadiance += eyeKeptCol * eyeKept * uKeptG.w;")
       .replace("#include <clearcoat_normal_fragment_begin>", "#include <clearcoat_normal_fragment_begin>\n  normal = eyeBaseV;\n#ifdef USE_CLEARCOAT\n  clearcoatNormal = eyeCoatV;\n#endif")
       .replace("#include <lights_physical_fragment>", `#include <lights_physical_fragment>
   material.specularColor *= 1.0 - eyeIrisW; material.specularF90 *= 1.0 - eyeIrisW;   // under the cornea: no shine of its own
@@ -373,7 +423,7 @@ export function eyeMaterial(side, extend = null, key = "") {
 #endif`);
     extend?.(sh);
   };
-  m.customProgramCacheKey = () => "studio-eye-5" + key;
+  m.customProgramCacheKey = () => "studio-eye-9" + key;
   return m;
 }
 
@@ -412,7 +462,7 @@ void main() {
 
 // what an exported eyeball carries for a reader that knows the eye (the desk, Unreal): the paint and the shape
 export function eyeRecord(p, s, side) {
-  const keep = ["real", ...EYE_COLOURS.map(c => c[0]), ...EYE_CONTROLS.map(c => c[0]), ...EYE_CHOICES.map(c => c[0])];
+  const keep = ["real", ...EYE_COLOURS.map(c => c[0]), ...EYE_CONTROLS.map(c => c[0]), ...EYE_CHOICES.map(c => c[0]), "lidShade", "occlusion"];   // (the Studio's Lid shadow and Eye occlusion: Godot's wet layer shades by them)
   return { side, paint: Object.fromEntries(keep.filter(k => p[k] !== undefined).map(k => [k, p[k]])),
            shape: { rho: s.rho, zl: s.zl, zc: s.zc, rc: s.rc, zi: s.zi, angle: s.angle, k: s.k } };
 }
