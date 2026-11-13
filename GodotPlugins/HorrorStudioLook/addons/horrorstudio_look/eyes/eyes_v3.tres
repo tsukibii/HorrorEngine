@@ -27,7 +27,7 @@ paint = {
 "cornerPink": 0.7,
 "gloss": 1.0,
 "irisDepth": 0.2,
-"bulge": 1.0,
+"bulge": 0.5,
 "ior": 1.336,
 "caustic": 0.5,
 "irisBright": 0.7,

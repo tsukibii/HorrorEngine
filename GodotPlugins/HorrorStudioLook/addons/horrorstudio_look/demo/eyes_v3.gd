@@ -5,7 +5,7 @@
 ## pupil's shape, a bigger iris, the catchlights that stay moved and switched off, her own eyes back; each pictured and
 ## measured where the eye lands (the iris's colour, the pupil, the white, the catchlights' places against the iris).
 ##   godot --path PROJECT --rendering-driver vulkan --fixed-fps 60 -s res://addons/horrorstudio_look/demo/eyes_v3.gd -- --glb=res://people/NAME.glb --out=DIR
-##         [--shots=pair,eye,face] [--paint=JSON] [--eye=JSON] [--stages=own,blue,...] [--light=soft|dark|lamp] [--tag=NAME] [--gaze=x,y]
+##         [--shots=pair,eye,face] [--paint=JSON] [--eye=JSON] [--stages=own,blue,...] [--light=soft|dark|lamp] [--tag=NAME] [--gaze=x,y] [--hide=lash]
 extends SceneTree
 
 var glb := ""
@@ -17,6 +17,7 @@ var paint_json := ""
 var eye_json := ""
 var light := "soft"
 var gaze := Vector2.ZERO          # the eyes turned (degrees: across, up)
+var hide: Array = []              # meshes left out, by a word of their names
 var world: Node3D
 var env: Environment
 var cam: Camera3D
@@ -66,6 +67,8 @@ func _initialize() -> void:
 			eye_json = a.substr(6)
 		elif a.begins_with("--light="):
 			light = a.substr(8)
+		elif a.begins_with("--hide="):                       # meshes left out by a word of their names (lash: the lids' skin alone)
+			hide = Array(a.substr(7).split(","))
 		elif a.begins_with("--gaze="):
 			var g := a.substr(7).split(",")
 			gaze = Vector2(float(g[0]), float(g[1]) if g.size() > 1 else 0.0)
@@ -89,6 +92,10 @@ func _initialize() -> void:
 		quit(1)
 		return
 	world.add_child(who)
+	for mi in who.find_children("*", "MeshInstance3D", true, false):
+		for h in hide:
+			if String(mi.name).to_lower().contains(String(h).to_lower()):
+				mi.visible = false
 	HSSkin.wear(who, {}, glb)
 	var over = JSON.parse_string(eye_json) if eye_json != "" else {}
 	report["eye_mats"] = HSEye.wear(who, glb, over if over is Dictionary else {}).size()
@@ -351,7 +358,7 @@ func _process(_d: float) -> bool:
 		var st: String = stages[si]
 		if shi == 0:
 			var t0 := Time.get_ticks_usec()
-			if st == "reset":
+			if st.begins_with("reset"):                    # her own eyes again ("reset", or "reset_<anything>" between two changes)
 				if painter != null:
 					painter.reset()
 			elif st == "redraw":                           # her own numbers drawn by Godot: its picture against the one the Studio baked

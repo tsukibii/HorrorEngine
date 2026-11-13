@@ -141,8 +141,8 @@ def main():
         worn = who.get("worn", {})
         say(all(worn.get(k, 0) >= 2 for k in looks), "%s: every look worn through the node on both her eyes" % glb.stem)
         G = who.get("glow", {})
-        # (her own eyes lit by the lamp may hold a few such points: a warm brown iris; the glow in the dark is tens of times that)
-        say(G.get("glow_dark", 0) > 8 and G.get("glow_dark", 0) > 20 * G.get("none", 0), "her eyes glow red in the dark (%d points of the picture; %d without the look, the lamp on)" % (G.get("glow_dark", 0), G.get("none", 0)))
+        # (counted against her own eyes with the lamp out: lit, a red-brown iris and a rosy lid are red points too)
+        say(G.get("glow_dark", 0) > 8 and G.get("none_dark", 0) == 0, "her eyes glow red in the dark (%d points of the picture; none without the look, the lamp out)" % G.get("glow_dark", 0))
         say(who.get("left", 1) == 0, "taken off: her own eyes back")
     try:
         from PIL import Image, ImageDraw

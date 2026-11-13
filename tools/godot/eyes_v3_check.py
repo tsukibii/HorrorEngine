@@ -39,7 +39,7 @@ OUT = ROOT / "Saved" / "Godot" / "_eyes_v3"
 KEEP = ROOT / "Saved" / "Story" / "_look" / "godot_eyes_v3"
 PEOPLE = ROOT / "Content" / "Studio" / "People"
 REF = ROOT / "Saved" / "Eyes" / "ref" / "eyes.png"
-STAGES = ["own", "redraw", "nocatch", "moved", "blue", "sunburst", "slit", "big", "small", "reset", "dark", "glow"]
+STAGES = ["own", "redraw", "nocatch", "moved", "blue", "sunburst", "slit", "reset_iris", "big", "small", "reset", "dark", "glow"]   # (her own dark iris again before its size is changed: its width is measured against the white)
 
 
 def run(g, script, args, env, word, headless=False):
@@ -126,7 +126,7 @@ def main():
     own = rep.get("own", {})
     say(rep.get("painter") and rep.get("eyes") == 2 and rep.get("eye_mats", 0) >= 2, "%s: her eyes on the Studio's eye (%d materials), her painter on both (%d)" % (glb.stem, rep.get("eye_mats", 0), rep.get("eyes", 0)))
     o = eye("own")
-    say(lum(o["iris"]) < 0.16 and lum(o["pupil"]) < 0.06 and o["iris"][0] >= o["iris"][2], "her own eyes: the iris dark and no bluer than red (%.3f, %.3f, %.3f), the pupil black (%.3f)" % (*o["iris"], lum(o["pupil"])))
+    say(lum(o["iris"]) < 0.16 and lum(o["pupil"]) < 0.12 and o["iris"][0] >= o["iris"][2], "her own eyes: the iris dark and no bluer than red (%.3f, %.3f, %.3f), the pupil dark under the catchlights' glow (%.3f)" % (*o["iris"], lum(o["pupil"])))
     say(lum(o["white"]) > 2.5 * lum(o["iris"]) and o["white"][2] >= o["white"][0] * 0.97, "the white brighter than the iris and cool (%.2f, %.2f, %.2f)" % tuple(o["white"]))
     cx, cy, c2x, c2y = float(own.get("catchX", 0)), float(own.get("catchY", 0)), float(own.get("catch2X", 0)), float(own.get("catch2Y", 0))
     kept = float(own.get("catchKeep", 0)) > 0
@@ -184,31 +184,34 @@ def main():
             w, h = im.size
             ch = int(w * H / W)
             return im.crop((0, (h - ch) // 2, w, (h - ch) // 2 + ch)).resize((W, H), Image.LANCZOS)
-        rows = []
-        if REF.exists():
-            rows.append(("the reference (the user's render)", Image.open(REF).convert("RGB").resize((W, H), Image.LANCZOS)))
-        rows.append(("eyes v3 in Godot", crop("own")))
         small_names = [n for n in ("nocatch", "moved", "blue", "sunburst", "slit", "big", "glow") if (keep / f"v3_{n}_pair.png").exists()]
-        sw = W // 4
-        sh = int(sw * H / W)
-        srows = (len(small_names) + 3) // 4
-        im = Image.new("RGB", (W, (H + 22) * len(rows) + (sh + 20) * srows), (20, 20, 20))
-        d = ImageDraw.Draw(im)
-        y = 0
-        for label, pic in rows:
-            d.text((6, y + 5), label, fill=(230, 230, 230))
-            if pic is not None:
-                im.paste(pic, (0, y + 22))
-            y += H + 22
-        for i, n in enumerate(small_names):
-            x, yy = (i % 4) * sw, y + (i // 4) * (sh + 20)
-            d.text((x + 6, yy + 4), n, fill=(230, 230, 230))
-            im.paste(crop(n).resize((sw, sh), Image.LANCZOS), (x, yy + 20))
-        im.save(keep / "eyes_v3.jpg", quality=90)
+
+        def sheet(with_ref, path):                       # her eyes (under the reference, when asked and there), then each change
+            rows = []
+            if with_ref and REF.exists():
+                rows.append(("the reference (the user's render)", Image.open(REF).convert("RGB").resize((W, H), Image.LANCZOS)))
+            rows.append(("eyes v3 in Godot", crop("own")))
+            sw = W // 4
+            sh = int(sw * H / W)
+            srows = (len(small_names) + 3) // 4
+            im = Image.new("RGB", (W, (H + 22) * len(rows) + (sh + 20) * srows), (20, 20, 20))
+            d = ImageDraw.Draw(im)
+            y = 0
+            for label, pic in rows:
+                d.text((6, y + 5), label, fill=(230, 230, 230))
+                if pic is not None:
+                    im.paste(pic, (0, y + 22))
+                y += H + 22
+            for i, n in enumerate(small_names):
+                x, yy = (i % 4) * sw, y + (i // 4) * (sh + 20)
+                d.text((x + 6, yy + 4), n, fill=(230, 230, 230))
+                im.paste(crop(n).resize((sw, sh), Image.LANCZOS), (x, yy + 20))
+            im.save(path, quality=90)
+        sheet(True, keep / "eyes_v3.jpg")
         print(f"  the sheet: {keep / 'eyes_v3.jpg'}")
-        if a.sheet:
+        if a.sheet:                                      # the docs' picture: Godot's alone (the reference is the user's own and stays out of git)
             Path(a.sheet).parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy(keep / "eyes_v3.jpg", a.sheet)
+            sheet(False, Path(a.sheet))
     except ImportError:
         pass
     print("EYESV3 ok" if ok else "EYESV3 FAIL")

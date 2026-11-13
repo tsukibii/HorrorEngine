@@ -59,7 +59,7 @@ const frame = async (what, clip) => {
     b.rig.updateMatrixWorld(true); cam.updateMatrixWorld(true);
     const eL = new T.Vector3(), eR = new T.Vector3(); b.EYES.L.getWorldPosition(eL); b.EYES.R.getWorldPosition(eR);
     const px = p => { const q = p.clone().project(cam); return [r.left + (q.x + 1) / 2 * r.width, r.top + (1 - q.y) / 2 * r.height]; };
-    const A = px(eL), C = px(eR), gap = Math.hypot(A[0] - C[0], A[1] - C[1]) || 1, want = (what === "pair" ? 0.668 : 0.3) * cw;
+    const A = px(eL), C = px(eR), gap = Math.hypot(A[0] - C[0], A[1] - C[1]) || 1, want = (what === "pair" ? 0.668 : what === "card" ? 0.5 : 0.3) * cw;
     const mid = eL.clone().add(eR).multiplyScalar(0.5); mid.y -= (what === "face" ? 0.03 : 0.002) * b.scale;
     const m = px(mid), depth = cam.position.distanceTo(mid), mpp = 2 * depth * Math.tan(cam.fov * Math.PI / 360) / r.height;
     const right = new T.Vector3().setFromMatrixColumn(cam.matrixWorld, 0), up = new T.Vector3().setFromMatrixColumn(cam.matrixWorld, 1);
@@ -101,10 +101,10 @@ try {
     await fresh("_eyelooks"); await base("v2female"); await view();
     const clip = await clipOf(2);
     for (const k of keys) {
-      await wear(k, null); await frame("pair", clip);
+      await wear(k, null); await frame("card", clip);
       // her left eye cut out of the picture of both (a view any closer is inside the lens's reach): one eye fills a card,
       // where two side by side are too small to read
-      const jpg = await jpeg(Buffer.from(await crop(await page.screenshot({ clip }), 0.6, 0.29, 0.4, 0.4), "base64"), 320);
+      const jpg = await jpeg(Buffer.from(await crop(await page.screenshot({ clip }), 0.6, 0.35, 0.3, 0.3), "base64"), 320);
       fs.writeFileSync(path.join(out, k + ".jpg"), Buffer.from(jpg, "base64"));
       console.log(`  ok  ${k}: ${path.relative(ROOT, path.join(out, k + ".jpg"))} (${Math.round(Buffer.from(jpg, "base64").length / 1024)} KB)`);
     }

@@ -77,6 +77,7 @@ func _initialize() -> void:
 		load_who()
 		if who != null:
 			stages.append("who:none")
+			stages.append("who:none_dark")                   # her own eyes with the lamp out: what a glow is counted against (lit, a red-brown iris and a rosy lid are red points too)
 			for l in looks:
 				stages.append("who:" + str(l))
 			stages.append("who:off")

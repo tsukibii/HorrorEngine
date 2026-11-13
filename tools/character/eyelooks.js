@@ -32,7 +32,7 @@ export const EYE_LOOKS = {
     label: "Eyes v3 (dark doll)",
     about: "After your own render: big, very dark red-brown irises the pupil melts into, two crisp catchlights that stay and the lower lid's wet line low on the cornea, cool whites, a long almond opening tilted up at the outer corner with a thin double lid, a soft dark band of short lashes above with a silver shimmer on the lid, long sparse lower lashes in little points, rose round the eye and a wet pink waterline.",
     eyes: { iris: "#200b09", iris2: "#1a0907", accent: "#e8a33a", pupilColor: "#030303", sclera: "#cfd6e2", corner: "#e59aa0", pattern: "natural", pupilShape: "round", pupilTurn: 0,
-            irisSize: 32.5, pupil: 0.42, fibres: 0.12, limbal: 0.35, limbalWidth: 0.22, limbalSoft: 0.75, scleraShade: 0.7, socket: 0.3, cornerPink: 0.7, gloss: 1, irisDepth: 0.2, bulge: 1,
+            irisSize: 32.5, pupil: 0.42, fibres: 0.12, limbal: 0.35, limbalWidth: 0.22, limbalSoft: 0.75, scleraShade: 0.7, socket: 0.3, cornerPink: 0.7, gloss: 1, irisDepth: 0.2, bulge: 0.5,
             ior: 1.336, caustic: 0.5, irisBright: 0.7, limbusView: 0.5, veins: 0.05, patternAmt: 1,
             catchKeep: 1, catch1: 1, catchSize: 0.095, catchX: 0.27, catchY: 0.42, catch2: 0.7, catch2Size: 0.65, catch2X: -0.3, catch2Y: -0.1, catchLine: 0.35, catchRoom: 0.25, catchGlow: 0,
             whiteBright: 0.52, whiteWarm: -0.5, lidShade: 0.9, occlusion: 0.6, tearline: 0.35 },
