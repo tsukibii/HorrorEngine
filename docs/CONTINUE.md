@@ -34,7 +34,7 @@ cards in the Studio. Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-13, `eyes-v3`): the user's eye render matched in Godot; eye looks as cards; eye sliders
+## Where it stopped last (2026-11-13, `eyes-v3`): the user's eye render matched in Godot; eye looks as cards; eye sliders; lashes on the skin
 
 Read DECISIONS 2026-11-12, "eyes v3", first. The user, with two pictures of their own render (Unity and Blender):
 "re-create this eye look 1:1 ... including the eyelashes and eyelids and exact eyes (pupils, the whites) ... create a
@@ -64,9 +64,33 @@ session**, and EYESV3's sheet puts the reference beside Godot's only when they'r
   tears: the skin's wetness is HSSkin's, not the eye look's); the lid's glitter is a band of fine flakes, the
   reference's a brighter patch; the fringe of the test character ends higher than the reference's (the hair editor's
   twin tails as they are); the reference's upper lashes show a few long hairs at the corners.
-- **Checked here**: EYELOOKS, EYEPATCH (the Opening's new end), EYEFX, EYESV3, and the checks that hold the eye's
-  shader in a face (see the commit); **not run here**: STUDIO and the other page checks (the Studio's eye code, its
-  skin shader and the lash builder changed: ask the user for a local run, docs/RUN_LOCALLY.md).
+- **The lashes on the skin** (DECISIONS 2026-11-13, the lashes; docs/CHARACTER_STUDIO.md §2i): the user's second ask,
+  with EYESV3's sheet marked: skin showing in the lash band, lashes starting in mid air. `tools/character/lashfit.js`:
+  the lash line put on the lid's own skin, every point of a lash that's under it lifted out, in the Studio each time
+  the lashes are made (`lashFit`) and **again as the export's last step on the file's own skin, in each state of the
+  blink** (`bakeLashFit`: the targets written again from the fitted states; a point between the two lids' margins
+  pressed together goes onto the skin it's under). On the eyes v3 export: 2,440 points under the skin at rest before,
+  3,794 shut; now none at rest or at any of the blink's nine weights, at most 12 of 24,352 (0.25 mm) at a twentieth
+  between two of them. It is for every lash set, not eyes v3's alone; **an export made before this has to be made
+  again to get it** (Export for Godot in the Studio).
+- **EYELIDS' rule changed** (docs/CHARACTER_STUDIO.md §2c's note): a lid's margin, edge-on to the eye, is no longer
+  counted as a lid the eye stands through where the cornea's dome hides its inner part. It failed that way on a plain
+  v2female character (0.043 mm², the limit 0.02) before this branch touched a lid, and on the eyes v3 one (0.39):
+  both pass now (0.010, 0.013). The graft's lining also rides the cornea's dome now (`eyegraft.js placeAll`).
+- **Checked here** (all on the last export of `eyes_v3`): CHECKS (check_all, with EYELOOKS and LASHFIT's made-up lid
+  in it), EYEPATCH (the Opening's new end), LASHFIT on the export, EYELIDS (file and Godot), EYESV3, EYEFX, GDFACES,
+  LOOKSWITCH, GDPLAY; GDPEOPLE on her and on a plain v2female character (`_eyesv3`): the cornea's bending is held on
+  the plain one (the pupil 8 px from where IOR 1 reads it) and said to be not measured on her, whose iris is as dark
+  as her pupil (the check finds a pupil by its darkness, and found her whole iris: its rule reads the file's record
+  now); GDTESTROOM with the desk's bake made first: every station but 13, which fails as on
+  any fresh container (its made props need Blender; the stations after it run with `--from n_bath`). **Not run
+  here**: STUDIO, GROOM, GROWPAGE, TAILOR's page checks and the other browser checks (the Studio's eye code, its skin
+  shader, the lash builder and the export changed: ask the user for a local run, docs/RUN_LOCALLY.md), and
+  LOOKPLUGIN's whole demo.
+- **Not measured**: whether the reworked eye shader is cheaper to draw. It does less per pixel by construction (the
+  eye's axes once a vertex, no depth written per pixel so the lids' depth can throw hidden pixels out before the
+  shader runs), but no frame time was taken: this machine draws on the CPU, where a timing says little about a
+  graphics card. Worth a look on the user's 3090 if eyes ever show up in a profile.
 - **Left, and seen**: the catchlights that stay are lit by the lamps that reach the eye, so a lamp behind her with no
   shadows on lights her catchlights too; the eye picker has no key of its own in a game (call
   `HSEyePicker.toggle(tree)`; the look viewer has the button); an HSLookPreset doesn't carry an eye's paint yet (a

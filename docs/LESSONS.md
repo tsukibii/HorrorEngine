@@ -28,6 +28,11 @@ the fix.
   white's *sphere*, and a lid lying on the cornea has the *dome* over that ledge. The plain base character failed
   the same way (0.043) before anything of this branch touched a lid. Twenty minutes of diagnosis would have saved
   three exports. (The lining under the dome stays: a lid's back should follow the surface the lid lies on.)
+- **A check that fails on a new kind of character may be measuring the character.** GDPEOPLE failed on the eyes v3
+  export: "the cornea doesn't move the pupil" (0.1 px). After a rework of the eye's shader that reads like a broken
+  refraction. The same check on a plain character passed (8 px): the shader was fine, and the "pupil" on the dark
+  doll eye was 9,164 px where a pupil is 3,000: the finder looks for dark, and her iris is as dark as her pupil.
+  Run the failing line on the plain case before reading the shader.
 - **A name for a view isn't its direction.** "below" in EYELIDS is the camera above, looking down on the lower lid's
   ledge. A back-face rule written for "seen from underneath" changed nothing; the rotation's sign, worked out on one
   normal, said why.
