@@ -19,7 +19,7 @@ window.__anim = S;
 
 // ---- the view ---------------------------------------------------------------------------------------------------------
 const box = $("#view"), renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.AgXToneMapping ?? THREE.ACESFilmicToneMapping; renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.AgXToneMapping ?? THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.35; renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; box.append(renderer.domElement);
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0x26282d); scene.fog = new THREE.Fog(0x26282d, 9, 22);
 const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 60), orbit = { yaw: -0.6, pitch: 0.08, dist: 5.2, at: new THREE.Vector3(0, 0.9, 0) };
@@ -69,7 +69,7 @@ async function load(name) {
 }
 function sliders() { for (const k of ["style", "strength", "weight", "soft"]) $("#" + k).value = S.set[k]; }
 function readout() {
-  const b = summary(S.ctx.body), p = params(S.ctx.body, S.set), word = p.build < -0.25 ? "light" : p.build < 0.3 ? "ordinary" : p.build < 0.8 ? "heavy" : "very heavy";
+  const b = summary(S.ctx.body), p = params(S.ctx.body, S.set), word = p.build < -0.25 ? "light" : p.build < 0.35 ? "ordinary" : p.build < 1.25 ? "heavy" : "very heavy";
   $("#body").innerHTML = `<div><b>${b.height} cm</b>, about <b>${b.weight} kg</b> <span class="dim">(${b.from === "recipe" ? "from her own unclothed body" : "from her meshes"})</span></div>
     <div>bust ${b.bust} · waist ${b.waist} · hips ${b.hips} cm, thigh ${b.thigh} cm, legs ${b.leg} cm</div>
     <div>Moves as a <b>${word}</b> body <span class="dim">(build ${p.build.toFixed(2)})</span></div>

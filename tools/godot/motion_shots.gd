@@ -71,9 +71,6 @@ func _initialize() -> void:
 		for nm in ap.get_animation_list():
 			var an := ap.get_animation(nm)
 			report["clips"][String(nm)] = {"secs": an.length, "loop": an.loop_mode, "tracks": an.get_track_count()}
-	for mi in who.find_children("*", "MeshInstance3D", true, false):
-		if mi.mesh != null:
-			tall = max(tall * 0.0 + 0.0, 0.0) if false else tall
 	var top := 0.0
 	for mi in who.find_children("*", "MeshInstance3D", true, false):
 		if mi.mesh != null:
@@ -81,10 +78,12 @@ func _initialize() -> void:
 			top = max(top, bb.position.y + bb.size.y)
 	if top > 0.5:
 		tall = top
-	if wear and ClassDB.class_exists("Node"):                       # a Studio export dressed as the game dresses it (the look plugin, when the project has it)
-		var eye = load("res://addons/horrorstudio_look/eye.gd")
-		if eye != null:
-			eye.wear(who, glb)
+	if wear:                                                        # a Studio export dressed as the game dresses it (the look plugin, when the project has it)
+		var base := "res://addons/horrorstudio_look/"
+		if ResourceLoader.exists(base + "eye.gd"):
+			load(base + "skin.gd").wear(who, {}, glb)
+			load(base + "hair.gd").wear(who, {}, glb)
+			load(base + "eye.gd").wear(who, glb)
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color(0.2, 0.21, 0.23)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR

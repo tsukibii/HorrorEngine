@@ -12,6 +12,9 @@
     python tools/godot/motion_check.py shots --glb FILE.glb --clip walk_loop [--n 12] [--view side] [--sheet FILE.jpg]
                                              [--size 480x640] [--wear] [--tag NAME]
         a baked character's clip pictured at n moments on the real mesh in a scratch project, as one sheet
+    python tools/godot/motion_check.py sheets [--out docs/animator_sheets]
+        the three test characters (tools/animator/people.mjs, baked) pictured wearing the look: their walks from the
+        side and the front, and the normal woman's acts
 
 Godot is $GODOT, else godot; under xvfb when there's no display to draw on (the pictures).
 """
@@ -180,7 +183,38 @@ def check(args):
     sys.exit(1 if errs else 0)
 
 
+def doc_sheets(out_dir):
+    """the three test characters' sheets (docs/animator_sheets): their walks from the side and the front, and one's acts"""
+    out_dir = Path(out_dir)
+    people = [("anim_skinny_man", "the skinny man"), ("anim_normal_woman", "the normal woman"), ("anim_chubby_woman", "the chubby woman")]
+    files = {n: next((p for p in [ROOT / "Exports" / "characters" / n / f"{n}.glb"] if p.is_file()), None) for n, _ in people}
+    if not all(files.values()):
+        sys.exit("the three test characters aren't on this machine: node tools/animator/people.mjs (the Studio's server running), then bake each")
+    n = 8
+    for view, name in [("side", "three_walks"), ("front", "three_walks_front")]:
+        rows = []
+        for who, label in people:
+            plan = [{"clip": "walk_loop", "f": i / n, "view": view, "name": f"walk_{view}_{i:02d}"} for i in range(n)]
+            rep, err = shoot(files[who], plan, KEEP / who, who, "400x520", 5, True)
+            if rep is None:
+                sys.exit(err)
+            rows += [KEEP / who / f for f in rep["shots"]]
+        sheet(rows, out_dir / f"2026-11-13_{name}.jpg", cols=n, height=420)
+        print(f"  {out_dir / f'2026-11-13_{name}.jpg'}")
+    who = "anim_normal_woman"
+    acts = [("sit_down", "q"), ("lie_down", "q"), ("open_push", "side"), ("reach_low", "q"), ("reach_high", "q"), ("run_loop", "side")]
+    plan = [{"clip": c, "f": i / (n - 1) * 0.999, "view": v, "name": f"{c}_{i:02d}", "at": [0, 0.8, -0.15], "dist": 4.4} for c, v in acts for i in range(n)]
+    rep, err = shoot(files[who], plan, KEEP / who, who + "_acts", "400x440", 5, True)
+    if rep is None:
+        sys.exit(err)
+    sheet([KEEP / who / f for f in rep["shots"]], out_dir / "2026-11-13_acts.jpg", cols=n, labels=[f"{s['clip']}" if i % n == 0 else "" for i, s in enumerate(plan)], height=360)
+    print(f"  {out_dir / '2026-11-13_acts.jpg'}")
+    print("SHEETS ok")
+
+
 def main():
+    if sys.argv[1:] and sys.argv[1] == "sheets":
+        return doc_sheets(sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else ROOT / "docs" / "animator_sheets")
     if not sys.argv[1:] or sys.argv[1] != "shots":
         return check(sys.argv[1:])
     ap = argparse.ArgumentParser()
