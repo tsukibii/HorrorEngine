@@ -361,20 +361,24 @@ function powder(P, rows, amount) {
 }
 
 // one brow: hairs lying flat on the skin in the band between its two rows, the front ones up, the rest swept out
-function brow(G, rows, o, C, U, S, seed, P) {
-  const r = rng(seed), top = along(rows.upper), bot = along(rows.lower);
+// (skin: (p, n) => how far out of p along n the face's skin is, when the page can say (index.html browSkin): the band
+// between MediaPipe's two rows is straight lines between ten points, and on a face whose brow stands out of them, wider
+// eyes set further apart, the hairs lay up to a millimetre under the skin: all but a brow's two ends hidden. Each hair's
+// root, middle and tip are set on the skin itself, then lifted)
+function brow(G, rows, o, C, U, S, seed, P, skin = null) {
+  const r = rng(seed), top = along(rows.upper), bot = along(rows.lower), onSkin = (p, n) => skin ? add(p, mul(n, skin(p, n))) : p;
   const end0 = mix(top(0).p, bot(0).p, 0.5), end1 = mix(top(1).p, bot(1).p, 0.5);
   const mid = t => {                                                       // the band's middle and half height at t (0 the front, 1 the tail), shaped
     const tt = t * o.tail, a = top(tt), b = bot(tt); let c = mix(a.p, b.p, 0.5), half = Math.hypot(...sub(a.p, b.p)) / 2 * o.width * 1.3 * (1 - 0.5 * smooth(0.6, 1.05, t));   // MediaPipe's rows sit inside the brow: a little taller
     if (tt > 1) c = add(end1, mul(norm(sub(end1, mix(top(0.9).p, bot(0.9).p, 0.5))), (tt - 1) * Math.hypot(...sub(end1, end0))));   // a longer tail goes on along its line
-    const line = mix(end0, end1, Math.min(tt, 1)), dev = sub(c, line);
-    c = add(line, mul(dev, 1 + o.arch));                                  // the arch: straighter (-1) or higher (+1) than the face's own
+    const line = mix(end0, end1, Math.min(tt, 1)), dev = sub(c, line), rise = dot(dev, U);
+    c = add(c, mul(U, rise * o.arch));                                    // the arch: straighter (-1) or higher (+1) than the face's own, up and down the face only (the whole of `dev` scaled took the brow's depth with it: the line between a brow's ends runs through the head, the forehead being round, and a straight brow's middle lay 5 to 8 mm under the skin)
     return { c, half, tg: norm(sub(top(Math.min(tt + 0.02, 1)).p, top(Math.max(tt - 0.02, 0)).p)) };
   };
   if (o.powder > 0 && P) {                                                // the fill: the band itself, a faint tint under the hairs
     const rows = [];
     for (let k = 0; k <= 24; k++) { const { c, half, tg } = mid(0.01 + 0.99 * k / 24), out = norm(sub(c, C)), up = norm(cross3(out, tg));
-      rows.push({ c: add(c, mul(out, 0.00025 * S)), a: mul(dot(up, U) < 0 ? mul(up, -1) : up, half * 1.05), n: out }); }
+      rows.push({ c: add(onSkin(c, out), mul(out, 0.00025 * S)), a: mul(dot(up, U) < 0 ? mul(up, -1) : up, half * 1.05), n: out }); }
     powder(P, rows, o.powder);
   }
   for (let j = 0; j < o.count; j++) {
@@ -388,7 +392,7 @@ function brow(G, rows, o, C, U, S, seed, P) {
     let d = norm(add(mul(tg, Math.cos(phi)), mul(bandUp, Math.sin(phi))));
     d = norm(sub(d, mul(n, dot(d, n))));
     const len = o.length / 1000 * S * (0.65 + 0.45 * r()) * (1 - 0.3 * (1 - smooth(0, 0.2, t)) * o.soft) * (1 - 0.25 * smooth(0.75, 1, t));
-    const lift = 0.00018 * S, pts = [add(root, mul(n, lift)), add(add(root, mul(d, len * 0.5)), mul(n, lift * 1.8)), add(add(root, mul(d, len)), mul(n, lift * 1.2))];
+    const lift = 0.00018 * S, pts = [add(onSkin(root, n), mul(n, lift)), add(onSkin(add(root, mul(d, len * 0.5)), n), mul(n, lift * 1.8)), add(onSkin(add(root, mul(d, len)), n), mul(n, lift * 1.2))];
     const fine = 1 - 0.45 * o.soft * (1 - smooth(0, 0.25, t)), w0 = 0.24 / 1000 * S * fine, [u0, u1] = clumpU(r, 0.35);   // one fine hair to a card
     card(G, pts, norm(cross3(n, d)), n, w0, w0 * 0.3, u0, u1, [0, 0, 0, 0], 0.03);
   }
@@ -419,7 +423,7 @@ export function strandCards(strands, kind, seed = 7) {
 export function build(ctx, lash, brw) {
   const G = Cards(), B = Cards(), H = Cards(), P = { pos: [], nrm: [], alpha: [], idx: [] }, { F, U, C, scale: S } = ctx;
   if (lash.on) for (const side of ["L", "R"]) if (ctx.lids[side]) eyeLashes(G, B, ctx.lids[side], lash, F, U, S, side, side === "L" ? 101 : 202);
-  if (brw.on) for (const side of ["L", "R"]) if (ctx.brows[side]) brow(H, ctx.brows[side], brw, C, U, S, side === "L" ? 303 : 404, P);
+  if (brw.on) for (const side of ["L", "R"]) if (ctx.brows[side]) brow(H, ctx.brows[side], brw, C, U, S, side === "L" ? 303 : 404, P, ctx.skin || null);
   const fill = new THREE.BufferGeometry();
   fill.setAttribute("position", new THREE.Float32BufferAttribute(P.pos, 3)); fill.setAttribute("normal", new THREE.Float32BufferAttribute(P.nrm, 3));
   fill.setAttribute("color", new THREE.Float32BufferAttribute(P.alpha.flatMap(a => [1, 1, 1, a]), 4)); fill.setIndex(P.idx);

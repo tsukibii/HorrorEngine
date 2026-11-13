@@ -2956,3 +2956,24 @@ pale one shows.
   face-framing strands crossed the cheek, a ponytail's fringe hid the forehead a head preset is about. A cropped tee,
   leggings and a buzz cut show the shape and nothing else.
 
+## The makeup after the Daz faces (2026-11-13, `make-up-enhanced`)
+
+- **Look at what's there before adding to it.** The first close-up of the look every new character wears showed the
+  upper lip nearly bare (the lipstick's outline sits inside the lip's edge and a strong gradient thins it further),
+  no brows, and a frown from the reference light's side key. Half of "better makeup" was the old settings: the
+  outline a third of a millimetre out, a low gradient, the studio light to judge by.
+- **A look that names something that isn't there throws when it's worn, not when it's written.** "brow_dark" (the
+  colours are `brow_dark_brown`, `brow_black`...) passed every check and broke the page at `useLook`. LOOKS now
+  reads the tables from their source and holds every look to them. A table of names wants a check the day a second
+  table starts naming into it.
+- **The brows: two guesses, then a probe.** A straight brow drew as a few hairs at each end. First guess: the band
+  between the detector's brow points sinks a little on a wide-eyed head; a snap to the skin within 5 mm changed one
+  brow and not the other. Second guess: the highlight washes the hairs out. A probe in the page, each hair against
+  the skin under it by distance along the brow, said 5 to 8 mm deep in the middle and right at both ends: the shape's
+  Arch was scaling the brow's depth as well as its height, toward a chord that runs through the head. Measure where
+  the thing is before reasoning about why it can't be seen. And: a shape applied "toward a line" in 3D moves in
+  every direction that line differs in; say which direction is meant.
+- **A gloss in a render is its lamps.** A clear coat gives the scene's own highlights: none in a dark room, broad
+  ones under soft panels. The references' glints are small and always there, so they are painted, with the coat
+  left under them. Say which it is: painted is a look, not physics.
+

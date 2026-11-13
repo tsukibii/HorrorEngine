@@ -47,6 +47,15 @@ Read DECISIONS 2026-11-12, "make-up enhanced", first; docs/CHARACTER_STUDIO.md ย
   the CPU; its scratch character now says it starts plain, which should leave it as it was: a local run is the proof).
 - **Open**: an outfit on the two new bodies; the sports bra's straps on bodyv2; muscle relief for the athletic body
   (a normal map: not built); a second pass on each new head with outlines read off its picture.
+- **The makeup** (CHARACTER_STUDIO ยง2i, `docs/research/makeup_reference.md`): the lipstick has an *Inner colour* (a
+  deeper colour where the lips meet) and a *Wet shine* (painted glints), the skin's makeup a *Lower liner colour* and
+  a *Highlighter*; five looks after the five faces (porcelain berry, red satin, wine doll, neon wing, smoky nude);
+  the brows lie on the skin (a straight or arched brow's middle had been pulled inside or off the head: the arch was
+  applied in depth too). `makeupshots.mjs` pictures looks close up; LOOKS (in check_all) holds every look's names.
+- **Open on the makeup**: nothing of it has been seen in Godot or on the user's machine; the neon look's long pink
+  wing is only a short flick (the liner's wing is 5 mm at most: a wing length wants its own slider); the eyes' lid
+  shape is not part of a look (the East Asian preset in Face, Eyes brings them nearer the pictures); the skin's tone
+  is the character's (the pictures are paler and pinker); head cards could be pictured again wearing a look.
 
 ## Before that (2026-11-12, the styles gone through, `claude/ecstatic-dijkstra-6ixk71`): what the two matched hairstyles taught, in all 67
 

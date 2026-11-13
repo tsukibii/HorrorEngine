@@ -551,7 +551,7 @@ let skinPreset = null;                                 // a preset into the skin
   const usePreset = (pre, groups, colours) => {   // the preset's groups start from the defaults: nothing left over from before
     for (const f of SKINSH.FEATURES) if (groups.includes(f[7])) st.skin.proc[f[0]] = f[5];
     for (const c of colours) st.skin.proc[c] = SKINSH.DEFAULTS[c];
-    for (const [k, v] of Object.entries(pre)) { if (k === "rough") { st.skin.rough = v; set.rough(v); } else st.skin.proc[k] = v; }
+    for (const [k, v] of Object.entries(SKINSH.withLower(pre))) { if (k === "rough") { st.skin.rough = v; set.rough(v); } else st.skin.proc[k] = v; }   // (withLower: a preset from before the lower liner's own colour)
     st.skin.proc.on = true; procSet.all(); skinLook();
   };
   skinPreset = usePreset;
@@ -2083,6 +2083,7 @@ function lipstick() {
   SKU.uLipBox.value.set(Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys));
   SKU.uLipZ.value = o.zmin - 6 * mm; SKU.uLipC.value.set(o.c[0], o.c[1]); SKU.uLipCol.value.set(L.colour);
   SKU.uLipAmt.value = L.amount; SKU.uLipGrad.value = L.gradient; SKU.uLipGloss.value = L.gloss; SKU.uLipLines.value = L.lines;
+  SKU.uLipCol2.value.set(L.colour2 || LIPS.LIPS_DEFAULTS.colour2); SKU.uLipInner.value = L.inner || 0; SKU.uLipShine.value = L.shine || 0;   // the deeper colour at the seam, the painted glints
   SKU.uLipSoft.value = (0.3 + 2.2 * L.soft) * mm; SKU.uLipDepth.value = Math.max(1.5 * mm, 0.3 * o.height);   // full colour this far inside the border
   SKU.uLipFar.value = 3 * o.height; SKU.uLipN.value = 2 * Math.PI * 3 * o.height / (1.1 * mm);   // the creases' fan: a point three lip-heights away, one every 1.1 mm
   if (!L.guide) return;
@@ -2794,17 +2795,19 @@ function accClick(e) {                                 // Place by clicking: whe
 // ---- the lipstick's controls (lips.js) ------------------------------------------------------------------------------
 const lipSet = {};
 {
-  const box = $("#lipRows"), on = el("input", { type: "checkbox" }), guide = el("input", { type: "checkbox" }), col = el("input", { type: "color", value: LIPS.LIPS_DEFAULTS.colour });
+  const box = $("#lipRows"), on = el("input", { type: "checkbox" }), guide = el("input", { type: "checkbox" }), col = el("input", { type: "color", value: LIPS.LIPS_DEFAULTS.colour }), col2 = el("input", { type: "color", value: LIPS.LIPS_DEFAULTS.colour2, title: "The deeper colour where the lips meet (Inner colour sets how much of it shows)" });
   on.onchange = () => { st.lips.on = on.checked; skinLook(); changed("expr"); };
   guide.onchange = () => { st.lips.guide = guide.checked; changed("expr"); };
   col.oninput = () => { st.lips.colour = col.value; changed("expr"); };
+  col2.oninput = () => { st.lips.colour2 = col2.value; changed("expr"); };
   box.append(el("h4", { textContent: "Lipstick" }),
     el("label", { className: "tog" }, on, el("span", {}, "Lipstick", el("small", { textContent: "Colour painted inside the lips' outline (the guide), over the photo skin or the procedural one: soft at its border, a gradient from the middle, gloss and fine lip lines. It follows the lips through every expression." }))),
-    el("div", { className: "row" }, el("span", { textContent: "Colour" }), col, el("output")));
+    el("div", { className: "row" }, el("span", { textContent: "Colour" }), col, el("output")),
+    el("div", { className: "row" }, el("span", { textContent: "Inner colour" }), col2, el("output")));
   for (const [k, label, lo, hi, step, help] of LIPS.LIP_PAINT) lipSet[k] = slider(box, "lip_" + k, label, lo, hi, step, LIPS.LIPS_DEFAULTS[k], help, v => { st.lips[k] = v; changed("expr"); });
   box.append(el("label", { className: "tog" }, guide, el("span", {}, "Show the guide", el("small", { textContent: "The lipstick's outline over the face (pink) through the lips' own points (yellow, MediaPipe's outer lip ring; on a photo face, the photo's lips): shape it with the sliders below." }))));
   for (const [k, label, lo, hi, step, help] of LIPS.LIP_SHAPE) lipSet[k] = slider(box, "lip_" + k, label, lo, hi, step, 0, help, v => { st.lips[k] = v; changed("expr"); });
-  lipSet.all = () => { on.checked = !!st.lips.on; guide.checked = !!st.lips.guide; col.value = st.lips.colour; for (const [k] of [...LIPS.LIP_PAINT, ...LIPS.LIP_SHAPE]) lipSet[k](st.lips[k]); };
+  lipSet.all = () => { on.checked = !!st.lips.on; guide.checked = !!st.lips.guide; col.value = st.lips.colour; col2.value = st.lips.colour2 || LIPS.LIPS_DEFAULTS.colour2; for (const [k] of [...LIPS.LIP_PAINT, ...LIPS.LIP_SHAPE]) lipSet[k](st.lips[k]); };
 }
 // ---- the fingernails' controls (nails.js) ---------------------------------------------------------------------------
 const nailSet = {};
@@ -2959,6 +2962,33 @@ Object.entries({ lash: "lashes", line: "lash_line", brow: "brows", fill: "brow_f
 for (const m of Object.values(BLM)) { m.renderOrder = 3; m.frustumCulled = false; m.visible = false; rig.add(m); }   // after the eyeballs, which draw over what's in the openings
 const fillColour = () => BLM.fill.material.color.set(BL.LOOKS[st.brow.look].tip);
 const BROWROWS = { R: { upper: [107, 66, 105, 63, 70], lower: [55, 65, 52, 53, 46] }, L: { upper: [336, 296, 334, 293, 300], lower: [285, 295, 282, 283, 276] } };
+// the skin under the brows, for browlash.js to lay their hairs on (the band between MediaPipe's brow rows is straight
+// lines between ten points; the face's own brow stands out of them by up to a millimetre on a wide-eyed head, and the
+// hairs were under the skin: DECISIONS 2026-11-12, make-up enhanced): the triangles within 14 mm of the brows' points,
+// and for a point and the way out of the head there, how far out the outermost skin is, within 9 mm either way
+function browSkin(brows) {
+  const mm = 0.001 * SCALE, lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9], pad = 14 * mm;
+  for (const side of ["L", "R"]) for (const p of [...brows[side].upper, ...brows[side].lower]) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], p[a] - pad); hi[a] = Math.max(hi[a], p[a] + pad); }
+  const box = i => POS[i * 3] > lo[0] && POS[i * 3] < hi[0] && POS[i * 3 + 1] > lo[1] && POS[i * 3 + 1] < hi[1] && POS[i * 3 + 2] > lo[2] && POS[i * 3 + 2] < hi[2], tris = [];
+  for (let t = 0; t < TRIS.length; t += 3) if (box(TRIS[t]) && box(TRIS[t + 1]) && box(TRIS[t + 2])) {
+    const a = TRIS[t] * 3, b = TRIS[t + 1] * 3, d = TRIS[t + 2] * 3;
+    tris.push(POS[a], POS[a + 1], POS[a + 2], POS[b], POS[b + 1], POS[b + 2], POS[d], POS[d + 1], POS[d + 2], (POS[a] + POS[b] + POS[d]) / 3, (POS[a + 1] + POS[b + 1] + POS[d + 1]) / 3, (POS[a + 2] + POS[b + 2] + POS[d + 2]) / 3);
+  }
+  const R = 9 * mm, R2 = (R + 6 * mm) ** 2;
+  return (q, d) => {
+    const ox = q[0] - d[0] * R, oy = q[1] - d[1] * R, oz = q[2] - d[2] * R; let best = -Infinity;
+    for (let t = 0; t < tris.length; t += 12) {
+      if ((tris[t + 9] - q[0]) ** 2 + (tris[t + 10] - q[1]) ** 2 + (tris[t + 11] - q[2]) ** 2 > R2) continue;   // only the triangles near the ray
+      const ax = tris[t], ay = tris[t + 1], az = tris[t + 2], e1x = tris[t + 3] - ax, e1y = tris[t + 4] - ay, e1z = tris[t + 5] - az, e2x = tris[t + 6] - ax, e2y = tris[t + 7] - ay, e2z = tris[t + 8] - az;
+      const hx = d[1] * e2z - d[2] * e2y, hy = d[2] * e2x - d[0] * e2z, hz = d[0] * e2y - d[1] * e2x, det = e1x * hx + e1y * hy + e1z * hz;
+      if (Math.abs(det) < 1e-14) continue;
+      const sx = ox - ax, sy = oy - ay, sz = oz - az, u = (sx * hx + sy * hy + sz * hz) / det; if (u < 0 || u > 1) continue;
+      const qx = sy * e1z - sz * e1y, qy = sz * e1x - sx * e1z, qz = sx * e1y - sy * e1x, v = (d[0] * qx + d[1] * qy + d[2] * qz) / det; if (v < 0 || u + v > 1) continue;
+      const at = (e2x * qx + e2y * qy + e2z * qz) / det; if (at >= 0 && at <= 2 * R) best = Math.max(best, at - R);
+    }
+    return best > -Infinity ? best : 0;                    // (no skin found there: the band's own line, as it was)
+  };
+}
 function browLash() {
   BLM.lash.visible = BLM.line.visible = !!LMK && st.lash.on; BLM.brow.visible = BLM.fill.visible = !!LMK && st.brow.on;
   if (!LMK || (!st.lash.on && !st.brow.on)) { BLNOW = null; return; }
@@ -2975,7 +3005,7 @@ function browLash() {
     brows[side] = { upper: BROWROWS[side].upper.map(lmk), lower: BROWROWS[side].lower.map(lmk) };
   }
   const C = v(234).add(v(454)).multiplyScalar(0.5);
-  const r = BL.build({ lids, brows, F: F.toArray(), U: U.toArray(), C: C.toArray(), scale: SCALE }, st.groom.on ? { ...st.lash, line: st.groom.lash.line ?? 0.22 } : st.lash, st.brow); BLLIDS = lids;   // (by hand: the lash line's own darkness)
+  const r = BL.build({ lids, brows, F: F.toArray(), U: U.toArray(), C: C.toArray(), scale: SCALE, skin: st.brow.on ? browSkin(brows) : null }, st.groom.on ? { ...st.lash, line: st.groom.lash.line ?? 0.22 } : st.lash, st.brow); BLLIDS = lids;   // (by hand: the lash line's own darkness)
   if (st.groom.on) {                                     // the brows and lashes by hand (groom.js) in place of the clumped ones: made on the face as it is now
     const G = groomNow(lids, brows, F, U, X);
     r.lashes.dispose(); r.lashes = BL.strandCards(G.lashes, "lashes");
@@ -3560,7 +3590,7 @@ async function open(name) {
   st.hairHead = c.hairHead?.base?.C ? c.hairHead : null; HAIRINFO = null;   // the head its hair was baked on (placeHair)
   grownUI();
   Object.assign(st.skin, { tone: "#c9b3a2", rough: 0.62, photo: false, size: 2048 }, c.skin || {});
-  st.skin.proc = { ...SKINSH.DEFAULTS, ...(c.skin?.proc || {}) }; procSet.all();
+  st.skin.proc = { ...SKINSH.DEFAULTS, ...SKINSH.withLower(c.skin?.proc || {}) }; procSet.all();   // (a character from before the lower liner had a colour of its own: its liner's)
   st.skin.lit = { ...SKIN_LIT, ...(c.skin?.lit || {}) }; litSet.all();
   toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
   SKIN = null; await loadSkin(); await LAY.load();

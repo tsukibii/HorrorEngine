@@ -45,15 +45,19 @@ export const FEATURES = [   // [key, label, lo, hi, step, default, help, group]
   ["corner", "Inner corner", 0, 1, 0.01, 0, "A dab of colour at the inner corner, with a little shimmer.", "Makeup"],
   ["waterline", "Waterline", 0, 1, 0.01, 0, "The lower lid's rim tinted and wet, corner to corner.", "Makeup"],
   ["aegyo", "Aegyo-sal", 0, 1, 0.01, 0, "The soft highlight just under the lower lashes.", "Makeup"],
+  ["highlight", "Highlighter", 0, 1, 0.01, 0, "Small bright, wet-looking accents: the nose's tip and bridge, the tops of the cheekbones, the cupid's bow, the chin (a doll's finish).", "Makeup"],
   ["pigment", "Pigment mixing", 0, 1, 0.01, 1, "0 makeup and the photo sit on the skin like an overlay; 1 they are pigment: they filter the skin's own colour (a tint that follows the base tone), skin and lips taking more than a lid, and a little of it hiding the base like paint.", "Makeup"],
   ["pigStrength", "Pigment strength", 0, 3, 0.05, 1.4, "How much light the pigment takes out of the skin under it (its density).", "Makeup"],
   ["photo", "Photo on the face", 0, 1, 0.01, 1, "With a photo skin: how much of the picture shows inside its mask.", "Photo"],
   ["over", "Procedural over the photo", 0, 1, 0.01, 0.35, "How much of the procedural detail (pores, grain, age) shows on the photo.", "Photo"],
 ];
 export const COLOURS = [["freckleColor", "Freckle colour", "#8a5a3c"], ["flushColor", "Flush colour", "#c4555a"], ["blushColor", "Blush colour", "#e2737e"],
-  ["lipColor", "Lip colour", "#c23a4f"], ["linerColor", "Liner colour", "#2a1c18"], ["shadowColor", "Eyeshadow colour", "#9a6a5a"],
+  ["lipColor", "Lip colour", "#c23a4f"], ["linerColor", "Liner colour", "#2a1c18"], ["lowerColor", "Lower liner colour", "#2a1c18"], ["shadowColor", "Eyeshadow colour", "#9a6a5a"],
   ["underColor", "Under-eye colour", "#e49aa6"], ["cornerColor", "Inner corner colour", "#f2b4bc"], ["waterColor", "Waterline colour", "#e07f8e"]];
-export const SKIN_COLOURS = ["freckleColor", "flushColor"], MAKEUP_COLOURS = ["blushColor", "lipColor", "linerColor", "shadowColor", "underColor", "cornerColor", "waterColor"];   // a preset's groups' colours
+export const SKIN_COLOURS = ["freckleColor", "flushColor"], MAKEUP_COLOURS = ["blushColor", "lipColor", "linerColor", "lowerColor", "shadowColor", "underColor", "cornerColor", "waterColor"];   // a preset's groups' colours
+// the lower liner has a colour of its own since make-up enhanced (DECISIONS 2026-11-12: the red line under the lower
+// lashes of the user's Daz3D faces); settings from before it (a saved character's, a preset's) have the upper liner's
+export const withLower = p => p && "linerColor" in p && !("lowerColor" in p) ? { ...p, lowerColor: p.linerColor } : p;
 export const DEFAULTS = { on: false, pigmentOn: false, ...Object.fromEntries(FEATURES.map(f => [f[0], f[5]])), ...Object.fromEntries(COLOURS.map(c => [c[0], c[2]])) };
 
 // presets (docs/research/skin.md §6, starting points tuned by eye): skin and age set the skin's layers and its roughness
@@ -137,7 +141,7 @@ float mouthFront(float x) {                                        // how far fo
     float dx = uMouthD[i + 1].x - uMouthD[i].x; z = mix(uMouthD[i].y, uMouthD[i + 1].y, abs(dx) < 1e-6 ? 0.0 : (x - uMouthD[i].x) / dx); }
   return z;
 }
-uniform float uLipOn, uLipZ, uLipAmt, uLipGrad, uLipGloss, uLipSoft, uLipLines, uLipDepth, uLipFar, uLipN; uniform vec2 uLipP[32], uLipC; uniform vec3 uLipCol; uniform vec4 uLipBox;   // the lipstick (index.html, lips.js)
+uniform float uLipOn, uLipZ, uLipAmt, uLipGrad, uLipGloss, uLipSoft, uLipLines, uLipDepth, uLipFar, uLipN, uLipInner, uLipShine; uniform vec2 uLipP[32], uLipC; uniform vec3 uLipCol, uLipCol2; uniform vec4 uLipBox;   // the lipstick (index.html, lips.js)
 float segD(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-14), 0.0, 1.0); return length(pa - ba * h); }
 float cutCover(vec2 P[32], vec4 box, vec2 p, float px) {           // the skin at an opening: 0 inside, 1 outside, the edge over a
   if (p.x < box.x - 2.0 * px || p.y < box.y - 2.0 * px || p.x > box.z + 2.0 * px || p.y > box.w + 2.0 * px) return 1.0;   // pixel (px:
@@ -327,6 +331,12 @@ vec3 makeup(vec3 c, vec3 p) {
   }
   bl = max(bl, uf_blushPlace * 0.6 * near(p, uBridge - uUp * 0.004 * s, 0.011));
   c = mix(c, c * uc_blushColor * 1.5, clamp(uf_blush * bl * fr * 0.7, 0.0, 1.0));
+  // the highlighter: small bright, wet accents on the nose's tip and down its bridge, the tops of the cheekbones, the
+  // cupid's bow and the chin (the shines of the user's Daz3D faces): a little lighter, and a coat that catches the light
+  float hl = max(max(near(p, uNose + uUp * 0.003 * s, 0.0055), 0.75 * near(p, mix(uBridge, uNose, 0.5), 0.0042)),
+                 max(max(near(p, uBoneL + uUp * 0.007 * s, 0.011), near(p, uBoneR + uUp * 0.007 * s, 0.011)), max(0.7 * near(p, uLipTop + uUp * 0.003 * s, 0.0035), 0.45 * near(p, uChin + uUp * 0.014 * s, 0.007)))) * fr;
+  c = mix(c, c * 1.1 + 0.035, clamp(uf_highlight * hl, 0.0, 1.0) * 0.8);
+  skinRough *= 1.0 - 0.5 * uf_highlight * hl; skinCoat += 0.6 * uf_highlight * hl;
   vec3 dm = p - uMouthC; float lx = dot(dm, uRight), lu = dot(dm, uUp);  // lips
   float rx = length(uMouthL - uMouthR) * 0.5, top = dot(uLipTop - uMouthC, uUp), bot = -dot(uLipBot - uMouthC, uUp);
   float t = abs(lx) / max(rx, 1e-4), hgt = (lu > 0.0 ? top : bot) * (1.0 - t * t * t);
@@ -385,7 +395,8 @@ vec3 makeup(vec3 c, vec3 p) {
     float ag = exp(-pow(dl / (0.0021 * s), 2.0));
     c = mix(c, c * 1.12 + 0.02, uf_aegyo * ag * 0.6);
     skinCoat += 0.2 * uf_aegyo * ag;
-    c = tint(c, uc_linerColor, clamp(max(uf_liner * ln, uf_lowerLiner * lo) * fr, 0.0, 1.0), 1.0);
+    c = tint(c, uc_lowerColor, clamp(uf_lowerLiner * lo * fr, 0.0, 1.0), 1.0);   // the lower liner in its own colour, the upper one over it where they meet
+    c = tint(c, uc_linerColor, clamp(uf_liner * ln * fr, 0.0, 1.0), 1.0);
   }
   return c;
 }`;
@@ -398,7 +409,7 @@ export function procedural(material) {
               uHasLay: { value: 0 }, uShowSel: { value: 0 }, uGlowK: { value: 1 }, uLayOv: { value: null }, uLayPig: { value: null }, uLaySurf: { value: null }, uLayGlow: { value: null },
               uCutOn: { value: 0 }, uCutL: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) }, uCutR: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) },
               uCutZ: { value: new THREE.Vector2() }, uCutBoxL: { value: new THREE.Vector4() }, uCutBoxR: { value: new THREE.Vector4() },
-              uLipOn: { value: 0 }, uLipZ: { value: 0 }, uLipAmt: { value: 0.8 }, uLipGrad: { value: 0.5 }, uLipGloss: { value: 0.6 }, uLipSoft: { value: 0.001 }, uLipLines: { value: 0.3 },
+              uLipOn: { value: 0 }, uLipZ: { value: 0 }, uLipAmt: { value: 0.8 }, uLipGrad: { value: 0.5 }, uLipGloss: { value: 0.6 }, uLipSoft: { value: 0.001 }, uLipLines: { value: 0.3 }, uLipInner: { value: 0 }, uLipShine: { value: 0 }, uLipCol2: { value: new THREE.Color(0x7a1830) },
               uLipDepth: { value: 0.004 }, uLipFar: { value: 0.06 }, uLipN: { value: 300 }, uLipP: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) }, uLipC: { value: new THREE.Vector2() }, uLipCol: { value: new THREE.Color() }, uLipBox: { value: new THREE.Vector4() },
               uNailOn: { value: 0 }, uNailTint: { value: 0.5 }, uNailHalf: { value: 0.5 }, uNailFree: { value: 0.35 }, uNailShine: { value: 0.5 }, uNailShape: { value: 2 },
               uNailPaint: { value: 0 }, uNailStyle: { value: 0 }, uNailFinish: { value: 0 }, uNailCover: { value: 1 }, uNailAccent: { value: 0 }, uNailCol: { value: new THREE.Color() }, uNailCol2: { value: new THREE.Color() },
@@ -442,9 +453,25 @@ if (uLipOn > 0.5 && vObj.z > uLipZ && vObj.x > uLipBox.x - uLipSoft && vObj.y > 
   float gr = mix(1.0, smoothstep(0.0, uLipDepth, sd), uLipGrad);              // a gradient: strongest in the middle
   vec2 far = uLipC + vec2(0.0, vObj.y < uLipC.y ? uLipFar : -uLipFar);   // fine creases square to the lip's border: nearly upright, fanning a little
   float ln = uLipLines * smoothstep(0.6, 0.95, 0.5 + 0.5 * sin(atan(vObj.x - far.x, abs(vObj.y - far.y)) * uLipN + 2.5 * fbm(vObj * 600.0)));
-  diffuseColor.rgb = tint(diffuseColor.rgb, uLipCol, clamp(uLipAmt * m * gr, 0.0, 1.0), 1.3) * (1.0 - 0.16 * ln * m);
+  // a second, deeper colour where the lips meet (the deepest part of the outline: its middle line), fading out toward
+  // the border: the two-tone gradient lip of the user's Daz3D faces (a wine red at the seam under a rose)
+  vec3 lipc = mix(uLipCol, uLipCol2, uLipInner * smoothstep(0.45 * uLipDepth, 1.5 * uLipDepth, sd));
+  diffuseColor.rgb = tint(diffuseColor.rgb, lipc, clamp(uLipAmt * m * gr, 0.0, 1.0), 1.3) * (1.0 - 0.16 * ln * m);
   skinRough *= 1.0 - 0.7 * uLipGloss * m * (1.0 - 0.5 * ln);
   skinCoat = max(skinCoat, 0.85 * uLipGloss * m * (1.0 - 0.6 * ln));
+  if (uLipShine > 0.001) {
+    // the wet shine: painted glints, whatever the light (the white dabs of a lip gloss in a render: two on the lower
+    // lip, a broad one a little to her left and a small one beside it, and a thin one along the cupid's bow), their
+    // edges a little uneven; under them the coat is at its smoothest, so a real light adds its own
+    float hw = 0.5 * (uLipBox.z - uLipBox.x), hl = uLipC.y - uLipBox.y, hu = uLipBox.w - uLipC.y;
+    vec2 q = vObj.xy - uLipC; float wob = 0.75 + 0.5 * fbm(vObj * 900.0);
+    float g1 = 1.0 - smoothstep(0.4, 1.0, length((q - vec2(0.2 * hw, -0.46 * hl)) / vec2(0.2 * hw, 0.19 * hl)) * wob);
+    float g2 = 1.0 - smoothstep(0.4, 1.0, length((q - vec2(-0.12 * hw, -0.52 * hl)) / vec2(0.07 * hw, 0.1 * hl)) * wob);
+    float g3 = 0.5 * (1.0 - smoothstep(0.4, 1.0, length((q - vec2(0.06 * hw, 0.5 * hu)) / vec2(0.12 * hw, 0.08 * hu)) * wob));
+    float gl = clamp(max(max(g1, g2), g3) * m * uLipShine, 0.0, 1.0);
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), 0.92 * gl);
+    skinRough *= 1.0 - 0.6 * gl; skinCoat = max(skinCoat, gl); skinCoatR = mix(skinCoatR < 0.0 ? 0.2 : skinCoatR, 0.04, gl);
+  }
 }
 if (uNailOn > 0.5 && vNail.w > -0.5 && vNail.z > 0.001 && vNail.x > -0.7 && vNail.x < 1.1) diffuseColor.rgb = paintNail(diffuseColor.rgb);   // the fingernails
 if (uHasTouch > 0.5) { vec4 tp = texture2D(uTouchPaint, vSkinUv); diffuseColor.rgb = mix(diffuseColor.rgb, tp.rgb, tp.a); }

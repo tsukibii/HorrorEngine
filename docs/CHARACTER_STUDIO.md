@@ -743,6 +743,68 @@ bodies." There was no good reason: v2female and bodyv2 had been built as two mor
   wardrobe's dummy and the outfits' cards are still the plain bodies; hair made on one head is not re-fitted when
   another head card is picked (the hair editor v2.0 grows again by itself; the salon's bake rides the head).
 
+## 2i. The makeup of the Daz3D faces: two-tone lips, wet glints, a red lower line, a highlighter (DECISIONS 2026-11-12, make-up enhanced)
+
+The user: "For makeup, I want better makeup, analyze the daz images I shared earlier and re-create those makeup looks
+1:1 (the same lip gloss, shines etc, )". What each picture's makeup is, part by part, is in
+`docs/research/makeup_reference.md` (the pictures stay out of git). What it took:
+
+- **What the pictures have that the Studio could not draw.**
+  - **A two-tone lip**: the deepest colour where the lips meet, a lighter one toward a soft border. The lipstick had
+    one colour whose amount faded outward. Now `lips.colour2` and `lips.inner` (Face, Mouth: *Inner colour*, its
+    colour and how much): the second colour takes over toward the outline's deepest line, the seam
+    (`skinshader.js`, the lipstick's block; `lips.js` `LIP_PAINT`).
+  - **Wet gloss that reads at any size and in any light**: small hard white glints, one broad and one small on the
+    lower lip a little to her left, a thin one on the cupid's bow. A clear coat alone shows only what the scene's
+    lamps give. Now `lips.shine` (*Wet shine*): the glints painted, their edges a little uneven, the coat at its
+    smoothest under them (so a real light still adds its own). They are the references' look, not physics: they stay
+    where they are drawn.
+  - **A red line under the lower lashes** under a dark upper liner. The lower liner used the liner's colour. Now
+    `lowerColor` (Skin, Makeup: *Lower liner colour*); the upper liner is drawn over it where they meet. Settings
+    from before it, a saved character's or a preset's, take the liner's colour (`skinshader.js` `withLower`: nothing
+    that existed changes).
+  - **Small shines on the skin**: the nose's tip and bridge, the tops of the cheekbones, the cupid's bow, the chin.
+    Dewy is a broad glow. Now `highlight` (*Highlighter*): a little lighter there, and a coat that catches the light.
+  - All four are off (0) unless a look or a slider sets them: a character from before is as it was.
+- **Five looks after the five faces** (`looks.js`; Face, Look): **porcelain berry** (the twin-tail reference),
+  **red satin** and **wine doll** (the Christmas picture's two faces), **neon wing** (the neon picture), **smoky
+  nude** (the T-pose reference's face). Each sets the eyes (pale grey irises, a dark limbal ring), the lips (both
+  colours, the gloss, the glints, the outline a little over the lip's own edge so the upper lip is full to its
+  cupid's bow), the skin's makeup (the flush high over the nose, the liners, the shadow and wash, the waterline, the
+  highlighter), separate dark lashes and soft dark brows. The table of which part came from which picture is in the
+  research note.
+- **The brows lie on the skin now.** Worn with a look, a *straight* brow drew as a few hairs at each end. A probe in
+  the page (each brow hair against the skin under it) found its middle 5 to 8 mm inside the head: a shape's Arch
+  scaled the brow's whole offset from the line between its two ends, depth included, and that line runs through the
+  head, the forehead being round (an *arched* brow stood off the face the same way). The arch is now applied up and
+  down the face only (`browlash.js` `brow`), and the page hands the builder the skin under the brows (`browSkin`: the
+  triangles within 14 mm, a ray out of the head through each point, 9 mm either way), so each hair's root, middle
+  and tip, and the fill, are set on the skin before the lift. The brows by hand (groom.js) are placed their own way
+  and were not touched.
+- **Into Godot**: the export bakes what the skin's shader draws (`albedo.js`: the colour, and the roughness in the
+  ORM), so the two-tone lip, the glints, the lower line and the highlighter's lightening and gloss are in the file's
+  maps. The clear coat itself is not a map: in Godot the glints are the painted ones, and the lips' shine is their
+  low roughness.
+- **Tools**: `node tools/character/makeupshots.mjs --out DIR [--looks a,b] [--light studio]` pictures looks close up
+  on a scratch character (the face from the front and three quarters, the eyes, the lips), `--set` laying settings
+  over a look to try a value. `node tools/character/lookscheck.mjs` (LOOKS, in check_all): every look names only
+  what exists (a look that named a brow colour that isn't there threw in the page when worn), every setting within
+  its slider, the new parts off by default.
+- **How near, and what's left** (seen in the Studio's own view under its studio light; nothing of it has been seen
+  in Godot or on the user's machine):
+  - The lips' two colours, their fullness and the glints' places are the pictures'. The glints are white dabs: under
+    a dim lamp they dim with the lip, where a render's reflection would stay bright.
+  - The references' skin is a render's (subsurface light, a soft key from the front); the Studio's view is flatter.
+    The colours were read by eye through each picture's own light and grade.
+  - **neon wing is the furthest off**: her wing is a centimetre long and thick; the liner's wing is a flick of 5 mm
+    at most, and under glam lashes it hardly shows. A wing length of its own is not built.
+  - The lids' shape is the character's (a look doesn't set it): the pictures' eyes are lifted almonds with the upper
+    lid over the iris's top, ours open rounder. Face, Eyes, the *East Asian* shape preset brings them nearer.
+  - The lashes are the nearest existing sets (separate, defined, round doll, glam, natural), not drawn lash by lash
+    from the pictures. The brows are mostly under each picture's fringe: straight or arched, dark, guessed.
+  - The eyes' size on the face is the head's (v2female's are smaller than the pictures' drawn eyes: §2f).
+- **Checks**: LOOKS; GROWPAGE and STUDIO unchanged by it (the new settings default to 0).
+
 ## 3. Each stage against the rule (as of this branch)
 
 | Stage | Sources kept | Bakes | Gaps |
