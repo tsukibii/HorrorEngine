@@ -3079,3 +3079,24 @@ pale one shows.
   ones under soft panels. The references' glints are small and always there, so they are painted, with the coat
   left under them. Say which it is: painted is a look, not physics.
 
+## Heads from two pictures (2026-11-13, `more-body-presets`: v2 fox and v2 pixie, after three wrong tries)
+
+- **A detector's points on a stylised face under a fringe are not a measurement.** MediaPipe put the first picture's
+  outer eye corners 153 px apart where they are 172: every proportion was 12% off, each its own way, and the fit of
+  them was a round face with a wide nose. It finds no face at all in a profile.
+- **Read the picture by hand, and read a picture of a head you already have the same way, first.** Ten minutes with
+  a grid showed the new front picture and v2female's own had the same eye length, eye gap, nose base and mouth
+  height. That one table would have stopped the first two versions.
+- **An outline fit pays for what it can't know with whatever is free.** A side picture doesn't say how far round the
+  camera is; left free, the fit lengthened the nose and pulled its tip down: a hooked nose neither picture has. A
+  longer nose in a profile is a tip that stands out and a base that sits low, never a tip pulled down.
+- **Match a picture from its own angle, and judge every other angle as a head.** Holding the lower face to the front
+  picture's width gave the number and a head the user called deformed. The user's rule: the angle and the profile
+  1:1, the rest by common sense: well formed, nothing at an extreme.
+- **A bald head under a close wide-angle camera is a caricature whatever its proportions.** Judge a head with hair,
+  lashes and a long lens, beside the picture, or in the style the existing cards are pictured in.
+- **A different person is MHR's own head shapes, not twenty sliders.** The face's outline at the mouth's height is the
+  cheek over the jaw: no slider reaches it (Jaw width moves the jaw's angle, 3 cm below). MHR's head shape 20 slims
+  the whole lower face the way faces differ; one weight did what the sliders stacked could not.
+- **When the user says it looks wrong, stop and look at what they are looking at.** Three corrections arrived while
+  the fit was being refined; each was about the picture on the screen, not the number being chased.

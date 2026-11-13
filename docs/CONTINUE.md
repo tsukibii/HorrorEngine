@@ -38,6 +38,28 @@ main): a fourth body card, v2 pear, and the Hips & thighs slider. Read this afte
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## Where it stopped last (2026-11-13, `more-body-presets`): two head cards and their hair, after two pictures
+
+- **Asked** (DECISIONS 2026-11-13, two heads): two head presets matching two pictures' head shape, with their
+  hairstyles as separate hair editor v2.0 styles; references built first; 1:1 for the proportions, the second
+  picture (a side view) most of all. Then, on the first versions: head presets mean eyelid, nose and lip shape too;
+  the faces were parody distortions; a hooked nose neither picture has; two different people; and last: match the
+  picture's own angle and profile 1:1, every other angle by common sense: no disfigured heads.
+- **Built**: head cards **v2 fox** and **v2 pixie** (CHARACTER_STUDIO §2n): MHR head weights of their own plus
+  v2female's sculpt moved a little; **a head card now sets the lids' shape and a lip shape** (all six cards);
+  sliders **Nose base** and **Jaw line**; lip shapes v2 fox and v2 pixie; hair styles **fox_long** and
+  **pixie_tail** (HAIR_V2 §10d) and the dye **One streak in the fringe**; the references read by hand in
+  `docs/research/headfit/two_heads.md` with the tools that draw a head over a side picture (`profile.py`,
+  `profit.mjs`, `pover.py`), measure one (`direct.mjs`, `headshapes.mjs`) and picture one in the Studio
+  (`tools/character/headshots.mjs`).
+- **Checks run**: GROW, HAIR2, CHECKS, GROWPAGE (QUICK). **Not run**: STUDIO, HAIR2PAGE, the Godot checks.
+- **For the user to look at** (the Studio's Body tab, Presets, Heads; the Hair editor v2.0's first group after the
+  Daz one): do the two heads read as the two people? v2 pixie's profile is held to the picture (1.7 mm rms); v2 fox
+  is the picture's kind of face made well formed, not its numbers (its lower face is slimmer than v2female's, not
+  as narrow as the picture's). The lids, the nose and the lips are where a second pass would pay most: say which.
+- **Could come next**: the same pass for the four older head cards (weights of their own: they are all v2female's
+  skull); a pony tied below the nape without its side hair looping; a finer fringe streak; an ear's tilt slider.
+
 ## Where it stopped last (2026-11-13, `more-body-presets`): v2 pear, after the user's low-poly character
 
 Read DECISIONS 2026-11-13, "more body presets", first; docs/CHARACTER_STUDIO.md §2m is what's built and how it was

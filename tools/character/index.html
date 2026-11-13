@@ -2402,8 +2402,11 @@ function usePreset(kind, key) {                        // kind: "head" or "body"
   // character's own to move from there; the one slider a body card sets)
   const bust = kind === "body" && key && T[key].anime != null ? T[key].anime : null;
   if (bust != null) { st.anime = true; $("#animeOn").checked = true; st.sculpt.bust = bust; monsterUI(); sculptAll(); }
+  // (a head card is the whole face, grow.js HEADS: the lids' shape, the grafted eye's keys, and the lips' shape with
+  // it; Plain: the plain lids and no lip shape. DECISIONS 2026-11-13, two heads)
+  if (kind === "head") { st.eyes.shape = { ...EG.KEYS0, ...((key && T[key].eyes) || {}) }; eyeSet.shape?.(); useLips((key && T[key].lips) || "", true); }
   presetMark(); UNSAVED = true; changed("body"); hud();
-  status(`${key ? T[key].label : "Plain"}: the ${kind === "head" ? "head and neck" : "body"}${kind === "head" ? ", the body as it was" : ", the head as it was"}${moved ? " (the base set to Feminine: the presets are made on it)" : ""}${bust != null ? `; Anime on, the Bust at ${bust} (Body, Anime: −2 flat to 3 very full)` : ""}`, "ok");
+  status(`${key ? T[key].label : "Plain"}: the ${kind === "head" ? "head and neck, the lids' and the lips' shape (Face: still yours to move)" : "body"}${kind === "head" ? ", the body as it was" : ", the head as it was"}${moved ? " (the base set to Feminine: the presets are made on it)" : ""}${bust != null ? `; Anime on, the Bust at ${bust} (Body, Anime: −2 flat to 3 very full)` : ""}`, "ok");
 }
 for (const [kind, T, plain] of [["head", GW.HEADS, "MHR's own feminine head and neck."], ["body", GW.BODIES, "The slim feminine base's body."]])
   $(kind === "head" ? "#headCards" : "#bodyCards").append(...[["", { label: "Plain", about: plain }], ...Object.entries(T)].map(([k, m]) => {

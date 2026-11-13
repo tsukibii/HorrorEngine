@@ -21,3 +21,13 @@ head is v2female's values plus what its fit differs from d5's (in full for the e
 face's and the chin's length; by 0.7 for the mouth's width, the jaw, the chin's width and the taper; by half for
 the rest), then looked at with `over.py`. The detector draws every outline toward an average face: on d5 the fit
 alone leaves v2female's narrow jaw out, which is why nothing is taken from one fit alone.
+
+## Two heads read by hand (DECISIONS 2026-11-13, two heads): `two_heads.md`
+
+v2 fox and v2 pixie were not made the way above: on their pictures the detector was 12% off (a fringe over the eyes'
+corners) and one of the two is a profile it can't read at all. `two_heads.md` is the analysis and the rule it left;
+its tools are here: `profile.py` (a side picture's traced outline and its measures), `profit.mjs` + `pover.py` (a
+head seen by that picture's camera, drawn over it), `direct.mjs` (a head's front proportions off its mesh),
+`headshapes.mjs` (what MHR's own head shapes do). `fit.mjs` also writes its head's 468 points in the picture
+(`lm` in `_proj.json`); `lm.py` reads h1 and h2 (`Saved/Heads/ref/`).
+

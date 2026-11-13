@@ -1,5 +1,5 @@
 # lm.py: MediaPipe's face landmarks on crops of the reference pictures -> heads/<name>.json (pixels in the source picture)
-import sys, json
+import sys, os, json
 import numpy as np
 from PIL import Image
 import mediapipe as mp
@@ -8,7 +8,8 @@ from mediapipe.tasks.python import vision
 R = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..") + "/"
 SRC = {"d2a": (R + "Saved/Hair2/daz/ref/d2.jpg", (40, 0, 330, 350)), "d2b": (R + "Saved/Hair2/daz/ref/d2.jpg", (600, 60, 936, 350)),
        "d3": (R + "Saved/Hair2/daz/ref/d3.jpg", (150, 100, 591, 560)), "d4a": (R + "Saved/Hair2/daz/ref/d4.png", (60, 0, 260, 200)), "d4b": (R + "Saved/Hair2/daz/ref/d4.png", (340, 20, 540, 220)),
-       "t1": (R + "Saved/Body/ref/t1.jpg", (440, 230, 680, 470)), "d1": (R + "Saved/Hair2/daz/ref/d1.png", (0, 60, 400, 400)), "d5": (R + "Saved/Hair2/daz/ref/d5.png", (540, 0, 960, 380))}
+       "t1": (R + "Saved/Body/ref/t1.jpg", (440, 230, 680, 470)), "d1": (R + "Saved/Hair2/daz/ref/d1.png", (0, 60, 400, 400)), "d5": (R + "Saved/Hair2/daz/ref/d5.png", (540, 0, 960, 380)),
+       "h1": (R + "Saved/Heads/ref/h1.png", (0, 0, 447, 447)), "h2": (R + "Saved/Heads/ref/h2.png", (0, 0, 276, 316))}
 opt = vision.FaceLandmarkerOptions(base_options=mpp.BaseOptions(model_asset_path=R + "vendor/face_mesh/face_landmarker.task"), output_face_blendshapes=True, output_facial_transformation_matrixes=True, num_faces=1, min_face_detection_confidence=0.2, min_face_presence_confidence=0.2)
 det = vision.FaceLandmarker.create_from_options(opt)
 for name in sys.argv[1:] or SRC:

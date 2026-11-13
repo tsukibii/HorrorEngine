@@ -238,6 +238,7 @@ export function grow(body, pores, s, prep, o = {}) {
         case "over": w = by[i] > lerp(0.115, 0.02, amt) + (hash(u[c], 64) - 0.5) * 0.008 ? 1 : 0; break;
         case "front": w = gI === FRAME || (Math.abs(az[i]) > 24 && Math.abs(az[i]) < lerp(40, 62, amt) && depth < lerp(0.006, 0.02, amt)) ? 1 : 0; break;   // (the strands beside the face and a narrow band of the hairline there: two pieces, never the top of the head)
         case "fringe": w = gI === FRINGE || (gI === FRAME && amt > 0.5) ? 1 : 0; break;
+        case "fringe_streak": w = gI === FRINGE && Math.abs(az[i] - (dye.at ?? 20)) < lerp(1.5, 13, amt) ? 1 : 0; break;   // (one streak in the fringe: the fringe's hairs growing within a few degrees of a place round the head, her left +; the Amount its width)
         case "split": w = pos[i * 3] >= C[0] ? 1 : 0; break;
         case "split_r": w = pos[i * 3] < C[0] ? 1 : 0; break;
         case "tips": w = gI === FRINGE || gI === FRAME || gI >= TIE ? 0 : 1; break;       // (a tied hair's ends are in its tail: the tail's tips are dyed)

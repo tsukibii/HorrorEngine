@@ -193,6 +193,15 @@ SCULPT = {"feminine": {"belly": -0.7},
           "v2elegant": {"neck_width": -0.7, "neck_base": -0.3, "neck_length": -0.35, "eye_spacing": 1.05, "eye_size": -0.1, "eye_tilt": 0.3, "nose_size": -0.15, "nose_projection": -0.1, "nose_length": 0.1, "nose_bridge": -0.1, "nose_tip": 0.25, "mouth_width": -0.45, "lips": 0.4, "brow_ridge": -0.18, "forehead_slope": 0.45, "chin_length": -0.1, "chin_width": -0.85, "jaw_width": -0.2, "cheekbones": -0.1, "face_height": -0.8, "face_taper": -1.05, "temples": -0.25, "face_round": 0.1},
           "v2doll": {"neck_width": -0.7, "neck_base": -0.3, "neck_length": -0.35, "eye_spacing": 1.6, "eye_size": 0.5, "eye_tilt": 0.5, "nose_size": -0.25, "nose_projection": -0.22, "nose_length": 0.3, "nose_bridge": -0.3, "nose_width": -0.3, "nose_tip": 0.5, "mouth_width": -0.6, "lips": 0.4, "brow_ridge": -0.18, "forehead_slope": 0.45, "chin_length": -0.25, "chin_width": -0.9, "jaw_width": -0.9, "cheekbones": -0.2, "cheeks": 0.3, "face_height": -0.7, "face_taper": -0.95, "forehead_width": 0.1},
           "v2soft": {"neck_width": -0.7, "neck_base": -0.3, "neck_length": -0.35, "eye_spacing": 1.05, "eye_size": 0.3, "eye_tilt": 0.15, "hooded_lids": 0.4, "nose_size": -0.2, "nose_projection": -0.22, "nose_length": 0.5, "nose_bridge": -0.22, "nose_width": 0.3, "mouth_width": -0.35, "lips": 0.1, "brow_ridge": -0.18, "forehead_slope": 0.45, "chin_length": -0.3, "chin_width": -0.7, "jaw_width": -0.4, "cheekbones": -0.2, "cheeks": 0.2, "face_round": 0.3, "face_height": -0.9, "face_taper": -1.0, "temples": -0.15},
+          # v2fox, v2pixie (DECISIONS 2026-11-13, two heads; docs/CHARACTER_STUDIO.md §2n; docs/research/headfit/
+          # two_heads.md): two more people, each after one picture, read by hand. Each has head weights of its own
+          # (MHR's head shapes 20, 23, 24: a slimmer lower face; the file's `presets.v2fox`, `presets.v2pixie`, kept as
+          # they are: FITTED) and v2female's sculpt moved a little. v2fox: the front picture: a slim oval to a small
+          # chin, a small straight nose, a slightly wider mouth, the eyes a little lifted. v2pixie: the side picture,
+          # held to its profile: a nose turned up over a short upper lip (Nose base, a hollow bridge, the tip out, not
+          # down), a small chin set back, a jaw line that rises to the ear, bigger eyes
+          "v2fox": {"neck_width": -0.7, "eye_spacing": 1.6, "eye_size": 1.0, "nose_size": -0.5, "nose_projection": -0.22, "nose_length": 0.2, "nose_bridge": -0.22, "mouth_width": -0.55, "lips": 0.13, "brow_ridge": -0.18, "forehead_slope": 0.45, "chin_length": -0.15, "chin_width": -0.6, "jaw_width": -0.5, "cheekbones": -0.2, "face_height": -0.75, "face_taper": -0.8, "neck_base": -0.3, "neck_length": -0.35, "eye_tilt": 0.25, "nose_width": -0.1},
+          "v2pixie": {"neck_width": -0.7, "eye_spacing": 1.6, "eye_size": 1.0, "nose_size": -0.4, "nose_projection": 0.1, "nose_length": 0.4, "nose_bridge": -0.4, "mouth_width": -0.72, "lips": 0.35, "brow_ridge": -0.18, "forehead_slope": 0.45, "chin_length": -0.5, "chin_width": -0.7, "jaw_width": -0.5, "cheekbones": -0.2, "face_height": -0.65, "face_taper": -0.9, "neck_base": -0.3, "neck_length": -0.35, "nose_base": 0.9, "nose_tip": 0.7, "chin_forward": -0.3, "jaw_angle": 0.5},
           # bodyv2: the sliders its body carries on top of its weights (only what it lists: the head's and the neck's stay
           # v2female's or the feminine base's). Arm length is the picture's: her wrists are 58 cm from her middle on a
           # 163 cm body, MHR's 66
@@ -223,7 +232,8 @@ SAME_BODY = {"v2female": "feminine"}
 # (v2athletic and v2hourglass: bodyv2's weights moved to measures of their own, fit_measures from bodyv2's: the shoulders,
 # the chest, the bust, the waist, the belly, the hips, the seat, the thighs and the neck; kept as fitted, as bodyv2's are)
 # (v2pear: the same way, toward narrower shoulders and chest, a smaller waist and a fuller seat: docs/research/bodyfit/lowpoly)
-FITTED = ("bodyv2", "v2athletic", "v2hourglass", "v2pear")
+# (v2fox, v2pixie: heads with head weights of their own, the body's the feminine base's: DECISIONS 2026-11-13, two heads)
+FITTED = ("bodyv2", "v2athletic", "v2hourglass", "v2pear", "v2fox", "v2pixie")
 # a base's head (changes from MHR's average, cm), fitted only for a base the file doesn't have yet
 HEADS = {"feminine": dict(head_w=-0.6, skull=-0.4, jaw=-1.2, brow=-0.3, nose=-0.2, chin=-0.2),
          "masculine": dict(head_w=0.4, jaw=0.8, brow=0.3, chin=0.2)}

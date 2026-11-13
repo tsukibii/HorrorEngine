@@ -2,6 +2,38 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-13, two heads: two head cards and their hairstyles after two pictures (the user, with two pictures)
+
+- **"Create two head presets that match the head shape and hairstyle (seperate hthe hairstyle preset into the hair v2
+  tab) , for both images. Start by analyzing the images and building strong references that make it easy for you to
+  use as references for the presets. Then build them. Be as 1:1 as possible for the proprtions, especialyl with the
+  2nd image since it gives a good side/quater view."**
+- **"btw when Is ay head presets i mean eyelid shape and nose and lip shape too"**: a head card is the whole face. It
+  now sets the lids' shape (the grafted eye's shape keys) and a lip shape when it's picked, beside the skull, jaw
+  and nose it carries; every head card, the four older ones too (each with the lip shape made after the same face).
+- The first heads were fitted by machine (a face detector on the front picture, an outline match on the side one).
+  The user, on seeing them: **"From a reference Id dont think youve analyzed the original images well enough, the
+  faces you make look like parody distortions"**. Then: **"just note You are allowed to change the head and neck
+  shpes to make it match better for rhtese presets"**; **"I dont know if you realise this (but you made ah ookked
+  nose which neither images have),k but the 2 images are different people"**; and on a slim-jawed version held to
+  the front picture's numbers: **"this looks too disformed , instead of doing 1:1, try match teh angle and profile
+  only 1:1, but for the other angles use common sense and asthetisism, you dont want disfigured ooking female
+  heads"**.
+- **What that settles, for any head made from a picture**: read the picture by hand (and a picture of a head we
+  already have, the same way) before any fit; match a picture **from its own angle only** (a front picture's front,
+  a side picture's profile); from every other angle the head is judged as a head: well formed, attractive, no slider
+  at an extreme. No hooked nose: a longer nose in a profile is a tip that stands out, never one pulled down. Two
+  pictures of two people are two heads, not one base twice.
+- **Built** (branch `more-body-presets`: no branch was named; it is the open presets branch): the head cards **v2
+  fox** (the front picture: a slim oval face to a small chin, long half-lidded lifted eyes, a small straight nose, a
+  sharp bow over a full lower lip) and **v2 pixie** (the side picture, held to its profile: a small nose turned up
+  over a short upper lip, big round eyes, full lips set forward, a small chin set back, a soft jaw line), each with
+  MHR head weights of its own (a slimmer lower face: the first heads to have them) and v2female's sculpt moved a
+  little; two sliders the profile asked for, **Nose base** and **Jaw line**; the lip shapes v2 fox and v2 pixie;
+  the hair editor v2.0 styles **fox_long** and **pixie_tail** in a group of their own, and a second colour as **one
+  streak in the fringe**. docs/CHARACTER_STUDIO.md §2n, docs/HAIR_V2.md §10d, docs/research/headfit/two_heads.md.
+- The pictures stay out of git (`Saved/Heads/ref/h1.png`, `h2.png`).
+
 ## 2026-11-13, more body presets: the low-poly character's physique (the user, with a picture)
 
 - **"can you make a new branch off of main, called more-body-presets. And for the body presets tab make a physique
