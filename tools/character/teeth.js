@@ -15,7 +15,27 @@ const LOWER = [["central", 5.3, 9, 6, "incisor"], ["lateral", 5.9, 9.5, 6.2, "in
 // first molars
 const ARCH = [[0, -3.5], [4.4, -4], [10.5, -6], [15.6, -9.6], [19, -15], [21.3, -21], [23.5, -28.5], [25.5, -38], [26.8, -47], [27.6, -56]];
 export const LOWER_ARCH = { sx: 0.95, dz: -2.6, over: 1.6 };   // the lower arch: a little narrower, behind the upper incisors (overjet), their edges 1.6 mm above the upper's (overbite)
-export const TEETH_DEFAULTS = { on: true, shade: 0.35, size: 1, forward: 0, up: 0, tongue: true, curl: 0.5, fangs: 0, points: 0 };   // (curl: the lower lip's, index.html; fangs, points: a creature's teeth, below)
+// ---- the v2 mouth (DECISIONS 2026-11-13, better mouths: "a v2 mouth interior that's more feminine and looks 1:1 with the
+// image shared, even the person realistic tongue ... i hate gummy smiles"). A young woman's teeth after the user's
+// picture: a little smaller and more even than the tables' average (the laterals nearer the centrals, the canines no
+// longer than their neighbours), their corners rounder, whiter; the gum's edge high on the crown and scalloped (up
+// over each tooth, a papilla down between two), so a lip that rises in a smile uncovers crown, not gum; the upper
+// teeth high under the lip, as hers show under a lip at rest; and a tongue that is a tongue (V2.tongue)
+// (a sixth number: how far a tooth's biting edge stops short of the central incisors' line, mm: the laterals a little
+// shorter, the line rising toward the back, as a smile's does)
+const UPPER2 = [["central", 8.3, 10.8, 6.8, "incisor", 0], ["lateral", 6.9, 10, 6, "incisor", 0.7], ["canine", 7.3, 10.2, 7.6, "canine", 0.4],
+                ["premolar1", 6.8, 8.6, 8.8, "premolar", 0.5], ["premolar2", 6.4, 8.1, 8.8, "premolar", 0.4], ["molar1", 9.8, 7.5, 10.8, "molar", 0], ["molar2", 8.8, 7, 10.2, "molar", 0]];
+const LOWER2 = [["central", 5, 8.8, 5.8, "incisor", 0], ["lateral", 5.5, 9, 6, "incisor", 0.1], ["canine", 6.5, 9.8, 7.2, "canine", 0], 
+                ["premolar1", 6.8, 8.4, 7.8, "premolar", 0], ["premolar2", 6.8, 8, 8.3, "premolar", 0], ["molar1", 10.8, 7.5, 10.3, "molar", 0], ["molar2", 10.2, 7, 9.8, "molar", 0]];
+// (held to her picture by the overlay, docs/research/mouthfit: under a smiling lip only the lower quarter of her upper
+// teeth shows, so the frame sits 1.5 mm higher than the classic's and the gum's edge is far up under the lip; her teeth
+// are large for her small mouth: `fit`, a mouth narrower than MHR's shrinks them by its square root, not all the way;
+// dark corners beside them: `arch`, a narrower, more tapered arch; only the tips of her lower teeth: `over`)
+export const V2 = { margin: 0.95, scallop: 0.09, down: -1.5,   // the gum's edge at 0.95 of a crown's height (the classic: 0.78), dipping 0.09 of it between two teeth; the whole frame 1.5 mm higher against the lips
+                    arch: 0.85, over: -1.9, fit: 0.5, tongueTop: 7.2, lean: 0.4,   // the arch's width against the classic's; the lower teeth's edges under the upper's at rest (mm; the classic 1.6 above); the tongue's top over the frame's origin; how far the upper teeth's shading leans up (enamel scatters light: under a lamp from above they are not grey)
+                    gum: 0xd98f93, tongue: 0xaa547a, cavity: 0x3a1114 };   // a healthy pink gum, a rose tongue, the dark red behind them
+export const TEETH_STYLES = { classic: "Classic (an adult's average)", v2: "v2 (a young woman's: even, rounded, little gum, a real tongue)" };
+export const TEETH_DEFAULTS = { on: true, style: "classic", shade: 0.35, size: 1, forward: 0, up: 0, tongue: true, curl: 0.5, fangs: 0, points: 0 };   // (curl: the lower lip's, index.html; fangs, points: a creature's teeth, below)
 
 function arch(sx = 1, dz = 0) {                         // the centre line sampled finely, with its length along it
   const P = []; for (let i = 0; i < ARCH.length - 1; i++) {
@@ -39,8 +59,14 @@ function along({ P, S }, s) {                          // the point at length s 
 // a crown: rings of a rounded rectangle from the biting edge to the gum, closed at both ends. The ring's width and
 // thickness change with the height by kind: an incisor is a blade at its edge, a canine comes to a point
 const RING = 14;
-function shapeAt(kind, v, sharp = 0) {                 // v: 0 the edge, 1 the gum -> [width, thickness] as parts of the full size
+function shapeAt(kind, v, sharp = 0, soft = 0) {       // v: 0 the edge, 1 the gum -> [width, thickness] as parts of the full size; soft: the v2 mouth's rounder teeth
   const e = Math.min(1, v / 0.55), s = e * (2 - e);    // eased up from the edge
+  if (soft && !sharp) {                                 // a young woman's: the incisors' corners rounded off, the canine a soft point no longer than its neighbours
+    const r = Math.sqrt(Math.min(1, v / 0.3)), nk = 0.16 * Math.max(0, v - 0.72) / 0.28;
+    if (kind === "incisor") return [0.6 + 0.4 * r - nk, 0.3 + 0.7 * s];           // the edge's two corners rounded: a scalloped smile line
+    if (kind === "canine") return [0.46 + 0.54 * Math.sqrt(Math.min(1, v / 0.4)) - nk, 0.45 + 0.55 * s];
+    if (kind === "premolar") return [0.66 + 0.34 * Math.sqrt(Math.min(1, v / 0.3)) - 0.15 * Math.max(0, v - 0.75) / 0.25, 0.75 + 0.25 * s];
+  }
   const pt = 1 - sharp * (1 - Math.min(1, v / 0.6)), k = [1 - 0.8 * (1 - pt), 1 - 0.55 * (1 - pt)];   // sharp (a fang, a pointed tooth): drawn in to a point toward the edge
   if (kind === "incisor") return [(0.92 + 0.08 * s - 0.2 * Math.max(0, v - 0.7) / 0.3) * k[0], (0.28 + 0.72 * s) * k[1]];
   if (kind === "canine") return [(0.4 + 0.6 * Math.min(1, v / 0.45) - 0.2 * Math.max(0, v - 0.7) / 0.3) * k[0], (0.45 + 0.55 * s) * k[1]];
@@ -49,19 +75,21 @@ function shapeAt(kind, v, sharp = 0) {                 // v: 0 the edge, 1 the g
 }
 // o: a creature's teeth (DECISIONS 2026-11-10, night): `fangs` 0..1 the canines longer past the biting edge (the upper
 // 7 mm at 1, the lower 4.5) and sharper; `points` 0..1 every tooth drawn to a point, the front ones a little longer
-function pushCrown(out, at, [, w, h, t, kind], up, edgeY, shade, o = {}) {
+function pushCrown(out, at, [, w, h, t, kind, back = 0], up, edgeY0, shade, o = {}) {
+  const soft = o.style === "v2" ? 1 : 0, edgeY = edgeY0 + up * back, lowDim = soft && up < 0 ? 0.86 : 1;   // (back: the v2 tables' sixth number; the v2 lower teeth a little dimmer: under the upper lip's and the tongue's shade)
   const base = out.pos.length / 3, rows = 7, fang = kind === "canine" ? o.fangs || 0 : 0, pts = o.points || 0;
   const ext = fang * (up > 0 ? 7 : 4.5) + pts * (kind === "incisor" ? 1.6 : kind === "canine" ? 1.2 : kind === "premolar" ? 0.8 : 0.4), sharp = Math.min(1, Math.max(fang, pts));
   for (let r = 0; r <= rows; r++) {
-    const v = r / rows, [kw, kt] = shapeAt(kind, Math.max(0.04, v), sharp), y = edgeY - up * ext + up * v * (h + ext);
+    const v = r / rows, [kw, kt] = shapeAt(kind, Math.max(0.04, v), sharp, soft), y = edgeY - up * ext + up * v * (h + ext);
     for (let k = 0; k < RING; k++) {
       const a = k / RING * Math.PI * 2, c = Math.cos(a), s = Math.sin(a);
       const u = Math.sign(c) * Math.pow(Math.abs(c), 0.6) * w / 2 * kw, n = Math.sign(s) * Math.pow(Math.abs(s), 0.6) * t / 2 * kt;   // a superellipse: squarish, rounded
       out.pos.push(at.x + at.tx * u + at.nx * n, y, at.z + at.tz * u + at.nz * n);
       // enamel is never plain white: translucent blue-grey at a front tooth's biting edge (light passes through it),
       // warmer at the gum, darker at the sides where the teeth meet (the gaps), the back teeth in the mouth's shadow
-      const g = shade * (0.84 + 0.16 * (1 - v)) * (1 - 0.32 * Math.pow(Math.abs(c), 4));
-      const edge = kind === "incisor" || kind === "canine" ? 0.6 * Math.pow(Math.max(0, 1 - v / 0.3), 1.5) : 0;
+      const g = soft ? lowDim * (0.6 + 0.4 * shade) * (0.92 + 0.08 * (1 - v)) * (1 - 0.1 * Math.pow(Math.abs(c), 6))   // (the v2 mouth's: brighter, the gaps and the back teeth less dark: a lit smile)
+                     : shade * (0.84 + 0.16 * (1 - v)) * (1 - 0.32 * Math.pow(Math.abs(c), 4));
+      const edge = (kind === "incisor" || kind === "canine" ? 0.6 * Math.pow(Math.max(0, 1 - v / 0.3), 1.5) : 0) * (soft ? 0.45 : 1);   // (the v2 mouth's: young enamel, less of the grey edge)
       const gum = Math.max(0, (v - 0.7) / 0.3);
       out.col.push(g * (1 - 0.24 * edge) * (1 + 0.02 * gum), g * (1 - 0.14 * edge) * (1 - 0.03 * gum), g * (1 - 0.03 * edge) * (1 - 0.12 * gum));
     }
@@ -91,12 +119,13 @@ function orient(out, t0, middle) {
   }
 }
 // the gums: a rounded band swept along the arch over the crowns' necks, from the last tooth on one side to the other
-function pushGum(out, line, teeth, up, edgeY, shade) {
-  const half = teeth.reduce((s, x) => s + x[1], 0) + 1.5, steps = 64, prof = 9, base = out.pos.length / 3, necks = [];
-  const at = s => { let acc = 0; for (const x of teeth) { if (s <= acc + x[1]) return x; acc += x[1]; } return teeth[teeth.length - 1]; };
+function pushGum(out, line, teeth, up, edgeY, shade, o = {}) {
+  const v2 = o.style === "v2", half = teeth.reduce((s, x) => s + x[1], 0) + 1.5, steps = v2 ? 168 : 64, prof = 9, base = out.pos.length / 3, necks = [];
+  const at = s => { let acc = 0; for (const x of teeth) { if (s <= acc + x[1]) return [x, (s - acc) / x[1]]; acc += x[1]; } return [teeth[teeth.length - 1], 0.5]; };
   for (let q = 0; q <= steps; q++) {
-    const s = -half + 2 * half * q / steps, side = s < 0 ? -1 : 1, p = along(line, Math.abs(s)), [, , h, t] = at(Math.abs(s));
-    const x = p.x * side, tx = p.tx * side, nx = p.nx * side, neck = edgeY + up * h * 0.78;
+    const s = -half + 2 * half * q / steps, side = s < 0 ? -1 : 1, p = along(line, Math.abs(s)), [[, , h, t], u] = at(Math.abs(s));
+    // the gum's edge: at 0.78 of the crown; the v2 mouth's high on it and scalloped (highest over a tooth's middle, a papilla between two)
+    const x = p.x * side, tx = p.tx * side, nx = p.nx * side, neck = edgeY + up * h * (v2 ? V2.margin - V2.scallop * Math.pow(Math.abs(2 * u - 1), 2.2) : 0.78);
     const bk = Math.min(1, Math.abs(s) / half), g = shade * (1 - 0.55 * bk);   // darker toward the back
     necks.push([x, neck, p.z]);
     for (let k = 0; k < prof; k++) {                  // a U over the necks: out, over the top, back in
@@ -132,12 +161,50 @@ function pushTongue(out, frontZ, topY, halfW) {         // an ellipsoid, flatten
   orient(out, t0, () => [0, cy, cz]);
 }
 
+// the v2 mouth's tongue (after the user's picture: a broad, soft, rose tongue filling the floor of an open mouth, its
+// top a little under the upper teeth's edges, its tip behind the lower incisors). Sections along its length, front to
+// back: a rounded blade that widens to the body and narrows to the root, the top domed with a shallow groove down the
+// middle that dies out before the tip, the sides rolled, the underside tucked in; the tip turned down behind the
+// teeth, the back falling away into the throat. `uv` (across, along) for its papillae's bump (index.html)
+function pushTongue2(out, frontZ, topY) {
+  // (her picture, docs/research/mouthfit: a broad tongue lying over the lower side teeth, domed across with a groove down
+  // its middle, sloping down toward a thin tip behind the lower incisors: from the front its top is what shows, not a
+  // front wall)
+  const base = out.pos.length / 3, U = 32, V = 34, L = 46, sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const hwAt = f => 22 * Math.pow(Math.sin(Math.PI * Math.min(1, 0.2 + 0.8 * Math.pow(f / 0.45, 0.6)) / 2), 0.8) * (1 - 0.28 * sm(0.62, 1, f));   // a round tip a finger wide, broadening to the blade over the side teeth
+  const thAt = f => 2.2 + 10.3 * sm(0, 0.5, f);                                     // a thin tip, a body further back
+  const topAt = f => topY - 6.5 * Math.pow(1 - sm(0, 0.42, f), 1.6) - 9 * Math.pow(sm(0.58, 1, f), 1.6);   // the tip sloping down to the lower teeth, the back falling into the throat
+  out.uv = out.uv || [];
+  for (let i = 0; i <= V; i++) {
+    const f = i / V, z = frontZ - f * L, hw = hwAt(f), th = thAt(f), top = topAt(f);   // 0 the tip, 1 the root
+    for (let j = 0; j < U; j++) {
+      const a = 2 * Math.PI * j / U, c = Math.cos(a), s = Math.sin(a), ex = Math.sign(c) * Math.pow(Math.abs(c), 0.7), edge = 3.4 * (0.35 + 0.65 * ex * ex);   // domed across: its sides 3.4 mm under its middle
+      let x = hw * ex, y = s > 0 ? top - edge * (1 - Math.pow(Math.max(0, s), 0.6)) : top - edge + s * th * (1 - 0.45 * ex * ex);   // (thinner toward its sides underneath: it lies over the side teeth)
+      const gr = Math.exp(-(x * x) / 5) * sm(0.06, 0.24, f) * (1 - sm(0.3, 0.52, f));   // (the groove fades out before the dome's highest part: no notch in its outline from the front)
+      if (s > 0) y -= 0.9 * gr * s - 0.7 * Math.exp(-Math.pow((Math.abs(x) - 0.5 * hw) / (0.32 * hw + 0.1), 2)) * s * sm(0.1, 0.5, f);   // the groove, and the soft swell either side of it
+      if (s < 0) x *= 1 - 0.3 * -s;                                                 // the underside narrower
+      out.pos.push(x, y, z); out.uv.push(0.5 + 0.5 * ex * (s >= 0 ? 1 : 0.5), f);
+      const g = (0.7 + 0.3 * (1 - sm(0.25, 1, f))) * (s > 0 ? 1 : 0.8) * (1 - 0.2 * (s > 0 ? Math.exp(-(x * x) / 2.2) * sm(0.05, 0.2, f) * (1 - sm(0.42, 0.6, f)) : 0));   // darker toward the root, underneath and in the groove
+      out.col.push(g, g * (0.96 + 0.04 * f), g * (0.96 + 0.04 * f));
+    }
+  }
+  const t0 = out.idx.length;
+  for (let i = 0; i < V; i++) for (let j = 0; j < U; j++) { const a = base + i * U + j, b = base + i * U + (j + 1) % U, c = a + U, d = b + U; out.idx.push(a, b, c, b, d, c); }
+  for (const [i, zc] of [[0, frontZ + 0.6], [V, frontZ - L - 1]]) {                 // the two ends closed
+    const m = out.pos.length / 3; let cy = 0; for (let j = 0; j < U; j++) cy += out.pos[(base + i * U + j) * 3 + 1] / U;
+    out.pos.push(0, cy, zc); out.uv.push(0.5, i ? 1 : 0); out.col.push(i ? 0.6 : 1, i ? 0.58 : 0.97, i ? 0.58 : 0.97);
+    for (let j = 0; j < U; j++) out.idx.push(base + i * U + j, base + i * U + (j + 1) % U, m);
+  }
+  orient(out, t0, (t, g) => { const f = Math.min(1, Math.max(0, (frontZ - g[2]) / L)); return [0, topAt(f) - 2 - 0.4 * thAt(f), g[2]]; });   // (out from the middle of its own section)
+}
+
 // both jaws: { upper: {teeth, gums}, lower: {teeth, gums, tongue} }, each { pos, col, idx } in the frame above
-export function buildMouth(o = {}) {                  // o: { fangs, points } (pushCrown)
+export function buildMouth(o = {}) {                  // o: { fangs, points } (pushCrown), style: "v2" the v2 mouth
   const mesh = () => ({ pos: [], col: [], idx: [] });
   const R = { upper: { teeth: mesh(), gums: mesh() }, lower: { teeth: mesh(), gums: mesh(), tongue: mesh() } };
-  const up = arch(), lo = arch(LOWER_ARCH.sx, LOWER_ARCH.dz);
-  for (const [line, teeth, out, dir, edge] of [[up, UPPER, R.upper, 1, 0], [lo, LOWER, R.lower, -1, LOWER_ARCH.over]]) {
+  const v2 = o.style === "v2", ax = v2 ? V2.arch : 1, over = v2 ? V2.over : LOWER_ARCH.over;
+  const up = arch(ax), lo = arch(LOWER_ARCH.sx * ax, LOWER_ARCH.dz);
+  for (const [line, teeth, out, dir, edge] of [[up, v2 ? UPPER2 : UPPER, R.upper, 1, 0], [lo, v2 ? LOWER2 : LOWER, R.lower, -1, over]]) {
     let s = 0;
     for (const [n, tooth] of teeth.entries()) {
       const p = along(line, s + tooth[1] / 2), shade = 1 - 0.6 * n / (teeth.length - 1);   // the back teeth in the mouth's shadow
@@ -145,9 +212,10 @@ export function buildMouth(o = {}) {                  // o: { fangs, points } (p
       for (const side of [1, -1]) pushCrown(out.teeth, { ...p, x: p.x * side, tx: p.tx * side, nx: p.nx * side }, tooth, dir, e, shade, o);
       s += tooth[1];
     }
-    pushGum(out.gums, line, teeth, dir, edge * 0.5, 1);
+    pushGum(out.gums, line, teeth, dir, v2 ? edge : edge * 0.5, 1, o);   // (the v2 mouth's lower gum measured from its own teeth's edge, as the upper's is)
   }
-  pushTongue(R.lower.tongue, LOWER_ARCH.dz - 3 - 4.5, LOWER_ARCH.over - 4.5, 15);
+  if (v2) pushTongue2(R.lower.tongue, LOWER_ARCH.dz - 3 - 2.6, V2.tongueTop);   // its tip 2.6 mm behind the lower incisors, its top to just under the upper teeth's edges in an open smile (her picture: the tongue fills the mouth); in a shut mouth that is behind the upper teeth, where a tongue rests
+  else pushTongue(R.lower.tongue, LOWER_ARCH.dz - 3 - 4.5, LOWER_ARCH.over - 4.5, 15);
   return R;
 }
 // a rigid fit (Horn's quaternion method): the rotation and the shift that best carry points A onto B (flat arrays)

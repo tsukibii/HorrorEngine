@@ -19,6 +19,7 @@ STUDIO = [["pbr.py", "check"], ["sfx.py", "check"], ["face_capture.py", "check"]
           ["godot_byhand.py", "ready", "--check"],                                                                      # the ready-made exports made from their sets as they are (READYMADE),
           ["character/growtest.mjs"],                                                                                   # the Character Studio's ages, proportions and creatures (GROW),
           ["character/lookscheck.mjs"],                                                                                 # its whole looks naming only what exists (LOOKS),
+          ["character/mouthcheck.mjs"],                                                                                 # its teeth, gums and tongue: the classic mouth as it was, the v2 one (MOUTH),
           ["clothing_library.py", "check"],                                                                             # the clothing library's catalogue and credits (CLOTHLIB),
           ["character/tailor/librarytest.mjs"],                                                                         # the library garments' fit to a body, in layers (LIBRARY),
           ["character/hair2/check.mjs"]]                                                                                # the hair editor v2.0's engine: every style grown, measured (HAIR2)

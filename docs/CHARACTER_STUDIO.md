@@ -807,6 +807,79 @@ The user: "For makeup, I want better makeup, analyze the daz images I shared ear
   light: the face, the eyes, the lips; bald, so nothing hides the brows).
 - **Checks**: LOOKS; GROWPAGE and STUDIO unchanged by it (the new settings default to 0).
 
+## 2j. The v2 mouth: teeth, a gum a smile hardly shows, a real tongue; lip shapes (DECISIONS 2026-11-13, better mouths)
+
+The user, with a close-up of the neon reference's open smile: *"make a v2 mouth interior that's more feminine and
+looks 1:1 with the image shared, even the person realistic tongue, note i hate gummy smiles ... A new v2 lip shape too
+that [resembles] the daz3d lips (create some variations) ... If your [overlaid] open mouth matches the image 1:1 in 3d
+model shape, and is close in texture then you can pass this new branch"*.
+
+- **A style, not a replacement.** Face, Mouth, Teeth & tongue has a *Style* picker: `classic` (the mouth as it was,
+  to the bit: MOUTH holds its checksum) and `v2` (`teeth.js` `TEETH_STYLES`, `V2`). A character from before keeps
+  `classic`; a new one starts on `v2` (`grow.js` `NEW_START.teeth`).
+- **The v2 teeth** (`UPPER2`, `LOWER2`): a young woman's: even, the laterals 0.7 mm short of the centrals (a smile's
+  line), rounded corners (`shapeAt`'s `soft`), whiter. On a narrower, more tapered arch (`V2.arch` 0.85: 55 mm across
+  where the classic's is 63), so a smile has dark corners beside the teeth. **Sized less by a small mouth**
+  (`V2.fit`): the classic mouth scales with the mouth's width, which made v2female's teeth a fifth too small (her
+  mouth at rest is 40 mm, MHR's 50); v2 scales by the square root of that.
+- **The gum** (`pushGum`, `V2.margin`, `V2.scallop`): its edge at 0.95 of a crown's height (the classic 0.78), up over
+  each tooth and down between two, 10.6 mm above the incisors' biting edge. With the lip at rest 8.3 mm above the
+  lips' line. A smile raises the upper lip's edge 1.7 mm (the open smile) to 5.9 mm (a full one: both the corner
+  puller and the cheek raiser at 1): **no gum in either**; the classic shows 1.2 mm in the full one. With the upper
+  lip raised as well (a snarl: the raiser at 0.5) 1.2 mm shows, the classic's 4.8. Nothing holds the lip down: it is
+  where the gum is.
+- **The tongue** (`pushTongue2`): broad (44 mm), lying over the lower side teeth, domed across with a faint groove
+  down its middle, sloping down to a thin round tip behind the lower incisors, so from the front its top shows and
+  not a front wall; rose (`V2.tongue`), darker toward the root; a bump map of papillae made in the page
+  (`tonguePapillae`), wetter (a clear coat). It rides the jaw, rigid, as the lower teeth do.
+- **How they sit** (set by the overlay): the frame 1.5 mm higher under the lip than the classic's (`V2.down`: only
+  the lower third of her upper teeth shows in the smile), the lower teeth's edges 1.9 mm under the upper's at rest
+  (`V2.over`: only their tips show), the tongue's top just under the upper teeth's edges in the open smile
+  (`V2.tongueTop`). The upper teeth's shading leans up a little (`V2.lean`): enamel scatters light, and under a lamp
+  from above flat fronts read grey.
+- **The open smile**: an expression preset of MHR's own shapes (`arkit_mhr.json` `mhr_presets`, a button under
+  Expressions): the jaw 0.33, the lower lip's depressor 0.7, the corner puller 0.45, the stretcher 0.5, the dimpler
+  0.5, the cheek raiser 0.3, the upper lip's raiser 0.05. Fitted to the picture's lips (docs/research/mouthfit).
+- **Lip controls** (`sculpt.js`, Face): *Upper lip* and *Lower lip* (each lip's red taller or thinner about the line
+  where they meet, which doesn't move: the teeth and the opening are set by it), *Cupid's bow*, *Lip corners*, *Pout*.
+- **Lip shapes** (`grow.js` `LIPS`, chips in Face, Mouth; each only those five sliders, still yours to move): *v2 soft
+  bow* (the twin-tail reference; a new character's), *v2 full*, *v2 doll pout* (the Christmas reference's two faces),
+  *v2 smile* (the neon reference), *v2 thin* (the T-pose reference). Read from the pictures by eye, not fitted.
+  `docs/studio_sheets/2026-11-13_lip_shapes.jpg`.
+- **The lipstick's painted glints fade as the mouth opens** (`MOUTHOPEN`): they are painted for shut lips; on a lower
+  lip stretched open they slid to its inner edge as grey patches.
+- **The overlay** (docs/research/mouthfit; the picture's light, `--key front`; the lips *v2 smile*, the look *neon
+  wing* without its painted glints): ours laid on the picture by the lips' twenty outer points, nothing stretched:
+
+  | | hers | ours |
+  |---|---|---|
+  | the lips' outer points | | within 1.8 mm (rms) |
+  | the opening, across and high | 56.6 x 18.4 mm | 56.4 x 18.9 mm |
+  | the two openings' outlines | | share 0.82 of what they cover |
+  | of the opening: teeth, tongue, dark | 22%, 63%, 15% | 25%, 66%, 9% |
+  | the teeth across | 45.1 mm | 45.7 mm |
+  | the upper teeth showing in the middle | 2.5 mm | 3.3 mm |
+  | gum showing | none | none |
+  | the tongue's colour | (180, 101, 137) | (188, 109, 138) |
+  | the teeth's colour | (211, 183, 218) | (200, 196, 193) |
+
+  Pixel for pixel the tongue is in the same place over 0.62 of what the two cover, the teeth over 0.34 (counted by
+  colour: ours show 0.8 mm more and have a dark line between two teeth where hers run together).
+- **What isn't 1:1**:
+  - Her smile is a little crooked (the opening's lower edge is higher on her left); the preset's sides are tied, so
+    ours is even. That is most of the 0.18 the outlines don't share.
+  - Her teeth's edges are rounder and run into each other; ours are separate teeth with a line between.
+  - The picture is lit pink from the front and her skin is a render's; the Studio's lamp is white and comes from
+    above in a close-up of the head, so there the upper teeth are greyer than the lower.
+  - Her lower lip sparkles with gloss; ours has the look's own gloss, without the painted glints while open.
+  - The tongue doesn't change shape (it doesn't rise, curl or stick out): rigid on the jaw.
+  - In an export the mouth's meshes carry their colours and the leaning normals; the tongue's bump map does not go.
+- **Pictures**: `docs/studio_sheets/2026-11-13_open_mouth.jpg` (ours alone: the picture's light, the Studio's own, the
+  face); the side by side with the picture is not kept in git (the picture isn't): `compare.py` makes it.
+- **Checks**: MOUTH (`tools/character/mouthcheck.mjs`, in check_all: the classic mouth as it was, the v2 mouth well
+  formed, its arch, gum, tongue, the open smile's shapes all MHR's, the gum a smile uncovers), GROW (the lip shapes:
+  only the five lip controls, the lips' line not moved by them), GROWPAGE.
+
 ## 3. Each stage against the rule (as of this branch)
 
 | Stage | Sources kept | Bakes | Gaps |

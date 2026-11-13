@@ -3,6 +3,28 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The v2 mouth: what took more than one try (2026-11-13)
+
+- **A landmark is only as good as what it sits on.** MediaPipe's inner-lip points for both lips are on MHR's lip
+  membrane at one place: the expression fit could not open the mouth however far the jaw dropped. The opening is the
+  membrane's own edges (the triangles that stretch when the jaw drops); they were found by printing what each shape
+  moves, not by trying another weight.
+- **Say which way a camera's pitch goes before the first picture.** "8 degrees below" was passed as -8 and looked
+  down: the teeth's arch came out upside down and a render was spent finding out.
+- **Read the lamp before blaming the mesh.** The upper teeth were grey and the lower white. Normals, colours, winding
+  and shadows were each suspected; a probe of the scene's lights showed the Studio's key aims at the floor's middle,
+  so in a close-up of the head it comes from steeply above. A comparison with a picture is made under the picture's
+  light (`mouthshots.mjs --key front`), and the Studio's own light is pictured beside it.
+- **Two things that move the same landmark can't both be fitted from it.** A dropped jaw and a lower lip pulled down
+  open the mouth alike; the lips can't tell them apart. What shows of the lower teeth decides.
+- **Size by what the thing is, not by what's near it.** Teeth sized by the mouth's width were a fifth too small on a
+  head with a small mouth; the overlay's teeth count across the smile (fourteen where hers has ten) said so before
+  any number did.
+- **A measure made of colours needs a look at the picture too.** The teeth's shared share read 0.01 while the sheet
+  showed them lined up: the classifier didn't count grey teeth as teeth. The sheet is kept beside every number.
+- **Paint made for a pose shows in another.** The lipstick's painted glints, placed for shut lips, slid to the
+  inside of a lower lip stretched open and read as grey patches under the teeth.
+
 ## The ringlets: the user's catch (2026-11-12)
 
 - **Look at every part from the side; the user did.** The ringlets were looked at from the front and three

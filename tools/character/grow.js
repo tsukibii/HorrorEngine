@@ -244,9 +244,21 @@ export const BODIES = {
   v2athletic: { label: "v2 athletic", about: "bodyv2's proportions, lean and toned: wider shoulders, a small waist, narrow hips, firm arms, calves and seat.", height: 1.63 },
   v2hourglass: { label: "v2 hourglass", about: "bodyv2's hips and thighs under a small waist, with a fuller bust and seat.", height: 1.63 },
 };
+// ---- lip shapes (DECISIONS 2026-11-13, better mouths: "a new v2 lip shape too that resembles the daz3d lips (create some
+// variations) ... only focus on female"): the sculpt's five lip controls set together (sculpt.js: Upper lip, Lower
+// lip, Cupid's bow, Lip corners, Pout), each after the lips of one of the user's pictures. A shape sets the
+// character's own sliders (Face, Mouth: Lip shape): they are still yours to move
+export const LIP_IDS = ["lip_upper", "lip_lower", "lip_bow", "lip_corners", "lip_pout"];
+export const LIPS = {
+  v2_soft: { label: "v2 soft bow", about: "After the twin-tail reference: a thin upper lip with a clear bow over a fuller lower one, the corners a little up.", sculpt: { lip_upper: -0.45, lip_lower: 0.1, lip_bow: 0.6, lip_corners: 0.3, lip_pout: 0.2 } },
+  v2_full: { label: "v2 full", about: "After the Christmas reference's left face: both lips full, the lower fuller, a soft bow, a pout.", sculpt: { lip_upper: -0.05, lip_lower: 0.4, lip_bow: 0.4, lip_corners: 0.15, lip_pout: 0.45 } },
+  v2_doll: { label: "v2 doll pout", about: "After the Christmas reference's right face: a small pouting mouth, a sharp bow, a round lower lip.", sculpt: { lip_upper: -0.25, lip_lower: 0.3, lip_bow: 0.9, lip_corners: 0.1, lip_pout: 0.7 } },
+  v2_smile: { label: "v2 smile", about: "After the neon reference: a thin upper lip that stretches flat in a smile, a medium lower lip, the corners well up.", sculpt: { lip_upper: -0.75, lip_lower: -0.2, lip_bow: 0.2, lip_corners: 0.6, lip_pout: 0 } },
+  v2_thin: { label: "v2 thin", about: "After the T-pose reference's face: both lips thin and quiet, hardly a bow.", sculpt: { lip_upper: -0.6, lip_lower: -0.35, lip_bow: 0.1, lip_corners: 0, lip_pout: -0.1 } },
+};
 // what a new character starts as (the Studio's New; DECISIONS 2026-11-12, make-up enhanced: "a thumbnail preset that we
 // default to"): the feminine base with v2female's head on bodyv2's body, at that body's height
-export const NEW_START = { base: -1, head: "v2female", body: "bodyv2", height: 1.63 };
+export const NEW_START = { base: -1, head: "v2female", body: "bodyv2", height: 1.63, lips: "v2_soft", teeth: "v2" };   // (and, since better mouths, the v2 soft bow's lips and the v2 mouth: teeth.js)
 // a character's file from before the presets said v2: 1 and b2: 1 (the two switches): the same two presets
 export const presetOf = c => ({ head: c.headPreset ?? (c.v2 ? "v2female" : ""), body: c.bodyPreset ?? (c.b2 ? "bodyv2" : "") });
 // the controls a head preset may list: the Face and the Forehead groups', the Creature group's but the hunch, and the neck's own
@@ -333,5 +345,5 @@ export function limits(id, monster, anime = false) {
 }
 // how far a control's whole value may go whatever the sliders say (past it the field turns the skin inside out: a nose
 // narrowed to nothing, lips pushed through the teeth, an arm pinched to a thread): [least, most]
-export const REACH = { nose_size: [-2.3, 9], nose_projection: [-1.7, 9], lips: [-1.6, 9], ears_size: [-1.6, 9], upper_arms: [-2.2, 9], forearms: [-2.2, 9], eye_size: [-2.4, 9], face_height: [-3, 3.4],
+export const REACH = { lip_upper: [-2, 2.2], lip_lower: [-2, 2.2], nose_size: [-2.3, 9], nose_projection: [-1.7, 9], lips: [-1.6, 9], ears_size: [-1.6, 9], upper_arms: [-2.2, 9], forearms: [-2.2, 9], eye_size: [-2.4, 9], face_height: [-3, 3.4],
                        skull_back: [-1.2, 9], neck_length: [-1.6, 9], neck_width: [-1.4, 9], neck_base: [-2.3, 1.9], shoulder_slope: [-3.4, 1.8], fingers: [-2.4, 9], torso_length: [-2.4, 9], ears_out: [-1.1, 9], ears_point: [-0.5, 9] };

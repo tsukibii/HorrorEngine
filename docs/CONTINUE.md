@@ -29,11 +29,35 @@ two of the user's Daz hairstyles held to their pictures, the v2female and bodyv2
 beside it on `more-shotgun-shells`: two easter egg shells for the shotgun; and 2026-11-12 on
 `claude/jolly-darwin-9t8hkc` (merged first, PR #25): the ghost events plan, the cloak and creepy eyes, the hunt, sanity
 and the kit's bed, with `more-shotgun-shells` merged in; then on `make-up-enhanced` (from main after PR #26): heads and
-bodies as preset cards, three more heads, two more bodies, and the makeup. Read this after CLAUDE.md's start
+bodies as preset cards, three more heads, two more bodies, and the makeup; 2026-11-13 on `better-mouths` (from
+`make-up-enhanced`): the v2 mouth, the open smile, lip shapes. Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-12, `make-up-enhanced`): preset cards for heads and bodies, then the makeup
+## Where it stopped last (2026-11-13, `better-mouths`): the v2 mouth, the open smile, lip shapes
+
+Read DECISIONS 2026-11-13, "better mouths", first; docs/CHARACTER_STUDIO.md §2j is what's built and how far the
+overlay got. The branch is from `make-up-enhanced` and waits for the user to merge it there.
+
+- **The v2 mouth** (Face, Mouth, Teeth & tongue, *Style*; a new character's; a character from before keeps the
+  classic one, unchanged to the bit): a young woman's teeth on a narrower arch, the gum's edge high (no gum in an
+  open or a full smile), a broad domed tongue with papillae. `teeth.js` `V2` holds every number the overlay set.
+- **The open smile**: an expression preset (Expressions) of MHR's own shapes, fitted to the picture's lips.
+- **Lip controls and shapes**: five sculpt sliders (Upper lip, Lower lip, Cupid's bow, Lip corners, Pout) and five
+  shapes as chips in Face, Mouth (v2 soft bow a new character's, v2 full, v2 doll pout, v2 smile, v2 thin).
+- **The overlay** (`docs/research/mouthfit/`, `mouthshots.mjs`, `compare.py`): the lips' outer points within 1.8 mm,
+  the opening 56.4 x 18.9 mm on hers 56.6 x 18.4, the outlines sharing 0.82, teeth 25% and tongue 66% of it on her
+  22% and 63%, no gum. The side by side isn't in git (her picture isn't); ours alone is
+  `docs/studio_sheets/2026-11-13_open_mouth.jpg`, the lips `2026-11-13_lip_shapes.jpg`.
+- **Run here**: GROW, LOOKS, MOUTH, CHECKS, GROWPAGE (QUICK). **Not run here**: STUDIO (its scratch character starts
+  plain, on the classic mouth: it should be as it was), anything in Godot (an export with the v2 mouth hasn't been
+  looked at there: the tongue's bump map doesn't go with it).
+- **Open**: her smile is a little crooked and the preset is even (untie the sides for the last of the outline); the
+  teeth's edges could be rounder and run together; the tongue is rigid on the jaw (no rise, curl or sticking out);
+  the Studio's key lamp comes from steeply above in a head close-up (a head view's own key would help every face
+  picture); the lip shapes are read by eye from the pictures, not fitted; a lip shape isn't part of a head card.
+
+## Before that (2026-11-12, `make-up-enhanced`): preset cards for heads and bodies, then the makeup
 
 Read DECISIONS 2026-11-12, "make-up enhanced", first; docs/CHARACTER_STUDIO.md §2h is what's built.
 

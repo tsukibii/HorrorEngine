@@ -417,6 +417,9 @@ function setExpr(w) {
   changed("expr");
 }
 function markPreset(name) { document.querySelectorAll("#exprPresets button").forEach(b => b.classList.toggle("on", b.textContent === name)); }
+// (and presets written in MHR's own shapes, `mhr_presets`: an expression fitted to a picture has no ARKit curves)
+const mhrPreset = o => { const w = new Float32Array(ENAMES.length); for (const [k, v] of Object.entries(o)) for (const n of ENAMES.includes(k) ? [k] : [k + "_L", k + "_R"]) { const i = ENAMES.indexOf(n); if (i >= 0) w[i] = v; } return w; };
+for (const [name, o] of Object.entries(AMAP.mhr_presets || {})) { const b = el("button", { textContent: name, title: o.about || name }); b.onclick = () => { setExpr(mhrPreset(o.shapes)); markPreset(name); }; $("#exprPresets").append(b); }
 const PRESET_NAMES = Object.keys(AMAP.presets || {});
 for (const name of PRESET_NAMES) {
   const b = el("button", { textContent: name, title: Object.entries(AMAP.presets[name]).map(([k, v]) => `${k} ${v}`).join(", ") || "all zero" });
@@ -2036,12 +2039,13 @@ function mouthReach() {                                // how far up and down th
 // the seal's reach at rest: MHR's lips overlap there (the lower one up inside the upper's curl) and the lower lip's
 // curl parts them a little; neither is an open mouth, so the opening counts from it (half off each side)
 const MOUTHREST = new Float32Array(16);
+let MOUTHOPEN = 0;                                     // how open the mouth is now, against its width (mouthCut)
 function mouthRest() {                                 // on the neutral face, before the expressions
   MOUTHREST.fill(0); if (!LMK || !MEMBRANE.length) return;
   const { n, top, bot } = mouthReach(); for (let k = 0; k < n; k++) if (top[k]) MOUTHREST[k] = top[k][1] - bot[k][1];
 }
 function mouthCut() {
-  const off = () => { SKU.uMouthOn.value = 0; BAG.visible = false; MOUTHRING = null; };
+  const off = () => { SKU.uMouthOn.value = 0; BAG.visible = false; MOUTHRING = null; MOUTHOPEN = 0; };
   if (!LMK || !MEMBRANE.length) return off();
   const { L, R, n, xs, top, bot } = mouthReach(), up = [], lo = [];
   for (let k = 1; k < n - 1; k++) if (top[k]) { const r = MOUTHREST[k] / 2; top[k][1] -= r; bot[k][1] += r; }
@@ -2054,7 +2058,7 @@ function mouthCut() {
     const c = line.map(p => [...p]); for (let k = 1; k < n - 1; k++) for (let a = 1; a < 3; a++) line[k][a] = (c[k - 1][a] + 2 * c[k][a] + c[k + 1][a]) / 4;
   }
   let gap = 0; for (let k = 0; k < n; k++) { up[k][0] = lo[k][0] = xs[k]; if (lo[k][1] > up[k][1]) lo[k][1] = up[k][1]; gap = Math.max(gap, up[k][1] - lo[k][1]); }
-  mouthLight(gap / (Math.abs(R[0] - L[0]) || 1));     // how open, against the mouth's width
+  MOUTHOPEN = gap / (Math.abs(R[0] - L[0]) || 1); mouthLight(MOUTHOPEN);   // how open, against the mouth's width
   if (gap < 0.0003) return off();                      // closed
   const ring = [...up, ...lo.slice().reverse()];       // 32 points round the opening
   MOUTHRING = ring;
@@ -2083,7 +2087,7 @@ function lipstick() {
   SKU.uLipBox.value.set(Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys));
   SKU.uLipZ.value = o.zmin - 6 * mm; SKU.uLipC.value.set(o.c[0], o.c[1]); SKU.uLipCol.value.set(L.colour);
   SKU.uLipAmt.value = L.amount; SKU.uLipGrad.value = L.gradient; SKU.uLipGloss.value = L.gloss; SKU.uLipLines.value = L.lines;
-  SKU.uLipCol2.value.set(L.colour2 || LIPS.LIPS_DEFAULTS.colour2); SKU.uLipInner.value = L.inner || 0; SKU.uLipShine.value = L.shine || 0;   // the deeper colour at the seam, the painted glints
+  SKU.uLipCol2.value.set(L.colour2 || LIPS.LIPS_DEFAULTS.colour2); SKU.uLipInner.value = L.inner || 0; SKU.uLipShine.value = (L.shine || 0) * (1 - Math.min(1, Math.max(0, (MOUTHOPEN - 0.03) / 0.09)));   // the deeper colour at the seam, the painted glints (painted for lips that are shut: they go as the mouth opens, where a stretched lower lip would carry them into the mouth)
   SKU.uLipSoft.value = (0.3 + 2.2 * L.soft) * mm; SKU.uLipDepth.value = Math.max(1.5 * mm, 0.3 * o.height);   // full colour this far inside the border
   SKU.uLipFar.value = 3 * o.height; SKU.uLipN.value = 2 * Math.PI * 3 * o.height / (1.1 * mm);   // the creases' fan: a point three lip-heights away, one every 1.1 mm
   if (!L.guide) return;
@@ -2097,12 +2101,15 @@ const MOUTH = { teeth: mouthMat(0xf0ece2, 0.35, 1), gums: mouthMat(0xa65c5a, 0.4
 // the teeth, gums and tongue's meshes (teeth.js), made again when the teeth's own shape changes (a creature's fangs, its
 // pointed teeth: Face, Mouth)
 function mouthBuild(t = TEETH.TEETH_DEFAULTS) {
-  const key = `${t.fangs || 0}|${t.points || 0}`; if (MOUTH.key === key) return; MOUTH.key = key;
-  const B = TEETH.buildMouth({ fangs: t.fangs || 0, points: t.points || 0 });
+  const key = `${t.fangs || 0}|${t.points || 0}|${t.style || "classic"}`; if (MOUTH.key === key) return; MOUTH.key = key;
+  const B = TEETH.buildMouth({ fangs: t.fangs || 0, points: t.points || 0, style: t.style || "classic" });   // (style: the classic mouth, or the v2 one: teeth.js)
   for (const [jaw, grp] of [["upper", MOUTH.upper], ["lower", MOUTH.lower]]) for (const [part, d] of Object.entries(B[jaw])) {
     const g = new THREE.BufferGeometry(), name = `${jaw}-${part}`;
     g.setAttribute("position", new THREE.Float32BufferAttribute(d.pos, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(d.col, 3));
+    if (d.uv) g.setAttribute("uv", new THREE.Float32BufferAttribute(d.uv, 2));   // (the v2 tongue's: its papillae's bump)
     g.setIndex(d.idx); g.computeVertexNormals();
+    if (t.style === "v2" && name === "upper-teeth") { const N = g.attributes.normal.array;   // (teeth.js V2.lean: the upper teeth's shading leans up a little)
+      for (let i = 0; i < N.length; i += 3) { const y = N[i + 1] + TEETH.V2.lean, l = Math.hypot(N[i], y, N[i + 2]) || 1; N[i] /= l; N[i + 1] = y / l; N[i + 2] /= l; } }
     if (MOUTH.parts[name]) { MOUTH.parts[name].geometry.dispose(); MOUTH.parts[name].geometry = g; continue; }
     const m = new THREE.Mesh(g, MOUTH[part]); m.renderOrder = 2; m.frustumCulled = false; m.userData.noShadow = true; m.name = name;
     grp.add(m); MOUTH.parts[m.name] = m;
@@ -2145,18 +2152,35 @@ const MW0 = (() => { if (!LMK) return 0.05; const lb = i => { const t = LMK.tri[
 st.teeth = { ...TEETH.TEETH_DEFAULTS };
 st.lips = { ...LIPS.LIPS_DEFAULTS };
 st.nails = { ...NAILS.NAIL_DEFAULTS };
+// the v2 tongue's papillae: a small tiling picture of soft dots (the fine ones close together, a few bigger toward the
+// back), read as a bump by the tongue's material; made once
+let PAPILLAE = null;
+function tonguePapillae() {
+  if (PAPILLAE) return PAPILLAE;
+  const n = 256, c = document.createElement("canvas"); c.width = c.height = n; const g = c.getContext("2d"); g.fillStyle = "#808080"; g.fillRect(0, 0, n, n);
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 2600; i++) { const x = rnd() * n, y = rnd() * n, r = 1.6 + 1.8 * rnd(), k = 150 + Math.floor(70 * rnd());
+    for (const [ox, oy] of [[0, 0], [n, 0], [-n, 0], [0, n], [0, -n]]) { const gr = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r); gr.addColorStop(0, `rgba(${k},${k},${k},0.9)`); gr.addColorStop(1, "rgba(128,128,128,0)"); g.fillStyle = gr; g.beginPath(); g.arc(x + ox, y + oy, r, 0, 6.3); g.fill(); } }
+  PAPILLAE = new THREE.CanvasTexture(c); PAPILLAE.wrapS = PAPILLAE.wrapT = THREE.RepeatWrapping; PAPILLAE.repeat.set(5, 8);
+  return PAPILLAE;
+}
 function placeTeeth() {                                // from the neutral face, before the expressions
   const on = !!LMK && !!JAW && st.teeth.on;
   MOUTH.upper.visible = MOUTH.jaw.visible = on; if (!on) return;
   mouthBuild(st.teeth);                                // (as they're shaped now: fangs, points)
   MOUTH.parts["lower-tongue"].visible = st.teeth.tongue !== false;
   const a = lmk(13), b = lmk(14), w = Math.abs(lmk(291)[0] - lmk(61)[0]), mm = 0.001 * w / MW0;   // a millimetre on this face
-  const k = mm * (st.teeth.size || 1); MOUTH.mm = mm;
-  MOUTH.upper.matrix.makeScale(k, k, k).setPosition((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + (st.teeth.up - 3.5) * mm, (a[2] + b[2]) / 2 + (st.teeth.forward - 6) * mm);
+  const v2 = st.teeth.style === "v2";                  // the v2 mouth (teeth.js V2): higher under the lip, a pink gum, a rose tongue with its papillae
+  // (the v2 mouth's own size: a mouth narrower than MHR's for its head shrinks the teeth by its square root, not all the
+  // way: a small mouth has smaller teeth, but not by as much: V2.fit; the head's own scale counts whole)
+  const kv = v2 ? 0.001 * SCALE * Math.pow(Math.max(0.2, w / (MW0 * SCALE)), TEETH.V2.fit) : mm;
+  const k = kv * (st.teeth.size || 1); MOUTH.mm = mm;
+  MOUTH.upper.matrix.makeScale(k, k, k).setPosition((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + (st.teeth.up - 3.5 - (v2 ? TEETH.V2.down : 0)) * kv, (a[2] + b[2]) / 2 + (st.teeth.forward - 6) * mm);
   MOUTH.lower.matrix.copy(MOUTH.upper.matrix);
   const c = JAW.c; c.fill(0); for (const v of JAW.v) for (let q = 0; q < 3; q++) c[q] += POS[v * 3 + q] / JAW.v.length;   // the jaw's middle on this face
   const sh = new THREE.Color(0xf3f3f1).lerp(new THREE.Color(0xe2d3b4), st.teeth.shade);   // a bright neutral white to ivory: the enamel's own tints are in the teeth's colours (teeth.js)
-  MOUTH.base = { teeth: sh.clone(), gums: new THREE.Color(0xa65c5a), tongue: new THREE.Color(0x9e4a4e) };
+  MOUTH.base = { teeth: sh.clone(), gums: new THREE.Color(v2 ? TEETH.V2.gum : 0xa65c5a), tongue: new THREE.Color(v2 ? TEETH.V2.tongue : 0x9e4a4e) };
+  const T = MOUTH.tongue; T.bumpMap = v2 ? tonguePapillae() : null; T.bumpScale = v2 ? 0.6 : 1; T.roughness = v2 ? 0.42 : 0.55; T.clearcoat = v2 ? 0.55 : 0.25; T.clearcoatRoughness = v2 ? 0.18 : 0.06; T.needsUpdate = true;   // a wet, softly pebbled tongue
 }
 function mouthLight(open) {                            // less light gets into a mouth barely open: the teeth, gums and tongue darker
   if (!MOUTH.base) return;
@@ -2361,12 +2385,21 @@ for (const b of document.querySelectorAll("#presetTabs button")) b.onclick = () 
   for (const x of document.querySelectorAll("#presetTabs button")) x.classList.toggle("on", x === b);
   $("#headBox").hidden = b.dataset.kind !== "head"; $("#bodyBox").hidden = b.dataset.kind !== "body"; $("#creatureBox").hidden = b.dataset.kind !== "monster";
 };
+function lipsMark() { const now = k => GW.LIP_IDS.every(id => (st.sculpt[id] || 0) === ((GW.LIPS[k]?.sculpt || {})[id] || 0)); for (const b of document.querySelectorAll("#lipShapes button")) b.classList.toggle("on", now(b.dataset.lips)); }
+function useLips(key, quiet = false) {                 // a lip shape: the five lip sliders as it has them ("": back to 0)
+  const m = GW.LIPS[key]; if (key && !m) return;
+  for (const id of GW.LIP_IDS) { const v = m ? m.sculpt[id] || 0 : 0; if (v) st.sculpt[id] = v; else delete st.sculpt[id]; }
+  monsterUI(); lipsMark(); if (quiet) return;
+  UNSAVED = true; changed("body"); hud(); status(`${m ? m.label : "Own"}: the lips' shape (five sliders in Sculpt, Face: still yours to move)`, "ok");
+}
 // what a new character starts as (grow.js NEW_START: v2female's head on bodyv2's body, the feminine base). The checks
 // that measure from MHR's plain halfway base say so before they make one (window.__plainNew)
 function newStart() {
   if (window.__plainNew) return;
   const N = GW.NEW_START; st.base = N.base; set.base(st.base); st.height = N.height; set.height(st.height);
   st.headPreset = GW.HEADS[N.head] ? N.head : ""; st.bodyPreset = GW.BODIES[N.body] ? N.body : ""; presetMark();
+  st.teeth.style = TEETH.TEETH_STYLES[N.teeth] ? N.teeth : "classic"; teethSet.all();   // the v2 mouth (teeth.js) and the v2 soft bow's lips (DECISIONS 2026-11-13, better mouths)
+  useLips(GW.LIPS[N.lips] ? N.lips : "", true);
   agedNow(); changed("body");
 }
 // ---- the creatures: monster mode's presets as cards (grow.js MONSTERS; DECISIONS 2026-11-11: "add presets for the
@@ -2444,7 +2477,7 @@ function ageUI() {
 $("#cuteOn").onchange = () => { st.cute.on = $("#cuteOn").checked; cuteUI(); UNSAVED = true; changed("sculpt"); };
 const cuteSet = slider($("#cuteRows"), "cuteAmount", "Cuteness", 0, 1.5, 0.05, 0.6, "How much: 0.6 soft and young-looking, 1 a doll's face, past it a cartoon's.", v => { st.cute.amount = v; UNSAVED = true; changed("sculpt"); });
 function cuteUI() { $("#cuteOn").checked = !!st.cute.on; $("#cuteRows").hidden = !st.cute.on; cuteSet(st.cute.amount); }
-function grownUI() { ageSet.age(st.age.age); ageSet.face(st.age.face); ageUI(); cuteUI(); $("#animeOn").checked = !!st.anime; monsterUI(); }
+function grownUI() { ageSet.age(st.age.age); ageSet.face(st.age.face); ageUI(); cuteUI(); $("#animeOn").checked = !!st.anime; monsterUI(); lipsMark(); }
 grownUI();
 const HANDLES = { box: el("div", { id: "handles" }), list: [], drag: null };
 view.append(HANDLES.box);
@@ -2650,6 +2683,10 @@ const teethSet = {};
   tongue.onchange = () => { st.teeth.tongue = tongue.checked; changed("expr"); };
   box.append(el("label", { className: "tog" }, on, el("span", {}, "Teeth", el("small", { textContent: "An adult's average teeth and gums, as wide as this mouth's corners and set behind the lips. The upper ones stay with the skull, the lower ones ride the jaw. They show only through the opening between the lips, never through the lips or cheeks, whatever the face does." }))),
              el("label", { className: "tog" }, tongue, el("span", {}, "Tongue", el("small", { textContent: "A simple one, lying in the lower arch and riding the jaw." }))));
+  const style = el("select", { id: "teethStyle", title: "Classic: an adult's average teeth, a simple tongue. v2: a young woman's (even, rounded, on a narrower arch, set high under the lip with the gum's edge far up so a smile shows no gum) and a real tongue." });
+  style.append(...Object.entries(TEETH.TEETH_STYLES).map(([k, label]) => el("option", { value: k, textContent: label })));
+  style.onchange = () => { st.teeth.style = style.value; UNSAVED = true; changed("expr"); };
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Mouth" }), style, el("output")));
   const rows = [["shade", "Shade", 0, 1, 0.01, TEETH.TEETH_DEFAULTS.shade, "White to ivory."],
                 ["size", "Size", 0.85, 1.15, 0.01, 1, "Bigger or smaller teeth for this mouth."],
                 ["forward", "Forward (mm)", -3, 3, 0.1, 0, "Toward the lips (+) or back into the mouth."],
@@ -2666,7 +2703,7 @@ const teethSet = {};
     if (open) document.querySelector('#views button[data-v="head"]').click();
   };
   box.append(el("div", { className: "bases" }, say));
-  teethSet.all = () => { on.checked = st.teeth.on; tongue.checked = st.teeth.tongue !== false; for (const [k] of rows) teethSet[k](st.teeth[k]); };
+  teethSet.all = () => { on.checked = st.teeth.on; tongue.checked = st.teeth.tongue !== false; style.value = TEETH.TEETH_STYLES[st.teeth.style] ? st.teeth.style : "classic"; for (const [k] of rows) teethSet[k](st.teeth[k]); };
 }
 // ---- whole looks (looks.js): the eyes, the lips, the teeth and the skin together; a new character starts from one ----
 function useLook(name) {
@@ -2800,6 +2837,15 @@ const lipSet = {};
   guide.onchange = () => { st.lips.guide = guide.checked; changed("expr"); };
   col.oninput = () => { st.lips.colour = col.value; changed("expr"); };
   col2.oninput = () => { st.lips.colour2 = col2.value; changed("expr"); };
+  // the lips' shape (grow.js LIPS; DECISIONS 2026-11-13, better mouths): the sculpt's five lip sliders set together,
+  // after the lips of the user's pictures; Own takes them back to 0 (the head's own lips)
+  const shapes = el("div", { className: "chips", id: "lipShapes" });
+  for (const [k, m] of [["", { label: "Own", about: "The head's own lips: the five lip sliders back to 0.", sculpt: {} }], ...Object.entries(GW.LIPS)]) {
+    const b = el("button", { textContent: m.label, title: m.about }); b.dataset.lips = k;
+    b.onclick = () => useLips(k);
+    shapes.append(b);
+  }
+  box.append(el("h4", { textContent: "Lip shape" }), shapes, el("p", { className: "note", textContent: "Sets the sculpt's lip sliders (Body, Sculpt, Face: Upper lip, Lower lip, Cupid's bow, Lip corners, Pout); each is still yours to move." }));
   box.append(el("h4", { textContent: "Lipstick" }),
     el("label", { className: "tog" }, on, el("span", {}, "Lipstick", el("small", { textContent: "Colour painted inside the lips' outline (the guide), over the photo skin or the procedural one: soft at its border, a gradient from the middle, gloss and fine lip lines. It follows the lips through every expression." }))),
     el("div", { className: "row" }, el("span", { textContent: "Colour" }), col, el("output")),
@@ -4333,7 +4379,7 @@ $("#poseSel").onchange = () => { POSE = $("#poseSel").value; try { localStorage.
 $("#povShot").onchange = () => { orbit.focus = "pov"; repose(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, on: graftOn() }), EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, useCreature, usePreset, newStart, changed, creatureLook, setAnime, GW, SKINSH, loadSalon, get salonHair() { return SALONH; }, get hair2() { return HAIR2; }, get headBase() { return HEADBASE; }, get hairStale() { return HAIRSTALE; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, on: graftOn() }), EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, useCreature, usePreset, useLips, newStart, changed, mhrPreset, AMAP, setExpr, get MOUTHPARTS() { return MOUTH; }, creatureLook, setAnime, GW, SKINSH, loadSalon, get salonHair() { return SALONH; }, get hair2() { return HAIR2; }, get headBase() { return HEADBASE; }, get hairStale() { return HAIRSTALE; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
