@@ -3,6 +3,28 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## Eyes v3: what took a second try (2026-11-12)
+
+- **A page that never says it's ready is waiting for something: ask it what.** The first drive of the Character
+  Studio on a fresh cloud session sat for seven minutes at full CPU. The page was drawing; its module was stopped at
+  a call to the server that answered 400: MediaPipe wasn't set up (`python tools/face_mesh.py setup`), and then its
+  `libEGL.so.1` was missing (`apt-get install -y libegl1 libgl1 libgles2`). A probe that prints the page's failed
+  requests and its status line found both in a minute. A driver should wait a minute, not ten, before it asks.
+- **A scratch Godot project copies the plugin; it never links it.** Linked, Godot's importer wrote a `.uid` beside
+  every script and an `.import` beside every picture into the repository's own folder, and rewrote the tracked
+  `.import` files. The checks copy; a tuning loop must too (copy what's newer, leave Godot's own files).
+- **Two shaders that share a material share its names.** `catch_size` was already the eye shader's (a lamp's spread),
+  `uCatch` the Studio page's own (the painted catchlights' extension): both new uniforms compiled to a black eye.
+  Search the shader *and whatever extends it* for a name before taking it. The Studio's failure was silent in the
+  driver (a shader that doesn't compile is a console error, not a page error): a driver that makes pictures should
+  print the page's console errors.
+- **A halo is a share of the light, over an area.** The catchlights' soft glow was written as a wide Gaussian times
+  the same strength as the core; over the whole cornea it was a grey glare I took for my test lamp's reflection, and
+  dimmed the lamp's glints to no effect. Before blaming a light, switch the new thing off.
+- **A slider's range is part of the look.** The lids needed to come two millimetres lower; the Opening key's whole
+  travel was one. Two variants at −0.6 and −1.0 looked alike because they were alike. Measure what a slider's end
+  does in millimetres before spending renders on values inside it.
+
 ## The ringlets: the user's catch (2026-11-12)
 
 - **Look at every part from the side; the user did.** The ringlets were looked at from the front and three

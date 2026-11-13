@@ -36,6 +36,8 @@ One line, for the user to give Claude on their machine, for example:
    | STUDIO | `GPU=1 node tools/character/studiotest.js` | Studio |
    | SALON | `GPU=1 node tools/character/salontest.js` | Studio |
    | HAIR2PAGE | `GPU=1 node tools/character/hair2pagetest.mjs` | Studio (the Hair editor v2.0 tab on a scratch character, `_hair2test`; `EXPORT=1` in front also exports for Godot and reads the file. On the cloud's CPU it takes four and a half minutes: timed 2026-11-12) |
+   | EYELOOKPAGE | `GPU=1 node tools/character/eyelooks.mjs make --only v3 --hair daz_twin_tails --shots Saved/Eyes/studio --export` | Studio (a character wearing the eyes v3 look, `eyes_v3`, pictured and exported: what EYESV3 needs; `eyelooks.mjs thumbs` makes the cards' pictures. On the cloud's CPU about seven minutes) |
+   | EYESV3 | `python tools/godot/eyes_v3_check.py` | none (Godot; needs `eyes_v3`'s export) |
    | GROWPAGE | `GPU=1 node tools/character/growpagetest.mjs` | Studio (ages, Cutify, monster mode, horns and ears on a scratch character, `_growtest`; it runs JIGGLE on its export when Godot is there) |
    | UEEYE | `GPU=1 node tools/character/ueeye.mjs` | none |
    | PLAY | `GPU=1 node tools/director/playtest.js` | desk |

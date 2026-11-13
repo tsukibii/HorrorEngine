@@ -94,7 +94,7 @@ static func params(rec: Dictionary) -> Dictionary:
 		"kept_size": Vector2(size1, size1 * float(p.get("catch2Size", 0.6))),
 		"kept_gain": Vector2(float(p.get("catch1", 0.9)), float(p.get("catch2", 0.5))),
 		"kept_line": float(p.get("catchLine", 0.0)),
-		"kept_line_at": Vector4(0.0, catch_dir(0.0, float(p.get("catchLineY", -0.86)), rho, rc).y, 0.55, 0.012),
+		"kept_line_at": Vector4(0.0, catch_dir(0.0, float(p.get("catchLineY", -0.86)), rho, rc).y, 0.34, 0.012),
 		"lamp_catch": float(p.get("catchRoom", 1.0)),
 		# the white's scattered light (the wrap past the terminator): warm and pinkish in a warm white, bluish in a cool one
 		"scatter_color": Color(0.86, 0.9, 1.0).lerp(Color(1.0, 0.72, 0.62), clampf((float(p.get("whiteWarm", 0.35)) + 0.35) / 0.7, 0.0, 1.0)),

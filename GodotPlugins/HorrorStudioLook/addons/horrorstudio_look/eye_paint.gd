@@ -161,6 +161,12 @@ func set_paint(changes: Dictionary, side: String = "both") -> void:
 		painted.emit.call_deferred()
 
 
+## the eyes' pictures drawn again from their numbers as they are (EYESV3 holds Godot's picture of an export's own
+## record against the one the Studio baked into it)
+func redraw() -> void:
+	_ask()
+
+
 ## one of the Studio's eye styles (STYLES): its colours, pattern and pupil together, over the plain ones
 func use_style(style: String, side: String = "both") -> void:
 	if STYLES.has(style):

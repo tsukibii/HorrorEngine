@@ -254,6 +254,25 @@ func measure(img: Image, c: Vector3, rho_mm: float, pupil: float) -> Dictionary:
 			elif d > 1.25 and d < 1.75 and absf(y - cy) < R * 0.3:
 				wl += v
 				nw += 1
+	# the pupil's shape: the dark points along the row and the column through the iris's middle, in iris radii
+	var across := 0
+	var down := 0
+	for i in range(int(-R), int(R) + 1):
+		if img.get_pixel(clampi(int(cx) + i, 0, img.get_width() - 1), int(cy)).get_luminance() < 0.035:
+			across += 1
+		if img.get_pixel(int(cx), clampi(int(cy) + i, 0, img.get_height() - 1)).get_luminance() < 0.035:
+			down += 1
+	# how wide the iris is drawn (mm): out from its middle along the row until the white (a dark iris: under 0.3)
+	var run := 0
+	for dirn in [-1, 1]:
+		for i in range(1, int(R * 2.2)):
+			var xx: int = int(cx) + int(dirn) * i
+			if xx < 0 or xx >= img.get_width() or img.get_pixel(xx, int(cy + 0.15 * R)).get_luminance() > 0.3:
+				break
+			run += 1
+	out["iris_mm"] = run / maxf(k, 0.001)
+	out["pupil_w"] = across / maxf(2.0 * R, 1.0)
+	out["pupil_h"] = down / maxf(2.0 * R, 1.0)
 	out["iris"] = [iris.x / maxf(ni, 1), iris.y / maxf(ni, 1), iris.z / maxf(ni, 1)]
 	out["pupil"] = [pup.x / maxf(np, 1), pup.y / maxf(np, 1), pup.z / maxf(np, 1)]
 	out["white"] = [wl.x / maxf(nw, 1), wl.y / maxf(nw, 1), wl.z / maxf(nw, 1)]
@@ -280,6 +299,48 @@ func measure(img: Image, c: Vector3, rho_mm: float, pupil: float) -> Dictionary:
 	return out
 
 
+## Godot's picture of each eye's own record against the picture the Studio baked into the export: the mean and the
+## largest difference a channel (0..1), over the white and over the iris's disc
+func against_bake() -> Dictionary:
+	var out := {}
+	for e in painter.eyes:
+		var a: Texture2D = e["paint0"]
+		var b = e["material"].get_shader_parameter("paint")
+		if a == null or b == null:
+			continue
+		var ia: Image = a.get_image()
+		var ib: Image = b.get_image()
+		ia.decompress()
+		ia.convert(Image.FORMAT_RGB8)
+		ib.convert(Image.FORMAT_RGB8)
+		if ia.get_size() != ib.get_size():
+			ib.resize(ia.get_width(), ia.get_height(), Image.INTERPOLATE_BILINEAR)
+		var n := ia.get_width()
+		var rho := float(e["rec"].get("shape", {}).get("rho", 0.5))
+		var sum_i := 0.0
+		var sum_w := 0.0
+		var ni := 0
+		var nw := 0
+		var worst := 0.0
+		for y in range(0, n, 4):
+			for x in range(0, n, 4):
+				var r := Vector2((x + 0.5) / n * 2.0 - 1.0, (y + 0.5) / n * 2.0 - 1.0).length()
+				if r > 0.97:
+					continue
+				var ca := ia.get_pixel(x, y)
+				var cb := ib.get_pixel(x, y)
+				var d := (absf(ca.r - cb.r) + absf(ca.g - cb.g) + absf(ca.b - cb.b)) / 3.0
+				worst = maxf(worst, d)
+				if r < rho:
+					sum_i += d
+					ni += 1
+				else:
+					sum_w += d
+					nw += 1
+		out[e["side"]] = {"iris": sum_i / maxf(ni, 1), "white": sum_w / maxf(nw, 1), "worst": worst, "size": n}
+	return out
+
+
 func _process(_d: float) -> bool:
 	if waiting:
 		return false
@@ -293,6 +354,16 @@ func _process(_d: float) -> bool:
 			if st == "reset":
 				if painter != null:
 					painter.reset()
+			elif st == "redraw":                           # her own numbers drawn by Godot: its picture against the one the Studio baked
+				if painter != null:
+					waiting = true
+					painter.painted.connect(func():
+						report["redraw"] = against_bake()
+						waiting = false, CONNECT_ONE_SHOT)
+					painter.redraw()
+			elif st == "dark":
+				light = "dark"
+				lights()
 			elif st == "glow":
 				light = "dark"
 				lights()

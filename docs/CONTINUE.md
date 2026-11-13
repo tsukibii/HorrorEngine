@@ -28,11 +28,52 @@ clothing library), merged; then on `claude/ecstatic-dijkstra-6ixk71`: the hair e
 two of the user's Daz hairstyles held to their pictures, the v2female and bodyv2 bases, and the styles gone through;
 beside it on `more-shotgun-shells`: two easter egg shells for the shotgun; and 2026-11-12 on
 `claude/jolly-darwin-9t8hkc` (merged first, PR #25): the ghost events plan, the cloak and creepy eyes, the hunt, sanity
-and the kit's bed, with `more-shotgun-shells` merged in. Read this after CLAUDE.md's start
+and the kit's bed, with `more-shotgun-shells` merged in; 2026-11-12 and 13 on `eyes-v3`: the user's own eye render
+matched in Godot (the eye's shader reworked, catchlights that stay, the eye repainted from sliders) and eye looks as
+cards in the Studio. Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## Where it stopped last (2026-11-12, the styles gone through, `claude/ecstatic-dijkstra-6ixk71`): what the two matched hairstyles taught, in all 67
+## Where it stopped last (2026-11-13, `eyes-v3`): the user's eye render matched in Godot; eye looks as cards; eye sliders
+
+Read DECISIONS 2026-11-12, "eyes v3", first. The user, with two pictures of their own render (Unity and Blender):
+"re-create this eye look 1:1 ... including the eyelashes and eyelids and exact eyes (pupils, the whites) ... create a
+thumbnail icon for it similar to the icons we have in our monster presets ... make it easy to modify some things via
+sliders (different iris shape / patterns, colors etc). Your main objective is to get this exact eye look in godot."
+The pictures are kept out of git (`Saved/Eyes/ref/eyes.png`, `face.png`: **they have to be sent again in a new
+session**, and EYESV3's sheet puts the reference beside Godot's only when they're there).
+
+- **Godot** (docs/GODOT_LOOK.md §5v): `eye.gdshader` reworked (the eye's axes once per vertex, everything else from
+  the eye's own shape per pixel, NORMAL set by the shader; the eyeball's room behind the lids a push of its vertices
+  instead of a depth written per pixel), **catchlights that stay** and the lower lid's wet line, the room's lamps
+  dimmed in the cornea, a white that can be cool; `HSEyePaint` (the Studio's paint ported, an export's eyes repainted
+  once a change), `HSEyePicker` (the sliders: the look viewer's Eye sliders), `HSEyeLook` (a saved eye;
+  `eyes/eyes_v3.tres` ready-made), the HSCharacterLook node's Eye Look, Eye paint and Inspector sliders.
+- **The Studio** (docs/CHARACTER_STUDIO.md §2h): Face, **Eye looks**: cards with pictures (`eyelooks.js`); the first,
+  **Eyes v3 (dark doll)**; new controls where they belong (the eye's catchlights and whites, *Lower lashes in
+  points*, *Lid gloss* and *Lid glitter*, the Opening shape key down to −2.5, the lash look *Ink black*, the beauty
+  light); `eyelooks.mjs thumbs | make`.
+- **How it was matched**: a character (`eyes_v3`: v2female, the look, the hair editor's twin tails) made by
+  `eyelooks.mjs make`, exported, and pictured in Godot framed as the reference frames her (`demo/eyes_v3.gd`, the
+  `pair` shot), the two stacked and looked at; the eyeball tuned in Godot by `--paint=JSON` (40 s a try), the lids and
+  lashes in the Studio (`--variants`, about three minutes a try on the cloud's CPU; an export five).
+- **Where the match stands** (looked at, not measured against the reference: it's a picture of another engine under
+  another light): the iris, the pupil, both catchlights' places and sizes, the wet line, the whites' tone, the eye's
+  size in the face, its tilt, the lid resting on the iris, the soft dark band above and the points below are there.
+  **Not matched**: the skin's rosy, wetter look round the eye (the reference is lit pink and her skin is wet with
+  tears: the skin's wetness is HSSkin's, not the eye look's); the lid's glitter is a band of fine flakes, the
+  reference's a brighter patch; the fringe of the test character ends higher than the reference's (the hair editor's
+  twin tails as they are); the reference's upper lashes show a few long hairs at the corners.
+- **Checked here**: EYELOOKS, EYEPATCH (the Opening's new end), EYEFX, EYESV3, and the checks that hold the eye's
+  shader in a face (see the commit); **not run here**: STUDIO and the other page checks (the Studio's eye code, its
+  skin shader and the lash builder changed: ask the user for a local run, docs/RUN_LOCALLY.md).
+- **Left, and seen**: the catchlights that stay are lit by the lamps that reach the eye, so a lamp behind her with no
+  shadows on lights her catchlights too; the eye picker has no key of its own in a game (call
+  `HSEyePicker.toggle(tree)`; the look viewer has the button); an HSLookPreset doesn't carry an eye's paint yet (a
+  look that turns her iris another colour for a quest: `HSEyePaint.set_paint` from a script, or an HSCharacterLook's
+  `set_eye_paint`); a Director or desk game has no story word for it.
+
+## Before that (2026-11-12, the styles gone through, `claude/ecstatic-dijkstra-6ixk71`): what the two matched hairstyles taught, in all 67
 
 Read DECISIONS 2026-11-12, "the lessons into every style" and "the ringlets", first. The user: "take everything
 you've learnt from the last hairstyles and enhance improve v2 hairstyles"; and, with a screenshot while it was being

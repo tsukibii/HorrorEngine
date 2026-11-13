@@ -647,6 +647,64 @@ width sliders around mid", and: "I mean thighs and legs too and hands and feet")
   dummy and the outfits' cards are the plain bodies; the Studio's own view of it has been seen by nobody but the
   page check.
 
+## 2h. Eye looks: the eye alone as a preset on a card, and Eyes v3 (DECISIONS 2026-11-12, eyes v3)
+
+The user's own render (Unity and Blender; both eyes close, and the face; kept out of git in `Saved/Eyes/ref/`) is to be
+matched 1:1 in Godot from a character made here, "including the eyelashes and eyelids and exact eyes (pupils, the
+whites)", with "a thumbnail icon for it similar to the icons we have in our monster presets", and sliders afterwards.
+
+**An eye look** (`eyelooks.js` `EYE_LOOKS`; Face, **Eye looks**: cards, each with its picture) is the eye and nothing
+else, set together:
+
+| Part | What it sets | Where its sliders are |
+|---|---|---|
+| `eyes` | the eyeball's paint and fit: the iris's colours, pattern and size, the pupil, the limbal ring, the white, the catchlights that stay, Lid shadow, Eye occlusion, Tear line | Skin, Eyes |
+| `shape` | the grafted lids' shape keys (size, crease, inner fold, tilt, opening, depth: §2c) | Skin, Eyes, Eye shape |
+| `sculpt` | the sculpt's eye controls only (`EYE_SCULPT`: Eye size, Eye spacing, Deep-set eyes, Eye slant, Hooded lids) | Body, Face |
+| `lash` | a lash style, its own settings over it, a look | Brows & lashes |
+| `makeup` | the eye's makeup only (`EYE_MAKEUP`: liner, shadow, under-eye, inner corner, waterline, aegyo-sal, lid gloss, lid glitter); what a look doesn't name is taken off the eye | Skin, Procedural skin, Makeup |
+
+A card sets them (`useEyeLook`); two switches leave the eye's shape or the lids' makeup as the character has them.
+Everything is a plain slider afterwards; the face, the lips, the skin, the brows and the hair aren't touched. The card
+worn is marked (`st.eyes.look`, kept with the character: what its eyes started as). Where a whole look (`looks.js`)
+is a face's makeup, lips and skin, an eye look can go on any of them.
+
+**Eyes v3 (dark doll)**, the reference taken apart and where each part is made:
+
+| In the reference | Here |
+|---|---|
+| big, very dark red-brown irises, the pupil melting in, no fibres to see, a soft edge | `iris` `#170807`, `iris2` `#2c100c`, Pupil 0.42, Fibres 0.12, a wide soft limbus, Iris brightness 0.8, Iris size up |
+| two crisp catchlights on each eye, a big one up and to the picture's right of the pupil and a small cool one across from it, the same side in both eyes | **Catchlights that stay** (new): two lights that follow the camera, reflected in the cornea (they slide over the iris as the eye turns), at *Catchlight across / up* and *Second across / up* |
+| a thin bright arc low on the cornea | **Wet line in the cornea** (new): the lower lid's tear film reflected |
+| cool, bluish whites, never paper, shaded under the upper lid | Sclera `#dfe6f2`, **White warmth** below 0 and **White brightness** (new: what Godot draws; the Studio the same), Lid shadow 0.7 |
+| a long almond opening, the outer corner a little higher, the upper lid resting low over the iris | the shape keys: Tilt, Inner fold, **Opening** well under −1 (its slider now runs to −2.5: at −1 the lid moved a millimetre, not enough to rest on the iris), Eye size |
+| a thin fold close above the lashes | Hooded lids (the sculpt's) |
+| the upper lashes a soft dark band along the lid, hardly hairs | the lash style **Eyes v3**: short (5 mm), no curl, Lift below 0 (down over the eye), the lash line at 1 |
+| the lower lashes long, fine, sparse, in little points down the skin | **Lower lashes in points** (new, `lowerSpikes`): clusters of two to four whose roots stay apart and whose tips draw together; Lower lashes down |
+| a silver shimmer on the lid above the lashes | **Lid gloss** and **Lid glitter** (new, Makeup): the lid wet up to the crease; flakes a quarter of a millimetre across in a band two millimetres up from the lashes, each pale, mirror smooth and tilted its own way (colour, roughness and relief: all three are baked into the export) |
+| rose all round the eye, a wet pink waterline, a lit under-eye | Eyeshadow, Under-eye shadow, Inner corner, Waterline, Aegyo-sal |
+
+**The new controls** are in the tables they belong to, so every character has them and an export carries them:
+tools/shared/eye.js `EYE_CONTROLS` (Catchlights that stay, Second's size / across / up, Wet line in the cornea, Room
+lights in the cornea (game), Catchlights in the dark, White brightness (game), White warmth (game); all at values
+that change nothing on a character saved before them), browlash.js (`lowerSpikes`), skinshader.js (`lidGloss`,
+`lidGlitter`, `glitterColor`), eyegraft.js (Opening from −2.5; EYEPATCH tries its new end too). The export's eye record
+also says the fit's Lid shadow and Eye occlusion now (Godot's wet layer shades by them). The **beauty** light (the
+view bar): big and soft from the front and a little above, a rosy room, the film curve: what the cards are pictured
+under.
+
+**The cards' pictures and a character wearing a look** (`eyelooks.mjs`, in the Studio's own page, as the creatures'):
+
+    node tools/character/eyelooks.mjs thumbs                       # Content/Studio/Eyes/thumbs/<id>.jpg (kept in the project)
+    node tools/character/eyelooks.mjs make --only v3 --hair daz_twin_tails --shots DIR --export
+        # People/eyes_v3: the v2female base, the look, the hair editor's twin tails (the reference's fringe); the
+        # Studio's own pictures (both eyes framed as the reference, her left eye, the face); Export for Godot
+    ... --variants FILE     # {tag: {eyes, shape, sculpt, lash, makeup}}: each worn over the look and pictured (tuning)
+
+EYELOOKS (`node tools/character/eyelooks_check.mjs`, in check_all) holds every name in a look to a control that
+exists, within its slider, and Godot's port of the eye's paint to this side's. EYESV3 (docs/GODOT_LOOK.md §5v) is the
+look in Godot.
+
 ## 3. Each stage against the rule (as of this branch)
 
 | Stage | Sources kept | Bakes | Gaps |

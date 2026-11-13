@@ -3,8 +3,8 @@
 // browser:
 //
 //   node tools/character/eyelooks.mjs thumbs [--only v3]
-//       the cards' pictures: each look on a scratch character (_eyelooks, the v2female base), both eyes close under the
-//       beauty light, into Content/Studio/Eyes/thumbs/<id>.jpg (kept in the project, as the creatures' are)
+//       the cards' pictures: each look on a scratch character (_eyelooks, the v2female base), her left eye close under
+//       the beauty light, into Content/Studio/Eyes/thumbs/<id>.jpg (kept in the project, as the creatures' are)
 //   node tools/character/eyelooks.mjs make [--only v3] [--name NAME] [--base v2female|feminine|average|masculine]
 //                                          [--hair STYLE] [--look "soft cinematic"] [--set JSON] [--shots DIR] [--variants FILE] [--export] [--again]
 //       a character wearing an eye look (eyes_<id> unless --name), made from the defaults and saved; one that's there
@@ -28,8 +28,9 @@ if (mode !== "thumbs" && mode !== "make") { console.log("node tools/character/ey
 const EL = await import("./eyelooks.js"), only = (opt("--only") || "").split(",").filter(Boolean), keys = Object.keys(EL.EYE_LOOKS).filter(k => !only.length || only.includes(k));
 if (only.some(k => !EL.EYE_LOOKS[k])) { console.log(`EYELOOKPAGE FAIL: no eye look named ${only.filter(k => !EL.EYE_LOOKS[k]).join(", ")} (there are: ${Object.keys(EL.EYE_LOOKS).join(", ")})`); process.exit(1); }
 const browser = await req("../browser.cjs").launch(chromium);
-const page = await (await browser.newContext({ viewport: { width: 1300, height: 900 }, deviceScaleFactor: opt("--shots") ? 2 : 1 })).newPage(); page.setDefaultTimeout(600000);   // (a busy software-drawn page answers late; the pictures at twice the size)
+const page = await (await browser.newContext({ viewport: { width: 1300, height: 900 }, deviceScaleFactor: opt("--shots") || mode === "thumbs" ? 2 : 1 })).newPage(); page.setDefaultTimeout(600000);   // (a busy software-drawn page answers late; the pictures at twice the size)
 const errs = []; page.on("pageerror", e => errs.push(e.message)); page.on("dialog", d => d.accept());
+page.on("console", m => { if (m.type() === "error" && /Shader Error/.test(m.text())) errs.push(m.text().slice(0, 400)); });   // (a shader that doesn't compile is a console error, and a black eye in the picture)
 const B = (f, a) => page.evaluate(f, a), t0 = Date.now();
 const settle = async () => {                             // the view's own word that it's composed, the face's fit not in flight
   await page.waitForFunction(() => /points/.test(document.querySelector("#hud").textContent) && !/finding|fitting/.test(document.querySelector("#status").textContent), null, { timeout: 600000 });
@@ -101,7 +102,9 @@ try {
     const clip = await clipOf(2);
     for (const k of keys) {
       await wear(k, null); await frame("pair", clip);
-      const jpg = await jpeg(await page.screenshot({ clip }), 320);
+      // her left eye cut out of the picture of both (a view any closer is inside the lens's reach): one eye fills a card,
+      // where two side by side are too small to read
+      const jpg = await jpeg(Buffer.from(await crop(await page.screenshot({ clip }), 0.6, 0.29, 0.4, 0.4), "base64"), 320);
       fs.writeFileSync(path.join(out, k + ".jpg"), Buffer.from(jpg, "base64"));
       console.log(`  ok  ${k}: ${path.relative(ROOT, path.join(out, k + ".jpg"))} (${Math.round(Buffer.from(jpg, "base64").length / 1024)} KB)`);
     }

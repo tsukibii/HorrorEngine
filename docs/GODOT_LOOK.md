@@ -1549,6 +1549,83 @@ every side: every lock material on the bake's look, the scalp seen through the h
 outline (a second picture with the hair a flat green and the painted scalp, where it's at its full shade, a flat
 magenta: under 3%, 5% for tied hair, which is pulled up off its hairline), the hair neither black nor bleached.
 
+## 5v. Eyes v3: the eye worked out per pixel, catchlights that stay, the eye repainted from sliders (`eye.gdshader`, `eye_paint.gd` `HSEyePaint`, `eye_picker.gd` `HSEyePicker`, `eye_look.gd` `HSEyeLook`; DECISIONS 2026-11-12, eyes v3)
+
+The user's own render (Unity and Blender; two pictures, kept out of git in `Saved/Eyes/ref/`) is the reference: big,
+very dark red-brown irises the pupil melts into, on each two crisp catchlights and a thin bright arc low on the
+cornea, cool whites, a heavy almond lid, a soft band of lashes above and little points below. The lids, the lashes and
+the makeup are the Character Studio's to make (docs/CHARACTER_STUDIO.md §2h: the eye look *Eyes v3 (dark doll)*); this
+section is what Godot's side needed for it, and the sliders asked for after it.
+
+**The eye's shader, worked out from the eye's own shape.** Until now `fragment()` rebuilt the eye's frame at every
+pixel from the mesh's tangent, binormal and normal, and took the mesh's normal for the shine. Now `vertex()` reads the
+eye's three axes once (the way the wet layer finds the eye's centre: the point in eye units from the UV, its normal
+as the export made it, so the tangent frame maps the eye's axes into the model exactly; every vertex gives the same
+three) and hands them on as `v_ex`, `v_ey`, `v_ez`. `fragment()` then needs only the UV: the point on the eye, its
+normal (the cornea's dome inside the limbus, the white's sphere outside, **rounded over where they meet**:
+`limbus_round`, 7% of the limbus's radius, a real limbus being a soft groove and a hard crease a line of light), the
+view ray in the eye's frame, and it **sets NORMAL itself**. What that buys:
+
+- the shine is a true sphere's, whatever the mesh's triangles are: a catchlight is round at any size;
+- **the eye drawn can differ from the mesh**: a bigger or smaller iris (HSEyePaint's `irisSize`) moves the limbus and
+  the dome in the shader alone. The mesh's own shape then goes to `mesh_shape` (what the axes are read from); the
+  demos' made-up eyeballs, plain balls with no dome, say so there;
+- nothing in the fragment reads TANGENT or BINORMAL any more.
+
+**The eyeball's room behind the lids is a push of its vertices** (`lid_room`, §5f). It was a DEPTH written per pixel
+(the same pixel, further along its ray), and a shader that writes its depth can't be thrown out by the depth test
+before it runs: the eye's shader ran for every pixel of the eyeball's front half, lids or no lids (about twice what
+shows), and the wet layer's eight searches of the depth buffer with it. Now each vertex is moved `lid_room` along its
+own view ray in `vertex()` (`POSITION`), which lands on the same pixel, and the fragment writes no depth: what the
+lids hide is rejected first. GDFACES and EYELIDS hold the lids as before.
+
+**Catchlights that stay.** With a refracting cornea the room's lamps make the catchlights, so an eye in a dim room has
+none, and the reference's two crisp dots are a look, not a room. Above 0, `kept_amount` (the Studio's *Catchlights
+that stay*, `catchKeep`) keeps two on the cornea: the view ray is reflected in the cornea's own normal and compared,
+in the view ray's own frame (x right, y up, z back at the camera), with two directions (`kept_dir1`, `kept_dir2`):
+two lights that follow the camera. They're reflections, so they sit where the look puts them when she looks at you
+and slide over the iris as her eyes or her head turn, as real ones do; the same side in both eyes (a light, not a
+mirror). Where they sit is said as a place on the iris (`catchX`, `catchY`, `catch2X`, `catch2Y`, in iris radii as the
+eye is seen straight on); `HSEye.catch_dir` turns a place into the direction whose reflection lands there on the
+dome. A disc each (`kept_size`: `catchSize`, the second `catch2Size` of it; `kept_gain`: `catch1`, `catch2`; the second
+a cooler white) with a small halo, and **the lower lid's wet line** (`kept_line`, `catchLine`): a thin arc low on the
+cornea, the reflection of the tear film along the lower lid. They're lit in `light()` by every lamp that reaches the
+eye (`ATTENUATION × LIGHT_COLOR × kept_lit`), so they dim with the room and go out in the dark; `kept_glow`
+(*Catchlights in the dark*) makes them glow by themselves: eyes that glint out of the dark. `lamp_catch` (*Room
+lights in the cornea*) dims the lamps' own glints there, so with the kept ones the eye reads the same in any room.
+
+**The white.** `sclera_bright` and `sclera_warm` were fixed (0.58, 0.35: §5d, §5f); the record now says them
+(`whiteBright`, `whiteWarm`), and below 0 the warmth is a cool, bluish white (a porcelain doll's), its scattered light
+(`scatter_color`) cool with it. The wet layer's two shades follow the Studio's *Lid shadow* and *Eye occlusion* when
+the record carries them (0.6 and 0.5 are the layer's own 0.45 and 0.6).
+
+**The eye repainted (`HSEyePaint`).** An export's eyeball wears its paint baked flat and carries the numbers that made
+it (`studioEye`). `eye_paint.gdshaderinc` is the Studio's paint (tools/shared/eye.js PAINT: the iris's colours and
+fibres, the six patterns, the twelve pupil shapes, the limbal ring, the white, its veins and corners) in Godot's
+shading language, function for function; EYELOOKS (`node tools/character/eyelooks_check.mjs`) compares the two files'
+code and EYESV3 compares the two pictures. `HSEyePaint.attach(her).set_paint({...})` changes any of the Studio's
+numbers by the Studio's names: what isn't paint goes to the eye's shader at once; what is, draws the picture again,
+**once**, into a small viewport (1024 px, as the Studio bakes), which is read back, given its mips and worn. So the
+eye's cost is what it was (a picture read behind the cornea), whatever its iris looks like, and a slider dragged
+costs a picture a frame at most (changes while one is being drawn are gathered into the next). `use_style(name)` the
+Studio's sixteen eye styles; `reset()` the export's own; `changes(side)` what differs. Headless there's nothing to
+draw with: the numbers are kept, the picture stays.
+
+**The sliders.** `HSEyePicker` (the look viewer's **Eye sliders**, with its **Eyes** view; `HSEyePicker.toggle(tree)`
+over a running game): a look to start from (the ready-made eye looks, yours, the Studio's styles), the six colours,
+the pattern, the pupil's shape, and a slider for each number in three sections (Iris, White, Catchlights), one eye or
+both, Her own eyes, **Save as eyes** (an `HSEyeLook` in `res://looks/eyes/`), Copy as code. On an `HSCharacterLook`:
+**Eye Look** (a saved one, worn when the game runs), **Eye paint** (single numbers over it), and under *Eye* in the
+Inspector the same sliders, each starting from the export's own value (read from its record) and kept only where it
+differs; `set_eye_paint(changes)` and `reset_eye_paint()` while the game runs. `eyes/eyes_v3.tres` is the eyes v3
+look's own eyeball, for any character's eyes (the lids and lashes are geometry: the Studio's).
+
+EYESV3 (`python tools/godot/eyes_v3_check.py`; a character made by `node tools/character/eyelooks.mjs make --only v3
+--hair daz_twin_tails --export`): her eyes pictured as the reference frames them and measured (the iris, the pupil, the
+white; the catchlights' places against the iris on both eyes), Godot's picture of her record against the Studio's bake,
+the catchlights off, moved, in the dark and glowing, another iris, a pattern, a slit pupil, a bigger and a smaller
+iris, reset; headless the picker, the node and a saved eye look; the sheet beside the reference.
+
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 
 A street baked in Blender (`tools/street.py bake`, docs/STREET_TEXTURING.md) comes as plain glTF:

@@ -84,8 +84,8 @@ export const LASH_STYLES = {   // presets for the lashes' own settings, after th
   // lashes short, fine and lying down over the top of the eye, a dark band along the lid more than hairs, a few longer
   // ones swept out at the outer corner; the lower lashes long and sparse, in points of two or three hairs straight down
   // the skin, the outer ones leaning out
-  v3: { label: "Eyes v3 (a soft band above, points below)", group: "Eyes v3, after the user's render", count: 130, length: 5, curl: 0.05, lift: -0.45, sweep: 0.3, innerLength: 0.55, clump: 0.3, spikes: 0, vary: 0.35, under: 0.7, cross: 0.45, width: 0.36, flare: 0.35,
-        lowerCount: 36, lowerLength: 5.2, lowerDrop: 0.8, lowerSpikes: 0.67, line: 1 },
+  v3: { label: "Eyes v3 (a soft band above, points below)", group: "Eyes v3, after the user's render", count: 150, length: 5, curl: 0.05, lift: -0.45, sweep: 0.3, innerLength: 0.55, clump: 0.3, spikes: 0, vary: 0.35, under: 0.9, cross: 0.45, width: 0.38, flare: 0.35,
+        lowerCount: 36, lowerLength: 4, lowerDrop: 0.8, lowerSpikes: 0.67, line: 1 },
   naturalMedium: { label: "Natural medium (separated)", group: "Lash sets, after the second reference", count: 110, length: 8, curl: 0.5, lift: 0.45, sweep: 0, innerLength: 0.5, clump: 0.05, spikes: 0, vary: 0.15, under: 0.3, cross: 0.3, width: 0.45, flare: 0.3,
                    lowerCount: 24, lowerLength: 3, lowerDrop: 0.25, line: 0.25 },
 };
@@ -107,6 +107,10 @@ const look = (root, tip, spec, shine, rim, inner = tip, innerAmount = 0) => ({ r
   shift1: -0.05, shift2: 0.08, shiftNoise: 0.25, rim, rimAmount: 0.08, rootLength: 0.35, soft: 0 });   // (soft: the hair's soft edges; lashes and brows stay crisp)
 export const LOOKS = {
   lash_black: { label: "Black", ...look("#050505", "#0e0d0c", "#8f8a85", 0.3, "#2a2826") },
+  // eyes v3 (DECISIONS 2026-11-12): fine, ink-dark lashes with hardly a sheen; `coverage`: how much denser a game draws
+  // each hair than its width alone gives (Godot's hair_fine coverage, times this), so a fine hair is a dark line and
+  // not a brown wash over the skin
+  lash_ink: { label: "Ink black (fine, dark)", ...look("#030303", "#080707", "#5a5653", 0.12, "#181616"), coverage: 1.25 },
   lash_brown_black: { label: "Brown-black", ...look("#0a0605", "#221610", "#9a8574", 0.3, "#3a2a20") },
   // after the second reference (docs/research/lash_reference.md): a fair face's brown lashes, and an old man's going grey
   // (dark hairs with pale tips, a third of them grey all along) and grey (most of them white-grey)

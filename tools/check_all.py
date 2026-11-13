@@ -20,7 +20,8 @@ STUDIO = [["pbr.py", "check"], ["sfx.py", "check"], ["face_capture.py", "check"]
           ["character/growtest.mjs"],                                                                                   # the Character Studio's ages, proportions and creatures (GROW),
           ["clothing_library.py", "check"],                                                                             # the clothing library's catalogue and credits (CLOTHLIB),
           ["character/tailor/librarytest.mjs"],                                                                         # the library garments' fit to a body, in layers (LIBRARY),
-          ["character/hair2/check.mjs"]]                                                                                # the hair editor v2.0's engine: every style grown, measured (HAIR2)
+          ["character/hair2/check.mjs"],                                                                                # the hair editor v2.0's engine: every style grown, measured (HAIR2),
+          ["character/eyelooks_check.mjs"]]                                                                             # the eye looks, and Godot's eye paint held to the Studio's (EYELOOKS)
 game, _ = L.pick_game(sys.argv[1:])
 bad = 0
 for g in ([game] if game else L.games()):

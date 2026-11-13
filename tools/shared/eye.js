@@ -408,7 +408,7 @@ export function eyeMaterial(side, extend = null, key = "") {
     vec3 kv = -eyeDv, kx = normalize(cross(vec3(0.0, 1.0, 0.0), kv)), ky = cross(kv, kx), kf = reflect(eyeDv, eyeCoatV), kr = vec3(dot(kf, kx), dot(kf, ky), dot(kf, kv));
     float t1 = length(kr - uKeptD1) / max(uKept.y, 1e-4), t2 = length(kr - uKeptD2) / max(uKept.z, 1e-4);
     float k1 = uKeptG.x * ((1.0 - eyeSm(0.65, 1.35, t1)) + 0.12 * exp(-0.45 * t1 * t1)), k2 = uKeptG.y * ((1.0 - eyeSm(0.65, 1.35, t2)) + 0.12 * exp(-0.45 * t2 * t2));
-    float kl = uKept.w * exp(-pow((kr.y - uKeptG.z) / 0.012, 2.0)) * (1.0 - eyeSm(0.22, 0.55, abs(kr.x)));
+    float kl = uKept.w * exp(-pow((kr.y - uKeptG.z) / 0.012, 2.0)) * (1.0 - eyeSm(0.136, 0.34, abs(kr.x)));
     eyeKept = (k1 + k2 + kl) * uKept.x * (1.0 - 0.5 * eyeSock);
     eyeKeptCol = (vec3(k1 + kl) + vec3(0.82, 0.9, 1.0) * k2) / max(k1 + k2 + kl, 1e-4);
   }`)
