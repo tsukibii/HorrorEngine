@@ -35,11 +35,22 @@ export const TEST_BODIES = {
 export const CREATURE_BODIES = ["goblin", "ghoul", "ogre", "imp", "hag"];
 const creatureDef = name => { const c = GW.MONSTERS[name]; return c && { grown: { base: c.base ?? 0, head: "", body: "", sculpt: c.sculpt, shape: c.shape, monster: true }, height: c.height, base: c.base ?? 0, creature: name, about: c.about }; };
 
+// children (DECISIONS 2026-11-14, short NPCs: "children npcs (really short npcs), can you figure out a way to adjust
+// the animations proportionally to height"): the Character Studio's ages made in node as the page makes one (grow.js:
+// a child isn't a small adult: a bigger head, shorter legs), at the age's own height or one set. What the furniture
+// clips must hold on: a person's chair is over these knees, a person's door handle at these shoulders
+export const CHILD_BODIES = {
+  child_8: { grown: { age: 8, base: -1 }, height: null, base: -1, about: "a girl of eight at her age's height: 1.27 m" },
+  child_small: { grown: { age: 8, base: -1 }, height: 1.10, base: -1, about: "the same girl at 1.10 m: as short as a child in a game is likely to be" },
+  child_12: { grown: { age: 12, base: 1 }, height: null, base: 1, about: "a boy of twelve at his age's height: 1.49 m" },
+};
+
 let MHR = null;
 /** a test body: { name, P (MHR's points, metres, feet on the floor), T, joints: [{ name, parent, at }] parents first, BI, BW (the rig's, a point's four bones by the joints' order) } */
 export function testBody(name) {
-  const def = TEST_BODIES[name] || creatureDef(name) || { mhr: name, height: 1.7, base: 0 }, m = (MHR ||= loadMhr()), R = growRig(m); let b, J;
-  if (def.grown) { b = grownBody(m, { ...def.grown, height: def.height }); J = PO.joints(R, b.P, m.P, b.scale, b.F); }
+  let def = TEST_BODIES[name] || CHILD_BODIES[name] || creatureDef(name) || { mhr: name, height: 1.7, base: 0 }; const m = (MHR ||= loadMhr()), R = growRig(m); let b, J;
+  if (def.grown) { b = grownBody(m, { ...def.grown, height: def.height }); J = PO.joints(R, b.P, m.P, b.scale, b.F);
+    if (def.height == null) { let hi = 0; for (let i = 1; i < b.P.length; i += 3) hi = Math.max(hi, b.P[i]); def = { ...def, height: +hi.toFixed(3) }; } }   // (an age's own height: what it came out as)
   else {
     const w = bodyWeights(def.mhr).slice(); while (w.length < m.k) w.push(0); for (const [i, v] of Object.entries(def.add || {})) w[+i] += v;
     const sculpt = { ...(bodySculpt(def.mhr) || {}), ...(def.sculpt || {}) }; b = mhrBody(m, w, def.height, Object.keys(sculpt).length ? sculpt : null);

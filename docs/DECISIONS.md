@@ -2,6 +2,42 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-14, short NPCs: a person's furniture used by any body; the peek is seen from in front (the user, on animations v3's first report)
+
+- **"For the animations you said there are issues with the sitting/sleeping for imps and goblins etc. What about
+  children npcs (really short npcs), can you figure out a way to adjust the animations proportionally to height."**
+- **"For peak the back doesnt need to look good since it will ever only face the front"**
+
+What follows from it (docs/ANIMATOR_V3.md §10):
+
+- **What didn't fit a short body was never the animation, it was the furniture.** Every clip is already made from the
+  body it's for; sitting, sleeping, doors and the reach to a table were made for a person's furniture as if the body
+  were a person's: a seat and a bed 45 cm high, a handle a metre up, a table at 86 cm. On the 1.63 m test woman those
+  are the back of her knee, three quarters of the way up to her shoulder, and her leg's own length. A child's or an
+  imp's legs can't sit on a seat over their knees with their feet on the floor.
+- **The game's furniture stays a person's, and the clip gets her onto it** (`acts.js` `furniture()`, "fits her", the
+  default). A seat or a bed over 1.18 of her own she gets onto as a child does: her bottom to its front (up on her
+  toes, a hop when it's over her hips, her hands on it), then she slides back, and sits with her thighs on it and her
+  legs hanging, swinging a little. A handle over her shoulder she reaches up to, on her toes when it's well over. So
+  a child, a goblin and an imp use the chairs, beds and doors a level already has, and nothing in a game changes.
+  An adult's sitting and door clips are what they were, to the bit.
+- **What her body can't use is made as near a person's as she can manage** (a seat no higher than her hips, a handle
+  no higher than her hand goes with her elbow still bent: an imp's is 86 cm), and the game makes up the rest: she is
+  lifted onto a seat that's higher still, and her hand is carried to the real handle by her hand's IK as far as her
+  arm goes.
+- **Two other settings**, per character, on the Animator's page: **her own size** (a child's chair, a goblin's door:
+  what a person's are to a person, by her knee, her shoulder and her leg) and **a person's** whatever she is. A size
+  can be said outright too (`seat`, `bed`, `handle`, `table`, metres).
+- **A body bigger than a person keeps a person's furniture and comes down to it** (an ogre stoops to a handle).
+- **Held from now on**: the Animator's check makes three children (eight years at 1.27 m, the same at 1.10 m, twelve
+  at 1.49 m) beside the five creatures, and holds every clip on all of them, the furniture's with rules of their own.
+  Holding them found things wrong on adults too, which were fixed in the same go: the lie-down's elbows snapped 32
+  degrees in a frame, a foot went through the bed's corner on its way up, the hands of someone sat on a bed's edge
+  hung in the mattress, and the arm of someone asleep lay 5 cm in it. Their bed clips are the only adult clips that
+  changed; a character baked before wants baking again for them (version 4).
+- **The peek is only ever seen from in front.** Its other hand (flat on the wall, up beside her shoulder) is not
+  something to work on; it stays where it's out of the wall and out of sight.
+
 ## 2026-11-14, animations v3: creatures' clips, a head that follows you, a grip on props, fights (the user)
 
 After the pull request for the markers (`marker-system`, tsukibii/HorrorEngine#30):

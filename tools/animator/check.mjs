@@ -14,7 +14,8 @@
 // made in node): the elbow's hinge MHR's own on any body, no arm wrung along its length, nothing turning faster than
 // it may, nothing under the floor, no arm asked for more than its length, a wall clear of a hunched face, a hand that
 // gets to what it reaches for.
-import { testBody, bodyGlb, mhrRigBuffer, TEST_BODIES, CREATURE_BODIES } from "./bodies.mjs";
+import { testBody, bodyGlb, mhrRigBuffer, TEST_BODIES, CREATURE_BODIES, CHILD_BODIES } from "./bodies.mjs";
+import { furniture, PERSONS, FEET_ON } from "./core/acts.js";
 import { parseGlb } from "./core/glb.js";
 import { prepare, attach, animate, makers, makeClip, settingsFor } from "./core/animate.js";
 import { measure, meshPoints, summary } from "./core/measure.js";
@@ -34,7 +35,7 @@ const V3 = ["sneak_loop", "crouch_loop", "crawl_loop", "crawl_idle_loop", "creep
   "scare_lunge", "scare_loom", "scare_snap", "scare_claw", "punch", "swing", "hit_react", "punch_l", "swing_l", "eat", "drink", "eat_l", "drink_l", "look_around", "knock", "cower_loop"];
 NAMES.push(...V3);
 const FAST = /^(scare_|punch|swing)/;                         // a blow or a scare is thrown: its arms may turn faster in a frame than anything else does
-const bytes = {}, ctxs = {}, clips = {};
+const bytes = {}, ctxs = {}, clips = {}, sets = {};
 const clamp1 = x => Math.max(-1, Math.min(1, x));
 const quatAngle = (a, b, i, j) => { const d = Math.abs(a[i] * b[j] + a[i + 1] * b[j + 1] + a[i + 2] * b[j + 2] + a[i + 3] * b[j + 3]); return 2 * Math.acos(Math.min(1, d)); };
 const trackOf = (rig, c, name) => c.tracks.find(t => rig.J[t.joint].name === name);
@@ -73,7 +74,7 @@ for (const [n, ctx] of Object.entries(ctxs)) {
 
 // ---- 3. the clips ---------------------------------------------------------------------------------------------------------
 for (const [n, ctx] of Object.entries(ctxs)) {
-  const set = settingsFor(ctx.glb, ctx.body, {}); clips[n] = all(ctx, set);
+  const set = settingsFor(ctx.glb, ctx.body, {}); clips[n] = all(ctx, set); sets[n] = set;
   ok(NAMES.every(c => clips[n][c]) && Object.keys(clips[n]).length === NAMES.length, `${n}: every clip made`, Object.keys(clips[n]).length);
   ok(Math.sign(set.style) === (n === "skinny_man" ? -1 : 1), `${n}: the walk's style starts from the body`, set.style);
   let jump = 0, where = "", nan = 0, face = 0, fast = 0, fastWhere = "";
@@ -294,6 +295,7 @@ for (const [n, ctx] of Object.entries(ctxs)) {
   ok(heavy.crawl_loop.speed < light.crawl_loop.speed - 0.04 && heavy.scare_lunge.meta.scare.peak > light.scare_lunge.meta.scare.peak, "weight: a heavy one crawls slower and lunges later", `${heavy.crawl_loop.speed.toFixed(2)} and ${light.crawl_loop.speed.toFixed(2)} m/s; ${heavy.scare_lunge.meta.scare.peak} and ${light.scare_lunge.meta.scare.peak} s`);
   say(`v3: ${Object.entries(v3).map(([n, o]) => `${n} sneaks ${o.sneak.toFixed(2)}, creeps ${o.creep.toFixed(2)}, crawls ${o.crawl.toFixed(2)} m/s`).join("; ")}`); }
 
+const others = {};                                            // the creatures' and the children's clips, for §6d
 // ---- 6c. creatures (DECISIONS 2026-11-14: "animations for creatures (our monsters)"; docs/ANIMATOR_V3.md §8.4) -----------------
 // The clips are made from the body, and a creature's body is not a person's: a goblin's arms are long for its legs, a
 // ghoul's and a hag's backs hunched, an ogre's hands twice a person's for its height, an imp knee high. What was built
@@ -309,9 +311,14 @@ for (const [n, ctx] of Object.entries(ctxs)) {
     let low = 1e9; for (const F of c.frames) for (const j of tipsOf(ctx.rig)) low = Math.min(low, F.solved.P[j * 3 + 1]);
     ok(Math.abs(tu) < 45 && Math.abs(tf) < 25, `${n}: standing, no arm is wrung along its length`, `the upper arm ${tu.toFixed(0)}, the forearm ${tf.toFixed(0)} degrees`);
     ok(d < 0.015 && low > -0.012 && c.meta.reach.wrist[1] > c.meta.reach.at[1], `${n}: taking something from the floor, the hand gets to where it's asked and its fingers stay off the floor`, `${(d * 100).toFixed(1)} cm off, the lowest fingertip ${(low * 100).toFixed(1)} cm`); }
-  const HELD = ["idle_loop", "walk_loop", "run_loop", "reach_low", "reach_mid", "reach_high", "reach_low_l", "reach_mid_l", "reach_high_l", ...V3], NOREACH = /^reach_/, says = [];
-  for (const n of CREATURE_BODIES) {
+  // (children too, DECISIONS 2026-11-14, short NPCs: a child isn't a small adult either. And every clip now: sitting,
+  //  lying down and doors were left out while they were made for a person's furniture whatever the body, §6d.
+  //  NOREACH: a reach on its way down, a hand that follows a door, and hands laid on thighs they don't quite reach
+  //  ask an arm for more than its length by design; on a high seat they don't)
+  const HELD = NAMES, NOREACH = /^(reach_|open_|sit_|stand_up)/, says = [];
+  for (const n of [...CREATURE_BODIES, ...Object.keys(CHILD_BODIES)]) {
     const ctx = prepare(parseGlb(bodyGlb(testBody(n))), { mhrRig: MHR }), R = ctx.rig, b = ctx.body, set = settingsFor(ctx.glb, b, {}), C = all(ctx, set), tips = tipsOf(R), sc = b.height / 1.63, arm = b.upper + b.fore;
+    others[n] = { ctx, C, set };
     const at = (c, f, nm) => { const P = c.frames[f].solved.P, j = R.ix.get(nm); return [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]]; };
     ok(NAMES.every(c => C[c]) && Object.keys(C).length === NAMES.length && ctx.rig.unturned && Math.abs(b.height - testBody(n).def.height) < 0.01, `${n}: a creature's body measured, every clip made`, `${(b.height * 100).toFixed(0)} cm, ${b.mass.toFixed(0)} kg, arms ${(arm * 100).toFixed(0)} cm, legs ${(b.leg * 100).toFixed(0)} cm`);
     // the elbow: MHR's own hinge whatever the rest pose's bend has become, and no arm wrung along its length standing
@@ -329,8 +336,8 @@ for (const [n, ctx] of Object.entries(ctxs)) {
         for (const nm of ["l_wrist", "r_wrist"]) lowWrist = Math.min(lowWrist, P[R.ix.get(nm) * 3 + 1]);
         lowHead = Math.min(lowHead, P[R.head * 3 + 1]); } }
     // (a toe follows its foot's heel as it leaves the floor: on a knee-high imp's 0.47 s stride that is 38 degrees in a frame, and it's given a blow's limit)
-    ok(nan === 0 && jump < 34 && wrap < 0.2, `${n}: in the new clips, the walk, the run and the reaches no bone turns faster than it may (34 degrees a frame; a blow's, a scare's and a toe's 56), every loop closes`, `${jump.toFixed(1)} of 34 (${where})`);
-    ok(asked < 0.999, `${n}: no arm is asked for more than its length (but in a reach on its way down, by design)`, `${asked.toFixed(3)} (${askedWhere})`);
+    ok(nan === 0 && jump < 34 && wrap < 0.2, `${n}: in no clip does a bone turn faster than it may (34 degrees a frame; a blow's, a scare's and a toe's 56), every loop closes`, `${jump.toFixed(1)} of 34 (${where})`);
+    ok(asked < 0.999, `${n}: no arm is asked for more than its length (but in a reach on its way down, after a door and on its thighs, by design)`, `${asked.toFixed(3)} (${askedWhere})`);
     ok(lowTip > -0.012 && lowFoot > 0.004 && lowWrist > 0.01 && lowHead > 0.05, `${n}: nothing under the floor: no fingertip, foot, wrist or head`, `the lowest fingertip ${(lowTip * 100).toFixed(1)} cm (${tipWhere}), foot ${(lowFoot * 100).toFixed(1)}, wrist ${(lowWrist * 100).toFixed(1)}`);
     // the low gaits at their own paces, the planted contacts still
     const slip = (c, nm, a0, b0) => { let z0 = null, x0 = 0, worst = 0; const m = c.frames.length; for (let f = 0; f < m; f++) { const phi = f / m; if (phi < a0 || phi > b0) continue; const q = at(c, f, nm), z = q[2] + c.speed * c.secs * phi; if (z0 == null) { z0 = z; x0 = q[0]; } worst = Math.max(worst, Math.hypot(z - z0, q[0] - x0)); } return worst; };
@@ -357,9 +364,66 @@ for (const [n, ctx] of Object.entries(ctxs)) {
     // taking something: the hand gets there, low and from a table
     { const far = lvl => { const c = C["reach_" + lvl], g = Math.round(c.events.find(e => e.name === "grab").t * c.fps), P = c.frames[g].solved.P, w = R.armR.hand, a = c.frames[g].c.arms.r.hand; return Math.hypot(P[w * 3] - a[0], P[w * 3 + 1] - a[1], P[w * 3 + 2] - a[2]); };
       ok(far("low") < 0.015 && far("mid") < 0.015 && far("high") < 0.015, `${n}: a thing on the floor, on a table and on a shelf is reached`, `${(far("low") * 100).toFixed(1)}, ${(far("mid") * 100).toFixed(1)} and ${(far("high") * 100).toFixed(1)} cm off`); }
+    if (CHILD_BODIES[n]) continue;
     says.push(`${n} ${(b.height * 100).toFixed(0)} cm: walks ${pace.walk.toFixed(2)}, creeps ${pace.creep.toFixed(2)}, crawls ${pace.crawl.toFixed(2)}, scuttles ${pace.scuttle.toFixed(2)} m/s`);
   }
   say("creatures: " + says.join("; "));
+}
+
+// ---- 6d. the furniture by her size (DECISIONS 2026-11-14, short NPCs; docs/ANIMATOR_V3.md §10) ----------------------------------
+// "children npcs (really short npcs), can you figure out a way to adjust the animations proportionally to height":
+// a seat, a bed, a door handle and a table are a person's (45, 45, 100, 86 cm) wherever the body can use them, and the
+// clips get her there: a seat over 1.18 of her own she gets up onto and sits on with her legs hanging, a handle over
+// her shoulder she reaches up to on her toes. Held on the three people, three children and five creatures.
+{
+  const FURN = ["sit_down", "stand_up", "lie_down", "get_up", "lie_down_r", "get_up_r"], says = [], cm = v => (v * 100).toFixed(1);
+  const seg = (q, a, c) => { const ac = V.sub(c, a), t = Math.max(0, Math.min(1, V.dot(V.sub(q, a), ac) / V.dot(ac, ac))); return V.dist(q, V.mad(a, ac, t)); };
+  const each = { ...Object.fromEntries(Object.keys(TEST_BODIES).map(n => [n, { ctx: ctxs[n], C: clips[n], set: sets[n] }])), ...others };
+  for (const [n, { ctx, C, set }] of Object.entries(each)) {
+    const R = ctx.rig, b = ctx.body, F = furniture(b, set), own = furniture(b, { furniture: "own" }), K = b.shank + b.ankleH, sy = b.shoulderY + b.floor, arm = b.upper + b.fore, adult = !!TEST_BODIES[n];
+    const at = (c, f, j) => { const P = c.frames[f].solved.P; return [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]]; };
+    // what her furniture is
+    ok(F.mode === "fit" && F.seat <= PERSONS.seat + 1e-9 && F.seat <= 1.05 * b.leg + 1e-3 && F.bed === F.seat && F.handle <= Math.min(PERSONS.handle, sy + 0.6 * arm) + 1e-3 && F.table <= Math.min(PERSONS.table, sy + 0.2 * arm) + 1e-3
+      && (!adult || (F.seat === 0.45 && F.handle === 1 && F.table === 0.86)) && Math.abs(own.seat - 0.947 * K) < 1e-3 && Math.abs(own.handle - 0.751 * sy) < 1e-3,
+      `${n}: its furniture is a person's wherever its body can use it${adult ? " (an adult's: all of it)" : ""}, its own size is by its knee, its shoulder and its leg`, `seat ${cm(F.seat)}, handle ${cm(F.handle)}, table ${cm(F.table)}; its own ${cm(own.seat)}, ${cm(own.handle)}, ${cm(own.table)} cm`);
+    ok(C.sit_down.meta.seat.height === F.seat && C.lie_down.meta.bed.height === F.bed && C.open_push.meta.door.handle[1] === F.handle && C.reach_mid.meta.reach.at[1] === F.table, `${n}: its clips are made for that furniture and say so`);
+    // sat
+    const sl = C.sit_loop, H = F.seat, edge = sl.meta.seat.edge, high = H > FEET_ON * K, hip = at(sl, 0, R.legL.up), kn = at(sl, 0, R.legL.low), an = at(sl, 0, R.legL.foot), slope = Math.atan2(hip[1] - kn[1], kn[2] - hip[2]) / DEG;
+    const feet = c => { let lo = 9; for (const F2 of c.frames) for (const j of [R.legL.foot, R.legR.foot, R.legL.ball, R.legR.ball]) lo = Math.min(lo, F2.solved.P[j * 3 + 1]); return lo; }, stood = feet(C.idle_loop), satFeet = feet(sl);
+    const hands = ["l", "r"].map(s => seg(at(sl, 0, R.arm(s).hand), at(sl, 0, R.leg(s).up), at(sl, 0, R.leg(s).low)) / (b.limbs["thigh_" + s].bins[4].front || 0.06));
+    ok(!!sl.meta.seat.high === high && hip[1] - H > 0.015 && hip[1] - H < 0.14 && Math.min(...hands) > 1 && Math.max(...hands) < 2.6, `${n}: sat, its hips are on the seat and a hand on each thigh`, `the hip joints ${cm(hip[1] - H)} cm over a ${cm(H)} cm seat, the wrists ${hands.map(v => v.toFixed(1)).join(" and ")} thigh's widths from the thigh bones`);
+    if (high) { let asked = 0; for (const nm of ["sit_down", "sit_loop", "stand_up"]) for (const F2 of C[nm].frames) asked = Math.max(asked, F2.pose.info.armReach_l || 0, F2.pose.info.armReach_r || 0);
+      ok(satFeet > stood + 0.03 && Math.abs(slope - 5) < 3 && an[2] - kn[2] > -0.005 && an[2] - kn[2] < 0.3 * b.shank && kn[2] > edge && asked < 0.999,
+        `${n}: the seat is high for it (over ${cm(FEET_ON * K)} cm): its thighs lie on it, its legs hang from its edge, never back into it, its feet are off the floor, and no arm is asked for more than its length getting on or off`,
+        `the thighs slope ${slope.toFixed(0)} degrees, the ankle ${cm(an[2] - kn[2])} cm ahead of the knee, the feet ${cm(satFeet)} cm up (${cm(stood)} standing), the arms asked ${asked.toFixed(3)} at the most`);
+      let most = 0, least = 0; for (const F2 of sl.frames) { const P = F2.solved.P, d = P[R.legL.foot * 3 + 2] - P[R.legL.low * 3 + 2]; most = Math.max(most, d); least = Math.min(least, d); }
+      ok(most - (an[2] - kn[2]) > 0.02 * b.shank && least > -0.005, `${n}: sat there, its legs swing a little and never behind the knee`, `${cm(most)} cm ahead at the most, ${cm(least)} at the least`); }
+    else ok(Math.abs(satFeet - stood) < 0.004 && slope < 20, `${n}: its feet stay on the floor as it sits`, `the thighs slope ${slope.toFixed(0)} degrees, the lowest foot joint ${cm(satFeet)} cm (${cm(stood)} standing)`);
+    // getting on and off: no leg asked for more than its length, nothing through the floor or into what it sits on
+    { let leg = 0, low = 9, deep = 0, where = "";
+      for (const nm of FURN) { const c = C[nm], sb = c.meta.seat || c.meta.bed;
+        for (let f = 0; f < c.frames.length; f++) { const I = c.frames[f].pose.info; leg = Math.max(leg, I.reach_l || 0, I.reach_r || 0);
+          for (const [j, lab] of [[R.legL.foot, "l ankle"], [R.legR.foot, "r ankle"], [R.legL.low, "l knee"], [R.legR.low, "r knee"], [R.legL.ball, "l toes"], [R.legR.ball, "r toes"], [R.armL.hand, "l wrist"], [R.armR.hand, "r wrist"]]) { const q = at(c, f, j), d = Math.min(sb.height - q[1], sb.edge - q[2]); if (d > deep) { deep = d; where = `${nm} ${lab} frame ${f}`; } }
+          for (const j of [R.legL.foot, R.legR.foot, R.legL.ball, R.legR.ball]) low = Math.min(low, at(c, f, j)[1]); } }
+      ok(leg < 1.0006 && low > 0.004 && deep < 0.012, `${n}: getting onto a seat and a bed and off them, no leg is asked for more than its length, no foot is under the floor, and no ankle, knee, toe or wrist goes into what it sits on`,
+        `the legs asked ${leg.toFixed(4)}, the lowest foot joint ${cm(low)} cm, ${cm(deep)} cm into it at the most${where ? ` (${where})` : ""}`); }
+    // asleep: on the bed, not in it
+    { const c = C.sleep_loop, Hb = F.bed; let low = 9, lw = ""; for (let j = 0; j < R.J.length; j++) { const nm = R.J[j].name; if (/^soft_|_null$|^root$|^body_world$/.test(nm)) continue; const y = at(c, 0, j)[1]; if (y < low) { low = y; lw = nm; } }
+      ok(low > Hb - 0.002 && at(c, 0, R.head)[1] > Hb + 0.04 * Math.min(1, b.height / 1.63) && at(c, 0, R.pelvis)[2] < c.meta.bed.edge - 0.1 * Math.min(1, b.height / 1.63), `${n}: asleep, it lies on the bed: no joint under its top, well back from its edge`, `the lowest ${cm(low - Hb)} cm over it (${lw}), the pelvis ${cm(c.meta.bed.edge - at(c, 0, R.pelvis)[2])} cm in from the edge`); }
+    // doors: the hand gets to the handle
+    { let worst = 0, asked = 0, up = 0, heel = 0;
+      for (const nm of ["open_push", "open_pull", "open_slide", "open_push_l", "open_pull_l", "open_slide_l"]) { const c = C[nm], s = /_l$/.test(nm) ? "l" : "r", A = R.arm(s), g = Math.round(c.events.find(e => e.name === "grab").t * c.fps);
+        worst = Math.max(worst, V.dist(at(c, g, A.hand), c.frames[g].c.arms[s].hand)); asked = Math.max(asked, c.frames[g].pose.info["armReach_" + s]); up = Math.max(up, (at(c, g, A.hand)[1] - at(c, g, A.up)[1]) / arm); heel = Math.max(heel, at(c, g, R.leg(s).foot)[1] - at(c, 0, R.leg(s).foot)[1]); }
+      ok(worst < 0.015 && asked < 1.0006 && up < 0.62 && (F.handle - sy < 0.3 * arm || heel > 0.002), `${n}: at a door, its hand is on the handle as it takes hold of it, the arm not asked for more than its length; a handle well over its shoulder is reached up to on its toes`,
+        `${cm(worst)} cm off at the most, the arm asked ${asked.toFixed(3)}, the handle ${cm(F.handle - sy)} cm ${F.handle > sy ? "over" : "under"} its shoulder, the heels up ${cm(heel)} cm`); }
+    if (!adult) says.push(`${n} ${(b.height * 100).toFixed(0)} cm: ${high ? `gets up onto a ${cm(F.seat)} cm seat, feet ${cm(satFeet)} cm off the floor` : `sits on a ${cm(F.seat)} cm seat`}, handle ${cm(F.handle)} cm`);
+  }
+  // her own size instead: a child's chair, feet on the floor as a person's are
+  { const { ctx } = others.child_small, set = settingsFor(ctx.glb, ctx.body, { furniture: "own" }), C2 = all(ctx, set, ["sit", "open"]), R = ctx.rig, F = furniture(ctx.body, set), feet = c => { let lo = 9; for (const F2 of c.frames) for (const j of [R.legL.foot, R.legR.foot, R.legL.ball, R.legR.ball]) lo = Math.min(lo, F2.solved.P[j * 3 + 1]); return lo; };
+    ok(F.mode === "own" && F.seat < 0.32 && !C2.sit_loop.meta.seat.high && C2.sit_loop.meta.seat.height === F.seat && Math.abs(feet(C2.sit_loop) - feet(others.child_small.C.idle_loop)) < 0.004 && C2.open_push.meta.door.handle[1] === F.handle && F.handle < 0.7,
+      "a small child with furniture of her own size: a seat by her knee that she sits on with her feet on the floor, a handle by her shoulder", `seat ${cm(F.seat)}, handle ${cm(F.handle)} cm`);
+    const P = furniture(ctx.body, { furniture: "person" }), S1 = furniture(ctx.body, { seat: 0.3, handle: 0.8 }); ok(P.seat === 0.45 && P.handle === 1 && P.mode === "person" && S1.seat === 0.3 && S1.handle === 0.8 && S1.bed === 0.45, "a person's whatever her size, and a size said outright, are what's asked"); }
+  say("furniture: " + says.join("; "));
 }
 
 // ---- 7. the bake --------------------------------------------------------------------------------------------------------------
@@ -376,7 +440,8 @@ for (const [n, ctx] of Object.entries(ctxs)) {
   const m = j.meshes[j.nodes[skinNode].mesh]; ok(m.primitives[0].targets.length === 1 && m.weights[0] === 0.25 && m.extras.targetNames[0] === "jawDrop", "baked: the skin's face shape and its weight as they were");
   ok(j.nodes.every(n => !(n.matrix && joints.has(j.nodes.indexOf(n)))) && j.skins.every(s => s.joints.length === j.skins[0].joints.length), "baked: the bones carry translations (glTF allows no matrix on an animated node), every skin the same bones");
   const rec = record(back), pub = j.nodes[skinNode].extras.hsMotion; ok(rec && rec.clips.walk_loop.speed > 1 && rec.clips.sit_down.seat && rec.clips.open_push.door && rec.clips.reach_low.reach && rec.palm && pub && pub.clips && !pub.undo, "baked: its record (speeds, events, where a seat, a handle and a reach are) in the scene and on the skin's node");
-  ok(rec.version === 3 && pub.soft.length === 9 && pub.soft.every(b => b.axis.length === 3 && Math.abs(Math.hypot(...b.axis) - 1) < 1e-3 && b.length > 0.04 && b.stiffness > 0.1 && b.damping >= 0 && b.gain > 0 && b.limit > 0) && pub.settings.bounce === 0.5,
+  ok(rec.furniture && rec.furniture.mode === "fit" && rec.furniture.seat === 0.45 && rec.furniture.handle === 1 && pub.furniture && pub.settings.furniture === "fit", "baked: the furniture its clips are made for is in its record", JSON.stringify(rec.furniture));
+  ok(rec.version === 4 && pub.soft.length === 9 && pub.soft.every(b => b.axis.length === 3 && Math.abs(Math.hypot(...b.axis) - 1) < 1e-3 && b.length > 0.04 && b.stiffness > 0.1 && b.damping >= 0 && b.gain > 0 && b.limit > 0) && pub.settings.bounce === 0.5,
     "baked: each soft bone's rod and JiggleBones' numbers for it in the record, for whoever swings it live", pub.soft.filter(b => /_l$|belly/.test(b.bone)).map(b => `${b.bone.replace("soft_", "")} ${b.stiffness.toFixed(2)}/${b.damping.toFixed(1)}`).join(", "));
   ok(pub.clips.crawl_loop.speed > 0.1 && pub.clips.scuttle_loop.speed > pub.clips.crawl_loop.speed && pub.clips.scare_lunge.scare.peak > 0 && pub.clips.scare_lunge.scare.show > pub.clips.scare_lunge.scare.peak && pub.clips.punch.punch.at.length === 3
     && pub.clips.swing.swing.axis.length === 3 && pub.clips.peek_out.peek.edge.length === 3 && pub.clips.eat.eat.mouth.length === 3 && pub.clips.knock.knock.at.length === 3 && pub.clips.punch_l.punch.hand === "l",

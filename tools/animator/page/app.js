@@ -7,6 +7,7 @@ import { parseGlb } from "/core/glb.js";
 import { attach, makers, makeClip, settingsFor, DEFAULTS, VERSION } from "/core/animate.js";
 import { summary } from "/core/measure.js";
 import { params } from "/core/gait.js";
+import { furniture } from "/core/acts.js";
 
 const $ = s => document.querySelector(s), status = (t, c = "") => { $("#status").textContent = t; $("#status").className = "status " + c; };
 const KIND_LABEL = { idle: "Idle", walk: "Walk", run: "Run", sit: "Sit", sleep: "Sleep", open: "Open a door", reach: "Reach",
@@ -74,13 +75,17 @@ async function load(name) {
     status(`${name}: ${stale ? `baked by an older Animator (${info.clips.length} clips): Bake again for what you see here` : info.baked ? `baked (${info.clips.length} clips)` : info.last ? "exported again since its bake: Bake to put its clips back" : "not baked yet"} · ${info.where || ""}`, info.baked && !stale ? "good" : "");
   } catch (e) { status(`${name}: ${e.message}`, "bad"); console.error(e); }
 }
-function sliders() { for (const k of ["style", "strength", "weight", "soft", "bounce"]) $("#" + k).value = S.set[k]; }
+function sliders() { for (const k of ["style", "strength", "weight", "soft", "bounce"]) $("#" + k).value = S.set[k]; $("#furniture").value = S.set.furniture || "fit"; }
 function readout() {
   const b = summary(S.ctx.body), p = params(S.ctx.body, S.set), word = p.build < -0.25 ? "light" : p.build < 0.35 ? "ordinary" : p.build < 1.25 ? "heavy" : "very heavy";
   $("#body").innerHTML = `<div><b>${b.height} cm</b>, about <b>${b.weight} kg</b> <span class="dim">(${b.from === "recipe" ? "from her own unclothed body" : "from her meshes"})</span></div>
     <div>bust ${b.bust} · waist ${b.waist} · hips ${b.hips} cm, thigh ${b.thigh} cm, legs ${b.leg} cm</div>
     <div>Moves as a <b>${word}</b> body <span class="dim">(build ${p.build.toFixed(2)})</span></div>
     <div class="dim">Soft: ${S.ctx.plan.map(x => `${x.name.replace("soft_", "").replace("_", " ")} ${x.amount.toFixed(1)}`).join(", ") || "none"}</div>`;
+  // what her clips are made for, and what that is to her: a seat over 1.18 of her own she gets up onto
+  const F = furniture(S.ctx.body, S.set), own = furniture(S.ctx.body, { furniture: "own" }), cm = v => Math.round(v * 100), high = F.seat > 1.18 * own.seat + 1e-6;
+  $("#furn").innerHTML = `<div>seat <b>${cm(F.seat)}</b> · bed <b>${cm(F.bed)}</b> · handle <b>${cm(F.handle)}</b> · table <b>${cm(F.table)}</b> cm</div>
+    <div class="dim">her own size: ${cm(own.seat)}, ${cm(own.bed)}, ${cm(own.handle)}, ${cm(own.table)} cm${high ? ". The seat is high for her: she gets up onto it, her legs hang" : ""}</div>`;
 }
 // ---- clips --------------------------------------------------------------------------------------------------------------
 function clipsOf(kind) {
@@ -138,6 +143,7 @@ requestAnimationFrame(frame);
 // ---- the controls -------------------------------------------------------------------------------------------------------
 let wait = 0;
 for (const k of ["style", "strength", "weight", "soft", "bounce"]) $("#" + k).addEventListener("input", e => { S.set[k] = +e.target.value; clearTimeout(wait); wait = setTimeout(() => { if (S.ctx) { readout(); show(S.kind, true); } }, 40); });
+$("#furniture").onchange = e => { S.set.furniture = e.target.value; if (S.ctx) { readout(); show(S.kind, true); } };
 $("#reset").onclick = () => { S.set = { ...DEFAULTS, style: S.auto }; sliders(); readout(); show(S.kind, true); };
 $("#play").onclick = () => { S.playing = !S.playing; $("#play").textContent = S.playing ? "❚❚" : "▶"; };
 $("#scrub").addEventListener("input", e => { const c = S.list.find(x => x.name === S.clip); if (c) { S.playing = false; $("#play").textContent = "▶"; S.t = +e.target.value * c.secs; } });

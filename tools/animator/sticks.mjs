@@ -3,17 +3,21 @@
 // right) and from the front, her left limbs blue, her right red, the floor a line.
 //   node tools/animator/sticks.mjs --kind sneak [--body normal_woman] [--frames 8] [--views side,front] [--scale 150] [--out sticks.png]
 //   node tools/animator/sticks.mjs --clips punch,swing --set strength=1
+//   node tools/animator/sticks.mjs --body child_small --kind sit --set furniture=own      (a word for a setting)
+//   node tools/animator/sticks.mjs --body hag --clips lie_down --window 2.1,2.7           (only those seconds of it)
+// Behind her, what the clip is made for: the seat or the bed, the door and its handle, the thing she reaches for.
 // Draws the three test bodies' skeletons (bodies.mjs); the pictures are for whoever is writing a clip.
 import { writeFileSync } from "fs";
 import { createRequire } from "module";
-import { testBody, bodyGlb, mhrRigBuffer, TEST_BODIES, CREATURE_BODIES } from "./bodies.mjs";
+import { testBody, bodyGlb, mhrRigBuffer, TEST_BODIES, CREATURE_BODIES, CHILD_BODIES } from "./bodies.mjs";
 import { parseGlb } from "./core/glb.js";
 import { prepare, makers, makeClip, settingsFor } from "./core/animate.js";
 
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i > 0 ? process.argv[i + 1] : d; };
 const bodyName = arg("body", "normal_woman"), kind = arg("kind", null), only = arg("clips", null), N = +arg("frames", 8), out = arg("out", "sticks.png"), SC = +arg("scale", 150), VIEWS = arg("views", "side,front").split(",");
-const given = Object.fromEntries((arg("set", "") || "").split(",").filter(Boolean).map(kv => { const [k, v] = kv.split("="); return [k, +v]; }));
-if (!TEST_BODIES[bodyName] && !CREATURE_BODIES.includes(bodyName)) { console.error(`no test body "${bodyName}": ${Object.keys(TEST_BODIES).concat(CREATURE_BODIES).join(", ")}`); process.exit(1); }
+const WIN = arg("window", null) ? arg("window", "").split(",").map(Number) : null;
+const given = Object.fromEntries((arg("set", "") || "").split(",").filter(Boolean).map(kv => { const [k, v] = kv.split("="); return [k, isNaN(+v) ? v : +v]; }));   // (furniture=own: a word)
+if (!TEST_BODIES[bodyName] && !CHILD_BODIES[bodyName] && !CREATURE_BODIES.includes(bodyName)) { console.error(`no test body "${bodyName}": ${Object.keys(TEST_BODIES).concat(Object.keys(CHILD_BODIES), CREATURE_BODIES).join(", ")}`); process.exit(1); }
 
 const ctx = prepare(parseGlb(bodyGlb(testBody(bodyName))), { mhrRig: mhrRigBuffer() }), { rig, body, X, plan } = ctx, set = settingsFor(ctx.glb, body, given);
 let list = makers(rig, body, set, kind ? kind.split(",") : null, X); if (only) { const want = only.split(","); list = list.filter(m => want.includes(m.name)); }
@@ -32,11 +36,18 @@ for (const m of list) {
   svg += `<text x="6" y="${y0 + 16}" font-size="14" font-family="monospace">${m.name}  ${((m.loop ? n : n - 1) / m.fps).toFixed(2)} s${m.loop ? " loop" : ""}${m.speed ? `  ${m.speed.toFixed(2)} m/s` : ""}  ${(m.events || []).map(e => `${e.name}@${e.t.toFixed(2)}`).join(" ")}  reach ${c.stats.reach}</text>`;
   y0 += 22;
   for (let k = 0; k < cols; k++) {
-    const f = Math.min(n - 1, Math.round(k * (m.loop ? n : n - 1) / (m.loop ? cols : cols - 1))), P = F[f].solved.P, p = j => [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]];
+    const f = WIN ? Math.min(n - 1, Math.round((WIN[0] + (WIN[1] - WIN[0]) * k / Math.max(1, cols - 1)) * m.fps)) : Math.min(n - 1, Math.round(k * (m.loop ? n : n - 1) / (m.loop ? cols : cols - 1))), P = F[f].solved.P, p = j => [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]];
     for (const [view, ox] of VIEWS.map((v, vi) => [v, vi * (cols * cell.w + 20) + k * cell.w])) {
       const cx = ox + cell.w / 2, fy = y0 + cell.h - PAD * SC * 0.5, at = j => { const q = p(j); return [cx + (view === "side" ? q[2] : q[0]) * SC, fy - q[1] * SC]; };
       const line = (js, col, w = 2.2) => js.length > 1 ? `<polyline fill="none" stroke="${col}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round" points="${js.map(j => at(j).map(v => v.toFixed(1)).join(",")).join(" ")}"/>` : "";
       svg += `<line x1="${ox + 4}" y1="${fy}" x2="${ox + cell.w - 4}" y2="${fy}" stroke="#999" stroke-width="1"/>`;
+      // what the clip is made for, behind her: the seat or the bed she ends up on (from her side: its front edge and
+      // its top; from the front: its top), the door's handle, where the thing she reaches for is
+      { const mt = m.meta || {}, sb = mt.seat || mt.bed, px = v => (cx + v * SC).toFixed(1), py = v => (fy - v * SC).toFixed(1), tone = "#d9cfbd";
+        if (sb && view === "side") svg += `<rect x="${px(sb.edge - (mt.bed ? 0.9 : 0.45))}" y="${py(sb.height)}" width="${((mt.bed ? 0.9 : 0.45) * SC).toFixed(1)}" height="${(sb.height * SC).toFixed(1)}" fill="${tone}"/>`;
+        if (sb && view !== "side") svg += `<rect x="${px(mt.bed ? -0.5 : -0.25)}" y="${py(sb.height)}" width="${((mt.bed ? 1.9 : 0.5) * SC).toFixed(1)}" height="${(sb.height * SC).toFixed(1)}" fill="${tone}"/>`;
+        const dot = mt.door ? mt.door.handle : mt.reach ? mt.reach.at : null;
+        if (dot) svg += `<circle cx="${px(view === "side" ? dot[2] : dot[0])}" cy="${py(dot[1])}" r="4" fill="#c58a1f"/>` + (mt.door && view === "side" ? `<line x1="${px(dot[2] + 0.06)}" y1="${py(0)}" x2="${px(dot[2] + 0.06)}" y2="${py(2.0)}" stroke="${tone}" stroke-width="3"/>` : ""); }
       // (the far side first: from her right side her left limbs are behind; from the front neither is)
       svg += line(L.leg, "#5b8def") + line(L.arm, "#5b8def") + line(L.thumb, "#5b8def", 1.2) + line(SPINE, "#222", 2.8) + line(R.leg, "#e0524a") + line(R.arm, "#e0524a") + line(R.thumb, "#e0524a", 1.2);
       const hd = at(ix("c_head")), ht = at(ix("c_head_null")), r = Math.hypot(ht[0] - hd[0], ht[1] - hd[1]) * 0.55, mx = (hd[0] + ht[0]) / 2, my = (hd[1] + ht[1]) / 2;
