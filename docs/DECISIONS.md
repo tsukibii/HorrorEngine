@@ -2,6 +2,50 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-14, animations v3: creatures' clips, a head that follows you, a grip on props, fights (the user)
+
+After the pull request for the markers (`marker-system`, tsukibii/HorrorEngine#30):
+
+- **"Then make a new branch called even more animations-v3."** Read as the branch `even-more-animations-v3` (the
+  spaces as hyphens, as `more-body-presets` and `more-shotgun-shells` were named), made from `marker-system` so the
+  new work can use the markers.
+- **"In our animation tool add animations for creatures (our monsters) maybe some crawls, sneaks, peaking as well as a
+  generic lunge jump scare ones (ones that briefly appear) ."**
+- **"Can you also figure out how to do / toggle semi ik animations where the npc head tracks the user for a given
+  adjustable range (let's say 160 degrees with front facing bing 0 so the 160 degrees is 80 degrees left and 80
+  degrees right) ."**
+- **"See if you can figure out a gizmo we can add to props and ajist to handle size so for pickup object animations we
+  can make it look like the npc actually picked it up e.g to eat or drink."**
+- **"Can you also add some generic ik inspired fight animation , one cor punch which tracks the player or npc it's
+  trying to punch, or swing object e.g a baseball bat or any object it's carrying )."**
+- **"Add any more genetic animations you think that would be required, e.g a sneak ."**
+
+What follows from it (the design and the plan: docs/ANIMATOR_V3.md):
+
+- **The clips are made, as every Animator clip is** (from the body and the five sliders, nothing recorded), in the
+  Animator's page under new kinds beside Idle, Walk, Run, Sit, Sleep, Door and Reach: **Sneak** (a careful crouched
+  walk and its crouch), **Crawl** (hands and knees, and stopped on all fours), **Creature** (a hunched creep, its
+  stance, a fast scuttle on hands and feet), **Peek** (out round a corner, held, back; both sides), **Scare** (the
+  ones that briefly appear: a lunge, a loom, a head snap, a claw up from the crawl: each starts already coiled, so the
+  first frame she's shown in is not a person standing), **Fight** (a punch, a swing of whatever she holds, being
+  hit), **Eat and drink**, and **Acting** (looking round, a knock, cowering). Baked with the others into her .glb.
+- **"Semi IK" is a layer over a baked clip, never a clip of its own**: the clip is played as made and a
+  SkeletonModifier3D corrects a few bones after it. Two of them, in the Look plugin beside `HSSoftJiggle` (which went
+  there the same way: DECISIONS 2026-11-13, the hands and the jiggle), so a by-hand game, the markers and an export
+  all have them: **`HSHeadTrack`** (her head, neck, a share of her chest and her eyes turned to the player or
+  anything else, within `range_degrees`: 160 by default, 80 to each side of straight ahead, 0 the way she faces;
+  past it she lets go, or holds at the limit; a switch) and **`HSHandIK`** (a point that rides her hand brought onto
+  a point in the world as much as a weight says: her palm onto a thing's grip as she takes it, the thing's mouth onto
+  her mouth as she eats or drinks, her fist onto who she punches, the end of a bat onto who she swings at; and her
+  fingers closed round a handle of a given thickness).
+- **The gizmo is a node, `HSGrip`**, put under a prop where a hand takes it: the handle's thickness and length
+  dragged by handles in the 3D view with a hand drawn round it, where the mouth goes when it's eaten or drunk from,
+  where it hits when it's swung. A prop with none is still held, by a grip guessed from its size.
+- **A punch or a swing "tracks" in two ways**: she turns to who she's hitting until the blow is thrown, and the arm's
+  IK carries the fist (or the thing's end) the rest of the way to them, at whatever height they are.
+- **In the markers**: paces for a Walk (sneak, crawl, creep, scuttle), eating and drinking on a Grab, an Attack
+  card, *Her head follows you* on any marker with its range, and a jump scare from one card.
+
 ## 2026-11-14, the markers' conversations: the prior style, not a new panel (the user, on the first picture of it in play)
 
 The picture: Alex in the room and, at the foot of the screen, a dark rounded panel with "Alex", "Looking for
