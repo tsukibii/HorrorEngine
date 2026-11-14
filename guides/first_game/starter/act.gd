@@ -15,7 +15,8 @@ signal started
 signal finished
 
 @export var who: NodePath                              ## the character; empty: this node's parent
-@export_enum("walk_to", "run_to", "sit", "stand_up", "sleep", "wake_up", "open", "reach", "pick_up", "play", "face", "idle") var act := "walk_to"
+@export_enum("walk_to", "run_to", "sit", "stand_up", "sleep", "wake_up", "open", "reach", "pick_up", "play", "face", "idle",
+	"sneak_to", "crawl_to", "creep_to", "scuttle_to", "rise", "peek", "scare", "punch", "swing", "eat", "drink", "look_around", "knock", "cower", "head_follow", "head_free") var act := "walk_to"
 @export var target: NodePath                           ## where, or what
 @export var also: NodePath                             ## open: the door; sleep: the pillow
 @export_enum("push", "pull", "slide") var door_opens := "push"
@@ -23,6 +24,9 @@ signal finished
 @export var loop := false                              ## play: looped until she's asked for something else
 @export var left_hand := false
 @export var keep_in_hand := false                      ## pick_up: it stays in her hand
+@export_enum("lunge", "loom", "snap", "claw") var scare_kind := "lunge"   ## scare: which
+@export var then_hide := false                         ## scare: she's hidden when it's been shown
+@export var secs := 2.5                                ## peek: how long she holds it
 @export_group("When")
 @export var needs := ""                                ## the Story's words: by itself when they come to hold
 @export var again := false                             ## every time they come to hold (else once)
@@ -107,6 +111,37 @@ func fire(_a = null, _b = null) -> void:
 			what = "face"
 		"idle":
 			m.idle()
+		"sneak_to", "crawl_to", "creep_to", "scuttle_to":
+			m.go_low(t, act.trim_suffix("_to"))
+			what = act.trim_suffix("_to")
+		"rise":
+			m.rise()
+			what = "rise"
+		"peek":
+			m.peek(t, secs, left_hand)
+			what = "peek"
+		"scare":
+			m.scare(scare_kind, t, then_hide)
+			what = "scare"
+		"punch", "swing":
+			m.call(act, t, left_hand)
+			what = act
+		"eat", "drink":
+			m.call(act, t, left_hand)
+			what = act
+		"look_around":
+			m.look_around()
+			what = "look"
+		"knock":
+			m.knock(t, left_hand)
+			what = "knock"
+		"cower":
+			m.cower(true)
+			what = "low"
+		"head_follow":
+			m.head_follow(true, t)
+		"head_free":
+			m.head_follow(false)
 	if what != "":                                        # till she's done it; asked for something else meanwhile, this act is over and nothing follows
 		var got := [false]
 		var heard := func(w: String) -> void:

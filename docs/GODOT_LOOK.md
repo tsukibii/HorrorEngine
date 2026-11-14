@@ -1685,6 +1685,83 @@ plugins style": JiggleBones (the asset library's 1595; BauxiteDev, Cory Petkovse
   degrees live where her run's clip carries 19.3; 16 just after she stops, 1 three seconds on; a clip that only
   hops her, 14 degrees live and nothing without.
 
+## 5x. A head that follows you (`head_track.gd`, `HSHeadTrack`; DECISIONS 2026-11-14, animations v3)
+
+The user: "semi ik animations where the npc head tracks the user for a given adjustable range (let's say 160 degrees
+with front facing being 0 so the 160 degrees is 80 degrees left and 80 degrees right)". docs/ANIMATOR_V3.md §3.
+
+A SkeletonModifier3D under her skeleton. Her animation plays as it was made; after it, each frame, a share of her
+upper spine, her neck, her head and her eyes are turned toward a target: the player's eye (the camera in view) unless
+`target` names a node (a node with a camera under it is looked at there, one with a skeleton at its head, one with
+`aim_point()` where that says) or `look_at_point` gives a place.
+
+| | |
+|---|---|
+| `range_degrees` | 160: the whole arc, half to each side of straight ahead; **0 is the way she faces** (her own forward, not where a clip has turned her chest) |
+| `up_degrees`, `down_degrees` | 40 and 45 |
+| `beyond` | the target past the range: *Lets go* (her head is her animation's again) or *Holds at the limit*; 6 degrees of slack once she's following, so she doesn't flick at the edge |
+| `follow`, `amount` | the switch (eased over 0.3 s, never snapped) and how much of the way |
+| `turn_speed`, `ease_secs`, `snappy` | never faster than 260 degrees a second, softened over 0.16 s; `snappy`: where she looks is taken up in sudden steps (a creature) |
+| `body_share` | 0.22 of a turn is the upper spine's (`c_spine2`, `c_spine3`), the rest the neck's (0.38 of it) and the head's |
+| `eyes` | her eye bones lead by up to 20 degrees across and 13 up and down, and come back to straight as her head arrives |
+| `max_distance` | 12 m |
+
+How: where her animation alone has her face pointing is read off the head bone (its own space: the model's `forward`,
++Z for a Studio export, carried by the bone); the target's bearing from her head is clamped to the range; the tracked
+angles go toward it by an exponential ease capped at the speed; the difference from the animation's is shared out down
+the chain, parents first, about her own up for the yaw and about the level axis across where she then faces for the
+pitch (`set_bone_global_pose`). Godot rolls a modifier's work back after each frame, so with `follow` off she is
+exactly her clip again and nothing accumulates; a BoneAttachment3D on her head is where the turned head shows.
+`HSHeadTrack.attach(character)` puts one under her skeleton (before an `HSHandIK`: a hand brought to her mouth wants
+her head where it ends up); the starter kit's `motion.gd` `head_follow()` and a marker's *Her head follows you* call it.
+
+Measured (GDMOTION3, the normal woman): you 40 degrees to her left, her head is turned 40.4; at 75, 75.8; at -60,
+-61.0; past 80 it lets go (her animation's 1.9) or holds at 80.0; her chest takes 8.1 degrees of a 40 degree turn;
+never faster than 242 degrees a second; up 40, down 45; her eyes 16 degrees ahead of her head a tenth of a second
+after you move.
+
+Godot 4.7 has a `LookAtModifier3D` of its own (one bone a node, a limit that is also the whole arc). This is one
+node for the whole chain, measured from her facing, with both behaviours past the range.
+
+## 5y. A hand brought the rest of the way, and closed round what it holds (`hand_ik.gd` `HSHandIK`, `grip.gd` `HSGrip`, `grip_gizmo.gd`; the same day)
+
+The user: "a gizmo we can add to props and adjust to handle size so for pickup object animations we can make it look
+like the npc actually picked it up e.g to eat or drink", "punch which tracks the player or npc it's trying to punch,
+or swing object e.g a baseball bat or any object it's carrying". docs/ANIMATOR_V3.md §4, §5.
+
+**`HSGrip`**, a `@tool` Node3D put under a prop where a hand takes it. Its place is the middle of what the hand closes
+round; **+Y runs along the handle toward the thumb, +Z points at the palm**. `shape` (Handle, Ball, Pinch), `size`
+(how thick it is there), `length`, `hand` (either, right, left), `use` (just held, eaten, drunk from), `mouth` (where
+the mouth goes), `tip` (where it hits when it's swung). In the 3D view its gizmo (`grip_gizmo.gd`, registered by
+plugin.gd) draws the handle at its size, a hand round it with its fingers wrapped as they will be, the mouth and the
+tip, and four handles to drag, each undoable. `HSGrip.grip_of(thing)` is what a game asks: the node's numbers in the
+thing's own space, or `guess`: its longest side the handle, a round thing in the whole hand.
+
+**`HSHandIK`**, a SkeletonModifier3D for both hands, working from her skeleton's rest pose alone (MHR's bones, a
+Mixamo skeleton's as far as they go): no record, so a character baked before it has it too.
+
+- `grip_frame(side, size, shape)`: where a grip sits in her hand, in the wrist bone's own space: the palm's middle
+  just behind the knuckles, a radius and 2 mm out of the palm, +Y along the knuckles toward the first finger, +Z into
+  the palm. A held thing is put so its grip is there.
+- `grip(side, size, shape)`: her fingers closed round a handle that thick. Each finger is wrapped in the plane it
+  curls in: from its knuckle, each bone is laid along the tangent to a circle (the handle's radius and half a finger)
+  that passes it on the far side, joint by joint, within what a joint bends (92, 112, 80 degrees). The thumb is laid
+  as the Animator lays a fist's (pose.js): all of it round a thin handle, open round a can.
+- `bring(side, {point, target, peak, rise, hold, fall, aim, anchor, freeze, peaks, most})`: a point that rides the
+  hand (in the wrist's space) is brought onto a target in the world as much as an envelope over the clip's time says
+  (`at(side, t)`). The arm's two bones are solved again for where the wrist must be, the elbow kept on the side the
+  clip had it; `aim` first turns the hand about `anchor` so the point leads at the target (what she holds pointed at
+  her mouth, or at who she swings at); `freeze`: from the peak on, how far the point had to be moved then is kept (a
+  blow thrown doesn't home; a fist rapping on a door keeps rapping, on the door); `peaks`: a second bite.
+- `mouth()`: between her lips, from the teeth's bone.
+
+Measured (GDMOTION3): a bottle 6.5 cm thick and a bat 3.5 cm picked up: her hand closes 0.0 cm from the grip, the
+thing held 0.0 mm from her hand's own grip frame, fingertips 9 to 16 mm off the bottle and 12 to 16 off the bat (a
+fingertip's bone ends 7.5 mm inside its pad), no joint inside either; drinking, the bottle's rim 0.0 cm from her lips,
+tipped 52 degrees; eating, an apple's bitten side 0.0 cm from them at both bites; a punch at someone 1.05 and 1.55 m
+up lands 2.3 and 2.6 cm from them, 2.9 cm when they step 30 cm aside as it's thrown; the end of a swung bat 4.5 cm
+from who it's swung at; knuckles 0.3, 0.1 and 1.1 cm from a spot knocked on.
+
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 
 A street baked in Blender (`tools/street.py bake`, docs/STREET_TEXTURING.md) comes as plain glTF:

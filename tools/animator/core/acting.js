@@ -64,7 +64,8 @@ export function peeking(rig, body, set, X = null) {
 export function mouthing(rig, body, set, X = null) {
   const p = params(body, set), S = stance(rig, body, p, X), base = basePose(rig, body, set, X), sc = p.sc, slow = 1 + 0.15 * p.heavy + 0.15 * p.weak - 0.08 * p.strong;
   // where the wrist goes: so a fist's top is at the lips (the mouth read off the pose it's in)
-  const wristFor = (c, up) => { const m = mouthOf(rig, homeOf(rig, c).pose.solve()); return [m[0] - 0.045 * sc, m[1] - (0.105 - 0.03 * up) * sc, m[2] + (0.085 - 0.012 * up) * sc]; };
+  // (`up`: 0 a bite, 1 a sip: the hand then comes up level with the mouth and further out in front of it, so what it holds lies tipped toward her and not stood under her chin)
+  const wristFor = (c, up) => { const m = mouthOf(rig, homeOf(rig, c).pose.solve()); return [m[0] - 0.045 * sc, m[1] - (0.105 - 0.04 * up) * sc, m[2] + (0.09 + 0.035 * up) * sc]; };
   const body_ = (k, o = {}) => { const c = leanFrame(rig, body, p, S, base, { k: sm(0, 1, k), pitch: (o.pitch || 0) * DEG, yaw: -3 * DEG * k, look: [(o.hp || 0) * DEG, (o.hy || 0) * DEG] }); c.breath = 0; return c; };
   const arm = (c, k, up, o = {}) => { const home = homeOf(rig, c), to = wristFor(c, up), rest = [home.shoulder.r[0] + 0.02 * sc, home.shoulder.r[1] - 0.3 * sc, home.shoulder.r[2] + 0.2 * sc], at = o.low ? mixA(to, rest, o.low) : to;
     c.arms.r = armTo(home, "r", at, k, { palm: [0.8, 0.12 + 0.3 * up, -0.58], pole: [-0.55, -0.8, -0.2], curl: 1.05, wrist: (6 + 16 * up) * DEG, via: [home.shoulder.r[0] - 0.02 * sc, home.shoulder.r[1] - 0.36 * sc, home.shoulder.r[2] + 0.22 * sc] }); return c; };

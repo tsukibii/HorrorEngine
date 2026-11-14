@@ -170,10 +170,10 @@ swings at.
 - [x] Clips: eat, drink; look_around, knock, cower
 - [x] `animate.js` kinds, `VERSION` 3, the page's kinds and labels; ANIMATOR holds each new clip to its rules;
       ANIMATORPAGE
-- [ ] `HSHeadTrack`; measured (the range, both behaviours past it, the switch, the speed)
-- [ ] `HSHandIK`: the arm's IK and the envelope; the fingers' wrap; measured
-- [ ] `HSGrip` and its gizmo; a held thing sits in the hand by it; a grip guessed
-- [ ] `motion.gd`: the new gaits, peek, scare, punch, swing, eat, drink, the small acts, `head_follow`; `act.gd`;
+- [x] `HSHeadTrack`; measured (the range, both behaviours past it, the switch, the speed)
+- [x] `HSHandIK`: the arm's IK and the envelope; the fingers' wrap; measured
+- [x] `HSGrip` and its gizmo; a held thing sits in the hand by it; a grip guessed
+- [x] `motion.gd`: the new gaits, peek, scare, punch, swing, eat, drink, the small acts, `head_follow`; `act.gd`;
       `moves.gd`; GDMOTION
 - [ ] The markers: paces, eat and drink, Attack, the head, Jump scare; MARKERS, MARKERSEDITOR
 - [ ] Sheets of pictures, the guides (the Animator's, the markers'), CLAUDE.md, CONTINUE, LESSONS; every check
@@ -204,6 +204,24 @@ Measured by ANIMATOR on the three test bodies (the skinny man, the normal woman,
   behind the ribs to straight out in a fifth of a second.
 - **The swing lands with what's in the fist pointing up and ahead** (`meta.swing.axis`: 0.2, 0.8, 0.55 for the normal
   woman): the palm faces her own middle all the way, as a hand holds a hammer.
+
+### 8.2 In Godot (GDMOTION3: `python tools/godot/motion_check.py v3`)
+
+- **The head** (docs/GODOT_LOOK.md §5x has the table): at 40 degrees her head is turned 40.4, at 75 75.8; past 80 it
+  lets go, or holds at 80.0; the chest takes 8 of a 40 degree turn; 242 degrees a second at the most; the eyes lead.
+- **The grip** (§5y): a thing is held 0.0 mm from her hand's own grip frame, her fingertips 9 to 16 mm off a bottle's
+  surface and 12 to 16 off a bat's; the bottle's rim at her lips tipped 52 degrees; an apple's bitten side at her lips
+  at both bites, then gone.
+- **Blows**: a punch lands 2.3 and 2.6 cm from someone 1.05 and 1.55 m up; she stands nearer for someone above or
+  below her shoulder (`_reach_at`: her arm is no longer); 2.9 cm from someone who stepped 30 cm aside as it was
+  thrown; a swung bat's end 4.5 cm from who it's swung at (the bat is turned to point at them, then carried); at you
+  it stops 21 cm short of your eye; someone with a Motion node of their own reels (`take_hit`).
+- **What a skeleton does with a modifier's work**: rolls it back after the frame. Outside the modifier a bone reads as
+  its animation left it; a BoneAttachment3D follows the modified pose, so a held thing follows the corrected hand,
+  and the checks read bones through attachments (made a frame before they're read).
+- **A finger's wrap needed its angle unwrapped**: the tangent's direction is an `atan2`, the bend the difference from
+  the bone before: past half a turn that difference reads as a bend the other way, clamped to none. The first run's
+  fingers stood 3 to 5 cm off every handle.
 
 ## 9. Not there
 

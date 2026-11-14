@@ -9,6 +9,12 @@
         asked to walk, sleeping with her head on the pillow and waking, a door opened with her hand on its handle, a
         thing picked up from the floor and from a table, acts fired by the Story's words and chained, a clip of your
         own, and moves.gd using her own clips. Ends "GDMOTION ok".
+    python tools/godot/motion_check.py v3 [--reuse] [--quick]
+        animations v3 (docs/ANIMATOR_V3.md) in the same project (motion3_test.gd): her head following the player
+        within its range and letting go past it, the low gaits and what she rests in after, a peek past a wall's edge,
+        a scare thrown and hidden, a thing held by its grip with her fingers round it, drinking and eating with the
+        thing's mouth at hers, a punch and a swing carried onto who they're thrown at, a knock, the acts, moves.gd.
+        Ends "GDMOTION3 ok".
     python tools/godot/motion_check.py shots --glb FILE.glb --clip walk_loop [--n 12] [--view side] [--sheet FILE.jpg]
                                              [--size 480x640] [--wear] [--tag NAME]
         a baked character's clip pictured at n moments on the real mesh in a scratch project, as one sheet
@@ -134,29 +140,33 @@ def check(args):
     """GDMOTION"""
     sys.path.insert(0, str(ROOT / "tools"))
     import godot_byhand as BH
+    v3 = "v3" in args                                        # animations v3's half (motion3_test.gd): the same project, another script
+    NAME, TEST = ("GDMOTION3", "motion3_test.gd") if v3 else ("GDMOTION", "motion_test.gd")
     g = godot_bin()
     if not g:
-        sys.exit("GDMOTION FAILED: no godot (tools/godot_setup.sh on a cloud session)")
+        sys.exit(f"{NAME} FAILED: no godot (tools/godot_setup.sh on a cloud session)")
     proj = Path(args[args.index("--keep") + 1]).resolve() if "--keep" in args else ROOT / "Saved" / "Godot" / "_motion_check"
     if "--reuse" in args and (proj / "motion.json").is_file():
         BH.install(proj, starter=True)
         print(f"  reusing {proj}")
     else:
         if proj.exists() and any(proj.iterdir()) and not (proj / "motion.json").exists():
-            sys.exit(f"GDMOTION FAILED: {proj} has things in it this didn't make: give --keep a new folder")
+            sys.exit(f"{NAME} FAILED: {proj} has things in it this didn't make: give --keep a new folder")
         shutil.rmtree(proj, ignore_errors=True)
         if BH.main(["new", str(proj), "--name", "Motion"]):
-            sys.exit("GDMOTION FAILED: godot_byhand.py new")
+            sys.exit(f"{NAME} FAILED: godot_byhand.py new")
         (proj / "motion.json").write_text("{}", encoding="utf-8")
     (proj / "characters").mkdir(exist_ok=True)
     scratch = ROOT / "Saved" / "Animator" / "check"
     r = subprocess.run(["node", str(ROOT / "tools" / "animator" / "bodies.mjs"), "--out", str(scratch), "normal_woman"], capture_output=True, text=True, timeout=600)
     if "BODIES ok" not in r.stdout:
-        sys.exit("GDMOTION FAILED: the test body: " + (r.stdout + r.stderr)[-1500:])
+        sys.exit(f"{NAME} FAILED: the test body: " + (r.stdout + r.stderr)[-1500:])
     r = subprocess.run(["node", str(ROOT / "tools" / "animator" / "bake.mjs"), str(scratch / "normal_woman.glb"), "--out", str(proj / "characters" / "normal_woman.glb")], capture_output=True, text=True, timeout=600)
     if "BAKE ok" not in r.stdout:
-        sys.exit("GDMOTION FAILED: the bake: " + (r.stdout + r.stderr)[-1500:])
+        sys.exit(f"{NAME} FAILED: the bake: " + (r.stdout + r.stderr)[-1500:])
     for _ in range(3):
+        if "--reuse" in args and "--quick" in args and list((proj / ".godot" / "imported").glob("normal_woman.glb-*.scn")):
+            break                                              # (--quick: the scripts changed, the body didn't: no import)
         subprocess.run([g, "--headless", "--path", str(proj), "--import"], capture_output=True, text=True, timeout=2400)
         if list((proj / ".godot" / "imported").glob("normal_woman.glb-*.scn")):
             break
@@ -166,20 +176,22 @@ def check(args):
              '[node name="Shape" type="CollisionShape3D" parent="Floor"]', 'shape = SubResource("floor")', "",
              '[node name="Story" type="CanvasLayer" parent="."]', 'script = ExtResource("story")', 'tasks = PackedStringArray("key: Someone takes the key.")', ""]
     (proj / "main.tscn").write_text("\n".join(lines), encoding="utf-8")
-    shutil.copy(Path(__file__).with_name("motion_test.gd"), proj / "motion_test.gd")
-    r = subprocess.run([g, "--headless", "--path", str(proj), "--fixed-fps", "60", "-s", "motion_test.gd"], capture_output=True, text=True, timeout=1200)
+    shutil.copy(Path(__file__).with_name(TEST), proj / TEST)
+    more = ["--"] + [x for x in args if x.startswith("--only=")] if any(x.startswith("--only=") for x in args) else []
+    r = subprocess.run([g, "--headless", "--path", str(proj), "--fixed-fps", "60", "-s", TEST] + more, capture_output=True, text=True, timeout=1200)
     got = [ln for ln in r.stdout.splitlines() if ln.startswith("MOTION ")]
     for ln in got:
         if not ln.startswith("MOTION result "):
             print("  " + ln[7:])
     res = next((json.loads(ln.split(" ", 2)[2]) for ln in got if ln.startswith("MOTION result ")), None)
     if res is None:
-        sys.exit("GDMOTION FAILED: Godot said nothing: " + (r.stdout + r.stderr)[-3000:])
+        sys.exit(f"{NAME} FAILED: Godot said nothing: " + (r.stdout + r.stderr)[-3000:])
     errs = list(res.get("errors", []))
-    errs += [f"a script error: {ln.strip()}" for ln in (r.stdout + r.stderr).splitlines() if "SCRIPT ERROR" in ln or "Parse Error" in ln][:8]
+    out = (r.stdout + r.stderr).splitlines()
+    errs += [f"a script error: {ln.strip()} {out[i + 1].strip() if i + 1 < len(out) else ''}" for i, ln in enumerate(out) if "SCRIPT ERROR" in ln or "Parse Error" in ln][:8]
     for e in errs:
         print("ERROR: " + e)
-    print("GDMOTION ok" if not errs else f"GDMOTION FAILED ({len(errs)})")
+    print(f"{NAME} ok" if not errs else f"{NAME} FAILED ({len(errs)})")
     sys.exit(1 if errs else 0)
 
 

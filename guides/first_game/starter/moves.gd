@@ -20,6 +20,9 @@ extends Node
 signal made(count: int)                               ## her clips are ready (count: how many)
 
 const MOVES := ["idle", "walk", "run", "stalk", "crawl", "watch", "peek", "search", "lunge", "kill", "hit"]
+## a character baked by the Animator (animations v3) has clips of her own for these, under the Animator's names
+## (Godot's importer takes "_loop" off a looping clip's name)
+const OWN := {"stalk": ["creep", "creep_loop", "sneak", "sneak_loop"], "crawl": ["crawl_loop"], "peek": ["peek_loop"], "lunge": ["scare_lunge"], "search": ["look_around"], "hit": ["punch"]}
 const FALLBACK := {"stalk": "walk", "crawl": "stalk", "run": "walk", "watch": "idle", "search": "idle", "peek": "watch",
 	"lunge": "run", "kill": "lunge", "hit": "idle"}
 const RETARGET := ["res://kimodo/retarget.gd", "res://addons/horrorstudio_director/kimodo/retarget.gd"]
@@ -90,14 +93,15 @@ func make() -> void:
 	for m in MOVES:
 		if clips.has(m):
 			continue
-		for cand in [m, m + "_loop", m + "-loop"]:
+		for cand in [m, m + "_loop", m + "-loop"] + (OWN.get(m, []) as Array):
 			var found := false
 			for ap in h.find_children("*", "AnimationPlayer", true, false):
 				if ap != _own and (ap as AnimationPlayer).has_animation(cand):
 					var a := (ap as AnimationPlayer).get_animation(cand)
 					if loops.has(m):
 						a.loop_mode = Animation.LOOP_LINEAR
-					var info: Dictionary = (rec.get("clips", {}) as Dictionary).get(m + "_loop", (rec.get("clips", {}) as Dictionary).get(m, {}))
+					var rc := rec.get("clips", {}) as Dictionary
+					var info: Dictionary = rc.get(cand, rc.get(cand + "_loop", rc.get(m + "_loop", {})))
 					clips[m] = {"player": ap, "name": cand, "secs": a.length, "speed": float(info.get("speed", 0.0)), "own": true}
 					found = true
 					break
