@@ -13,7 +13,7 @@ const CondEdit := preload("res://addons/horrorstudio_markers/editor/cond_edit.gd
 const Dial := preload("res://addons/horrorstudio_markers/editor/dial.gd")
 const SwitchEdit := preload("res://addons/horrorstudio_markers/editor/switch_edit.gd")
 const KIND_TITLES := [["appear", "Start here"], ["walk", "Walk (or run)"], ["wait", "Wait (or talk)"], ["sit", "Sit"], ["sleep", "Sleep"], ["grab", "Grab, pick up, open"],
-	["animation", "Animation"], ["event", "Event"], ["disappear", "Disappear"], ["choice", "Choice"], ["repeat", "Repeat"], ["attack", "Attack (a punch, a swing)"], ["scare", "Jump scare"]]
+	["animation", "Animation"], ["event", "Event"], ["disappear", "Disappear"], ["choice", "Choice"], ["repeat", "Repeat"], ["attack", "Attack (a punch, a swing)"], ["scare", "Jump scare"], ["gesture", "Small movement"], ["peek", "Peek"]]
 const STAYS := [["next", "until the next marker can start"], ["secs", "for some seconds"], ["talked", "until you talk"]]
 const HOWS := [["now", "at once"], ["unseen", "when you're not looking"], ["fade", "fading (the look plugin)"]]
 const REBUILD := ["kind", "stay", "action", "loop", "talk", "to_player", "pace", "clip_file", "look", "talks", "face_rules", "fire", "target", "take_secs", "head", "attack_at", "head_at", "scare_kind", "alive"]   # fields that change which rows the form has
@@ -928,6 +928,38 @@ func _pick(n: Object, prop: String, items: Array) -> OptionButton:
 	return ob
 
 
+# a thing carried by its name, typed or picked from the ones the scene has (pickups, shop items, what's handed over)
+func _item(n: Object, prop: String, hint := "") -> Control:
+	var row := HBoxContainer.new()
+	row.name = "F_" + prop
+	var le := LineEdit.new()
+	le.name = "Line"
+	le.text = str(n.get(prop))
+	le.placeholder_text = hint
+	le.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	le.text_submitted.connect(func(t: String) -> void: _put(n, prop, t))
+	le.focus_exited.connect(func() -> void: _put(n, prop, le.text))
+	row.add_child(le)
+	var mb := MenuButton.new()
+	mb.name = "Menu"
+	mb.flat = false
+	mb.icon = Glyphs.icon("down", Color("#C8D2DC"), 12)
+	mb.tooltip_text = "Pick one the scene already has."
+	var pm := mb.get_popup()
+	mb.about_to_popup.connect(func() -> void:
+		pm.clear()
+		pm.add_item("(none)")
+		pm.set_item_metadata(0, "")
+		for nm in plugin.wiring.names("item"):
+			pm.add_item(String(nm))
+			pm.set_item_metadata(pm.item_count - 1, String(nm)))
+	pm.index_pressed.connect(func(i: int) -> void:
+		le.text = str(pm.get_item_metadata(i))
+		_put(n, prop, le.text))
+	row.add_child(mb)
+	return row
+
+
 func _cond(n: Object, prop: String, none: String, about_her := true, waits := true) -> Control:
 	var ce := CondEdit.new()
 	ce.name = "F_" + prop
@@ -1153,7 +1185,19 @@ func _form_marker(m: HSNpcMarker) -> void:
 				_note(b, "Click the + on the path in the 3D view for a bend; drag it. Right-click a bend to delete it.")
 		"grab":
 			var g := _sec("The hand")
-			_row(g, "Does", _pick(m, "action", [["reach", "reach for the pin"], ["pick_up", "pick a thing up"], ["put_down", "put down what's held"], ["open", "open a door"], ["eat", "eat a thing"], ["drink", "drink from a thing"]]))
+			_row(g, "Does", _pick(m, "action", [["reach", "reach for the pin"], ["pick_up", "pick a thing up"], ["put_down", "put down what's held"], ["open", "open a door"], ["eat", "eat a thing"], ["drink", "drink from a thing"],
+				["take_from", "take a thing from you"], ["give_to", "hand a thing to you"]]))
+			if m.action == "take_from":
+				_row(g, "The thing", _item(m, "take_item", "its name in your pocket"), "What you carry, by its name: a Pickup's Item, a thing the shop gave you. It leaves your pocket and is in the hand.")
+				g.add_child(_check(m, "keep_in_hand", "It stays in the hand", "Off: it's put away (hidden). On: it's carried from here on: an Eat or a Drink after this uses it."))
+				g.add_child(_check(m, "left_hand", "With the left hand"))
+				_note(g, "No pin: it happens where the character stands, turned to you, a hand held out. To wait until you have the thing, give Starts when 'you carry ' and its name; to be asked first, put a Talk before it. Nothing happens to your pocket if you don't carry it.")
+			elif m.action == "give_to":
+				_row(g, "Gives", _item(m, "give_item", "what's in the hand"), "Its name in your pocket. Empty: the name of the thing in the hand (a Pick up before this that keeps it).")
+				_row(g, "Called", _text(m, "give_label", "the name you read"), "What your pocket calls it. Empty: its name.")
+				_row(g, "And money", _num(m, "give_cash", 0.0, 100000.0, 0.5, " $"), "Paid into your cash: a customer paying, change given.")
+				g.add_child(_check(m, "left_hand", "With the left hand", "With a thing in a hand, that hand is used."))
+				_note(g, "No pin: it happens where the character stands, turned to you, a hand held out. What's in the hand goes into your pocket with its own look; with nothing in the hand, an item by its name alone (and any money).")
 			if m.action in ["pick_up", "open", "eat", "drink"]:
 				var tr := HBoxContainer.new()
 				var tl := Label.new()
@@ -1174,14 +1218,28 @@ func _form_marker(m: HSNpcMarker) -> void:
 				_row(g, "It opens", _pick(m, "door_opens", [["push", "pushed"], ["pull", "pulled"], ["slide", "slid"]]))
 			if m.action == "pick_up":
 				g.add_child(_check(m, "keep_in_hand", "It stays in the hand", "Off: it's put away (hidden)."))
-			g.add_child(_check(m, "left_hand", "With the left hand"))
-			_note(g, "The pin is where the hand goes; the arrow is the facing. There are three reaches (the floor, a table, a shelf): the one nearest the pin's height is used.")
+			if not (m.action in HSNpcMarker.HANDOVER):
+				g.add_child(_check(m, "left_hand", "With the left hand"))
+				_note(g, "The pin is where the hand goes; the arrow is the facing. There are three reaches (the floor, a table, a shelf): the one nearest the pin's height is used.")
 		"sleep":
 			var sl := _sec("The bed")
 			sl.add_child(_check(m, "head_right", "Head to the right", "Seen sitting on the edge. Off: to the left."))
 			_note(sl, "The pin on the bed's edge at the mattress's height, the arrow pointing away from the bed.")
 		"sit":
 			_note(_sec("The seat"), "The pin on the seat's front edge at sitting height, the arrow the way the knees point.")
+		"peek":
+			var pk2 := _sec("The peek")
+			pk2.add_child(_check(m, "left_hand", "Out to the left", "Seen from behind the character. Off: out to the right (the wall's end is on the right)."))
+			_note(pk2, "The pin at the foot of the wall's end, the arrow the way of the look (past the wall, at what's watched). The character stands hidden behind the wall, leans out, and stays looking; the next marker that moves them draws them back first. Seen from the front only: the wall hides the rest.")
+		"gesture":
+			var gs := _sec("The small movement")
+			var gi := []
+			for k in HSNpcMarker.GESTURES:
+				gi.append([k, HSNpcMarker.GESTURES[k]])
+			_row(gs, "Does", _pick(m, "gesture", gi), "One of the character's own small movements, laid over whatever they're doing: nothing below the chest changes. A body that can't do one cleanly wasn't given it (Problems says so).")
+			gs.add_child(_check(m, "left_hand", "With the left hand", "A look at what's held uses the hand that holds it."))
+			gs.add_child(_check(m, "gesture_along", "Over what comes next", "Off: the next marker waits until the hand is back. On: the next marker starts at once and this is laid over it as soon as it can be: a look at a watch as the walk sets off."))
+			_note(gs, "Over standing, walking and sitting. The next marker starts when the hand is back. For small movements now and then by themselves, see the character's Alive (click their name) and the Small movements row below.")
 		"animation":
 			var an := _sec("The animation")
 			_row(an, "A clip", _pick(m, "clip", _clip_items(npc, "(none)")), "One of the model's own animations.")
@@ -1266,7 +1324,7 @@ func _form_marker(m: HSNpcMarker) -> void:
 			_row(sb, "Seconds", _num(m, "stay_secs", 0.0, 600.0, 0.5, " s"))
 		if m.kind == "wait":
 			sb.add_child(_check(m, "face_player", "Keeps turning to face you"))
-	if m.kind in HSNpcMarker.BODY and m.kind != "appear":
+	if m.kind in HSNpcMarker.BODY and not (m.kind in ["appear", "gesture"]):
 		var a := _sec("Animation")
 		if m.kind == "wait":
 			_row(a, "Waits in", _pick(m, "clip", _clip_items(npc, "the idle")))

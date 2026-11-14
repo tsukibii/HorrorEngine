@@ -12,6 +12,11 @@ const G := {
 	"attack": '<path d="M5 10h8.5a2.5 2.5 0 0 1 0 5H5zM5 10V7.5a1.5 1.5 0 0 1 3 0V10M8 7.5V6a1.5 1.5 0 0 1 3 0v4M11 6.5a1.5 1.5 0 0 1 3 0V10M5 15v3h7.5v-3M17 9l4-2M17.5 12.5H22M17 16l4 2"/>',
 	"eat": '<path d="M12 8c-2-1.6-6-.8-6 3.6 0 4 2.6 8.4 6 8.4s6-4.4 6-8.4C18 7.2 14 6.4 12 8zM12 8c0-2 1-3.5 2.5-4.5"/>',
 	"drink": '<path d="M6 5h12l-1.5 15h-9zM6.7 10h10.6"/>',
+	"take_from": '<rect x="14.5" y="8.500" width="6" height="7" rx="1"/><path d="M12 12H3.500M7 8.500L3.500 12 7 15.500"/>',
+	"give_to": '<rect x="3.500" y="8.500" width="6" height="7" rx="1"/><path d="M12 12h8.500M17 8.500l3.500 3.500-3.500 3.500"/>',
+	"gesture": '<circle cx="11" cy="6" r="2.6"/><path d="M11 8.600v7M11 11l-4 2.500M11 10.500l4.500-1.500-1.200-4M11 15.600l-2.500 5.400M11 15.600l2.500 5.400M18.500 3.500l1.500-1M19.500 6.500h2"/>',
+	"look_at": '<path d="M4 8s3-4.500 8-4.500S20 8 20 8s-3 4.500-8 4.500S4 8 4 8z"/><circle cx="12" cy="8" r="1.800"/><rect x="8.500" y="15.500" width="7" height="5.500" rx="1"/>',
+	"peek": '<path d="M9.500 3v18M9.500 3H4.500v18h5"/><circle cx="14" cy="8.500" r="3"/><circle cx="15.200" cy="8.200" r="0.600"/><path d="M9.500 13.500c3 0 5 .5 6.500 2.500"/>',
 	"run": '<circle cx="15" cy="4.5" r="1.8"/><path d="M14 7.5l-4 3 .5 3 3.5 1.5-2 5.5M10 10.5l-3.5-.5M14 15l4 1 1.5 4M13.5 8.5l3.5 2.5 3-.5M4 14h3M3 17.5h4"/>',
 	"wait": '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/>',
 	"talk": '<path d="M4 5.5h16v10.5H11l-4.5 4v-4H4z"/><path d="M8 9.5h8M8 12.5h5"/>',
@@ -76,6 +81,8 @@ static func of_marker(m: Node) -> String:
 			return "talk" if mk.talk and mk.stay == "talked" else "wait"
 		"grab":
 			return mk.action if G.has(mk.action) else "grab"
+		"gesture":
+			return "look_at" if mk.gesture == "look_hand" else "gesture"
 		"event":
 			return "scare" if mk.scare else ("look" if (mk.look != "" or mk.look_skin != "" or mk.look_eyes != "") and mk.fire.is_empty() else "event")
 	return mk.kind if G.has(mk.kind) else "event"

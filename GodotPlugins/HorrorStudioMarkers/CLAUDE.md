@@ -96,6 +96,20 @@ phasing, the Weapons plugin's hit reaction (any child of her with `hit` and `dow
   ever started on the first three. Never made on the tester's copy (`set.preview`): they come when they like, and a
   preview must show the same thing twice. A new clip that uses a hand goes in `HANDS_OFF` (both) or `ONE_HAND` (its
   own) here **and in the starter's motion.gd**, or a carried thing stays in its carry pose through it.
+- **A thing that changes hands goes through the Story's pocket and nothing else** (`runner.gd` `_take_from_you`,
+  `_give_to_you`; `body.gd` `hand_over`, `take_given`, `give_held`, `model_of`): Take from you copies the pocket's
+  model **before** `story.take()` (which frees it when the count reaches 0 and no HUD holds it), marks the copy
+  `hs_given` (made while the game runs: never saved, taken out of her hand again by a checkpoint from before she had
+  it, replaced when she's handed one again); Hand to you gives the Story a copy of the thing's meshes
+  (`model_of`) and hides the thing, as the starter's pickup does. No flag is set by either: the marker's own Then
+  does that. Both are `grab` actions with no pin (`HSNpcMarker.HANDOVER`, `is_placed()`): every place that asks
+  where a Grab stands has to pass them over (`flow.gd` `end_of`, Problems, `_snap`).
+- **A Small movement marker never changes what she's doing** (`_start` leaves `hold_clip` alone for `gesture`):
+  it's the layer's, over her loop. *Over what comes next* is kept in the runner (`_along`) and asked for every
+  frame until the layer takes it (8 s), since the next marker's first step is a turn, and a turn is "busy".
+- **A Wait with no loop of its own leaves her as she is** (sat, lying, peeking, low): `_start`'s `wait` case. A
+  posture that isn't standing has its own held loop in `body.gd` `_hold`, its `_begin` pre-step to leave it
+  (`stand_up`, `get_up`, `peek_back`), and its `*_now` for `_snap`: a new posture gets all three.
 - **An editor test that fails to parse hangs the editor** (the test plugin never quits it): parse it first
   (`--check-only`), and type every variable read off an untyped node (`var who: Node = dock.find_child(...)`).
 - **A marker's end state must be reachable at once** (`_snap`): the tester starts from it and a checkpoint restores

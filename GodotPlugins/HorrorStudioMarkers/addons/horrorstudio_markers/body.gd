@@ -263,7 +263,7 @@ func layer_tick(quiet := false) -> void:
 	for s in ["l", "r"]:
 		if String(_gesture.carrying(s)) == "":
 			continue
-		var off := quiet or posture == "lying" or hidden
+		var off := quiet or posture in ["lying", "peeking"] or hidden
 		if not _step.is_empty() and String(_step["k"]) == "clip":
 			var cn := String(_step["clip"])
 			for w in HANDS_OFF:
@@ -557,6 +557,97 @@ func rise() -> void:
 	_begin([])
 
 
+## out past the end of a wall, and held there (docs/MARKERS.md §4, Peek): `corner` the wall's end, `front` the way
+## she looks past it; left: out to her left. She stands behind the wall where her clip was made to (its record's
+## `edge`), looks out, and stays looking until something else is asked of her: then she draws back first
+func peek(corner: Vector3, front: Vector3, left := false, blend := 0.25) -> void:
+	var sd := "_l" if left else ""
+	var yaw := atan2(front.x, front.z)
+	_begin(_go(HSNpcFlow.peek_stand(corner, front, left, record), yaw) + [{"k": "clip", "clip": "peek_out" + sd, "blend": blend, "to": {"posture": "peeking", "side": sd}}])
+
+
+## a thing changes hands between her and someone (docs/MARKERS.md §4, Take from you and Hand to you): she turns to
+## `to` (where they stand), puts her hand out toward them, and `on_hand` is called the moment it's out: the thing
+## goes from one to the other there. `after`: called as her hand comes back (what she took is carried, or put away)
+func hand_over(to: Vector3, on_hand: Callable, after := Callable(), left := false, rate := 1.0, blend := 0.25) -> void:
+	if her == null:
+		return
+	var clip := "reach_mid" + ("_l" if left else "")
+	var d := to - her.global_position
+	d.y = 0.0
+	var yaw := atan2(d.x, d.z) if d.length() > 0.05 else her.global_rotation.y
+	var on := {"grab": on_hand}
+	if after.is_valid():
+		on["put_away"] = after
+	var step := {"k": "clip", "clip": clip, "on": on, "rate": rate, "blend": blend}
+	var grab_t := _event_at(clip, "grab")
+	if grab_t >= 0.0:                                          # her hand carried out toward them: as far as her reach goes and never into them, between her waist and her chest
+		var r: Array = clip_info(clip).get("reach", {}).get("at", HSNpcFlow.REACH_AT)
+		var tall := float((record.get("body", {}) as Dictionary).get("height", 163.0)) / 100.0 if record.get("body") is Dictionary else 1.63
+		var ahead := clampf(d.length() - 0.32, 0.2, absf(float(r[2])) + 0.06)
+		var pt := Vector3(her.global_position.x, ground() + 0.64 * tall, her.global_position.z) + HSNpcFlow.turned(Vector3(float(r[0]) * 0.5, 0, ahead), yaw)
+		step["bring"] = {"what": "palm", "side": "l" if left else "r", "target": pt, "peak": grab_t, "rise": 0.5, "hold": 0.3, "fall": 0.45, "most": 0.4}
+	_begin([{"k": "turn", "yaw": yaw}, step])
+
+
+## a thing put into her hand that wasn't in the scene (what you handed her: a copy of your pocket's model), by its
+## grip; `keep`: carried from now on (off: put away when her hand comes back)
+func take_given(thing: Node3D, left := false) -> void:
+	if thing == null or her == null or bool(set["preview"]):
+		return
+	_drop_given()                                              # (handed the same thing again after a checkpoint: one in her hand, not two)
+	if thing.get_parent() == null:
+		(her.get_parent() if her.get_parent() != null else her).add_child(thing)
+	var sk := skeleton_of(her)
+	if sk != null:
+		for cand in HANDS[left]:
+			var b := sk.find_bone(cand)
+			if b >= 0:
+				thing.global_position = sk.global_transform * sk.get_bone_global_pose(b).origin
+				break
+	_take(thing, left)
+
+
+## what she holds given away: out of her hand and gone from the scene's sight (it's in someone's pocket now). -> it
+func give_held() -> Node3D:
+	var t := held if is_instance_valid(held) else null
+	if t != null:
+		t.visible = false
+		_let_go()
+	held = null
+	return t
+
+
+# a thing that was handed to her while the game ran (not the scene's), out of her hand and gone
+func _drop_given() -> void:
+	if is_instance_valid(held) and held.has_meta("hs_given"):
+		var t := held
+		_let_go()
+		held = null
+		t.queue_free()
+
+
+## a thing's meshes as a model for a pocket's slot (the starter's pickup.gd makes the same): no script, no collider
+static func model_of(thing: Node3D) -> Node3D:
+	if thing == null:
+		return null
+	var g := Node3D.new()
+	g.name = "copy_" + str(thing.name)
+	var inv := thing.global_transform.affine_inverse()
+	for mi in thing.find_children("*", "MeshInstance3D", true, false) + ([thing] if thing is MeshInstance3D else []):
+		var src := mi as MeshInstance3D
+		if src.mesh == null:
+			continue
+		var c := MeshInstance3D.new()
+		c.mesh = src.mesh
+		c.material_override = src.material_override
+		for i in src.get_surface_override_material_count():
+			c.set_surface_override_material(i, src.get_surface_override_material(i))
+		c.transform = inv * src.global_transform if src.is_inside_tree() and thing.is_inside_tree() else (Transform3D.IDENTITY if src == thing else src.transform)
+		g.add_child(c)
+	return g
+
+
 ## a hand put out to a point, facing `yaw`, and back: `clip` the reach played (the runner picks it by how high the
 ## point is: flow.gd reach_of), `flat` where her hand is in it from where she stands; thing: taken as her hand closes
 ## (keep: it stays in her hand); put: what she holds is left there; rate: how fast the clip plays
@@ -747,6 +838,8 @@ func _bring_start(b: Dictionary) -> void:
 		"handle":                                             # the middle of her closed hand onto a door's handle
 			o["point"] = (hik.grip_frame(side, 0.03, "handle") as Transform3D).origin
 			o["target"] = b["target"]
+		"palm":                                               # her palm held out (what she holds with it, when she holds something)
+			o["target"] = b["target"]
 		"grip":
 			var thing := b["thing"] as Node3D
 			var gcls := look_script("grip.gd")
@@ -901,6 +994,8 @@ func _begin(steps: Array) -> void:
 		pre.append({"k": "clip", "clip": "get_up" + side, "lift": 0.0, "to": {"posture": "standing", "side": ""}})
 	elif posture == "sitting":
 		pre.append({"k": "clip", "clip": "stand_up", "lift": 0.0, "to": {"posture": "standing"}})
+	elif posture == "peeking":                                # (looking out past a wall: she draws back behind it first)
+		pre.append({"k": "clip", "clip": "peek_back" + side, "to": {"posture": "standing", "side": ""}})
 	_queue = pre + steps
 	_step = {}
 	busy = not _queue.is_empty()
@@ -964,11 +1059,13 @@ func _hold(blend: float) -> void:
 			n = "sit_loop"
 		"lying":
 			n = "sleep%s_loop" % side
+		"peeking":
+			n = "peek%s_loop" % side
 		_:
 			if hold_clip != "":
 				n = hold_clip
 				rate = hold_rate
-	if _play(n, true, rate, blend) <= 0.0 and n != "idle_loop" and posture == "standing":
+	if _play(n, true, rate, blend) <= 0.0 and n != "idle_loop" and posture in ["standing", "peeking"]:
 		_play("idle_loop", true, 1.0, blend)
 	now = "idle" if n == "idle_loop" else n
 
@@ -1232,6 +1329,13 @@ func lie_now(bed: Vector3, front: Vector3, right := false) -> void:
 	_hold(0.0)
 
 
+func peek_now(corner: Vector3, front: Vector3, left := false) -> void:
+	place(HSNpcFlow.peek_stand(corner, front, left, record), atan2(front.x, front.z))
+	posture = "peeking"
+	side = "_l" if left else ""
+	_hold(0.0)
+
+
 # stood in front of a seat at `top`: on the floor under it (looked for from under the seat's top, so the seat itself
 # isn't taken for the floor), raised or lowered to meet it
 func _place_under(at: Vector3, top: float, made_for: float, yaw: float, most := 0.12) -> void:
@@ -1250,7 +1354,8 @@ func _place_under(at: Vector3, top: float, made_for: float, yaw: float, most := 
 ## what she is, to keep at a checkpoint
 func snapshot() -> Dictionary:
 	return {"pos": her.global_position if her != null else Vector3.ZERO, "yaw": her.global_rotation.y if her != null else 0.0, "posture": posture, "side": side,
-		"lift": lift, "hidden": hidden, "hold_clip": hold_clip, "hold_rate": hold_rate, "released": released}
+		"lift": lift, "hidden": hidden, "hold_clip": hold_clip, "hold_rate": hold_rate, "released": released,
+		"given": is_instance_valid(held) and held.has_meta("hs_given")}
 
 
 func restore(d: Dictionary) -> void:
@@ -1269,6 +1374,8 @@ func restore(d: Dictionary) -> void:
 	hold_clip = String(d.get("hold_clip", ""))
 	hold_rate = float(d.get("hold_rate", 1.0))
 	released = bool(d.get("released", false))
+	if not bool(d.get("given", false)):                        # (what you handed her since is back in your pocket: the Story's checkpoint put it there)
+		_drop_given()
 	_playing = ""
 	_hold(0.0)
 

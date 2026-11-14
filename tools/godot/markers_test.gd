@@ -230,7 +230,7 @@ func _initialize() -> void:
 	story = main.get_node("Story")
 	for st in [["order", stage_order], ["gates", stage_gates], ["quests", stage_quests], ["talk", stage_talk], ["repeat", stage_repeat], ["hide", stage_hide],
 			["sit", stage_sit], ["clips", stage_clips], ["speed", stage_speed], ["stairs", stage_stairs], ["faces", stage_faces], ["looks", stage_looks],
-			["shot", stage_shot], ["checkpoint", stage_checkpoint], ["event", stage_event], ["you", stage_you], ["problems", stage_problems], ["tester", stage_tester], ["v3", stage_v3], ["life", stage_life]]:
+			["shot", stage_shot], ["checkpoint", stage_checkpoint], ["event", stage_event], ["you", stage_you], ["problems", stage_problems], ["tester", stage_tester], ["v3", stage_v3], ["life", stage_life], ["hands", stage_hands]]:
 		if wants(st[0]):
 			await (st[1] as Callable).call()
 	print("MARKERS result " + JSON.stringify({"errors": errors}))
@@ -1747,4 +1747,246 @@ func stage_life() -> void:
 	ok(tab.size() == 1 and tab2.is_empty(), "U: the tab's Problems says when she was baked before the life clips", "%d, %d" % [tab.size(), tab2.size()])
 	npc.queue_free()
 	block.queue_free()
+
+
+# W. sequences' markers (docs/MARKERS.md §4, guides/sequences): one small movement as a marker, a Wait that leaves her
+# sat, things changing hands between her and you, a peek past a wall's end
+func stage_hands() -> void:
+	const LOOKP := "res://addons/horrorstudio_look/"
+	if not ResourceLoader.exists(LOOKP + "gesture.gd"):
+		bad("W: the look plugin's gesture.gd isn't in the project")
+		return
+	var small := func(nm: String, mesh: Mesh, at: Vector3) -> MeshInstance3D:
+		var mi := MeshInstance3D.new()
+		mi.name = nm
+		mi.mesh = mesh
+		main.add_child(mi)
+		mi.global_position = at
+		return mi
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.035
+	cyl.bottom_radius = 0.03
+	cyl.height = 0.09
+	var ball := SphereMesh.new()
+	ball.radius = 0.035
+	ball.height = 0.07
+	var slab := BoxMesh.new()
+	slab.size = Vector3(0.06, 0.012, 0.03)
+
+	# ---- a quiet evening: a cup from the table kept in her hand, to the sofa, sat, a look at it, still sat for a Wait ----
+	var o := origin()
+	box(o + Vector3(0.3, 0.43, 1.75), Vector3(0.7, 0.86, 0.5), "TableW")
+	box(o + Vector3(3, 0.225, 8.7), Vector3(1.2, 0.45, 0.6), "SofaW")
+	var her := woman(o, "HerW")
+	var npc := new_npc(her, "Wren")
+	var q := quest(npc, "One")
+	var cup: MeshInstance3D = small.call("Cup", cyl, o + Vector3(0.3, 0.905, 1.6))
+	mk(q, "appear", o, 0.0)
+	var pick := mk(q, "grab", cup.global_position, 0.0, {"action": "pick_up", "keep_in_hand": true})
+	mk(q, "walk", o + Vector3(3, 0, 10.0), 180.0)
+	var sit := mk(q, "sit", o + Vector3(3, 0.45, 9.0), 0.0, {"stay": "secs", "stay_secs": 1.0})
+	var lookm := mk(q, "gesture", Vector3.ZERO, 0.0, {"gesture": "look_hand"})
+	var wsat := mk(q, "wait", Vector3.ZERO, 0.0, {"stay": "secs", "stay_secs": 1.5})
+	var along := mk(q, "gesture", Vector3.ZERO, 0.0, {"gesture": "check_wrist", "gesture_along": true})
+	var leave := mk(q, "walk", o + Vector3(3, 0, 15.0), 0.0, {"face_arrow": false})
+	put(o + Vector3(9, 0.1, 9))
+	go(npc)
+	pick.target = pick.get_path_to(cup)
+	await frames(6)
+	var run: HSNpcRunner = npc.runner
+	var g: Node = run.body.gesture()
+	if g == null:
+		bad("W: no layer on her")
+		return
+	var began: Array = []                                          # [its clip, what she was doing, the marker she was at, when]
+	g.started.connect(func(n: String) -> void: began.append([n, run.body.report()["doing"], run.cur, now()]))
+	var at_marker := {}                                            # a marker -> [first seen, last seen]
+	var postures := {}                                             # a marker -> every posture she had at it
+	var nows := {}
+	var each := func() -> void:
+		var c: Node = run.cur
+		if c != null:
+			if not at_marker.has(c):
+				at_marker[c] = [now(), now()]
+			at_marker[c][1] = now()
+			if not postures.has(c):
+				postures[c] = {}
+			postures[c][run.body.posture] = true
+			if not nows.has(c):
+				nows[c] = {}
+			nows[c][run.body.now] = true
+	await watch(func() -> bool: return run.finished, 60.0, each)
+	var looks := began.filter(func(b: Array) -> bool: return b[2] == lookm)
+	var took: float = at_marker[lookm][1] - at_marker[lookm][0] if at_marker.has(lookm) else 0.0
+	ok(lookm.title() == "Looks at her hand" and looks.size() == 1 and String(looks[0][0]).begins_with("life_look_hand") and looks[0][1] == "sit" and took > 1.0,
+		"W: a Small movement marker: sat with the cup, she looks at it, and the next marker waits for her hand to come back", "%s over '%s', %.1f s" % [looks.map(func(b: Array) -> String: return String(b[0])), looks[0][1] if not looks.is_empty() else "", took])
+	ok(not looks.is_empty() and String(looks[0][0]) == "life_look_hand", "W: with the hand that holds it", str(looks.map(func(b: Array) -> String: return String(b[0]))))
+	ok(postures.get(lookm, {}).keys() == ["sitting"] and postures.get(wsat, {}).keys() == ["sitting"] and not nows.get(wsat, {}).has("stand_up") and at_marker[wsat][1] - at_marker[wsat][0] > 1.3,
+		"W: she stays sat through it, and through a Wait after it", "%s, %s" % [postures.get(lookm, {}).keys(), postures.get(wsat, {}).keys()])
+	var alongs := began.filter(func(b: Array) -> bool: return String(b[0]).begins_with("life_check_wrist"))
+	var quick: float = at_marker[along][1] - at_marker[along][0] if at_marker.has(along) else 0.0      # (never seen at a frame's end: it passed within one)
+	ok(quick < 0.1 and alongs.size() == 1 and alongs[0][2] == leave and alongs[0][1] == "walk" and nows.get(leave, {}).has("stand_up"),
+		"W: a small movement 'over what comes next' isn't waited for: she gets up, sets off, and it's laid over her walk", "%.2f s at its marker; began at '%s' while she was '%s'" % [quick, alongs[0][2].name if not alongs.is_empty() else "", alongs[0][1] if not alongs.is_empty() else ""])
+	npc.queue_free()
+	her.queue_free()
+	cup.queue_free()
+
+	# ---- you give her something and she eats it ----
+	o = origin()
+	her = woman(o, "HerW2")
+	npc = new_npc(her, "Willa")
+	q = quest(npc, "One")
+	mk(q, "appear", o, 0.0)
+	var take := mk(q, "grab", Vector3.ZERO, 0.0, {"action": "take_from", "take_item": "apple_w", "keep_in_hand": true, "start_when": "item:apple_w"})
+	var eat := mk(q, "grab", o, 0.0, {"action": "eat"})
+	mk(q, "event", Vector3.ZERO, 0.0, {"set_flags": "+w_ate"})
+	put(o + Vector3(0.9, 0.05, 1.2))
+	go(npc)
+	await frames(40)
+	run = npc.runner
+	ok(run.cur == take and run.phase == "gate" and not take.is_placed() and take.title() == "Take from you", "W: Take from you waits until you carry the thing (it has no pin)", "%s, %s" % [run.cur.name if run.cur != null else "", run.phase])
+	var apple_model := MeshInstance3D.new()
+	apple_model.mesh = ball
+	story.give("apple_w", "Apple", apple_model)
+	var wrist := probe(her, "r_wrist")
+	var shoulder := probe(her, "r_uparm")
+	var head := probe(her, "c_head")
+	var hand_out := [0.0, 0.0, 0.0]                                 # as the thing changes hands: her wrist ahead of her shoulder, its height, how far she's turned from you
+	var mouth := [9.0]
+	var held_names := {}
+	var each2 := func() -> void:
+		var hd: Node3D = run.body.held
+		if is_instance_valid(hd):
+			held_names[String(hd.name)] = true
+			if hand_out[0] == 0.0:
+				hand_out[0] = (her.global_basis.inverse() * (wrist.global_position - shoulder.global_position)).z
+				hand_out[1] = wrist.global_position.y
+				var d := player.global_position - her.global_position
+				hand_out[2] = ang(yaw_of(her), rad_to_deg(atan2(d.x, d.z)))
+			if run.cur == eat:
+				mouth[0] = minf(mouth[0], hd.global_position.distance_to(head.global_position))
+	await watch(func() -> bool: return HSNpcCond.holds("w_ate", self, null), 30.0, each2)
+	ok(not story.has("apple_w") and held_names.has("AppleW"), "W: you carry it: it leaves your pocket and is in her hand", "in her hand: %s; in your pocket: %s" % [held_names.keys(), story.has("apple_w")])
+	ok(hand_out[0] > 0.2 and hand_out[1] > 0.75 and hand_out[1] < 1.35 and hand_out[2] < 10.0, "W: she turns to you and holds her hand out for it",
+		"her wrist %.0f cm ahead of her shoulder, %.2f m up; turned %.0f degrees from you" % [hand_out[0] * 100.0, hand_out[1], hand_out[2]])
+	ok(mouth[0] < 0.22 and not is_instance_valid(run.body.held) and HSNpcCond.holds("w_ate", self, null), "W: kept in her hand, the Eat after it eats it where she stands, and it's gone", "%.0f cm from her head at the nearest" % (mouth[0] * 100.0))
+	# handed the same thing again after a checkpoint: one in her hand
+	story.give("apple_w", "Apple", null)
+	run.body.take_given(MeshInstance3D.new(), false)
+	var first_given: Node3D = run.body.held
+	first_given.set_meta("hs_given", true)
+	var again := MeshInstance3D.new()
+	again.set_meta("hs_given", true)
+	run.body.take_given(again, false)
+	await frames(3)
+	ok(run.body.held == again and not is_instance_valid(first_given), "W: handed one again, the one she held is gone (one in her hand, not two)")
+	var snap := {"given": false}
+	run.body.restore(run.body.snapshot().merged(snap, true))
+	await frames(3)
+	ok(not is_instance_valid(again) and not is_instance_valid(run.body.held), "W: a checkpoint from before she had it takes it out of her hand")
+	story.take("apple_w")
+	npc.queue_free()
+	her.queue_free()
+
+	# ---- she fetches a key and hands it to you, with some money ----
+	o = origin()
+	box(o + Vector3(0.3, 0.43, 1.75), Vector3(0.7, 0.86, 0.5), "TableW2")
+	her = woman(o, "HerW3")
+	npc = new_npc(her, "Wanda")
+	q = quest(npc, "One")
+	var key: MeshInstance3D = small.call("CellarKey", slab, o + Vector3(0.3, 0.87, 1.6))
+	mk(q, "appear", o, 0.0)
+	pick = mk(q, "grab", key.global_position, 0.0, {"action": "pick_up", "keep_in_hand": true})
+	mk(q, "walk", Vector3.ZERO, 0.0, {"to_player": true, "stop_short": 1.1})
+	var give := mk(q, "grab", Vector3.ZERO, 0.0, {"action": "give_to", "give_label": "Cellar key", "give_cash": 3.5})
+	mk(q, "event", Vector3.ZERO, 0.0, {"set_flags": "+w_given"})
+	var q2 := quest(npc, "Two", "w_given")
+	mk(q2, "grab", Vector3.ZERO, 0.0, {"action": "give_to", "give_item": "ticket_w"})
+	mk(q2, "event", Vector3.ZERO, 0.0, {"set_flags": "+w_ticket"})
+	put(o + Vector3(3.0, 0.05, 4.0))
+	go(npc)
+	pick.target = pick.get_path_to(key)
+	var cash0 := float(story.get("cash"))
+	await frames(4)
+	run = npc.runner
+	await watch(func() -> bool: return HSNpcCond.holds("w_given", self, null), 40.0, func() -> void: pass)
+	var d3 := player.global_position - her.global_position
+	var km = (story.get("models") as Dictionary).get("cellar_key")
+	ok(story.has("cellar_key") and String((story.get("names") as Dictionary).get("cellar_key", "")) == "Cellar key" and km is Node3D and is_instance_valid(km) and not (km as Node3D).find_children("*", "MeshInstance3D", true, false).is_empty(),
+		"W: Hand to you: what she holds goes into your pocket by its name, with its own look", "you carry: %s" % str((story.get("items") as Dictionary).keys()))
+	ok(absf(float(story.get("cash")) - cash0 - 3.5) < 0.001 and not is_instance_valid(run.body.held) and not key.visible and give.title() == "Hand to you" and ang(yaw_of(her), rad_to_deg(atan2(d3.x, d3.z))) < 12.0,
+		"W: and its money; her hand is empty, the thing gone from the room", "cash +%.2f" % (float(story.get("cash")) - cash0))
+	await watch(func() -> bool: return HSNpcCond.holds("w_ticket", self, null), 12.0, func() -> void: pass)
+	ok(story.has("ticket_w") and HSNpcCond.holds("w_ticket", self, null), "W: with nothing in her hand, an item by its name alone")
+	story.take("cellar_key")
+	story.take("ticket_w")
+	story.pay(3.5)
+	npc.queue_free()
+	her.queue_free()
+	key.queue_free()
+
+	# ---- a peek past a wall's end, held, then drawn back before she goes ----
+	o = origin()
+	var corner := o + Vector3(0, 0, 4.0)
+	box(corner + Vector3(1.0, 1.2, 0.1), Vector3(2.0, 2.4, 0.2), "WallW")      # a wall from its end at `corner` off to her left; she looks out along +Z
+	her = woman(o + Vector3(1.5, 0, 0.5), "HerW4")
+	npc = new_npc(her, "Wilma")
+	q = quest(npc, "One")
+	mk(q, "appear", o + Vector3(1.5, 0, 0.5), 0.0)
+	var peek := mk(q, "peek", corner, 0.0, {"stay": "secs", "stay_secs": 1.6})
+	var still := mk(q, "wait", Vector3.ZERO, 0.0, {"stay": "secs", "stay_secs": 0.8})
+	var off := mk(q, "walk", o + Vector3(1.5, 0, 0.5), 180.0)
+	put(corner + Vector3(-0.6, 0.05, 4.0))
+	go(npc)
+	await frames(4)
+	run = npc.runner
+	head = probe(her, "c_head")
+	var want := HSNpcFlow.peek_stand(corner, Vector3(0, 0, 1), false, run.body.record)
+	var past := [-9.0]
+	var stood := [9.0]
+	postures = {}
+	nows = {}
+	var each4 := func() -> void:
+		var c: Node = run.cur
+		if c == null:
+			return
+		if not postures.has(c):
+			postures[c] = {}
+			nows[c] = {}
+		postures[c][run.body.posture] = true
+		nows[c][run.body.now] = true
+		if c == peek and run.phase == "stay":
+			past[0] = maxf(past[0], corner.x - head.global_position.x)
+			stood[0] = minf(stood[0], flat(her.global_position).distance_to(flat(want)))
+	await watch(func() -> bool: return run.finished, 40.0, each4)
+	ok(peek.is_placed() and stood[0] < 0.03 and past[0] > 0.02 and nows.get(peek, {}).has("peek_out") and nows.get(peek, {}).has("peek_loop") and postures.get(peek, {}).has("peeking"),
+		"W: a Peek: she stands behind the wall's end where her clip was made to, leans out past it and stays looking", "%.1f cm from where the clip stands her, her head %.0f cm past the edge" % [stood[0] * 100.0, past[0] * 100.0])
+	ok(postures.get(still, {}).keys() == ["peeking"] and nows.get(off, {}).has("peek_back") and run.body.posture == "standing" and flat(her.global_position).distance_to(flat(o + Vector3(1.5, 0, 0.5))) < 0.1,
+		"W: a Wait after it leaves her looking; the next marker that moves her draws her back first", "%s; then %s" % [postures.get(still, {}).keys(), nows.get(off, {}).keys()])
+	var lw := HSNpcFlow.peek_stand(corner, Vector3(0, 0, 1), true, run.body.record)
+	ok(absf((lw.x - corner.x) + (want.x - corner.x)) < 0.02 and absf(lw.z - want.z) < 0.02, "W: out to her left, she stands the other side of the edge", "%.2f and %.2f m to its side" % [want.x - corner.x, lw.x - corner.x])
+	# what Problems says of them
+	var bad_give := mk(q, "grab", Vector3.ZERO, 0.0, {"action": "give_to"})
+	var bad_take := mk(q, "grab", Vector3.ZERO, 0.0, {"action": "take_from"})
+	var bad_g := mk(q, "gesture", Vector3.ZERO, 0.0, {"gesture": "stretch"})
+	var clips := PackedStringArray()
+	for c in HSNpcBody.clips_of(her):
+		if not String(c).contains("life_stretch") and not String(c).contains("peek_out"):
+			clips.append(c)
+	var texts := ""
+	for pr in HSNpcFlow.problems(npc, clips, HSNpcFlow.flags_set(main), HSNpcFlow.tasks_known(main)):
+		texts += str(pr["text"]) + "\n"
+	for need in [["say which thing she takes", "a Take from you with no thing named"], ["she has nothing to hand you", "a Hand to you with nothing"], ["wasn't made for her body", "a small movement her body hasn't got"],
+			["she has no 'peek_out' of her own", "a Peek on a character baked before it"]]:
+		ok(texts.contains(need[0]), "W: Problems says: " + need[1])
+	bad_take.take_item = "apple_w"
+	bad_give.give_item = "ticket_w"
+	var found := HSLogicScan.scan(main)
+	var uses := []
+	for u in HSLogicScan.uses_of(bad_take) + HSLogicScan.uses_of(bad_give):
+		uses.append("%s %s %s" % [u.get("role", ""), u.get("kind", ""), u.get("name", "")])
+	ok(HSLogicScan.names(found, "item").has("apple_w") and HSLogicScan.names(found, "item").has("ticket_w") and uses.has("needs item apple_w") and uses.has("gives item ticket_w"),
+		"W: the scan reads them: a Take from you needs the thing, a Hand to you gives it", str(uses))
+	npc.queue_free()
+	her.queue_free()
 

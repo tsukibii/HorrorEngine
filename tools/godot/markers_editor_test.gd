@@ -597,6 +597,76 @@ func _run() -> void:
 		plug.delete_node(mk3)
 	await frames(3)
 
+	# ---- the sequences' cards: one small movement, a look at what's held, a peek, a thing changing hands ----
+	plug.pick_node(quest, false)
+	for id in ["gesture", "look_at", "peek", "take_from", "give_to"]:
+		ok(not card(id).is_empty(), "the palette has a %s card" % id)
+	var gm: HSNpcMarker = plug.add_marker(card("gesture"), Vector3.ZERO)
+	var la: HSNpcMarker = plug.add_marker(card("look_at"), Vector3.ZERO)
+	var pk: HSNpcMarker = plug.add_marker(card("peek"), Vector3(1.0, 0.02, 1.0))
+	var tk: HSNpcMarker = plug.add_marker(card("take_from"), Vector3.ZERO)
+	var gv: HSNpcMarker = plug.add_marker(card("give_to"), Vector3.ZERO)
+	await frames(3)
+	ok(gm.kind == "gesture" and gm.gesture == "any" and gm.title() == "Small movement" and la.gesture == "look_hand" and la.title() == "Looks at her hand" and pk.kind == "peek" and pk.stay == "secs"
+		and tk.action == "take_from" and tk.title() == "Take from you" and gv.action == "give_to" and gv.title() == "Hand to you",
+		"the cards make a Small movement, a Look at it, a Peek, a Take from you and a Hand to you", "%s, %s, %s, %s, %s" % [gm.title(), la.title(), pk.title(), tk.title(), gv.title()])
+	plug.pick_node(pk)
+	await frames(3)
+	ok(pk.is_placed() and not gm.is_placed() and not tk.is_placed() and not gv.is_placed() and not hot("pin", pk).is_empty() and hot("pin", tk).is_empty() and pk.global_position.distance_to(Vector3(1.0, 0.02, 1.0)) < 0.01,
+		"a Peek has a pin (the foot of the wall's end); a small movement and a thing changing hands have none")
+	plug.pick_node(gm)
+	await frames(2)
+	dock.refresh()
+	await frames(3)
+	var gf := field("F_gesture") as OptionButton
+	var along_box := field("F_gesture_along") != null
+	var no_clip_rows := field("F_anim_speed") == null and field("F_blend") == null
+	var listed := gf.item_count if gf != null else 0
+	if gf != null:
+		for i in gf.item_count:
+			if str(gf.get_item_metadata(i)) == "scratch_head":
+				gf.select(i)
+				gf.item_selected.emit(i)
+	await frames(4)
+	var picked := gm.gesture
+	var its_title := gm.title()
+	undo()
+	await frames(3)
+	ok(listed == HSNpcMarker.GESTURES.size() and picked == "scratch_head" and its_title == "Scratches her head" and gm.gesture == "any" and along_box and no_clip_rows,
+		"a Small movement's form: which one (all of them listed), 'over what comes next', no clip rows; undone", "%d listed; picked %s (%s); after undo %s" % [listed, picked, its_title, gm.gesture])
+	plug.pick_node(tk)
+	await frames(2)
+	dock.refresh()
+	await frames(3)
+	texts = ""
+	for p in dock.problems():
+		texts += str(p["text"]) + "\n"
+	var asked_first := texts.contains("say which thing she takes")
+	var ti := field("F_take_item")
+	var line := ti.get_node_or_null("Line") as LineEdit if ti != null else null
+	var menu := ti.get_node_or_null("Menu") as MenuButton if ti != null else null
+	if line != null:
+		line.text = "apple"
+		line.text_submitted.emit("apple")
+	await frames(4)
+	texts = ""
+	for p in dock.problems():
+		texts += str(p["text"]) + "\n"
+	ok(asked_first and line != null and menu != null and tk.take_item == "apple" and not texts.contains("say which thing she takes") and field("F_keep_in_hand") != null,
+		"a Take from you's form: the thing by its name (typed, or picked from the scene's), kept in the hand or not; Problems asks until it's named", tk.take_item)
+	plug.pick_node(gv)
+	await frames(2)
+	dock.refresh()
+	await frames(3)
+	var cash := field("F_give_cash") as SpinBox
+	if cash != null:
+		cash.value = 2.5
+	await frames(3)
+	ok(field("F_give_item") != null and field("F_give_label") != null and cash != null and is_equal_approx(gv.give_cash, 2.5), "a Hand to you's form: what's given, what it's called, and money", "$%.2f" % gv.give_cash)
+	for mk4 in [gv, tk, pk, la, gm]:
+		plug.delete_node(mk4)
+	await frames(3)
+
 	# ---- the tester ----
 	plug.pick_node(walk)
 	await frames(2)

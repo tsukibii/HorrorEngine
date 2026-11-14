@@ -73,6 +73,27 @@ front of her, upright). The next Grab, Eat, Drink or Attack takes her hand and g
 Both want a character **baked by the Animator since its life clips** (96 clips on a person; Problems says when she
 wasn't) and the Look plugin (its `HSGesture`). The tester's copy doesn't do them.
 
+## The sequences' cards: one small movement, a thing changing hands, a peek
+
+For the little scenes the guide `guides/sequences` is made of (docs/MARKERS.md §4):
+
+- **Small movement** and **Look at it**: one of her small movements *now*, where the Life switch above is chance:
+  she looks at what's in her hand, checks her wrist, scratches her head, stretches. Laid over whatever she's doing,
+  so sat on the sofa she stays sat. The next marker waits until her hand is back; tick *Over what comes next* and it
+  doesn't (she sets off and checks her wrist as she walks).
+- **A Wait leaves her as she is**: sat, asleep, looking out past a wall. Sit → Look at it → Wait → Look at it is
+  someone sat with a cup; only a marker that moves her stands her up.
+- **Take from you** and **Hand to you**: no pin. Where she stands she turns to you and holds a hand out. *Take from
+  you* takes a thing you carry, by its name in your pocket (a Pickup's Item), into her hand with the look your
+  pocket had for it; kept there, an Eat or a Drink after it uses it. *Hand to you* puts what she holds into your
+  pocket (or an item by its name alone, and money: a customer paying). To have her wait until you have the thing,
+  give the marker *Starts when: you carry …*; to be asked first, put a Talk before it.
+- **Peek**: click the foot of a wall's end; the arrow is the way of the look. She stands hidden behind the wall,
+  leans out past its edge and stays looking; the next marker that moves her draws her back first.
+
+They want the same two things as the cards above: a character baked by the Animator since its life clips, and the
+Look plugin.
+
 ## In the 3D view
 
 Each marker is a map pin in its character's colour, its kind's drawing in it, its number at its corner; an arrow shows
