@@ -14,7 +14,10 @@ var none := "at once"                      ## what it says with no word
 var about_her := true                      ## offer the words about her and you (@near, @seen...)
 var waits := true                          ## offer "after a wait"
 var flags: PackedStringArray = []          ## flags the scene knows, for the menu
+var groups: Array = []                     ## or in groups: [[title, [names]]] (this quest's first, then the game's)
 var tasks: PackedStringArray = []          ## tasks the scene knows
+var items: PackedStringArray = []          ## things carried the scene knows
+var links: Array = []                      ## ways to make a tie in one gesture: [[label, Callable(this editor)]] ("A thing… (click it)")
 var _menu: PopupMenu
 var _pop: PopupPanel
 var _line: LineEdit
@@ -133,17 +136,23 @@ func _show_menu(from: Control) -> void:
 		add.call("Out of your sight", "@unseen")
 		add.call("Has been shot", "@shot")
 		add.call("Has been shot down", "@down")
-	_menu.add_separator("Flags (ticked: must be on)")
-	words.append("")
+	for ln in links:                                           # (a tie made in one gesture: its Callable gets this editor and adds the word)
+		add.call(String(ln[0]), "?link%d" % links.find(ln))
 	var have := {}
 	for w in HSNpcCond.words(text):
 		var pw := HSNpcCond.parse(w)
 		if String(pw["kind"]) == "flag" and not bool(pw["neg"]):
 			have[String(pw["arg"])] = true
-	for f in flags:                                            # (the user's "Boolean Flags Trigger": the scene's flags, a tick each)
-		_menu.add_check_item(f)
-		_menu.set_item_checked(_menu.item_count - 1, have.has(f))
-		words.append("?" + f)
+	var list: Array = groups if not groups.is_empty() else [["Flags (ticked: must be on)", Array(flags)]]
+	for g in list:                                             # (the user's "Boolean Flags Trigger": the scene's flags, a tick each)
+		if (g[1] as Array).is_empty() and list.size() > 1:
+			continue
+		_menu.add_separator(String(g[0]))
+		words.append("")
+		for f in (g[1] as Array):
+			_menu.add_check_item(String(f))
+			_menu.set_item_checked(_menu.item_count - 1, have.has(String(f)))
+			words.append("?" + String(f))
 	add.call("New flag…", "new_flag")
 	if not tasks.is_empty():
 		_menu.add_separator("A quest (task)")
@@ -151,12 +160,18 @@ func _show_menu(from: Control) -> void:
 		for t in tasks:
 			add.call("%s is open" % t, "on:" + t)
 			add.call("%s is done" % t, "task:" + t)
-	_menu.add_separator("")
+	_menu.add_separator("You carry")
 	words.append("")
-	add.call("You carry something…", "item:key")
+	for it in items:
+		add.call(String(it), "item:" + String(it))
+	add.call("Something else…", "item:key")
 	_menu.index_pressed.connect(func(i: int) -> void:
 		var w := String(words[i])
 		if w == "":
+			return
+		if w.begins_with("?link"):
+			var ln2: Array = links[int(w.substr(5))]
+			(ln2[1] as Callable).call(self)
 			return
 		if w.begins_with("?"):                                 # a flag's tick: on, or off again
 			toggle_flag(w.substr(1))

@@ -62,6 +62,38 @@ The user's answers, newest first. They override the plan, the research and the d
   generator), at its real size; a dye is never a plain multiply (deeper between the yarns; a power where it takes in
   part); the Blender-made fabrics (2026-11-01) stay as they are beside these.
 
+## 2026-11-14, the tutorial is updated in bulk, later (the user, on the flags and things branch)
+
+- **"make a note for what we'll need to updatge in the tutorial and then make a pr. I have otehr parallel branches
+  that will need updated for tutoria lso will leave that to do in a bulk new branch later"**
+- So: a branch that changes what tutorial v2 shows doesn't touch the tutorial; it adds a section to
+  `docs/TUTORIAL_TODO.md`. The tutorial, its builder and TUTORIAL2 are brought up to date once, on a branch of their own.
+
+## 2026-11-14, flags and things: the markers tied to everything else (the user, once the marker system was merged)
+
+- **"review and enhance the horrorplugin, especially on how to easily tie in the marker system with other elements
+  (interactables), maybe create a new tab for global flags that can be filtered off of quests or maybe there are
+  non-global flags too, if I make a marker that depends on a flag to walk, it should be easy for me to use that flag
+  elsewhere too for other game logic e.g. can only itneract with door if this flag is also on etc. Consdier what we
+  mgiht be missing from or horrro engine plugin for godot and build it."**
+- **"The goal is to make an insanely fast workflow to build games"**
+- **What it settles** (docs/FLAGS.md is the review, the design and the plan with its checkboxes):
+  - **"the horrorplugin"** is read as before (2026-11-13): the family a by-hand project gets, and this work goes into
+    the Markers plugin, as more tabs beside NPC Markers.
+  - **A flag stays one name everywhere.** The point of the request is that a marker's flag can be used by a door, so
+    flags are never fenced in. "Global" and "non-global" are **whose a flag is, worked out from who uses it**: one
+    quest's, one character's, or the game's (a thing uses it, or two characters). The Flags tab filters by that, and
+    a flag can be pinned to a quest (then using it elsewhere is a Problem, not a wall).
+  - **Any thing can ask and can switch**, with one node, **Logic** (`HSLogic`), in the three lines a marker has:
+    *Works only when* → *When* (it's used, one of its signals, by itself) → *Then* (flags, a task, a line, a sound,
+    things fired). The starter's player asks a thing's Logic before it uses it: one place, so every thing with a
+    `use()` is covered, the other plugins' too.
+  - **Nobody types a flag's name twice**: every place a condition is written offers the scene's flags, tasks and
+    things carried (the tabs, and the Inspector for any script's `needs`), and a flag renamed moves every use.
+  - **What was missing, built**: a Flags tab (every flag with who turns it on and who needs it), a Things tab (cards
+    that make the selected node a pickup, a note, an area...; the scene's things in one list; Set up the scene), F7
+    listing the flags in play.
+
 ## 2026-11-14, the markers' conversations: the prior style, not a new panel (the user, on the first picture of it in play)
 
 The picture: Alex in the room and, at the foot of the screen, a dark rounded panel with "Alex", "Looking for
