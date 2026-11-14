@@ -363,7 +363,8 @@ func signals_of(thing: Node) -> PackedStringArray:
 	return out
 
 
-## A thing's Logic: the first it has (with `when`: the first set off that way), else one made with `set`.
+## A thing's Logic: the first it has (with `when`: the first set off that way), else one made with `set`, set off as
+## `when` says or, when nobody says, by what the thing does (default_when: a door when it's opened, not just tried).
 func logic_for(thing: Node, when: Array = [], set: Dictionary = {}) -> HSLogic:
 	if thing is HSLogic:
 		return thing
@@ -372,9 +373,9 @@ func logic_for(thing: Node, when: Array = [], set: Dictionary = {}) -> HSLogic:
 			return l
 	var lg := HSLogic.new()
 	lg.name = "Logic"
-	if not when.is_empty():
-		lg.on = String(when[0])
-		lg.on_signal = String(when[1])
+	var how := when if not when.is_empty() else default_when(thing)
+	lg.on = String(how[0])
+	lg.on_signal = String(how[1])
 	for k in set:
 		lg.set(k, set[k])
 	plugin.add_node(thing, lg, "Logic for " + String(thing.name))

@@ -37,7 +37,7 @@ A node, **Logic** (`HSLogic`, `logic.gd`), put under anything. Three lines, the 
 
 | | | |
 |---|---|---|
-| **Works only when** | `needs` | the condition's words (MARKERS §5: flags, `task:`, `on:`, `item:`, `!` for not). While they aren't so, E on the thing does nothing but say `locked_says` (and play `locked_sound`). Empty: it always works |
+| **Works only when** | `needs` | the condition's words (MARKERS §5: flags, `task:`, `on:`, `item:`, `!` for not). While they aren't so, E on the thing does nothing but say `locked_says` (with none of its own: the thing's own, a door's "Locked.") and play `locked_sound`. Empty: it always works |
 | **When** | `on` | **it's used** (E); **one of its signals** (`on_signal`: a door's `opened` or `closed`, a pickup's `picked`, an area's `body_entered`, which counts only for the player); or **by itself**, the moment its needs come to be so. `once`, or every time |
 | **Then** | | flags switched (`set_flags`: `+a, -b, ~c`), a task ticked (`tick`) or put on the list (`add_tasks`), a line (`say`), a sound, things fired (`fires`: their `fire()`, `start()` or `use()`) |
 
@@ -47,6 +47,10 @@ The thing is its parent (or `thing`, for a Logic kept somewhere else). So:
 - *a marker waits for a door*: the door's Logic, *When it's `opened`, then* `+cellar_open`; the marker's *Starts when*
   `cellar_open`.
 - *something happens by itself once two things are so*: a Logic on its own, *by itself*, needs `has_key, task:power`.
+
+A Logic made in the tabs is set off by what the thing does when nobody says otherwise: a door when it's **opened**
+(not when it's only tried, locked), an area when it has done its own thing or you walk in, anything else when it's
+used (`default_when`).
 
 **How it's asked.** The starter's player (`player.gd` `use()`) finds what E is aimed at as before, then asks that
 thing's Logic nodes (`allows`): one that says no has said why, and the thing isn't used. After the thing's own `use()`

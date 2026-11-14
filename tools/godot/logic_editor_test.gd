@@ -254,6 +254,15 @@ func _run() -> void:
 	await select(door)
 	ok(things.thing == door and things.form.find_child("AddLogic", true, false) != null and things.form.find_child("F_locked_by", true, false) != null,
 		"the door's form: no Logic yet (a button for one), and its own Locked by with a picker")
+	(things.form.find_child("AddLogic", true, false) as Button).pressed.emit()
+	await frames(3)
+	var dl0 := door.get_node_or_null("Logic") as HSLogic
+	ok(dl0 != null and dl0.on == "signal" and dl0.on_signal == "opened", "a Logic made for a door is set off when it's opened (not when it's only tried)", "%s %s" % [dl0.on, dl0.on_signal] if dl0 != null else "none")
+	undo()
+	await frames(3)
+	ok(door.get_node_or_null("Logic") == null, "undone: the door has no Logic again")
+	things.refresh()
+	await frames(2)
 	var lb = things.form.find_child("F_locked_by", true, false)
 	(lb.get_node("Line") as LineEdit).text = "cellar_key"
 	(lb.get_node("Line") as LineEdit).text_submitted.emit("cellar_key")

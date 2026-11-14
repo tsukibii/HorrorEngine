@@ -173,6 +173,10 @@ func stage_gate() -> void:
 	await frames(2)
 	ok(hit == null and not bool(door.get("open")) and refused[0] == 1, "A: E on a door whose flag is off does nothing", "open %s refused %d" % [door.get("open"), refused[0]])
 	ok(line() == "Not while Alex is watching.", "A: it says why", line())
+	lg.locked_says = ""
+	door.set("locked_says", "It won't budge.")
+	await use_at(door)
+	ok(line() == "It won't budge.", "A: with no line of its own, a door's Logic says the door's own", line())
 	story.call("set_flag", "alex_gone")
 	hit = await use_at(door)
 	await frames(2)

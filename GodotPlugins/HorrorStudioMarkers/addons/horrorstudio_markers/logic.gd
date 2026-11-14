@@ -29,7 +29,7 @@ const REACH_MOST := 6.0                       ## a thing with no use() bigger th
 @export var thing: NodePath                   ## what this is the logic of; empty: its parent
 @export_group("Works only when")
 @export var needs := ""                       ## the condition's words: "alex_gone, item:key, !task:power"; empty: always
-@export var locked_says := ""                 ## the line when it's tried while they aren't so
+@export var locked_says := ""                 ## the line when it's tried while they aren't so (empty: the thing's own, a door's "Locked.")
 @export var locked_sound := ""                ## and a sound: one of the sound shelf's by name
 @export_group("When")
 @export_enum("used", "signal", "itself") var on := "used":   ## what sets its Then off
@@ -197,7 +197,11 @@ func holds() -> bool:
 func allows(_by: Node = null) -> bool:
 	if needs.strip_edges() == "" or holds():
 		return true
-	_say(locked_says)
+	var line := locked_says
+	var t := thing_node()
+	if line == "" and t != null and t.get("locked_says") is String:   # (nothing of its own to say: the thing's own, a door's "Locked.")
+		line = t.get("locked_says")
+	_say(line)
 	_sound(locked_sound)
 	refused.emit()
 	return false
