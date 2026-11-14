@@ -8,31 +8,36 @@
 ##
 ## Where it is matters for the kinds with a place: `appear` (she's put there), `walk` (where she walks TO, through its
 ## HSNpcBend children; she starts from wherever she is), `sit` (the seat's front edge, at the height she sits at),
-## `sleep` (the bed's edge), `grab` (where her hand goes). Its +Z (the blue arrow) is the way she faces there.
+## `sleep` (the bed's edge), `grab` (where her hand goes), `scare` (where she appears). Its +Z (the blue arrow) is the
+## way she faces there.
 ## The other kinds happen where she is.
 ##
 ## The Inspector shows only the fields its kind uses; the NPC Markers tab is the easy way to fill them in.
 class_name HSNpcMarker
 extends Node3D
 
-const KINDS := ["appear", "walk", "wait", "sit", "sleep", "grab", "animation", "event", "disappear", "choice", "repeat"]
+const KINDS := ["appear", "walk", "wait", "sit", "sleep", "grab", "animation", "event", "disappear", "choice", "repeat", "attack", "scare"]
 const TITLES := {"appear": "Start here", "walk": "Walk", "wait": "Wait", "sit": "Sit", "sleep": "Sleep", "grab": "Grab", "animation": "Animation",
-	"event": "Event", "disappear": "Disappear", "choice": "Choice", "repeat": "Repeat"}
-const PLACED := ["appear", "walk", "sit", "sleep", "grab"]                 # kinds whose pin is a place
+	"event": "Event", "disappear": "Disappear", "choice": "Choice", "repeat": "Repeat", "attack": "Attack", "scare": "Jump scare"}
+const PLACED := ["appear", "walk", "sit", "sleep", "grab", "scare"]        # kinds whose pin is a place
 const STAYS := ["wait", "sit", "sleep", "animation"]                       # kinds she stays in
-const BODY := ["appear", "walk", "wait", "sit", "sleep", "grab", "animation"]   # kinds that need her body (a hidden character comes back for them)
-const ACTIONS := {"reach": "Reach for it", "pick_up": "Pick it up", "put_down": "Put it down", "open": "Open a door"}
+const BODY := ["appear", "walk", "wait", "sit", "sleep", "grab", "animation", "attack", "scare"]   # kinds that need her body (a hidden character comes back for them)
+const ACTIONS := {"reach": "Reach for it", "pick_up": "Pick it up", "put_down": "Put it down", "open": "Open a door", "eat": "Eat it", "drink": "Drink from it"}
+const PACES := {"walk": "Walk", "run": "Run", "sneak": "Sneak", "crawl": "Crawl", "creep": "Creep", "scuttle": "Scuttle"}   # (the last four: animations v3, docs/ANIMATOR_V3.md)
 
 # which kinds use a field (a field not listed here is every kind's)
 const USED_BY := {
 	"pace": ["walk"], "pace_scale": ["walk"], "take_secs": ["walk"], "smooth": ["walk"], "follow_floor": ["walk"], "face_arrow": ["walk"],
 	"to_player": ["walk"], "stop_short": ["walk"],
-	"stay": STAYS, "stay_secs": STAYS, "face_player": ["wait"],
-	"action": ["grab"], "target": ["grab"], "door_opens": ["grab"], "left_hand": ["grab"], "keep_in_hand": ["grab"],
+	"stay": STAYS, "stay_secs": STAYS, "face_player": ["wait", "scare"],
+	"action": ["grab"], "target": ["grab"], "door_opens": ["grab"], "left_hand": ["grab", "attack"], "keep_in_hand": ["grab"],
+	"attack": ["attack"], "attack_at": ["attack"], "attack_times": ["attack"],
+	"scare_kind": ["scare"], "scare_stays": ["scare"],
+	"head": BODY + ["event"], "head_range": BODY + ["event"], "head_at": BODY + ["event"],
 	"head_right": ["sleep"],
 	"clip": ["wait", "animation"], "clip_file": ["animation"], "loop": ["animation"], "times": ["animation"],
-	"anim_speed": ["wait", "sit", "sleep", "grab", "animation"], "blend": BODY,
-	"how": ["appear", "disappear"],
+	"anim_speed": ["wait", "sit", "sleep", "grab", "animation", "attack"], "blend": BODY,
+	"how": ["appear", "disappear", "scare"],
 	"repeat_times": ["repeat"], "repeat_until": ["repeat"],
 	"face": BODY + ["event"], "face_amount": BODY + ["event"], "face_rules": BODY + ["event"],
 	"look": BODY + ["event"], "look_skin": BODY + ["event"], "look_eyes": BODY + ["event"], "look_eye_color": BODY + ["event"], "look_secs": BODY + ["event"],
@@ -42,7 +47,7 @@ const USED_BY := {
 	"fire": BODY + ["event", "disappear"], "scare": ["event"], "let_go": ["event"],
 }
 
-@export_enum("appear", "walk", "wait", "sit", "sleep", "grab", "animation", "event", "disappear", "choice", "repeat") var kind := "walk":
+@export_enum("appear", "walk", "wait", "sit", "sleep", "grab", "animation", "event", "disappear", "choice", "repeat", "attack", "scare") var kind := "walk":
 	set(v):
 		kind = v
 		notify_property_list_changed()
@@ -51,7 +56,7 @@ const USED_BY := {
 @export var start_when := ""                             ## the condition's words (cond.gd); empty: at once, when the marker before is done
 
 @export_group("Walk")
-@export_enum("walk", "run") var pace := "walk"           ## her own walk, or her own run
+@export_enum("walk", "run", "sneak", "crawl", "creep", "scuttle") var pace := "walk"   ## her own walk or run; or low: a careful sneak, a crawl on hands and knees, a creature's creep, a scuttle on hands and feet (she stays low after)
 @export_range(0.2, 4.0, 0.05) var pace_scale := 1.0      ## times that speed (0.5: a slow walk; her feet keep step)
 @export_range(0.0, 120.0, 0.1) var take_secs := 0.0      ## over 0: she gets there in this many seconds, whatever the distance
 @export var smooth := true                               ## one smooth curve through her bends (off: straight from bend to bend)
@@ -66,11 +71,25 @@ const USED_BY := {
 @export var face_player := false                         ## she keeps turning to face you while she waits
 
 @export_group("Grab")
-@export_enum("reach", "pick_up", "put_down", "open") var action := "reach"
-@export var target: NodePath                             ## the thing she picks up, or the door she opens (its use() or fire() is called)
+@export_enum("reach", "pick_up", "put_down", "open", "eat", "drink") var action := "reach"
+@export var target: NodePath                             ## the thing she picks up, eats or drinks from (none: what she holds), or the door she opens (its use() or fire() is called)
 @export_enum("push", "pull", "slide") var door_opens := "push"
 @export var left_hand := false
 @export var keep_in_hand := true                         ## picked up, it stays in her hand (off: it's put away, hidden)
+
+@export_group("Attack")
+@export_enum("punch", "swing") var attack := "punch"     ## a punch, or a swing of what she holds (her fist when she holds nothing)
+@export var attack_at: NodePath                          ## who: empty, you
+@export_range(1, 20) var attack_times := 1               ## how many blows
+
+@export_group("Jump scare")
+@export_enum("lunge", "loom", "snap", "claw") var scare_kind := "lunge"   ## thrown at you; risen over you; her head snapping up; clawed up from all fours
+@export var scare_stays := false                         ## she stays after (off: she's gone when it's been shown)
+
+@export_group("Head")
+@export_enum("keep", "follow", "free") var head := "keep"   ## from here on: her head follows you ("follow"), is her animation's again ("free"), or as it was ("keep")
+@export_range(0.0, 360.0, 1.0, "degrees") var head_range := 160.0   ## the whole arc she follows in, half to each side of straight ahead
+@export var head_at: NodePath                            ## who she looks at: empty, you
 
 @export_group("Sleep")
 @export var head_right := false                          ## her head goes to her right as she sits on the edge (off: to her left)
@@ -136,12 +155,14 @@ func _get_configuration_warnings() -> PackedStringArray:
 
 
 func title() -> String:
-	if kind == "walk" and pace == "run":
-		return "Run"
+	if kind == "walk" and pace != "walk":
+		return PACES.get(pace, "Walk")
+	if kind == "attack":
+		return "Punch" if attack == "punch" else "Swing"
 	if kind == "wait" and talk and stay == "talked":
 		return "Talk"
 	if kind == "grab":
-		return {"reach": "Grab", "pick_up": "Pick up", "put_down": "Put down", "open": "Open door"}.get(action, "Grab")
+		return {"reach": "Grab", "pick_up": "Pick up", "put_down": "Put down", "open": "Open door", "eat": "Eat", "drink": "Drink"}.get(action, "Grab")
 	return TITLES.get(kind, kind)
 
 

@@ -99,7 +99,7 @@ static func _clip_info(record: Dictionary, clip: String) -> Dictionary:
 
 ## where her hand goes for a Grab: the thing itself when it picks one up, else the pin
 static func hand_at(m: HSNpcMarker) -> Vector3:
-	if m.kind == "grab" and m.action == "pick_up" and not m.target.is_empty() and m.is_inside_tree():
+	if m.kind == "grab" and m.action in ["pick_up", "eat", "drink"] and not m.target.is_empty() and m.is_inside_tree():
 		var t := m.get_node_or_null(m.target)
 		if t is Node3D:
 			return (t as Node3D).global_position
@@ -170,6 +170,8 @@ static func end_of(m: HSNpcMarker, from: Dictionary, record: Dictionary = {}) ->
 			return {"pos": m.place(), "yaw": yaw}
 		"sit", "sleep", "grab":
 			return stand_for(m, record, (from["pos"] as Vector3).y)
+		"scare":
+			return {"pos": m.place(), "yaw": m.yaw()}
 	return from
 
 
@@ -328,11 +330,17 @@ static func length(points: PackedVector3Array) -> float:
 	return l
 
 
+const LOW_SPEED := {"sneak": 0.42, "crawl": 0.38, "creep": 0.53, "scuttle": 1.2}   # a low pace's speed when her record doesn't say (HSNpcBody.LOW)
+
 ## how fast she goes on a Walk marker, metres a second: `walk` and `run` her own speeds, `dist` the path's length
-static func speed_of(m: HSNpcMarker, walk: float, run: float, dist: float) -> float:
+## (`low`: her own speed at a low pace (sneak, crawl, creep, scuttle) when it's known; else what such a pace usually is)
+static func speed_of(m: HSNpcMarker, walk: float, run: float, dist: float, low := 0.0) -> float:
 	if m.take_secs > 0.0:
 		return clampf(dist / m.take_secs, 0.1, 9.0)
-	return clampf((run if m.pace == "run" else walk) * m.pace_scale, 0.1, 9.0)
+	var base := run if m.pace == "run" else walk
+	if m.pace in LOW_SPEED:
+		base = low if low > 0.05 else float(LOW_SPEED[m.pace])
+	return clampf(base * m.pace_scale, 0.1, 9.0)
 
 
 ## about how long a marker takes, seconds (-1: it depends: on you, on flags). `from`: where she starts; `walk`, `run`:
@@ -352,6 +360,8 @@ static func seconds_of(m: HSNpcMarker, from: Vector3, walk := 1.3, run := 3.0, c
 			return clip_secs * m.times / maxf(m.anim_speed, 0.05) if clip_secs > 0.0 else -1.0
 		"appear", "disappear", "event":
 			return 0.0 if m.how == "now" or m.kind == "event" else -1.0
+		"scare":
+			return (1.0 if not m.scare_stays else 2.0) if m.how == "now" else -1.0
 	return -1.0
 
 
@@ -380,7 +390,29 @@ static func problems(npc: Node, clips: PackedStringArray = [], setters = null, k
 		if items(q).is_empty():
 			out.append({"node": q, "text": "'%s' has no markers." % (q as HSNpcQuest).label(), "level": "tip"})
 		_container_problems(q, npc, clips, setters, mine, known_tasks, out, false)
+	_hand_problems(npc, out)
 	return out
+
+
+# what's in her hand as the markers go (in order, every way gone through): an Eat or a Drink with nothing named wants
+# something there by then
+static func _hand_problems(npc: Node, out: Array) -> void:
+	var holding := false
+	for q in quests(npc):
+		for row in board(q):
+			var m := row["node"] as HSNpcMarker
+			if m == null or m.kind != "grab":
+				continue
+			var named := not m.target.is_empty() and m.is_inside_tree() and m.get_node_or_null(m.target) != null
+			match m.action:
+				"pick_up":
+					holding = named and m.keep_in_hand
+				"put_down":
+					holding = false
+				"eat", "drink":
+					if not named and not holding:
+						out.append({"node": m, "text": "%s %s: nothing's named and her hand is empty by then, so she only goes through the motions. Pick the thing, or put a Pick up before it." % [row["label"], m.title()], "level": "tip"})
+					holding = m.action == "drink" and (named or holding)
 
 
 static func _cond_problems(node: Node, text: String, what: String, setters, mine: Dictionary, known_tasks, npc: Node, out: Array) -> void:
@@ -409,6 +441,29 @@ static func _container_problems(container: Node, npc: Node, clips: PackedStringA
 		var m := list[i] as HSNpcMarker
 		var lab := "%s %s" % [label_of(m), m.title()]
 		_cond_problems(m, m.start_when, "Starts when", setters, mine, known_tasks, npc, out)
+		if m.kind == "attack" and not m.attack_at.is_empty() and m.get_node_or_null(m.attack_at) == null:
+			out.append({"node": m, "text": "%s: pick who she attacks (or leave it empty: you)." % lab, "level": "error"})
+		if not clips.is_empty():                               # animations v3's clips: a character baked before them (or never baked) has none
+			var lacks := ""
+			var then := ""
+			if m.kind == "walk" and m.pace in LOW_SPEED and not _has_clip(clips, m.pace):
+				lacks = m.pace
+				then = "she'll walk"
+			elif m.kind == "grab" and m.action in ["eat", "drink"] and not _has_clip(clips, m.action + ("_l" if m.left_hand else "")):
+				lacks = m.action
+				then = "she'll only take it"
+			elif m.kind == "attack" and not _has_clip(clips, m.attack + ("_l" if m.left_hand else "")):
+				lacks = m.attack
+				then = "she'll go up to them and nothing more"
+			elif m.kind == "scare" and not _has_clip(clips, "scare_" + m.scare_kind):
+				lacks = "scare_" + m.scare_kind
+				then = "she'll be there for a blink and no more"
+			if lacks != "":
+				out.append({"node": m, "text": "%s: she has no '%s' of her own (%s). Bake her again in the Animator: it makes one." % [lab, lacks, then], "level": "warn"})
+		if m.head != "keep" and not m.head_at.is_empty() and m.get_node_or_null(m.head_at) == null:
+			out.append({"node": m, "text": "%s: pick who her head follows (or leave it empty: you)." % lab, "level": "error"})
+		if m.head == "follow" and not ResourceLoader.exists(HSNpcBody.LOOK + "head_track.gd"):
+			out.append({"node": m, "text": "%s: her head can't follow anyone without the HorrorStudio Look plugin in the project (addons/horrorstudio_look)." % lab, "level": "warn"})
 		match m.kind:
 			"walk":
 				if not m.to_player:
@@ -459,7 +514,7 @@ static func _container_problems(container: Node, npc: Node, clips: PackedStringA
 				hidden = true
 			"appear":
 				hidden = false
-		if hidden and m.kind in ["walk", "sit", "sleep", "grab"] :
+		if hidden and m.kind in ["walk", "sit", "sleep", "grab", "attack"] :
 			out.append({"node": m, "text": "%s comes after a Disappear: the character comes back where they vanished. Put a Start here before it to come back somewhere else." % lab, "level": "tip"})
 			hidden = false
 		if m.stay == "talked" and m.stays() and not (m.talk and not m.conversations().is_empty()):

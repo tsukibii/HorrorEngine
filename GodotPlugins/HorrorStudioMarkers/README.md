@@ -22,17 +22,38 @@ design and its rules: `docs/MARKERS.md`.
 
 - *Starts when*: nothing (at once, after the marker before), or chips: a flag is on, a quest is open, after 3 s,
   you're near, you can't see her, she's been shot.
-- What she does, by its card: **Start here**, **Walk** / **Run** (to the pin, through bends you add on the path, at
-  her pace or in a time, over stairs), **Wait** / **Talk**, **Sit**, **Sleep**, **Grab** / **Pick up** / **Put down** /
-  **Open door**, **Animation** (one of hers, or a file: a Kimodo `.npz` dropped in `res://animations/`), **Event** /
-  **Scare** / **Look**, **Choice** (ways by flags), **Repeat**, **Disappear** (hidden and switched off: no drawing, no
-  animation, no processing, until a later marker needs her).
+- What she does, by its card: **Start here**, **Walk** / **Run** / **Sneak** / **Crawl** (to the pin, through bends
+  you add on the path, at her pace or in a time, over stairs; a creature's **Creep** and **Scuttle** are paces in the
+  form; after a low pace she stays low), **Wait** / **Talk**, **Sit**, **Sleep**, **Grab** / **Pick up** / **Put down** /
+  **Open door** / **Eat** / **Drink**, **Attack** (a punch, or a swing of what she holds, at you or anyone you pick),
+  **Jump scare** (there, shown, gone: a lunge, a loom, a snap of her head, a claw up from all fours), **Animation** (one
+  of hers, or a file: a Kimodo `.npz` dropped in `res://animations/`), **Event** / **Scare** / **Look**, **Choice**
+  (ways by flags), **Repeat**, **Disappear** (hidden and switched off: no drawing, no animation, no processing, until
+  a later marker needs her).
 - *Then*: flags switched, a task ticked or added, a line, a sound, things fired (a scare area, a cue).
-- On any marker: her **face** (and faces by flag), her **look** (skin and eyes, with the Look plugin), and **You can
-  talk to ... here**: her lines, your answers, each answer's flags, face and reply.
+- On any marker: her **face** (and faces by flag), her **look** (skin and eyes, with the Look plugin), her **head**
+  (it follows you, or someone you pick, within an arc: 160 degrees unless you set it, 80 to each side; carried on
+  until a marker gives it back to her animation), and **You can talk to ... here**: her lines, your answers, each
+  answer's flags, face and reply.
 
-Her state is carried from marker to marker and quest to quest: where she stands, sat or asleep, hidden, her face, her
-look, what she holds. A quest that doesn't end in Disappear leaves her where she is for the next.
+Her state is carried from marker to marker and quest to quest: where she stands, sat or asleep, low or upright,
+hidden, her face, her look, who her head follows, what she holds. A quest that doesn't end in Disappear leaves her
+where she is for the next.
+
+## The cards from animations v3
+
+Sneak, Crawl, Eat, Drink, Attack, Jump scare and the head want two things (docs/ANIMATOR_V3.md):
+
+- **A character baked by the Animator since animations v3** (53 clips; open her in the Animator and press Bake again).
+  On an older bake or another model, Problems names the clip she lacks at its marker.
+- **The Look plugin** in the project (every `godot_byhand.py` project has it) for her head and her hands: the head
+  follows by its `HSHeadTrack`; a thing is held, eaten, drunk from and swung by its `HSGrip` (add one under a prop:
+  a ring where a hand closes round it, a handle for its thickness, a point for the side that's bitten or the rim, a
+  point for the far end of a bat) and her hand is carried the last centimetres by `HSHandIK`. A prop without a grip is
+  held by a guess from its size.
+
+An Attack that lands says so: the HSNpc's `struck(target, kind)`, and the target's own `take_hit(by)` or
+`struck(by, kind)` when it has one (the starter kit's player has: a fright).
 
 ## In the 3D view
 
@@ -58,6 +79,7 @@ beside a character in the tab shows or hides her markers; the ring shows only he
 ```gdscript
 $"Alex markers".jump_to($"Alex markers/Night two/Walk")     # straight to a marker
 $"Alex markers".marker_done.connect(func(m): print(m.name))
+$"Alex markers".struck.connect(func(who, kind): print("she hit ", who.name, " with a ", kind))
 HSNpcCond.set_flag(get_tree(), "met_alex")                   # a flag, with or without a Story
 ```
 

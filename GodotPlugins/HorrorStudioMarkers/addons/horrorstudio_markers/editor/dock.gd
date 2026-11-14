@@ -12,10 +12,10 @@ const Glyphs := preload("res://addons/horrorstudio_markers/editor/glyphs.gd")
 const CondEdit := preload("res://addons/horrorstudio_markers/editor/cond_edit.gd")
 const Dial := preload("res://addons/horrorstudio_markers/editor/dial.gd")
 const KIND_TITLES := [["appear", "Start here"], ["walk", "Walk (or run)"], ["wait", "Wait (or talk)"], ["sit", "Sit"], ["sleep", "Sleep"], ["grab", "Grab, pick up, open"],
-	["animation", "Animation"], ["event", "Event"], ["disappear", "Disappear"], ["choice", "Choice"], ["repeat", "Repeat"]]
+	["animation", "Animation"], ["event", "Event"], ["disappear", "Disappear"], ["choice", "Choice"], ["repeat", "Repeat"], ["attack", "Attack (a punch, a swing)"], ["scare", "Jump scare"]]
 const STAYS := [["next", "until the next marker can start"], ["secs", "for some seconds"], ["talked", "until you talk"]]
 const HOWS := [["now", "at once"], ["unseen", "when you're not looking"], ["fade", "fading (the look plugin)"]]
-const REBUILD := ["kind", "stay", "action", "loop", "talk", "to_player", "pace", "clip_file", "look", "talks", "face_rules", "fire", "target", "take_secs"]   # fields that change which rows the form has
+const REBUILD := ["kind", "stay", "action", "loop", "talk", "to_player", "pace", "clip_file", "look", "talks", "face_rules", "fire", "target", "take_secs", "head", "attack_at", "head_at", "scare_kind"]   # fields that change which rows the form has
 const CLIP_FOLDERS := ["res://animations"]
 
 var plugin: EditorPlugin
@@ -1104,7 +1104,8 @@ func _form_marker(m: HSNpcMarker) -> void:
 			b.add_child(_check(m, "to_player", "Comes to you instead of to the pin"))
 			if m.to_player:
 				_row(b, "Stops", _num(m, "stop_short", 0.3, 5.0, 0.05, " m from you"))
-			_row(b, "Pace", _pick(m, "pace", [["walk", "walk"], ["run", "run"]]))
+			_row(b, "Pace", _pick(m, "pace", [["walk", "walk"], ["run", "run"], ["sneak", "sneak (low, careful)"], ["crawl", "crawl (hands and knees)"], ["creep", "creep (a creature's stalk)"], ["scuttle", "scuttle (hands and feet, quick)"]]),
+				"The last four are low: there, the character stays low (crouched, on all fours, hunched) until a marker walks or runs.")
 			_row(b, "Speed", _num(m, "pace_scale", 0.2, 4.0, 0.05, " ×"), "Times the walk's own speed: 0.5 a slow walk. The feet keep step.")
 			if not m.to_player:
 				_row(b, "Or take", _num(m, "take_secs", 0.0, 120.0, 0.5, " s"), "Over 0: gets there in this many seconds, whatever the distance.")
@@ -1116,8 +1117,8 @@ func _form_marker(m: HSNpcMarker) -> void:
 				_note(b, "Click the + on the path in the 3D view for a bend; drag it. Right-click a bend to delete it.")
 		"grab":
 			var g := _sec("The hand")
-			_row(g, "Does", _pick(m, "action", [["reach", "reach for the pin"], ["pick_up", "pick a thing up"], ["put_down", "put down what's held"], ["open", "open a door"]]))
-			if m.action in ["pick_up", "open"]:
+			_row(g, "Does", _pick(m, "action", [["reach", "reach for the pin"], ["pick_up", "pick a thing up"], ["put_down", "put down what's held"], ["open", "open a door"], ["eat", "eat a thing"], ["drink", "drink from a thing"]]))
+			if m.action in ["pick_up", "open", "eat", "drink"]:
 				var tr := HBoxContainer.new()
 				var tl := Label.new()
 				var tn := m.get_node_or_null(m.target) if not m.target.is_empty() else null
@@ -1128,9 +1129,11 @@ func _form_marker(m: HSNpcMarker) -> void:
 				var pk := _button("Pick", "target", "Then click it in the 3D view.")
 				pk.name = "PickTarget"
 				pk.pressed.connect(func() -> void:
-					plugin.pick_in_view("the thing" if m.action == "pick_up" else "the door", func(node: Node, _where: Vector3) -> void: set_target(m, node)))
+					plugin.pick_in_view("the door" if m.action == "open" else "the thing", func(node: Node, _where: Vector3) -> void: set_target(m, node)))
 				tr.add_child(pk)
-				_row(g, "The thing" if m.action == "pick_up" else "The door", tr)
+				_row(g, "The door" if m.action == "open" else "The thing", tr)
+			if m.action in ["eat", "drink"]:
+				_note(g, "With no thing picked, what's already in the hand. A thing sits in the hand by its grip: an HSGrip node under the prop (Add Child Node) says where a hand takes it, how thick it is there and where the mouth goes; with none it's guessed from the prop's size." + (" Eaten, it's gone." if m.action == "eat" else ""))
 			if m.action == "open":
 				_row(g, "It opens", _pick(m, "door_opens", [["push", "pushed"], ["pull", "pulled"], ["slide", "slid"]]))
 			if m.action == "pick_up":
@@ -1150,6 +1153,36 @@ func _form_marker(m: HSNpcMarker) -> void:
 			an.add_child(_check(m, "loop", "It loops (and stays in it)"))
 			if not m.loop:
 				_row(an, "Times", _num(m, "times", 1, 99, 1))
+		"attack":
+			var at := _sec("The attack")
+			_row(at, "Does", _pick(m, "attack", [["punch", "throws a punch"], ["swing", "swings what's in the hand"]]), "A swing with an empty hand is a swing of the fist.")
+			var ar := HBoxContainer.new()
+			var al := Label.new()
+			var an2 := m.get_node_or_null(m.attack_at) if not m.attack_at.is_empty() else null
+			al.text = String(an2.name) if an2 != null else "you"
+			al.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			al.clip_text = true
+			ar.add_child(al)
+			var ap := _button("Pick", "target", "Then click who in the 3D view.")
+			ap.name = "PickWho"
+			ap.pressed.connect(func() -> void:
+				plugin.pick_in_view("who", func(node: Node, _where: Vector3) -> void: set_who(m, "attack_at", node)))
+			ar.add_child(ap)
+			if an2 != null:
+				var ay := _button("You", "", "Back to you.")
+				ay.pressed.connect(func() -> void: _put(m, "attack_at", NodePath("")))
+				ar.add_child(ay)
+			_row(at, "At", ar)
+			_row(at, "Times", _num(m, "attack_times", 1, 20, 1))
+			at.add_child(_check(m, "left_hand", "With the left hand"))
+			_note(at, "Walks up to where the blow reaches, turns with them until it's thrown, and the fist (or the end of what's held) is carried the rest of the way onto them. Someone with a Motion node, or anything with take_hit() or struck(), is told.")
+		"scare":
+			var sc := _sec("The scare")
+			_row(sc, "Is", _pick(m, "scare_kind", [["lunge", "a lunge: a step, both hands at your face"], ["loom", "a loom: bent double, then upright over you"], ["snap", "a head snap"], ["claw", "a claw up from all fours"]]))
+			_row(sc, "Comes", _pick(m, "how", [["now", "at once"], ["unseen", "when you're not looking"]]))
+			sc.add_child(_check(m, "face_player", "Turned to you as it starts", "Off: facing the arrow."))
+			sc.add_child(_check(m, "scare_stays", "Stays after", "Off: gone when it's been shown (about a second), as a scare that briefly appears is."))
+			_note(sc, "The pin is where the character appears: put it a little over a metre from where you'll be. It starts already coiled, so nothing eases into it. The Fear node and the night's director hear it.")
 		"appear", "disappear":
 			var h := _sec("How")
 			_row(h, "Comes" if m.kind == "appear" else "Goes", _pick(m, "how", HOWS))
@@ -1286,6 +1319,27 @@ func _form_where(m: HSNpcMarker, npc: HSNpc) -> void:
 
 
 func _form_face(m: HSNpcMarker) -> void:
+	var hd := _sec("Head")
+	_row(hd, "The head", _pick(m, "head", [["keep", "as it was"], ["follow", "follows you"], ["free", "is the animation's again"]]), "From here on, until another marker says. It turns the head, the neck, a little of the chest and the eyes over whatever is playing.")
+	if m.head == "follow":
+		_row(hd, "Within", _num(m, "head_range", 0.0, 360.0, 5.0, " degrees"), "The whole arc: half to each side of straight ahead. 160 is 80 to the left and 80 to the right. Past it the head lets go.")
+		var hr := HBoxContainer.new()
+		var hl := Label.new()
+		var hn := m.get_node_or_null(m.head_at) if not m.head_at.is_empty() else null
+		hl.text = String(hn.name) if hn != null else "you"
+		hl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		hl.clip_text = true
+		hr.add_child(hl)
+		var hp := _button("Pick", "target", "Then click who or what in the 3D view.")
+		hp.name = "PickHead"
+		hp.pressed.connect(func() -> void:
+			plugin.pick_in_view("who or what", func(node: Node, _where: Vector3) -> void: set_who(m, "head_at", node)))
+		hr.add_child(hp)
+		if hn != null:
+			var hy := _button("You", "", "Back to you.")
+			hy.pressed.connect(func() -> void: _put(m, "head_at", NodePath("")))
+			hr.add_child(hy)
+		_row(hd, "Looks at", hr)
 	var f := _sec("Face and look")
 	_row(f, "Face", _pick(m, "face", _face_items("as it was")), "Worn from here on, until another marker's.")
 	if m.face != "":
@@ -1633,8 +1687,23 @@ func set_target(m: HSNpcMarker, node: Node) -> void:
 				break
 			p = p.get_parent()
 	_put(m, "target", m.get_path_to(t))
-	if m.action == "pick_up" and t is Node3D:                  # (its pin goes to the thing)
+	if m.action in ["pick_up", "eat", "drink"] and t is Node3D:   # (its pin goes to the thing)
 		plugin.place_node(m, Transform3D(m.global_transform.basis, (t as Node3D).global_position), m.global_transform, "the pin onto the thing")
+	refresh_form.call_deferred()
+
+
+## who a marker is about (an Attack's `attack_at`, a head's `head_at`): the node clicked, or the character it's part of
+func set_who(m: HSNpcMarker, field: String, node: Node) -> void:
+	if node == null:
+		return
+	var t := node
+	var p := node
+	while p != null and p != plugin.scene_root():                  # (a click lands on a mesh: the character or the player it belongs to is who's meant)
+		if p.is_in_group("hs_player") or p is CharacterBody3D or p.get_node_or_null("Motion") != null or (p.get_parent() != null and p.get_parent().get_children().any(func(c): return c is HSNpc and (c as HSNpc).character_node() == p)):
+			t = p
+			break
+		p = p.get_parent()
+	_put(m, field, m.get_path_to(t))
 	refresh_form.call_deferred()
 
 

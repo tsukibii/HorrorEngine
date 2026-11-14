@@ -18,6 +18,7 @@ signal quest_started(quest: Node)
 signal quest_done(quest: Node)
 signal talked(marker: Node, answer: int)      ## a conversation with her ended (the answer picked, -1 when it had none)
 signal scared                                 ## a marker's jump scare: the starter's Fear node and night director listen (group hs_scare)
+signal struck(target: Node, kind: String)     ## a blow of an Attack marker landed on someone ("punch" or "swing")
 
 const COLORS := ["#4FC3F7", "#FFB74D", "#BA68C8", "#81C784", "#F06292", "#FFF176", "#4DB6AC", "#FF8A65", "#9FA8DA", "#E57373"]
 

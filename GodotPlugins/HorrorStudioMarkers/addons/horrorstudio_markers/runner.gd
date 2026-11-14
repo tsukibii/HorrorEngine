@@ -62,6 +62,8 @@ var _react: Node
 var _kept := {}
 var _look := {}
 var _look_name := ""
+var _scared := false                       # a Jump scare marker's scare has been thrown
+var _head := {}                            # her head, as the last marker that said left it: {on, range, at (a path from her HSNpc)}; {}: nothing said yet
 var _rule_face := ""
 var _noted := {}
 var _fading := false
@@ -81,6 +83,7 @@ func begin(of_npc: Node, character: Node3D, as_preview := false) -> void:
 	var f := her.global_basis.z
 	home = {"pos": her.global_position, "yaw": atan2(f.x, f.z)}
 	body.on_event = _on_body_event
+	body.on_struck = func(t: Node, k: String) -> void: npc.struck.emit(t, k)
 	if preview:
 		return
 	_skip_bodies()
@@ -433,8 +436,8 @@ func _start(m: HSNpcMarker) -> void:
 	match m.kind:
 		"walk":
 			_start_walk(m)
-		"wait":
-			body.stand(m.clip, m.anim_speed, m.blend)
+		"wait":                                                # (a wait with no loop of its own after a low way of going: she waits low, as it left her)
+			body.stand(m.clip if m.clip != "" or not body.is_low() else body.hold_clip, m.anim_speed, m.blend)
 		"sit":
 			body.sit(m.place(), m.front(), m.blend)
 		"sleep":
@@ -458,17 +461,28 @@ func _start(m: HSNpcMarker) -> void:
 			if m.let_go and not preview:
 				body.interrupt()
 				body.released = true
+		"attack":
+			var who: Node3D = (m.get_node_or_null(m.attack_at) as Node3D) if not m.attack_at.is_empty() else player()
+			if preview or who == null:
+				_note("%s %s" % ["punches" if m.attack == "punch" else "swings at", "you" if m.attack_at.is_empty() else str(m.attack_at.get_name(m.attack_at.get_name_count() - 1))])
+				body.play(m.attack + ("_l" if m.left_hand else ""), m.attack_times, m.anim_speed, m.blend)
+			else:
+				body.attack(m.attack, who, m.left_hand, m.attack_times, m.anim_speed, m.blend)
+		"scare":
+			_scared = false
+	_head_from(m)
 	npc.marker_started.emit(m)
 
 
 func _start_walk(m: HSNpcMarker) -> void:
 	var run := m.pace == "run"
+	var gait := m.pace if body.LOW.has(m.pace) else ""        # a low way of going (sneak, crawl, creep, scuttle): its own loop and speed, and she stays low after
 	if m.to_player:
 		if preview:
 			_note("comes to you")
 			return
 		body.follow(func(): return player().global_position if player() != null else her.global_position,
-			clampf(body.pace(run) * m.pace_scale, 0.1, 9.0), run, m.stop_short, m.blend)
+			clampf(body.gait_pace(m.pace) * m.pace_scale, 0.1, 9.0), run, m.stop_short, m.blend, gait)
 		return
 	var here := Vector3(her.global_position.x, body.ground(), her.global_position.z)
 	var ctrl := HSNpcFlow.walk_control(m, here)
@@ -492,7 +506,7 @@ func _start_walk(m: HSNpcMarker) -> void:
 			ctrl = joined
 	var pts := HSNpcFlow.sampled(ctrl, m.smooth)
 	var dist := HSNpcFlow.length(pts)
-	body.walk(pts, HSNpcFlow.speed_of(m, body.pace(false), body.pace(true), dist), run, m.yaw() if m.face_arrow else null, m.follow_floor, m.blend)
+	body.walk(pts, HSNpcFlow.speed_of(m, body.pace(false), body.pace(true), dist, body.gait_pace(m.pace)), run, m.yaw() if m.face_arrow else null, m.follow_floor, m.blend, gait)
 
 
 func _start_grab(m: HSNpcMarker) -> void:
@@ -508,12 +522,36 @@ func _start_grab(m: HSNpcMarker) -> void:
 			body.reach(hand, yaw, r["clip"], flat, null, true, true, m.anim_speed, m.blend)
 		"open":
 			body.open(hand, yaw, r["clip"], flat, thing, m.anim_speed, m.blend)
+		"eat", "drink":                                        # the thing taken first when one's named, else what she holds; eaten, it's gone
+			body.consume(m.action, thing as Node3D, hand, yaw, r["clip"], flat, m.left_hand, "gone" if m.action == "eat" else "keep", m.anim_speed, m.blend)
 		_:
 			body.reach(hand, yaw, r["clip"], flat, null, true, false, m.anim_speed, m.blend)
 
 
 func _run_done(m: HSNpcMarker) -> bool:
 	match m.kind:
+		"scare":                                               # she's put there, the scare's thrown at once, and when it's been shown she's gone (or stays)
+			if not _scared:
+				var spot := m.place()
+				if m.how == "unseen" and not preview and (seen() or spot_seen(spot)):
+					waiting_for = "you to look away"
+					return false
+				_unphase()
+				body.show_now()
+				body.place(spot, m.yaw())
+				var you := player()
+				body.scare(m.scare_kind, you.global_position if m.face_player and you != null and not preview else null, not m.scare_stays)
+				_scared = true
+				if not preview:
+					npc.scared.emit()
+					tree.call_group("hs_scare", "scared", her)
+				return false
+			if body.busy:
+				return false
+			if not m.scare_stays:
+				body.interrupt()
+				body.hide_now()
+			return true
 		"appear":
 			var spot := m.place()
 			if m.how == "unseen" and not preview and (seen() or spot_seen(spot)):
@@ -662,6 +700,24 @@ func sound(what: String) -> void:
 
 
 # ---- her face and her look ----------------------------------------------------------------------------------------------------
+# her head from a marker on: following someone, her animation's again, or as it was
+func _head_from(m: HSNpcMarker) -> void:
+	if m.head == "keep":
+		return
+	_head = {"on": m.head == "follow", "range": m.head_range, "at": npc.get_path_to(m.get_node(m.head_at)) if not m.head_at.is_empty() and m.get_node_or_null(m.head_at) != null else NodePath("")}
+	_head_apply()
+
+
+func _head_apply() -> void:
+	if _head.is_empty() or her == null:
+		return
+	var who: Node3D = npc.get_node_or_null(_head["at"]) as Node3D if not (_head["at"] as NodePath).is_empty() else null
+	if preview:
+		_note("her head %s" % ("follows %s" % ("you" if who == null else str(who.name)) if _head["on"] else "is her animation's again"))
+		return
+	body.head(bool(_head["on"]), who, float(_head["range"]))
+
+
 func _wear(m: HSNpcMarker) -> void:
 	if m.face != "":
 		face.wear(m.face, m.face_amount, maxf(m.blend, 0.15))
@@ -980,7 +1036,7 @@ func snapshot() -> Dictionary:
 	return {"qi": qi, "began": began.duplicate(), "finished": finished, "halted": halted, "dead": dead, "shot": shot, "down": down,
 		"cur": npc.get_path_to(cur) if cur != null and is_instance_valid(cur) else NodePath(""),
 		"at": npc.get_path_to(at) if at != null and is_instance_valid(at) else NodePath(""),
-		"talked": talked, "asked": asked.duplicate(), "body": body.snapshot(), "face": face.snapshot(), "look": _look.duplicate(), "look_name": _look_name}
+		"talked": talked, "asked": asked.duplicate(), "body": body.snapshot(), "face": face.snapshot(), "look": _look.duplicate(), "look_name": _look_name, "head": _head.duplicate()}
 
 
 func restore(d: Dictionary) -> void:
@@ -994,6 +1050,11 @@ func restore(d: Dictionary) -> void:
 	face.restore(d.get("face", {}))
 	_look = (d.get("look", {}) as Dictionary).duplicate()
 	_look_name = String(d.get("look_name", ""))
+	_head = (d.get("head", {}) as Dictionary).duplicate()
+	if _head.is_empty():
+		body.head(false)
+	else:
+		_head_apply()
 	if ResourceLoader.exists(LOOK_SWITCH) and her.get_node_or_null("HSLookSwitch") != null:
 		_apply_look(load(LOOK_SWITCH).call("attach", her), 0.0)
 	qi = int(d.get("qi", -1))
@@ -1130,9 +1191,10 @@ func _snap(m: HSNpcMarker) -> void:
 				var e := HSNpcFlow.end_of(m, {"pos": her.global_position, "yaw": her.global_rotation.y}, body.record)
 				body.place(e["pos"], float(e["yaw"]))
 		"wait":
-			body.hold_clip = m.clip
+			var wc := m.clip if m.clip != "" or not body.is_low() else body.hold_clip
+			body.hold_clip = wc
 			body.hold_rate = m.anim_speed
-			body.stand(m.clip, m.anim_speed, 0.0)
+			body.stand(wc, m.anim_speed, 0.0)
 		"sit":
 			body.sit_now(m.place(), m.front())
 		"sleep":
@@ -1147,8 +1209,18 @@ func _snap(m: HSNpcMarker) -> void:
 					body.stand(clip, m.anim_speed, 0.0)
 		"disappear":
 			body.hide_now()
-	if m.kind in ["walk", "sit", "sleep", "grab", "appear"] or (m.kind == "animation" and not m.loop):
+		"scare":
+			body.place(m.place(), m.yaw())
+			if not m.scare_stays:
+				body.hide_now()
+	if m.kind in ["walk", "sit", "sleep", "grab", "appear", "attack", "scare"] or (m.kind == "animation" and not m.loop):
 		body.hold_clip = ""
+	if m.kind == "walk" and body.LOW.has(m.pace):              # she rests low where a low way of going took her
+		body._rest_for(m.pace)
+	if m.kind == "scare" and m.scare_stays and m.scare_kind == "claw" and body.has_clip("crawl_idle_loop"):
+		body.hold_clip = "crawl_idle_loop"
+	if m.head != "keep":
+		_head_from(m)
 	if m.face != "":
 		face.wear(m.face, m.face_amount, 0.01)
 

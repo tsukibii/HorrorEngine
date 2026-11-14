@@ -18,6 +18,9 @@ extends RefCounted
 
 const WALK := 1.3                          # her speeds when nothing says (m/s)
 const RUN := 3.0
+## the low ways of going (animations v3, docs/ANIMATOR_V3.md): its loop, the loop she rests in after, and how fast when her record doesn't say
+const LOW := {"sneak": ["sneak_loop", "crouch_loop", 0.42], "crawl": ["crawl_loop", "crawl_idle_loop", 0.38], "creep": ["creep_loop", "creep_idle_loop", 0.53], "scuttle": ["scuttle_loop", "crawl_idle_loop", 1.2]}
+const LOOK := "res://addons/horrorstudio_look/"       # the look plugin's head tracker, hands' IK and grips, used when the project has them (never by class name)
 const RETARGET := ["res://kimodo/retarget.gd", "res://addons/horrorstudio_director/kimodo/retarget.gd"]
 const NPZ := ["res://kimodo/npz.gd", "res://addons/horrorstudio_director/kimodo/npz.gd"]
 const GUESS := {                           # an unbaked model's clips, found by what their names hold
@@ -47,6 +50,11 @@ var held: Node3D                           ## what's in her hand
 var avoid := Vector3.INF                   ## where the player is (she waits a moment for them to move); INF: nobody
 var skip: Array[RID] = []                  ## bodies her floor ray leaves out (her own, the player's)
 var on_event := Callable()                 ## (name): a clip's own moments: step_l, step_r, grab, open...
+var on_struck := Callable()                ## (target, kind): a blow of hers landed
+var held_side := "r"
+var held_grip := {}                        ## how what she holds is held (the look plugin's HSGrip.grip_of)
+var hit_m := 0.3                           ## how near her fist, or what she swings, has to get to land
+var short_of_you := 0.16                   ## how far short of the player's eye a blow stops
 var waited := 0.0                          ## how long she's been waiting for the player to move
 var travelled := 0.0                       ## metres walked on the path she's on
 
@@ -61,6 +69,7 @@ var _playing := ""
 var _files := {}
 var _mode_was := Node.PROCESS_MODE_INHERIT
 var _own: AnimationPlayer
+var _ik: Node                              # her hands' IK (the look plugin's HSHandIK)
 
 
 # ---- finding what she has -------------------------------------------------------------------------------------------------
@@ -168,6 +177,43 @@ func speed_of(run := false) -> float:
 func pace(run := false) -> float:
 	var v := float(set["run_speed"] if run else set["walk_speed"])
 	return v if v > 0.0 else speed_of(run)
+
+
+## how fast a low way of going travels as it was made ("sneak", "crawl", "creep", "scuttle"); a walk's or a run's for those
+func gait_pace(gait: String) -> float:
+	if not LOW.has(gait):
+		return pace(gait == "run")
+	var s := float(clip_info(String(LOW[gait][0])).get("speed", 0.0))
+	return s if s > 0.05 else float(LOW[gait][2])
+
+
+# a script of the look plugin's, when the project has it
+static func look_script(file: String) -> GDScript:
+	return load(LOOK + file) as GDScript if ResourceLoader.exists(LOOK + file) else null
+
+
+## her hands' IK (the look plugin's HSHandIK), or null: without it a clip plays as it was made
+func ik() -> Node:
+	if not is_instance_valid(_ik):
+		var cls := look_script("hand_ik.gd")
+		_ik = cls.attach(her) if cls != null and her != null else null
+	return _ik
+
+
+## her head follows someone (the look plugin's HSHeadTrack): on or off, who (a node; null: the player), within how
+## many degrees (half to each side of straight ahead). -> the tracker, or null without the plugin
+func head(on: bool, target: Node3D = null, range_degrees := 160.0) -> Node:
+	var cls := look_script("head_track.gd")
+	var t: Node = cls.attach(her) if cls != null and her != null else null
+	if t == null:
+		return null
+	t.range_degrees = range_degrees
+	t.follow = on
+	if target != null:
+		t.look_at_node(target)
+	else:
+		t.follow_player()
+	return t
 
 
 func _source(n: String) -> Array:
@@ -333,7 +379,8 @@ static func react_of(node: Node) -> Node:
 
 ## along a path (points a step apart, the first where she is), at `speed` m/s; `yaw`: the way she ends up facing
 ## (null: the way she came); `run`: with her run; `floor`: her height from the floor under the path
-func walk(points: PackedVector3Array, speed: float, run := false, yaw = null, floor := true, blend := 0.25) -> void:
+func walk(points: PackedVector3Array, speed: float, run := false, yaw = null, floor := true, blend := 0.25, gait := "") -> void:
+	_rest_for(gait)
 	if points.size() < 2 or HSNpcFlow.length(points) < 0.03:
 		if yaw != null:
 			_begin([{"k": "turn", "yaw": float(yaw)}])
@@ -341,6 +388,7 @@ func walk(points: PackedVector3Array, speed: float, run := false, yaw = null, fl
 			_begin([])
 		return
 	var step := _path_step(points, speed, run, floor, blend)
+	step["gait"] = gait
 	var steps: Array = [step]
 	if yaw != null:
 		steps.append({"k": "turn", "yaw": float(yaw)})
@@ -348,8 +396,34 @@ func walk(points: PackedVector3Array, speed: float, run := false, yaw = null, fl
 
 
 ## after someone who moves (`where`: a Callable giving their place), until `stop` metres from them
-func follow(where: Callable, speed: float, run := false, stop := 0.8, blend := 0.25) -> void:
-	_begin([{"k": "follow", "to": where, "v": speed, "run": run, "stop": stop, "blend": blend}])
+func follow(where: Callable, speed: float, run := false, stop := 0.8, blend := 0.25, gait := "") -> void:
+	_rest_for(gait)
+	_begin([{"k": "follow", "to": where, "v": speed, "run": run, "stop": stop, "blend": blend, "gait": gait}])
+
+
+## she's resting low (crouched, on all fours, hunched): what a low way of going left her in
+func is_low() -> bool:
+	return hold_clip in ["crouch_loop", "crawl_idle_loop", "creep_idle_loop"]
+
+
+# what she rests in after going somewhere: low after a low way of going, standing after a walk
+func _rest_for(gait: String) -> void:
+	if LOW.has(gait):
+		hold_clip = String(LOW[gait][1]) if has_clip(String(LOW[gait][1])) else ""
+		hold_rate = 1.0
+	elif hold_clip in ["crouch_loop", "crawl_idle_loop", "creep_idle_loop"]:
+		hold_clip = ""
+
+
+# the loop a path or a follow plays: -> [clip, the speed it was made at, what she says she's doing]
+func _gait_of(step: Dictionary, v: float) -> Array:
+	var g := String(step.get("gait", ""))
+	if LOW.has(g) and has_clip(String(LOW[g][0])):
+		return [String(LOW[g][0]), gait_pace(g), g]
+	var run := bool(step["run"]) and has_clip("run_loop")
+	if not run and v > 0.5 * (speed_of(false) + speed_of(true)) and has_clip("run_loop"):
+		run = true                                             # (a walk asked to go at a run's pace runs)
+	return ["run_loop" if run else "walk_loop", speed_of(run), "run" if run else "walk"]
 
 
 func turn_to(yaw: float) -> void:
@@ -393,13 +467,199 @@ func rise() -> void:
 func reach(at: Vector3, yaw: float, clip: String, flat: Vector3, thing: Node3D = null, keep := true, put := false, rate := 1.0, blend := 0.25) -> void:
 	var stand_at := at - HSNpcFlow.turned(Vector3(flat.x, 0, flat.z), yaw)
 	var left := clip.ends_with("_l")
+	_begin(_go(stand_at, yaw) + [_reach_step(at, clip, thing, keep, put, rate, blend)])
+
+
+func _reach_step(at: Vector3, clip: String, thing: Node3D, keep: bool, put: bool, rate: float, blend: float) -> Dictionary:
+	var left := clip.ends_with("_l")
 	var on := {}
+	var step := {"k": "clip", "clip": clip, "on": on, "rate": rate, "blend": blend}
 	if thing != null:
 		on["grab"] = func(): _take(thing, left)
 		on["put_away"] = func(): _put_away(keep)
+		var grab_t := _event_at(clip, "grab")
+		if grab_t >= 0.0:                                      # her hand brought the rest of the way onto where the thing is taken
+			step["bring"] = {"what": "grip", "side": "l" if left else "r", "thing": thing, "peak": grab_t, "rise": 0.45, "hold": 0.04, "fall": 0.4, "freeze": true, "most": 0.3}
 	elif put:
 		on["grab"] = func(): put_down(at)
-	_begin(_go(stand_at, yaw) + [{"k": "clip", "clip": clip, "on": on, "rate": rate, "blend": blend}])
+	return step
+
+
+# when a clip's own moment is, seconds (-1: it has none by that name)
+func _event_at(clip: String, name: String) -> float:
+	for e in clip_info(clip).get("events", []):
+		if String(e["name"]) == name:
+			return float(e["t"])
+	return -1.0
+
+
+## she eats ("eat") or drinks from ("drink") something: a thing given is taken first (`at`, `yaw`, `reach_clip`,
+## `flat`: as reach), with none it's what she holds. Then it's gone ("gone"), kept ("keep") or let go of ("drop")
+func consume(what: String, thing: Node3D, at: Vector3, yaw: float, reach_clip: String, flat: Vector3, left := false, finish := "gone", rate := 1.0, blend := 0.25) -> void:
+	var steps: Array = []
+	if thing != null and thing != held:
+		steps += _go(at - HSNpcFlow.turned(Vector3(flat.x, 0, flat.z), yaw), yaw)
+		steps.append(_reach_step(at, reach_clip, thing, true, false, rate, blend))
+	var clip := what + ("_l" if left else "")
+	var peaks := []
+	for e in clip_info(clip).get("events", []):
+		if String(e["name"]) in ["bite", "sip"]:
+			peaks.append(float(e["t"]) + (0.4 if what == "drink" else 0.0))
+	var after := func() -> void:
+		if finish == "gone":
+			_put_away(false)
+		elif finish == "drop":
+			put_down()
+	var step := {"k": "clip", "clip": clip, "on": {"done": after}, "rate": rate, "blend": blend}
+	if not peaks.is_empty():
+		step["bring"] = {"what": "mouth", "side": "l" if left else "r", "peaks": peaks, "rise": 0.4, "hold": 0.5 if what == "drink" else 0.14, "fall": 0.35, "most": 0.3}
+	_begin(steps + [step])
+
+
+## where to hit someone: what their aim_point() says, a little under the player's eye and short of it, their upper
+## chest, else 1.3 m over where they are
+func aim_point(target) -> Vector3:
+	if target is Vector3:
+		return target
+	var n := target as Node3D
+	if n == null or not is_instance_valid(n) or her == null:
+		return her.global_position + her.global_basis.z if her != null else Vector3.ZERO
+	if n.has_method("aim_point"):
+		return n.aim_point()
+	var cams := n.find_children("*", "Camera3D", true, false)
+	if n is Camera3D or not cams.is_empty():
+		var cam: Camera3D = n if n is Camera3D else cams[0]
+		var back := her.global_position - cam.global_position
+		back.y = 0.0
+		return cam.global_position + Vector3(0, -0.1, 0) + (back.normalized() * short_of_you if back.length() > 0.01 else Vector3.ZERO)
+	for sk in n.find_children("*", "Skeleton3D", true, false):
+		for nm in ["c_spine3", "UpperChest", "Chest", "Spine2", "mixamorig_Spine2", "mixamorig:Spine2"]:
+			var b := (sk as Skeleton3D).find_bone(nm)
+			if b >= 0:
+				return (sk as Skeleton3D).global_transform * (sk as Skeleton3D).get_bone_global_pose(b).origin + Vector3(0, 0.08, 0)
+	return n.global_position + Vector3(0, 1.3, 0)
+
+
+## a blow at someone, `times` times: "punch", or "swing" (of what she holds; her fist when she holds nothing). She
+## goes to where it reaches them, turns with them until it's thrown, and it's carried the rest of the way onto them
+func attack(kind: String, target: Node3D, left := false, times := 1, rate := 1.0, blend := 0.2) -> void:
+	var clip := kind + ("_l" if left else "")
+	var m: Dictionary = clip_info(clip).get(kind, {}) if clip_info(clip).get(kind) is Dictionary else {}
+	var at: Array = m.get("at", [0.0, 1.28, 0.72 if kind == "punch" else 0.5])
+	var reach := float(at[2])
+	var what := "fist"
+	if kind == "swing" and is_instance_valid(held) and not held_grip.is_empty():
+		var ax: Array = m.get("axis", [0.0, 0.8, 0.55])
+		reach += float(ax[2]) * ((held_grip["tip"] as Vector3) - (held_grip["xform"] as Transform3D).origin).length() * 0.9
+		what = "tip"
+	var hit_t := _event_at(clip, "hit")
+	if hit_t < 0.0:
+		hit_t = 0.5
+	var side := "l" if left else "r"
+	var stand := func():                                       # where the blow reaches them from: nearer for someone above or below her shoulder (her arm is no longer)
+		var aim := aim_point(target)
+		var away := her.global_position - aim
+		away.y = 0.0
+		var arm := 0.86 * reach
+		var dy := aim.y - (her.global_position.y + float(at[1]))
+		var r := 0.97 * (0.14 * reach + sqrt(maxf(0.05 * arm * arm, arm * arm - dy * dy)))
+		return aim + (away.normalized() if away.length() > 0.01 else -her.global_basis.z) * r
+	var steps: Array = []
+	for i in maxi(times, 1):
+		steps.append({"k": "follow", "to": stand, "v": pace(false), "run": false, "stop": 0.06, "blend": blend, "give_up": 8.0})
+		steps.append({"k": "clip", "clip": clip, "rate": rate, "blend": blend, "face": target, "face_until": hit_t - 0.06, "on": {"hit": func(): _land(kind, target, side)},
+			"bring": {"what": what, "side": side, "target": func(): return aim_point(target), "peak": hit_t, "rise": 0.22 if kind == "punch" else 0.3, "hold": 0.05, "fall": 0.3, "freeze": true, "most": 0.55}})
+	_begin(steps)
+
+
+# the blow has been thrown: did it get there?
+func _land(kind: String, target: Node3D, side: String) -> void:
+	if bool(set["preview"]) or not is_instance_valid(target):
+		return
+	var hik := ik()
+	var got := true
+	if hik != null and hik.last.has(side):
+		got = float(hik.last[side]["error"]) <= hit_m
+	else:
+		var d := aim_point(target) - her.global_position
+		d.y = 0.0
+		got = d.length() <= 1.0
+	if not got:
+		return
+	if on_struck.is_valid():
+		on_struck.call(target, kind)
+	for n in [target] + target.get_children():
+		if n.has_method("take_hit"):
+			n.take_hit(her)
+			break
+		if n.has_method("struck"):
+			n.struck(her, kind)
+			break
+
+
+## a scare thrown at once ("lunge", "loom", "snap", "claw"): turned to `toward` first when it's given; it's over at
+## its own `over` moment (when it's been shown) with `cut`, else at its end
+func scare(kind: String, toward = null, cut := true) -> void:
+	var clip := "scare_" + kind
+	var steps: Array = []
+	if toward is Vector3 and her != null:
+		var to: Vector3 = (toward as Vector3) - her.global_position
+		if Vector2(to.x, to.z).length() > 0.05:
+			her.global_rotation.y = atan2(to.x, to.z)
+	var step := {"k": "clip", "clip": clip, "blend": 0.0}
+	if cut:
+		step["until"] = "over"
+	if kind == "claw":
+		hold_clip = "crawl_idle_loop" if has_clip("crawl_idle_loop") else ""
+	_begin(steps + [step])
+
+
+## a scare's own numbers from her record: {peak, show, reach}
+func scare_info(kind: String) -> Dictionary:
+	var sc = clip_info("scare_" + kind).get("scare", {})
+	return sc if sc is Dictionary else {}
+
+
+# a clip's hand brought the rest of the way (HSHandIK; without it the clip plays as it was made)
+func _bring_start(b: Dictionary) -> void:
+	var hik := ik()
+	if hik == null or bool(set["preview"]):
+		return
+	var side := String(b["side"])
+	var o := {"rise": b.get("rise", 0.25), "hold": b.get("hold", 0.06), "fall": b.get("fall", 0.3), "freeze": b.get("freeze", false), "most": b.get("most", 0.5)}
+	if b.has("peaks"):
+		o["peaks"] = b["peaks"]
+	else:
+		o["peak"] = b["peak"]
+	match String(b["what"]):
+		"mouth":
+			if not is_instance_valid(held) or held_grip.is_empty() or held_side != side:
+				return
+			var x := held.transform
+			o["point"] = x * (held_grip["mouth"] as Vector3)
+			o["anchor"] = x * (held_grip["xform"] as Transform3D).origin
+			o["target"] = Callable(hik, "mouth")
+			o["aim"] = true
+		"tip":
+			if is_instance_valid(held) and not held_grip.is_empty() and held_side == side:
+				o["point"] = held.transform * (held_grip["tip"] as Vector3)
+				o["anchor"] = held.transform * (held_grip["xform"] as Transform3D).origin
+				o["aim"] = true
+			else:
+				o["point"] = hik.knuckles(side)
+			o["target"] = b["target"]
+		"grip":
+			var thing := b["thing"] as Node3D
+			var gcls := look_script("grip.gd")
+			if thing == null or gcls == null:
+				return
+			var g: Dictionary = gcls.grip_of(thing)
+			o["point"] = (hik.grip_frame(side, float(g["size"]), String(g["shape"])) as Transform3D).origin
+			o["target"] = thing.global_transform * (g["xform"] as Transform3D).origin
+		_:
+			o["point"] = hik.knuckles(side)
+			o["target"] = b["target"]
+	hik.bring(side, o)
 
 
 ## a door opened: a hand to its handle at `at`, facing `yaw` (into the door), by the clip `clip`, `flat` where the
@@ -444,6 +704,7 @@ func put_down(at = null) -> void:
 			(c as CollisionObject3D).process_mode = Node.PROCESS_MODE_INHERIT
 		if held is RigidBody3D:
 			(held as RigidBody3D).freeze = false
+		_let_go()
 	held = null
 
 
@@ -571,6 +832,8 @@ func _next() -> void:
 				_step["secs"] = float(clip_info(n).get("secs", secs)) / maxf(float(_step.get("rate", 1.0)), 0.05)
 				_step["left"] = int(_step.get("times", 1)) - 1
 				now = n
+				if _step.has("bring"):
+					_bring_start(_step["bring"])
 				return
 			"path":
 				travelled = 0.0
@@ -628,7 +891,17 @@ func tick(dt: float) -> void:
 			var n := String(_step["clip"])
 			if _step.has("lift") and secs > 0.0:
 				_set_lift(lerpf(_lift_from, float(_step["lift"]), smoothstep(0.1, 0.7, _t / secs)))
-			_events(n, _t * maxf(float(_step.get("rate", 1.0)), 0.05), false, secs)
+			var ct := _t * maxf(float(_step.get("rate", 1.0)), 0.05)                 # the clip's own time
+			if _step.has("face") and ct < float(_step.get("face_until", 0.0)):         # turning with who she's hitting until the blow's thrown
+				var to2 := aim_point(_step["face"]) - her.global_position
+				if Vector2(to2.x, to2.z).length() > 0.05:
+					her.global_rotation.y = rotate_toward(her.global_rotation.y, atan2(to2.x, to2.z), deg_to_rad(float(set["turn_degrees"])) * 0.6 * dt)
+			if _step.has("bring") and is_instance_valid(_ik):
+				_ik.at(String(_step["bring"]["side"]), ct)
+			_events(n, ct, false, secs)
+			if _step.is_empty():
+				return
+			secs = float(_step.get("secs", secs))
 			if _t >= secs:
 				if int(_step.get("left", 0)) > 0:
 					_step["left"] = int(_step["left"]) - 1
@@ -665,9 +938,6 @@ func _tick_path(dt: float) -> void:
 		her.global_rotation.y = rotate_toward(yaw, want, deg_to_rad(float(set["turn_degrees"])) * dt)
 	var v := float(_step["v"])
 	v *= clampf(_t / 0.3, 0.25, 1.0) * clampf(rem / 0.3, 0.35, 1.0) * (1.0 if off < 0.9 else 0.3)    # eased in, eased out, slower while she's still turning onto it
-	var run := bool(_step["run"]) and has_clip("run_loop")
-	if not run and v > 0.5 * (speed_of(false) + speed_of(true)) and has_clip("run_loop"):
-		run = true                                             # (a walk asked to go at a run's pace runs)
 	var np := _at(_step, minf(s + v * dt, total))
 	if bool(set["waits"]) and avoid != Vector3.INF:
 		var to_you := avoid - her.global_position
@@ -691,10 +961,10 @@ func _tick_path(dt: float) -> void:
 		var cur := her.global_position.y - lift
 		y = fy if absf(fy - cur) > 0.6 else lerpf(cur, fy, 1.0 - exp(-11.0 * dt))      # (eased: she glides over the risers)
 	her.global_position = Vector3(np.x, y + lift, np.z)
-	var clip := "run_loop" if run else "walk_loop"
-	_play(clip, true, clampf(v / speed_of(run), 0.4, 2.2), float(_step["blend"]))
-	now = "run" if run else "walk"
-	_events(clip, _player.current_animation_position if _player != null else 0.0, true, 0.0)
+	var g := _gait_of(_step, v)
+	_play(String(g[0]), true, clampf(v / float(g[1]), 0.4, 2.2), float(_step["blend"]))
+	now = String(g[2])
+	_events(String(g[0]), _player.current_animation_position if _player != null else 0.0, true, 0.0)
 
 
 func _tick_follow(dt: float) -> void:
@@ -709,6 +979,9 @@ func _tick_follow(dt: float) -> void:
 	if dist <= float(_step["stop"]):
 		_next()
 		return
+	if _step.has("give_up") and _t > float(_step["give_up"]):   # (after someone she can't get to: on with it from where she is)
+		_next()
+		return
 	_t += dt
 	var want := atan2(d.x, d.z)
 	var off := absf(angle_difference(her.global_rotation.y, want))
@@ -719,11 +992,10 @@ func _tick_follow(dt: float) -> void:
 	var fy := floor_y(np, cur)
 	np.y = (fy if absf(fy - cur) > 0.6 else lerpf(cur, fy, 1.0 - exp(-14.0 * dt))) + lift
 	her.global_position = np
-	var run := bool(_step["run"]) and has_clip("run_loop")
-	var clip := "run_loop" if run else "walk_loop"
-	_play(clip, true, clampf(v / speed_of(run), 0.4, 2.2), float(_step["blend"]))
-	now = "run" if run else "walk"
-	_events(clip, _player.current_animation_position if _player != null else 0.0, true, 0.0)
+	var g := _gait_of(_step, v)
+	_play(String(g[0]), true, clampf(v / float(g[1]), 0.4, 2.2), float(_step["blend"]))
+	now = String(g[2])
+	_events(String(g[0]), _player.current_animation_position if _player != null else 0.0, true, 0.0)
 
 
 # a clip's own moments, as its time passes them; a clip with none of its own: what's waiting on it happens half way
@@ -753,6 +1025,8 @@ func _events(n: String, t: float, looped: bool, secs: float) -> void:
 		var on: Dictionary = _step.get("on", {})
 		if on.has(nm):
 			(on[nm] as Callable).call()
+		if String(_step.get("until", "")) == nm:              # the clip is over at this moment of it (a scare that's been shown)
+			_step["secs"] = _t
 
 
 func _take(thing: Node3D, left: bool) -> void:
@@ -783,16 +1057,32 @@ func _take(thing: Node3D, left: bool) -> void:
 	if thing is RigidBody3D:
 		(thing as RigidBody3D).freeze = true
 	thing.reparent(att, true)
-	var palm: Array = (record.get("palm", {}) as Dictionary).get("l" if left else "r", [0.0, -0.07, 0.03]) if record.get("palm") is Dictionary else [0.0, -0.07, 0.03]
-	thing.position = Vector3(palm[0], palm[1], palm[2])
 	held = thing
+	held_side = "l" if left else "r"
+	held_grip = {}
+	var hik := ik()
+	var gcls := look_script("grip.gd")
+	if hik != null and gcls != null and hik.get_parent() == sk:      # by its grip (an HSGrip under it, else guessed from its size), her fingers closed round it
+		held_grip = gcls.grip_of(thing)
+		var want: Transform3D = (hik.grip_frame(held_side, float(held_grip["size"]), String(held_grip["shape"])) as Transform3D) * (held_grip["xform"] as Transform3D).affine_inverse()
+		thing.create_tween().tween_property(thing, "transform", want, 0.14)
+		hik.grip(held_side, float(held_grip["size"]), String(held_grip["shape"]), 0.14)
+	else:
+		var palm: Array = (record.get("palm", {}) as Dictionary).get("l" if left else "r", [0.0, -0.07, 0.03]) if record.get("palm") is Dictionary else [0.0, -0.07, 0.03]
+		thing.position = Vector3(palm[0], palm[1], palm[2])
 
 
 func _put_away(keep: bool) -> void:
 	if keep or not is_instance_valid(held):
 		return
 	held.visible = false
+	_let_go()
 	held = null
+
+
+func _let_go() -> void:
+	if is_instance_valid(_ik):
+		_ik.release(held_side)
 
 
 func _use(door: Node) -> void:

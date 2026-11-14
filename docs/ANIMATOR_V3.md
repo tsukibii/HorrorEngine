@@ -175,7 +175,7 @@ swings at.
 - [x] `HSGrip` and its gizmo; a held thing sits in the hand by it; a grip guessed
 - [x] `motion.gd`: the new gaits, peek, scare, punch, swing, eat, drink, the small acts, `head_follow`; `act.gd`;
       `moves.gd`; GDMOTION
-- [ ] The markers: paces, eat and drink, Attack, the head, Jump scare; MARKERS, MARKERSEDITOR
+- [x] The markers: paces, eat and drink, Attack, the head, Jump scare; MARKERS, MARKERSEDITOR
 - [ ] Sheets of pictures, the guides (the Animator's, the markers'), CLAUDE.md, CONTINUE, LESSONS; every check
 
 ## 8. As built
@@ -222,6 +222,31 @@ Measured by ANIMATOR on the three test bodies (the skinny man, the normal woman,
 - **A finger's wrap needed its angle unwrapped**: the tangent's direction is an `atan2`, the bend the difference from
   the bone before: past half a turn that difference reads as a bend the other way, clamped to none. The first run's
   fingers stood 3 to 5 cm off every handle.
+
+### 8.3 In the NPC Markers tab (MARKERS's stage `v3`, MARKERSEDITOR; docs/MARKERS.md §4)
+
+Six new cards (Sneak, Crawl, Eat, Drink, Attack, Jump scare), two new kinds (`attack`, `scare`), four new paces and a
+*Head* row on every marker. Measured on the test woman, headless:
+
+- **Paces**: a Walk at a sneak goes at 0.42 m/s (her sneak was made at 0.42; her walk is 1.34) and at a crawl at
+  0.38; she waits crouched after the sneak and on all fours after the crawl; a plain Walk stands her up; the tab's
+  time for a 2 m sneak is 5.2 s.
+- **Her head**: you 50.2 degrees to her left, her head turned 50.6; carried on to the next marker (50.7); given back
+  to her animation by a later marker (-1.5); kept by a checkpoint and put back.
+- **Eat**: the apple taken by its grip, its bitten side 0.0 cm from her lips at the nearest, then hidden and out of
+  her hand.
+- **Attack**: she comes for you from 2.7 m and both of two punches land (`struck` twice); her fist stops 20 cm from
+  your eye; she stands 0.88 m from you to throw it.
+- **Jump scare**: hidden until its quest starts; then at its pin, 0.0 degrees off you, already in `scare_lunge`;
+  shown 0.98 s (the lunge's own *show*), then hidden; the scare heard once.
+- **Problems**: a character with no sneak, eat, swing or scare_claw is told so at its marker; an Eat with nothing
+  named and an empty hand by then; an Attack or a head pointed at someone who isn't there; a head asked to follow in
+  a project without the Look plugin.
+
+What it took in the runner: **a Wait keeps a low rest** (a Wait after a Sneak with no loop of its own stood her up:
+the rest she's in is the body's `hold_clip`, and Wait used to set it to its own, empty); **the Jump scare card sets
+*turned to you*** (the field's default is off, for a Wait; a scare facing its arrow and not you missed the point);
+**in the tester an Attack is its clip and a note**, the head a note (nothing of the scene may be touched).
 
 ## 9. Not there
 

@@ -104,19 +104,25 @@ start from it.
 | Card | Kind | What she does | Its own settings |
 |---|---|---|---|
 | Start here | `appear` | is put at the pin, facing its arrow, shown | how: at once, when you're not looking, fading in |
-| Walk, Run | `walk` | goes from where she is to the pin, through its bends, then turns to the arrow | pace (walk, run, her own speed × N, or "take N seconds"), smooth or sharp corners, follow the floor, end facing the arrow or the way she came; or *to you* (stops short) |
+| Walk, Run, **Sneak, Crawl** (and Creep, Scuttle in the form) | `walk` | goes from where she is to the pin, through its bends, then turns to the arrow. At a low pace she goes low and **stays low** where it leaves her (crouched after a sneak, on all fours after a crawl or a scuttle, hunched after a creep) until a plain Walk or Run stands her up | pace (walk, run, sneak, crawl, creep, scuttle; her own speed × N, or "take N seconds"), smooth or sharp corners, follow the floor, end facing the arrow or the way she came; or *to you* (stops short) |
 | Wait, Talk | `wait` | stays where she is, idling (or a loop of yours) | stays: N seconds, until you talk to her, until the next can start; faces you |
 | Sit | `sit` | walks the last step to the pin (on the seat's front edge, the arrow the way her knees point), sits, stays sat | stays (as Wait) |
 | Sleep | `sleep` | sits on the bed's edge at the pin, lies down, sleeps | which side her head goes; stays |
-| Grab, Pick up, Put down, Open door | `grab` | a hand to the pin, the arrow the way she faces: reaches for it; or takes the thing named into her hand; or puts what she holds at the pin; or opens the door named. Her hand has three reaches (the floor, a table at about 0.86 m, a shelf at about 1.65 m on an adult: the Animator's three clips): the one nearest the pin's height is played | which hand, the thing, the door and how it opens |
+| Grab, Pick up, Put down, Open door, **Eat, Drink** | `grab` | a hand to the pin, the arrow the way she faces: reaches for it; or takes the thing named into her hand; or puts what she holds at the pin; or opens the door named. Her hand has three reaches (the floor, a table at about 0.86 m, a shelf at about 1.65 m on an adult: the Animator's three clips): the one nearest the pin's height is played. **Eat, Drink**: the thing named is taken first (or it's what she already holds), then brought to her mouth: eaten, it's gone; drunk from, it stays in her hand | which hand, the thing, the door and how it opens |
 | Animation | `animation` | plays a clip: one of her own by name, or a file (a Kimodo `.npz` in `res://animations/`, a Godot animation) | once, N times, looping (stays as Wait); speed |
 | Event | `event` | nothing with her body: what's under *then*, at once | a scare; let go of her |
 | Disappear | `disappear` | is hidden and switched off: not drawn, not animated, not processed, her colliders out of the physics; she still exists | how: at once, when you're not looking, fading out |
 | Choice | `choice` | takes the first of its ways whose flags are so | its ways, in order; "otherwise" last |
 | Repeat | `repeat` | does the markers inside it again | N times, until flags, or until the quest moves on |
+| **Attack** (Punch, Swing) | `attack` | goes to where the blow reaches whoever it's for (you, or anyone picked), turns with them until it's thrown, and throws it: a punch, or a swing of what she holds (her fist when she holds nothing) | punch or swing, who, how many blows, which hand |
+| **Jump scare** | `scare` | is put at the pin already in the scare (turned to you unless told not to), and is gone again when it's been shown | lunge, loom, snap or claw; how: at once or when you're not looking; *she stays after* |
 
 Every kind has: a note (shown on its pin), *Starts when*, the animation's **speed** and the **blend** into it
-(seconds), a face, a look, *then*.
+(seconds), a face, a look, **her head** (below), *then*.
+
+The rows in bold are **animations v3** (DECISIONS 2026-11-14; docs/ANIMATOR_V3.md): they want a character baked by
+the Animator since then (its record's version 3). On one baked before, or on any other model, Problems says which
+clip she lacks and she plays what she has (a walk for a sneak; the clip passed over for the rest).
 
 **A hidden character costs nothing.** Disappear sets `visible` off and `process_mode` to disabled on the character
 (Godot then takes her colliders out of the physics too) and the runner looks at her next marker's flags five times a
@@ -144,9 +150,46 @@ before each riser, down it she comes off each step late, and she's never inside 
 3.3 cm of height a frame, never more than 4 cm under a step). One bend at the foot and one at the top of a flight
 (*sharp corners*) is enough. Where there's no collider she keeps the path's own height.
 
+**Low ways of going.** Sneak (a careful walk on bent knees, 0.42 m/s on the test woman), Crawl (hands and knees,
+0.38), Creep (a creature's hunched prowl, 0.53) and Scuttle (hands and feet, fast: 1.2) are a Walk's pace: the same
+pin, bends, stairs and "take N seconds", each at its own clip's speed so nothing slides. Where it ends she rests in
+that pace's own loop, and a Wait, a Talk or the next low Walk keeps her there. A plain Walk or Run, a Sit, a Sleep, a
+Grab or an Attack stands her up first.
+
+**Her head.** On any marker, *Head*: **follows you** (or someone picked), **is her animation's again**, or nothing
+said (as the marker before left it). Following, her head and neck turn to whoever it is on top of whatever clip she's
+playing, within an arc: 160 degrees unless set, half to each side of straight ahead (the user's "80 degrees left and
+80 degrees right"); past it she lets go and looks ahead again. It's carried from marker to marker and quest to quest
+like her face and her look, and kept by a checkpoint. It's the Look plugin's `HSHeadTrack` under her skeleton
+(GODOT_LOOK §5x): a little of the turn goes into her chest, her eyes lead when her model has eye bones. Without the
+Look plugin in the project the row does nothing and Problems says so.
+
+**Eat and drink.** The thing is held where its **grip** says (the Look plugin's `HSGrip` under the prop: a ring to
+put where a hand closes round it, sized by a handle to the prop's thickness, with a point for the side that's bitten
+or the rim that's drunk from; a prop with none is gripped by a guess from its size). Her fingers close to the grip's
+size; the bite or the rim is carried the last centimetres to her lips by her hand's IK (`HSHandIK`, GODOT_LOOK §5y),
+measured at 0.0 cm on the test woman. Eat: two bites, then the thing is put away (hidden, not deleted). Drink: a sip,
+tipped, and it stays in her hand for the next marker (Put down leaves it at a pin).
+
+**Attack.** She walks to where the blow reaches (nearer for someone above or below her shoulder), keeps turning with
+them until just before it lands, and her fist or the end of what she holds is carried onto where they are at that
+moment: someone who stepped aside 20 cm is still hit, someone who got away isn't. A blow that gets there (within
+12 cm) says so: the HSNpc's `struck(target, kind)` signal, and the target's `take_hit(by)` or `struck(by, kind)` when
+it has one (the starter's player and Motion both do). On you it's aimed a little under your eye and stops 20 cm short
+of it. *How many blows* repeats it, catching up with them between blows; she gives up a blow after 8 s of not getting
+there. Swing swings whatever she holds by its grip (a bat picked up a marker earlier); with nothing in her hand it's a
+swung fist.
+
+**Jump scare.** One marker for the whole thing: she's put at its pin, turned to you, already in the scare's first
+frame (no blend), the scare is heard at once (`scared` on the HSNpc, the group `hs_scare`: the Fear node and the
+night's director hear it), and when the clip's own *over* moment comes (the lunge has been shown for 0.98 s) she's
+hidden and switched off as Disappear does. *She stays after* plays it to its end and leaves her there (after the claw,
+on all fours). *When you're not looking* waits for that before she's put there. Lunge: thrown at you from a crouch.
+Loom: risen over you with her arms up. Snap: her head snapping up to you. Claw: clawed up from all fours.
+
 **A custom animation (a Kimodo dance).** Drop the `.npz` in `res://animations/`. On an Animation marker pick it under
 *From a file*: it's fitted onto her own skeleton the first time it's needed (the Director's Kimodo reader and
-retarget, which every by-hand project already carries in `res://kimodo/`) and kept. Her own clips (the Animator's 24,
+retarget, which every by-hand project already carries in `res://kimodo/`) and kept. Her own clips (the Animator's 53,
 or whatever her model has) are in the same list by name.
 
 ## 5. Starts when, and flags
@@ -316,11 +359,20 @@ saving the scene, ends it.
 - [x] the guide `guides/markers/` with pictures of the real thing; the plugin's README and CLAUDE.md; CLAUDE.md,
       CONTINUE, GodotPlugins/README
 
+**F. Animations v3** (DECISIONS 2026-11-14; docs/ANIMATOR_V3.md)
+- [x] a Walk's low paces: sneak, crawl, creep, scuttle, each at its own clip's speed, resting low after
+- [x] Eat and Drink on a Grab: the thing by its grip, to her mouth by her hand's IK
+- [x] the **Attack** kind: punch or swing at you or anyone, carried onto them, `struck`
+- [x] the **Jump scare** kind: there, shown, gone
+- [x] *Head* on every marker: follows you within an arc, carried on, kept by a checkpoint
+- [x] the cards (Sneak, Crawl, Eat, Drink, Attack, Jump scare), their form rows, their drawings; Problems for a
+      character with no such clip or an attack at nobody
+- [x] MARKERS (the stage `v3`) and MARKERSEDITOR (the new cards)
+
 ## 11. Later (not in this round)
 
 - doors opened on the way of a walk (now: an Open door marker before it)
 - a Follow marker (she keeps after you along your trail, as the starter's chase does)
-- her head and eyes turning to you while she waits (now: her body can face you)
 - feet planted on each step of a stair (now: she glides over the risers)
 - a navigation mesh (now: the path you draw is the path she takes)
 - Director and desk games (now: games built by hand)

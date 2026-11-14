@@ -540,6 +540,39 @@ func _run() -> void:
 		texts += str(p["text"]) + "\n"
 	ok(pick_up.get_node_or_null(pick_up.target) == root.get_node("Book") and not texts.contains("pick the thing"), "the thing picked, it doesn't any more")
 
+	# ---- animations v3's cards: a low pace, eating, an attack, a jump scare, the head ----
+	for id in ["sneak", "crawl", "eat", "drink", "attack", "jumpscare"]:
+		ok(not card(id).is_empty(), "the palette has a %s card" % id)
+	var sneak: HSNpcMarker = plug.add_marker(card("sneak"), Vector3(1.2, 0.02, -1.4))
+	var eat: HSNpcMarker = plug.add_marker(card("eat"), Vector3(-1.5, 0.02, 1.0))
+	var attack: HSNpcMarker = plug.add_marker(card("attack"), Vector3.ZERO)
+	var js: HSNpcMarker = plug.add_marker(card("jumpscare"), Vector3(0.6, 0.02, 1.6))
+	await frames(2)
+	ok(sneak.kind == "walk" and sneak.pace == "sneak" and sneak.title() == "Sneak" and eat.kind == "grab" and eat.action == "eat" and attack.kind == "attack" and js.kind == "scare" and js.face_player,
+		"the cards make a Sneak, an Eat, an Attack and a Jump scare", "%s, %s, %s, %s" % [sneak.title(), eat.title(), attack.title(), js.title()])
+	ok(js.is_placed() and not attack.is_placed() and js.global_position.distance_to(Vector3(0.6, 0.02, 1.6)) < 0.01, "a Jump scare has a pin (where they appear), an Attack none")
+	dock.set_target(eat, root.get_node("Book"))
+	await frames(3)
+	ok(eat.get_node_or_null(eat.target) == root.get_node("Book") and eat.global_position.distance_to((root.get_node("Book") as Node3D).global_position) < 0.01, "an Eat's thing picked: its pin goes onto it")
+	plug.pick_node(attack)
+	await frames(2)
+	dock.refresh()
+	await frames(3)
+	dock.set_who(attack, "attack_at", root.get_node("Book"))
+	await frames(6)
+	var who: Node = dock.find_child("PickWho", true, false)        # (looked for once the form has been built again for it)
+	ok(who != null and attack.get_node_or_null(attack.attack_at) == root.get_node("Book"), "an Attack's form: who it's at, picked", "%s (its picker in the form: %s)" % [attack.attack_at, who != null])
+	plug.set_prop(attack, "attack_at", NodePath(""))
+	plug.set_prop(attack, "head", "follow")
+	await frames(4)
+	var hp: Node = dock.find_child("PickHead", true, false)
+	plug.set_prop(attack, "head_range", 120.0)
+	await frames(2)
+	ok(hp != null and attack.head == "follow" and is_equal_approx(attack.head_range, 120.0), "any marker's form: the head follows you, within a range", "%s, %.0f degrees" % [attack.head, attack.head_range])
+	for mk3 in [js, attack, eat, sneak]:                      # (taken out again: what follows counts the rows it had)
+		plug.delete_node(mk3)
+	await frames(3)
+
 	# ---- the tester ----
 	plug.pick_node(walk)
 	await frames(2)

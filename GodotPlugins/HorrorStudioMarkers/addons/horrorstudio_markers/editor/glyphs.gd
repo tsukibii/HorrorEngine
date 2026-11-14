@@ -7,6 +7,11 @@ extends RefCounted
 const G := {
 	"appear": '<path d="M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/>',
 	"walk": '<circle cx="13" cy="4.5" r="1.8"/><path d="M13 7.5l-3 4.5 3 2.5-1 6M10 12l-3 1.5M13 14.5l3.5 5.5M11.5 9l3.5 2 2.5-.5"/>',
+	"sneak": '<circle cx="15" cy="7" r="1.8"/><path d="M13.5 9.5l-4 2.5 1 4-3 4M9.5 12l5 1 3.5 4.5M11 10.5l3.5 3 3-1M3 21h4"/>',
+	"crawl": '<circle cx="18.5" cy="9" r="1.8"/><path d="M16.5 11 9 12.5l-4.5 6M9 12.5l1.5 6.5H6M16.5 11l1.5 8M13 11.8l-.5 7.2"/>',
+	"attack": '<path d="M5 10h8.5a2.5 2.5 0 0 1 0 5H5zM5 10V7.5a1.5 1.5 0 0 1 3 0V10M8 7.5V6a1.5 1.5 0 0 1 3 0v4M11 6.5a1.5 1.5 0 0 1 3 0V10M5 15v3h7.5v-3M17 9l4-2M17.5 12.5H22M17 16l4 2"/>',
+	"eat": '<path d="M12 8c-2-1.6-6-.8-6 3.6 0 4 2.6 8.4 6 8.4s6-4.4 6-8.4C18 7.2 14 6.4 12 8zM12 8c0-2 1-3.5 2.5-4.5"/>',
+	"drink": '<path d="M6 5h12l-1.5 15h-9zM6.7 10h10.6"/>',
 	"run": '<circle cx="15" cy="4.5" r="1.8"/><path d="M14 7.5l-4 3 .5 3 3.5 1.5-2 5.5M10 10.5l-3.5-.5M14 15l4 1 1.5 4M13.5 8.5l3.5 2.5 3-.5M4 14h3M3 17.5h4"/>',
 	"wait": '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/>',
 	"talk": '<path d="M4 5.5h16v10.5H11l-4.5 4v-4H4z"/><path d="M8 9.5h8M8 12.5h5"/>',
@@ -59,7 +64,7 @@ static func of_marker(m: Node) -> String:
 	var mk := m as HSNpcMarker
 	match mk.kind:
 		"walk":
-			return "run" if mk.pace == "run" else "walk"
+			return {"run": "run", "sneak": "sneak", "creep": "sneak", "crawl": "crawl", "scuttle": "crawl"}.get(mk.pace, "walk")
 		"wait":
 			return "talk" if mk.talk and mk.stay == "talked" else "wait"
 		"grab":
