@@ -313,7 +313,10 @@ func tick() -> void:
 		say("Testing: " + plugin.tester.status())
 
 
-## the scene changed through undo; own: by this tab's own form (which then keeps its fields as they are)
+## something was done to the scene through undo. own: by this tab's own form, which keeps its fields as they are (it's
+## being typed in) and only brings the storyboard's rows and the quest's row up to date, at once. Anything else (an
+## undo, the Inspector, a pin dragged): everything read again at the tab's next look, which is asked for now (the next
+## frame: not inside whoever made the change)
 func changed(own: bool) -> void:
 	if chars == null:
 		return
@@ -321,8 +324,12 @@ func changed(own: bool) -> void:
 		refresh_board()
 		_fill_quest_row()
 		_form_vals = _vals(_form_node)
+		var now := form.find_child("F_now", true, false) as Label      # (a walk's length and time, said in the form too)
+		if now != null and _form_node is HSNpcMarker:
+			now.text = "Now: " + timing(_form_node as HSNpcMarker)
 		return
-	refresh()
+	_sig = "?"
+	plugin.look_soon()
 
 
 func tested() -> void:
@@ -589,63 +596,120 @@ func refresh_board() -> void:
 		return
 	var was := _busy
 	_busy = true
-	board.clear()
-	var root := board.create_item()
 	var q: HSNpcQuest = plugin.cur_quest if plugin.valid(plugin.cur_quest) else null
+	var labels := {}
 	if q != null:
-		var labels := {}
 		for row in HSNpcFlow.board(q):
 			labels[row["node"]] = row["label"]
-		_fill(root, q, labels)
+	var want: Array = []
+	if q != null:
+		_rows_of(q, want)
+	var rows: Array = []                                       # the rows it has now, top to bottom
+	var same := board.get_root() != null
+	var it: TreeItem = board.get_root().get_first_child() if same else null
+	while it != null:
+		rows.append(it)
+		it = it.get_next_in_tree()
+	same = same and rows.size() == want.size()
+	for i in rows.size():
+		if not same:
+			break
+		var md = (rows[i] as TreeItem).get_metadata(0)
+		same = md != null and is_instance_valid(md) and md == want[i]
+	if same:                                                   # the same rows: their words again, where they are (nothing jumps while a field is typed in)
+		board.deselect_all()
+		for i in rows.size():
+			_dress(rows[i], want[i], labels)
+	else:
+		board.clear()
+		var root := board.create_item()
+		if q != null:
+			_fill(root, q, labels)
+	var picked: int = plugin.cur.get_instance_id() if plugin.valid(plugin.cur) else 0
+	if not same or picked != _row_shown:                       # (another marker picked, or other rows: its row comes into view)
+		_row_shown = picked
+		_show_row.call_deferred()
 	_busy = was
 
 
+## the picked marker's row brought into view (a pin clicked in the 3D view: its row may be scrolled out)
+func _show_row() -> void:
+	var sel := board.get_selected() if board != null else null
+	if sel != null:
+		board.scroll_to_item(sel)
+
+
+## the nodes the storyboard has a row for, top to bottom: markers, a Choice's ways and what's in them, a Repeat's
+func _rows_of(container: Node, out: Array) -> void:
+	for it in HSNpcFlow.items(container):
+		var m := it as HSNpcMarker
+		out.append(m)
+		if m.kind == "choice":
+			for w in m.ways():
+				out.append(w)
+				_rows_of(w, out)
+		elif m.kind == "repeat":
+			_rows_of(m, out)
+
+
 func _fill(parent: TreeItem, container: Node, labels: Dictionary) -> void:
-	var col: Color = plugin.cur_npc.color if plugin.cur_npc != null else Color.WHITE
 	for it in HSNpcFlow.items(container):
 		var m := it as HSNpcMarker
 		var row := board.create_item(parent)
 		row.set_metadata(0, m)
-		row.set_icon(0, Glyphs.icon(Glyphs.of_marker(m), col, 16))
-		row.set_text(0, "%s   %s%s" % [labels.get(m, ""), m.title(), ("  ·  " + m.note) if m.note != "" else ""])
-		var extra := PackedStringArray()
-		if m.start_when != "":
-			extra.append("when " + HSNpcCond.says(m.start_when))
-		var tm := timing(m)
-		if tm != "":
-			extra.append(tm)
-		if m.talk:
-			extra.append("talk")
-		if m.face != "" or not m.face_rules.is_empty():
-			extra.append("face")
-		if m.look != "" or m.look_skin != "" or m.look_eyes != "":
-			extra.append("look")
-		if m.set_flags != "":
-			extra.append(m.set_flags)
-		row.set_text(1, "  ·  ".join(extra))
-		row.set_custom_color(1, Color("#9CCB9F") if m.start_when != "" else Color(1, 1, 1, 0.6))
-		row.set_tooltip_text(0, "%s %s%s" % [labels.get(m, ""), m.title(), ("\n" + m.note) if m.note != "" else ""])
-		row.set_tooltip_text(1, "Starts when: %s\n%s" % [HSNpcCond.says(m.start_when) if m.start_when != "" else "at once", "  ·  ".join(extra)])
-		if m.needs_body() or m.kind in ["event", "disappear"]:
-			row.add_button(1, Glyphs.icon("play", Color("#9CCB9F"), 13), 0, false, "Try this marker in the 3D view.")
-		if m == plugin.cur:
-			row.select(0)
+		_dress(row, m, labels)
 		if m.kind == "choice":
 			for w in m.ways():
-				var way := w as HSNpcWay
 				var wr := board.create_item(row)
-				wr.set_metadata(0, way)
-				wr.set_icon(0, Glyphs.icon("way", col.darkened(0.2), 16))
-				wr.set_text(0, "%s   %s" % [labels.get(way, ""), way.title()])
-				wr.set_custom_color(0, Color("#C9B6E8"))
-				if plugin.picks.get(m, 0) == m.ways().find(way):
-					wr.set_text(1, "the tester takes this way")
-					wr.set_custom_color(1, Color(1, 1, 1, 0.4))
-				if way == plugin.cur:
-					wr.select(0)
-				_fill(wr, way, labels)
+				wr.set_metadata(0, w)
+				_dress(wr, w, labels)
+				_fill(wr, w, labels)
 		elif m.kind == "repeat":
 			_fill(row, m, labels)
+
+
+## a row's words, drawing, colours and ▶ for the marker (or the way) it's for
+func _dress(row: TreeItem, node: Node, labels: Dictionary) -> void:
+	var col: Color = plugin.cur_npc.color if plugin.cur_npc != null else Color.WHITE
+	if node is HSNpcWay:
+		var way := node as HSNpcWay
+		var ch := way.get_parent() as HSNpcMarker
+		row.set_icon(0, Glyphs.icon("way", col.darkened(0.2), 16))
+		row.set_text(0, "%s   %s" % [labels.get(way, ""), way.title()])
+		row.set_custom_color(0, Color("#C9B6E8"))
+		var takes: bool = ch != null and plugin.picks.get(ch, 0) == ch.ways().find(way)
+		row.set_text(1, "the tester takes this way" if takes else "")
+		row.set_custom_color(1, Color(1, 1, 1, 0.4))
+		if way == plugin.cur:
+			row.select(0)
+		return
+	var m := node as HSNpcMarker
+	row.set_icon(0, Glyphs.icon(Glyphs.of_marker(m), col, 16))
+	row.set_text(0, "%s   %s%s" % [labels.get(m, ""), m.title(), ("  ·  " + m.note) if m.note != "" else ""])
+	var extra := PackedStringArray()
+	if m.start_when != "":
+		extra.append("when " + HSNpcCond.says(m.start_when))
+	var tm := timing(m)
+	if tm != "":
+		extra.append(tm)
+	if m.talk:
+		extra.append("talk")
+	if m.face != "" or not m.face_rules.is_empty():
+		extra.append("face")
+	if m.look != "" or m.look_skin != "" or m.look_eyes != "":
+		extra.append("look")
+	if m.set_flags != "":
+		extra.append(m.set_flags)
+	row.set_text(1, "  ·  ".join(extra))
+	row.set_custom_color(1, Color("#9CCB9F") if m.start_when != "" else Color(1, 1, 1, 0.6))
+	row.set_tooltip_text(0, "%s %s%s" % [labels.get(m, ""), m.title(), ("\n" + m.note) if m.note != "" else ""])
+	row.set_tooltip_text(1, "Starts when: %s\n%s" % [HSNpcCond.says(m.start_when) if m.start_when != "" else "at once", "  ·  ".join(extra)])
+	while row.get_button_count(1) > 0:
+		row.erase_button(1, 0)
+	if m.needs_body() or m.kind in ["event", "disappear"]:
+		row.add_button(1, Glyphs.icon("play", Color("#9CCB9F"), 13), 0, false, "Try this marker in the 3D view.")
+	if m == plugin.cur:
+		row.select(0)
 
 
 func _on_row() -> void:
@@ -743,6 +807,7 @@ func _test(mode: String) -> void:
 var _form_node: Node
 var _form_shape := ""
 var _form_vals := 0
+var _row_shown := 0
 
 
 # everything a node keeps, as one number: to see it changed from outside the form
@@ -803,13 +868,14 @@ func _row(box: Container, label: String, ctl: Control, tip := "") -> Control:
 	return ctl
 
 
-func _note(box: Container, t: String) -> void:
+func _note(box: Container, t: String) -> Label:
 	var l := Label.new()
 	l.text = t
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
 	l.add_theme_font_size_override("font_size", int(11 * Glyphs.scale()))
 	box.add_child(l)
+	return l
 
 
 func _num(n: Object, prop: String, lo: float, hi: float, step: float, suffix := "") -> SpinBox:
@@ -905,6 +971,8 @@ func refresh_form() -> void:
 		form_head.remove_child(c)
 		c.queue_free()
 	var n: Node = plugin.cur if plugin.valid(plugin.cur) else (plugin.cur_npc if plugin.valid(plugin.cur_npc) else null)
+	if n != _form_node and form.get_parent() is ScrollContainer:
+		(form.get_parent() as ScrollContainer).set_deferred("scroll_vertical", 0)     # (another marker's form starts at its top; the same one's stays where it was read)
 	_form_node = n
 	_form_shape = _shape(n)
 	_form_vals = _vals(n)
@@ -1040,7 +1108,7 @@ func _form_marker(m: HSNpcMarker) -> void:
 			_row(b, "Speed", _num(m, "pace_scale", 0.2, 4.0, 0.05, " ×"), "Times the walk's own speed: 0.5 a slow walk. The feet keep step.")
 			if not m.to_player:
 				_row(b, "Or take", _num(m, "take_secs", 0.0, 120.0, 0.5, " s"), "Over 0: gets there in this many seconds, whatever the distance.")
-				_note(b, "Now: " + timing(m))
+				_note(b, "Now: " + timing(m)).name = "F_now"
 				b.add_child(_check(m, "smooth", "One smooth curve through the bends", "Off: straight from bend to bend (stairs: a bend at the foot, one at the top)."))
 				b.add_child(_check(m, "face_arrow", "Turns to the arrow at the end", "Off: stays facing the way of the walk."))
 			b.add_child(_check(m, "follow_floor", "Follows the floor under the path", "Stairs and slopes. Off: the path's own height."))
@@ -1163,7 +1231,7 @@ func _form_where(m: HSNpcMarker, npc: HSNpc) -> void:
 				return
 			var pos := m.global_position
 			pos[axis] = v
-			plugin.place_node(m, Transform3D(m.global_transform.basis, pos), m.global_transform, "move " + String(m.name))
+			plugin.place_node(m, Transform3D(m.global_transform.basis, pos), m.global_transform, "move " + String(m.name), true)
 			was[0] = m.global_transform
 			_form_vals = _vals(m)
 			plugin.update_overlays())
@@ -1197,7 +1265,7 @@ func _form_where(m: HSNpcMarker, npc: HSNpc) -> void:
 		var to := Transform3D(Basis(Vector3.UP, y), m.global_position)
 		if keep:
 			m.global_transform = was[0]
-			plugin.place_node(m, to, was[0], "turn " + String(m.name))
+			plugin.place_node(m, to, was[0], "turn " + String(m.name), true)
 			was[0] = to
 			_form_vals = _vals(m)
 		else:

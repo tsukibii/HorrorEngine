@@ -3195,6 +3195,14 @@ pale one shows.
 - **The editor's undo can be done behind its manager's back** (`get_history_undo_redo(id).undo()`, which is all a
   script can call): `version_changed` isn't sent. A form that only listens to it shows a stale number. It now also
   compares what it shows with what the node holds at a slow tick, when no field of it has the focus.
+- **The undo manager has two signals and a commit is not the one you'd think.** Probed in 4.7: committing an action
+  sends `history_changed` and not `version_changed`; the editor's own Ctrl+Z sends `version_changed`; a raw history's
+  undo sends neither. The tab listened to `version_changed` alone and took it for "something was done": so nothing
+  told it of a commit (a slow tick covered for that, which hid it), and the first Ctrl+Z after a form's edit was
+  taken for the form's own change and left the form showing the number that had just been undone. A guide picture
+  gave it away: the quest's new name in the 3D view's legend, its old one in the tab. The check had only ever undone
+  through the raw history; it now also sends a real Ctrl+Z (`Input.parse_input_event` works in a headless editor).
+  Probe what a signal means before building on its name.
 - **A dock's minimum width is the whole editor's.** The tab asked for about 1500 px (an OptionButton is as wide as
   its longest item; a ScrollContainer with its horizontal bar off passes its content's minimum on; a row of fixed
   parts doesn't wrap) and pushed the Inspector and the play buttons off a 1600 px window. It showed in the first

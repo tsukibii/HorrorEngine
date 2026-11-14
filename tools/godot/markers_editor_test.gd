@@ -149,6 +149,31 @@ func field(n: String) -> Control:
 	return dock.form.find_child(n, true, false) as Control
 
 
+## the editor's own undo, as Ctrl+Z does it: the manager's, which says version_changed (a raw history's undo, as undo()
+## above, says nothing: the two are what the tab has to follow)
+func ctrl_z() -> void:
+	var f := get_viewport().gui_get_focus_owner()
+	if f != null:
+		f.release_focus()
+	var ev := InputEventKey.new()
+	ev.keycode = KEY_Z
+	ev.physical_keycode = KEY_Z
+	ev.ctrl_pressed = true
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	await frames(6)
+
+
+## the storyboard's row for a marker (null: it has none)
+func row_of(n: Node) -> TreeItem:
+	var it: TreeItem = dock.board.get_root().get_first_child() if dock.board.get_root() != null else null
+	while it != null:
+		if it.get_metadata(0) == n:
+			return it
+		it = it.get_next_in_tree()
+	return null
+
+
 func flat(v: Vector3) -> Vector2:
 	return Vector2(v.x, v.z)
 
@@ -360,6 +385,18 @@ func _run() -> void:
 		await secs(1.6)                                        # (an undo done behind the editor's back: the tab sees it at its next look)
 		ok(is_equal_approx(walk.take_secs, 0.0) and is_equal_approx((field("F_take_secs") as SpinBox).value, 0.0), "undo takes it back, in the form too",
 			"%.1f, the form %.1f" % [walk.take_secs, (field("F_take_secs") as SpinBox).value])
+		var spd := field("F_pace_scale") as SpinBox           # (a field that doesn't change the form's rows: the form keeps its fields, the storyboard follows at once)
+		var row_before := row_of(walk).get_text(1) if row_of(walk) != null else ""
+		var row_item := row_of(walk)
+		if spd != null:
+			spd.value = 2.0
+			ok(is_equal_approx(walk.pace_scale, 2.0) and row_of(walk) == row_item and row_item.get_text(1) != row_before and row_item.get_text(1).contains(dock.timing(walk)) and field("F_pace_scale") == spd,
+				"a number typed in the form: its row in the storyboard says so at once, in place, and the form is left as it is", "'%s' was '%s'" % [row_item.get_text(1), row_before])
+			await ctrl_z()
+			ok(is_equal_approx(walk.pace_scale, 1.0) and field("F_pace_scale") != null and is_equal_approx((field("F_pace_scale") as SpinBox).value, 1.0) and row_of(walk) != null and row_of(walk).get_text(1) == row_before,
+				"Ctrl+Z (the editor's own undo) after it: the marker, the form and the storyboard all go back", "%.1f, the form %.1f, the row '%s'" % [walk.pace_scale, (field("F_pace_scale") as SpinBox).value if field("F_pace_scale") != null else -1.0, row_of(walk).get_text(1) if row_of(walk) != null else ""])
+		else:
+			ok(false, "the form has a Walk's speed field")
 	var dial := field("Dial")
 	var px := field("F_pos_x") as SpinBox
 	ok(dial != null and px != null and is_equal_approx(px.value, snappedf(walk.global_position.x, 0.01)), "the form has its place as numbers and a facing dial")
@@ -428,11 +465,31 @@ func _run() -> void:
 		var inside := HSNpcFlow.items(ch.ways()[1])
 		ok(inside.size() == 1 and HSNpcFlow.label_of(inside[0]).ends_with("B.1"), "a card placed while a way is picked goes inside that way", HSNpcFlow.label_of(inside[0]) if inside.size() == 1 else "")
 
+	# ---- the picked marker's row comes into view; another marker's form starts at its top ----
+	var all_rows := HSNpcFlow.items(quest)
+	var fs := dock.form.get_parent() as ScrollContainer
+	plug.pick_node(all_rows[all_rows.size() - 1])
+	await frames(5)
+	var down: float = dock.board.get_scroll().y
+	fs.scroll_vertical = 120
+	await frames(2)
+	var was_down := fs.scroll_vertical
+	plug.pick_node(walk)
+	await frames(5)
+	ok(down > 0.0 and dock.board.get_scroll().y < down, "a marker picked: the storyboard brings its row into view", "scrolled %d for the last row, %d for the first" % [int(down), int(dock.board.get_scroll().y)])
+	ok(fs.scroll_vertical == 0, "and its form starts at its top", "was scrolled %d, now %d" % [was_down, fs.scroll_vertical])
+
 	# ---- the quest's Starts when; a second quest ----
 	dock.quest_when.add_word("on:book")
 	await frames(2)
 	ok(quest.starts_when == "on:book", "the quest's Starts when, by chips", quest.starts_when)
 	undo()
+	dock.quest_title.text = "Night one"
+	dock.quest_title.text_submitted.emit("Night one")
+	ok(quest.title == "Night one" and dock.quest_pick.get_item_text(dock.quest_pick.selected).contains("Night one"), "a quest renamed in its field is renamed in the dropdown at once", dock.quest_pick.get_item_text(dock.quest_pick.selected))
+	plug.set_prop(quest, "title", "")
+	await frames(3)
+	ok(dock.quest_pick.get_item_text(dock.quest_pick.selected).contains(String(quest.name)) and dock.quest_title.text == String(quest.name), "and named from elsewhere, the tab follows", dock.quest_pick.get_item_text(dock.quest_pick.selected))
 	var q2: HSNpcQuest = plug.add_quest(npc)
 	await frames(3)
 	ok(q2 != null and HSNpcFlow.quests(npc).size() == 2 and plug.cur_quest == q2 and dock.quest_pick.item_count == 2, "a new quest, picked")

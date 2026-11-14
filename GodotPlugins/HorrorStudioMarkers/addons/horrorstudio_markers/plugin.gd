@@ -63,6 +63,7 @@ func _enter_tree() -> void:
 	set_input_event_forwarding_always_enabled()
 	EditorInterface.get_selection().selection_changed.connect(_on_selection)
 	scene_changed.connect(_on_scene_changed)
+	get_undo_redo().history_changed.connect(_on_history)
 	get_undo_redo().version_changed.connect(_on_version)
 	set_process(true)
 
@@ -75,6 +76,8 @@ func _exit_tree() -> void:
 		sel.selection_changed.disconnect(_on_selection)
 	if scene_changed.is_connected(_on_scene_changed):
 		scene_changed.disconnect(_on_scene_changed)
+	if get_undo_redo().history_changed.is_connected(_on_history):
+		get_undo_redo().history_changed.disconnect(_on_history)
 	if get_undo_redo().version_changed.is_connected(_on_version):
 		get_undo_redo().version_changed.disconnect(_on_version)
 	if dock != null:
@@ -216,11 +219,26 @@ func _on_scene_changed(_root = null) -> void:
 	update_overlays()
 
 
-func _on_version() -> void:
+## something was done to the scene (an action committed). Godot's undo manager says so with history_changed; its
+## version_changed is for an undo or a redo only (measured in 4.7: a commit sends the first and not the second)
+func _on_history() -> void:
 	if dock != null:
 		dock.changed(_own)
 	_own = false
 	update_overlays()
+
+
+## an undo or a redo: never the form's own doing, so the tab reads everything again
+func _on_version() -> void:
+	_own = false
+	if dock != null:
+		dock.changed(false)
+	update_overlays()
+
+
+## the tab wants its next look at the scene now, not in 0.7 s (the next frame: never inside whoever changed the scene)
+func look_soon() -> void:
+	_poll = 10.0
 
 
 ## a card armed: the next click in the 3D view places it ({}: none)
@@ -346,11 +364,12 @@ func move_node(n: Node, parent: Node, at: int) -> void:
 	ur.commit_action()
 
 
-## a pin (or a bend) put somewhere, turned: one undo step from where it was
-func place_node(n: Node3D, xf: Transform3D, was: Transform3D, label: String) -> void:
+## a pin (or a bend) put somewhere, turned: one undo step from where it was (own: by the tab's own form, which then
+## keeps its fields as they are; from the 3D view the form reads the new place)
+func place_node(n: Node3D, xf: Transform3D, was: Transform3D, label: String, own := false) -> void:
 	if xf.is_equal_approx(was):
 		return
-	_own = true
+	_own = own
 	var ur := get_undo_redo()
 	ur.create_action("Markers: " + label, UndoRedo.MERGE_DISABLE, scene_root())
 	ur.add_do_property(n, "global_transform", xf)
