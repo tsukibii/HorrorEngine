@@ -589,3 +589,119 @@ record): `docs/animator_sheets/2026-11-14_furniture_child_small_{seat,bed,door}.
 - **Her hands flat on a high seat as she gets onto it.** They go to the seat beside her hips by the wrist; the
   fingers aren't laid on it.
 - **A footrest, a step.** A seat over her hips' height is out of her reach: lifted, not climbed.
+
+## 11. Life: small movements, laid over whatever she's doing
+
+The user (DECISIONS 2026-11-14, later): *"Can we add some 'add life' animations, meaning animations that make it
+seem characters are alive, stuff like looking at an object they are holding, scratching, little life flourish stuff,
+is there a way we could add these animations as ik blendables meaning if the lower body and chest is in a position
+e.g. walking or sitting, we can still blend in these animations. ... Dont need to do facial expressiosn for these
+isnce thats a diff system."*
+
+### 11.1 How it's read
+
+- **A flourish is a clip of the upper body**, made by the Animator from her own body as every other clip is
+  (`tools/animator/core/life.js`), named `life_<what>`, baked into her .glb. Made standing, on the idle's first
+  pose: her legs and pelvis don't move in it. It never touches her face (no clip does).
+- **It is laid over what she's doing, not played instead of it** ("ik blendables"): in Godot a layer after her
+  animation (the Look plugin's `HSGesture`, a SkeletonModifier3D, first under her skeleton) takes from the flourish
+  only what the flourish is about:
+  - **its arm** (or both): the whole chain from the collarbone to the fingertips, the clip's own turns, faded in as
+    the hand leaves her side and out as it comes back (the clip says when: `in`, `out`). Her other arm keeps doing
+    what it was doing: swinging in a walk, on her thigh in a seat;
+  - **her trunk, neck and head**: only *how far the flourish turns them from where it started*, added to what they
+    are doing. A head that tilts into a scratching hand tilts as far from wherever the walk has it;
+  - **nothing below her chest.** Legs, pelvis: her animation's, to the bit.
+- **A hand that touches her is put on her by IK.** Where a flourish touches (her head, her neck, her other arm, her
+  belly, her hip), the clip says which bone it touches and when (`touch`). While it does, the same point of her hand
+  is kept where the clip has it *on that bone as that bone is now*: the layer works out where the clip's hand is in
+  the clip's own bone, carries that to the bone's place in the pose she's really in, and `HSHandIK` brings her hand
+  the rest of the way. So a hand scratches her head with her head turned to follow you, and rests on her hip sat or
+  stood.
+- **A look is a look.** A flourish that looks at her hand (`head: "look"`) holds her head's follower off while it
+  lasts (`HSHeadTrack.hold_off`), so she looks at what's in her hand and then back at you.
+- **Which, and when**, is the layer's own: `alive` on, every 6 to 14 s she does one that suits what she's doing
+  (the clip's `over`: stand, walk, sit), with a hand that's free, never the same twice running, never while an act
+  has her hands. `play("scratch_head")` does one now.
+
+### 11.2 The flourishes
+
+Right hand's, with the left's as mirrors (`_l`) where a hand or a side is in it.
+
+| Clip | What | Over | Hand |
+|---|---|---|---|
+| `life_look_hand` | her hand brought up in front of her chest, turned over, looked at: what she holds, or her nails | stand, walk, sit | any (made for a thing in it) |
+| `life_scratch_head` | fingertips to the back of her head, four scratches, her head tilting into them | stand, walk, sit | free |
+| `life_rub_neck` | a palm on the back of her neck, squeezed twice, her head tipped back and rolled | stand, walk, sit | free |
+| `life_scratch_arm` | her other upper arm scratched, looked at | stand, sit | free |
+| `life_rub_nose` | the side of a finger across her nose, twice | stand, walk, sit | free |
+| `life_wipe_brow` | the back of her hand across her forehead | stand, walk, sit | free |
+| `life_check_wrist` | her forearm up across her, the back of her wrist looked at | stand, walk, sit | any |
+| `life_brush_off` | her other shoulder brushed twice, looked at | stand, walk, sit | free |
+| `life_tuck_hair` | fingertips from her temple back over her ear | stand, walk, sit | free |
+| `life_chin` | a knuckle under her chin, held: thinking | stand, sit | free |
+| `life_scratch_belly` | her side scratched | stand, walk, sit | free |
+| `life_hand_hip` | a hand on her hip a while, her weight settling | stand | free |
+| `life_flex_hand` | her hand opened wide and closed, twice, at her side | stand, walk, sit | free |
+| `life_stretch` | both arms up over her head, her back arched, and down | stand, sit | both free |
+| `life_rub_hands` | her palms together in front of her, rubbed | stand, sit | both free |
+| `life_roll_shoulders` | her shoulders up, back and down, her head side to side | stand, walk, sit | any |
+| `life_sigh` | a breath in, her shoulders up; out, they drop and her head sinks a little | stand, walk, sit | any |
+| `life_glance` | a look off to one side and back | stand, walk, sit | any |
+| `life_neck_stretch` | her head tipped to one shoulder, held, to the other | stand, sit | any |
+
+Where a hand goes is by her own parts, as everywhere in v3: the head's own size and middle (`body.headC`,
+`headR`), her mouth, her neck's joints, her trunk's slabs at her own belly and hips, her other arm's joints. A
+target her arm can't get to (an imp's crown) is slid toward one it can (its temple).
+
+### 11.3 The plan
+
+- [ ] `core/life.js`: the flourishes, the left hand's as mirrors; each one's record (`life`: hand, head, trunk, in,
+      out, touch, over, free)
+- [ ] `core/layer.js`: the layer in JavaScript (the same rule Godot runs): a flourish over any base clip's pose, the
+      touch by a two-bone solve; used by the page and by ANIMATOR
+- [ ] ANIMATOR: every flourish on the three people, five creatures and three children: starts and ends in the idle,
+      legs and pelvis the idle's own, no turn over 34 degrees a frame, the hand on what it touches, nothing of the
+      arm in the body or the head; laid over the walk and the sit: legs and pelvis the base's to the bit, the hand
+      still on what it touches
+- [ ] the page: a Life kind, each flourish shown over standing, walking or sitting
+- [ ] Look plugin: `gesture.gd` `HSGesture` (the layer, `alive`, `play`), `HSHeadTrack.hold_off`, the hand's anchor
+      through `HSHandIK`
+- [ ] the starter's `motion.gd` (`alive`, `life()`), `act.gd`, the Markers (an Alive switch on a character)
+- [ ] GDLIFE (`python tools/godot/motion_check.py life`), pictures, the Animator's guide, notes
+
+## 12. Carrying: a thing held in any pose
+
+The user: *"Is there a way we can use ik to allow them to hold objects in any of the current animation positions."*
+
+### 12.1 How it's read
+
+A thing in her hand goes wherever her hand's clip takes it: swung by a walking arm, pressed through her thigh when
+she sits with her hands on her knees. **Carrying** is a pose for the arm that holds, kept over whatever clip plays:
+
+- **Five ways to carry**, each a one-pose clip made from her body (`carry_side`, `carry_front`, `carry_chest`,
+  `carry_shoulder`, `carry_raised`, and `_l`): at her side (a bottle by its neck, a bat, a bag); in front of her,
+  forearm level (a cup, a candle, a flashlight, a plate, a phone); held to her chest (a book, a doll); over her
+  shoulder (a bat, an axe, an umbrella); raised in front of her (a lantern, a torch). Made by the Animator so the arm
+  clears *her* belly, bust and hips.
+- **Kept by the same layer** (`HSGesture.carry(side, how)`): the holding arm takes the carry pose, over a walk, a
+  run, a sneak, a seat, an idle. At her side it keeps a share of the walk's swing; sat, "side" becomes "front" (a
+  hand on a thigh has nowhere to put a bottle).
+- **Then IK**: the arm is solved again so the hand hangs or stays level however her chest leans (`plumb`: a sneak
+  pitches her chest 35 degrees; the cup doesn't go with it), a thing that should stay the way up it stands is turned
+  so (`upright`: a cup, a candle, a lantern), and the hand is kept off her thighs.
+- **A prop says how it's carried**: `HSGrip.carry` and `upright`, guessed when it has no grip (drunk from: front and
+  upright; long: at her side).
+- **Acts take the hand back**: eating, drinking, a swing, a door: the carry lets go as the act's clip starts and
+  comes back as it ends. A flourish plays from the carry pose and back to it ("looking at an object they are
+  holding").
+
+### 12.2 The plan
+
+- [ ] `core/life.js` `carrying()`: the five poses and their mirrors, clear of her body
+- [ ] `HSGesture`: `carry(side, how, thing)`, plumb, upright, off her thighs; `HSGrip.carry`, `upright`
+- [ ] `motion.gd`: a kept thing is carried (`pick_up(thing, true)`, `hold(thing)`), `carry(how)`; acts take the hand
+      and give it back; the Markers the same
+- [ ] reaching at any height: two neighbouring reach clips mixed by the thing's height (`HSGesture.mix`), her feet
+      kept where they stand; the modelling rules' pick-up heights measured again
+- [ ] GDLIFE: a thing carried walking, sitting and sneaking (level, off her thighs, where the pose has it), pictures
