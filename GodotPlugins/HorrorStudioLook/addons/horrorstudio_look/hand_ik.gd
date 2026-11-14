@@ -433,15 +433,17 @@ func _process_modification_with_delta(delta: float) -> void:
 		var hb := hp.basis
 		var wrist := hp.origin
 		var pt: Vector3 = hp * (b["point"] as Vector3)
+		var turned := 0.0
 		if b["aim"] and tw != Vector3.INF:              # the hand turned about what it holds so the point leads at the target
 			var o: Vector3 = hp * (b["anchor"] as Vector3)
 			var v := pt - o
 			var u := tgt - o
 			if v.length() > 0.004 and u.length() > 0.004:
-				var q := Quaternion.IDENTITY.slerp(Quaternion(v.normalized(), u.normalized()), w)
+				var q := Quaternion.IDENTITY.slerp(Quaternion(v.normalized(), u.normalized()), w * w)   # (late: turned in step with the rise, a swung bat pointed at who it was for a tenth of a second before it got there)
 				hb = Basis(q) * hb
 				wrist = o + q * (wrist - o)
 				pt = o + q * v
+				turned = q.get_angle()
 		var need := tgt - pt                              # how far the point has to go, in her own space
 		if b["freeze"]:
 			if b["offset"] != Vector3.INF:
@@ -454,7 +456,8 @@ func _process_modification_with_delta(delta: float) -> void:
 			move = move.normalized() * most
 		_solve(sk, h, wrist + move, hb)
 		var done := sk.get_bone_global_pose(h["hand"]) * (b["point"] as Vector3)
-		last[side] = {"point": world * done, "target": tw, "error": (world * done).distance_to(tw) if tw != Vector3.INF else 0.0, "weight": w}
+		# (`moved`, `turned`: how far the clip's hand was carried and turned to get there. A correction that does most of the work is a clip that's wrong: the checks hold these too)
+		last[side] = {"point": world * done, "target": tw, "error": (world * done).distance_to(tw) if tw != Vector3.INF else 0.0, "weight": w, "moved": move.length(), "turned": turned}
 	for side in grips.keys():
 		var g: Dictionary = grips[side]
 		g["w"] = move_toward(float(g["w"]), float(g["goal"]), delta / float(g["secs"]))

@@ -96,7 +96,11 @@ takes its parent's. The builder never deals in bone axes:
 - the **arms** by angles from the arm hanging (forward, out to the side, turned in, then the elbow), or by IK to a
   wrist's place;
 - each bone's turn is the one that takes its rest direction and its hinge onto the posed ones (`Q.frame`), so the
-  same controls give the same pose whatever the rest pose is (MHR's A-pose, with its elbows bent 35 degrees);
+  same controls give the same pose whatever the rest pose is (MHR's A-pose, with its elbows bent 35 degrees). **The
+  elbow's hinge is MHR's own, carried by the upper arm** (`rig.js` `ELBOW`), not read off the body's own rest pose:
+  a creature's hunch leaves its elbow nearly straight, and the axis a straight arm is "bent about" is noise (a
+  hag's arms were wrung 140 degrees along their length to make up for one that pointed backward: animations v3,
+  docs/ANIMATOR_V3.md §8.4);
 - the **spine** bends between the pelvis's turn and the chest's, the neck between the chest's and the head's;
 - the **hand's turn** is an angle about the forearm, **counted from the body** (DECISIONS 2026-11-13, the hands:
   *"when you run the palms would be towards the body not towards the ground"*): 0 is the palm to the body's middle,

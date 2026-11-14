@@ -214,7 +214,8 @@ Measured by ANIMATOR on the three test bodies (the skinny man, the normal woman,
   at both bites, then gone.
 - **Blows**: a punch lands 2.3 and 2.6 cm from someone 1.05 and 1.55 m up; she stands nearer for someone above or
   below her shoulder (`_reach_at`: her arm is no longer); 2.9 cm from someone who stepped 30 cm aside as it was
-  thrown; a swung bat's end 4.5 cm from who it's swung at (the bat is turned to point at them, then carried); at you
+  thrown; a swung bat's end 2.0 cm from who it's swung at (the swing itself brings it down level: §8.5; the hand
+  IK turns it the last few degrees and carries it); at you
   it stops 21 cm short of your eye; someone with a Motion node of their own reels (`take_hit`).
 - **What a skeleton does with a modifier's work**: rolls it back after the frame. Outside the modifier a bone reads as
   its animation left it; a BoneAttachment3D follows the modified pose, so a held thing follows the corrected hand,
@@ -248,6 +249,133 @@ the rest she's in is the body's `hold_clip`, and Wait used to set it to its own,
 *turned to you*** (the field's default is off, for a Wait; a scare facing its arrow and not you missed the point);
 **in the tester an Attack is its clip and a note**, the head a note (nothing of the scene may be touched).
 
+### 8.4 On creatures' bodies (ANIMATOR's section 6c; `tools/animator/bodies.mjs` `CREATURE_BODIES`)
+
+The request is for creatures. The clips were written and measured on three people, and a clip is made from the body
+it's for, so the last stage made five of the Studio's own creature cards in node, as the page makes them (their base,
+their build from MHR's shapes, their sculpt at monster mode's reach, their height: `grownBody` takes a `shape` now):
+a **goblin** (1.15 m, arms 40 cm on legs of 56), a **ghoul** (1.90 m, arms 67 cm, hunched), an **ogre** (2.60 m,
+hands of 41 cm), an **imp** (0.90 m) and a **hag** (1.50 m, bent double). Every clip was made on each. It found six
+things, the first of them in every clip since animation v2:
+
+- **The elbow's hinge was read off the rest pose, and a creature's rest pose has no bend to read.** The hinge was the
+  axis the forearm is bent about at rest: 35 degrees on MHR's own bodies. A hunch and longer arms leave it 15 degrees
+  on the goblin, 10 on the ghoul, 13 and a little the wrong way on the hag, and the axis is then whatever the last
+  millimetres make it. The hag's came out pointing backward, the ghoul's sideways. Everything downstream was
+  consistent with it, so nothing looked broken from the numbers: the hand still got where it was sent. But the
+  upper arm's skin was wrung 139 degrees round against the collarbone and the forearm's 143 back again, standing
+  still, and in a peek, a punch or a swing the twist went past half a turn and the twist bones flipped over between
+  two frames (160 degrees in one). The hinge is now **MHR's own, carried by the upper arm** (`rig.js` `ELBOW`: the
+  mean of its two bases' axes, 1.9 degrees from either, which ANIMATOR holds it to). On the three people nothing
+  moved that a check could see. On every creature the standing arm is as a person's: the upper arm 31 to 42 degrees
+  round, the forearm 13 to 35.
+- **A wall put by her height stood inside a hunched face.** The peek's wall was 20 cm ahead of her feet times her
+  scale. A hag's face is 34 cm ahead of hers and a ghoul's 34: the wall cut through their heads, and their
+  shoulders were past where the hand was sent, so the arm folded flat (the elbow 179 degrees) and pointed anywhere.
+  The wall now stands clear of the body's own front as it stands (its face by the head's own size, its chest and
+  belly by the slabs it's measured in): 20 cm on a person as before, 37 on the ghoul, 39 on the ogre.
+- **Where a hand goes is by the arm and the hand that's on it.** The peek's hand is on the wall's end, a line up the
+  wall: how high is free, and it's put where the arm isn't folded flat to get there (no nearer the shoulder than 0.42
+  of the arm: a long arm's hand ends higher). On its way any hand can be kept clear of its own shoulder (`armTo`'s
+  `near`, `clearOf`). A wrist beside a mouth, on a wall or over a head is placed by the hand's and the head's own
+  size against a person's (`handScale`, `headScale`: an ogre's hand is 2.3 times a person's where its height says
+  1.6; a goblin's head and ears 1.2 where its height says 0.6). And the peek's arm goes with the lean all the way
+  through it: sent in a burst in the middle, the elbow swung 27 degrees in a frame on a person and 37 on a ghoul.
+- **On all fours the wrist's height is the hand's own.** A wrist a person's 2.8 cm off the floor put an ogre's
+  fingertips 5.3 cm under it. It's read off the pose now (`handDrop`: how far under its wrist a planted hand's
+  lowest finger joint lies), and a carried hand is lifted by what its hanging fingers need. The arms' share of
+  their length comes down for a body whose crawl would ask for all of it (a goblin's 0.993, an ogre's 0.997: now
+  0.966 and 0.967, a person's 0.959 to 0.972 as before), found by running the crawl's own cycle (`kneeling`, kept
+  for a body and its settings).
+- **A thing on the floor was never reached, on people either.** The low reach's body was held to a squat of 0.52 of
+  her scale and 82 degrees over, and from there the two women's hands stopped 5.5 and 7.7 cm short of where they
+  were asked. No IK in the game makes an arm longer, so a pick-up from the floor could not have touched. It goes to
+  0.62 and 92 now, and the hand gets there on all eight bodies (0.0 to 0.4 cm). The palm was asked to face the
+  floor, which a forearm pointing at the floor can't do: the turn stayed as it hung until the elbow bent, then went
+  60 degrees in a frame; it faces back toward her feet now. The wrist is held as high over the thing as keeps the
+  fingers off the floor (an ogre's were 21 cm under it), and the other hand goes to its thigh (a ghoul's hung 6 cm
+  through the floor from a squat that deep). A table is at an ogre's knees: the middle reach's knees give too.
+- **A toe follows its heel.** On a knee-high imp's 0.47 s stride the toe joint turns 38 degrees in the frame its
+  heel leaves the floor. That is what keeps the toes flat, and it's allowed a blow's limit.
+
+| | height | walks | sneaks | creeps | crawls | scuttles | its front | its lunge reaches |
+|---|---|---|---|---|---|---|---|---|
+| goblin | 1.15 m | 1.11 m/s | 0.27 | 0.34 | 0.24 | 1.07 | 24 cm ahead of its feet | 79 cm |
+| ghoul | 1.90 m | 1.43 | 0.49 | 0.63 | 0.45 | 1.43 | 37 cm | 137 cm |
+| ogre | 2.60 m | 1.23 | 0.43 | 0.52 | 0.31 | 1.04 | 39 cm | 202 cm |
+| imp | 0.90 m | 0.95 | 0.27 | 0.27 | 0.19 | 0.75 | | |
+| hag | 1.50 m | 1.34 | 0.42 | 0.53 | 0.38 | 1.20 | | |
+
+On each of the five: no bone turns faster than it may in the new clips, the walk, the run and the reaches; no arm is
+asked for more than its length (0.994 at the most); no fingertip, foot, wrist or head under the floor (a fingertip
+0.5 cm at the worst); a planted foot, knee or hand slips 1 mm at the most; the wall is 1 to 5 cm past its front, its
+head out past the wall's end, its arm 0.48 of its length held and never under 0.41; its fist comes up under its
+mouth by its own hand (14 cm from its lips on a goblin's 17 cm hand, 33 on an ogre's 41); a thing on the floor, a
+table and a shelf is reached within 0.5 cm.
+
+### 8.5 On the mesh (`python tools/godot/motion_check.py sheets3`)
+
+Until this stage every clip had been looked at as a stick figure and measured. Pictured in Godot on the normal
+woman's dressed character (a sheet a group in `docs/animator_sheets/2026-11-14_v3_*.jpg`; `motion_shots.gd` takes
+`boxes` now, so a peek has its wall), five things showed that no number had:
+
+- **The sneak** carried its forearms level at the chest with the hands hanging: a cartoon burglar on tiptoe. The
+  hands are low now, in front of the hips, the elbows a little bent.
+- **The creep's hands** hung limp from the wrists in loose fists, a sleepwalker's. They're hooked: the wrists bent
+  back, the fingers half curled, the palms down. The same for the hands of the **lunge** (it lunged with its fists)
+  and of the **loom**.
+- **The peek's hand** was on the wall's end at her shoulder's height, which is where her face comes out: she stood
+  with her cheek on her hand. It's below her leaning shoulder now (107 cm up on the woman, her head at 137), the
+  elbow behind her. From in front, behind a wall, what comes out is her head, her shoulder and her forearm.
+- **Eating**, with nothing in the hand, the fist stopped at her collarbone: it was placed for a thing standing a
+  hand's breadth out of the fist. The top of the fist is at her lips now; with a thing in it, the game's hand IK
+  takes the hand back out by the thing's own length (0.0 cm from her lips, as before).
+- The crawl, the scuttle, the punch, the hit, the knock, looking round, cowering and the reach to the floor read
+  as what they are.
+
+Then in the game (`python tools/godot/motion_check.py shots3`: her with the starter's Motion node, a water bottle
+and a bat with grips, someone to hit; `gizmo`: the grip's gizmo in the editor), two more:
+
+- **The swing was wrong, and its number was right.** GDMOTION3 measured "the bat's end 4.5 cm from who it's swung
+  at" and passed. The picture showed her hand down at her hip with the bat pointing up at them, and a tenth of a
+  second before that the bat held level at them from behind her head. The clip landed with what the fist holds 55
+  degrees up, so a bat's end was half a metre over its target; the hand IK made up the difference, by turning the bat
+  at them early and dragging the hand down. Asking the clip for a level bat outright made it worse: with the forearm
+  level too, that is a hammer held along its own forearm, and the forearm's twist bones went half a turn in a frame.
+  What a fist holds stands out of its thumb side, square to the forearm, and swings round toward where the forearm
+  points only by the wrist's sideways bend. So the swing is built that way now (`pose.js` `dev`, the wrist tipped
+  toward the little finger; `fight.js`): the hand comes down in front of her with the elbow out to her side, the
+  forearm pointing ahead and down, and the wrist tips the rest: the bat is back and down behind her shoulder wound
+  up, up as it comes over, and 21 to 28 degrees above level as it lands on a person (37 to 45 on a goblin, a ghoul or
+  a hag, whose forearms are short for their upper arms or long for their bodies). No hand's turn is given outright,
+  so no forearm is asked past its range (22 degrees of twist a frame at the most). In the game the bat's end is
+  2.0 cm from who it's swung at, and the hand stays where the swing put it. The hand IK's turn toward its target
+  comes in late now (the square of its weight): turned in step with the rise, it pointed the thing before the arm
+  had brought it. An outright hand turn (`handQ`, still used for a hand flat on the floor) keeps the forearm's share
+  inside what a forearm turns.
+- **The player wasn't told.** A blow that landed said so (`struck`) and told a character with a Motion node, who
+  reels; the starter's own player had nothing to hear it with. It has `struck(by, kind)` now: your view is knocked
+  5 degrees aside and settles in a third of a second, whatever hears a scare hears it, and its `hit` signal says
+  who and with what, for a game to count.
+- Drinking: the Devices plugin's water bottle with a grip, taken from a table and brought to her lips, her fingers
+  round it, its mouth 0.0 cm from them.
+
 ## 9. Not there
 
-(filled in at the end)
+- **Sitting, sleeping and doors on a creature.** Those clips are for a person's furniture: a seat 45 cm high, a bed,
+  a handle a metre up. An imp's hand can't get to that handle and an ogre's has to come down to it; a goblin's hands
+  don't reach its thighs sat on a seat as high as its legs. The clips are made and play, the hand stops short (an
+  arm asked for 1.1 to 2.0 times its length), and on the smallest bodies an arm turns faster than it should for a
+  frame or two. Furniture sized for the body (a seat by its legs, a handle by its shoulder) is a setting the bake
+  could take (`set.seat`, `set.handle` exist) and nothing offers yet.
+- **A two-handed swing, a kick, a grab that holds you.** One punch, one swing, one reaction.
+- **Beckoning, pointing, waving, a shrug.** The small acts are look around, knock, cower.
+- **Her eyes without eye bones.** `HSHeadTrack` leads with the eyes when the model has `l_eye`/`r_eye` bones (a
+  Studio export has); a stand-in's eyes don't move.
+- **A floor under a brought hand.** `HSHandIK` carries a hand onto a grip; it doesn't know where the floor or a
+  table's top is, so a thing lying flat is taken with the fingers a little into what it lies on.
+- **Which clips to bake.** All 53 go into the file (10.3 MB on the test body where 24 made 6.5). A creature that
+  never sits could leave those out; there's no switch.
+- **The Director and desk games.** The head, the grip and the blows are the starter kit's (`motion.gd`, `act.gd`) and
+  the markers'. The runtime add-on's cast plays the new loops only if a behaviour names them; it has no head
+  following and no hand IK.

@@ -500,10 +500,17 @@ func stage_grip() -> void:
 	var bat: Node3D = things["Bat"]
 	var end := bat.global_transform * Vector3(0, 0.3, 0)
 	var miss := end.distance_to(dummy.aim_point())
+	# how much of that was the swing's own and how much the hand IK's: the hand carried and the bat turned to get it there
+	# (it once got there with her hand dragged half a metre down to her hip and the bat turned 50 degrees: the clip's wrong then)
+	var carried: float = float(ik.last["r"].get("moved", 9.0)) if ik.last.has("r") else 9.0
+	var turned_by: float = rad_to_deg(float(ik.last["r"].get("turned", 9.0))) if ik.last.has("r") else 999.0
+	var hand_up: float = wrist.global_position.y - her.global_position.y
 	await until(func(): return dones.has("swing"), 8.0)
 	if miss > 0.1 or hits != [["Dummy", "swing"]] or dummy.got != ["swing"]:
 		bad("a swing of the bat: its end %.1f cm from them as it lands, struck %s, they were told %s" % [miss * 100.0, hits, dummy.got])
-	said.append("a swing of the bat: its end %.1f cm from who it's swung at as it lands" % (miss * 100.0))
+	if carried > 0.25 or turned_by > 45.0 or hand_up < 0.85:                    # (this one is 30 cm under where the swing lands by itself: a turn of some 36 degrees)
+		bad("a swing of the bat lands by the swing, not by the hand IK: her hand carried %.0f cm and the bat turned %.0f degrees to get there, her hand %.2f m up as it lands" % [carried * 100.0, turned_by, hand_up])
+	said.append("a swing of the bat: its end %.1f cm from who it's swung at as it lands, her hand %.2f m up, carried %.0f cm and the bat turned %.0f degrees by the hand IK" % [miss * 100.0, hand_up, carried * 100.0, turned_by])
 	m.drop()
 	dummy.queue_free()
 	# eating: a thing with a grip for the whole hand, taken, bitten twice, gone
@@ -636,7 +643,32 @@ func stage_blows() -> void:
 		bad("moves.gd on her own clips: %s" % [found])
 	other.queue_free()
 	dummy.queue_free()
-	say("a punch: %s; stepped aside as it's thrown, %.1f cm (she turned with them); out of reach it doesn't land; at you it stops %.0f cm short of your eye; someone with a Motion node reels; the hunt's moves find her creep, crawl, peek and lunge" % ["; ".join(said), moved * 100.0, short * 100.0])
+	# the starter's own player, told a blow landed: its view knocked aside and settled again, a scare heard, `hit` said
+	var knocked := "no starter player in the project"
+	if ResourceLoader.exists(S + "player.tscn"):
+		var sp := (load(S + "player.tscn") as PackedScene).instantiate() as Node3D
+		main.add_child(sp)
+		sp.global_position = Vector3(20, 0, 20)
+		var told := []
+		var ears := Node.new()
+		ears.set_script(made("extends Node\nvar got := []\nfunc scared(who) -> void:\n\tgot.append(who)\n"))
+		ears.add_to_group("hs_scare")
+		main.add_child(ears)
+		sp.connect("hit", func(by: Node, kind: String) -> void: told.append([by, kind]))
+		await frames(3)
+		sp.call("struck", her, "punch")
+		await frames(2)
+		var eye_node := sp.get_node("Eye") as Camera3D
+		var roll0: float = absf(eye_node.rotation.z)
+		await frames(40)
+		var roll1: float = absf(eye_node.rotation.z)
+		var got: Array = ears.get("got")
+		if told != [[her, "punch"]] or got != [her] or roll0 < 0.04 or roll1 > 0.001:
+			bad("the starter's player told a blow landed: hit said %d times, a scare heard %d, its view rolled %.1f degrees and %.2f after 0.7 s" % [told.size(), got.size(), rad_to_deg(roll0), rad_to_deg(roll1)])
+		knocked = "its view knocked %.0f degrees aside and level again in 0.7 s, a scare heard" % rad_to_deg(roll0)
+		sp.queue_free()
+		ears.queue_free()
+	say("a punch: %s; stepped aside as it's thrown, %.1f cm (she turned with them); out of reach it doesn't land; at you it stops %.0f cm short of your eye; someone with a Motion node reels; the starter's player: %s; the hunt's moves find her creep, crawl, peek and lunge" % ["; ".join(said), moved * 100.0, short * 100.0, knocked])
 
 
 # ---- a knock, looking round, the acts -------------------------------------------------------------------------------------------------

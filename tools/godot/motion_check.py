@@ -21,6 +21,18 @@
     python tools/godot/motion_check.py sheets [--out docs/animator_sheets]
         the three test characters (tools/animator/people.mjs, baked) pictured wearing the look: their walks from the
         side and the front, their runs, their hands close up (standing, walking, running), and the normal woman's acts
+    python tools/godot/motion_check.py sheets3 [--who NAME | --glb FILE.glb] [--out docs/animator_sheets] [--only low,peek]
+        animations v3 (docs/ANIMATOR_V3.md) pictured on a baked character (the normal woman's unless another is named:
+        a creature exported from the Studio and baked), a sheet a group: low (sneak, creep, crawl, scuttle), peek (round
+        a wall, from in front and from behind), scares, fight, mouth (eat, drink), acts (look round, knock, cower, a
+        reach to the floor)
+    python tools/godot/motion_check.py shots3 [--who NAME | --glb FILE.glb] [--out DIR] [--only head,drink,swing]
+        animations v3 in the game (motion3_shots.gd, in the check's own by-hand project: run the check first): her head
+        following someone to her left and right and let go of behind her, a bottle taken from a table by its grip and
+        drunk from, a bat taken and swung onto someone, a punch landing; eight pictures as JPEGs
+    python tools/godot/motion_check.py gizmo [--out DIR]
+        the grip's gizmo pictured in Godot's editor itself (grip_editor_shots.gd, a plugin of its own in the check's
+        project, under xvfb): a water bottle's grip selected, the whole editor and the 3D view close; a bat's
 
 Godot is $GODOT, else godot; under xvfb when there's no display to draw on (the pictures).
 """
@@ -246,9 +258,147 @@ def doc_sheets(out_dir):
     print("SHEETS ok")
 
 
+def v3_sheets(args):
+    """animations v3 on a baked character, a sheet a group (docs/animator_sheets/<date>_v3_<group>.jpg)"""
+    opt = lambda k, d=None: args[args.index(k) + 1] if k in args else d
+    who = opt("--who", "anim_normal_woman")
+    glb = Path(opt("--glb") or ROOT / "Exports" / "characters" / who / f"{who}.glb")
+    out_dir = Path(opt("--out", ROOT / "docs" / "animator_sheets"))
+    only = [x for x in (opt("--only") or "").split(",") if x]
+    rec_file = glb.with_name(glb.stem + ".motion.json")
+    if not glb.is_file() or not rec_file.is_file():
+        sys.exit(f"{glb} isn't there, or isn't baked (node tools/animator/bake.mjs {glb})")
+    rec = json.loads(rec_file.read_text(encoding="utf-8"))
+    if "peek_out" not in rec["clips"]:
+        sys.exit(f"{glb.name} was baked before animations v3: node tools/animator/bake.mjs {glb}")
+    k = float(rec["body"]["height"]) / 163.0                    # the camera's distances are a 1.63 m woman's: by the body's own height
+    edge = rec["clips"]["peek_out"]["peek"]["edge"]
+    wall = [[edge[0] + 0.75 * k, 1.1 * k, edge[2] + 0.06, 1.5 * k, 2.2 * k, 0.12]]   # the wall she peeks round: its end at the record's edge, off to her left
+    v = lambda at, dist, **more: {"at": [a * k for a in at], "dist": dist * k, **more}
+    groups = {
+        "low": [("sneak_loop", "side", {}), ("creep_loop", "side", {}), ("crawl_loop", "side", v([0, 0.45, 0.2], 3.4)), ("scuttle_loop", "side", v([0, 0.45, 0.2], 3.4))],
+        "peek": [("peek_out", "front", v([-0.25, 1.05, 0], 3.3, boxes=wall)), ("peek_out", "side", v([-0.1, 1.0, 0.1], 3.6, boxes=wall, yaw=-150, pitch=14)), ("peek_loop", "front", v([-0.3, 1.25, 0.2], 1.7, boxes=wall))],
+        "scares": [("scare_lunge", "q", v([0, 0.82, 0.2], 4.6)), ("scare_loom", "q", {}), ("scare_snap", "front", {}), ("scare_claw", "q", v([0, 0.5, 0.2], 3.6))],
+        "fight": [("punch", "side", v([0, 0.82, 0.2], 4.4)), ("swing", "side", v([0, 0.82, 0.2], 4.4)), ("swing", "front", {}), ("hit_react", "side", v([0, 0.82, -0.1], 4.4))],
+        "mouth": [("eat", "q", v([0, 1.25, 0], 2.3)), ("drink", "q", v([0, 1.25, 0], 2.3))],
+        "acts": [("look_around", "front", {}), ("knock", "side", {}), ("cower_loop", "q", {}), ("reach_low", "side", v([0, 0.7, 0.1], 4.0))],
+    }
+    n, date = 8, opt("--date", "2026-11-14")
+    tag = "v3" if who == "anim_normal_woman" and not opt("--glb") else f"v3_{glb.stem}"
+    for name, rows in groups.items():
+        if only and name not in only:
+            continue
+        plan, labels = [], []
+        for clip, view, extra in rows:
+            for i in range(n):
+                f = i / n if clip.endswith("_loop") else i / (n - 1) * 0.999
+                plan.append({"clip": clip, "f": f, "view": view, "name": f"{clip}_{view}_{i:02d}", **extra})
+                labels.append(f"{clip} ({'from behind' if extra.get('yaw') else view})" if i == 0 else "")
+        rep, err = shoot(glb, plan, KEEP / (glb.stem + "_v3"), glb.stem + "_" + name, "400x440", 5, True)
+        if rep is None:
+            sys.exit(err)
+        out = out_dir / f"{date}_{tag}_{name}.jpg"
+        sheet([KEEP / (glb.stem + "_v3") / f for f in rep["shots"]], out, cols=n, labels=labels, height=330)
+        print(f"  {out}")
+    print("SHEETS3 ok")
+
+
+def v3_shots(args):
+    """animations v3 pictured in the game: the head, a grip, a swing, a punch (motion3_shots.gd)"""
+    from PIL import Image
+    opt = lambda k, d=None: args[args.index(k) + 1] if k in args else d
+    who = opt("--who", "anim_normal_woman")
+    glb = Path(opt("--glb") or ROOT / "Exports" / "characters" / who / f"{who}.glb").resolve()
+    out = Path(opt("--out", KEEP / (glb.stem + "_game"))).resolve()
+    proj = ROOT / "Saved" / "Godot" / "_motion_check"
+    g = godot_bin()
+    if not g or not (proj / "project.godot").is_file() or not glb.is_file():
+        sys.exit("shots3: run the check first (python tools/godot/motion_check.py v3), and bake the character")
+    shutil.copy(Path(__file__).with_name("motion3_shots.gd"), proj / "motion3_shots.gd")
+    shutil.copytree(PLUGIN, proj / "addons" / "horrorstudio_look", dirs_exist_ok=True)       # (the plugin and the starter as they are now)
+    for f in ["motion.gd", "act.gd", "moves.gd"]:
+        shutil.copy(ROOT / "guides" / "first_game" / "starter" / f, proj / "starter" / f)
+    raw = out / "raw"
+    raw.mkdir(parents=True, exist_ok=True)
+    cmd = [g, "--path", str(proj), "--rendering-driver", "vulkan", "--resolution", "900x900", "--fixed-fps", "60", "-s", "res://motion3_shots.gd", "--", f"--glb={glb}", f"--out={raw}"] + ([f"--only={opt('--only')}"] if opt("--only") else [])
+    if shutil.which("xvfb-run") and not os.environ.get("DISPLAY"):
+        cmd = ["xvfb-run", "-a", "-s", "-screen 0 900x900x24"] + cmd
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=1500, env=env())
+    text = "\n".join(l for l in (r.stdout + r.stderr).splitlines() if l and "ALSA" not in l and "snd_" not in l)
+    line = next((l for l in text.splitlines() if l.startswith("MOTION3SHOTS {")), None)
+    bad = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "Parse Error" in l or "MOTION3SHOTS FAIL" in l]
+    if bad or not line:
+        print(text[-3000:])
+        sys.exit("MOTION3SHOTS FAILED")
+    rep = json.loads(line[len("MOTION3SHOTS "):])
+    for f in rep["shots"]:
+        Image.open(raw / f).convert("RGB").save(out / (Path(f).stem + ".jpg"), quality=88)
+    for n in rep["notes"]:
+        print("  " + n)
+    print(f"  {len(rep['shots'])} pictures in {out}")
+    print("MOTION3SHOTS ok")
+
+
+def gizmo_shots(args):
+    """the grip's gizmo pictured in the editor (grip_editor_shots.gd, installed as a plugin of its own)"""
+    from PIL import Image
+    opt = lambda k, d=None: args[args.index(k) + 1] if k in args else d
+    out = Path(opt("--out", KEEP / "grip_gizmo")).resolve()
+    proj = ROOT / "Saved" / "Godot" / "_motion_check"
+    g = godot_bin()
+    if not g or not (proj / "project.godot").is_file():
+        sys.exit("gizmo: run the check first (python tools/godot/motion_check.py v3)")
+    shutil.copytree(PLUGIN, proj / "addons" / "horrorstudio_look", dirs_exist_ok=True)
+    t = proj / "addons" / "hs_grip_shots"
+    t.mkdir(parents=True, exist_ok=True)
+    (t / "plugin.cfg").write_text('[plugin]\nname="hs grip shots"\ndescription=""\nauthor=""\nversion="1"\nscript="plugin.gd"\n', encoding="utf-8")
+    shutil.copy(Path(__file__).with_name("grip_editor_shots.gd"), t / "plugin.gd")
+    raw = out / "raw"
+    raw.mkdir(parents=True, exist_ok=True)
+    (proj / "grip_shots.json").write_text(json.dumps({"out": str(raw)}), encoding="utf-8")
+    subprocess.run([g, "--headless", "--path", str(proj), "--import"], capture_output=True, text=True, timeout=900, env=env())
+    pg = proj / "project.godot"
+    before = pg.read_text(encoding="utf-8").replace('"res://addons/hs_grip_shots/plugin.cfg", ', "")     # (a run that was killed leaves it in)
+    pg.write_text(before.replace("enabled=PackedStringArray(", 'enabled=PackedStringArray("res://addons/hs_grip_shots/plugin.cfg", ', 1), encoding="utf-8")
+    try:
+        shutil.rmtree(proj / ".godot" / "editor", ignore_errors=True)                                  # (a fresh layout)
+        e = env()
+        if os.path.exists("/usr/share/vulkan/icd.d/lvp_icd.json") and not e.get("DISPLAY"):
+            e.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
+        cmd = [g, "--editor", "--path", str(proj), "--rendering-driver", "vulkan", "--resolution", "1920x1080"]
+        if shutil.which("xvfb-run"):
+            cmd = ["xvfb-run", "-a", "-s", "-screen 0 1920x1080x24"] + cmd
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=600, env=e)
+    finally:
+        pg.write_text(before, encoding="utf-8")
+        shutil.rmtree(t, ignore_errors=True)
+        for f in ["grip_demo.tscn", "grip_shots.json"]:
+            (proj / f).unlink(missing_ok=True)
+    text = r.stdout + r.stderr
+    line = next((l for l in text.splitlines() if l.startswith("GRIPSHOTS {")), None)
+    if not line:
+        print(text[-3000:])
+        sys.exit("GRIPSHOTS FAILED: the editor said nothing")
+    rep = json.loads(line[len("GRIPSHOTS "):])
+    for f in raw.glob("*.png"):
+        Image.open(f).convert("RGB").save(out / (f.stem + ".jpg"), quality=88)
+    for d in rep["shots"]:
+        print("  " + d)
+    for e2 in rep["errors"]:
+        print("ERROR: " + e2)
+    print(f"  pictures in {out}")
+    print("GRIPSHOTS ok" if not rep["errors"] else "GRIPSHOTS FAILED")
+
+
 def main():
+    if sys.argv[1:] and sys.argv[1] == "gizmo":
+        return gizmo_shots(sys.argv[2:])
+    if sys.argv[1:] and sys.argv[1] == "shots3":
+        return v3_shots(sys.argv[2:])
     if sys.argv[1:] and sys.argv[1] == "sheets":
         return doc_sheets(sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else ROOT / "docs" / "animator_sheets")
+    if sys.argv[1:] and sys.argv[1] == "sheets3":
+        return v3_sheets(sys.argv[2:])
     if not sys.argv[1:] or sys.argv[1] != "shots":
         return check(sys.argv[1:])
     ap = argparse.ArgumentParser()

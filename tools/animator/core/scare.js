@@ -26,13 +26,13 @@ export function scares(rig, body, set, X = null) {
       c.arms.l = mixArm(C, S.arm, r); c.arms.r = mixArm(C, S.arm, r); c.clav = { l: { up: 10 * DEG * (1 - r) }, r: { up: 10 * DEG * (1 - r) } };
       const home = homeOf(rig, c), ka = sm2(t0 + 0.02, tp, t) * (1 - sm2(th, T - 0.15, t));
       for (const [sd, g] of [["l", 1], ["r", -1]]) { const Sh = home.shoulder[sd], tg = [Sh[0] - g * 0.035 * sc + 0.006 * sh2, Sh[1] + 0.05 * sc + 0.012 * sh * g, Sh[2] + 0.93 * arm];
-        c.arms[sd] = armTo(home, sd, tg, ka, { palm: [0, -0.45, 0.9], pole: [g * 0.75, -0.6, -0.2], curl: 0.72, wrist: -26 * DEG, via: [Sh[0] + g * 0.06 * sc, Sh[1] - 0.12 * sc, Sh[2] + 0.3 * arm] }); }
+        c.arms[sd] = armTo(home, sd, tg, ka, { palm: [0, -0.45, 0.9], pole: [g * 0.75, -0.6, -0.2], curl: 0.42, wrist: -26 * DEG, via: [Sh[0] + g * 0.06 * sc, Sh[1] - 0.12 * sc, Sh[2] + 0.3 * arm] }); }
       return c; };
     const pk = homeOf(rig, ctrl(Math.round(tp * FPS)));
     out.push(made("scare_lunge", T, ctrl, tp, th, Math.max(knuckles(rig, pk.info, "l")[2], knuckles(rig, pk.info, "r")[2]))); }
   // ---- the loom: bent double with the head hanging, whipped upright onto her toes and leant in over you ----------------
   { const t0 = 0.1 * q, tp = 0.44 * q, th = tp + 0.75, T = th + 1.1 * q;
-    const C = { flex: 0, elbow: 8 * DEG, abd: 3 * DEG, rot: 5 * DEG, pron: 40 * DEG, wrist: 0, curl: 0.5, hang: 1 }, K = { flex: 8 * DEG, elbow: 36 * DEG, abd: 25 * DEG, rot: -10 * DEG, pron: 75 * DEG, wrist: 28 * DEG, curl: 0.82, hang: 0.6 };
+    const C = { flex: 0, elbow: 8 * DEG, abd: 3 * DEG, rot: 5 * DEG, pron: 40 * DEG, wrist: 0, curl: 0.5, hang: 1 }, K = { flex: 8 * DEG, elbow: 36 * DEG, abd: 25 * DEG, rot: -10 * DEG, pron: 75 * DEG, wrist: -14 * DEG, curl: 0.5, hang: 0.6 };   // (risen, her hands are hooked at her sides: hung limp from the wrists in loose fists they read as tired)
     const ctrl = f => { const t = f / FPS, s = sm2(t0, tp, t), r = sm2(th, T - 0.1, t), mix = (c, k) => (c * (1 - s) + k * s) * (1 - r), over = hump(tp - 0.12, tp + 0.2, t), e = sm(tp, tp + 0.06, t) * (1 - sm(th - 0.15, th + 0.05, t)), sh = e * Math.sin(TAU * 11 * t), creepIn = sm(tp, th, t) * (1 - r);
       const c = standing(rig, body, p, S, base, { k: 1 - r, fwd: mix(-0.06, 0.07) * sc + 0.02 * sc * creepIn, down: mix(0.05, 0) * sc, pitch: (mix(80, 9) + 5 * over * (1 - r) + 3 * creepIn) * DEG, heel: 0.75 * s * (1 - r), look: [mix(60, 11.5) * DEG, 0.4 * DEG * sh], head: { roll: (mix(0, 24) + 7 * creepIn + 1.6 * sh) * DEG } });
       c.arms.l = mixArm(mixArm(C, K, s), S.arm, r); c.arms.r = mixArm(mixArm(C, K, s), S.arm, r); c.clav = { l: { up: 11 * DEG * s * (1 - r) }, r: { up: 11 * DEG * s * (1 - r) } }; return c; };

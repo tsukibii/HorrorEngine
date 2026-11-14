@@ -37,14 +37,25 @@ export function fighting(rig, body, set, X = null) {
         feet: { r: { pitch: -26 * DEG * K * on } } });
       c.arms.l = { ...S.arm, flex: S.arm.flex + (22 * w - 30 * K) * on * DEG, abd: S.arm.abd + 10 * DEG * w * on, elbow: S.arm.elbow + 25 * DEG * w * on };
       const home = homeOf(rig, c), Sr = home.shoulder.r, near = (P, lo = 0.5) => { const d = V.sub(P, Sr), l = V.len(d), want = clamp(l, lo * arm, 0.95 * arm); return V.mad(Sr, d, want / (l || 1)); };   // (never further than the arm is long, never folded flat against the shoulder)
-      const P0 = near([Sr[0] - 0.09 * sc, Sr[1] + 0.2 * sc, Sr[2] - 0.1 * sc]), Pt = near([Sr[0] - 0.06 * sc, Sr[1] + 0.33 * sc, Sr[2] + 0.17 * sc]), P1 = near([-0.02 * sc, Sr[1] - 0.1 * sc, Sr[2] + 0.8 * arm]), P2 = near([0.13 * sc, hipY + 0.26 * sc, c.pelvis.pos[2] + 0.24 * sc]);
+      // The hand's way: up behind her shoulder (wound up), over the top, out and down in front of her own shoulder to
+      // her chest's height (where it lands: the arm nearly straight, pointing ahead and down), then down across to her
+      // other hip.
+      const P0 = near([Sr[0] - 0.09 * sc, Sr[1] + 0.2 * sc, Sr[2] - 0.1 * sc]), Pt = near([Sr[0] - 0.03 * sc, Sr[1] + 0.33 * sc, Sr[2] + 0.17 * sc]), P1 = near([Sr[0], Sr[1] - 0.6 * arm, Sr[2] + 0.74 * arm]), P2 = near([0.13 * sc, hipY + 0.26 * sc, c.pelvis.pos[2] + 0.24 * sc]);
       const tg = near(through([P0, Pt, P1, P2], 3 * K)), q = K * 1.5;
-      // (the palm to her own middle all the way, as a hand holds a hammer: what's in the fist then points up and back when it's wound up, up and ahead as it lands)
-      const palm = q < 1 ? turnV([0.95, 0.1, 0.25], [0.95, -0.05, -0.3], sm(0, 1, q)) : turnV([0.95, -0.05, -0.3], [0.8, -0.5, -0.3], sm(1, 1.5, q));
-      c.arms.r = armTo(home, "r", tg, w * on, { palm, pole: turnV([-0.8, 0.1, -0.6], [-0.6, -0.7, -0.3], sm(0, 0.7, K)), curl: 1.2, wrist: 0, via: [Sr[0] - 0.36 * sc, Sr[1] - 0.12 * sc, Sr[2] + 0.1 * sc] });   // (up round the outside: a hand brought up past its own shoulder folds the arm flat)
-      // the fist turned as a hand holds a hammer, outright: what it holds (the fist's own axis, out of its thumb side) up and back when it's wound up, up and ahead as it lands, ahead when it's through; the palm to her own middle all the way
-      const hh = homeOf(rig, c).info, A = rig.armR, ax = q < 1 ? turnV([0, 0.6, -0.8], [0.05, 0.8, 0.6], sm(0, 1, q)) : turnV([0.05, 0.8, 0.6], [0.3, 0.2, 0.93], sm(1, 1.5, q)), fd = V.cross(palm, ax);
-      c.arms.r.handQ = Q.slerp(Q.frame(A.handDir, A.palm0, hh.handDir_r, hh.palm_r), Q.frame(A.handDir, A.palm0, fd, palm), w * on);
+      // the palm to her own middle all the way, as a hand holds a hammer; the elbow out to her side until it has landed, then let down
+      const palm = q < 1 ? turnV([0.95, 0.1, 0.25], [0.97, -0.1, -0.2], sm(0, 1, q)) : turnV([0.97, -0.1, -0.2], [0.8, -0.5, -0.3], sm(1, 1.5, q));
+      const pole = q < 1 ? turnV([-1, -0.1, 0.1], [-0.92, -0.3, -0.2], sm(0.3, 1, q)) : turnV([-0.92, -0.3, -0.2], [-0.6, -0.7, -0.3], sm(1, 1.5, q));   // (as it lands the elbow is out to her side, not under the arm: under it, the forearm points up at the hand and what the fist holds stands up with it)
+      // What the fist holds stands out of its thumb side, square to the forearm: back over her shoulder while the
+      // forearm is up (wound up), up as it comes over the top, ahead and up as the forearm comes down in front of her.
+      // The wrist does the rest: tipped a little toward the thumb wound up, and toward the little finger as it lands
+      // (`dev`, and a little past what a wrist gives alone: a handle lies slanted across a palm, not square to it),
+      // which is what brings a bat's end down onto what's in front of her, about level.
+      // (The fist's turn was first given outright, with what it held 55 degrees up as it landed, then level with the
+      //  forearm level too. A hand can't hold a hammer along its own forearm: the forearm's twist bones went half a
+      //  turn in a frame trying. And in the game a bat's end 55 degrees up was half a metre over who it was swung at:
+      //  the hand IK made up for it by pointing the bat at them early and dragging her hand down to her hip.)
+      c.arms.r = armTo(home, "r", tg, w * on, { palm, pole, curl: 1.2, wrist: 0, via: [Sr[0] - 0.36 * sc, Sr[1] - 0.12 * sc, Sr[2] + 0.1 * sc] });   // (up round the outside: a hand brought up past its own shoulder folds the arm flat)
+      c.arms.r.dev = (-0.14 + 0.89 * sm(0.3, 1, q)) * w * on;
       return c; };
     const h = homeOf(rig, ctrl(Math.round(th * FPS))), at = knuckles(rig, h.info, "r"), axis = V.norm(V.cross(h.info.handDir_r, h.info.palm_r));
     out.push({ name: "swing", loop: false, n, fps: FPS, secs: (n - 1) / FPS, ctrl, events: [{ t: th, name: "hit" }], meta: { swing: { hand: "r", at: r3(at), axis: r3(axis), reach: +at[2].toFixed(3) } } }); }

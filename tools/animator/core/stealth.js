@@ -23,11 +23,13 @@ const STYLE = {
 // the arms and the head of each, at a phase (sw: this arm's swing, -1 back .. 1 forward; breath: -1..1)
 const UPPER = {
   sneak: (p, K) => ({
-    arm: (g, sw, b) => ({ flex: (17 + 7 * sw) * DEG, elbow: (72 + 8 * sw + 2 * b) * DEG, abd: (11 + 4 * p.masc + 3 * p.heavy) * DEG, rot: (12 + 5 * Math.max(0, sw)) * DEG, pron: 34 * DEG, wrist: -6 * DEG, curl: 0.62, hang: 0.5 }),
+    // (the hands carried low, in front of the hips, the elbows a little bent: held up at the chest with the forearms level, as they first were, she tiptoed like a cartoon burglar)
+    arm: (g, sw, b) => ({ flex: (9 + 6 * sw) * DEG, elbow: (46 + 8 * sw + 2 * b) * DEG, abd: (10 + 4 * p.masc + 3 * p.heavy) * DEG, rot: (14 + 5 * Math.max(0, sw)) * DEG, pron: 30 * DEG, wrist: -4 * DEG, curl: 0.52, hang: 0.5 }),
     clav: () => ({ up: 3 * DEG, fwd: 6 * DEG }),
     head: (phi, chest) => ({ yaw: 9 * DEG * Math.sin(TAU * phi) , roll: 0.3 * chest.roll, pitch: 3 * DEG }), neck: 0.4 }),
   creep: (p, K) => ({
-    arm: (g, sw, b) => ({ flex: (30 + 11 * sw) * DEG, elbow: (40 + 12 * Math.max(0, sw) + 3 * b) * DEG, abd: (9 + 4 * p.heavy) * DEG, rot: (4 + 6 * Math.max(0, sw)) * DEG, pron: 62 * DEG, wrist: (26 + 8 * sw) * DEG, curl: 0.86, hang: 0.82 }),
+    // (its hands hooked: the wrists bent back, the fingers half curled, the palms down. Hung limp from the wrists in loose fists, as they first were, it shuffled like a sleepwalker)
+    arm: (g, sw, b) => ({ flex: (30 + 11 * sw) * DEG, elbow: (46 + 12 * Math.max(0, sw) + 3 * b) * DEG, abd: (12 + 4 * p.heavy) * DEG, rot: (4 + 6 * Math.max(0, sw)) * DEG, pron: 80 * DEG, wrist: -(20 + 6 * sw) * DEG, curl: 0.46, hang: 0.82 }),
     clav: () => ({ up: 9 * DEG, fwd: 15 * DEG }),
     head: (phi, chest) => ({ yaw: 5 * DEG * Math.sin(TAU * (phi + 0.1)), roll: 11 * DEG + 4 * DEG * Math.sin(TAU * phi), pitch: -7 * DEG + 2 * DEG * Math.cos(2 * TAU * phi) }), neck: 0.34 }),
 };

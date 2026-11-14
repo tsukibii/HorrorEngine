@@ -6,14 +6,14 @@
 // Draws the three test bodies' skeletons (bodies.mjs); the pictures are for whoever is writing a clip.
 import { writeFileSync } from "fs";
 import { createRequire } from "module";
-import { testBody, bodyGlb, mhrRigBuffer, TEST_BODIES } from "./bodies.mjs";
+import { testBody, bodyGlb, mhrRigBuffer, TEST_BODIES, CREATURE_BODIES } from "./bodies.mjs";
 import { parseGlb } from "./core/glb.js";
 import { prepare, makers, makeClip, settingsFor } from "./core/animate.js";
 
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i > 0 ? process.argv[i + 1] : d; };
 const bodyName = arg("body", "normal_woman"), kind = arg("kind", null), only = arg("clips", null), N = +arg("frames", 8), out = arg("out", "sticks.png"), SC = +arg("scale", 150), VIEWS = arg("views", "side,front").split(",");
 const given = Object.fromEntries((arg("set", "") || "").split(",").filter(Boolean).map(kv => { const [k, v] = kv.split("="); return [k, +v]; }));
-if (!TEST_BODIES[bodyName]) { console.error(`no test body "${bodyName}": ${Object.keys(TEST_BODIES).join(", ")}`); process.exit(1); }
+if (!TEST_BODIES[bodyName] && !CREATURE_BODIES.includes(bodyName)) { console.error(`no test body "${bodyName}": ${Object.keys(TEST_BODIES).concat(CREATURE_BODIES).join(", ")}`); process.exit(1); }
 
 const ctx = prepare(parseGlb(bodyGlb(testBody(bodyName))), { mhrRig: mhrRigBuffer() }), { rig, body, X, plan } = ctx, set = settingsFor(ctx.glb, body, given);
 let list = makers(rig, body, set, kind ? kind.split(",") : null, X); if (only) { const want = only.split(","); list = list.filter(m => want.includes(m.name)); }

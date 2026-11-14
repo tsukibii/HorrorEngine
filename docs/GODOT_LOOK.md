@@ -1759,7 +1759,7 @@ Measured (GDMOTION3): a bottle 6.5 cm thick and a bat 3.5 cm picked up: her hand
 thing held 0.0 mm from her hand's own grip frame, fingertips 9 to 16 mm off the bottle and 12 to 16 off the bat (a
 fingertip's bone ends 7.5 mm inside its pad), no joint inside either; drinking, the bottle's rim 0.0 cm from her lips,
 tipped 52 degrees; eating, an apple's bitten side 0.0 cm from them at both bites; a punch at someone 1.05 and 1.55 m
-up lands 2.3 and 2.6 cm from them, 2.9 cm when they step 30 cm aside as it's thrown; the end of a swung bat 4.5 cm
+up lands 2.3 and 2.6 cm from them, 2.9 cm when they step 30 cm aside as it's thrown; the end of a swung bat 2.0 cm
 from who it's swung at; knuckles 0.3, 0.1 and 1.1 cm from a spot knocked on.
 
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)

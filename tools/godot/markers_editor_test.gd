@@ -740,3 +740,19 @@ func _guide(alex: Node3D, bob: Node3D, sofa: Node3D) -> void:
 	await redraw()
 	await shot("09_solo")
 	plug.solo = null
+	# animations v3: an Attack with her head following you, its form open at what's new (the palette's new cards beside it)
+	plug.pick_node(npc)
+	await frames(3)
+	var atk := await put("attack")
+	if atk != null:
+		atk.head = "follow"
+		atk.attack_times = 2
+		plug.pick_node(atk)
+		await frames(6)
+		var sec2 := dock.form.find_child("Sec_The_attack", true, false) as Control
+		if sec2 == null:
+			sec2 = dock.form.find_child("Sec_The attack", true, false) as Control
+		if sec2 != null:
+			(dock.form.get_parent() as ScrollContainer).scroll_vertical = int(sec2.position.y) - 26
+		await redraw()
+		await shot("10_attack")

@@ -58,6 +58,7 @@ export function ankleAt(F, ankleH, o, yaw, pitch) {
     c.legs.l/.r { ankle, yaw, pitch, roll, toe, knee }   the ankle's place, the foot's heading, pitch (toes up) and roll, the toes' bend, the knee turned out
     c.arms.l/.r { flex, abd, rot, elbow, pron, wrist, curl, hang }   angles from the hanging arm; or { hand: [x,y,z], pole, palm, ... } the wrist's place
                 `handQ`: the hand's turn in the world, outright (a hand laid flat on something); the forearm's twist follows it
+                `dev`: the hand tipped sideways at the wrist toward its little finger (radians; below 0 toward its thumb)
                 `pron`: the hand's turn about the forearm, counted from the body (0: the palm to the body's middle; rising: turned over,
                 toward the back when the arm hangs, toward the floor when the forearm points ahead; with `pronArm`, counted from the
                 elbow's own axis instead); `curl`: 0 a flat hand, 0.45 a hand at rest, 1.3 a loose fist with the thumb laid along
@@ -124,7 +125,18 @@ export function build(rig, c) {
     let dTw = g * (pron - A.pron0), Dw = Q.mul(Q.axis(df, dTw), Dl), n = Q.rot(Dw, A.palm0), wr = ac.wrist || 0;
     let Dhand = wr ? Q.mul(Q.axis(V.cross(df, n), wr), Dw) : Dw;
     if (ac.handQ) {                                          // the hand's turn in the world given outright (a hand laid flat on the floor): the forearm takes the part of it that's about its own length
-      Dhand = ac.handQ; dTw = Q.twist(Q.mul(Dhand, Q.conj(Dl)), df); Dw = Q.mul(Q.axis(df, dTw), Dl); pron = A.pron0 + g * dTw; }
+      // (the forearm's share of it is kept inside what a forearm turns, about the middle of its range as the palm's rule
+      //  above: a hand asked round past either end is the wrist's to make up, and the further past, the less the forearm
+      //  follows, so the twist bones never flip from one end of the range to the other between two frames. A ghoul's
+      //  swing asked for a half turn and got one, in a frame)
+      Dhand = ac.handQ; dTw = Q.twist(Q.mul(Dhand, Q.conj(Dl)), df);
+      const MID = 0.7, HALF = 1.9; let d = A.pron0 + g * dTw - MID; if (d > Math.PI) d -= 2 * Math.PI; else if (d < -Math.PI) d += 2 * Math.PI;
+      if (Math.abs(d) > HALF) { const o = (Math.abs(d) - HALF) / (Math.PI - HALF); d = Math.sign(d) * HALF * (1 - o * o * (3 - 2 * o)); }
+      pron = MID + d; dTw = g * (pron - A.pron0); Dw = Q.mul(Q.axis(df, dTw), Dl); }
+    // `dev`: the hand tipped sideways at the wrist, toward its little finger (below 0: toward its thumb). What a fist
+    // holds as a hammer is held stands out of its thumb side, square to the forearm: tipped so, it swings round toward
+    // where the forearm points, which is how a blow with it lands (a wrist gives about 35 degrees of it, 15 the other way)
+    if (ac.dev) Dhand = Q.mul(Q.axis(Q.rot(Dhand, A.palm0), -g * ac.dev), Dhand);
     pose.D[A.up] = Du; pose.D[A.low] = Dl; pose.D[A.wtw] = Dw; pose.D[A.hand] = Dhand;
     const tw = Q.twist(Q.mul(Q.conj(pose.D[A.clav]), Du), A.du0);
     for (const t of A.upTw) pose.D[t.j] = Q.mul(Du, Q.axis(A.du0, -(1 - t.f) * tw));

@@ -3232,3 +3232,63 @@ pale one shows.
   bottom panel's own height the storyboard got a row and a half. The palette became a column of its own and the
   tab's least height went up. A picture of the editor as it opens says this; the layout's code doesn't.
 
+## Animations v3 (2026-11-14, `even-more-animations-v3`: creatures' clips, a head that follows, a grip, fights)
+
+- **A thing made from a body is tested on the bodies it's for.** The request was "animations for creatures (our
+  monsters)". Twenty-nine clips were written, measured and passed on three people, and committed, before one was
+  made on a creature's body. Made on five of the Studio's own creature cards, every stage had something wrong: arms
+  wrung 140 degrees along their length standing still, twist bones flipping in a peek, a wall inside a hunched face,
+  an ogre's fingers 21 cm through the floor. The test bodies took an hour to add (`bodies.mjs` reads the creature
+  cards: the same functions the page uses) and should have been the first thing built. Whoever a thing is for goes
+  into its check before its first clip.
+- **A direction read off a pose is only as good as the pose is bent.** The elbow's hinge was the axis the rest pose's
+  elbow is bent about: 35 degrees on MHR, so it held on every person ever tried. A hunch straightens the elbow, and
+  the cross product of two nearly parallel directions points anywhere (a hag's: backward). Nothing failed loudly,
+  because everything downstream was consistent with the wrong axis: the hand got where it was sent, the palm faced
+  the right way, and the skin between was wrung like a towel. An axis that anatomy fixes is a constant carried by the
+  bone, held to the model's own bodies by a check, not a measurement taken again from each rest pose.
+- **"The numbers are fine" on a consistent mistake.** What showed the hinge was not a failed rule but a number
+  nobody had asked for: the twist of the upper arm against the collarbone at rest (139 degrees where a person's is
+  31). When something is carried through several frames of reference, print it in the one anatomy cares about.
+- **A size that's "times her scale" is only right for what scales with her.** A wall 20 cm ahead of her feet, a
+  wrist 2.8 cm off the floor, a fist 10 cm under a mouth, hands 8 cm either side of a head: each was a person's
+  number times the body's height. A creature's parts don't keep a person's proportions (hands 2.3 times where the
+  height says 1.6, a head and ears 1.2 where it says 0.6, a face a foot ahead of the feet). Where a hand goes is by
+  the hand, the arm, the head and the body's own front, each read off the body.
+- **An arm folded flat points anywhere.** A hand's place is given by what it's going to; how near that passes the
+  shoulder depends on the arm, and a longer arm folds flat on the way to the same place (the elbow 179 degrees: the
+  IK's plane is then decided by rounding). Keep a wrist clear of its own shoulder on the way (`clearOf`), and choose
+  the free part of a target (how high on a wall's end) by the arm.
+- **A palm asked to face along its forearm says nothing, then everything.** The low reach asked the palm to face the
+  floor while the forearm pointed at the floor. The turn stayed the hanging arm's until the elbow bent, then went 60
+  degrees in a frame. It only showed when the reach was made deep enough to get there. Ask a palm for a direction
+  its forearm can give all the way down the path.
+- **A limit kept for looks hid that the thing never worked.** The low reach was capped at a squat that left two of
+  three people's hands 5 and 8 cm short of the floor target; the check measured "15 cm from it" and passed it since
+  v2. Then a hand IK was built on top to "make it look like she actually picked it up", which can't lengthen an arm.
+  Before building a correction on a clip, measure whether the clip leaves the correction anything it can do.
+- **What a skeleton does with a modifier's work** (Godot 4.7): rolls it back after the frame. Outside the modifier a
+  bone reads as its animation left it, and nothing accumulates; a BoneAttachment3D follows the modified pose. A
+  check reads modified bones through attachments, made at least a frame before they're read (the first run's
+  "fingertips 5 cm off the bottle" was an attachment made the frame it was read).
+- **An angle that is a difference of two `atan2`s needs unwrapping.** A finger's bend round a handle is the tangent's
+  direction minus the bone before's; past half a turn that reads as a bend the other way and was clamped to none
+  (fingers standing 3 to 5 cm off every handle).
+- **Rerun a check after the last edit, not before it.** `VERSION` went to 3 after ANIMATOR's last run, and the commit
+  went out with the check failing on `version === 2`.
+- **An editor test that doesn't parse hangs the editor.** The test is a plugin that quits Godot when it's done; with
+  a parse error it never loads, and the editor sat idle for ten minutes. `--check-only` on the test first, a
+  `timeout` on the run, and every variable read off an untyped node typed (`var who: Node = dock.find_child(...)`).
+- **A GDScript lambda takes a local by value.** A test's `snap = run.snapshot()` inside a watcher's lambda set a copy.
+  What a lambda sets goes in a holder (an array or a dictionary).
+- **A number can pass on a wrong picture.** "The bat's end 4.5 cm from who it's swung at": true, with her hand
+  dragged down to her hip and the bat pointing up at them. The check measured where the end got to and not how. The
+  first picture of it in the game showed it at once. For anything that corrects a pose, also hold how much it had to
+  correct (how far the hand was moved, how far the thing was turned): a correction that does most of the work is a
+  clip that's wrong.
+- **A hand can't hold a hammer along its own forearm.** What a fist holds stands out of its thumb side, square to
+  the forearm; only the wrist's sideways bend (about 35 degrees) swings it toward where the forearm points. Asking
+  for a hand's turn outright asks the forearm to twist for whatever the wrist can't give, and it flips. Build a held
+  thing's direction from the forearm's and the wrist's, not from where you'd like it to point.
+- **A card's defaults are the kind's, unless the card says.** The Jump scare card made a marker that faced its arrow
+  and not you: `face_player` defaults to off, which is right for a Wait. A card carries the fields it starts with.

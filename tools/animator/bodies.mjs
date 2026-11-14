@@ -11,6 +11,7 @@ import { writeFileSync, mkdirSync, readFileSync } from "fs";
 import { join } from "path";
 import { loadMhr, mhrBody, grownBody, bodyWeights, bodySculpt, growRig, ROOT } from "../character/tailor/node.mjs";
 import * as PO from "../character/pose.js";
+import * as GW from "../character/grow.js";
 import { Glb } from "./core/glb.js";
 
 // the three the Animator is tested on (DECISIONS 2026-11-13, animation v2): a skinny man, a normal woman, a chubby woman
@@ -27,10 +28,17 @@ export const TEST_BODIES = {
     studio: { name: "anim_chubby_woman", head: "v2female", body: "bodyv2", outfit: "leggings and long sleeves", garments: 3, hair: "ponytail_low" } },
 };
 
+// creatures (animations v3, DECISIONS 2026-11-14: "animations for creatures (our monsters)"): the Character Studio's
+// creature cards (grow.js MONSTERS) made in node as the page makes one: its base, its build from MHR's own shapes, its
+// sculpt at monster mode's reach, its height. The proportions the new clips must hold on: a goblin's short bow legs
+// and long arms at 1.15 m, a ghoul's long arms and hunch at 1.9 m, an ogre at 2.6 m, an imp at 0.9 m, a hag bent double
+export const CREATURE_BODIES = ["goblin", "ghoul", "ogre", "imp", "hag"];
+const creatureDef = name => { const c = GW.MONSTERS[name]; return c && { grown: { base: c.base ?? 0, head: "", body: "", sculpt: c.sculpt, shape: c.shape, monster: true }, height: c.height, base: c.base ?? 0, creature: name, about: c.about }; };
+
 let MHR = null;
 /** a test body: { name, P (MHR's points, metres, feet on the floor), T, joints: [{ name, parent, at }] parents first, BI, BW (the rig's, a point's four bones by the joints' order) } */
 export function testBody(name) {
-  const def = TEST_BODIES[name] || { mhr: name, height: 1.7, base: 0 }, m = (MHR ||= loadMhr()), R = growRig(m); let b, J;
+  const def = TEST_BODIES[name] || creatureDef(name) || { mhr: name, height: 1.7, base: 0 }, m = (MHR ||= loadMhr()), R = growRig(m); let b, J;
   if (def.grown) { b = grownBody(m, { ...def.grown, height: def.height }); J = PO.joints(R, b.P, m.P, b.scale, b.F); }
   else {
     const w = bodyWeights(def.mhr).slice(); while (w.length < m.k) w.push(0); for (const [i, v] of Object.entries(def.add || {})) w[+i] += v;

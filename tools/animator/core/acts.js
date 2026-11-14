@@ -71,11 +71,20 @@ export function idle(rig, body, set, X = null) {
 // body as it is in this frame (`home`: the frame built with its arms by their angles): at k = 0 it is that arm exactly,
 // so a hand leaves the side and comes back to it wherever the body has got to meanwhile
 export function homeOf(rig, c) { const pose = build(rig, c), { P } = pose.solve(), at = j => [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]]; return { c, pose, info: pose.info, shoulder: { l: at(rig.armL.up), r: at(rig.armR.up) } }; }
+// (`o.near`, metres: on its way the wrist is kept at least that far from this frame's shoulder. A hand's place is given
+//  by what it's going to, and how near that passes the shoulder depends on the arm: an arm half as long again folds flat
+//  on the way to the same place, and an elbow folded flat points anywhere. Eased in from a quarter further out, so the
+//  path has no corner where it starts)
+export function clearOf(P, S, r) {
+  const v = V.sub(P, S), d = V.len(v), d1 = 1.25 * r; if (d >= d1 || r <= 0) return P;
+  const want = r + 0.25 * r * Math.pow(d / d1, 5), u = d > 1e-5 ? V.mul(v, 1 / d) : [0, 0, 1];
+  return V.mad(S, u, want);
+}
 export function armTo(home, s, to, k, o = {}) {
   const W0 = home.info["wristAt_" + s], E0 = home.info["elbowAt_" + s], S0 = home.shoulder[s], g = s === "l" ? 1 : -1, out = o.via || [(W0[0] + to[0]) / 2 + g * 0.04, (W0[1] + to[1]) / 2 + 0.02, (W0[2] + to[2]) / 2 + 0.05];
-  const pole0 = V.sub(E0, S0), pole1 = o.pole || [g * 0.5, -0.75, -0.45], palm1 = o.palm || [0, -1, 0];
+  const pole0 = V.sub(E0, S0), pole1 = o.pole || [g * 0.5, -0.75, -0.45], palm1 = o.palm || [0, -1, 0], at = bez(W0, out, to, k);
   // (the palm: the hanging arm's own turn, and `k` of the way to facing where it's asked: an angle blended, never two directions, which whip round when they face opposite ways)
-  return { hand: bez(W0, out, to, k), pole: turnV(pole0, pole1, ease(k)), pron: home.info["pron_" + s], pronArm: true, palm: V.norm(palm1), palmK: ease(k), curl: lerp(home.c.arms[s].curl ?? 0.45, o.curl ?? 0.45, k), wrist: (o.wrist || 0) * k, free: true };
+  return { hand: o.near ? clearOf(at, S0, o.near) : at, pole: turnV(pole0, pole1, ease(k)), pron: home.info["pron_" + s], pronArm: true, palm: V.norm(palm1), palmK: ease(k), curl: lerp(home.c.arms[s].curl ?? 0.45, o.curl ?? 0.45, k), wrist: (o.wrist || 0) * k, free: true };
 }
 // the base pose (the idle's first frame) built once
 export function basePose(rig, body, set, X) { const c = idle(rig, body, set, X).ctrl(0), h = homeOf(rig, c); return { ...h, pelvis: c.pelvis.pos.slice() }; }
@@ -244,19 +253,34 @@ export function reaching(rig, body, set, X = null) {
     const squat = lvl === "low" ? clamp(0.55 + 0.25 * p.strong - 0.25 * p.weak - 0.15 * p.heavy, 0.2, 0.85) : 0;
     const hand = V.sub(tgt, [0, lvl === "low" ? -grip * 0.6 : 0, lvl === "low" ? 0 : grip]);
     // the body's part of the reach, `u` times as much as a short reach needs: grown until the arm can do the rest
-    const lean = (k, u) => lvl === "low" ? { down: Math.min((0.2 + 0.33 * squat) * u, 0.52) * p.sc * k, pitch: Math.min((62 - 26 * squat) * u, 82) * DEG * k, fwd: -0.05 * p.sc * k, yaw: -8 * DEG * k, squat: k, look: [14 * DEG * k, -6 * DEG * k] }
-      : lvl === "mid" ? { pitch: Math.min(10 * u, 48) * DEG * k, fwd: Math.min(0.04 * u, 0.13) * p.sc * k, down: Math.max(0, 0.03 * (u - 1.6)) * p.sc * k, yaw: -9 * DEG * k, look: [8 * DEG * k, -8 * DEG * k] }
+    // (low: as far down as 0.62 of the body's scale and 92 degrees over. It was held to 0.52 and 82, and from there the
+    //  two women's hands stopped 5 and 8 cm short of where they were asked: a thing on the floor was never touched, and
+    //  no IK in the game can make an arm longer. mid: past what a person needs, the knees give too: an ogre's table is
+    //  at its knees)
+    const lean = (k, u) => lvl === "low" ? { down: Math.min((0.2 + 0.33 * squat) * u, 0.62) * p.sc * k, pitch: Math.min((62 - 26 * squat) * u, 92) * DEG * k, fwd: -0.05 * p.sc * k, yaw: -8 * DEG * k, squat: k, look: [14 * DEG * k, -6 * DEG * k] }
+      : lvl === "mid" ? { pitch: Math.min(10 * u, 48) * DEG * k, fwd: Math.min(0.04 * u, 0.13) * p.sc * k, down: (Math.max(0, 0.03 * (u - 1.6)) + Math.max(0, 0.2 * (u - 3.8))) * p.sc * k, squat: clamp((u - 3.8) / 1.5, 0, 1) * k, yaw: -9 * DEG * k, look: [8 * DEG * k, -8 * DEG * k] }
         : { pitch: -5 * DEG * k, heel: Math.min(1, 0.6 * u) * k, fwd: Math.min(0.03 * u, 0.1) * p.sc * k, yaw: -5 * DEG * k, look: [-22 * DEG * k, -6 * DEG * k] };
-    let u = 1; for (; u < 4; u += 0.1) { const h = homeOf(rig, leanFrame(rig, body, p, S, base, { ...lean(1, u), k: 1 })); if (V.dist(h.shoulder.r, hand) <= 0.94 * arm) break; }
+    let u = 1; for (; u < 6; u += 0.1) { const h = homeOf(rig, leanFrame(rig, body, p, S, base, { ...lean(1, u), k: 1 })); if (V.dist(h.shoulder.r, hand) <= 0.94 * arm) break; }
     const ctrl = f => { const t = f / FPS, go = sm2(0.08, tg, t), back = sm2(th, tb, t), k = go * (1 - back), hold = sm(tg - 0.06, tg + 0.05, t) * (1 - sm(tb + 0.1, T - 0.05, t));
       const c = leanFrame(rig, body, p, S, base, { ...lean(k, u), k: sm(0, tg, t) * (1 - sm(tb, T, t)) });
       const home = homeOf(rig, c), carry = [home.info.wristAt_r[0] - 0.02, home.info.wristAt_r[1] + 0.07, home.info.wristAt_r[2] + 0.1];
-      c.arms.r = armTo(home, "r", hand, k, { palm: lvl === "low" ? [0, -1, 0.15] : lvl === "mid" ? [0.2, -0.9, 0.3] : [0, -0.2, 1], pole: lvl === "high" ? [-0.9, -0.1, -0.4] : [-0.7, -0.6, -0.3], curl: lerp(0.25, 0.95, hold),
+      c.arms.r = armTo(home, "r", hand, k, { palm: lvl === "low" ? [0.55, -0.25, -0.8] : lvl === "mid" ? [0.2, -0.9, 0.3] : [0, -0.2, 1], pole: lvl === "high" ? [-0.9, -0.1, -0.4] : [-0.7, -0.6, -0.3], curl: lerp(0.25, 0.95, hold),
         via: lvl === "high" ? [tgt[0] - 0.08, sy - 0.05, 0.3 * p.sc] : null });
       if (back > 0 && back < 1) c.arms.r.hand = mixA(c.arms.r.hand, carry, 0.5 * hump(0, 1, back));     // (what it took is brought back close to the body)
-      if (lvl === "low" && effort > 0.3) { const T2 = onThighs(rig, body, home.pose, p, c.legs); c.arms.l = armTo(home, "l", T2.l, sm(0.1, tg * 0.8, t) * (1 - sm(tb - 0.2, T - 0.1, t)), { palm: T2.palm_l, pole: [0.8, -0.3, -0.5], curl: 0.4 }); }
+      // (the other hand goes to its thigh: a weak or heavy body leans on it; any body's hangs to the floor from a squat this deep if it's left to, a ghoul's 6 cm through it)
+      if (lvl === "low") { const T2 = onThighs(rig, body, home.pose, p, c.legs); c.arms.l = armTo(home, "l", T2.l, sm(0.1, tg * 0.8, t) * (1 - sm(tb - 0.2, T - 0.1, t)), { palm: T2.palm_l, pole: [0.8, -0.3, -0.5], curl: 0.4 }); }
       return c; };
-    return { name: "reach_" + lvl, loop: false, n, fps: FPS, secs: (n - 1) / FPS, ctrl, events: [{ t: tg, name: "grab" }, { t: tb + 0.12, name: "put_away" }], meta: { reach: { hand: "r", at: tgt.map(v => +v.toFixed(3)), level: lvl } } };
+    // (low, the palm faces back toward her feet and in. It was asked to face the floor, which a forearm pointing at the
+    //  floor can't do and says nothing about: the turn stayed the hanging arm's until the elbow bent, then went 60
+    //  degrees in a frame)
+    // Low, the hand comes down on the thing from above, its fingers pointing at the floor: the wrist is held as high
+    // over the thing as keeps them off it, by the hand's own fingers (a wrist a person's 4.5 cm over the thing put a
+    // person's fingertips 2 cm under the floor as the hand opened, and an ogre's 21)
+    if (lvl === "low") { const tips = []; for (const chain of rig.armR.fingers) for (const j of chain) { tips.push(j); for (const kid of rig.J[j].kids) tips.push(kid); }
+      for (let i = 0; i < 3; i++) { let low = 1e9;
+        for (let f = Math.round((tg - 0.6) * FPS); f <= Math.round((tb + 0.2) * FPS); f += 2) { const P = homeOf(rig, ctrl(f)).pose.solve().P; for (const j of tips) low = Math.min(low, P[j * 3 + 1]); }
+        if (low >= 0.003) break; hand[1] += 0.005 - low; } }
+    return { name: "reach_" + lvl, loop: false, n, fps: FPS, secs: (n - 1) / FPS, ctrl, events: [{ t: tg, name: "grab" }, { t: tb + 0.12, name: "put_away" }], meta: { reach: { hand: "r", at: tgt.map(v => +v.toFixed(3)), wrist: hand.map(v => +v.toFixed(3)), level: lvl } } };
   };
   return [mk("reach_low", "low"), mk("reach_mid", "mid"), mk("reach_high", "high")];
 }

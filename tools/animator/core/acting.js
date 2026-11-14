@@ -29,6 +29,11 @@ export function mouthOf(rig, solved) {
   const P = solved.P, at = j => [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]], h = rig.head, D = solved.D[h], t = rig.ix.get("c_teeth"), size = rig.headTop >= 0 ? V.dist(rig.J[h].at, rig.J[rig.headTop].at) / 0.187 : 1;
   return t != null ? V.add(at(t), Q.rot(D, [0, 0.003 * size, 0.045 * size])) : V.add(at(h), Q.rot(D, [0, 0.017 * size, 0.086 * size]));
 }
+// A hand's and a head's own size against a person's of the body's size (1 on a person, and never under the body's own
+// scale): where a wrist goes beside a mouth, on a wall's end or over a head is by the hand that's on it and the head
+// it's beside. An ogre's hand is half as big again as its height makes it, a goblin's head and ears nearly twice
+export const handScale = (rig, sc) => Math.max(sc, rig.armL.handLen / 0.175);
+export const headScale = (body, sc) => [Math.max(sc, body.headR[0] / 0.088), Math.max(sc, body.headR[1] / 0.112), Math.max(sc, body.headR[2] / 0.103)];
 // a hand's knuckles in a built pose (the middle of the fist's front)
 export const knuckles = (rig, info, s) => V.mad(info["wristAt_" + s], info["handDir_" + s], 0.5 * rig.arm(s).handLen);
 const clipOf = (name, n, ctrl, events, meta, loop = false) => ({ name, loop, n, fps: FPS, secs: (loop ? n : n - 1) / FPS, ctrl, events, meta });
@@ -38,17 +43,31 @@ const clipOf = (name, n, ctrl, events, meta, loop = false) => ({ name, loop, n, 
     her right (meta.peek.edge, from where she stands), and leans out past it to her right, her right hand on the
     edge. Mirrored: to her left. */
 export function peeking(rig, body, set, X = null) {
-  const p = params(body, set), S = stance(rig, body, p, X), base = basePose(rig, body, set, X), sc = p.sc, shY = body.shoulderY + body.floor;
-  const xe = -(body.shoulderHalf + 0.085 * sc), zw = 0.2 * sc, edge = [xe, 0, zw];
-  const frame = (u, o = {}) => {                              // u: 0 stood behind it .. 1 leant out
-    const c = standing(rig, body, p, S, base, { k: sm(0, 0.35, u), side: -0.105 * sc * u, fwd: 0.02 * sc * u, down: 0.035 * sc * u, pitch: (7 * u + (o.dp || 0)) * DEG, yaw: -7 * DEG * u, roll: (27 * u + (o.lean || 0)) * DEG,
+  const p = params(body, set), S = stance(rig, body, p, X), base = basePose(rig, body, set, X), sc = p.sc, shY = body.shoulderY + body.floor, arm = body.upper + body.fore;
+  // The wall stands clear of her front as she stands: her face, her chest, her belly. On a person that's a hand's
+  // breadth past her toes; a hunched creature's face is a foot ahead of its feet (a hag's, a ghoul's), and a wall
+  // put by her height alone stood inside its head
+  const P0 = base.pose.solve().P, face = P0[rig.head * 3 + 2] + (body.headC[2] + body.headR[2] - rig.J[rig.head].at[2]), front = Math.max(face, ...body.slabs.map(s => s.zf));
+  const xe = -(body.shoulderHalf + 0.085 * sc), zw = Math.max(0.2 * sc, front + 0.03 * sc), edge = [xe, 0, zw];
+  const lean = (u, o = {}) => { const c = standing(rig, body, p, S, base, { k: sm(0, 0.35, u), side: -0.105 * sc * u, fwd: 0.02 * sc * u, down: 0.035 * sc * u, pitch: (7 * u + (o.dp || 0)) * DEG, yaw: -7 * DEG * u, roll: (27 * u + (o.lean || 0)) * DEG,
       proll: 7 * DEG * u, look: [(2 + (o.hp || 0)) * DEG * u, (-6 + (o.hy || 0)) * DEG * u], head: { roll: (15 + (o.tilt || 0)) * DEG * u }, feet: { l: { pitch: -16 * DEG * u } }, squat: 0.4 * u });
-    c.breath = o.breath || 0;
-    const home = homeOf(rig, c), wob = o.hand || [0, 0, 0];
-    c.arms.r = armTo(home, "r", [xe - 0.03 * sc + wob[0], shY - 0.03 * sc + wob[1], zw - 0.075 * sc + wob[2]], sm2(0.05, 0.8, u), { palm: [1, 0, 0.15], pole: [-0.5, -0.8, -0.35], curl: 0.66, wrist: -8 * DEG, via: [xe + 0.06 * sc, shY - 0.3 * sc, zw - 0.1 * sc] });   // (her palm on the wall's end, the fingers round its front)
+    c.breath = o.breath || 0; return c; };
+  // Her hand on the wall's end, under her face. The end is a line up the wall, so how high the hand is on it is
+  // free: it's put below her shoulder as she leans, as far from it as leaves the arm half bent (0.48 of its length:
+  // a long arm's hand ends lower down the wall). It was first at her shoulder's own height, which is where her face
+  // comes out: on the mesh she stood with her cheek on her hand. Below, her face is out over it, and the elbow
+  // points back behind her instead of folding flat
+  const hs = handScale(rig, sc), S1 = homeOf(rig, lean(1)).shoulder.r, hx = xe - 0.03 * hs, hz = zw - 0.075 * hs, flat = Math.hypot(hx - S1[0], hz - S1[2]);
+  const hy = S1[1] - Math.sqrt(Math.max((0.2 * arm) ** 2, (0.48 * arm) ** 2 - flat * flat));
+  const frame = (u, o = {}) => {                              // u: 0 stood behind it .. 1 leant out
+    const c = lean(u, o), home = homeOf(rig, c), wob = o.hand || [0, 0, 0];
+    // (the arm goes with the lean, all the way through it: sent in a burst in the middle of it, as it first was, the elbow swung round 27 degrees in a frame on a person and 37 on a ghoul's longer arm)
+    const W0 = home.info.wristAt_r, via = [(W0[0] + hx) / 2, (W0[1] + hy) / 2 - 0.02 * sc, W0[2] + 0.35 * (hz - W0[2])];   // (up beside her first, then out to the wall: a way that stays inside the arm's reach on any body)
+    c.arms.r = armTo(home, "r", [hx + wob[0], hy + wob[1], hz + wob[2]], sm(0.02, 0.9, u), { palm: [1, 0, 0.15], pole: [-0.5, -0.8, -0.35], curl: 0.66, wrist: -8 * DEG, via, near: 0.36 * arm });   // (her palm on the wall's end, the fingers round its front)
     c.arms.l = armTo(home, "l", [0.07 * sc, shY - 0.21 * sc, zw - 0.045 * sc], sm2(0.2, 1, u) * 0.999, { palm: [0, 0.1, 1], pole: [0.75, -0.6, -0.3], curl: 0.2, wrist: -30 * DEG });
     return c; };
-  const To = clamp(1.15 - 0.2 * p.pw + 0.25 * p.heavy, 0.8, 1.7), no = Math.round(To * FPS) + 1, Tb = clamp(0.95 - 0.1 * p.pw + 0.2 * p.heavy, 0.8, 1.4), nb = Math.round(Tb * FPS) + 1, Nl = 6 * FPS;
+  const long = clamp((arm / body.height - 0.31) / 0.08, 0, 1);  // (an arm long for the body it's on, a ghoul's, an ogre's, has further to fold away: it's given a little longer)
+  const To = clamp(1.15 - 0.2 * p.pw + 0.25 * p.heavy, 0.8, 1.7) + 0.1 * long, no = Math.round(To * FPS) + 1, Tb = clamp(0.95 - 0.1 * p.pw + 0.2 * p.heavy, 0.8, 1.4) + 0.2 * long, nb = Math.round(Tb * FPS) + 1, Nl = 6 * FPS;
   const out = f => frame(sm2(0.04, 0.96, f / (no - 1)) * (0.94 + 0.06 * sm(0.5, 1, f / (no - 1)))), back = f => frame(1 - sm2(0, 0.9, f / (nb - 1)));
   const hold = f => { const t = (f % Nl) / FPS, b = Math.sin(TAU * t / 3), w = Math.sin(TAU * t / 6); return frame(1, { breath: b, lean: 1.2 * w, dp: 0.6 * b, tilt: 3 * Math.sin(TAU * t / 6 + 1), hy: 3 * w, hand: [0, 0.002 * b, 0] }); };
   const head = (() => { const P = homeOf(rig, frame(1)).pose.solve().P, j = rig.head; return r3([P[j * 3], P[j * 3 + 1], P[j * 3 + 2]]); })();
@@ -65,15 +84,18 @@ export function mouthing(rig, body, set, X = null) {
   const p = params(body, set), S = stance(rig, body, p, X), base = basePose(rig, body, set, X), sc = p.sc, slow = 1 + 0.15 * p.heavy + 0.15 * p.weak - 0.08 * p.strong;
   // where the wrist goes: so a fist's top is at the lips (the mouth read off the pose it's in)
   // (`up`: 0 a bite, 1 a sip: the hand then comes up level with the mouth and further out in front of it, so what it holds lies tipped toward her and not stood under her chin)
-  const wristFor = (c, up) => { const m = mouthOf(rig, homeOf(rig, c).pose.solve()); return [m[0] - 0.045 * sc, m[1] - (0.105 - 0.04 * up) * sc, m[2] + (0.09 + 0.035 * up) * sc]; };
+  // (eating, nearer: the top of the fist at her lips. It was a hand's breadth under her mouth and as far out in front of it, for a thing that stands up out of the fist; on the mesh, with nothing in it, the fist stopped at her collarbone.
+  //  With a thing in it the game's hand IK takes the hand back out as far as the thing is long)
+  const hs = handScale(rig, sc), wristFor = (c, up, eat = 0) => { const m = mouthOf(rig, homeOf(rig, c).pose.solve());
+    return [m[0] - (0.045 - 0.01 * eat) * hs, m[1] - (0.105 - 0.04 * up - 0.03 * eat) * hs, m[2] + (0.09 + 0.035 * up - 0.03 * eat) * hs]; };
   const body_ = (k, o = {}) => { const c = leanFrame(rig, body, p, S, base, { k: sm(0, 1, k), pitch: (o.pitch || 0) * DEG, yaw: -3 * DEG * k, look: [(o.hp || 0) * DEG, (o.hy || 0) * DEG] }); c.breath = 0; return c; };
-  const arm = (c, k, up, o = {}) => { const home = homeOf(rig, c), to = wristFor(c, up), rest = [home.shoulder.r[0] + 0.02 * sc, home.shoulder.r[1] - 0.3 * sc, home.shoulder.r[2] + 0.2 * sc], at = o.low ? mixA(to, rest, o.low) : to;
+  const arm = (c, k, up, o = {}) => { const home = homeOf(rig, c), to = wristFor(c, up, o.eat || 0), rest = [home.shoulder.r[0] + 0.02 * sc, home.shoulder.r[1] - 0.3 * sc, home.shoulder.r[2] + 0.2 * sc], at = o.low ? mixA(to, rest, o.low) : to;
     c.arms.r = armTo(home, "r", at, k, { palm: [0.8, 0.12 + 0.3 * up, -0.58], pole: [-0.55, -0.8, -0.2], curl: 1.05, wrist: (6 + 16 * up) * DEG, via: [home.shoulder.r[0] - 0.02 * sc, home.shoulder.r[1] - 0.36 * sc, home.shoulder.r[2] + 0.22 * sc] }); return c; };
   // eat
   const Te = 4.3 * slow, t1 = 0.75 * slow, b1 = 0.86 * slow, d1 = 1.15 * slow, t2 = 2.3 * slow, b2 = 2.86 * slow, d2 = 3.15 * slow, ne = Math.round(Te * FPS);
   const eat = f => { const t = f / FPS, up = sm2(0.06, t1, t) * (1 - sm2(d2, Te - 0.15, t)), low = 0.55 * sm2(d1, d1 + 0.45 * slow, t) * (1 - sm2(t2, b2 - 0.1, t)), chew = sm(d1, d1 + 0.3, t) * (1 - sm(t2 - 0.2, t2, t)) + sm(d2, d2 + 0.3, t) * (1 - sm(Te - 0.5, Te - 0.2, t));
     const bite = hump(b1 - 0.2, b1 + 0.2, t) + hump(b2 - 0.2, b2 + 0.2, t), c = body_(up, { pitch: 2 * up + 4 * bite, hp: 7 * bite + 1.6 * chew * Math.sin(TAU * 2.4 * t), hy: -4 * up });
-    return arm(c, up, 0.25 * bite, { low }); };
+    return arm(c, up, 0.25 * bite, { low, eat: 1 }); };
   // drink
   const Td = 3.5 * slow, s1 = 0.8 * slow, s2 = 1.0 * slow, s3 = 2.0 * slow, nd = Math.round(Td * FPS);
   const drink = f => { const t = f / FPS, up = sm2(0.06, s1, t) * (1 - sm2(s3 + 0.1, Td - 0.15, t)), tip = sm2(s1 - 0.1, s2 + 0.35, t) * (1 - sm2(s3 - 0.25, s3 + 0.15, t)), gulp = tip * Math.sin(TAU * 1.5 * (t - s2));
@@ -106,11 +128,11 @@ export function knocking(rig, body, set, X = null) {
 }
 /** { cower_loop }: crouched small, turned a little away, the forearms up over the head, trembling. 4 s. */
 export function cowering(rig, body, set, X = null) {
-  const p = params(body, set), S = stance(rig, body, p, X), base = basePose(rig, body, set, X), sc = p.sc, N = 4 * FPS;
+  const p = params(body, set), S = stance(rig, body, p, X), base = basePose(rig, body, set, X), sc = p.sc, N = 4 * FPS, HK = headScale(body, sc);
   const ctrl = f => { const t = (f % N) / FPS, b = Math.sin(TAU * t / 2), tr = Math.sin(TAU * 8 * t) * (0.6 + 0.4 * Math.sin(TAU * t / 4)), tr2 = Math.sin(TAU * 8 * t + 1.7);
     const c = leanFrame(rig, body, p, S, base, { k: 1, down: (0.2 + 0.008 * b) * sc, pitch: (36 + 1.2 * b + 0.5 * tr) * DEG, fwd: -0.07 * sc, yaw: -14 * DEG, roll: (4 + 0.4 * tr2) * DEG, squat: 1, look: [(16 + 0.5 * tr) * DEG, -12 * DEG] });
     c.breath = b; c.clav = { l: { up: 14 * DEG, fwd: 10 * DEG }, r: { up: 14 * DEG, fwd: 10 * DEG } };
-    const home = homeOf(rig, c), P = home.pose.solve().P, hj = rig.head, hd = [P[hj * 3], P[hj * 3 + 1], P[hj * 3 + 2]], hq = home.pose.solve().D[hj], pt = (x, y, z) => V.add(hd, Q.rot(hq, [x * sc, y * sc, z * sc]));
+    const home = homeOf(rig, c), P = home.pose.solve().P, hj = rig.head, hd = [P[hj * 3], P[hj * 3 + 1], P[hj * 3 + 2]], hq = home.pose.solve().D[hj], pt = (x, y, z) => V.add(hd, Q.rot(hq, [x * HK[0], y * HK[1], z * HK[2]]));
     for (const [s, g] of [["l", 1], ["r", -1]]) c.arms[s] = armTo(home, s, V.add(pt(g * 0.085, 0.115, 0.12 + (g > 0 ? 0.02 : 0)), [0.002 * tr2, 0.003 * tr, 0]), 1, { palm: Q.rot(hq, [0, 0.5, 0.85]), pole: Q.rot(hq, [g * 0.55, -0.55, 0.6]), curl: 0.5, wrist: -10 * DEG });
     return c; };
   return [clipOf("cower_loop", N, ctrl, [], {}, true)];
