@@ -28,18 +28,20 @@ const bodyName = arg("body", "feminine"), H = parseFloat(arg("height", /masculin
 const extra = arg("look") ? JSON.parse(arg("look")) : null;               // --look '{"print": {...}}': on every garment, for a test
 const list0 = arg("designs") ? String(arg("designs")).split(",").map(d => [d]) : outfits[arg("outfit", "work uniform")];
 // --pbr: a garment's set off the shelf (Content/Studio/PBR, docs/ASSETS.md §6), as the Studio's pbrOf gives it to tailor/look.js
-const SHELF = process.env.STUDIO_PBR || (existsSync(join(ROOT, "assets", "pbr")) ? join(ROOT, "assets", "pbr") : join(ROOT, "Content", "Studio", "PBR"));   // the shelf (assets/pbr; the old place still read)
-const pbrSet = spec => {
-  const [ref, opt = ""] = spec.split(":"), rel = ref.replace(/^pbr\//, ""), f = join(SHELF, ...rel.split("/"), "meta.json");
-  if (!existsSync(f)) spawnSync("python3", [join(ROOT, "tools", "pbr.py")], { stdio: "ignore" });   // the shelf scanned: each set's meta.json
-  if (!existsSync(f)) { console.error(`no PBR set ${ref} on the shelf (${SHELF})`); process.exit(1); }
+const SHELVES = [process.env.STUDIO_PBR || join(ROOT, "assets", "pbr"), join(ROOT, "pbr"), join(ROOT, "Content", "Studio", "PBR")];   // the shelf (assets/pbr), the project's own sets in git (pbr/), the old place
+const shelfFile = (...rel) => SHELVES.map(d => join(d, ...rel)).find(f => existsSync(f));
+const pbrSet = (spec, must = true) => {
+  const [ref, opt = ""] = spec.split(":"), rel = ref.replace(/^pbr\//, "");
+  let f = shelfFile(...rel.split("/"), "meta.json");
+  if (!f && must) { spawnSync("python3", [join(ROOT, "tools", "pbr.py")], { stdio: "ignore" }); f = shelfFile(...rel.split("/"), "meta.json"); }   // the shelf scanned: each set's meta.json
+  if (!f) { if (!must) return null; console.error(`no PBR set ${ref} on the shelf (${SHELVES.join(", ")})`); process.exit(1); }   // (a design's own set not on this machine: its drawn surface, as the Studio does)
   const m = JSON.parse(readFileSync(f));
-  return { ref, base: "/pbrfile/" + rel.split("/").map(encodeURIComponent).join("/"), maps: m.maps, normal: m.normal, orm: m.orm,
+  return { ref, base: "/pbrfile/" + rel.split("/").map(encodeURIComponent).join("/"), maps: m.maps, normal: m.normal, orm: m.orm, fabric: m.fabric,
            tile_m: parseFloat(opt) || (m.tile_m && m.tile_m !== 2 ? m.tile_m : 0.3), tint: opt.endsWith("+") || !!m.tint };   // (a set that tints: the garment's colour, as the Studio has it)
 };
 const pbrs = Object.fromEntries((arg("pbr") ? String(arg("pbr")).split(",") : []).map(s => { const [d, r] = s.split("="); return [d, pbrSet(r)]; }));
 const edits = arg("edit") ? JSON.parse(arg("edit")) : {};
-const ownPbr = (d, l) => { const r = l?.pbr || designs[d]?.pbr; if (pbrs[d] || !r || typeof r !== "string") return null; try { return pbrSet(r); } catch { return null; } };   // a design's own set (or an outfit's), as the Studio wears it
+const ownPbr = (d, l) => { const r = l?.pbr || designs[d]?.pbr; if (pbrs[d] || !r || typeof r !== "string") return null; try { return pbrSet(r, false); } catch { return null; } };   // a design's own set (or an outfit's), as the Studio wears it
 for (const [d, , l] of list0 || []) { const p = ownPbr(d, l); if (p) pbrs[d] = p; }
 const list = list0 && list0.map(([d, c, l, e]) => [d, c, extra || pbrs[d] ? { ...(l || {}), ...(extra || {}), ...(pbrs[d] ? { pbr: pbrs[d] } : {}) } : l, edits[d] || e]);   // an outfit's own edit (a fit) unless --edit gives one
 if (!list) { console.error("no such outfit"); process.exit(1); }
@@ -107,8 +109,8 @@ const server = createServer((q, r) => {
   if (/^\/tailor\/[a-z]+\.js$/.test(q.url)) { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(readFileSync(join(ROOT, "tools", "character", q.url))); }
   if (q.url === "/data.bin") { r.writeHead(200, { "content-type": "application/octet-stream" }); return r.end(bin); }
   if (q.url.startsWith("/pbrfile/")) {                               // a PBR set's map, off the shelf
-    const rel = decodeURIComponent(q.url.slice(9)).split("/"), f = join(SHELF, ...rel);
-    if (!rel.includes("..") && /\.(png|jpe?g)$/i.test(f) && existsSync(f)) { r.writeHead(200, { "content-type": /png$/i.test(f) ? "image/png" : "image/jpeg" }); return r.end(readFileSync(f)); }
+    const rel = decodeURIComponent(q.url.slice(9)).split("/"), f = rel.includes("..") ? null : shelfFile(...rel);
+    if (f && /\.(png|jpe?g)$/i.test(f)) { r.writeHead(200, { "content-type": /png$/i.test(f) ? "image/png" : "image/jpeg" }); return r.end(readFileSync(f)); }
   }
   r.writeHead(404); r.end();
 }).listen(0, "127.0.0.1");

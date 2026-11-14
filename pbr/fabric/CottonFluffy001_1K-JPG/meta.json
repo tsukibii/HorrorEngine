@@ -1,0 +1,38 @@
+{
+ "maps": {
+  "albedo": "CottonFluffy001_1K-JPG_Color.jpg",
+  "normal": "CottonFluffy001_1K-JPG_NormalGL.jpg",
+  "rough": "CottonFluffy001_1K-JPG_Roughness.jpg",
+  "ao": "CottonFluffy001_1K-JPG_AmbientOcclusion.jpg",
+  "height": "CottonFluffy001_1K-JPG_Displacement.jpg",
+  "sheen": "CottonFluffy001_1K-JPG_Sheen.jpg"
+ },
+ "normal": "gl",
+ "tile_m": 0.0384,
+ "source": "ours: tools/fabricpbr.py CottonFluffy001",
+ "url": "",
+ "licence": "ours",
+ "tint": true,
+ "label": "fluffy cotton: a thick sock's brushed terry, a 1 x 1 rib under a pile of loops and loose fibre",
+ "group": "fabric",
+ "family": "pile",
+ "relief_m": 0.001518,
+ "fabric": {
+  "v": 1,
+  "kind": "pile",
+  "mean": [
+   0.7343,
+   0.7135,
+   0.6662
+  ],
+  "rough": 0.986,
+  "cavity": 0.6,
+  "sheen": 1.0,
+  "sheen_rough": 0.7,
+  "sheen_dye": 0.88,
+  "wrap": 0.45,
+  "spec": 0.25,
+  "crease": "knit",
+  "macro": 0.04
+ }
+}

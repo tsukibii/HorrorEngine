@@ -1,0 +1,38 @@
+{
+ "maps": {
+  "albedo": "WoolRib001_1K-JPG_Color.jpg",
+  "normal": "WoolRib001_1K-JPG_NormalGL.jpg",
+  "rough": "WoolRib001_1K-JPG_Roughness.jpg",
+  "ao": "WoolRib001_1K-JPG_AmbientOcclusion.jpg",
+  "height": "WoolRib001_1K-JPG_Displacement.jpg",
+  "sheen": "WoolRib001_1K-JPG_Sheen.jpg"
+ },
+ "normal": "gl",
+ "tile_m": 0.048,
+ "source": "ours: tools/fabricpbr.py WoolRib001",
+ "url": "",
+ "licence": "ours",
+ "tint": true,
+ "label": "knitted wool, ribbed: a 2 x 2 rib in a finer two-ply yarn (cuffs, hems, a fitted jumper)",
+ "group": "fabric",
+ "family": "knit",
+ "relief_m": 0.001749,
+ "fabric": {
+  "v": 1,
+  "kind": "knit",
+  "mean": [
+   0.6909,
+   0.6449,
+   0.5465
+  ],
+  "rough": 0.939,
+  "cavity": 0.75,
+  "sheen": 0.75,
+  "sheen_rough": 0.6,
+  "sheen_dye": 0.88,
+  "wrap": 0.4,
+  "spec": 0.35,
+  "crease": "rib",
+  "macro": 0.03
+ }
+}

@@ -1,0 +1,39 @@
+{
+ "maps": {
+  "albedo": "Spandex001_1K-JPG_Color.jpg",
+  "normal": "Spandex001_1K-JPG_NormalGL.jpg",
+  "rough": "Spandex001_1K-JPG_Roughness.jpg",
+  "ao": "Spandex001_1K-JPG_AmbientOcclusion.jpg",
+  "height": "Spandex001_1K-JPG_Displacement.jpg",
+  "sheen": "Spandex001_1K-JPG_Sheen.jpg"
+ },
+ "normal": "gl",
+ "tile_m": 0.024,
+ "source": "ours: tools/fabricpbr.py Spandex001",
+ "url": "",
+ "licence": "ours",
+ "tint": true,
+ "label": "spandex: a nylon and elastane jersey for leggings and swimwear, 16 wales and 23 courses a cm of filament yarn, smooth, with a soft sheen down its wales",
+ "group": "fabric",
+ "family": "knit",
+ "relief_m": 0.000229,
+ "fabric": {
+  "v": 1,
+  "kind": "knit",
+  "mean": [
+   0.8266,
+   0.8266,
+   0.8108
+  ],
+  "rough": 0.494,
+  "cavity": 0.35,
+  "sheen": 0.18,
+  "sheen_rough": 0.35,
+  "sheen_dye": 0.9,
+  "wrap": 0.12,
+  "spec": 0.55,
+  "aniso": 0.45,
+  "crease": "spandex",
+  "macro": 0.02
+ }
+}

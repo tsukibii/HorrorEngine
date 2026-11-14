@@ -1,0 +1,38 @@
+{
+ "maps": {
+  "albedo": "CottonJersey001_1K-JPG_Color.jpg",
+  "normal": "CottonJersey001_1K-JPG_NormalGL.jpg",
+  "rough": "CottonJersey001_1K-JPG_Roughness.jpg",
+  "ao": "CottonJersey001_1K-JPG_AmbientOcclusion.jpg",
+  "height": "CottonJersey001_1K-JPG_Displacement.jpg",
+  "sheen": "CottonJersey001_1K-JPG_Sheen.jpg"
+ },
+ "normal": "gl",
+ "tile_m": 0.024,
+ "source": "ours: tools/fabricpbr.py CottonJersey001",
+ "url": "",
+ "licence": "ours",
+ "tint": true,
+ "label": "spun cotton: a T-shirt's single jersey, 28 gauge, 16 wales and 21 courses a cm of ring-spun 30s yarn, its hairs standing off it",
+ "group": "fabric",
+ "family": "knit",
+ "relief_m": 0.000316,
+ "fabric": {
+  "v": 1,
+  "kind": "knit",
+  "mean": [
+   0.767,
+   0.7523,
+   0.7094
+  ],
+  "rough": 0.902,
+  "cavity": 0.6,
+  "sheen": 0.42,
+  "sheen_rough": 0.55,
+  "sheen_dye": 0.86,
+  "wrap": 0.3,
+  "spec": 0.42,
+  "crease": "jersey",
+  "macro": 0.03
+ }
+}

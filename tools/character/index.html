@@ -922,7 +922,7 @@ const lookOf = c => { const D = DESIGNS[c.design] || {}; return { color: c.color
 // 2 m is a wall's: a cloth's is 0.3 unless the set or the garment says), the garment's colour over it if asked
 function pbrOf(c) {
   const ref = c.pbr ?? DESIGNS[c.design]?.pbr, m = ref && SHELF[ref]; if (!m) return null;
-  return { ref, base: "pbrfile/" + ref.replace(/^pbr\//, "").split("/").map(encodeURIComponent).join("/"), maps: m.maps, normal: m.normal, orm: m.orm,
+  return { ref, base: "pbrfile/" + ref.replace(/^pbr\//, "").split("/").map(encodeURIComponent).join("/"), maps: m.maps, normal: m.normal, orm: m.orm, fabric: m.fabric,
            tile_m: c.pbrTile ?? (m.tile_m && m.tile_m !== 2 ? m.tile_m : 0.3), tint: !!(c.pbrTint ?? m.tint) };   // (a made fabric's colour is a tint unless its threads carry their own: tools/fabric_bake.py)
 }
 function restyle(c) {                                  // a new fabric, pattern, print or colour: the materials only, no refit
