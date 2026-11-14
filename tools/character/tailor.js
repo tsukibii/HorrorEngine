@@ -104,6 +104,7 @@ export function* making(B, name, design, opts = {}) {
     const C = halterCords(F, B, at || G.outer.P, { ...p.bra, under: bust(F).under + (p.bra.drop ?? 0) * s - (p.bra.band ?? 0.01) * s * 0.4 });
     if (C.T.length) { outer.push({ P: C.P, T: C.T }); part(`${name}_cord`, color, C, false); }
   }
+  for (const q of parts) if (!/_cord$/.test(q.name)) capped(q.P);    // (and the points a part's seams add between two of its own: one inside the line's flat, one out on its climb)
   const tris = parts.reduce((a, q) => a + q.T.length / 3, 0), verts = parts.reduce((a, q) => a + q.P.length / 3, 0);
   // its look (tailor/look.js): the design's fabric, pattern and trim, then the garment's own
   const look = { color, surface: design.surface, trim: design.trimSurface, pattern: design.pattern, denier: design.denier, crease: p.kind === "shoe" ? { crinkle: 0, fold: 0, drape: 0, seam: 0, ...(design.crease || {}) } : design.crease, ...(p.kind === "shoe" ? { shoe: true } : {}), ...(opts.look || {}) };   // (a shoe: its hems' stitching, no cloth wrinkles, no puckers at its fabric's seams: they aren't its panels)
