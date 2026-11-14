@@ -85,6 +85,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#head">Her head follows you</a></li>
     <li><a href="#grip">Things in her hand: the grip</a></li>
     <li><a href="#fight">Fights</a></li>
+    <li><a href="#short">Children and other short characters</a></li>
     <li><a href="#director">In the Director</a></li>
     <li><a href="#rules">Good to know</a></li>
   </ol>
@@ -148,6 +149,10 @@ middle, a few swings and they're still; at the right they keep ringing.</td></tr
 JiggleBones plugin for Godot): it lags when she starts, carries on when she stops, and rings a few times. Softness is
 how much of that shows; Bounce is how long it lasts. <span class="ui">Soft bones</span> over the view shows where each
 part is rooted.</p>
+<p><b>Her furniture.</b> Under the sliders: what the seat, the bed, the door handle and the table are that her clips
+are made for, with their heights. Leave it on <span class="ui">A person's, where she can use it</span> unless the place
+she lives in is built for her size: <a href="#short">section 15</a>. The view draws the chair, the bed, the door and
+the table as plain boxes while a clip that uses one plays.</p>
 <p>Every slider changes what you're watching at once. <span class="ui">Start again from the body</span> puts them back.</p>
 <div class="tip"><b>Under "This clip"</b> the page says what the clip needed: how far her forearms were turned and her arms
 carried out to clear her body, how much her thighs would have overlapped and how much is left after they squash, how
@@ -402,32 +407,72 @@ is heard by the Fear node and the director, and the player's <b>hit</b> signal s
 </table>
 </section>
 
+<section id="short">
+<h2><span class="n">15</span>Children and other short characters</h2>
+<p>A child, a goblin or an imp uses the chairs, beds and doors your level already has. You do nothing different in
+Godot: the same <code>m.sit(seat)</code>, <code>m.sleep(bed, pillow)</code> and <code>m.open(handle, door)</code>, the
+same markers. What changes is the clip, which the Animator makes from her body:</p>
+<table class="keys">
+<tr><td><b>A chair, a bed</b></td><td>A person's are 45 cm high. When that is more than she can sit on with her feet on the floor
+(over about 1.2 of her own knee's height), she gets onto it as a child does: her bottom to its front edge, up on her
+toes, her hands on it (a hop when it's over her hips), then she slides back. She sits with her thighs on it and her
+legs hanging, swinging a little now and then. Getting off, she slides forward until her feet find the floor.</td></tr>
+<tr><td><b>A door</b></td><td>A person's handle is a metre up. When that's over her shoulder she reaches up to it, on her toes
+when it's well over. In Godot her hand is then carried onto your handle itself, wherever it is, as far as her arm goes.</td></tr>
+<tr><td><b>A table</b></td><td>A person's is 86 cm. She takes things from it reaching up, as far as a fifth of her arm over her shoulder.</td></tr>
+</table>
+<figure><img src="img/page_child.jpg" alt="The Animator's page with a 1.10 m child sat on a chair, her legs hanging, and the furniture row saying seat 45, bed 45, handle 100, table 86 cm"><figcaption>A child of 1.10 m on a person's chair. <span class="ui">Her furniture</span> says what her clips are made for, and what her own size would be.</figcaption></figure>
+<figure><img src="img/short_seat.jpg" alt="A small child and a goblin getting onto a 45 cm chair, sat with their legs hanging, and getting off"><figcaption>Onto a 45 cm chair, sat, and off it: a 1.10 m child (a plain test body) and a goblin. In Godot, with the chair drawn as a box.</figcaption></figure>
+<figure><img src="img/short_bed.jpg" alt="The child sitting on a bed's edge with her hands on it, lying down, asleep, and getting up"><figcaption>Into a 45 cm bed, asleep, and out. Sat on its edge her hands rest on the bed; her feet go over its edge as she lies down.</figcaption></figure>
+<figure><img src="img/short_door.jpg" alt="The child pushing and pulling a door whose handle is at her eye level, and the goblin pushing one"><figcaption>A door whose handle is a metre up: pushed and pulled by the child, pushed by the goblin.</figcaption></figure>
+<h3>The three settings</h3>
+<table class="keys">
+<tr><td><b>A person's, where she can use it</b></td><td>The one to leave it on. An adult's are a person's; so are a child's, a goblin's
+and an imp's chair and bed. Only what her body can't manage is made nearer her size: a seat no higher than her hips, a
+handle no higher than her hand goes with her elbow still bent (an imp of 90 cm: 86 cm). In Godot she's lifted onto a
+seat that's higher still, and her hand goes as far toward a higher handle as her arm does.</td></tr>
+<tr><td><b>Her own size</b></td><td>A child's chair, a goblin's door: what a person's are to a person, by her knee, her shoulder and
+her leg. For a nursery, a den, a doll's house. She sits and opens as an adult does, on furniture you make that size
+(the page says the heights).</td></tr>
+<tr><td><b>A person's, whatever her size</b></td><td>Everything a person's even when she can't reach it. Rarely what you want.</td></tr>
+</table>
+<p>From the command line: <code>node tools/animator/bake.mjs her.glb --furniture own</code>, or one height said
+outright, in metres: <code>--seat 0.3 --handle 0.8</code>.</p>
+<div class="tip"><b>A body bigger than a person</b> keeps a person's furniture and comes down to it: an ogre sits low on a
+45 cm chair with its knees up, and bends to a handle a metre up.</div>
+<div class="tip"><b>A character baked before this</b> (the page says so beside her name) wants baking again: a small one for all
+of the above, an adult for her bed clips, which no longer snap an elbow as she lies down or put a foot through the
+bed's corner.</div>
+</section>
+
 <section id="director">
-<h2><span class="n">15</span>In the Director</h2>
+<h2><span class="n">16</span>In the Director</h2>
 <p>A character whose model was baked plays her own idle, walk, run and sitting wherever a move is left empty, and her
 walk keeps step with how fast a behaviour moves her. The Animate tab says which moves her model carries; fill the
 rest from the library as before, or leave them.</p>
 </section>
 
 <section id="rules">
-<h2><span class="n">16</span>Good to know</h2>
+<h2><span class="n">17</span>Good to know</h2>
 <ul>
-  <li><b>A seat that isn't 45 cm high</b>: she's raised or lowered to meet it, up to 12 cm. Her feet float or sink by that much.</li>
-  <li><b>A handle that isn't a metre up, a thing between two heights</b>: she stands so her hand lands near it; it can be off by a few centimetres.</li>
+  <li><b>A seat that isn't 45 cm high</b>: she's raised or lowered to meet it, up to 12 cm. Her feet float or sink by that much.
+  A small character whose legs hang anyway (<a href="#short">section 15</a>) is raised up to 30 cm.</li>
+  <li><b>A handle that isn't a metre up</b>: her hand is carried onto it as she takes hold of it, as far as her arm goes.
+  <b>A thing between two heights</b>: she stands so her hand lands near it; it can be off by a few centimetres.</li>
   <li><b>She walks in straight lines</b> between the places you give her (<code>m.go([a, b, c])</code> for a way round something).</li>
   <li><b>What she picks up is put away</b> (hidden) as she straightens, unless you say keep it in her hand.</li>
   <li><b>The left hand's clips start with her weight on the other leg</b>: the blend into them is a small shift of weight.</li>
-  <li><b>A thing in her hand is held by its grip</b> (section 13). A door's handle is still only reached for: her hand closes near it.</li>
+  <li><b>A thing in her hand is held by its grip</b> (section 13). A door's handle is held too: the middle of her closed hand is put on it.</li>
   <li><b>The head, the grip and the blows need the Look plugin</b> in the project (every <code>godot_byhand.py</code> project has it). Without it the clips play as they were made.</li>
   <li><b>A thing lying flat is taken with her fingers a little into what it lies on</b>: her hand knows where the grip is, not where the table's top is.</li>
 </ul>
 <div class="notyet"><b>Not there yet</b>: feet corrected in Godot; a turn on the spot; walking up stairs (the NPC Markers tab does stairs);
-furniture sized for a creature; a kick, a two-handed swing; waving, pointing, beckoning.</div>
+climbing onto something over her head; a kick, a two-handed swing; waving, pointing, beckoning.</div>
 </section>
 
 <footer>The Animator v2 and animations v3 (<code>tools/animator</code>, <code>docs/ANIMATOR_V2.md</code>, <code>docs/ANIMATOR_V3.md</code>). The page's
 pictures are its own test's (<code>node tools/animator/pagetest.mjs --out</code>); Godot's are <code>python tools/godot/motion_check.py sheets</code>,
-<code>sheets3</code>, <code>shots3</code> and <code>gizmo</code>: the three test characters, made by <code>node tools/animator/people.mjs</code>, and two
+<code>sheets3</code>, <code>shots3</code>, <code>gizmo</code> and <code>furniture</code>: the three test characters, made by <code>node tools/animator/people.mjs</code>, and two
 creatures by <code>node tools/character/creatures.mjs make --only ghoul,goblin --export</code>.</footer>
 </main>
 </div>

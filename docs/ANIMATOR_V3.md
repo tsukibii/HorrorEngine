@@ -412,12 +412,10 @@ the wheel to a distance, instead of guessing at an orbit.
   hand on its end lie along the end for a hand's length (7 cm past the wall's back on the test woman, 11 on a
   ghoul, 16 on an ogre), so on a wall thinner than that their tips stand out past its front. They don't hook round the front corner
   either: that would need the thickness.
-- **Sitting, sleeping and doors on a creature.** Those clips are for a person's furniture: a seat 45 cm high, a bed,
-  a handle a metre up. An imp's hand can't get to that handle and an ogre's has to come down to it; a goblin's hands
-  don't reach its thighs sat on a seat as high as its legs. The clips are made and play, the hand stops short (an
-  arm asked for 1.1 to 2.0 times its length), and on the smallest bodies an arm turns faster than it should for a
-  frame or two. Furniture sized for the body (a seat by its legs, a handle by its shoulder) is a setting the bake
-  could take (`set.seat`, `set.handle` exist) and nothing offers yet.
+- **Climbing.** A small body gets onto a seat or a bed up to its own hips' height (§10). Onto something over its
+  head, or down from it, there is no clip; the game lifts it up to 30 cm and no further.
+- **A handle out of reach.** An imp of 90 cm reaches 86 cm; at a person's handle a metre up its hand stops 7 cm
+  short (GDSMALL says so). It doesn't jump for it.
 - **A two-handed swing, a kick, a grab that holds you.** One punch, one swing, one reaction.
 - **Beckoning, pointing, waving, a shrug.** The small acts are look around, knock, cower.
 - **Her eyes without eye bones.** `HSHeadTrack` leads with the eyes when the model has `l_eye`/`r_eye` bones (a
@@ -429,3 +427,157 @@ the wheel to a distance, instead of guessing at an orbit.
 - **The Director and desk games.** The head, the grip and the blows are the starter kit's (`motion.gd`, `act.gd`) and
   the markers'. The runtime add-on's cast plays the new loops only if a behaviour names them; it has no head
   following and no hand IK.
+
+## 10. The furniture by her size: children, goblins, imps
+
+DECISIONS 2026-11-14, short NPCs. The user, on this document's first report: *"you said there are issues with the
+sitting/sleeping for imps and goblins etc. What about children npcs (really short npcs), can you figure out a way to
+adjust the animations proportionally to height."*
+
+### 10.1 What was wrong, measured
+
+Every clip is made from the body it's for. Sitting, lying down, doors and the reach to a table were made for a
+person's furniture as if the body were a person's: a seat and a bed 45 cm high, a handle a metre up, a table at
+86 cm. On the 1.63 m test woman those are the back of her knee (0.947 of its height), three quarters of the way up
+to her shoulder (0.751), and her leg's own length (0.994).
+
+| On a person's furniture, the old clips | a girl of 8 (1.27 m) | the same at 1.10 m | goblin 1.15 m | imp 0.90 m | the woman |
+|---|---|---|---|---|---|
+| sat: an arm asked for, of its length | 1.23 | 1.35 | 1.08 | 1.35 | 1.11 |
+| sat: a leg asked for, of its length | 0.83 | 0.91 | 0.92 | **1.16** | 0.72 |
+| a door: the fastest a bone turns, degrees a frame (34 allowed) | **47** | **45** | **50** | **71** | 24 |
+| lying down: the same | **41** | **36** | 34 | **50** | 32 |
+
+A child's or an imp's legs can't sit on a seat over their knees with their feet on the floor; its arm was straight
+long before its hand had followed a door 26 cm.
+
+### 10.2 What a clip is made for: `acts.js` `furniture(body, set)`
+
+`{ mode, seat, bed, handle, table }`, metres, in the bake's record (`furniture`) and each clip's own
+(`seat.height`, `bed.height`, `door.handle`, `reach.at`).
+
+- **`fit`** (the default, "A person's, where she can use it"): a person's wherever her body can use it. A seat and a
+  bed no higher than her hips (1.05 of her leg), a handle no higher than her hand goes with her elbow still bent (0.6
+  of her arm over her shoulder), a table no higher than a fifth of her arm over her shoulder. An adult's are a
+  person's; so are a child's, a goblin's and an imp's seat and bed. An imp's handle comes out at 86 cm and its table
+  at 75.
+- **`own`** ("Her own size"): 0.947 of her knee's height, 0.751 of her shoulder's, 0.994 of her leg. The 1.10 m
+  child: 29, 29, 66 and 57 cm. A nursery, a den.
+- **`person`**: a person's whatever she is.
+- `set.seat`, `set.bed`, `set.handle`, `set.table` say one outright (`bake.mjs --seat 0.3`).
+
+A body bigger than a person keeps a person's and comes down to it: an ogre's shoulder is 1.2 m over a person's
+handle and its arm 1.07 m long, so it bends until the handle is within nine tenths of its reach (`opening()`'s
+`stoop`).
+
+### 10.3 A seat that's high for her (`seated().high`, `sitFrame`)
+
+Over 1.18 of her own seat (`FEET_ON`) her feet can't stay on the floor. She gets onto it as a child does:
+
+1. **Her bottom to its front** (`Z.perch`): down to it, or up onto it when it's over her hips (an imp: up on its
+   toes, then off the floor, a 1.5 cm hop over the edge). Her feet stay where they stood as long as her legs allow
+   (`footUnder`: on her toes, the ball staying put; past that the foot leaves the floor, the leg toward where it
+   stood). No leg is asked for more than its length.
+2. **She slides back**, her hands on the seat beside her. Her feet come up over the whole of the slide and hang
+   under where her knees end up.
+3. **Sat**: her hip joints a thigh behind the edge, her thighs on the seat (sloping 5 degrees), her shins a little
+   ahead of straight down and never back into what she sits on, her toes drooped, her hands on her thighs. Her legs
+   swing a few degrees, one then the other, for a few seconds of every eight.
+
+Getting off is the same road back. The Animator's page draws the chair.
+
+### 10.4 Doors (`opening()`)
+
+How far her hand follows the door and how far her body goes after it are by her arm (`ts`: 1 on an arm of 41 cm or
+more, an adult's). A handle over her shoulder: up on her toes from a quarter of her arm over it (`heel`). The time her
+hand takes to get there and back is by how far her arm has to swing (`q`: 38 degrees up from a woman's hanging arm,
+88 for a child, 130 for an imp), and a hand that has to come up to her shoulder's height goes round her shoulder at
+arm's length, not past it.
+
+### 10.5 The bed clips, for everyone
+
+Holding the clips on other bodies showed what the adults' own had wrong. All fixed in `sleeping()`:
+
+- **No hand is asked further than the arm goes** (`armTo`'s `far`, `within()`): a hand left on the bed while the body
+  went on past it was asked for 1.8 of the arm, and in the frame it came back within reach the elbow folded 32 to 50
+  degrees. Let off gently from nine tenths of the arm's length, the elbow gives all the way.
+- **Her legs leave from where they sit** (their knees turned out as they were: an ogre's jumped 27 cm inward in the
+  frame it began to lie down), and **her arms from how they hang** as she sits.
+- **Her feet go over the bed's edge**, lifted in front of it, not 2 to 5 cm through the mattress's corner.
+- **Sat on the edge, her hands rest on the bed beside her**; they used to hang at her sides, a person's fingers 7 cm
+  in the mattress. They prop her as she lies back, and leave the bed before she leans forward to get up (a weak or
+  heavy body's go to its thighs from there).
+- **Asleep, her arm lies on the bed**: the forearm level, the hand on its edge with its palm to her thigh.
+
+These are the only adult clips that changed (the three test bodies' other 47 clips are the same to the bit), which is
+why the bake's version went to 4.
+
+### 10.6 In Godot
+
+Nothing to do differently: the same `sit(seat)`, `sleep(bed, pillow)`, `open(handle, door)`, the same markers.
+
+- **Lift** (`motion.gd` `_lift_for`, the Markers' `body.gd` `most_lift`): a clip that sits her with her feet on the
+  floor is raised or lowered 12 cm at the most, as before; one made for a seat that's high for her (`high` in the
+  clip's record) is raised up to 30 cm, since her legs hang anyway.
+- **The handle** (`open()`): from `grab` to `release` the middle of her closed hand (`HSHandIK.grip_frame`) is
+  carried onto the handle's marker, as far as her arm goes (`bring`, `"handle"`, `most` 0.35 m). The adult's hand is
+  now on the handle too, not 7 cm from it.
+
+### 10.7 The plan
+
+- [x] `furniture()`: fit, own, person, a size outright; in the record and the clips
+- [x] A high seat: onto it, sat with the legs hanging, off it; no leg over its length
+- [x] A high bed: the same onto its edge, the legs up from where they hang
+- [x] Doors by the arm; a handle over the shoulder; a body bigger than a person bends to it
+- [x] The bed clips' arms, legs and feet, for everyone
+- [x] Test bodies: three children (`bodies.mjs` `CHILD_BODIES`); every clip held on them and the five creatures
+- [x] ANIMATOR §6d: the furniture rules, on eleven bodies
+- [x] The page: Her furniture, the sizes, the furniture drawn; ANIMATORPAGE holds it on a child
+- [x] Godot: the lift by the clip's kind, the hand onto the handle; GDSMALL; MARKERS' door
+- [x] Pictures on a child and a goblin; the guide's section 15
+
+### 10.8 As built
+
+**In node** (ANIMATOR, 44 s; `node tools/animator/sticks.mjs --body child_small --kind sit` draws any of it):
+
+| | girl 8, 1.27 m | 1.10 m | boy 12, 1.49 m | goblin | imp | ogre | hag |
+|---|---|---|---|---|---|---|---|
+| a 45 cm seat is | high | high | not | high | high | not | not |
+| sat: feet off the floor, cm | 7.5 | 12.4 | on it | 12.8 | 19.0 | on it | on it |
+| getting on and off: fastest turn, degrees a frame | 24 | 24 | 13 | 23 | 27 | 7 | 14 |
+| lying down and getting up | 24 | 24 | 15 | 25 | 31 | 24 | 17 |
+| a door | 28 | 28 | 27 | 30 | 29 | 19 | 33 |
+| handle, cm | 100 | 100 | 100 | 100 | 86 | 100 | 100 |
+
+The woman's own lie-down went from 32 degrees a frame to 16. On all eleven bodies (the ghoul and the three adults
+too): no leg asked for more than its length, no foot under the floor, no ankle, knee, toe or wrist in the chair or
+the bed, asleep no joint under the bed's top, at a door the wrist within 1 cm of where it's asked as she takes hold.
+
+**In Godot** (GDSMALL: `python tools/godot/motion_check.py small`, bodies baked beside the normal woman):
+
+| | the 1.10 m child | goblin | imp | the woman |
+|---|---|---|---|---|
+| a 45 cm chair: pelvis up, m; back from the edge, m | 0.49, 0.22 | 0.50, 0.22 | 0.48, 0.17 | 0.52, 0.31 |
+| feet | hang 11 cm | hang 11 cm | hang 18 cm | on the floor |
+| a 60 cm seat: lifted, cm | 15 | 15 | 15 | 12 |
+| a 45 cm bed: head from the pillow, m; lowest joint over it, cm | 0.01, 1.0 | 0.02, 2.1 | 0.02, 1.2 | 0.04, 0.6 |
+| a handle its clip is made for: hand from it, cm (carried, cm) | 0.1 (3.8) | 0.0 (7.1) | 0.0 (5.1), at 86 | 0.0 (10.8) |
+| a handle 4 cm higher (the imp: a metre up) | 1.8 | 0.0 | 7.2 | 0.0 |
+
+No leg in the chair or the bed on any of them. MARKERS' stage `sit` opens a door through a Grab marker with the pin
+4 cm over what the clip is made for: her hand 0.0 cm from it, the door's own `use()` once.
+
+**Pictures** (`python tools/godot/motion_check.py furniture --who NAME`, the furniture drawn as boxes from the
+record): `docs/animator_sheets/2026-11-14_furniture_child_small_{seat,bed,door}.jpg` (a plain test body, `--plain`),
+`..._creature_goblin_{seat,bed,door}.jpg` (the Studio's goblin, baked).
+
+**What took a second try** is in docs/LESSONS.md (the Animator's furniture).
+
+### 10.9 Not there
+
+- **A child made in the Studio and dressed** pictured on the furniture: the pictures are a plain test body's and the
+  goblin's. A Studio child bakes the same way; none was exported for this.
+- **Her back against the chair's back.** She sits with her knees at the front edge; a deep chair's back is behind her.
+- **Her hands flat on a high seat as she gets onto it.** They go to the seat beside her hips by the wrist; the
+  fingers aren't laid on it.
+- **A footrest, a step.** A seat over her hips' height is out of her reach: lifted, not climbed.

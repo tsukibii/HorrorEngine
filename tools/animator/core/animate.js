@@ -90,5 +90,5 @@ export function animate(glb, { settings = {}, mhrRig = null, only = null, rigOnl
   const rec = { version: VERSION, tool: "HorrorStudio Animator v2", settings: set, body: summary(body), furniture: furniture(body, set), soft: plan.map(b => { const u = softUse(b, set), r4 = v => +v.toFixed(4);    // each soft bone as a jiggle bone, for whoever swings it live (the look plugin's HSSoftJiggle): its rod and the plugin's numbers
       return { bone: b.name, parent: rig.J[b.parent].name, amount: +b.amount.toFixed(2), axis: b.dir.map(r4), length: r4(b.len), stiffness: r4(u.stiff), damping: r4(u.damp), gravity: r4(u.grav), gain: r4(u.gain), limit: r4(u.limit) }; }), palm: { l: palm("l"), r: palm("r") } };
   writeClips(glb, rig, clips, rec, undo);
-  return { rig, body, clips, plan, report: { body: rec.body, settings: set, clips: rec.clips, soft: rec.soft, stats, softVerts: plan.moved || 0 } };
+  return { rig, body, clips, plan, report: { body: rec.body, settings: set, furniture: rec.furniture, clips: rec.clips, soft: rec.soft, stats, softVerts: plan.moved || 0 } };
 }

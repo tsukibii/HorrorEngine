@@ -342,14 +342,14 @@ def furniture_sheets(args):
     x0, x1 = -0.75 * max(k, 0.6), float(head[0]) + 0.4
     beds = [[(x0 + x1) / 2, Hb / 2, eb - 0.5, x1 - x0, Hb, 1.0], [x1 + 0.03, Hb / 2 + 0.25, eb - 0.5, 0.06, Hb + 0.5, 1.0]]   # a bed and its headboard
     hd = door["handle"]
-    frame = lambda d: [[hd[0] - 0.22, 1.0, d["handle"][2] + 0.03, 0.08, 2.0, 0.1], [d["handle"][0], d["handle"][1], d["handle"][2] + 0.005, 0.13, 0.025, 0.03]]   # the frame's post beside it, and where the handle is before it moves
+    frame = lambda d: [[hd[0] + 0.45, 1.0, d["handle"][2] + 0.03, 0.08, 2.0, 0.1], [d["handle"][0] + 0.2, d["handle"][1], d["handle"][2] + 0.005, 0.5, 0.025, 0.03]]   # the frame's post beyond it (the camera is on her right), and a bar at the handle's height where the handle is before it moves
     v = lambda at, dist, **more: {"at": at, "dist": dist, **more}
     tall = float(rec["body"]["height"]) / 100.0
     mid = max(0.75, 0.52 * tall)
     groups = {
         "seat": [("sit_down", "q", v([0, mid, -0.1], 3.6, boxes=chair)), ("sit_loop", "side", v([0, mid, -0.1], 3.4, boxes=chair)), ("stand_up", "q", v([0, mid, -0.1], 3.6, boxes=chair))],
         "bed": [("lie_down", "q", v([0.25, mid * 0.9, -0.3], 4.6, boxes=beds)), ("sleep_loop", "q", v([0.3, Hb + 0.15, -0.5], 3.4, boxes=beds, pitch=28)), ("get_up", "q", v([0.25, mid * 0.9, -0.3], 4.6, boxes=beds))],
-        "door": [("open_push", "side", v([0, max(0.8, 0.55 * tall), 0.25], 3.4, boxes=frame(C["open_push"]["door"]))), ("open_pull", "q", v([0, max(0.8, 0.55 * tall), 0.25], 3.4, boxes=frame(C["open_pull"]["door"])))],
+        "door": [("open_push", "side", v([0, max(0.8, 0.55 * tall), 0.25], 3.4, boxes=frame(C["open_push"]["door"]))), ("open_pull", "side", v([0, max(0.8, 0.55 * tall), 0.25], 3.4, boxes=frame(C["open_pull"]["door"])))],
     }
     n, date = 8, opt("--date", "2026-11-14")
     wear = "--plain" not in args

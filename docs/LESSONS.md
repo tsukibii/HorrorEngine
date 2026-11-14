@@ -3308,3 +3308,33 @@ pale one shows.
   and even after the first scan had finished, had "Updating Scene Groups" and "Loading editor" boxes across them.
   Wait until nothing is scanning and no `ProgressDialog` has been showing for some seconds; frame things with the
   view's own Focus Selection, not a guessed orbit.
+
+## The Animator's furniture (2026-11-14, `even-more-animations-v3`: short NPCs on a person's chairs, beds and doors)
+
+- **The second design was the first one's opposite, and the first was nearly built.** "Adjust the animations
+  proportionally to height" was first read as: make the clip for a seat her size, and let the game lift her onto the
+  real one. The clip then showed her on a low seat in the Animator and floating up in the game. What a level has is a
+  person's chair; the clip has to get her onto *that*, and a child does it by getting her bottom onto the front and
+  sliding back. Ask what stands in the game before sizing anything to the body.
+- **An arm asked for more than its length is not harmless.** A hand's target left behind by a moving body was asked
+  for 1.8 of the arm; the arm lay straight toward it, and in the one frame the target came back within reach the
+  elbow folded 32 degrees (50 on an imp). At full stretch any bend costs no reach. It passed the adults' rule by two
+  degrees and was taken for the clip's character. Keep a target short of the arm's length and let it off gently
+  (`within`), and read "asked 1.8" as a fault whatever the turn rate says.
+- **Where a limb is let go to is where the body will be, not where it is.** The hanging foot was blended toward
+  "under her knee" while her knee still stuck out in front: the foot shot 20 cm forward and came back with her.
+  And over the first of the slide only, a short thigh's blend took three frames. A blend goes over the whole of the
+  move it belongs to, toward the end of that move.
+- **Two frame builders that hand over to each other must agree at the handover.** Sitting on the bed's edge was one
+  function and lying down another; legs, knees and arms each started again from a standing body's numbers. The jumps
+  (25 degrees in an arm, an ogre's knees 27 cm) were there on adults all along, under the bigger snap. Build the
+  second from the first's last frame.
+- **A hand left where it was while the body turns over it flips the arm.** Keeping the hands on the bed until she had
+  stood up turned an upper arm 175 degrees in a frame; taking them off as her trunk came forward, 57. Hands leave
+  before the body leans over them, the way they arrived after it had sat.
+- **A rule about the furniture, not only about the body.** "No foot under the floor" never asked whether a foot was
+  in the bed. Written as a box (its top, its front edge), the rule found every body's ankle 2 to 5 cm through the
+  mattress's corner, hanging hands in it and a sleeping arm 5 cm under its top: on the adults too, since v2.
+- **A test's own geometry.** GDSMALL first had her walk to the chair from behind it, through where it would stand,
+  and reported a shin 46 cm "into" it. Nothing stood there. Start her where a level would let her come from, and
+  bound the box by its real size.

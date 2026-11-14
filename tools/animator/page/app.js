@@ -99,12 +99,25 @@ async function show(kind, keep = false) {
   if (!keep || !S.list.some(c => c.name === S.clip)) { S.clip = S.list[0].name; S.t = 0; S.seq = WHOLE.includes(kind); }
   chips(); info(performance.now() - t0);
 }
+// what the clip on show is made for, drawn where it stands: the seat, the bed, the door's post and a bar at its
+// handle, the table or the shelf a thing is taken from (the clip's own record: her furniture, acts.js furniture())
+const FURN = new THREE.Group(); scene.add(FURN); const furnMat = new THREE.MeshStandardMaterial({ color: 0x6f6b64, roughness: 0.92 });
+function furnish() {
+  for (const m of [...FURN.children]) { FURN.remove(m); m.geometry.dispose(); }
+  const c = S.list.find(x => x.name === S.clip), mt = c && c.maker && c.maker.meta; if (!mt) return;
+  const box = (x, y, z, sx, sy, sz) => { const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), furnMat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; FURN.add(m); };
+  if (mt.seat) { const H = mt.seat.height, e = mt.seat.edge; box(0, H / 2, e - 0.24, 0.48, H, 0.48); box(0, H + 0.2, e - 0.46, 0.48, 0.4, 0.04); }
+  if (mt.bed) { const H = mt.bed.height, e = mt.bed.edge, hx = mt.bed.head[0], x0 = Math.min(-0.6, hx - 0.4), x1 = Math.max(0.6, hx + 0.4); box((x0 + x1) / 2, H / 2, e - 0.5, x1 - x0, H, 1.0); box(hx > 0 ? x1 + 0.03 : x0 - 0.03, H / 2 + 0.25, e - 0.5, 0.06, H + 0.5, 1.0); }
+  if (mt.door) { const h = mt.door.handle, g = h[0] < 0 ? 1 : -1; box(h[0] + g * 0.45, 1.0, h[2] + 0.03, 0.08, 2.0, 0.1); box(h[0] + g * 0.2, h[1], h[2] + 0.012, 0.5, 0.025, 0.03); }
+  if (mt.reach && /mid|high/.test(c.name)) { const a = mt.reach.at; box(a[0], a[1] - 0.035, a[2] + 0.12, 0.6, 0.03, 0.45); }
+}
 function chips() {
   const el = $("#clips"); el.innerHTML = "";
   if (WHOLE.includes(S.kind)) { const b = document.createElement("button"); b.textContent = "the whole of it"; b.className = S.seq ? "on" : ""; b.onclick = () => { S.seq = true; S.clip = S.list[0].name; S.t = 0; chips(); }; el.append(b); }
   for (const c of S.list) { const b = document.createElement("button"); b.textContent = CLIP_LABEL[c.name] || c.name; b.title = c.name; b.className = !S.seq && c.name === S.clip ? "on" : ""; b.onclick = () => { S.seq = false; S.clip = c.name; S.t = 0; S.playing = true; chips(); info(); }; el.append(b); }
 }
 function info(ms) {
+  furnish();
   const c = S.list.find(x => x.name === S.clip); if (!c) return; const st = c.stats || {}, sf = st.soft || {};
   const rows = [`<div><b>${c.name}</b> · ${c.secs.toFixed(2)} s${c.loop ? ", a loop" : ""}${c.speed ? ` · ${c.speed.toFixed(2)} m/s, ${(120 / c.secs).toFixed(0)} steps a minute` : ""}</div>`];
   if (st.arm_l != null) { const turned = Math.max(st.turn_l || 0, st.turn_r || 0);

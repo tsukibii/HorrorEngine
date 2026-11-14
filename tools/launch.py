@@ -169,6 +169,8 @@ TOOLS = [
     ("Checks", "Animator page test (headless browser)", "node tools/animator/pagetest.mjs", {}),
     ("Checks", "Animator in Godot (a baked character's clips played, walked, sat: GDMOTION)", "tools/godot/motion_check.py", {}),
     ("Checks", "Animations v3 in Godot (her head following you, the low gaits, a peek, a scare, a thing held by its grip, eating and drinking, a punch and a swing: GDMOTION3; run the one above first)", "tools/godot/motion_check.py v3 --reuse", {}),
+    ("Checks", "Short characters on a person's furniture in Godot (a small child, a goblin and an imp onto a chair, into a bed, at a door: GDSMALL; run GDMOTION first)", "tools/godot/motion_check.py small --reuse", {}),
+    ("Characters", "Animator: a baked character pictured on the furniture its clips are made for (a chair, a bed, a door; sheets in docs/animator_sheets)", "tools/godot/motion_check.py furniture --who {ask:The character's name in Exports/characters (anim_normal_woman, creature_goblin...)}", {}),
     ("Characters", "Animator: animations v3 pictured on a baked character (sheets in docs/animator_sheets)", "tools/godot/motion_check.py sheets3 --who {ask:The character's name in Exports/characters (anim_normal_woman, creature_ghoul...)}", {}),
     ("Characters", "Animator: animations v3 pictured in a game (the head, a bottle drunk from, the blows) and the grip's gizmo in the editor", "tools/godot/motion_check.py shots3", {}),
     ("Characters", "Animator: the grip's gizmo pictured in Godot's editor", "tools/godot/motion_check.py gizmo", {}),

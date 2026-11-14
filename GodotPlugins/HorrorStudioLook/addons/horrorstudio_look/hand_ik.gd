@@ -5,10 +5,11 @@
 ## A SkeletonModifier3D under her skeleton, for both hands. Her clip is played as it was made; after it, each frame:
 ##   bring(side, {...})   a point that rides her hand (in the wrist bone's own space) is brought onto a target in
 ##                        the world, as much as a weight says: the arm's two bones are solved again for where the
-##                        wrist must be for that, the elbow kept on the side her clip had it. One rule, four uses:
+##                        wrist must be for that, the elbow kept on the side her clip had it. One rule, five uses:
 ##                        her palm onto a thing's grip as her hand closes on it; a held thing's mouth onto her mouth
 ##                        as she bites or sips (`aim`: the thing is also turned to point at her mouth); her knuckles
-##                        onto who she punches; the end of what she holds onto who she swings at.
+##                        onto who she punches; the end of what she holds onto who she swings at; the middle of
+##                        her closed hand onto a door's handle (a child's, whose clip reaches up to it).
 ##                        The weight is an envelope over the clip's time (at(side, t)): rising into `peak`, held,
 ##                        let go; `freeze`: the target is taken as it was at the peak (a blow thrown doesn't home).
 ##   grip(side, size)     her fingers closed round a handle that thick (metres): each finger's joints bent so its

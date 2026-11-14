@@ -39,7 +39,7 @@ PR #28); on `animation-v2` (from main): the Animator v2, a character's own anima
 PR #29); 2026-11-13 and 14 on `marker-system` (from main): **NPC markers**, a character's whole part in a game
 placed as markers (the pull request tsukibii/HorrorEngine#30 into main, open when this was written); and 2026-11-14 on
 `even-more-animations-v3` (from `marker-system`): **animations v3**, creatures' clips, a head that follows you, a
-grip on props, fights (§0 below). Read this after CLAUDE.md's start
+grip on props, fights, then, after the user's first feedback, **short NPCs on a person's furniture** (§0 below). Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
@@ -67,36 +67,59 @@ the user asked for the branch, not for one. If #30 merges first, this one goes i
   scare card, and a Head row on every marker.
 - **Pictures and guides**: the clips on the normal woman, a ghoul and a goblin (`docs/animator_sheets/2026-11-14_v3_*`),
   the Animator's guide sections 10 to 14, the Markers' guide section 15.
-- **Checks**: ANIMATOR (40 s, in check_all), ANIMATORPAGE (55 s), GDMOTION then GDMOTION3
-  (`python tools/godot/motion_check.py`, then `python tools/godot/motion_check.py v3 --reuse`), MARKERS (1 minute),
-  MARKERSEDITOR (1 minute). All passed on the last commit.
+- **Checks**: ANIMATOR (44 s, in check_all), ANIMATORPAGE (65 s), GDMOTION then GDMOTION3 and GDSMALL
+  (`python tools/godot/motion_check.py`, then `python tools/godot/motion_check.py v3 --reuse` and
+  `python tools/godot/motion_check.py small --reuse`), MARKERS (1 minute), MARKERSEDITOR (1 minute). All passed on
+  the last commit.
 
-**The user has seen none of it**: they were away for the whole of it. Their next message is the first feedback, and
-it will be about what eyes find: how a clip reads on their own characters, the gizmo under a real mouse (it was only
-ever dragged by a test and pictured under xvfb), a blow in play.
+**The user's first feedback on it, and what was built for it** (DECISIONS 2026-11-14, short NPCs; ANIMATOR_V3 §10):
+*"What about children npcs (really short npcs), can you figure out a way to adjust the animations proportionally to
+height. For peak the back doesnt need to look good since it will ever only face the front."*
+- **A short body uses a person's furniture.** The Animator's sit, bed, door and table clips are made for what
+  `acts.js` `furniture()` says: by default a person's 45 cm seat and bed, metre-high handle and 86 cm table wherever
+  her body can use them. A seat over 1.18 of her own she gets onto as a child does (her bottom to its front, on her
+  toes or with a hop, her hands on it, a slide back) and sits with her legs hanging; a handle over her shoulder she
+  reaches up to. Two other settings on the page (her own size, a person's whatever she is) and a size outright.
+- **The bed clips were fixed for everyone on the way** (an elbow snap, a foot through the bed's corner, hands and a
+  sleeping arm in the mattress): the bake's version is 4, and those are the only adult clips that changed.
+- **In Godot** nothing changes for the user: the starter's `motion.gd` and the Markers lift her only past what her
+  clip reaches (30 cm when her legs hang anyway), and `open()` now puts her hand on the handle itself by the hand's
+  IK (an adult's too).
+- **Held by** ANIMATOR on three children and the five creatures (`bodies.mjs` `CHILD_BODIES`), ANIMATORPAGE on a
+  child, GDSMALL in Godot, MARKERS' door.
+- **The peek's back** is left as it is: the user said it's only ever seen from in front.
+
+**The user has still seen none of it in motion**: their feedback so far came from the report and its pictures. What
+eyes will find: how a clip reads on their own characters, the gizmo under a real mouse (it was only ever dragged by
+a test and pictured under xvfb), a blow in play, a child of their own getting onto one of their chairs (the pictures
+are a plain test body's and the goblin's: no dressed Studio child was made).
 
 **What I'd say is weakest, if asked**:
-- **The peek's other hand** is flat on the wall up beside her shoulder, like a hand held up. It's there because a
-  forearm and a hand don't fit between her and a wall 20 cm away; from in front it's hidden. A hand low on the wall,
-  or on her thigh, may read better from behind.
+- **Getting onto a high seat is one way for everybody**: bottom to the front, slide back. Nobody climbs with a knee,
+  turns to face it, or uses a step; the hands go to the seat by the wrist, the fingers aren't laid on it. On a seat
+  over her hips' height (a bar stool to a small child) she is simply lifted.
 - **The swing lands low and one-handed**: on someone standing, about their waist. One swing, no overhead, no
   two-handed bat.
 - **The scares are poses thrown fast**, not acted: a lunge is 0.98 s. They want sound, a face (the markers' Face
   row) and a look to land; nobody has seen one in play.
-- **Sitting, sleeping and doors on a creature** are still a person's furniture (ANIMATOR_V3 §9).
+- **An imp can't reach a person's door handle**: 86 cm is as high as its hand goes; at a metre it stops 7 cm short
+  and the door opens all the same.
 - Every picture was drawn on a CPU (lavapipe): the look is the game's, the frame rate isn't.
 
 **Not built** (ANIMATOR_V3 §9, MARKERS §11), in the order I'd take them:
 1. a **Peek card** in the Markers tab (`m.peek` is the starter's and an act's; a marker can't ask for one yet);
-2. furniture by the body: a seat by its legs, a handle by its shoulder (`set.seat`, `set.handle` exist; nothing
-   offers them), so a goblin can sit and an ogre open a door;
-3. a wall's thickness for the peek (fingers round its front corner);
+2. a dressed Studio child made, baked and pictured on the furniture (`tools/animator/people.mjs` is the pattern; the
+   Studio's Age slider; about ten minutes a character on a CPU with its clothes);
+3. climbing: onto something over her hips, down from it; a step;
 4. a two-handed swing, an overhead one, a kick, a grab that holds you; beckoning, pointing, waving;
 5. which clips to bake (all 53 go in: 10.3 MB where 24 made 6.5);
 6. the head and the grip for the Director's and the desk's cast (they're the starter kit's and the markers').
 
-**The pictures again**, each under xvfb on a CPU: `python tools/godot/motion_check.py sheets3` (6 minutes; then
-`--who creature_ghoul`, `--who creature_goblin`), `python tools/godot/motion_check.py shots3` (after a GDMOTION run:
+**The pictures again**, each under xvfb on a CPU: `python tools/godot/motion_check.py furniture --who creature_goblin`
+and `--glb Saved/Animator/pics/child_small.glb --plain` (after `node tools/animator/bodies.mjs --out Saved/Animator/pics
+child_small` and `node tools/animator/bake.mjs Saved/Animator/pics/child_small.glb`; three sheets each, a minute
+a sheet), the page's own by `node tools/animator/pagetest.mjs --out docs/animator_sheets --real anim_chubby_woman`;
+`python tools/godot/motion_check.py sheets3` (6 minutes; then `--who creature_ghoul`, `--who creature_goblin`), `python tools/godot/motion_check.py shots3` (after a GDMOTION run:
 it uses that project), `python tools/godot/motion_check.py gizmo`, then `python tools/godot/motion_check.py guide3`.
 The two creatures are Studio exports on this machine only (`Exports/characters/creature_ghoul`, `creature_goblin`,
 not tracked): `node tools/character/creatures.mjs make --only ghoul,goblin --export` with the Studio's server
