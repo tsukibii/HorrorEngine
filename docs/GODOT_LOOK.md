@@ -1738,9 +1738,12 @@ lightness in order and its hue (red 6 times as red as green, green 2.8 times as 
 weave's relief gives 7.9 times the fine contrast; a light from the side: the wool's lit side 1.15 times as bright with
 the fuzz; a light behind: its outline 2.9 times as bright with the halo; neither on leather; under the sky alone the
 wool's edge lifts (edge over middle 1.13 against 0.98); a black sheer knit over skin lets 0.84 of the skin's light
-through its middle at denier 0.3, 0.50 at 0.7, 0.68 toward its edge. With `--person` a Studio export that wears fabric
-sets (`node tools/character/fabricpeople.mjs` makes `fabric_demo`): its garments as the file has them beside the cloth
-shader's, its records counted.
+through its middle at denier 0.3, 0.50 at 0.7, 0.68 toward its edge. With `--outfits` the six "fabrics:" outfits are written straight from the
+tailor (`tools/character/tailor/outfitglb.mjs`: cut, hung, each part's material saying its fabric as the export's
+does; no Studio page) and dressed by `HSCloth.wear`: every part that says its fabric is on the cloth shader, and
+`outfits_sheet.jpg` shows each as the file has it (a flat colour) and then on the shader (`docs/fabric_sheets/`).
+With `--person` a Studio export that wears fabric sets (`node tools/character/fabricpeople.mjs` makes `fabric_demo`):
+its garments as the file has them beside the cloth shader's, its records counted.
 
 **Not done**: anisotropy (a satin, a filament knit's highlight along its wales); light through thin cloth (Godot's
 backlight); a sheer knit inside the skin's own shader (no blending to sort); the cloth wet (the story's `skin` word

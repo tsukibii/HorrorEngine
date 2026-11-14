@@ -73,6 +73,26 @@ export function frame(P, T, o = {}) {                               // o.soft: t
   const col = up.filter(r => r.y >= neckBaseY && r.y <= neckBaseY + 0.04 * s);
   const neck = { cx: avg(col.map(r => r.l.cx)), cz: avg(col.map(r => r.l.cz)), r: avg(col.map(r => Math.sqrt(r.l.area / Math.PI))), y: neckBaseY };
 
+  // the neck's front, for a collar that climbs it (pieces.js neckline's `cover`: a turtleneck): the pit of the neck (where
+  // the body's front along its middle is furthest back, between the chest and the neck) and the chin's underside (the
+  // first height where that front stands a finger proud of the neck's own line, drawn through the neck just over the
+  // pit): the neck seen from the front is what's between the two
+  const frontZ = r => { const l = torsoLoop(r); if (!l) return null; let z = -1e9; for (const q of l.pts) if (Math.abs(q[0] - neck.cx) < 0.012 * s) z = Math.max(z, q[1]); return z > -1e8 ? z : l.z1; };
+  const fr = rowsIn(neckBaseY - 0.1 * s, neckBaseY + 0.14 * s).map(r => ({ y: r.y, z: frontZ(r) })).filter(r => r.z !== null);
+  let neckPitY = neckBaseY - 0.045 * s, chinY = neckBaseY + 0.02 * s;
+  const low = fr.filter(r => r.y <= neckBaseY);
+  if (low.length) {
+    neckPitY = low.reduce((a, b) => (b.z < a.z ? b : a)).y;
+    const fit = fr.filter(r => r.y >= neckPitY + 0.008 * s && r.y <= neckPitY + 0.032 * s);
+    if (fit.length >= 3) {
+      const my = avg(fit.map(r => r.y)), mz = avg(fit.map(r => r.z));
+      const k = fit.reduce((a, r) => a + (r.y - my) * (r.z - mz), 0) / Math.max(fit.reduce((a, r) => a + (r.y - my) ** 2, 0), 1e-12);
+      const jut = fr.find(r => r.y > neckPitY + 0.032 * s && r.z > mz + k * (r.y - my) + 0.014 * s);
+      if (jut) chinY = jut.y - 0.0025;                                // (half a row under the first row the chin is in)
+    }
+    chinY = Math.max(chinY, neckPitY + 0.03 * s);
+  }
+
   // the torso: its loops' centres between the crotch and the armpit, the waist the narrowest, the hips the widest, the bust the deepest
   const tor = rowsIn(S.crotchY + 0.01, S.armpitY).map(r => ({ y: r.y, l: torsoLoop(r) })).filter(r => r.l);
   const axisRows = tor.map(r => [r.y, r.l.cx, r.l.cz]).concat([[neckBaseY, neck.cx, neck.cz]]);
@@ -165,7 +185,7 @@ export function frame(P, T, o = {}) {                               // o.soft: t
   }
 
   const F = {
-    H, s, scan: S, neck, torsoAxis, feet, crotchY: S.crotchY, armpitY: S.armpitY, waistY: waist.y, hipY: hips.y, bustY: bust.y, neckBaseY,
+    H, s, scan: S, neck, torsoAxis, feet, crotchY: S.crotchY, armpitY: S.armpitY, waistY: waist.y, hipY: hips.y, bustY: bust.y, neckBaseY, neckPitY, chinY,
     kneeY: avg([legs.L.knee, legs.R.knee]), ankleY: 0.045 * H, arms, legs, legLines,
     // the torso's panels as arc lengths, the parts' radii: fabric coordinates in metres (tailor/uv.js)
     torsoU: torsoArcs(S, torsoAxis, S.crotchY - 0.06 * s, S.armpitY - 0.015 * s, (o.soft || 0) * s),

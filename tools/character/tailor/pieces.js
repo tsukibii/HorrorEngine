@@ -12,10 +12,16 @@ const front = (z, cz, w = 0.03) => smooth(cz - w, cz + w, z);      // 0 at the b
 
 /** the neckline: a cone round the neck's base (it rises away from the neck, so the shoulders are never cut), dipped
     at the front (and the back) into a scoop, a V or a square; `rise` (metres) takes the whole line up the neck instead,
-    for a turtleneck or a mock neck (the cloth climbs the neck and the neckband is its roll) */
+    for a mock neck or a stand collar (the cloth climbs the neck and the neckband is its roll); `cover` (0..1) takes it
+    up by a share of the neck itself: a turtleneck's collar ends that far up the neck seen from the front, from the
+    pit of the neck to under the chin (the frame's neckPitY and chinY), whatever the body's neck (the user, 2026-11-14:
+    "it should be about 2/3rds of the neck covered only": a rise in metres reached the chin on a short neck) */
 export function neckline(F, o = {}) {
-  const s = F.s, N = F.neck, depth = (o.depth ?? 0.012) * s, back = (o.back ?? 0.0) * s, w = (o.width ?? 0.085) * s, rise = (o.rise ?? 0) * s;
-  const tilt = (o.tilt ?? 0.022) * s, k = 1.6, r0 = N.r + ((o.open ?? 0.004) + (o.ease ?? 0)) * s, shape = o.shape || "round";   // the cone starts where the cloth is
+  const s = F.s, N = F.neck, depth = (o.depth ?? 0.012) * s, back = (o.back ?? 0.0) * s, w = (o.width ?? 0.085) * s;
+  const covered = o.cover !== undefined && F.neckPitY !== undefined, risen = covered || (o.rise ?? 0) > 0;
+  const tilt = (o.tilt ?? (covered ? 0.03 : 0.022)) * s;            // (a collar that covers lies a little steeper: lower under the chin, higher at the nape)
+  const rise = covered ? F.neckPitY + Math.min(1, Math.max(0, o.cover)) * (F.chinY - F.neckPitY) - N.y + tilt : (o.rise ?? 0) * s;   // its front edge at that share of the neck's front
+  const k = 1.6, r0 = N.r + ((o.open ?? 0.004) + (o.ease ?? 0)) * s, shape = o.shape || "round";   // the cone starts where the cloth is
   const g = u => { u = Math.min(1, Math.abs(u)); return shape === "v" ? 1 - u : shape === "square" ? (u < 0.85 ? 1 : 1 - smooth(0.85, 1, u)) : Math.sqrt(1 - u * u); };
   const cutY = (x, y, z) => {
     const dx = x - N.cx, dz = z - N.cz, rho = Math.hypot(dx, dz), c = rho > 1e-6 ? dz / rho : 0;
@@ -23,7 +29,7 @@ export function neckline(F, o = {}) {
     const cone = k * Math.max(0, rho - r0);
     const fr = front(z, N.cz, 0.025 * s), G = g(dx / w) * fr, B = g(dx / w) * (1 - fr);
     const yc = base + (1 - Math.max(G, B * (back > 0))) * cone - depth * G - back * B;
-    return rise > 0 ? Math.min(yc, base + 0.012 * s) : yc;           // risen, the line is level all round: the neck widens toward the jaw, and the cone would climb it
+    return risen ? Math.min(yc, base + 0.012 * s) : yc;              // risen, the line is level all round: the neck widens toward the jaw, and the cone would climb it
   };
   const v = (x, y, z) => cutY(x, y, z) - y;
   v.cutY = cutY;

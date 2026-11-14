@@ -13,7 +13,12 @@ With --person NAME (a Character Studio export that wears fabric sets: Exports/ch
 are pictured as the file has them and on the cloth shader, and the records counted. Pictures in
 Saved/Story/_look/godot_cloth/. Ends "GDCLOTH ok".
 
-    python tools/godot/cloth_check.py [--person NAME | --glb FILE] [--sets A,B] [--keep DIR] [--sheet FILE]
+With --outfits the "fabrics:" outfits (Content/Studio/Clothes/outfits.json) are written straight from the tailor as
+.glb files with the same records (node tools/character/tailor/outfitglb.mjs: cut and hung, no rig, no Studio page),
+dressed by HSCloth.wear and pictured: every garment that says its fabric is on the cloth shader; the sheet
+outfits_sheet.jpg (each outfit as the file has it, then on the cloth shader: whole, the chest, the legs).
+
+    python tools/godot/cloth_check.py [--person NAME | --glb FILE] [--outfits [--only-outfits]] [--sets A,B] [--keep DIR] [--sheet FILE]
 """
 import argparse
 import json
@@ -62,6 +67,8 @@ def main():
     ap.add_argument("--sets", default="")
     ap.add_argument("--keep", default=str(KEEP))
     ap.add_argument("--sheet", default="")
+    ap.add_argument("--outfits", action="store_true")
+    ap.add_argument("--only-outfits", action="store_true")
     a = ap.parse_args()
     g = godot_bin()
     if not g:
@@ -82,6 +89,17 @@ def main():
     if glb:
         (OUT / "people").mkdir()
         shutil.copy(glb, OUT / "people" / glb.name)
+    worn = []                                                            # the fabrics outfits, written straight from the tailor
+    if a.outfits or a.only_outfits:
+        names = [k for k in json.loads((ROOT / "Content" / "Studio" / "Clothes" / "outfits.json").read_text(encoding="utf-8"))["outfits"] if k.startswith("fabrics:")]
+        (OUT / "outfits").mkdir()
+        for i, nme in enumerate(names):
+            r = subprocess.run(["node", "tools/character/tailor/outfitglb.mjs", "--outfit", nme, "--out", str(OUT / "outfits" / f"outfit{i}.glb")], cwd=ROOT, capture_output=True, text=True, timeout=1800)
+            if not (OUT / "outfits" / f"outfit{i}.glb").exists():
+                print((r.stdout + r.stderr)[-800:])
+                print(f"GDCLOTH FAIL: {nme} wasn't written")
+                return 1
+            worn.append(nme)
     env = dict(os.environ)
     if os.path.exists("/usr/share/vulkan/icd.d/lvp_icd.json"):
         env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
@@ -95,6 +113,10 @@ def main():
         cmd.append(f"--glb=res://people/{glb.name}")
     if a.sets:
         cmd.append(f"--sets={a.sets}")
+    if worn:
+        cmd.append("--outfits=" + ",".join(f"res://outfits/outfit{i}.glb" for i in range(len(worn))))
+    if a.only_outfits:
+        cmd.append("--no-lab")
     if shutil.which("xvfb-run"):
         cmd = ["xvfb-run", "-a"] + cmd
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=3600, env=env)
@@ -110,7 +132,8 @@ def main():
     bad = []
     say = lambda ok, what: (print(("  ok  " if ok else "  BAD ") + what), None if ok else bad.append(what))
     say(not errs, "no shader or script errors" if not errs else "errors: " + " | ".join(errs[:4]))
-    say(rep["made"] == rep["sets"] and len(rep["sets"]) > 0, f"{len(rep['made'])} of {len(rep['sets'])} sets made a material: {', '.join(rep['sets'])}")
+    if not a.only_outfits:
+        say(rep["made"] == rep["sets"] and len(rep["sets"]) > 0, f"{len(rep['made'])} of {len(rep['sets'])} sets made a material: {', '.join(rep['sets'])}")
     lin = lambda a: np.where(a <= 0.04045, a / 12.92, ((a + 0.055) / 1.055) ** 2.4)
     img = lambda n: lin(np.asarray(Image.open(keep / n).convert("RGB"), np.float64) / 255)
     lum = lambda a: a @ np.array([0.2126, 0.7152, 0.0722])
@@ -156,11 +179,27 @@ def main():
         p = rep.get("person", {})
         say(p.get("cloth_materials", 0) > 0 and p.get("records", 0) > 0, f"{glb.name}: {p.get('records')} garments say their fabric, {p.get('cloth_materials')} surfaces on the cloth shader ({', '.join(f'{k} x{v}' for k, v in p.get('sets', {}).items())})")
         views = [v for v in ("full", "chest", "legs", "feet") if has(f"person_{v}_cloth.png")]
+        diff = float(np.abs(np.asarray(Image.open(keep / "person_chest_file.png").convert("RGB"), float) - np.asarray(Image.open(keep / "person_chest_cloth.png").convert("RGB"), float)).mean()) if "chest" in views else 0
+        say(diff > 0.4, f"her clothes change on the cloth shader (the chest's picture differs by {diff:.1f} of 255 a pixel)")
         if views:
             ims = [np.concatenate([np.asarray(Image.open(keep / f"person_{v}_file.png").convert("RGB")), np.asarray(Image.open(keep / f"person_{v}_cloth.png").convert("RGB"))], 1) for v in views]
             Image.fromarray(np.concatenate(ims[:2], 1)).save(keep / "person_sheet_a.jpg", quality=90)
             if len(ims) > 2:
                 Image.fromarray(np.concatenate(ims[2:4], 1)).save(keep / "person_sheet_b.jpg", quality=90)
+    if worn:                                                             # every garment that says its fabric is on the cloth shader; the sheet
+        from PIL import ImageDraw
+        W, Hh, cap = 400, 600, 24
+        sheet = Image.new("RGB", (W * 4, len(worn) * (Hh + cap)), (27, 29, 34))
+        dr = ImageDraw.Draw(sheet)
+        for i, nme in enumerate(worn):
+            o = rep["outfits"][i] if i < len(rep.get("outfits", [])) else {}
+            say(o.get("records", 0) > 0 and o.get("cloth_materials") == o.get("records"), f"{nme}: {o.get('cloth_materials')} of {o.get('records')} parts that say their fabric on the cloth shader ({', '.join(f'{k} x{v}' for k, v in o.get('sets', {}).items())})")
+            for c, (view, kind) in enumerate((("full", "file"), ("full", "cloth"), ("chest", "cloth"), ("legs", "cloth"))):
+                f = keep / f"outfit{i}_{view}_{kind}.png"
+                if f.exists():
+                    sheet.paste(Image.open(f).convert("RGB").resize((W, Hh), Image.LANCZOS), (c * W, i * (Hh + cap)))
+            dr.text((8, i * (Hh + cap) + Hh + 5), f"{nme}   (left: as the file has it; then on the cloth shader)", fill=(226, 224, 216))
+        sheet.save(keep / "outfits_sheet.jpg", quality=88)
     if has("cloth_sheet.png"):                                            # the sheet with each set's name under its row
         from PIL import ImageDraw
         table = json.loads((PLUGIN / "textures" / "cloth" / "cloth.json").read_text(encoding="utf-8"))

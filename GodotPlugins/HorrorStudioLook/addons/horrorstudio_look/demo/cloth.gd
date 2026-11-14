@@ -3,8 +3,10 @@
 ## distance in four dyes, as the Character Studio's own sheet has them (tools/character/tailor/swatch.mjs); then one
 ## ball in a small room of its own, lit so each thing the shader does can be measured (the dye, the weave's relief,
 ## the fuzz against a light behind it, a sheer knit over skin); and, given a Character Studio export that wears
-## fabric sets, its garments as the file has them beside the cloth shader's.
-##   godot --path PROJECT -s res://addons/horrorstudio_look/demo/cloth.gd -- --out=DIR [--glb=res://people/NAME.glb] [--sets=A,B]
+## fabric sets, its garments as the file has them beside the cloth shader's; and the same for outfits written straight
+## from the tailor (tools/character/tailor/outfitglb.mjs: the garments with their fabric records, no rig).
+##   godot --path PROJECT -s res://addons/horrorstudio_look/demo/cloth.gd -- --out=DIR [--glb=res://people/NAME.glb]
+##         [--outfits=res://outfits/a.glb,res://outfits/b.glb] [--sets=A,B] [--no-lab]
 extends SceneTree
 
 const DYES := ["#e9e4d8", "#8a2432", "#22304e", "#19191b"]
@@ -12,6 +14,8 @@ const CELL := 0.25
 const PX := 250
 var out_dir := "res://"
 var glb := ""
+var outfits: PackedStringArray = []
+var lab_on := true
 var only: PackedStringArray = []
 var report := {}
 
@@ -24,6 +28,10 @@ func _initialize() -> void:
 			glb = a.substr(6)
 		if a.begins_with("--sets="):
 			only = a.substr(7).split(",", false)
+		if a.begins_with("--outfits="):
+			outfits = a.substr(10).split(",", false)
+		if a == "--no-lab":
+			lab_on = false
 	run.call_deferred()
 
 
@@ -122,6 +130,8 @@ func run() -> void:
 	report["sets"] = names
 	report["made"] = []
 	report["cells"] = {"px": PX, "cols": 2 + DYES.size(), "rows": names.size(), "dyes": DYES}
+	if not lab_on:                                                         # (the characters and outfits alone)
+		names = []
 	# 1. the sheet: a wall of balls seen square on; the two on the left wear the cloth magnified
 	var mesh := ball(0.105)
 	var st := stage(Vector2i(PX * (2 + DYES.size()), PX * max(1, names.size())), Color("#1b1d22"), 0.38)
@@ -221,15 +231,20 @@ func run() -> void:
 	lab["vp"].queue_free()
 	# 3. a Character Studio export that wears fabric sets: as the file has it, then on the cloth shader
 	if glb != "":
-		await person()
+		report["person"] = await person(glb, "person", true)
+	report["outfits"] = []
+	for i in outfits.size():
+		report["outfits"].append(await person(outfits[i], "outfit%d" % i, false))
 	var f := FileAccess.open(out_dir.path_join("cloth_report.json"), FileAccess.WRITE)
 	f.store_string(JSON.stringify(report, " "))
 	f.close()
-	print("CLOTH demo done: %d sets" % names.size())
+	print("CLOTH demo done: %d sets, %d outfits" % [names.size(), outfits.size()])
 	quit(0)
 
 
-func person() -> void:
+## a character (a Studio export: its skin, eyes and hair worn too) or an outfit on a body, pictured as the file has it
+## and then with its garments on the cloth shader: <tag>_<view>_file.png, <tag>_<view>_cloth.png
+func person(glb: String, tag: String, studio: bool) -> Dictionary:
 	var who: Node3D = null
 	var ps = load(glb) if ResourceLoader.exists(glb) else null
 	if ps != null:
@@ -240,11 +255,10 @@ func person() -> void:
 		if doc.append_from_file(glb, gs) == OK:
 			who = doc.generate_scene(gs)
 	if who == null:
-		report["person"] = {"error": "no glb at " + glb}
-		return
-	var st := stage(Vector2i(900, 1200), Color("#23262d"), 0.6)
+		return {"error": "no glb at " + glb}
+	var st := stage(Vector2i(800, 1200), Color("#23262d"), 0.45)
 	st["world"].add_child(who)
-	var k := sun(st["world"], Vector3(1.5, 3.0, 2.5), Color("#fff4e8"), 1.8)
+	var k := sun(st["world"], Vector3(1.5, 3.0, 2.5), Color("#fff4e8"), 2.1)
 	k.shadow_enabled = true
 	sun(st["world"], Vector3(-2.0, 2.0, -2.5), Color("#bcd0ff"), 1.0)
 	var top := 1.6
@@ -253,25 +267,31 @@ func person() -> void:
 			top = (mi.global_transform * mi.get_aabb()).end.y
 	var cam: Camera3D = st["cam"]
 	cam.fov = 28
-	var views := {"full": [Vector3(0.55, top * 0.55, 2.7 * top / 1.62), Vector3(0, top * 0.52, 0)],
+	var views := {"full": [Vector3(0.75, top * 0.56, 3.75 * top / 1.62), Vector3(0, top * 0.51, 0)],
 			"chest": [Vector3(0.35, top * 0.8, 0.95), Vector3(0, top * 0.76, 0)],
 			"legs": [Vector3(0.4, top * 0.3, 1.25), Vector3(0, top * 0.25, 0)],
 			"feet": [Vector3(0.45, 0.22, 0.75), Vector3(0.05, 0.08, 0.05)]}
-	HSSkin.wear(who, {}, glb)
-	HSEye.wear(who, glb)
-	HSHair.wear(who, {}, glb)
+	if studio:
+		HSSkin.wear(who, {}, glb)
+		HSEye.wear(who, glb)
+		HSHair.wear(who, {}, glb)
 	for v in views:
 		cam.position = views[v][0]
 		cam.look_at(views[v][1])
-		await shot(st, "person_%s_file.png" % v)
+		await shot(st, "%s_%s_file.png" % [tag, v])
 	var mats := HSCloth.wear(who, {}, glb)
 	var worn := {}
 	for m in mats:
 		var s: String = m.get_meta("hs_cloth").get("set", "")
 		worn[s] = int(worn.get(s, 0)) + 1
-	report["person"] = {"glb": glb, "records": HSCloth.records(glb).size(), "cloth_materials": mats.size(), "sets": worn}
 	for v in views:
 		cam.position = views[v][0]
 		cam.look_at(views[v][1])
-		await shot(st, "person_%s_cloth.png" % v)
+		await shot(st, "%s_%s_cloth.png" % [tag, v])
 	st["vp"].queue_free()
+	var said := 0                                                          # the file's materials that say their fabric (two parts can share a name)
+	for mat in HSEye.gltf_json(glb).get("materials", []):
+		var ex = mat.get("extras")
+		if ex is Dictionary and ex.get("studioCloth") is Dictionary and HSCloth.table().has(str(ex["studioCloth"].get("set", ""))):
+			said += 1
+	return {"glb": glb, "records": said, "cloth_materials": mats.size(), "sets": worn}

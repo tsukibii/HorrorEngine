@@ -37,11 +37,63 @@ from sliders), eye looks as cards in the Studio and the lashes on the lid's skin
 main): a fourth body card, v2 pear, and the Hips & thighs slider, then two head cards after two pictures (merged,
 PR #28); on `animation-v2` (from main): the Animator v2, a character's own animations made from its body (merged,
 PR #29); and 2026-11-13 and 14 on `marker-system` (from main): **NPC markers**, a character's whole part in a game
-placed as markers (§0 below). Read this after CLAUDE.md's start
+placed as markers (merged, PR #30); and 2026-11-14 on `advanced-pbrs` (from main): **clothing fabric sets made from
+code**, the Studio's and Godot's cloth shaders, and the turtlenecks' collars (§0 below). Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Where `marker-system` stopped (2026-11-14)
+## 0. Where `advanced-pbrs` stopped (2026-11-14)
+
+**Asked** (DECISIONS 2026-11-14, advanced PBRs): research the latest ways of making hyper-realistic clothing fabric
+PBRs, make new ones that tint well (white or cream bases), demo clothing in them: knitted wool, wool, cotton, spun
+cotton, leather, spandex, sheer hosiery, fluffy cotton for socks, matte leather for shoes. Then, mid-way: every
+turtleneck's collar ran up to the chin; it should cover about two thirds of the neck.
+
+**Built**:
+
+- **The research**: docs/research/fabric_pbr.md. Honest about its limits: the papers and most textile pages couldn't
+  be opened from the cloud session (search extracts and GitHub sources only).
+- **The sets**: `tools/fabricpbr.py` (numpy; no Blender), eleven in `pbr/fabric/` (1K, in git): `WoolKnit001`,
+  `WoolRib001`, `WoolFlannel001`, `CottonPoplin001`, `CottonJersey001` (spun cotton), `Denim001`, `CottonFluffy001`,
+  `Spandex001`, `HosierySheer001`, `Leather001`, `LeatherMatte001`. Each the undyed cloth with `_Sheen`, `_Opacity`,
+  `_Tint` beside the usual five maps and a `fabric` block for the shaders (TAILOR §1k).
+- **The Studio**: `tailor/look.js` wears a fabric set as a physical material (the dye rules, the fuzz lobe and its
+  halo, a wrapped diffuse, a sheer knit blended); the PBR set picker lists them first, with Fuzz and Denier rows; the
+  outfits' **Fabric sets** tab has six outfits; the export bakes the dye alone and says the fabric (`studioCloth`).
+- **Godot**: the look plugin's `HSCloth` (`cloth.gd`, `cloth.gdshaderinc`, the packs in `textures/cloth/`): the same
+  terms as the Studio's, with its own `light()` since Godot has no fuzz lobe (GODOT_LOOK §5x). On by the
+  HSCharacterLook node's Cloth switch and for the runtime's cast bodies.
+- **The turtlenecks**: `neck.cover` (0.66 of the neck's front, from its pit to under the chin, measured on each body:
+  the frame's `neckPitY`, `chinY`) in place of a rise in metres, on the turtleneck, the sweater dress's sweater and
+  the lace blouse's stand collar; their cards made again.
+- **Pictures**: `docs/fabric_sheets/swatches.jpg` (every set on a ball of cloth, close up and in four dyes) and
+  `outfits.jpg` (the six outfits worn), both the Studio's own renderer (`python tools/fabricpbr.py demo`).
+- **Checks**: FABRICPBR (in check_all), GDCLOTH (`python tools/godot/cloth_check.py`), TAILOR with the collars' share.
+
+**The user has seen none of it yet.** Expect feedback on what a picture can't settle: how each fabric reads on their
+own characters under their own lights in Godot (the fuzz's strength was set by eye on balls of cloth: `sheen` and
+`halo` in each set's `SETS` entry, then `python tools/fabricpbr.py <Set>` and `godot <Set>`; or the garment's Fuzz
+row), whether "spin cotton" meant a T-shirt's jersey (it was read so), and whether the lace blouse's high collar
+should have come down with the turtlenecks (it did: one line in designs.json to put back).
+
+**Not built**, in the order I'd take them (TAILOR §1k and GODOT_LOOK §5x end with the same list):
+
+1. **More sets**: velvet, satin, suede, corduroy, lace, a sweatshirt's fleece. The generator has the parts.
+2. **Anisotropy** for a satin and a filament knit (a thread-direction map; three.js and Godot both have the term).
+3. **The designs' own defaults**: only the six "fabrics:" outfits name the new sets. The other 81 outfits still wear
+   their drawn surfaces (or the Blender-made sets where baked). Switching a design's `pbr` to a new set changes every
+   outfit that uses it: the user's call, design by design.
+4. **A sheer knit inside the skin's shader** in Godot (no blending to sort), and its cover by how far it's stretched.
+5. **Light through thin cloth**, the cloth wet.
+
+**In a cloud session** the Studio's page needs MediaPipe set up before any tool that drives it (`fabricpeople.mjs`,
+`people.mjs`, the page checks): `python tools/face_mesh.py setup` and `apt-get install -y libegl1`. Without them the
+page comes up but never builds its sculpt (it asks the server for MHR's face landmarks, which come from MediaPipe's
+worker), and a tool waiting on `window.__body.SCULPT` waits for nothing: twenty minutes went on that here before the
+page was probed. `fabricpeople.mjs` now asks first and says so. The page draws on the CPU there: one browser job at a
+time. `tools/godot/cloth_check.py --outfits` needs none of it (the outfits written straight from the tailor).
+
+## Before that (2026-11-13 and 14, `marker-system`, merged in PR #30): NPC markers
 
 **Built** (docs/MARKERS.md, its plan's boxes all ticked): the **HorrorStudio Markers** plugin
 (`GodotPlugins/HorrorStudioMarkers`), in every project `godot_byhand.py new` makes and switched on in an older one by

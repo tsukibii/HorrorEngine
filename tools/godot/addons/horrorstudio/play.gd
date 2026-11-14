@@ -3641,6 +3641,7 @@ func standin_body(cid: String) -> void:
 	standin_hair[cid] = HSHair.wear(body, hair_look(cid), file if people else "")   # a Studio export: the salon's bake MetaHuman's way (its records in the file)
 	if people:
 		HSEye.wear(body, file)
+		HSCloth.wear(body, {}, file)             # her garments on the fabric sets they say they wear (the look plugin's cloth shader)
 	standins[cid] = body
 	for k in body_moves.keys():                      # (her own clips are looked for again on this body)
 		if str(k).begins_with(cid + "|"):

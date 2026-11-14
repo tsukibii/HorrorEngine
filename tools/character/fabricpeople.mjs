@@ -7,7 +7,8 @@
 //   node tools/character/fabricpeople.mjs [--name fabric_demo] [--outfit "fabrics: cream knit over a wool skirt and sheer tights"]
 //        [--hair daz_bob] [--again] [--shot FILE]     (--shot: the Studio's own picture of her, dressed)
 //
-// The Character Studio's server running (python tools/character/serve.py; BODY_URL for another port). GPU=1 in front
+// The Character Studio's server running (python tools/character/serve.py; BODY_URL for another port), with MediaPipe
+// set up for it (python tools/face_mesh.py setup: the page's sculpt is built on its face landmarks). GPU=1 in front
 // on a machine with a graphics card (tools/browser.cjs). Ends "FABRICPEOPLE ok".
 import { createRequire } from "module";
 import path from "path";
@@ -28,6 +29,10 @@ const B = (f, a) => page.evaluate(f, a);
 const settle = async () => { await page.waitForFunction(() => /points/.test(document.querySelector("#hud").textContent) && !/finding|fitting/.test(document.querySelector("#status").textContent), null, { timeout: 1800000 }); await page.waitForTimeout(1500); };
 try {
   await page.goto(URL, { waitUntil: "load" });
+  // the page's sculpt is built on MHR's face landmarks, which the server asks MediaPipe's worker for: without it the page
+  // never has one, and this would wait for nothing (a cloud session: python tools/face_mesh.py setup, and libegl1)
+  const lm = await B(() => fetch("api/face/landmarks", { method: "POST", body: "{}" }).then(r => r.json()).catch(e => ({ error: String(e) })));
+  if (!lm || lm.error) throw new Error(`the Studio can't build its sculpt: ${lm && lm.error} (python tools/face_mesh.py setup; on a bare Linux also apt-get install libegl1)`);
   await page.waitForFunction(() => window.__body && window.__body.SCULPT && window.__body.hair2, null, { timeout: 1800000 });   // (drawn on the CPU where there's no card: slow to start)
   console.log(`  ..  the Studio's page is up (${secs()} s)`);
   await page.fill("#newName", name); await page.click("#make", { noWaitAfter: true });

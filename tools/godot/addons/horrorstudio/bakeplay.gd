@@ -93,6 +93,7 @@ func make_bodies(world: Node3D) -> void:
 					b["hair_mats"] = HSHair.wear(n, rt_hair(cid), file if people != "" else "")   # its hair, brows and lashes on the Studio's hair look (the story's `hair` word; a Studio export's bake as its records say)
 					if people != "":
 						HSEye.wear(n, file)
+						HSCloth.wear(n, {}, file)                              # its garments on the fabric sets they say they wear
 					print("scene body %s wears %s (%s): %d skin, %d hair surfaces" % [cid, file, "a Character Studio export" if people != "" else "the bake's body", b["skin_mats"].size(), b["hair_mats"].size()])
 					var shapes: Array = index.get("face_shapes", [])      # the face: the bake's 72 weights onto the glb's morph targets, on every mesh that has them (a Studio export's skin, lashes and brows: its blink)
 					b["blink"] = HSBlink.of(n)                             # a Studio export's blink takes eyesClosed_L and _R itself, with their arcs (blink.gd)

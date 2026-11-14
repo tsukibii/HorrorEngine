@@ -665,22 +665,22 @@ def dye(rel, tint, cavity):
     """The colour a dyed cloth shows: `rel` the undyed map over its mean, `tint` the dye (linear); down between the
     yarns (where the map is darker) the light meets the dye more than once: the colour to a higher power there."""
     lum = rel.mean(-1, keepdims=True)
-    return np.asarray(tint, F)[None, None, :] ** (1 + cavity * np.clip(1 - lum, 0, 1)) * rel
+    t = np.asarray(tint, F)
+    return (t if t.ndim == 3 else t[None, None, :]) ** (1 + cavity * np.clip(1 - lum, 0, 1)) * rel
 
 
 def dye_take(undyed, tint, mask):
     """Where a dye takes only in part (`mask` 0..1: a denim's weft, a ridge worn pale): its depth goes by its amount
     as a power, not a blend (the shaders': undyed * (tint / undyed) ^ mask)."""
     u = np.asarray(undyed, F)
-    return u * (np.maximum(np.asarray(tint, F), 1e-4) / u) ** (mask / max(float(np.mean(mask)), 0.05))
+    return u * (np.maximum(np.asarray(tint, F), 1e-4) / u) ** (mask[..., None] / max(float(np.mean(mask)), 0.05))
 
 
 def lit(m, tint="#ffffff", light=(-0.55, 0.6, 0.58), reps=1):
     """The set lit on a flat patch by a low light (a quick look, no browser): the dye over it, the fuzz lobe a soft
     glow off the hairy places."""
-    fb = fabric_block(m["P"]["name"], m) if "name" in m["P"] else m["P"]["fabric"]
     mean = m["albedo"].reshape(-1, 3).mean(0)
-    col = dye(m["albedo"] / mean, srgb(tint), m["P"]["fabric"].get("cavity", 0.5))
+    col = dye(m["albedo"] / mean, dye_take(mean, srgb(tint), m["tint"]) if "tint" in m else srgb(tint), m["P"]["fabric"].get("cavity", 0.5))
     L = np.array(light, F)
     L /= np.linalg.norm(L)
     nl = np.clip((m["normal"] * L).sum(-1), 0, 1)

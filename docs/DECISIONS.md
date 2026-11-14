@@ -2,6 +2,45 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-14, later, the turtlenecks: two thirds of the neck, not up to the chin (the user, mid-way through the fabric sets)
+
+- **"all the turtle necks in this game are wrong, anything with a 'turtle neck currently goess down to the bottom of
+  the chin which isnt how it should work, it should be about 2/3rds of the neck covered only"**
+- **So**: a turtleneck's collar is cut by a share of the neck itself (`neck.cover`, 0.66), from the pit of the neck to
+  under the chin as the tailor measures them on each body, not by a height in metres. The turtleneck, the sweater
+  dress's sweater and the lace blouse's stand collar (the same cut) all use it. TAILOR holds every one to it on nine
+  bodies, at least 8 mm short of the chin. (docs/TAILOR.md §2b's list.)
+- **Not touched**: library garments (MakeHuman's) keep the collars their authors gave them; none of the picked ones is
+  a turtleneck.
+
+## 2026-11-14, advanced PBRs: clothing fabric sets made from code, white or cream, a dye over them (the user, the branch `advanced-pbrs`)
+
+- **"createa new branch called advanced-pbrs, start of by researching the latest techinques for creating hyper
+  realistic clothing fabric pbrs (or even other types that you can implement the techniques for), then create new
+  beautiful clothing fabric pbrs that work well with being tinted (maybe base pbrs should all be white or cream so
+  tints apply well), then demo some of the clothing in the new pbrs system. I want thinks like knitted wool, wool,
+  cotton, spin cotton, leather, spandex, sheer hosier, fluffy cotton (for socks), matte leather (for shoes)"**
+- **The research first**: docs/research/fabric_pbr.md (two passes; the papers themselves and most textile pages
+  couldn't be opened from the cloud session, and the note says which numbers are search extracts).
+- **The base is the undyed cloth**: every set's colour map is white or cream, nearly neutral, with nothing of the
+  light in it; the garment's colour is the dye. The dye is laid over the map divided by its mean, so **the colour
+  picked is the colour worn**, on any set.
+- **The sets asked for, and how each was read**: knitted wool (a hand knit's stockinette in a three-ply yarn; and its
+  2 x 2 rib), wool (a 2/2 twill flannel, brushed), cotton (a shirt's poplin), **"spin cotton" read as spun cotton: a
+  T-shirt's ring-spun single jersey** (say if another cloth was meant), leather (a jacket's full-grain cowhide),
+  spandex (a nylon and elastane jersey), sheer hosiery (a 20 denier tight on the leg), fluffy cotton (a thick sock's
+  brushed terry), matte leather (a shoe's calf). One not asked for, because jeans are in so many outfits and it shows
+  what a dye mask is for: denim (its weft left white).
+- **"the new pbrs system"** was read as the whole path, not the maps alone: the generator (`tools/fabricpbr.py`), three
+  maps beyond the usual five and a `fabric` block a set, the Studio's shader for them, the export saying which fabric a
+  garment wears, and **a cloth shader in Godot** (`HSCloth`), since the games ship from there and Godot has no fuzz
+  lobe of its own. A garment looks in the game as it did in the Studio.
+- **The demo**: `docs/fabric_sheets/` (every set on a ball of cloth, close up and in four dyes; six outfits with every
+  garment in a set), the outfits' **Fabric sets** tab in the Studio, and the same in Godot (GDCLOTH's sheet).
+- **Rules from it**: a fabric set is made by code from the cloth's real construction (no photographs, no image
+  generator), at its real size; a dye is never a plain multiply (deeper between the yarns; a power where it takes in
+  part); the Blender-made fabrics (2026-11-01) stay as they are beside these.
+
 ## 2026-11-14, the markers' conversations: the prior style, not a new panel (the user, on the first picture of it in play)
 
 The picture: Alex in the room and, at the foot of the screen, a dark rounded panel with "Alex", "Looking for

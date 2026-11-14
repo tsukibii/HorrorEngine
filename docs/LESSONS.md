@@ -3232,3 +3232,37 @@ pale one shows.
   bottom panel's own height the storyboard got a row and a half. The palette became a column of its own and the
   tab's least height went up. A picture of the editor as it opens says this; the layout's code doesn't.
 
+## Fabric that reads as cloth (2026-11-14, `advanced-pbrs`: the clothing fabric sets, the cloth shaders)
+
+- **A dye that takes in part is a power, not a blend.** The first denim mixed the undyed white and the navy by the
+  mask in linear light: at 75% that is a pale grey-blue, and the jeans came out grey. A dye's depth goes by its amount
+  in the exponent (`undyed * (dye / undyed) ^ mask`), and the mask is divided by its own mean so the colour picked is
+  still the cloth's colour from afar. The same thought as the hollows between yarns (`dye ^ (1 + cavity)`): colour
+  through a dyed thing multiplies, it never averages.
+- **Know what a lobe can't do before measuring it.** The check lit a wool ball from straight behind and looked for the
+  fuzz along its outline: nothing, to four decimals, and an hour went on the shader. Charlie's distribution is zero
+  where the half vector lies along the normal, which is exactly the lit outline under a light behind. The test was
+  wrong, not the code; and the missing glow was real (knitwear does light up against a lamp), so it became a term of
+  its own (the halo) with its own measure. Work the geometry out on paper for one point first.
+- **A debug colour added in `light()` is added once a light**, lit or not: a light with no energy still ran, and its
+  term painted the whole ball. Multiply a debug term by the light's colour, or the picture lies.
+- **A trick that reads a texture at another scale reads everything in it at that scale.** The slow unevenness sampled
+  the colour map seven times larger to break up the tiling: on the poplin its yarns came through seven times their
+  size, as a plaid of stripes over the shirt. Read it from a blurred mip (`textureLod`, the sixth), where only the slow
+  mottle is left. It showed on a garment, not on the swatch balls: look at the thing worn.
+- **White fuzz turns black cloth grey.** The fuzz lobe's colour was half white whatever the dye; black socks were
+  charcoal. A dyed fibre is dyed through: the lobe carries the dye's square root (Filament's default), lighter and
+  less saturated, and black stays black.
+- **A length in metres on a neck is not a share of the neck.** The turtlenecks' collars rose 5.5 cm over "the neck's
+  base", which the frame finds at the neck's sides; at the front the chin is 1 to 2 cm over that line (under it on the
+  masculine base), so every collar ran to the chin, and the user saw it at once. Measure the thing the number is
+  about (the pit of the neck, the chin) and cut by a share of it.
+- **A wait that never ends is a question nobody asked.** The tool that makes a character waited on the Studio's page
+  for `window.__body.SCULPT`, as the other tools do; in this cloud session it never came, three times, and each time it
+  was put down to the page drawing slowly on the CPU. The page was up in 16 seconds: its sculpt is built on face
+  landmarks that the server gets from MediaPipe's worker, which wasn't set up (and then lacked libEGL). Probe the
+  thing being waited on after the first timeout, not the third: print the page's errors and its state as it loads.
+  The tool now asks the server for the landmarks first and says what's missing.
+- **Two CPU-bound jobs at once time each other out here.** The Studio's page takes minutes to start when it draws on
+  the CPU; with the outfit sheets rendering beside it, it passed its ten minute wait. One browser job at a time in a
+  cloud session.
