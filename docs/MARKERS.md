@@ -62,7 +62,8 @@ interactable" with its dialogue and answers that set flags; being shot, and whet
    flags: asked again they'd contradict). Afterwards E gives her "again" line, or nothing.
 10. **The player in her way**, a floor that isn't flat, a door on the way: she waits a moment for you to move and then
     passes; she follows the floor under her path (stairs, slopes); a door is its own marker (Grab, Open door).
-11. **Seeing why she's stuck.** In the game, F7 shows over each character her quest, her marker and what it waits for.
+11. **Seeing why she's stuck.** In the game, F7 shows over each character her quest, her marker and what it waits for
+    (a chip drawn over the picture, not text in the world: that smears under the game's anti-aliasing as she walks).
     In the editor, Problems lists what can never happen (a flag nothing turns on, a way after "otherwise", markers
     after a Repeat that never ends).
 12. **Two things moving her.** A chase, a hunt or the starter's Motion node also move a character. A marker can hand
@@ -211,31 +212,44 @@ the flags itself. In the tab a condition is built from a menu and shown as chips
 
 ## 7. The tab: NPC Markers
 
-A dock along the bottom (it can float), four parts, left to right:
+A dock along the bottom (it can float; it comes up by itself when one of its nodes is picked in the scene), four
+parts, left to right (as built; the first design had the palette over the storyboard, which left the storyboard a
+row and a half):
 
-1. **Characters.** A row each: her colour, her name, an eye (her markers shown in the 3D view or not), solo (only
-   hers). *+ Character* makes an HSNpc for the model selected in the scene.
-2. **Her quests and markers.** The quest picked from a dropdown (New, Rename, Delete, its *Starts when*); under it
-   the **palette** (a card a kind, with its drawing: click one, then click the floor in the 3D view; Shift keeps it
-   armed); under that the **storyboard**: her markers in order, numbered as their pins are, each with its drawing,
-   its note, chips for what starts it and how long it takes; ways and repeats indented; dragged to reorder.
-3. **The marker picked**, as a short form in plain words: what it is (its kind can be changed), *Starts when* as
-   chips, its own settings, Animation (clip, speed, blend), Face and look, *You can talk to her* with its
-   conversations (lines, answers, each answer's flags, face and reply; *Make a way for each answer* adds the Choice),
-   *Then*. ▶ **Try it** and ▶ **From here** on top.
-4. **Problems**, a count that opens the list; each takes you to its marker.
+1. **Characters.** A row each: a colour, a name, an eye (that character's markers shown in the 3D view or not), solo
+   (only theirs). *+ Character* makes an HSNpc for the model selected in the scene. *All quests* (every quest's
+   markers drawn, not just the picked one's). **Problems**, a count that opens the list; each takes you to its
+   marker.
+2. **Add a marker**: the palette, a column of its own: a card a kind, with its drawing. Click one, then click in the
+   3D view; Shift keeps it armed; Esc lets it go. A card with no place of its own is added at once.
+3. **The quest**, picked from a dropdown (its name, new, delete, its *starts* chips, Play), and under it the
+   **storyboard**: the markers in order, numbered as their pins are, each with its drawing and note, and beside it
+   what starts it, how long it takes and what it carries (talk, a face, a look, flags); ways and repeats indented;
+   dragged to reorder; ▶ on a row tries it.
+4. **The marker picked**, as a short form in plain words: its kind (it can be changed) and note; *Starts when* as
+   chips (the + lists the scene's flags with a tick each: the mock-up's "Boolean Flags Trigger"); **Where** (the pin
+   as x and z and its height, the facing as a dial with its degrees: the mock-up's positions and "Face Direction");
+   its own settings; Animation (clip, speed, eased in); Face and look; *You can talk to ... here* with its
+   conversations (lines, answers, each answer's flags, face and reply; *A way for each answer* adds the Choice);
+   *Then*. **Try it** and **From here** on top. With no marker picked: the character's own settings (name, model,
+   speeds, what being shot down means).
 
-Everything it changes goes through the editor's undo.
+Everything it changes goes through the editor's undo. The labels name the character or nobody ("You can talk to Alex
+here", "Stays", "Facing"): a guard, a monster and a sister all read right. The tab never asks for more width than the
+editor has (its rows wrap, its fields shrink); it's 300 px tall at the least, and can be dragged taller or floated.
 
 ## 8. In the 3D view
 
 Drawn over the view, translucent (the room shows through; nothing is hidden behind a panel): each shown character's
-markers as **numbered pins in her colour** with the kind's drawing and note on a dark chip, **the path** between them
-as a line with chevrons in the walking direction (dashed for the ways of a Choice, each labelled with its flags),
-**an arrow** on every pin for the way she faces, a faint dashed line from where the quest before left her. The picked
-marker has handles: the pin itself (drag: it rides the floor under the mouse, a seat's top, a shelf), the arrow's tip
-(drag round: her facing), each bend, and a + on each stretch of path for a new bend. A legend in the corner: who's
-shown, in which colour; while placing, what a click will do.
+markers as **map pins in their colour**, the kind's drawing in the pin's head and its number at its corner, its
+point on the place (the mock-up's pins); its title and note on a dark chip beside it; what happens where they stand
+(a wait, a talk, an event, a choice and its ways) as **round badges** stacked over that place; **the path** between
+pins as a line with chevrons in the walking direction (dashed inside the ways of a Choice); **an arrow** from every
+pin for the facing; a dashed line from where they'll stand to the seat or the thing reached for. The picked marker
+has handles: the pin itself (drag: it rides the floor under the mouse, a seat's top, a shelf; taken by its head, its
+point stays as far from the mouse as it was), the arrow's tip (drag round: the facing), each bend, and a + on each
+stretch of path for a new bend (right-click a bend to delete it). A legend in the corner: who's shown, in which
+colour; at the foot of the view, what a click will do while a card is armed, and what the tester is doing.
 
 ## 9. The tester
 
@@ -274,19 +288,23 @@ saving the scene, ends it.
       headless: every rule of §6 and every kind of §4 measured
 
 **D. The editor**
-- [ ] the plugin and the dock: characters (colour, eye, solo, add), quests (new, rename, delete, starts when)
-- [ ] the palette and placing by a click in the 3D view; the storyboard (numbers, chips, nesting, reorder, delete)
-- [ ] the marker's form: kind, Starts when chips, its settings, animation, face and look, talk, then; picking a
+- [x] the plugin and the dock: characters (colour, eye, solo, add), quests (new, rename, delete, starts when)
+- [x] the palette and placing by a click in the 3D view; the storyboard (numbers, chips, nesting, reorder, delete)
+- [x] the marker's form: kind, Starts when chips, its settings, animation, face and look, talk, then; picking a
       target in the 3D view; undo everywhere
-- [ ] the 3D view: pins, paths, arrows, the legend; drag a pin, its arrow, a bend; add a bend; who's shown
-- [ ] Problems
-- [ ] the tester
+- [x] the 3D view: pins, paths, arrows, the legend; drag a pin, its arrow, a bend; add a bend; who's shown
+- [x] Problems
+- [x] the tester
+
+- [x] from the mock-up itself, once it could be looked at: map pins with the kind's drawing, the facing dial, the
+      place as numbers, flags as ticks; the palette a column of its own so the storyboard keeps the height; labels
+      that name the character or nobody
 
 **E. Checked, written, shipped**
-- [ ] MARKERSEDITOR: the tab driven in the editor itself (headless), a scene made from nothing, saved clean
+- [x] MARKERSEDITOR: the tab driven in the editor itself (headless), a scene made from nothing, saved clean
 - [x] `godot_byhand.py` installs and enables it (a project made before it gets it switched on by `install`)
-- [ ] the launcher's rows
-- [ ] the guide `guides/markers/` with pictures of the real thing; the plugin's README and CLAUDE.md; CLAUDE.md,
+- [x] the launcher's rows
+- [x] the guide `guides/markers/` with pictures of the real thing; the plugin's README and CLAUDE.md; CLAUDE.md,
       CONTINUE, GodotPlugins/README
 
 ## 11. Later (not in this round)

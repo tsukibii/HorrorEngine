@@ -3164,3 +3164,51 @@ pale one shows.
 - **See it on the mesh early.** The walk was pictured on the skinned body in Godot (12 s a sheet) before anything
   else was built on it; the twist bones, the shoulders and the hands were right, and only then did the rest follow.
 
+## Markers for a character's whole part (2026-11-13 and 14, `marker-system`: the HorrorStudio Markers plugin)
+
+- **A picture that comes with a request is part of the request.** The design was written from the user's words; the
+  mock-up itself could only be looked at later, and it said things the words didn't: markers as map pins with the
+  kind's drawing in them, a facing dial, the place as numbers, flags as tick boxes. All four were small to add and
+  each is what the user had drawn. Read the picture first; when it can't be read yet, say so and come back to it.
+- **"Wait until" and "only if" are two things.** One list of flags on a marker can't be both: a marker whose flag is
+  off either blocks the sequence or is skipped. The first is a marker's Starts when; the second is a Choice with
+  ways. Kept apart, a conversation's answer can't strand her.
+- **A point of a path can't be a child that turns with its parent.** Bends were children of their Walk marker;
+  turning the marker's arrow swung every bend round the pin. A bend is a place in the world (`top_level`). It showed
+  up as a stair she never climbed: the test's bends were somewhere else.
+- **Read what a function returns before waiting on it.** The look plugin's `is_out()` is "going or gone": a fade
+  waited on it ended the frame it began. Wait on the amount. And give any wait on someone else's node a limit counted
+  in frames, not in calls.
+- **Easing a height after the step puts her inside the step.** Following the floor under her and easing toward it,
+  she was 15 cm under each riser's edge. She now rides the highest floor a hand's width ahead of her and behind:
+  early up, late down, never inside (3.3 cm a frame at the most, 4 cm under at the worst).
+- **A reach has the heights its clips have.** The Animator's three reaches put the hand at 0.10, 0.86 and 1.66 m on
+  an adult; a pin at 1.2 m is reached at 0.86. The nearest is picked by the record's own numbers, and the form says
+  so where the pin is placed.
+- **A test's clock must be the engine's.** Seconds counted only while the test was watching came out short by every
+  wait in between (a 1.5 s stay "took" 1.2 s), and a jump tracker that missed three frames found a 6.7 cm "jump".
+  `Engine.get_physics_frames()`.
+- **`_set` is taken.** A dock's helper named `_set(node, prop, value)` is Object's own `_set(property, value)`:
+  a parse error that names the parent's signature. So are `_get`, `_notification`, `_to_string`.
+- **An editor dock at the bottom isn't visible until it's opened**, so anything it does "while visible" never runs in
+  a headless check (`make_visible()`); and it should read the scene again each time it's shown.
+- **The editor's undo can be done behind its manager's back** (`get_history_undo_redo(id).undo()`, which is all a
+  script can call): `version_changed` isn't sent. A form that only listens to it shows a stale number. It now also
+  compares what it shows with what the node holds at a slow tick, when no field of it has the focus.
+- **A dock's minimum width is the whole editor's.** The tab asked for about 1500 px (an OptionButton is as wide as
+  its longest item; a ScrollContainer with its horizontal bar off passes its content's minimum on; a row of fixed
+  parts doesn't wrap) and pushed the Inspector and the play buttons off a 1600 px window. It showed in the first
+  real picture, not in any headless number. Rows that wrap (`HFlowContainer`), `fit_to_longest_item` off, words
+  that wrap, the bar on.
+- **The 3D view's surface is not in the viewport's container.** `_forward_3d_force_draw_over_viewport` hands a
+  Control whose parent is the view; the SubViewport is a grandchild of that parent. A mouse event sent to that
+  Control's `gui_input` goes through the editor's own handler to every plugin: a real test of a click.
+- **A check that's killed leaves its test plugin switched on** in the scratch project (the `finally` never ran).
+  The check takes it out before it starts.
+- **Words in the 3D world smear when they move.** F7's label was a Label3D over her head; under the game's TAA it
+  ghosted into a blur as she walked, and the first picture of it couldn't be read. It's a chip on a CanvasLayer now,
+  placed by the camera's `unproject_position`. Anything meant to be read while it moves is drawn in 2D.
+- **Look at the panel at the size it opens at.** The tab was laid out with the palette over the storyboard; at the
+  bottom panel's own height the storyboard got a row and a half. The palette became a column of its own and the
+  tab's least height went up. A picture of the editor as it opens says this; the layout's code doesn't.
+

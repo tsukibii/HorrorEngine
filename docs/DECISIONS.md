@@ -64,6 +64,12 @@ shelf", "3 Walk", "4 Sit: sitting in sofa" joined by arrows; "NPC: Path" beside 
   the 3D view. **Which plugin**: "horrorengine plugin" is read as the family of plugins a by-hand project gets; a new
   one beside them, as the weapons and the devices each were, not a part of the Director (whose games are a different
   runtime).
+- **From the mock-up itself** (2026-11-14: the picture could only be looked at after the design had been written from
+  the user's words): its markers are map pins with the kind's drawing in them and "1, Walk" beside them; its panel has
+  a "Face Direction" dial, the start and end positions as numbers and the flags as tick boxes. All four were built as
+  drawn. Its pins are coloured by kind; ours by character, since the user's words ask for "an easy way to distinguish"
+  whose markers are whose, and the kind is the drawing in the pin. Its "NPC: Alex (Guard)" is why the tab's labels
+  name the character or nobody, never "her".
 
 ## 2026-11-13, the hands and the jiggle: the Animator's first feedback (the user, with a screenshot)
 

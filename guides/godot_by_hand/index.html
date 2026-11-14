@@ -116,9 +116,11 @@ street dropped into a Director project is a model like any other.</p>
 <p><b>The quick way.</b> From the studio's folder, one command makes the project with everything below in it:</p>
 <pre>python tools/godot_byhand.py new ~/Games/MyGame</pre>
 <div class="cols">
-  <div class="card"><h4><code>project.godot</code></h4><p>The Look and UI plugins switched on and the balanced look's settings (§3).</p></div>
+  <div class="card"><h4><code>project.godot</code></h4><p>The studio's plugins switched on (Look, UI, Weapons, Devices, Markers) and the balanced look's settings (§3).</p></div>
   <div class="card"><h4><code>addons/horrorstudio_look/</code></h4><p>The Look plugin: the look, wet floors, rain, blood, mirrors, flickering lights, the character's skin, eyes and hair.</p></div>
   <div class="card"><h4><code>addons/horrorstudio_ui/</code></h4><p>The UI plugin: <code>HSHud</code> (the objective and to-do, the reticle and its prompt, lines, cards, the inventory's row) and <code>HSQuestMarker</code>, a node to put on anything the player should be pointed at: a diamond that is clearer the nearer you are and still faint through a wall. Add an <code>HSHud</code> to a scene and it sets itself up; its settings are in Project Settings under <code>horrorstudio/ui</code>.</p></div>
+  <div class="card"><h4><code>addons/horrorstudio_markers/</code></h4><p>The Markers plugin: the <span class="ui">NPC Markers</span> tab along the bottom of the editor. A character's whole part in the game placed as markers in the 3D view (walk here, talk, sit, grab, vanish), in order, by flags, no code. <a href="../markers/index.html">Its guide</a>.</p></div>
+  <div class="card"><h4><code>addons/horrorstudio_weapons/</code>, <code>addons/horrorstudio_devices/</code></h4><p>The double barrel under the camera (<a href="../weapons/index.html">its guide</a>) and the laptop with its shop and parcels (<a href="../laptop/index.html">its guide</a>). Switched on; they do nothing until you put one in a scene.</p></div>
   <div class="card"><h4><code>HumanShaders/</code></h4><p>The skin's and the eyes' textures (MIT). It must sit at the project's root under that name: the plugin looks for <code>res://HumanShaders/</code>.</p></div>
   <div class="card"><h4><code>starter/</code></h4><p>The first game's scripts: a first-person player, doors, a scare. Yours to change.</p></div>
   <div class="card"><h4><code>exports/</code></h4><p><code>interiors/</code>, <code>streets/</code>, <code>characters/</code>: where the studio's exports go (§4).</p></div>
@@ -135,7 +137,7 @@ three folders from the studio into the project's folder:</p>
 <p>Then <span class="ui">Project → Project Settings → Plugins</span> and tick <b>HorrorStudio Look</b>. The first time
 it's switched on it writes its balanced settings into the project.</p>
 <div class="tip"><b>After a pull of the studio,</b> the add-ons in your project are still the old copies. To bring them up to date:
-<code>python tools/godot_byhand.py install ~/Games/MyGame</code>. It leaves your <code>starter/</code> alone.</div>
+<code>python tools/godot_byhand.py install ~/Games/MyGame</code>. It leaves your <code>starter/</code> alone, and switches on a plugin the project didn't have yet (a project made before NPC markers gets its tab this way).</div>
 </section>
 
 <section id="settings">
