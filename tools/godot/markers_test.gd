@@ -590,8 +590,8 @@ func stage_hide() -> void:
 	ok(her.visible and flat(her.global_position).distance_to(flat(o + Vector3(-2, 0, 2))) < 0.05 and ang(yaw_of(her), 180.0) < 1.0, "F: Start here brings her back at its pin")
 	HSNpc.debug = true
 	await frames(3)
-	var lab := npc.get_node_or_null("_Debug") as Label3D
-	ok(lab != null and lab.text.contains("Fay") and lab.text.contains("One"), "F: F7 shows over her what she's doing", lab.text.replace("\n", " | ") if lab != null else "")
+	var said: String = npc.debug_text()
+	ok(npc.get_node_or_null("_Debug") != null and said.contains("Fay") and said.contains("One"), "F: F7 shows over her what she's doing", said.replace("\n", " | "))
 	HSNpc.debug = false
 	await frames(3)
 	ok(npc.get_node_or_null("_Debug") == null, "F: and takes it away again")
@@ -1150,7 +1150,7 @@ func stage_problems() -> void:
 	for p in found:
 		texts += str(p["text"]) + "\n"
 	for need in [["nothing in the scene turns it on", "a flag nothing sets"], ["has nothing to say", "staying until a talk with no conversation"], ["pick the thing", "a Pick up with nothing to pick"],
-			["no animation called 'moonwalk'", "a clip she hasn't got"], ["Move it last", "a way after 'otherwise'"], ["comes back where she vanished", "a body marker after Disappear"],
+			["no animation called 'moonwalk'", "a clip she hasn't got"], ["Move it last", "a way after 'otherwise'"], ["comes back where they vanished", "a body marker after Disappear"],
 			["Put a Walk marker before it", "a Sit far from where she'll be"], ["never ends", "a Repeat with no end before other markers"], ["isn't a word it knows", "a word that isn't one"]]:
 		ok(texts.contains(need[0]), "R: Problems says: " + need[1])
 	var at_marker := 0

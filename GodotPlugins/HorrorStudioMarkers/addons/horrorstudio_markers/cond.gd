@@ -151,13 +151,13 @@ static func says_word(word: String) -> String:
 		"far":
 			return ("you're within %s m" if neg else "you're over %s m away") % a
 		"seen":
-			return "you can't see her" if neg else "you can see her"
+			return "out of your sight" if neg else "in your sight"
 		"unseen":
-			return "you can see her" if neg else "you can't see her"
+			return "in your sight" if neg else "out of your sight"
 		"shot":
-			return "she hasn't been shot" if neg else "she's been shot"
+			return "not shot yet" if neg else "has been shot"
 		"down":
-			return "she isn't down" if neg else "she's down"
+			return "not shot down" if neg else "shot down"
 	return word
 
 

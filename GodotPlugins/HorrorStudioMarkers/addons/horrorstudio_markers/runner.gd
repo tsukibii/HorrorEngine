@@ -367,7 +367,7 @@ func _advance() -> bool:
 		stack.pop_back()
 	finished = true
 	phase = ""
-	waiting_for = "her next quest"
+	waiting_for = "the next quest"
 	var qs := HSNpcFlow.quests(npc)
 	if qi >= 0 and qi < qs.size():
 		npc.quest_done.emit(qs[qi])
@@ -554,9 +554,9 @@ func _stay_done(m: HSNpcMarker) -> bool:
 			return stay_t >= (minf(m.stay_secs, 3.0) if preview else m.stay_secs)
 		"talked":
 			if preview:
-				_note_once(m, "stays until you talk to her")
+				_note_once(m, "stays until you talk")
 				return stay_t >= 1.2
-			waiting_for = "you to talk to her"
+			waiting_for = "you to talk"
 			return talked
 	return true
 
@@ -670,7 +670,7 @@ func _wear_look(m: HSNpcMarker) -> void:
 		_note("look: " + (m.look if m.look != "" else ", ".join(PackedStringArray([m.look_skin, m.look_eyes])).trim_prefix(", ").trim_suffix(", ")))
 		return
 	if not ResourceLoader.exists(LOOK_SWITCH):
-		_problem("a marker changes her look, and the HorrorStudio Look plugin isn't in this project")
+		_problem("a marker changes the look, and the HorrorStudio Look plugin isn't in this project")
 		return
 	var sw = load(LOOK_SWITCH).call("attach", her)
 	if sw == null:

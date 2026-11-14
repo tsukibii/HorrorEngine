@@ -29,7 +29,7 @@ func play(of_npc: HSNpc, marker: HSNpcMarker, mode: String) -> String:
 		return "Pick a character first."
 	var character := of_npc.character_node()
 	if character == null:
-		return "She has no character yet: pick her model on the HSNpc."
+		return "No character yet: pick the model on the HSNpc."
 	if marker == null or not is_instance_valid(marker):
 		return "Pick a marker to try."
 	if mode == "quest":
@@ -42,7 +42,7 @@ func play(of_npc: HSNpc, marker: HSNpcMarker, mode: String) -> String:
 	her = character
 	ghost = character.duplicate() as Node3D
 	if ghost == null:
-		return "Her model couldn't be copied."
+		return "The model couldn't be copied."
 	ghost.name = "_Ghost"
 	character.get_parent().add_child(ghost)
 	ghost.global_transform = character.global_transform

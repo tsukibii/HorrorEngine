@@ -8,7 +8,7 @@
 ## script, if you want one:
 ##     $"Alex markers".jump_to($"Alex markers/Night two/Walk")     # straight to a marker
 ##     $"Alex markers".marker_done.connect(func(m): ...)           # each marker as it finishes
-## F7 in the game shows over every character what she's doing and waiting for.
+## F7 in the game shows over every character what they're doing and waiting for.
 class_name HSNpc
 extends Node3D
 
@@ -42,13 +42,16 @@ static var debug := false                     ## F7: what every character is doi
 @export_group("Talk")
 @export var talk_prompt := "Talk"             ## the prompt's word: "E   Talk to Alex"
 @export_group("Shot")
-@export_enum("her quest stops", "she's gone for good", "she can't be killed") var when_shot_down := 0   ## what the weapons plugin's HSHitReact going down means
+@export_enum("the quest stops", "gone for good", "can't be killed") var when_shot_down := 0   ## what the weapons plugin's HSHitReact going down means
 @export_range(0.5, 60.0, 0.5) var back_up_secs := 4.0   ## she can't be killed: how long she's down
 @export_group("Scares")
 @export var threat := false                   ## the player's fear rises near her (the group hs_threat)
 
 var runner: HSNpcRunner
-var _label: Label3D
+var _label: CanvasLayer
+var _chip: PanelContainer
+var _who: Label
+var _what: Label
 
 
 func _get_configuration_warnings() -> PackedStringArray:
@@ -97,20 +100,52 @@ func _show_debug() -> void:
 	var her := character_node()
 	if her == null or runner == null:
 		return
-	if _label == null:
-		_label = Label3D.new()
+	if _label == null:                                         # (drawn in 2D over the picture: text in the 3D world smears under TAA as she moves)
+		_label = CanvasLayer.new()
 		_label.name = "_Debug"
-		_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		_label.no_depth_test = true
-		_label.fixed_size = true
-		_label.pixel_size = 0.0011
-		_label.font_size = 26
-		_label.outline_size = 8
-		_label.modulate = color.lightened(0.35)
-		_label.top_level = true
+		_label.layer = 6
+		_chip = PanelContainer.new()
+		_chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.04, 0.045, 0.06, 0.8)
+		sb.set_corner_radius_all(6)
+		sb.content_margin_left = 12
+		sb.content_margin_right = 10
+		sb.content_margin_top = 5
+		sb.content_margin_bottom = 6
+		sb.border_color = color
+		sb.border_width_left = 4
+		_chip.add_theme_stylebox_override("panel", sb)
+		var col := VBoxContainer.new()
+		col.add_theme_constant_override("separation", 0)
+		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_chip.add_child(col)
+		_who = Label.new()
+		_who.add_theme_font_size_override("font_size", 15)
+		_who.add_theme_color_override("font_color", color.lightened(0.35))
+		col.add_child(_who)
+		_what = Label.new()
+		_what.add_theme_font_size_override("font_size", 15)
+		_what.add_theme_color_override("font_color", Color(1, 1, 1, 0.94))
+		col.add_child(_what)
+		_label.add_child(_chip)
 		add_child(_label)
-	_label.global_position = her.global_position + Vector3.UP * 2.0
-	_label.text = "%s\n%s" % [display_name(), runner.status()]
+	_who.text = display_name()
+	_what.text = runner.status()
+	var cam := get_viewport().get_camera_3d()
+	var over := her.global_position + Vector3.UP * 2.0
+	if cam == null or cam.is_position_behind(over):
+		_chip.visible = false
+		return
+	_chip.visible = true
+	_chip.reset_size()
+	var at := cam.unproject_position(over)
+	_chip.position = (at - Vector2(_chip.size.x * 0.5, _chip.size.y)).round()
+
+
+## what F7 shows over her right now ("" when it's off)
+func debug_text() -> String:
+	return "%s\n%s" % [_who.text, _what.text] if _label != null and _who != null else ""
 
 
 func character_node() -> Node3D:

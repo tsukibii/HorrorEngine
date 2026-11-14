@@ -121,12 +121,12 @@ func setup(character: Node3D, settings: Dictionary = {}) -> void:
 			if not _find_exact(role):
 				_find_like(role, GUESS[role])
 	if _players.is_empty():
-		problems.append("she has no animations: she'll slide from marker to marker (bake her .glb in the Animator)")
+		problems.append("no animations: the character slides from marker to marker (bake the .glb in the Animator)")
 	elif record.is_empty():
-		problems.append("her .glb wasn't baked by the Animator: only the animations her model has play (idle, walk, run by their names)")
+		problems.append("the .glb wasn't baked by the Animator: only the animations the model has play (idle, walk, run by their names)")
 	for need in ["idle_loop", "walk_loop"]:
 		if not _players.is_empty() and not names.has(need):
-			problems.append("she has no animation for '%s'" % need.trim_suffix("_loop"))
+			problems.append("no animation for '%s'" % need.trim_suffix("_loop"))
 
 
 func _find_exact(role: String) -> bool:
@@ -246,7 +246,7 @@ func clip_from(path: String) -> String:
 		if r == null or nz == null:
 			problems.append("%s: the Kimodo reader isn't in this project (res://kimodo/: tools/godot_byhand.py install puts it there)" % path.get_file())
 		elif sk == null or str(r.call("detect", sk)) == "":
-			problems.append("%s: her skeleton isn't one a Kimodo motion can be fitted to (MHR, Mixamo, Godot's humanoid)" % path.get_file())
+			problems.append("%s: the skeleton isn't one a Kimodo motion can be fitted to (MHR, Mixamo, Godot's humanoid)" % path.get_file())
 		elif not FileAccess.file_exists(path):
 			problems.append("%s isn't there" % path)
 		else:
@@ -565,8 +565,8 @@ func _next() -> void:
 						_set_lift(float(_step["lift"]))
 					if _step.has("to"):
 						_apply_state(_step["to"])
-					if bool(_step.get("own", false)) and not (("she has no animation called '%s'" % n) in problems):
-						problems.append("she has no animation called '%s'" % n)
+					if bool(_step.get("own", false)) and not (("no animation called '%s'" % n) in problems):
+						problems.append("no animation called '%s'" % n)
 					continue
 				_step["secs"] = float(clip_info(n).get("secs", secs)) / maxf(float(_step.get("rate", 1.0)), 0.05)
 				_step["left"] = int(_step.get("times", 1)) - 1

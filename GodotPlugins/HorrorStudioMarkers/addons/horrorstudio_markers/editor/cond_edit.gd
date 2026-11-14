@@ -53,6 +53,9 @@ func _build() -> void:
 		l.text = none
 		l.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
 		l.add_theme_font_size_override("font_size", int(12 * Glyphs.scale()))
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART           # (it wraps: a long "none" never widens what it's in)
+		l.custom_minimum_size = Vector2(96, 0) * Glyphs.scale()
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		add_child(l)
 	for i in ws.size():
 		var p := HSNpcCond.parse(ws[i])
@@ -124,12 +127,12 @@ func _show_menu(from: Control) -> void:
 	if waits:
 		add.call("After a wait (3 s)…", "@wait:3")
 	if about_her:
-		add.call("You're near her (2 m)…", "@near:2")
-		add.call("You're far from her (6 m)…", "@far:6")
-		add.call("You can see her", "@seen")
-		add.call("You can't see her", "@unseen")
-		add.call("She's been shot", "@shot")
-		add.call("She's been shot down", "@down")
+		add.call("You're near (2 m)…", "@near:2")
+		add.call("You're far away (6 m)…", "@far:6")
+		add.call("In your sight", "@seen")
+		add.call("Out of your sight", "@unseen")
+		add.call("Has been shot", "@shot")
+		add.call("Has been shot down", "@down")
 	_menu.add_separator("Flags (ticked: must be on)")
 	words.append("")
 	var have := {}

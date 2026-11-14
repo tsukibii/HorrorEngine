@@ -22,7 +22,7 @@ var _held := false
 func _init() -> void:
 	custom_minimum_size = Vector2(54, 54) * Glyphs.scale()
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	tooltip_text = "The way she faces, seen from above. Drag the needle round (Ctrl: steps of 15 degrees), or drag the arrow's tip in the 3D view."
+	tooltip_text = "The facing, seen from above. Drag the needle round (Ctrl: steps of 15 degrees), or drag the arrow's tip in the 3D view."
 
 
 func degrees() -> float:

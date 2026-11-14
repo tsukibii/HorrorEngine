@@ -174,6 +174,11 @@ func _run() -> void:
 	var cfg = JSON.parse_string(FileAccess.get_file_as_string("res://markers_editor.json"))
 	shots = str(cfg.get("shots", "")) if cfg is Dictionary else ""
 	await secs(3.0)
+	for i in 600:                                              # (the editor's first scan of the project done)
+		if not EditorInterface.get_resource_filesystem().is_scanning():
+			break
+		await frames(5)
+	await secs(1.5)
 	EditorInterface.open_scene_from_path("res://editor_scene.tscn")
 	for i in 400:
 		await frames(1)
@@ -214,7 +219,6 @@ func _run() -> void:
 	var quest: HSNpcQuest = HSNpcFlow.quests(npc)[0] if not HSNpcFlow.quests(npc).is_empty() else null
 	ok(quest != null and quest.owner == root and plug.cur_quest == quest, "with a first quest", quest.label() if quest != null else "")
 	ok(dock.chars.get_child_count() == 1 and dock.quest_pick.item_count == 1, "she's in the tab's list, her quest in the dropdown")
-	await shot("01_character")
 
 	# ---- cards placed by clicks ----
 	dock._card(card("walk"))
@@ -262,7 +266,6 @@ func _run() -> void:
 			head_over = head_over or (h["at"] as Vector2).y < scr(walk.global_position).y - 15.0
 	ok(on_place and head_over, "each a map pin: its point on its marker's place, its head over it")
 	ok(not hot("badge", wait).is_empty(), "and a badge where she waits")
-	await shot("02_markers")
 
 	# ---- a pin dragged, undone ----
 	plug.pick_node(walk)
@@ -315,7 +318,6 @@ func _run() -> void:
 		var yaw_before := yaw_of(walk)
 		plug.place_node(walk, Transform3D(Basis(Vector3.UP, 1.0), walk.global_position), walk.global_transform, "turn")
 		ok((bends[0] as Node3D).global_position.distance_to(Vector3(0.0, 0, 3.0)) < 0.001, "turning the marker's arrow leaves its bend where it is")
-		await shot("03_bend")
 		await redraw()
 		var bh := hot("bend", bends[0])
 		ok(not bh.is_empty(), "the bend has a handle")
@@ -425,7 +427,6 @@ func _run() -> void:
 		await frames(3)
 		var inside := HSNpcFlow.items(ch.ways()[1])
 		ok(inside.size() == 1 and HSNpcFlow.label_of(inside[0]).ends_with("B.1"), "a card placed while a way is picked goes inside that way", HSNpcFlow.label_of(inside[0]) if inside.size() == 1 else "")
-		await shot("04_talk")
 
 	# ---- the quest's Starts when; a second quest ----
 	dock.quest_when.add_word("on:book")
@@ -461,7 +462,6 @@ func _run() -> void:
 	await redraw()
 	ok(hot("pin", bob_walk).is_empty() and not hot("pin", HSNpcFlow.items(q2)[0]).is_empty(), "solo: only hers")
 	plug.solo = null
-	await shot("05_two_characters")
 
 	# ---- Problems ----
 	plug.pick_node(quest, false)
@@ -491,7 +491,6 @@ func _run() -> void:
 	await frames(3)
 	var ghost := root.get_node_or_null("_Ghost") as Node3D
 	ok(why == "" and plug.tester.playing() and ghost != null and ghost.owner == null and not alex.visible, "Try it: a copy of her plays, the real one hidden", why)
-	await shot("06_tester")
 	var far := 0.0
 	for i in 1200:
 		await frames(1)
@@ -510,9 +509,144 @@ func _run() -> void:
 
 	# ---- saved clean ----
 	plug.pick_node(walk)
-	await shot("07_form")
 	var saved := EditorInterface.save_scene() == OK
 	await frames(5)
 	var text := FileAccess.get_file_as_string("res://editor_scene.tscn")
 	ok(saved and text.contains("Alex markers") and text.contains("kind = \"sit\"") and text.contains("alex_kitchen"), "the scene saves her markers as nodes")
+	if shots != "":
+		await _guide(alex, bob, sofa)
 	_done()
+
+
+# ---- the guide's pictures (guides/markers/img): a small story laid out in the room, the editor pictured as it's made ------------
+func wheel(n: int) -> void:
+	for i in absi(n):
+		var e := InputEventMouseButton.new()
+		e.button_index = MOUSE_BUTTON_WHEEL_DOWN if n > 0 else MOUSE_BUTTON_WHEEL_UP
+		e.pressed = true
+		e.factor = 1.0
+		e.position = surface.size * 0.5
+		surface.gui_input.emit(e)
+		await frames(2)
+
+
+func orbit(by: Vector2) -> void:
+	var e := InputEventMouseMotion.new()
+	e.button_mask = MOUSE_BUTTON_MASK_MIDDLE
+	e.relative = by
+	e.position = surface.size * 0.5
+	surface.gui_input.emit(e)
+	await frames(2)
+
+
+# a card placed as someone would: its button, then a click where it goes; -> the marker
+func put(id: String, at: Vector3 = Vector3.ZERO, yaw_deg = null, values: Dictionary = {}) -> HSNpcMarker:
+	dock._card(card(id))
+	if not plug.armed.is_empty():
+		press(scr(at))
+	await frames(2)
+	var m := plug.cur as HSNpcMarker
+	if m == null:
+		return null
+	if yaw_deg != null:
+		m.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(float(yaw_deg))), m.global_position)
+	for key in values:
+		m.set(key, values[key])
+	return m
+
+
+func _guide(alex: Node3D, bob: Node3D, sofa: Node3D) -> void:
+	for n in plug.npcs():
+		plug.delete_node(n)
+	await frames(4)
+	plug.all_quests = false
+	plug.solo = null
+	plug.hidden.clear()
+	alex.global_position = Vector3(-3.2, 0, 1.7)
+	alex.global_rotation = Vector3(0, PI * 0.5, 0)
+	await wheel(5)
+	await orbit(Vector2(-60, 22))
+	await secs(1.0)
+	did.append("the view for the pictures: the camera at %s" % str(cam.global_position))
+	EditorInterface.get_selection().clear()
+	await frames(3)
+	await shot("00_before")
+	var npc: HSNpc = plug.add_character(alex)
+	await frames(3)
+	var quest: HSNpcQuest = HSNpcFlow.quests(npc)[0]
+	plug.set_prop(quest, "title", "The missing book")
+	await redraw()
+	await shot("01_character")
+	dock._card(card("walk"))
+	await redraw()
+	await shot("02_place")
+	press(scr(Vector3(0.1, 0, 1.2)))
+	await frames(2)
+	var walk := plug.cur as HSNpcMarker
+	walk.global_transform = Transform3D(Basis(Vector3.UP, 0.0), walk.global_position)
+	plug.add_bend(walk, Vector3(-1.5, 0, 2.5), 0)
+	walk.note = "comes to meet you"
+	var talk := await put("talk")
+	var list: Array = dock._talks(talk)
+	list[0]["lines"] = ["Alex: Looking for something?"]
+	list[0]["answers"] = [{"text": "The book on the shelf", "sets": "+alex_shelf", "face": "smile", "reply": "Alex: I'll get it for you."}, {"text": "Never mind", "sets": "+alex_never", "face": "sad", "reply": ""}]
+	list[0]["again"] = "Alex: I told you already."
+	dock._save_talks(talk, list)
+	await frames(3)
+	var ch: HSNpcMarker = dock.ways_for_answers(talk, 0)
+	await frames(3)
+	plug.pick_node(ch.ways()[0])
+	await put("walk", Vector3(-2.0, 0, -2.4), 180.0)
+	var grab := await put("grab", Vector3(-2.0, 0.86, -3.0), 180.0)
+	if grab != null:
+		grab.note = "the book from the shelf"
+	plug.pick_node(ch.ways()[1])
+	var shrug := await put("wait")
+	if shrug != null:
+		shrug.stay_secs = 2.0
+	plug.pick_node(ch)
+	await put("walk", Vector3(2.5, 0, -0.5), 180.0)
+	var sit := await put("sit", sofa.global_position + Vector3(0, 0.225, 0.3), 0.0)
+	if sit != null:
+		sit.note = "on the sofa"
+	dock.refresh()
+	plug.pick_node(quest, false)
+	EditorInterface.get_selection().clear()
+	await redraw()
+	await shot("03_route")
+	plug.pick_node(walk)
+	await redraw()
+	await shot("04_walk")
+	plug.pick_node(talk)
+	await frames(4)
+	var sec := dock.form.find_child("Sec_Talk", true, false) as Control
+	if sec != null:
+		(dock.form.get_parent() as ScrollContainer).scroll_vertical = int(sec.position.y) - 26
+	await redraw()
+	await shot("05_talk")
+	plug.pick_node(ch)
+	await redraw()
+	await shot("06_choice")
+	plug.pick_node(walk)
+	await frames(2)
+	plug.tester.play(npc, walk, "from")
+	await secs(2.4)
+	await shot("07_tester")
+	plug.tester.stop()
+	await frames(3)
+	plug.add_character(bob)
+	await frames(3)
+	await put("walk", Vector3(-3.6, 0, 0.3), 90.0)
+	var guard := await put("wait")
+	if guard != null:
+		guard.note = "keeps watch"
+	await put("walk", Vector3(-0.8, 0, -1.6), 0.0)
+	dock.refresh()
+	EditorInterface.get_selection().clear()
+	await redraw()
+	await shot("08_two")
+	plug.solo = npc
+	dock.refresh()
+	await redraw()
+	await shot("09_solo")
+	plug.solo = null

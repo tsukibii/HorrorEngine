@@ -13,7 +13,7 @@ const CondEdit := preload("res://addons/horrorstudio_markers/editor/cond_edit.gd
 const Dial := preload("res://addons/horrorstudio_markers/editor/dial.gd")
 const KIND_TITLES := [["appear", "Start here"], ["walk", "Walk (or run)"], ["wait", "Wait (or talk)"], ["sit", "Sit"], ["sleep", "Sleep"], ["grab", "Grab, pick up, open"],
 	["animation", "Animation"], ["event", "Event"], ["disappear", "Disappear"], ["choice", "Choice"], ["repeat", "Repeat"]]
-const STAYS := [["next", "until the next marker can start"], ["secs", "for some seconds"], ["talked", "until you talk to her"]]
+const STAYS := [["next", "until the next marker can start"], ["secs", "for some seconds"], ["talked", "until you talk"]]
 const HOWS := [["now", "at once"], ["unseen", "when you're not looking"], ["fade", "fading (the look plugin)"]]
 const REBUILD := ["kind", "stay", "action", "loop", "talk", "to_player", "pace", "clip_file", "look", "talks", "face_rules", "fire", "target", "take_secs"]   # fields that change which rows the form has
 const CLIP_FOLDERS := ["res://animations"]
@@ -50,7 +50,7 @@ func _init() -> void:
 
 func _ready() -> void:
 	var s := Glyphs.scale()
-	custom_minimum_size = Vector2(0, 250) * s
+	custom_minimum_size = Vector2(0, 300) * s
 	var bg := PanelContainer.new()
 	bg.add_theme_stylebox_override("panel", Glyphs.box(Color(0.105, 0.12, 0.145, 0.94), 0, 6))
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -60,7 +60,7 @@ func _ready() -> void:
 	bg.add_child(cols)
 	# -- characters
 	var left := VBoxContainer.new()
-	left.custom_minimum_size = Vector2(205, 0) * s
+	left.custom_minimum_size = Vector2(160, 0) * s
 	cols.add_child(left)
 	left.add_child(_head("CHARACTERS"))
 	var sc := ScrollContainer.new()
@@ -89,24 +89,28 @@ func _ready() -> void:
 	mid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mid.size_flags_stretch_ratio = 1.4
 	cols.add_child(mid)
-	var qrow := HBoxContainer.new()
+	var qrow := HFlowContainer.new()                           # (it wraps: the tab never asks for more width than the editor has)
+	qrow.add_theme_constant_override("h_separation", int(4 * s))
+	qrow.add_theme_constant_override("v_separation", int(3 * s))
 	mid.add_child(qrow)
-	qrow.add_child(_head("QUEST"))
 	quest_pick = OptionButton.new()
 	quest_pick.name = "QuestPick"
-	quest_pick.custom_minimum_size = Vector2(150, 0) * s
-	quest_pick.tooltip_text = "Her quests, in order. A quest's markers run top to bottom."
+	quest_pick.custom_minimum_size = Vector2(130, 0) * s
+	quest_pick.fit_to_longest_item = false
+	quest_pick.clip_text = true
+	quest_pick.tooltip_text = "This character's quests, in order. A quest's markers run top to bottom."
 	quest_pick.item_selected.connect(_on_quest_picked)
 	qrow.add_child(quest_pick)
 	quest_title = LineEdit.new()
 	quest_title.name = "QuestTitle"
 	quest_title.placeholder_text = "its name"
-	quest_title.custom_minimum_size = Vector2(130, 0) * s
+	quest_title.custom_minimum_size = Vector2(96, 0) * s
+	quest_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	quest_title.tooltip_text = "The quest's name."
 	quest_title.text_submitted.connect(func(t: String) -> void: _rename_quest(t))
 	quest_title.focus_exited.connect(func() -> void: _rename_quest(quest_title.text))
 	qrow.add_child(quest_title)
-	var nq := _button("", "plus", "A new quest for her.")
+	var nq := _button("", "plus", "A new quest for this character.")
 	nq.name = "NewQuest"
 	nq.pressed.connect(func() -> void:
 		if plugin.valid(plugin.cur_npc):
@@ -123,15 +127,17 @@ func _ready() -> void:
 	qrow.add_child(sl)
 	quest_when = CondEdit.new()
 	quest_when.name = "QuestWhen"
-	quest_when.none = "after the quest before (the first: when the game starts)"
+	quest_when.none = "after the quest before"
+	quest_when.tooltip_text = "What starts this quest. Nothing: when the quest before is finished (the first: when the game starts). With something: the moment it's so, even in the middle of an earlier quest."
 	quest_when.about_her = false
 	quest_when.waits = false
+	quest_when.custom_minimum_size = Vector2(150, 0) * s
 	quest_when.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	quest_when.changed.connect(func(t: String) -> void:
 		if plugin.valid(plugin.cur_quest):
 			plugin.set_prop(plugin.cur_quest, "starts_when", t, "what starts the quest"))
 	qrow.add_child(quest_when)
-	var pq := _button("Play", "play", "Play this whole quest in the 3D view on a copy of her.")
+	var pq := _button("Play", "play", "Play this whole quest in the 3D view, on a copy of the character.")
 	pq.name = "PlayQuest"
 	pq.pressed.connect(func() -> void: _test("quest"))
 	qrow.add_child(pq)
@@ -140,11 +146,22 @@ func _ready() -> void:
 	stop_btn.visible = false
 	stop_btn.pressed.connect(func() -> void: plugin.tester.stop())
 	qrow.add_child(stop_btn)
-	var pal := HFlowContainer.new()
+	var palcol := VBoxContainer.new()                          # the palette: a column of its own, so the storyboard keeps the tab's height
+	palcol.custom_minimum_size = Vector2(228, 0) * s
+	cols.add_child(palcol)
+	cols.move_child(palcol, 1)
+	palcol.add_child(_head("ADD A MARKER"))
+	var psc := ScrollContainer.new()
+	psc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	psc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	palcol.add_child(psc)
+	var pal := GridContainer.new()
 	pal.name = "Palette"
+	pal.columns = 2
+	pal.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	pal.add_theme_constant_override("h_separation", int(3 * s))
 	pal.add_theme_constant_override("v_separation", int(3 * s))
-	mid.add_child(pal)
+	psc.add_child(pal)
 	for card in plugin.CARDS:
 		var b := Button.new()
 		b.name = "Card_" + String(card["id"])
@@ -153,6 +170,9 @@ func _ready() -> void:
 		b.tooltip_text = String(card.get("tip", ""))
 		b.focus_mode = Control.FOCUS_NONE
 		b.toggle_mode = true
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.clip_text = true
 		b.add_theme_font_size_override("font_size", int(12 * s))
 		b.add_theme_stylebox_override("normal", Glyphs.box(Color("#2A303A"), 6, 4))
 		b.add_theme_stylebox_override("hover", Glyphs.box(Color("#353D4A"), 6, 4))
@@ -162,16 +182,17 @@ func _ready() -> void:
 		cards[card["id"]] = b
 	board = Tree.new()
 	board.name = "Board"
-	board.columns = 3
+	board.columns = 2
 	board.hide_root = true
 	board.select_mode = Tree.SELECT_ROW
 	board.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	board.custom_minimum_size = Vector2(220, 60) * s
 	board.set_column_expand(0, true)
 	board.set_column_expand_ratio(0, 3)
 	board.set_column_expand(1, true)
 	board.set_column_expand_ratio(1, 2)
-	board.set_column_expand(2, true)
-	board.set_column_expand_ratio(2, 2)
+	board.set_column_clip_content(0, true)
+	board.set_column_clip_content(1, true)
 	board.add_theme_constant_override("v_separation", int(5 * s))
 	board.item_selected.connect(_on_row)
 	board.button_clicked.connect(func(item: TreeItem, _col: int, _id: int, _mb: int) -> void:
@@ -192,14 +213,14 @@ func _ready() -> void:
 	mid.add_child(status)
 	# -- the marker picked
 	var right := VBoxContainer.new()
-	right.custom_minimum_size = Vector2(350, 0) * s
+	right.custom_minimum_size = Vector2(300, 0) * s
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cols.add_child(right)
 	form_head = HBoxContainer.new()
 	right.add_child(form_head)
 	var fs := ScrollContainer.new()
 	fs.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	fs.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	fs.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO      # (what doesn't fit scrolls: it never widens the tab)
 	right.add_child(fs)
 	form = VBoxContainer.new()
 	form.name = "Form"
@@ -228,6 +249,8 @@ func _button(t: String, icon: String, tip: String) -> Button:
 		b.icon = Glyphs.icon(icon, Color("#E6E9EE"), 15)
 	b.tooltip_text = tip
 	b.focus_mode = Control.FOCUS_NONE
+	if t.length() > 14:
+		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return b
 
 
@@ -398,8 +421,8 @@ func _fill_chars() -> void:
 		sw.color = npc.color
 		sw.custom_minimum_size = Vector2(18, 18) * Glyphs.scale()
 		sw.edit_alpha = false
-		sw.tooltip_text = "Her markers' colour."
-		sw.popup_closed.connect(func() -> void: plugin.set_prop(npc, "color", sw.color, "her colour"))
+		sw.tooltip_text = "The colour of this character's markers."
+		sw.popup_closed.connect(func() -> void: plugin.set_prop(npc, "color", sw.color, "the markers' colour"))
 		row.add_child(sw)
 		var b := Button.new()
 		b.text = npc.display_name()
@@ -410,7 +433,7 @@ func _fill_chars() -> void:
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.clip_text = true
 		b.focus_mode = Control.FOCUS_NONE
-		b.tooltip_text = "Her quests and markers."
+		b.tooltip_text = "This character's quests and markers."
 		b.pressed.connect(func() -> void:
 			plugin.cur = null
 			plugin.pick_node(npc, false))
@@ -419,7 +442,7 @@ func _fill_chars() -> void:
 		eye.flat = true
 		eye.focus_mode = Control.FOCUS_NONE
 		eye.icon = Glyphs.icon("eye" if plugin.is_shown(npc) else "eye_off", Color("#E6E9EE") if plugin.is_shown(npc) else Color("#6B7686"), 15)
-		eye.tooltip_text = "Her markers drawn in the 3D view, or not."
+		eye.tooltip_text = "This character's markers drawn in the 3D view, or not."
 		eye.pressed.connect(func() -> void:
 			if plugin.hidden.has(npc.get_instance_id()):
 				plugin.hidden.erase(npc.get_instance_id())
@@ -433,7 +456,7 @@ func _fill_chars() -> void:
 		so.flat = true
 		so.focus_mode = Control.FOCUS_NONE
 		so.icon = Glyphs.icon("solo", Color("#FFD54F") if plugin.solo == npc else Color("#6B7686"), 15)
-		so.tooltip_text = "Only her markers drawn."
+		so.tooltip_text = "Only this character's markers drawn."
 		so.pressed.connect(func() -> void:
 			plugin.solo = null if plugin.solo == npc else npc
 			_fill_chars()
@@ -585,10 +608,9 @@ func _fill(parent: TreeItem, container: Node, labels: Dictionary) -> void:
 		row.set_metadata(0, m)
 		row.set_icon(0, Glyphs.icon(Glyphs.of_marker(m), col, 16))
 		row.set_text(0, "%s   %s%s" % [labels.get(m, ""), m.title(), ("  ·  " + m.note) if m.note != "" else ""])
-		row.set_text(1, HSNpcCond.says(m.start_when))
-		row.set_custom_color(1, Color("#9CCB9F"))
-		row.set_tooltip_text(1, "Starts when: " + (HSNpcCond.says(m.start_when) if m.start_when != "" else "at once"))
 		var extra := PackedStringArray()
+		if m.start_when != "":
+			extra.append("when " + HSNpcCond.says(m.start_when))
 		var tm := timing(m)
 		if tm != "":
 			extra.append(tm)
@@ -600,10 +622,12 @@ func _fill(parent: TreeItem, container: Node, labels: Dictionary) -> void:
 			extra.append("look")
 		if m.set_flags != "":
 			extra.append(m.set_flags)
-		row.set_text(2, "  ·  ".join(extra))
-		row.set_custom_color(2, Color(1, 1, 1, 0.6))
+		row.set_text(1, "  ·  ".join(extra))
+		row.set_custom_color(1, Color("#9CCB9F") if m.start_when != "" else Color(1, 1, 1, 0.6))
+		row.set_tooltip_text(0, "%s %s%s" % [labels.get(m, ""), m.title(), ("\n" + m.note) if m.note != "" else ""])
+		row.set_tooltip_text(1, "Starts when: %s\n%s" % [HSNpcCond.says(m.start_when) if m.start_when != "" else "at once", "  ·  ".join(extra)])
 		if m.needs_body() or m.kind in ["event", "disappear"]:
-			row.add_button(2, Glyphs.icon("play", Color("#9CCB9F"), 13), 0, false, "Try this marker in the 3D view.")
+			row.add_button(1, Glyphs.icon("play", Color("#9CCB9F"), 13), 0, false, "Try this marker in the 3D view.")
 		if m == plugin.cur:
 			row.select(0)
 		if m.kind == "choice":
@@ -615,8 +639,8 @@ func _fill(parent: TreeItem, container: Node, labels: Dictionary) -> void:
 				wr.set_text(0, "%s   %s" % [labels.get(way, ""), way.title()])
 				wr.set_custom_color(0, Color("#C9B6E8"))
 				if plugin.picks.get(m, 0) == m.ways().find(way):
-					wr.set_text(2, "the tester takes this way")
-					wr.set_custom_color(2, Color(1, 1, 1, 0.4))
+					wr.set_text(1, "the tester takes this way")
+					wr.set_custom_color(1, Color(1, 1, 1, 0.4))
 				if way == plugin.cur:
 					wr.select(0)
 				_fill(wr, way, labels)
@@ -685,7 +709,7 @@ func _card(card: Dictionary) -> void:
 	for id in cards:
 		(cards[id] as Button).set_pressed_no_signal(false)
 	if not plugin.valid(plugin.cur_npc):
-		say("Add a character first: select her model in the scene and press + Character.")
+		say("Add a character first: select the model in the scene and press + Character.")
 		return
 	var m := HSNpcMarker.new()
 	m.kind = String(card["kind"])
@@ -766,7 +790,7 @@ func _row(box: Container, label: String, ctl: Control, tip := "") -> Control:
 	var r := HBoxContainer.new()
 	var l := Label.new()
 	l.text = label
-	l.custom_minimum_size = Vector2(108, 0) * Glyphs.scale()
+	l.custom_minimum_size = Vector2(92, 0) * Glyphs.scale()
 	l.add_theme_color_override("font_color", Color(1, 1, 1, 0.78))
 	l.tooltip_text = tip
 	l.mouse_filter = Control.MOUSE_FILTER_STOP if tip != "" else Control.MOUSE_FILTER_IGNORE
@@ -805,6 +829,7 @@ func _check(n: Object, prop: String, t: String, tip := "") -> CheckBox:
 	cb.name = "F_" + prop
 	cb.text = t
 	cb.tooltip_text = tip
+	cb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	cb.button_pressed = bool(n.get(prop))
 	cb.toggled.connect(func(on: bool) -> void: _put(n, prop, on))
 	return cb
@@ -823,6 +848,10 @@ func _text(n: Object, prop: String, hint := "") -> LineEdit:
 func _pick(n: Object, prop: String, items: Array) -> OptionButton:
 	var ob := OptionButton.new()
 	ob.name = "F_" + prop
+	ob.fit_to_longest_item = false
+	ob.clip_text = true
+	ob.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	ob.custom_minimum_size = Vector2(90, 0) * Glyphs.scale()
 	var cur := str(n.get(prop))
 	var found := false
 	for i in items.size():
@@ -905,7 +934,7 @@ func refresh_form() -> void:
 		var m := n as HSNpcMarker
 		t.text = "%s  ·  %s" % [HSNpcFlow.label_of(m), m.title()]
 		if m.needs_body() or m.kind in ["event", "disappear"]:
-			var b1 := _button("Try it", "play", "Play this marker in the 3D view on a copy of her.")
+			var b1 := _button("Try it", "play", "Play this marker in the 3D view, on a copy of the character.")
 			b1.name = "TryIt"
 			b1.pressed.connect(func() -> void: _test("one"))
 			form_head.add_child(b1)
@@ -922,23 +951,23 @@ func refresh_form() -> void:
 
 
 func _form_npc(npc: HSNpc) -> void:
-	var b := _sec("Who she is")
-	_row(b, "Name", _text(npc, "npc_name", String(npc.character_node().name) if npc.character_node() != null else "her name"), "In conversations and here. Empty: her model's name.")
+	var b := _sec("Who")
+	_row(b, "Name", _text(npc, "npc_name", String(npc.character_node().name) if npc.character_node() != null else "a name"), "In conversations and here. Empty: the model's name.")
 	var who := Label.new()
-	who.text = String(npc.character_node().name) if npc.character_node() != null else "nobody: pick her model in the Inspector (Character)"
-	_row(b, "Her model", who)
-	b.add_child(_check(npc, "starts_hidden", "Hidden until her first marker that needs her"))
-	var w := _sec("How she moves")
-	_row(w, "Walk speed", _num(npc, "walk_speed", 0.0, 8.0, 0.05, " m/s"), "0: as her own walk was made (the Animator's).")
-	_row(w, "Run speed", _num(npc, "run_speed", 0.0, 12.0, 0.05, " m/s"), "0: as her own run was made.")
-	w.add_child(_check(npc, "waits_for_player", "Waits a moment when you're in her way"))
-	w.add_child(_check(npc, "solid", "You can't walk through her"))
-	var sh := _sec("If she's shot down")
-	_row(sh, "Then", _pick(npc, "when_shot_down", [[0, "her quest stops (a later quest brings her back)"], [1, "she's gone for good"], [2, "she can't be killed: up again and on"]]),
-		"What the weapons plugin's HSHitReact going down means for her markers. Flags either way: shot:%s, down:%s." % [npc.id(), npc.id()])
-	_row(sh, "Down for", _num(npc, "back_up_secs", 0.5, 60.0, 0.5, " s"), "She can't be killed: how long she's down.")
-	sh.add_child(_check(npc, "threat", "The player's fear rises near her (a threat)"))
-	_note(form, "Her flags: talked:%s when you've talked to her, shot:%s at her first hit, down:%s when she's shot down." % [npc.id(), npc.id(), npc.id()])
+	who.text = String(npc.character_node().name) if npc.character_node() != null else "nobody: pick the model in the Inspector (Character)"
+	_row(b, "Model", who)
+	b.add_child(_check(npc, "starts_hidden", "Hidden until the first marker that needs the body"))
+	var w := _sec("Moving")
+	_row(w, "Walk speed", _num(npc, "walk_speed", 0.0, 8.0, 0.05, " m/s"), "0: the speed the walk was made at (the Animator's).")
+	_row(w, "Run speed", _num(npc, "run_speed", 0.0, 12.0, 0.05, " m/s"), "0: the speed the run was made at.")
+	w.add_child(_check(npc, "waits_for_player", "Waits a moment when you're in the way"))
+	w.add_child(_check(npc, "solid", "Solid: you can't walk through"))
+	var sh := _sec("If shot down")
+	_row(sh, "Then", _pick(npc, "when_shot_down", [[0, "the quest stops (a later quest brings them back)"], [1, "gone for good"], [2, "can't be killed: up again and on"]]),
+		"What the weapons plugin's HSHitReact going down means for these markers. Flags either way: shot:%s, down:%s." % [npc.id(), npc.id()])
+	_row(sh, "Down for", _num(npc, "back_up_secs", 0.5, 60.0, 0.5, " s"), "Can't be killed: how long down.")
+	sh.add_child(_check(npc, "threat", "The player's fear rises nearby (a threat)"))
+	_note(form, "%s's flags, set by themselves: talked:%s after a talk, shot:%s at the first hit, down:%s when shot down." % [npc.display_name(), npc.id(), npc.id(), npc.id()])
 
 
 func _form_way(way: HSNpcWay) -> void:
@@ -994,7 +1023,7 @@ func _look_lists() -> Dictionary:
 func _form_marker(m: HSNpcMarker) -> void:
 	var npc := HSNpcFlow.npc_of(m) as HSNpc
 	var what := _sec("What")
-	_row(what, "Kind", _pick(m, "kind", KIND_TITLES), "What she does here. It can be changed; what the new kind doesn't use is kept and ignored.")
+	_row(what, "Kind", _pick(m, "kind", KIND_TITLES), "What happens here. It can be changed; what the new kind doesn't use is kept and ignored.")
 	_row(what, "Note", _text(m, "note", "what it's for (shown on its pin)"))
 	if m.kind != "choice" and m.kind != "repeat":
 		var st := _sec("Starts when")
@@ -1004,22 +1033,22 @@ func _form_marker(m: HSNpcMarker) -> void:
 	match m.kind:
 		"walk":
 			var b := _sec("The walk")
-			b.add_child(_check(m, "to_player", "She comes to you instead of to the pin"))
+			b.add_child(_check(m, "to_player", "Comes to you instead of to the pin"))
 			if m.to_player:
 				_row(b, "Stops", _num(m, "stop_short", 0.3, 5.0, 0.05, " m from you"))
-			_row(b, "Pace", _pick(m, "pace", [["walk", "her walk"], ["run", "her run"]]))
-			_row(b, "Speed", _num(m, "pace_scale", 0.2, 4.0, 0.05, " ×"), "Times her own speed: 0.5 a slow walk. Her feet keep step.")
+			_row(b, "Pace", _pick(m, "pace", [["walk", "walk"], ["run", "run"]]))
+			_row(b, "Speed", _num(m, "pace_scale", 0.2, 4.0, 0.05, " ×"), "Times the walk's own speed: 0.5 a slow walk. The feet keep step.")
 			if not m.to_player:
-				_row(b, "Or take", _num(m, "take_secs", 0.0, 120.0, 0.5, " s"), "Over 0: she gets there in this many seconds, whatever the distance.")
+				_row(b, "Or take", _num(m, "take_secs", 0.0, 120.0, 0.5, " s"), "Over 0: gets there in this many seconds, whatever the distance.")
 				_note(b, "Now: " + timing(m))
-				b.add_child(_check(m, "smooth", "One smooth curve through her bends", "Off: straight from bend to bend (stairs: a bend at the foot, one at the top)."))
-				b.add_child(_check(m, "face_arrow", "There, she turns to the arrow", "Off: she stays facing the way she came."))
-			b.add_child(_check(m, "follow_floor", "Her height from the floor under the path", "Stairs and slopes. Off: the path's own height."))
+				b.add_child(_check(m, "smooth", "One smooth curve through the bends", "Off: straight from bend to bend (stairs: a bend at the foot, one at the top)."))
+				b.add_child(_check(m, "face_arrow", "Turns to the arrow at the end", "Off: stays facing the way of the walk."))
+			b.add_child(_check(m, "follow_floor", "Follows the floor under the path", "Stairs and slopes. Off: the path's own height."))
 			if not m.to_player:
-				_note(b, "Click the + on her path in the 3D view for a bend; drag it. Right-click a bend to delete it.")
+				_note(b, "Click the + on the path in the 3D view for a bend; drag it. Right-click a bend to delete it.")
 		"grab":
-			var g := _sec("Her hand")
-			_row(g, "Does", _pick(m, "action", [["reach", "reach for the pin"], ["pick_up", "pick a thing up"], ["put_down", "put down what she holds"], ["open", "open a door"]]))
+			var g := _sec("The hand")
+			_row(g, "Does", _pick(m, "action", [["reach", "reach for the pin"], ["pick_up", "pick a thing up"], ["put_down", "put down what's held"], ["open", "open a door"]]))
 			if m.action in ["pick_up", "open"]:
 				var tr := HBoxContainer.new()
 				var tl := Label.new()
@@ -1037,27 +1066,27 @@ func _form_marker(m: HSNpcMarker) -> void:
 			if m.action == "open":
 				_row(g, "It opens", _pick(m, "door_opens", [["push", "pushed"], ["pull", "pulled"], ["slide", "slid"]]))
 			if m.action == "pick_up":
-				g.add_child(_check(m, "keep_in_hand", "It stays in her hand", "Off: it's put away (hidden)."))
-			g.add_child(_check(m, "left_hand", "With her left hand"))
-			_note(g, "The pin is where her hand goes and the arrow the way she faces. She has three reaches: the floor, a table, a shelf: the one nearest the pin's height.")
+				g.add_child(_check(m, "keep_in_hand", "It stays in the hand", "Off: it's put away (hidden)."))
+			g.add_child(_check(m, "left_hand", "With the left hand"))
+			_note(g, "The pin is where the hand goes; the arrow is the facing. There are three reaches (the floor, a table, a shelf): the one nearest the pin's height is used.")
 		"sleep":
 			var sl := _sec("The bed")
-			sl.add_child(_check(m, "head_right", "Her head goes to her right", "As she sits on the edge. Off: to her left."))
+			sl.add_child(_check(m, "head_right", "Head to the right", "Seen sitting on the edge. Off: to the left."))
 			_note(sl, "The pin on the bed's edge at the mattress's height, the arrow pointing away from the bed.")
 		"sit":
-			_note(_sec("The seat"), "The pin on the seat's front edge at the height she sits at, the arrow the way her knees point.")
+			_note(_sec("The seat"), "The pin on the seat's front edge at sitting height, the arrow the way the knees point.")
 		"animation":
 			var an := _sec("The animation")
-			_row(an, "One of hers", _pick(m, "clip", _clip_items(npc, "(none)")))
-			_row(an, "Or a file", _pick(m, "clip_file", _file_items()), "A Kimodo .npz or a Godot animation dropped in res://animations/. It's fitted to her skeleton the first time it plays.")
-			an.add_child(_check(m, "loop", "It loops (she stays in it)"))
+			_row(an, "A clip", _pick(m, "clip", _clip_items(npc, "(none)")), "One of the model's own animations.")
+			_row(an, "Or a file", _pick(m, "clip_file", _file_items()), "A Kimodo .npz or a Godot animation dropped in res://animations/. It's fitted to the skeleton the first time it plays.")
+			an.add_child(_check(m, "loop", "It loops (and stays in it)"))
 			if not m.loop:
 				_row(an, "Times", _num(m, "times", 1, 99, 1))
 		"appear", "disappear":
 			var h := _sec("How")
-			_row(h, "She " + ("comes" if m.kind == "appear" else "goes"), _pick(m, "how", HOWS))
+			_row(h, "Comes" if m.kind == "appear" else "Goes", _pick(m, "how", HOWS))
 			if m.kind == "disappear":
-				_note(h, "Hidden, she isn't drawn, animated or processed. She comes back with a Start here, or by herself (where she vanished) when a later marker needs her.")
+				_note(h, "Hidden: not drawn, not animated, not processed. Back with a Start here, or by itself (at the same place) when a later marker needs the body.")
 		"repeat":
 			var r := _sec("Again and again")
 			_row(r, "Times", _num(m, "repeat_times", 0, 999, 1), "0: until its flags are so, or until a later quest starts.")
@@ -1088,25 +1117,25 @@ func _form_marker(m: HSNpcMarker) -> void:
 			aw.name = "AddWay"
 			aw.pressed.connect(func() -> void: add_way(m, "new_flag"))
 			c.add_child(aw)
-			_note(c, "She takes the first way, top to bottom, whose flags are on, then goes on after the Choice. A way with no flags is 'otherwise': keep it last. With no 'otherwise' she waits until a way opens.")
+			_note(c, "The first way, top to bottom, whose flags are on is taken; then the markers after the Choice. A way with no flags is 'otherwise': keep it last. With no 'otherwise' it waits until a way opens.")
 		"event":
 			var e := _sec("The event")
 			e.add_child(_check(m, "scare", "It's a jump scare", "The starter's Fear node and night director hear it."))
-			e.add_child(_check(m, "let_go", "Let go of her", "From here another script moves her (a chase, a hunt) until her next marker."))
+			e.add_child(_check(m, "let_go", "Let go", "From here another script moves the character (a chase, a hunt) until the next marker."))
 	if m.stays():
-		var sb := _sec("She stays")
+		var sb := _sec("Stays")
 		_row(sb, "How long", _pick(m, "stay", STAYS))
 		if m.stay == "secs":
 			_row(sb, "Seconds", _num(m, "stay_secs", 0.0, 600.0, 0.5, " s"))
 		if m.kind == "wait":
-			sb.add_child(_check(m, "face_player", "She keeps turning to face you"))
+			sb.add_child(_check(m, "face_player", "Keeps turning to face you"))
 	if m.kind in HSNpcMarker.BODY and m.kind != "appear":
 		var a := _sec("Animation")
 		if m.kind == "wait":
-			_row(a, "She waits in", _pick(m, "clip", _clip_items(npc, "her idle")))
+			_row(a, "Waits in", _pick(m, "clip", _clip_items(npc, "the idle")))
 		if m.kind != "walk":
 			_row(a, "Speed", _num(m, "anim_speed", 0.1, 4.0, 0.05, " ×"), "How fast the clip plays.")
-		_row(a, "Eased in", _num(m, "blend", 0.0, 2.0, 0.05, " s"), "Seconds blended into it from what she was doing.")
+		_row(a, "Eased in", _num(m, "blend", 0.0, 2.0, 0.05, " s"), "Seconds blended into it from what came before.")
 	if m.kind in HSNpcMarker.BODY or m.kind == "event":
 		_form_face(m)
 		_form_talk(m, npc)
@@ -1117,28 +1146,33 @@ func _form_marker(m: HSNpcMarker) -> void:
 # where its pin is and the way she faces there: numbers and a dial, for what the mouse does in the 3D view
 func _form_where(m: HSNpcMarker, npc: HSNpc) -> void:
 	var wh := _sec("Where")
-	var row := HBoxContainer.new()
 	var was := [m.global_transform]
-	for axis in 3:
+	var spin := func(axis: int, tip: String) -> SpinBox:
 		var sb := SpinBox.new()
 		sb.name = "F_pos_%s" % "xyz"[axis]
 		sb.min_value = -100000.0
 		sb.max_value = 100000.0
 		sb.step = 0.01
 		sb.prefix = ["x", "y", "z"][axis]
+		sb.suffix = "m"
 		sb.value = m.global_position[axis]
 		sb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		sb.tooltip_text = ["Across", "Up: the height of the floor, the seat, the shelf", "Along"][axis] + " (metres). Or drag the pin in the 3D view."
+		sb.tooltip_text = tip
 		sb.value_changed.connect(func(v: float) -> void:
 			if _busy or not plugin.valid(m):
 				return
 			var pos := m.global_position
 			pos[axis] = v
 			plugin.place_node(m, Transform3D(m.global_transform.basis, pos), m.global_transform, "move " + String(m.name))
+			was[0] = m.global_transform
 			_form_vals = _vals(m)
 			plugin.update_overlays())
-		row.add_child(sb)
+		return sb
+	var row := HBoxContainer.new()
+	row.add_child(spin.call(0, "Across (metres). Or drag the pin in the 3D view."))
+	row.add_child(spin.call(2, "Along (metres). Or drag the pin in the 3D view."))
 	_row(wh, "Pin", row)
+	_row(wh, "Its height", spin.call(1, "Up (metres): the floor's height, the seat's, the shelf's. A pin dragged in the 3D view takes the height of what it's dropped on."))
 	if m.kind == "walk" and not m.face_arrow:
 		return
 	var frow := HBoxContainer.new()
@@ -1180,12 +1214,12 @@ func _form_where(m: HSNpcMarker, npc: HSNpc) -> void:
 			return
 		dial.yaw = deg_to_rad(v)
 		turn.call(deg_to_rad(v), true))
-	_row(wh, "She faces", frow, "The way she faces there, seen from above.")
+	_row(wh, "Facing", frow, "The facing there, seen from above.")
 
 
 func _form_face(m: HSNpcMarker) -> void:
 	var f := _sec("Face and look")
-	_row(f, "Her face", _pick(m, "face", _face_items("as she was")), "Worn from here on, until another marker's.")
+	_row(f, "Face", _pick(m, "face", _face_items("as it was")), "Worn from here on, until another marker's.")
 	if m.face != "":
 		_row(f, "How much", _num(m, "face_amount", 0.0, 1.5, 0.05))
 	for i in m.face_rules.size():
@@ -1202,6 +1236,9 @@ func _form_face(m: HSNpcMarker) -> void:
 		ce.changed.connect(func(t: String) -> void: _rule(m, i, t, String(r["face"])))
 		row.add_child(ce)
 		var ob := OptionButton.new()
+		ob.fit_to_longest_item = false
+		ob.clip_text = true
+		ob.custom_minimum_size = Vector2(84, 0) * Glyphs.scale()
 		var faces := _face_items("(pick)")
 		for k in faces.size():
 			ob.add_item(str(faces[k][1]))
@@ -1214,22 +1251,22 @@ func _form_face(m: HSNpcMarker) -> void:
 		x.pressed.connect(func() -> void: _rule(m, i, "", "", true))
 		row.add_child(x)
 		f.add_child(row)
-	var ar := _button("A face by flags", "plus", "While she's at this marker: a face for when some flags are on (the first that's so). An answer of a conversation can turn a flag on.")
+	var ar := _button("A face by flags", "plus", "While at this marker: a face for when some flags are on (the first that's so). An answer of a conversation can turn a flag on.")
 	ar.name = "AddFaceRule"
 	ar.pressed.connect(func() -> void: _rule(m, m.face_rules.size(), "new_flag" if m.face_rules.is_empty() else "", "smile"))
 	f.add_child(ar)
 	var lists := _look_lists()
 	if lists.is_empty():
-		_note(f, "Her look (skin and eyes) changes with the HorrorStudio Look plugin in the project.")
+		_note(f, "The look (skin and eyes) changes with the HorrorStudio Look plugin in the project.")
 		return
 	var skins := [["", "as it was"]]
 	for sk in lists["skins"]:
-		skins.append([sk, "her own" if sk == "default" else String(sk)])
+		skins.append([sk, "the model's own" if sk == "default" else String(sk)])
 	var eyes := [["", "as they were"]]
 	for ey in lists["eyes"]:
-		eyes.append([ey, "her own" if ey == "default" else String(ey)])
-	_row(f, "Her skin", _pick(m, "look_skin", skins), "A creature skin from here on (chrome, ember, the cloak...), or her own again.")
-	_row(f, "Her eyes", _pick(m, "look_eyes", eyes), "Creepy eyes from here on (glow, black, void...), or her own again.")
+		eyes.append([ey, "the model's own" if ey == "default" else String(ey)])
+	_row(f, "Skin", _pick(m, "look_skin", skins), "A creature skin from here on (chrome, ember, the cloak...), or the model's own again.")
+	_row(f, "Eyes", _pick(m, "look_eyes", eyes), "Creepy eyes from here on (glow, black, void...), or the model's own again.")
 	if m.look_eyes != "" and m.look_eyes != "default":
 		var cp := ColorPickerButton.new()
 		cp.color = m.look_eye_color if m.look_eye_color.a > 0.0 else Color(1, 0.1, 0.1)
@@ -1241,10 +1278,10 @@ func _form_face(m: HSNpcMarker) -> void:
 	var her := npc.character_node() if npc != null else null
 	var sw: Node = her.get_node_or_null("HSLookSwitch") if her != null else null
 	if sw != null and sw.has_method("names") and not (sw.call("names") as PackedStringArray).is_empty():
-		var looks := [["", "(none)"], ["default", "her own"]]
+		var looks := [["", "(none)"], ["default", "the model's own"]]
 		for nm in sw.call("names"):
 			looks.append([nm, String(nm)])
-		_row(f, "Or a saved look", _pick(m, "look", looks), "One of her look switch's looks, by name.")
+		_row(f, "Or a saved look", _pick(m, "look", looks), "One of the look switch's looks, by name.")
 
 
 func _rule(m: HSNpcMarker, i: int, when: String, face: String, remove := false) -> void:
@@ -1279,7 +1316,7 @@ func _save_talks(m: HSNpcMarker, list: Array) -> void:
 
 func _form_talk(m: HSNpcMarker, npc: HSNpc) -> void:
 	var tk := _sec("Talk")
-	tk.add_child(_check(m, "talk", "You can talk to her here (E)"))
+	tk.add_child(_check(m, "talk", "You can talk to %s here (E)" % (npc.display_name() if npc != null else "them")))
 	if not m.talk:
 		return
 	var list := _talks(m)
@@ -1316,10 +1353,10 @@ func _form_talk(m: HSNpcMarker, npc: HSNpc) -> void:
 		var te := TextEdit.new()
 		te.name = "Lines"
 		te.text = "\n".join(PackedStringArray(c["lines"]))
-		te.placeholder_text = "What she says, a line a row.\n%s: Looking for something?\n[smile] I can show you.\nYou: Please." % (npc.display_name() if npc != null else "Alex")
+		te.placeholder_text = "What's said, a line a row.\n%s: Looking for something?\n[smile] I can show you.\nYou: Please." % (npc.display_name() if npc != null else "Alex")
 		te.custom_minimum_size = Vector2(0, 64) * Glyphs.scale()
 		te.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
-		te.tooltip_text = "A line a row. 'Name: words' names who says it (just words: her; 'You:' you). '[smile]' in front wears that face while it's said."
+		te.tooltip_text = "A line a row. 'Name: words' names who says it (just words: the character; 'You:' you). '[smile]' in front wears that face while it's said."
 		te.focus_exited.connect(func() -> void:
 			var l2 := _talks(m)
 			var lines := []
@@ -1352,20 +1389,23 @@ func _form_talk(m: HSNpcMarker, npc: HSNpc) -> void:
 			af.tooltip_text = "Flags it switches: +name on, -name off. A Choice after this marker takes the way of the flag."
 			arow.add_child(af)
 			var fo := OptionButton.new()
+			fo.fit_to_longest_item = false
+			fo.clip_text = true
+			fo.custom_minimum_size = Vector2(70, 0) * Glyphs.scale()
 			var faces := _face_items("face")
 			for k in faces.size():
 				fo.add_item(str(faces[k][1]))
 				fo.set_item_metadata(k, faces[k][0])
 				if faces[k][0] == an["face"]:
 					fo.select(k)
-			fo.tooltip_text = "The face she wears from this answer on."
+			fo.tooltip_text = "The face worn from this answer on."
 			arow.add_child(fo)
 			var ax := _button("", "trash", "Delete this answer.")
 			arow.add_child(ax)
 			cb.add_child(arow)
 			var rep := LineEdit.new()
 			rep.text = String(an["reply"])
-			rep.placeholder_text = "    her reply to it (optional)"
+			rep.placeholder_text = "    the reply to it (optional)"
 			cb.add_child(rep)
 			var save := func() -> void:
 				var l2 := _talks(m)
@@ -1391,7 +1431,7 @@ func _form_talk(m: HSNpcMarker, npc: HSNpc) -> void:
 				(l2[i]["answers"] as Array).remove_at(a)
 				_save_talks(m, l2))
 		var brow := HBoxContainer.new()
-		var aa := _button("Answer", "plus", "Something you can answer. It can switch a flag, change her face, get a reply.")
+		var aa := _button("Answer", "plus", "Something you can answer. It can switch a flag, change the face, get a reply.")
 		aa.name = "AddAnswer"
 		aa.pressed.connect(func() -> void:
 			var l2 := _talks(m)
@@ -1429,15 +1469,15 @@ func _form_talk(m: HSNpcMarker, npc: HSNpc) -> void:
 				if l2[i]["again"] != ag.text.strip_edges():
 					l2[i]["again"] = ag.text.strip_edges()
 					_save_talks(m, l2))
-			_row(cb, "Asked again", ag, "Answers are given once. Talked to again she says this (empty: nothing, and no prompt).")
-	var ac := _button("Another conversation, for when flags are on", "plus", "She has the first conversation whose flags are on: so a flag picks what she says.")
+			_row(cb, "Asked again", ag, "Answers are given once. Talked to again, this is said (empty: nothing, and no prompt).")
+	var ac := _button("Another conversation, for when flags are on", "plus", "The first conversation whose flags are on is the one had: so a flag picks what's said.")
 	ac.pressed.connect(func() -> void:
 		var l2 := _talks(m)
 		l2.insert(0, {"when": "new_flag", "lines": ["..."], "answers": [], "sets": "", "again": ""})
 		_save_talks(m, l2))
 	tk.add_child(ac)
-	_row(tk, "Prompt", _text(m, "talk_prompt", "Talk"), "The prompt's word: 'E   Talk to her'.")
-	tk.add_child(_check(m, "turn_to_player", "She turns to you"))
+	_row(tk, "Prompt", _text(m, "talk_prompt", "Talk"), "The prompt's word: 'E   Talk to %s'." % (npc.display_name() if npc != null else "them"))
+	tk.add_child(_check(m, "turn_to_player", "Turns to you"))
 
 
 func _form_then(m: HSNpcMarker) -> void:
@@ -1445,7 +1485,7 @@ func _form_then(m: HSNpcMarker) -> void:
 	_row(t, "Says", _text(m, "say", "a line, as it starts"))
 	if m.say != "":
 		_row(t, "For", _num(m, "say_secs", 0.5, 20.0, 0.5, " s"))
-	_row(t, "Sound", _text(m, "sound", "a shelf sound's name, or a file"), "Played where she is as the marker starts.")
+	_row(t, "Sound", _text(m, "sound", "a shelf sound's name, or a file"), "Played at the character as the marker starts.")
 	var fr := VBoxContainer.new()
 	for i in m.fire.size():
 		var row := HBoxContainer.new()
@@ -1558,8 +1598,8 @@ func ways_for_answers(m: HSNpcMarker, conv: int) -> HSNpcMarker:
 		var w := HSNpcWay.new()
 		w.when = on
 		w.note = "answered: " + String(a["text"])
-		w.name = "Way"
-		c.add_child(w)
+		w.name = "Way %d" % (c.get_child_count() + 1)
+		c.add_child(w, true)
 	plugin.add_node(m.get_parent(), c, "a Choice for the answers", m.get_index() + 1)
 	plugin.pick_node(c)
 	return c

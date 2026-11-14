@@ -415,29 +415,29 @@ static func _container_problems(container: Node, npc: Node, clips: PackedStringA
 					for from in starts_of(m):
 						var d := length(walk_points(m, from["pos"]))
 						if d < 0.05:
-							out.append({"node": m, "text": "%s goes nowhere: its pin is where she already is." % lab, "level": "warn"})
+							out.append({"node": m, "text": "%s goes nowhere: its pin is where the character already is." % lab, "level": "warn"})
 						elif m.take_secs > 0.0 and d / m.take_secs > 6.0:
-							out.append({"node": m, "text": "%s: %.1f m in %.1f s is faster than anyone runs; her feet will slide." % [lab, d, m.take_secs], "level": "warn"})
+							out.append({"node": m, "text": "%s: %.1f m in %.1f s is faster than anyone runs; the feet will slide." % [lab, d, m.take_secs], "level": "warn"})
 						break
 			"sit", "sleep", "grab":
 				for from in starts_of(m):
 					var st := stand_for(m, record, (from["pos"] as Vector3).y)
 					var gap := Vector2(st["pos"].x - from["pos"].x, st["pos"].z - from["pos"].z).length()
 					if gap > 2.0:
-						out.append({"node": m, "text": "%s is %.1f m from where she'll be: she walks there in a straight line. Put a Walk marker before it." % [lab, gap], "level": "tip"})
+						out.append({"node": m, "text": "%s is %.1f m from where the character will be: it's walked in a straight line. Put a Walk marker before it." % [lab, gap], "level": "tip"})
 					break
 				if m.kind == "grab" and m.action in ["pick_up", "open"] and (m.target.is_empty() or m.get_node_or_null(m.target) == null):
-					out.append({"node": m, "text": "%s: pick %s." % [lab, "the thing she picks up" if m.action == "pick_up" else "the door she opens"], "level": "error"})
+					out.append({"node": m, "text": "%s: pick %s." % [lab, "the thing to pick up" if m.action == "pick_up" else "the door to open"], "level": "error"})
 			"animation":
 				if m.clip == "" and m.clip_file == "":
 					out.append({"node": m, "text": "%s: pick the animation to play." % lab, "level": "error"})
 				elif m.clip_file != "" and not ResourceLoader.exists(m.clip_file) and not FileAccess.file_exists(m.clip_file):
 					out.append({"node": m, "text": "%s: the file %s isn't there." % [lab, m.clip_file], "level": "error"})
 				elif m.clip_file == "" and not clips.is_empty() and not _has_clip(clips, m.clip):
-					out.append({"node": m, "text": "%s: she has no animation called '%s'." % [lab, m.clip], "level": "error"})
+					out.append({"node": m, "text": "%s: there's no animation called '%s'." % [lab, m.clip], "level": "error"})
 			"wait":
 				if m.clip != "" and not clips.is_empty() and not _has_clip(clips, m.clip):
-					out.append({"node": m, "text": "%s: she has no animation called '%s'." % [lab, m.clip], "level": "error"})
+					out.append({"node": m, "text": "%s: there's no animation called '%s'." % [lab, m.clip], "level": "error"})
 			"choice":
 				var ways := m.ways()
 				if ways.is_empty():
@@ -460,12 +460,12 @@ static func _container_problems(container: Node, npc: Node, clips: PackedStringA
 			"appear":
 				hidden = false
 		if hidden and m.kind in ["walk", "sit", "sleep", "grab"] :
-			out.append({"node": m, "text": "%s comes after a Disappear: she comes back where she vanished. Put a Start here before it to bring her back somewhere else." % lab, "level": "tip"})
+			out.append({"node": m, "text": "%s comes after a Disappear: the character comes back where they vanished. Put a Start here before it to come back somewhere else." % lab, "level": "tip"})
 			hidden = false
 		if m.stay == "talked" and m.stays() and not (m.talk and not m.conversations().is_empty()):
-			out.append({"node": m, "text": "%s stays until you talk to her, but she has nothing to say here: turn on 'You can talk to her' and give her a line." % lab, "level": "error"})
+			out.append({"node": m, "text": "%s stays until you talk, but has nothing to say here: turn on 'You can talk here' and give it a line." % lab, "level": "error"})
 		if m.talk and m.conversations().is_empty() and m.kind != "choice":
-			out.append({"node": m, "text": "%s: you can talk to her, but she has no conversation." % lab, "level": "warn"})
+			out.append({"node": m, "text": "%s: you can talk here, but there's no conversation." % lab, "level": "warn"})
 		if m.talk and m.kind == "walk":
 			pass
 		for fp in m.fire:

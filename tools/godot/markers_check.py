@@ -13,6 +13,10 @@
         bend, the storyboard reordered, the form filled, Problems, the tester run, saved clean). --shots: the guide's
         pictures of the editor, under xvfb.
 
+    python tools/godot/markers_check.py guide DIR
+        the guide's pictures (guides/markers/img): the editor's from DIR (a run with --editor --shots DIR), the game's
+        two made now under xvfb (markers_shots.gd: F7's label, the talk box), all as JPEGs.
+
 Godot is $GODOT, else godot.
 """
 import json
@@ -30,23 +34,65 @@ PLUGIN = ROOT / "GodotPlugins" / "HorrorStudioMarkers" / "addons" / "horrorstudi
 HERE = Path(__file__).resolve().parent
 
 
-EDITOR_SCENE = """[gd_scene load_steps=7 format=3]
+EDITOR_SCENE = """[gd_scene load_steps=19 format=3]
 
 [ext_resource type="PackedScene" path="res://characters/normal_woman.glb" id="her"]
 
 [sub_resource type="BoxShape3D" id="floor_s"]
 size = Vector3(30, 0.2, 30)
 
+[sub_resource type="StandardMaterial3D" id="c_floor"]
+albedo_color = Color(0.62, 0.47, 0.33, 1)
+
+[sub_resource type="StandardMaterial3D" id="c_wall"]
+albedo_color = Color(0.86, 0.82, 0.74, 1)
+
+[sub_resource type="StandardMaterial3D" id="c_sofa"]
+albedo_color = Color(0.27, 0.5, 0.32, 1)
+
+[sub_resource type="StandardMaterial3D" id="c_wood"]
+albedo_color = Color(0.42, 0.28, 0.18, 1)
+
+[sub_resource type="StandardMaterial3D" id="c_book"]
+albedo_color = Color(0.7, 0.2, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="c_bob"]
+albedo_color = Color(0.45, 0.48, 0.55, 1)
+
 [sub_resource type="BoxMesh" id="floor_m"]
-size = Vector3(30, 0.2, 30)
+material = SubResource("c_floor")
+size = Vector3(9, 0.2, 7)
+
+[sub_resource type="BoxMesh" id="wall_back_m"]
+material = SubResource("c_wall")
+size = Vector3(9, 2.6, 0.15)
+
+[sub_resource type="BoxMesh" id="wall_left_m"]
+material = SubResource("c_wall")
+size = Vector3(0.15, 2.6, 7)
 
 [sub_resource type="BoxMesh" id="sofa_m"]
-size = Vector3(1.6, 0.45, 0.7)
+material = SubResource("c_sofa")
+size = Vector3(1.8, 0.45, 0.8)
+
+[sub_resource type="BoxMesh" id="sofa_back_m"]
+material = SubResource("c_sofa")
+size = Vector3(1.8, 0.55, 0.2)
+
+[sub_resource type="BoxMesh" id="shelf_m"]
+material = SubResource("c_wood")
+size = Vector3(1.4, 2, 0.4)
+
+[sub_resource type="BoxMesh" id="table_m"]
+material = SubResource("c_wood")
+size = Vector3(1, 0.4, 0.5)
 
 [sub_resource type="BoxMesh" id="book_m"]
+material = SubResource("c_book")
 size = Vector3(0.14, 0.04, 0.2)
 
 [sub_resource type="BoxMesh" id="bob_m"]
+material = SubResource("c_bob")
 size = Vector3(0.4, 1.7, 0.25)
 
 [node name="Level" type="Node3D"]
@@ -60,9 +106,29 @@ shape = SubResource("floor_s")
 [node name="Mesh" type="MeshInstance3D" parent="Floor"]
 mesh = SubResource("floor_m")
 
+[node name="WallBack" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, -3.5)
+mesh = SubResource("wall_back_m")
+
+[node name="WallLeft" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 1.3, 0)
+mesh = SubResource("wall_left_m")
+
 [node name="Sofa" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.225, -1.5)
 mesh = SubResource("sofa_m")
+
+[node name="SofaBack" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.72, -1.8)
+mesh = SubResource("sofa_back_m")
+
+[node name="Shelf" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 1, -3.2)
+mesh = SubResource("shelf_m")
+
+[node name="Table" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0.2, -2.9)
+mesh = SubResource("table_m")
 
 [node name="Book" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.02, 1)
@@ -179,9 +245,9 @@ def editor(args):
             env = dict(os.environ)
             if os.path.exists("/usr/share/vulkan/icd.d/lvp_icd.json") and not env.get("DISPLAY"):
                 env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
-            cmd = [g, "--editor", "--path", str(proj), "--rendering-driver", "vulkan", "--resolution", "1600x1000"]
+            cmd = [g, "--editor", "--path", str(proj), "--rendering-driver", "vulkan", "--resolution", "1920x1080"]
             if shutil.which("xvfb-run"):
-                cmd = ["xvfb-run", "-a", "-s", "-screen 0 1600x1000x24"] + cmd
+                cmd = ["xvfb-run", "-a", "-s", "-screen 0 1920x1080x24"] + cmd
             r = run(cmd, timeout=1500, env=env)
         else:
             r = run([g, "--headless", "--editor", "--path", str(proj)], timeout=1500)
@@ -209,6 +275,57 @@ def editor(args):
     return 1 if errs else 0
 
 
+def jpeg(src, dst):
+    """a picture as a JPEG (Pillow, else ffmpeg)"""
+    try:
+        from PIL import Image
+        Image.open(src).convert("RGB").save(dst, quality=88, optimize=True)
+        return True
+    except ImportError:
+        pass
+    ff = shutil.which("ffmpeg")
+    if not ff:
+        return False
+    return run([ff, "-y", "-loglevel", "error", "-i", str(src), "-q:v", "3", str(dst)], timeout=120).returncode == 0
+
+
+def guide(args):
+    g = godot_bin()
+    src = Path(args[args.index("guide") + 1]).resolve() if len(args) > args.index("guide") + 1 else None
+    if not g or src is None or not src.is_dir():
+        sys.exit("guide: python tools/godot/markers_check.py guide DIR  (DIR: the pictures of a run with --editor --shots DIR)")
+    proj = ROOT / "Saved" / "Godot" / "_markers"
+    if not (proj / "editor_scene.tscn").is_file():
+        sys.exit("guide: run the editor check first (python tools/godot/markers_check.py --editor --shots DIR)")
+    shutil.copy(HERE / "markers_shots.gd", proj / "markers_shots.gd")
+    env = dict(os.environ)
+    if os.path.exists("/usr/share/vulkan/icd.d/lvp_icd.json") and not env.get("DISPLAY"):
+        env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
+    cmd = [g, "--path", str(proj), "--rendering-driver", "vulkan", "--resolution", "1280x720", "--fixed-fps", "60", "-s", "markers_shots.gd", "--", "--out=" + str(src)]
+    if shutil.which("xvfb-run"):
+        cmd = ["xvfb-run", "-a", "-s", "-screen 0 1280x720x24"] + cmd
+    r = run(cmd, timeout=900, env=env)
+    for ln in r.stdout.splitlines():
+        if ln.startswith("MARKERSSHOTS "):
+            print("  " + ln[13:])
+    out = ROOT / "guides" / "markers" / "img"
+    out.mkdir(parents=True, exist_ok=True)
+    made = 0
+    for png in sorted(src.glob("*.png")):
+        if png.stem.startswith("00_"):
+            continue
+        if jpeg(png, out / (png.stem + ".jpg")):
+            made += 1
+        else:
+            sys.exit("guide: no Pillow and no ffmpeg to make the JPEGs with")
+    want = [m for m in __import__("re").findall(r'src="img/([^"]+)"', (ROOT / "guides" / "markers" / "index.html").read_text(encoding="utf-8"))]
+    missing = [w for w in want if not (out / w).is_file()]
+    for w in missing:
+        print("ERROR: the guide shows img/%s, which wasn't made" % w)
+    print(f"guide: {made} pictures in {out}" if not missing else f"guide FAILED ({len(missing)})")
+    return 1 if missing else 0
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
-    sys.exit(editor(a) if "--editor" in a else game(a))
+    sys.exit(guide(a) if "guide" in a else editor(a) if "--editor" in a else game(a))
