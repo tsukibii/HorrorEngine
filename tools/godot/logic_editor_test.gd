@@ -191,7 +191,7 @@ func _run() -> void:
 	await shot("01_things_empty")
 
 	# ---- set up the scene ----
-	ok(wiring.story() == null and names_in(things.list) == ["Door"], "to begin with: a door, and no Story", str(names_in(things.list)))
+	ok(wiring.story() == null and names_in(things.list) == ["Door", "door_2"], "to begin with: a door, an interior's door, and no Story", str(names_in(things.list)))
 	(things.setup_btn as Button).pressed.emit()
 	await frames(4)
 	var player := root.get_node_or_null("Player")
@@ -429,6 +429,16 @@ func _run() -> void:
 		ok(str(area.get("needs")) == "door_opened", "a flag picked there is set on the area", str(area.get("needs")))
 	await shot("05_inspector")
 
+	# ---- an interior's door (no script in the editor), and a node inside an instanced scene ----
+	var xd := root.get_node_or_null("House/doors/door_2") as Node3D
+	ok(xd != null and "door_2" in names_in(things.list) and wiring.default_when(xd) == ["signal", "opened"] and wiring.thing_of(xd.get_node("Mesh")) == xd,
+		"an interior's door is a thing (a door, set off when it's opened), found from its mesh clicked")
+	var eye := player.get_node("Eye")
+	var el: HSLogic = wiring.logic_for(eye)
+	await frames(3)
+	ok(el != null and el.owner == root and root.is_editable_instance(player), "a Logic for a node inside an instanced scene: the instance's children made editable, so the scene keeps it")
+	plug.delete_node(el, "remove a Logic")
+	await frames(3)
 	# ---- a list on a script that isn't a tool (the editor's stand-in refuses its first value unless it's set right) ----
 	await select(area)
 	things.make_visible()

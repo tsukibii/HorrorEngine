@@ -302,6 +302,8 @@ func things() -> Array:
 				continue                                           # (the player isn't a thing; nor is what's inside an instanced scene)
 			if not (n in out):
 				out.append(n)
+		elif HSLogicScan.export_door(n) and not (n in out):       # (an interior's doors, though they've no script until the game runs)
+			out.append(n)
 	return out
 
 
@@ -310,7 +312,7 @@ func thing_of(node: Node) -> Node:
 	var p := node
 	var r: Node = plugin.scene_root()
 	while p != null and p != r:
-		if p.has_method("use") or p is Area3D or not logics(p).is_empty():
+		if p.has_method("use") or p is Area3D or HSLogicScan.export_door(p) or not logics(p).is_empty():
 			return p
 		p = p.get_parent()
 	return node
@@ -343,6 +345,8 @@ func default_when(thing: Node) -> Array:
 	for sig in ["opened", "entered", "scared"]:
 		if thing.has_signal(sig):
 			return ["signal", sig]
+	if HSLogicScan.export_door(thing):                         # (an interior's door: it has `opened` once the game gives it its script)
+		return ["signal", "opened"]
 	if thing is Area3D:
 		return ["signal", "body_entered"]
 	return ["used", ""]
@@ -371,6 +375,7 @@ func logic_for(thing: Node, when: Array = [], set: Dictionary = {}) -> HSLogic:
 	for l in logics(thing):
 		if when.is_empty() or ((l as HSLogic).on == String(when[0]) and (String(when[0]) != "signal" or (l as HSLogic).on_signal == String(when[1]))):
 			return l
+	_open_instance(thing)
 	var lg := HSLogic.new()
 	lg.name = "Logic"
 	var how := when if not when.is_empty() else default_when(thing)
@@ -381,6 +386,18 @@ func logic_for(thing: Node, when: Array = [], set: Dictionary = {}) -> HSLogic:
 	plugin.add_node(thing, lg, "Logic for " + String(thing.name))
 	touch()
 	return lg
+
+
+# A node inside an instanced scene (an interior's door) can only be given a child this scene saves when that
+# instance's children are editable: switched on for it (what the Scene dock's Editable Children does)
+func _open_instance(node: Node) -> void:
+	var r: Node = plugin.scene_root()
+	var o := node.owner
+	if node == r or o == null or o == r or not r.is_ancestor_of(o):
+		return
+	if not r.is_editable_instance(o):
+		r.set_editable_instance(o, true)
+		plugin.say("%s's children are now editable (so %s can keep its Logic)." % [o.name, node.name])
 
 
 # the field of a node that says when it happens ("": it has none, its Logic does)

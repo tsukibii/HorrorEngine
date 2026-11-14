@@ -107,3 +107,6 @@ phasing, the Weapons plugin's hit reaction (any child of her with `hit` and `dow
 - **A flag is one name everywhere.** "Whose it is" is worked out for showing and for a Problem, never to fence a
   flag in: the user's point was to use a marker's flag on a door.
 - F7 is heard by the flag board alone (each character hearing it flipped it once each).
+- **A thing may get its script after its Logic is ready** (an interior's door: `interior.gd` sets `door.gd` in its
+  own `_ready`, which comes after its children's). Anything a Logic needs of its thing's script (a signal, `use()`,
+  `locked_says`) is looked for when it's needed or deferred with retries (`_listen`), never once in `_ready`.

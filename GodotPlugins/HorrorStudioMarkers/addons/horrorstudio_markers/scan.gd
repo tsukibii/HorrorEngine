@@ -320,11 +320,19 @@ static func what(node: Node) -> String:
 		return "Logic"
 	var sc: Script = node.get_script()
 	if sc == null:
+		if export_door(node):
+			return "door"
 		return "thing" if node is Node3D else node.get_class()
 	var g := String(sc.get_global_name())
 	if g != "":
 		return g.trim_prefix("HSNpc").trim_prefix("HS") if g.begins_with("HS") else g
 	return sc.resource_path.get_file().get_basename().replace("_", " ")
+
+
+## a door of an interior's export (its doors/door_<id>): it has no script in the editor; the starter's interior.gd
+## gives it door.gd as the game starts
+static func export_door(node: Node) -> bool:
+	return node != null and String(node.name).begins_with("door_") and node.get_parent() != null and String(node.get_parent().name) == "doors"
 
 
 ## what a use does, in plain words: "needs it on", "turns it on", "ticks it"

@@ -78,9 +78,7 @@ func _ready() -> void:
 		return
 	add_to_group("hs_logic")
 	HSFlagBoard.of(get_tree())                                # (F7 lists the flags)
-	var t := thing_node()
-	if on == "signal" and t != null and on_signal != "" and t.has_signal(on_signal):
-		t.connect(on_signal, _heard)
+	_listen.call_deferred()
 	set_process(on == "itself")
 	_hook()
 	_player_asks.call_deferred()
@@ -89,6 +87,22 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	_unhook()
+
+
+# Its thing's signal, once the thing has it. (A door of an interior's export gets its script as the interior starts,
+# which is after this node is ready: looked for again for a couple of seconds before it's said to be missing.)
+func _listen(tries := 0) -> void:
+	if on != "signal" or on_signal == "" or not is_inside_tree():
+		return
+	var t := thing_node()
+	if t != null and t.has_signal(on_signal):
+		if not t.is_connected(on_signal, _heard):
+			t.connect(on_signal, _heard)
+		return
+	if tries < 20:
+		get_tree().create_timer(0.1).timeout.connect(_listen.bind(tries + 1))
+	else:
+		push_warning("HSLogic (%s): %s has no signal '%s': its Then will never happen." % [get_path(), t.name if t != null else "its thing", on_signal])
 
 
 # A player older than this node uses things without asking their Logic: said once, with what to do

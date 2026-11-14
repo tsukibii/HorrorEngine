@@ -195,6 +195,17 @@ mesh = SubResource("paper_m")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.25, -2)
 mesh = SubResource("lamp_m")
 
+[node name="House" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 0, 2)
+
+[node name="doors" type="Node3D" parent="House"]
+
+[node name="door_2" type="Node3D" parent="House/doors"]
+
+[node name="Mesh" type="MeshInstance3D" parent="House/doors/door_2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("door_m")
+
 [node name="Ann" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -2)
 

@@ -59,6 +59,13 @@ food, the devices plugin's laptop and parcels, the weapons plugin's pickups, you
 things itself: `if HSLogic.may_use(thing, self): thing.use(self); HSLogic.was_used(thing, self)`. A project whose
 `starter/player.gd` is from before this is told once in the output, and in the Things tab's Problems.
 
+**An interior's doors.** A door that came with an interior's export (`doors/door_<id>`) has no script in the editor:
+the starter's `interior.gd` gives it `door.gd` as the game starts, which is after a Logic under it is ready. So the
+Logic looks for its thing's signal again for a couple of seconds before saying it's missing; the tabs know such a
+door as a door (it's in the Things list, a Logic made for it is set off when it's *opened*, a click on its mesh finds
+it); and giving a node inside an instanced scene a Logic switches that instance's Editable Children on, since
+otherwise the scene couldn't keep it.
+
 **Dying.** The Story's checkpoint puts flags back; a Logic keeps how often it had fired at the checkpoint and goes
 back to that, so a flag a death took away is set again the next time.
 
@@ -185,6 +192,8 @@ why something waits can be read off the screen.
 **D. In the game**
 - [x] F7 lists the flags, the tasks and the pocket; F7 heard in one place (two characters flipped it back)
 - [x] a plain mesh with a Logic is something to use with E
+- [x] an interior's doors (their script comes when the game starts): the Logic waits for the signal, the tabs know
+      them, an instance's children made editable when one of its nodes is given a Logic
 
 **E. Checked, written, shipped**
 - [x] LOGICEDITOR: the two tabs driven in the editor itself, headless, and the scene they saved played as a game

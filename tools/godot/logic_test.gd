@@ -209,6 +209,26 @@ func stage_gate() -> void:
 	hit = await use_at(crate, 0.5)
 	ok(hit == null and HSLogic.of(crate) == [far], "A: a Logic elsewhere in the scene, pointed at the thing, is asked too")
 	ok(not HSLogic.may_use(crate) and HSLogic.may_use(door.get_node("Mesh")), "A: may_use for a script of your own")
+	# a door of an interior's export: no script until the interior gives it one, after its Logic is ready
+	var doors := Node3D.new()
+	doors.name = "doors"
+	main.add_child(doors)
+	var was_main := main
+	main = doors
+	var xdoor := thing("door_7", o + Vector3(6, 0, 0), "")
+	var xl := logic(xdoor, {"needs": "x_ok", "on": "signal", "on_signal": "opened", "set_flags": "+x_opened"})
+	main = was_main
+	xdoor.set_script(load("res://starter/door.gd"))            # (as interior.gd does in its _ready)
+	xdoor.call("setup")
+	xdoor.set_process(true)
+	put(o + Vector3(6, 0.1, 1.5))
+	await secs(0.5)
+	hit = await use_at(xdoor)
+	ok(hit == null and line() == "Locked." and not bool(xdoor.get("open")), "A: an export's door given its script after its Logic was ready: the gate holds, with the door's own line", line())
+	story.call("set_flag", "x_ok")
+	await use_at(xdoor)
+	await frames(4)
+	ok(bool(xdoor.get("open")) and bool(story.call("is_set", "x_opened")) and xl.times == 1, "A: and its 'opened' is heard (the signal looked for again once the door has it)")
 	# a mesh with no script at all: its Logic makes it something to use
 	var button := thing("ButtonA", o + Vector3(0, 0, 4), "", Vector3(0.3, 0.3, 0.1), false)
 	button.position.y = 1.0
