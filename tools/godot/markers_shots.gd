@@ -1,6 +1,9 @@
 ## The guide's two pictures of the game (guides/markers; tools/godot/markers_check.py guide): the room the editor check
-## works in, the starter's Story and player, Alex with three markers made here (walk, talk, a choice), played until
-## he's walking (F7's label over him) and until you're talking to him (the box with his line and your answers).
+## works in, the starter's Story and player, Alex with markers made here (a walk, a talk), played until Alex is
+## walking (F7's label over them) and until you're talking: the line at the foot of the view and your answers on one
+## line under it, as the UI plugin's HUD draws them (an HSHud is put in the scene for it, as a game has one). A third,
+## `00_play_talk_twin` (not the guide's: its name keeps it out), is the same moment with no HUD in the scene, drawn by
+## the Markers plugin itself: the two should look alike.
 ## Run with a window (under xvfb): `-- --out=DIR`. Prints `MARKERSSHOTS <what>` lines and quits.
 extends SceneTree
 
@@ -115,17 +118,30 @@ func _initialize() -> void:
 		if run.cur == talk and run.phase == "stay" and run.can_talk():
 			break
 		await physics_frame
+	var hud: CanvasLayer = load("res://addons/horrorstudio_ui/hud.gd").new()   # the game's HUD (the UI plugin's): the talk is drawn by it
+	hud.name = "Hud"
+	room.add_child(hud)
+	var box := HSNpcTalkBox.of(root.get_tree())
+	box.set("_hud_t", -100000)
 	player.global_position = Vector3(0.1, 0.1, 2.75)
 	look(player, alex.global_position + Vector3.UP * 1.3)
 	await frames(30)
 	look(player, alex.global_position + Vector3.UP * 1.3)
 	await frames(6)
+	await snap("00_play_prompt")
 	player.call("use")
-	await frames(20)
-	var box := HSNpcTalkBox.of(root.get_tree())
-	if box.open_now:
-		box.advance()
-		box.select(0)
-	await frames(10)
+	await frames(40)
+	print("MARKERSSHOTS with the HUD: open %s, stage %s, the HUD's line '%s', its answers %s" % [box.open_now, box.stage, hud.get("line_el").text, str(hud.call("choice_options"))])
 	await snap("play_talk")
+	box.close()
+	await frames(4)
+	room.remove_child(hud)
+	hud.queue_free()
+	box.set("_hud_t", -100000)
+	await frames(20)
+	await snap("00_play_prompt_twin")
+	player.call("use")
+	await frames(40)
+	print("MARKERSSHOTS with no HUD: open %s, stage %s, showing %s" % [box.open_now, box.stage, str(box.showing())])
+	await snap("00_play_talk_twin")
 	quit()

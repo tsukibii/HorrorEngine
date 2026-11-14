@@ -132,6 +132,27 @@ func _hook_story() -> void:
 		st.connect("died", _on_died)
 
 
+## her HSNpc left the scene (freed, the level changed): the talk shut, her prompt taken away, the Story no longer
+## heard. Nothing may keep this runner going once she's gone: a checkpoint put back would reach for nodes that aren't
+func end() -> void:
+	if preview:
+		return
+	_close_talk()
+	if tree != null and is_instance_valid(tree.root) and tree.root.has_node(HSNpcTalkBox.NAME):
+		HSNpcTalkBox.of(tree).prompt(self, "")
+	var st := story()
+	if st != null:
+		for pair in [["flagged", _on_story_changed], ["unflagged", _on_story_changed], ["task_done", _on_story_changed], ["task_added", _on_story_changed], ["got", _on_story_changed],
+				["kept", _on_kept], ["revived", _on_revived], ["died", _on_died]]:
+			if st.has_signal(pair[0]) and st.is_connected(pair[0], pair[1]):
+				st.disconnect(pair[0], pair[1])
+
+
+# she and her HSNpc are still there (a runner can outlive them for a moment: something else still holds it)
+func _alive() -> bool:
+	return npc != null and is_instance_valid(npc) and her != null and is_instance_valid(her)
+
+
 func _on_story_changed(_a = null) -> void:
 	_poll = 0.0                                                # (looked at again this frame)
 
@@ -864,7 +885,7 @@ func _player_things(dt: float) -> void:
 			aimed = aim.is_colliding() and aim.get_collider() == _talk_body
 		if aimed or tree.root.has_node(HSNpcTalkBox.NAME):
 			var word := at.talk_prompt if at != null and is_instance_valid(at) and at.talk_prompt != "" else str(npc.get("talk_prompt"))
-			HSNpcTalkBox.of(tree).prompt(self, ("E   %s to %s" % [word, npc.display_name()]) if aimed else "")
+			HSNpcTalkBox.of(tree).prompt(self, word if aimed else "", npc.display_name())     # (the HUD's own ring and prompt: the verb, and who under it)
 	if at != null and is_instance_valid(at) and at.kind == "wait" and at.face_player and pl != null and not body.busy and body.posture == "standing" and not body.hidden:
 		var d := pl.global_position - her.global_position
 		if Vector2(d.x, d.z).length() > 0.3:
@@ -1000,14 +1021,18 @@ func restore(d: Dictionary) -> void:
 
 
 func _on_kept() -> void:
-	_kept = snapshot()
+	if _alive():
+		_kept = snapshot()
 
 
 func _on_revived() -> void:
-	restore(_kept)
+	if _alive():
+		restore(_kept)
 
 
 func _on_died(_how = null) -> void:
+	if not _alive():
+		return
 	_close_talk()
 
 

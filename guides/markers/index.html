@@ -223,13 +223,17 @@ Meanwhile the character holds what they're in: standing they idle, sitting they 
 <ol class="steps">
   <li>Click the <span class="ui">Talk</span> card (or turn on <span class="ui">You can talk to ... here</span> on any marker where they stay put).</li>
   <li>Type what's said, a line a row. <code>Alex: Looking for something?</code> names who says it; just words are the character's; <code>You: ...</code> is yours. <code>[smile]</code> in front wears that face while it's said.</li>
-  <li>Press <span class="ui">+ Answer</span> for each thing you can answer. Each answer gets a flag of its own (you can rename it), a face, a reply.</li>
+  <li>Press <span class="ui">+ Answer</span> for each thing you can answer: two at the most, and short. Each answer gets a flag of its own (you can rename it), a face, a reply.</li>
 </ol>
 <figure><img src="img/05_talk.jpg" alt="The Talk section of the form: a line, two answers with their flags and faces"><figcaption>Two answers. "The book on the shelf" turns on <code>alex_shelf</code> and Alex smiles; "Never mind" turns on <code>alex_never</code>.</figcaption></figure>
 <ul>
   <li>Answers are given once each time the character comes to that marker. Talked to again they say the <span class="ui">Asked again</span> line, or nothing.</li>
   <li><span class="ui">Another conversation, for when flags are on</span>: the first conversation whose flags are on is the one had. So a flag picks what's said, and with it the face.</li>
   <li>While you talk you stand still and the character starts nothing: nobody walks off mid-sentence.</li>
+  <li>It's drawn as every line and choice in the studio's games is: no panel. The name small, the line under it, and the
+  answers on one line under the last thing said with a dash between, the one pointed at white and the other dimmed.
+  With the HUD in your scene (an <code>HSHud</code> node, the UI plugin's) it <em>is</em> the HUD's own line, choice and
+  ring; with none the Markers plugin draws the same thing.</li>
 </ul>
 </section>
 
@@ -304,7 +308,7 @@ touched and nothing is saved.</p>
 <section id="game">
 <h2><span class="n">16</span>In the game</h2>
 <div class="pair">
-<figure><img src="img/play_talk.jpg" alt="The game: Alex's line and two answers in a box at the foot of the screen"><figcaption><kbd>E</kbd> on someone you can talk to. <kbd>W</kbd>/<kbd>S</kbd> or the wheel choose, <kbd>E</kbd> or a click answers, <kbd>1</kbd> to <kbd>9</kbd> pick at once.</figcaption></figure>
+<figure><img src="img/play_talk.jpg" alt="The game: Alex's name and line at the foot of the view, the two answers on one line under it with a dash between, no panel"><figcaption>Aim at someone you can talk to (a ring, <em>Talk</em> and their name) and press <kbd>E</kbd>. The lines come one after another, each for as long as it takes to read; <kbd>E</kbd> or a click hurries them. The answers: <kbd>A</kbd> / <kbd>D</kbd> or the arrows move, <kbd>Enter</kbd> picks, or click one.</figcaption></figure>
 <figure><img src="img/play_f7.jpg" alt="The game with a label over Alex: the quest, the marker, what it waits for"><figcaption><kbd>F7</kbd>: over each character, their quest, their marker and what it's waiting for.</figcaption></figure>
 </div>
 <p>The flags a character sets by themselves (the name in small letters): <code>talked:alex</code> after a talk,

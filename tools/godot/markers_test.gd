@@ -448,7 +448,9 @@ func stage_talk() -> void:
 	var run: HSNpcRunner = npc.runner
 	var box := box_of()
 	ok(run.cur == m1 and run.phase == "stay" and run.can_talk(), "D: she stays until you talk to her", run.status())
-	ok(box.prompt_text().contains("Talk to Dee"), "D: aimed at her, the prompt says so", box.prompt_text())
+	ok(box.prompt_text() == "Talk Dee" and box.get_node("Root/Ring").visible and box.get_node("Root/Prompt/Verb").text == "Talk" and box.get_node("Root/Prompt/ThingName").text == "Dee",
+		"D: aimed at her, a ring with the verb beside it and her name under it", box.prompt_text())
+	ok(box.find_children("*", "PanelContainer", true, false).is_empty(), "D: no panel anywhere in it")
 	look(o + Vector3(6, 1.1, 0))
 	await frames(4)
 	ok(box.prompt_text() == "", "D: looking away, no prompt", box.prompt_text())
@@ -461,16 +463,53 @@ func stage_talk() -> void:
 	ok(box.showing()["who"] == "Dee" and box.showing()["text"] == "Looking for something?", "D: her first line", str(box.showing()))
 	await secs(0.5)
 	ok(run.cur == m1, "D: nothing of hers starts while you talk")
+	var foot := box.get_node("Root/Footer") as Control
+	var row := box.get_node("Root/Footer/Dock/Choice") as HBoxContainer
+	ok(foot.visible and (box.get_node("Root/Footer/Line") as Label).text == "Looking for something?" and (box.get_node("Root/Footer/Who") as Label).text == "Dee" and not row.visible,
+		"D: drawn as a line at the foot of the view with her name over it, no answers yet")
 	box.advance()
 	ok(box.showing()["text"] == "I can show you." and box.showing()["who"] == "Dee", "D: a line that names nobody is hers", str(box.showing()))
+	ok(box.stage == "answers" and box.options() == ["The kitchen", "The garden"], "D: the last line comes with the answers, as their question", str(box.options()))
+	await frames(2)
+	var opts := []
+	var dashes := 0
+	for ch in row.get_children():
+		if ch.has_meta("label"):
+			opts.append(ch)
+		elif ch is Label and (ch as Label).text == "—":
+			dashes += 1
+	var a0: Color = (opts[0] as Button).get_theme_color("font_color") if opts.size() == 2 else Color.BLACK
+	var a1: Color = (opts[1] as Button).get_theme_color("font_color") if opts.size() == 2 else Color.BLACK
+	ok(row.visible and opts.size() == 2 and dashes == 1 and (opts[0] as Button).text == "The kitchen" and (opts[1] as Button).text == "The garden" and absf((opts[0] as Control).global_position.y - (opts[1] as Control).global_position.y) < 1.0,
+		"D: the answers on one line under it, a dash between, their own words and no numbers", "%d answers, %d dash" % [opts.size(), dashes])
+	ok(a0.a > 0.9 and a1.a < a0.a * 0.6, "D: the one pointed at white, the other dimmed", "%.2f and %.2f" % [a0.a, a1.a])
 	box.advance()
-	ok(box.stage == "answers" and box.options() == ["The kitchen", "The garden"], "D: then the answers", str(box.options()))
-	box.pick(1)
+	ok(box.stage == "answers" and box.open_now and not story.is_set("dee_kitchen"), "D: E hurries the lines and never picks an answer")
+	var key := func(code: Key) -> void:
+		var ev := InputEventKey.new()
+		ev.physical_keycode = code
+		ev.keycode = code
+		ev.pressed = true
+		box._input(ev)
+	box._opened = 0
+	key.call(KEY_1)
+	key.call(KEY_2)
+	ok(box.stage == "answers" and not story.is_set("dee_kitchen") and not story.is_set("dee_garden"), "D: nor does 1 or 2")
+	key.call(KEY_D)
+	a0 = (opts[0] as Button).get_theme_color("font_color")
+	a1 = (opts[1] as Button).get_theme_color("font_color")
+	ok(box.selected == 1 and a1.a > 0.9 and a0.a < a1.a * 0.6, "D: D (or the right arrow) points at the next one")
+	key.call(KEY_LEFT)
+	ok(box.selected == 0, "D: A (or the left arrow) back")
+	key.call(KEY_RIGHT)
+	key.call(KEY_ENTER)
 	ok(story.is_set("dee_garden") and not story.is_set("dee_kitchen"), "D: the answer picked switches its flags")
-	ok(box.showing()["text"] == "Oh. The garden.", "D: and gets her reply", str(box.showing()))
-	box.advance()
-	await frames(3)
-	ok(not box.open_now and not run.talking and player.process_mode != Node.PROCESS_MODE_DISABLED, "D: over, you can move again")
+	ok(box.showing()["text"] == "Oh. The garden." and not row.visible, "D: Enter picks it: her reply, the answers gone", str(box.showing()))
+	var wait := HSNpcTalkBox.read_secs("Oh. The garden.")
+	await secs(wait - 0.4)
+	ok(box.open_now, "D: a line stays as long as it takes to read", "%.1f s" % wait)
+	await secs(0.7)
+	ok(not box.open_now and not run.talking and player.process_mode != Node.PROCESS_MODE_DISABLED and not foot.visible, "D: then it's over by itself, and you can move again")
 	ok(story.is_set("met_dee") and story.is_set("talked:dee") and heard == [1], "D: the conversation's own flag, talked:dee, the signal", str(heard))
 	await until(func(): return story.is_set("dee_done"), 12.0)
 	ok(flat(her.global_position).distance_to(flat(o + Vector3(0, 0, -4))) < 0.05, "D: the Choice took the way of the answer", "%.2f m from the garden" % flat(her.global_position).distance_to(flat(o + Vector3(0, 0, -4))))
@@ -510,8 +549,76 @@ func stage_talk() -> void:
 	box.advance()
 	await frames(2)
 	ok(run2.cur == w and not box.open_now, "D: a conversation with no answers can be had again")
+	await frames(6)
+	var up_before := box.prompt_text()
 	npc2.queue_free()
 	her2.queue_free()
+	await frames(4)
+	ok(up_before == "Talk Dot" and box.prompt_text() == "" and not story.is_connected("kept", run2._on_kept) and not story.is_connected("revived", run2._on_revived),
+		"D: taken out of the scene while you're aimed at her: her prompt goes and nothing of hers still listens to the Story", "'%s' then '%s'" % [up_before, box.prompt_text()])
+	# with the UI plugin's HUD in the scene: its own line, its own one-line choice, its own ring and prompt
+	var hud_script = load("res://addons/horrorstudio_ui/hud.gd") if ResourceLoader.exists("res://addons/horrorstudio_ui/hud.gd") else null
+	ok(hud_script != null, "D: the UI plugin is in the project")
+	if hud_script != null:
+		var hud = hud_script.new()
+		hud.name = "Hud"
+		main.add_child(hud)
+		box._hud_t = -100000
+		var o3 := origin()
+		var her3 := woman(o3, "HerD3")
+		var npc3 := new_npc(her3, "Eve")
+		var q3 := quest(npc3, "One")
+		var t3 := [{"when": "", "lines": ["Eve: Tea?", "Eve: Or something stronger?"], "answers": [{"text": "Tea", "sets": "+eve_tea", "reply": "Eve: Tea it is."}, {"text": "Stronger", "sets": "+eve_strong"}]}]
+		mk(q3, "wait", Vector3.ZERO, 0.0, {"talk": true, "stay": "secs", "stay_secs": 60.0, "talks": t3})
+		go(npc3)
+		put(o3 + Vector3(0, 0.1, 1.4))
+		look(o3 + Vector3(0, 1.1, 0))
+		await secs(0.6)
+		ok(str(hud.cursor_label) == "Talk" and str(hud.cursor_name) == "Eve" and not box.get_node("Root/Ring").visible and not box.get_node("Root/Prompt").visible,
+			"D: with a HUD in the scene the prompt is the HUD's own ring, verb and name", "%s %s" % [hud.cursor_label, hud.cursor_name])
+		look(o3 + Vector3(6, 1.1, 0))
+		await frames(4)
+		ok(str(hud.cursor_label) == "", "D: and gone from it when you look away")
+		look(o3 + Vector3(0, 1.1, 0))
+		await frames(4)
+		player.call("use")
+		await frames(2)
+		ok(box.open_now and str(hud.line_el.text) == "Tea?" and str(hud.who_el.text) == "Eve" and not (box.get_node("Root/Footer") as Control).visible,
+			"D: her line is the HUD's own line, nothing drawn beside it", "%s: %s" % [hud.who_el.text, hud.line_el.text])
+		box.advance()
+		await frames(2)
+		ok(box.stage == "answers" and not bool(hud.choice_over) and hud.choice_options() == ["Tea", "Stronger"] and str(hud.line_el.text) == "Or something stronger?",
+			"D: the answers are the HUD's own choice under the question", str(hud.choice_options()))
+		box._opened = 0
+		var ev := InputEventKey.new()
+		ev.physical_keycode = KEY_D
+		ev.pressed = true
+		box._input(ev)
+		ok(int(hud.choice_sel) == 1 and box.selected == 1, "D: D moves the HUD's own pick")
+		box.select(0)
+		ok(int(hud.choice_sel) == 0, "D: and back")
+		hud.choice_pick(1)                                     # (as a player: to it, then Enter)
+		await frames(2)
+		ok(story.is_set("eve_tea") and not story.is_set("eve_strong") and bool(hud.choice_over) and str(hud.line_el.text) == "Tea it is.", "D: picked in the HUD: its flag, her reply on the HUD", str(hud.line_el.text))
+		box.advance()
+		await frames(2)
+		ok(not box.open_now and player.process_mode != Node.PROCESS_MODE_DISABLED, "D: and over")
+		story.set_flag("eve_tea", false)
+		npc3.runner.asked.clear()
+		await frames(4)                                        # (the box E finds her by comes back once she has something to say again)
+		player.call("use")
+		await frames(2)
+		box.advance()
+		await frames(2)
+		ok(box.open_now and box.stage == "answers" and not bool(hud.choice_over), "D: (asked again, the answers up)")
+		box.close()
+		await frames(2)
+		ok(bool(hud.choice_over) and not box.open_now and not story.is_set("eve_tea") and not story.is_set("eve_strong"), "D: shut with the answers up (she's shot): the HUD's choice put away, nothing answered")
+		npc3.queue_free()
+		her3.queue_free()
+		hud.queue_free()
+		await frames(2)
+		box._hud_t = -100000
 	put(Vector3(20, 0.1, 20))
 
 
@@ -1142,6 +1249,7 @@ func stage_problems() -> void:
 	var rep := mk(q, "repeat")
 	mk(rep, "event")
 	mk(q, "event", Vector3.ZERO, 0.0, {"start_when": "@nonsense"})
+	mk(q, "wait", Vector3.ZERO, 0.0, {"talk": true, "talks": [{"lines": ["Roy: Which?"], "answers": [{"text": "One"}, {"text": "Two"}, {"text": "Three"}]}]})
 	main.add_child(npc)
 	npc.set_physics_process(false)
 	npc.character = npc.get_path_to(her)
@@ -1151,7 +1259,8 @@ func stage_problems() -> void:
 		texts += str(p["text"]) + "\n"
 	for need in [["nothing in the scene turns it on", "a flag nothing sets"], ["has nothing to say", "staying until a talk with no conversation"], ["pick the thing", "a Pick up with nothing to pick"],
 			["no animation called 'moonwalk'", "a clip she hasn't got"], ["Move it last", "a way after 'otherwise'"], ["comes back where they vanished", "a body marker after Disappear"],
-			["Put a Walk marker before it", "a Sit far from where she'll be"], ["never ends", "a Repeat with no end before other markers"], ["isn't a word it knows", "a word that isn't one"]]:
+			["Put a Walk marker before it", "a Sit far from where she'll be"], ["never ends", "a Repeat with no end before other markers"], ["isn't a word it knows", "a word that isn't one"],
+			["3 answers to one question", "more than two answers"]]:
 		ok(texts.contains(need[0]), "R: Problems says: " + need[1])
 	var at_marker := 0
 	for p in found:
@@ -1162,7 +1271,7 @@ func stage_problems() -> void:
 	main.add_child(none)
 	none.set_physics_process(false)
 	ok(str(HSNpcFlow.problems(none)).contains("No character yet"), "R: and an HSNpc with no character")
-	ok(HSNpcFlow.label_of(far) == "6" and HSNpcFlow.board(q).size() == 11, "R: the storyboard numbers them", "%s, %d rows" % [HSNpcFlow.label_of(far), HSNpcFlow.board(q).size()])
+	ok(HSNpcFlow.label_of(far) == "6" and HSNpcFlow.board(q).size() == 12, "R: the storyboard numbers them", "%s, %d rows" % [HSNpcFlow.label_of(far), HSNpcFlow.board(q).size()])
 	npc.queue_free()
 	none.queue_free()
 	her.queue_free()

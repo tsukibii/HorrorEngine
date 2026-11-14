@@ -193,9 +193,14 @@ the flags itself. In the tab a condition is built from a menu and shown as chips
 6. **Repeat.** Its markers again and again: N times, until its flags are so (looked at before each pass), or until a
    later quest starts.
 7. **Talking.** E on her while she stays put at a marker with *You can talk to her* on: the first of the marker's
-   conversations whose flags are so (so a flag chooses what she says). Lines one at a time, then the answers; an
-   answer switches its flags, shows its face, gives her reply. While it's open she starts nothing and you stand
-   still. A marker that *stays until you talk to her* is done when it ends.
+   conversations whose flags are so (so a flag chooses what she says). Lines one after another, each for as long as
+   it takes to read (E: the next now), the last of them with the answers under it; an answer switches its flags,
+   shows its face, gives her reply. While it's open she starts nothing and you stand still. A marker that *stays
+   until you talk to her* is done when it ends. **Drawn the studio's way** (DECISIONS 2026-10-30, evening, and
+   2026-11-14: "Keep it the prior style"): no panel, her name small over the line, the answers on one line under
+   it with a dash between, the one pointed at white and the other dimmed, no numbers; A / D or the arrows and Enter,
+   or a click; two answers at the most. With an HSHud in the scene it is that HUD's own line, choice and ring; with
+   none the plugin draws the same.
 8. **Faces.** A marker's face is worn as it starts and stays (until another marker's, or "neutral"). Its **rules**
    ("if `gave_gift`: smile; otherwise: sad") are looked at while she's at that marker, the first that's so worn. A
    conversation's line or answer can wear a face for that moment.
@@ -300,6 +305,10 @@ saving the scene, ends it.
       place as numbers, flags as ticks; the palette a column of its own so the storyboard keeps the height; labels
       that name the character or nobody
 
+- [x] conversations in the studio's own style (the user's first feedback, 2026-11-14): the HUD's line, one-line
+      answers and ring when the scene has an HSHud, the same drawn by the plugin when it has none; the boxed panel
+      with numbered answers this round first drew is gone
+
 **E. Checked, written, shipped**
 - [x] MARKERSEDITOR: the tab driven in the editor itself (headless), a scene made from nothing, saved clean
 - [x] `godot_byhand.py` installs and enables it (a project made before it gets it switched on by `install`)
@@ -313,6 +322,5 @@ saving the scene, ends it.
 - a Follow marker (she keeps after you along your trail, as the starter's chase does)
 - her head and eyes turning to you while she waits (now: her body can face you)
 - feet planted on each step of a stair (now: she glides over the risers)
-- conversations drawn by the UI plugin's HUD when the scene has one (now: the plugin's own box)
 - a navigation mesh (now: the path you draw is the path she takes)
 - Director and desk games (now: games built by hand)

@@ -15,7 +15,7 @@
 
     python tools/godot/markers_check.py guide DIR
         the guide's pictures (guides/markers/img): the editor's from DIR (a run with --editor --shots DIR), the game's
-        two made now under xvfb (markers_shots.gd: F7's label, the talk box), all as JPEGs.
+        two made now under xvfb (markers_shots.gd: F7's label, a conversation), all as JPEGs.
 
 Godot is $GODOT, else godot.
 """
@@ -297,6 +297,7 @@ def guide(args):
     proj = ROOT / "Saved" / "Godot" / "_markers"
     if not (proj / "editor_scene.tscn").is_file():
         sys.exit("guide: run the editor check first (python tools/godot/markers_check.py --editor --shots DIR)")
+    shutil.copytree(PLUGIN, proj / "addons" / "horrorstudio_markers", dirs_exist_ok=True)     # (the plugin as it is now, not as the last check left it)
     shutil.copy(HERE / "markers_shots.gd", proj / "markers_shots.gd")
     env = dict(os.environ)
     if os.path.exists("/usr/share/vulkan/icd.d/lvp_icd.json") and not env.get("DISPLAY"):

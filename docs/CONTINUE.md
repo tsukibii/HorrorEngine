@@ -55,10 +55,15 @@ colour, an eye and solo; the palette; the storyboard; the marker's form in plain
 3D view as map pins placed and dragged by mouse, the tester (a marker, from here, a quest, on a copy). The guide:
 `guides/markers/index.html`. Checks: MARKERS (4 minutes), MARKERSEDITOR (1 minute).
 
-**The user has seen none of it yet**: they sent a mock-up and a long request and this is the first answer. Expect the
-first feedback to be about what a hand finds that a check doesn't: the pins' size and look on their own maps, the
-tab's height (300 px at the least; the storyboard shows about five rows before it's dragged taller), the talk box's
-look in play, how a walk reads on their characters, stairs on an interior's export (they want step colliders). The
+**The user's first feedback, done** (DECISIONS 2026-11-14): the conversations were drawn in a new boxed panel with
+numbered answers; they're now the prior style (the HUD's own line, one-line answers with a dash and ring prompt when
+the scene has an `HSHud`; the same drawn by the plugin when it has none; lines timed, A / D and Enter or a click).
+
+**The user has seen only pictures of it**: expect the next feedback to be about what a hand finds that a check
+doesn't: the pins' size and look on their own maps, the tab's height (300 px at the least; the storyboard shows about
+five rows before it's dragged taller), how a walk reads on their characters, stairs on an interior's export (they
+want step colliders), and anything else on the game's screen that isn't in the studio's style (F7's chip is a debug
+label, drawn plainly; say so if asked). The
 editor was only ever driven by `markers_editor_test.gd` (headless, and under xvfb on lavapipe at 1920 x 1080 for the
 pictures); nobody has used it with a mouse.
 
@@ -74,7 +79,8 @@ the mock-up's are: say so if the user asks.
 3. a Follow marker (after you along your trail, as the starter's chase does), and the hunt's nodes as cards (a
    marker's Event can already `fire` a cue, a scare area, a hunt's `start`);
 4. the head and eyes turning to you while they wait (the body can face you);
-5. conversations drawn by the UI plugin's HUD when the scene has one (now the plugin's own box, `talk_box.gd`);
+5. a line's own time (now by its length: `read_secs`), and a marker's "Then: a line" through the HUD's line too (it
+   goes through the Story's `say`, which draws its own label);
 6. feet planted on each step of a stair (they glide over the risers; ANIMATOR_V2 §12's foot IK is the same work);
 7. a navigation mesh (the path drawn is the path walked), Director and desk games.
 

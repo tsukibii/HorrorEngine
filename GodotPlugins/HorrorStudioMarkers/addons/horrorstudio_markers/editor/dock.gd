@@ -1498,8 +1498,11 @@ func _form_talk(m: HSNpcMarker, npc: HSNpc) -> void:
 				var l2 := _talks(m)
 				(l2[i]["answers"] as Array).remove_at(a)
 				_save_talks(m, l2))
+		if not answers.is_empty():                              # how they'll look, where they're typed
+			_note(cb, "Shown on one line under the last thing said, a dash between: two answers at the most, and short." if answers.size() <= 2
+				else "%d answers: they're shown on one line with a dash between. Keep it to two." % answers.size())
 		var brow := HBoxContainer.new()
-		var aa := _button("Answer", "plus", "Something you can answer. It can switch a flag, change the face, get a reply.")
+		var aa := _button("Answer", "plus", "Something you can answer: shown on one line under the last line, a dash between (two at the most). It can switch a flag, change the face, get a reply.")
 		aa.name = "AddAnswer"
 		aa.pressed.connect(func() -> void:
 			var l2 := _talks(m)
@@ -1544,7 +1547,7 @@ func _form_talk(m: HSNpcMarker, npc: HSNpc) -> void:
 		l2.insert(0, {"when": "new_flag", "lines": ["..."], "answers": [], "sets": "", "again": ""})
 		_save_talks(m, l2))
 	tk.add_child(ac)
-	_row(tk, "Prompt", _text(m, "talk_prompt", "Talk"), "The prompt's word: 'E   Talk to %s'." % (npc.display_name() if npc != null else "them"))
+	_row(tk, "Prompt", _text(m, "talk_prompt", "Talk"), "The word beside the ring when you aim at %s (their name goes under it)." % (npc.display_name() if npc != null else "them"))
 	tk.add_child(_check(m, "turn_to_player", "Turns to you"))
 
 

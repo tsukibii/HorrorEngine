@@ -40,7 +40,7 @@ static var debug := false                     ## F7: what every character is doi
 @export var step_sounds := true               ## her steps heard (the starter's Sound node)
 @export var catch_up := true                  ## a quest that starts while she isn't where it expects: she's put there when you can't see it
 @export_group("Talk")
-@export var talk_prompt := "Talk"             ## the prompt's word: "E   Talk to Alex"
+@export var talk_prompt := "Talk"             ## the word beside the ring when you aim at them (their name goes under it)
 @export_group("Shot")
 @export_enum("the quest stops", "gone for good", "can't be killed") var when_shot_down := 0   ## what the weapons plugin's HSHitReact going down means
 @export_range(0.5, 60.0, 0.5) var back_up_secs := 4.0   ## she can't be killed: how long she's down
@@ -77,6 +77,18 @@ func start() -> void:
 		return
 	runner = HSNpcRunner.new()
 	runner.begin(self, her, false)
+
+
+# taken out of the scene (freed with its level, or moved): her runner lets go of the Story and the talk; put back, it
+# listens again
+func _exit_tree() -> void:
+	if runner != null and not Engine.is_editor_hint():
+		runner.end()
+
+
+func _enter_tree() -> void:
+	if runner != null and not Engine.is_editor_hint():
+		runner._hook_story()
 
 
 func _physics_process(dt: float) -> void:

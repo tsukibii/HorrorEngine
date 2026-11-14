@@ -3216,6 +3216,18 @@ pale one shows.
 - **Words in the 3D world smear when they move.** F7's label was a Label3D over her head; under the game's TAA it
   ghosted into a blur as she walked, and the first picture of it couldn't be read. It's a chip on a CanvasLayer now,
   placed by the camera's `unproject_position`. Anything meant to be read while it moves is drawn in 2D.
+- **What the user has already decided is used, not redone.** The markers' conversations were drawn in a new boxed
+  panel with numbered answers; the user had settled how a choice looks two weeks before (one line under the question,
+  a dash between, no panel, no numbers: DECISIONS 2026-10-30, evening) and the UI plugin has drawn it since. The design
+  even listed "the HUD's own look" under Later, as if it were the extra. Their first words on seeing it: "Why did we
+  switch to a new panel style for choices. Keep it the prior style." Before drawing anything on the game's screen:
+  grep DECISIONS for it (choice, prompt, line, panel) and look for the node that already draws it; a new plugin being
+  free of the others is no reason to look different from them.
+- **A RefCounted used as a dictionary's key is held by the dictionary.** The talk box kept its prompts by whoever
+  asked (the runner itself); a character freed while you were aimed at them left that entry, the entry kept the
+  runner, the runner stayed hooked to the Story, and the next checkpoint put back reached for its freed character
+  ("Cannot call method on a previously freed instance", three stages later). Keys by instance id; and whoever owns a
+  helper object tells it when it goes (`_exit_tree` → `end()`), rather than trusting it to die with its last signal.
 - **Look at the panel at the size it opens at.** The tab was laid out with the palette over the storyboard; at the
   bottom panel's own height the storyboard got a row and a half. The palette became a column of its own and the
   tab's least height went up. A picture of the editor as it opens says this; the layout's code doesn't.

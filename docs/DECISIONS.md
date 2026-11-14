@@ -2,6 +2,25 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-14, the markers' conversations: the prior style, not a new panel (the user, on the first picture of it in play)
+
+The picture: Alex in the room and, at the foot of the screen, a dark rounded panel with "Alex", "Looking for
+something?" and two boxed rows, "1 The book on the shelf" and "2 Never mind", with "W / S choose  E answer" under them.
+
+- **"Why did we switch to a new panel style for choices. Keep it the prior style."**
+- The prior style is the user's own of 2026-10-30, evening (below: "The choice back to one line"), which the UI
+  plugin's HUD has drawn since: the question as the line at the foot of the view, the answers on one line under it
+  with a dash between, the one pointed at white and the other dimmed, **no panel** (and 2026-11-08: "glass: no panel
+  to see"), **no numbers** ("we don't want 1 or 2 to select"), a click or A / D (or the arrows) and Enter, two answers
+  at the most. The Markers plugin had drawn a box of its own instead, and listed "use the HUD's" under Later. Wrong
+  way round: what's already decided is used first.
+- **So**: a marker's conversation is drawn by the scene's `HSHud` when it has one (its `line`, its `choose`, its
+  reticle's ring and prompt), and when it has none the plugin draws that same footer itself, number for number. Lines
+  come one after another, each for as long as it takes to read, as lines do in the games (E or a click hurries them;
+  E never picks an answer). The prompt over someone you can talk to is the ring with the verb and the name under it,
+  not a box. Problems warns past two answers.
+- **A rule from it**: nothing new is drawn on the game's screen while the UI plugin already draws that thing.
+
 ## 2026-11-13, the marker system: a character's whole part in the game placed as markers (the user, with a mock-up)
 
 The mock-up: a Godot editor with a bottom panel "NPC Path & Animation Sequencer" (an NPC list, a quest dropdown with

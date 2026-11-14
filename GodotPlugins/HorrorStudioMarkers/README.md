@@ -43,8 +43,12 @@ beside a character in the tab shows or hides her markers; the ring shows only he
 
 ## In the game
 
-- **E** on her when a marker says you can talk to her: a box with her lines and your answers (W/S or the wheel, E or a
-  click; 1 to 9). You stand still meanwhile; she starts nothing.
+- **E** on her when a marker says you can talk to her (aimed at her: a ring, *Talk* and her name). Her lines come one
+  after another, each for as long as it takes to read (E or a click: the next now); then your answers on one line under
+  the last thing she said, a dash between them, the one pointed at white and the other dimmed: **A / D** or the arrows,
+  **Enter**, or a click. No panel, no numbers, two answers at the most: the studio's own style for lines and choices
+  (DECISIONS 2026-10-30, evening). With an `HSHud` in the scene it's that HUD's own line, choice and ring; with none
+  the plugin draws the same. You stand still meanwhile; she starts nothing.
 - **F7**: over each character, their quest, their marker and what it's waiting for.
 - Her flags: `talked:<name>`, `shot:<name>`, `down:<name>` (her name in small letters), set by themselves.
 - It speaks the starter kit's Story's words (tasks, flags, items) and works without a Story (it keeps the flags).

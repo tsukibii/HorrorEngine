@@ -466,8 +466,10 @@ static func _container_problems(container: Node, npc: Node, clips: PackedStringA
 			out.append({"node": m, "text": "%s stays until you talk, but has nothing to say here: turn on 'You can talk here' and give it a line." % lab, "level": "error"})
 		if m.talk and m.conversations().is_empty() and m.kind != "choice":
 			out.append({"node": m, "text": "%s: you can talk here, but there's no conversation." % lab, "level": "warn"})
-		if m.talk and m.kind == "walk":
-			pass
+		if m.talk:                                             # answers are shown on one line with a dash between: two at the most (DECISIONS 2026-10-30, evening)
+			for c in m.conversations():
+				if (c["answers"] as Array).size() > 2:
+					out.append({"node": m, "text": "%s: %d answers to one question. They're shown on one line with a dash between: keep it to two (a second question can follow from an answer's flag)." % [lab, (c["answers"] as Array).size()], "level": "warn"})
 		for fp in m.fire:
 			var t := m.get_node_or_null(fp) if m.is_inside_tree() else null
 			if t == null:
