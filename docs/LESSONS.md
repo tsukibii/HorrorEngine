@@ -3338,3 +3338,20 @@ pale one shows.
 - **A test's own geometry.** GDSMALL first had her walk to the chair from behind it, through where it would stand,
   and reported a shin 46 cm "into" it. Nothing stood there. Start her where a level would let her come from, and
   bound the box by its real size.
+
+## Rules for whoever models (2026-11-14, later, `even-more-animations-v3`: docs/ANIMATION_RULES.md)
+
+- **Measure the rule, then write it.** The first draft of the rules had "a handle between 0.9 and 1.1 m" from what
+  the clips are made for. Swept in Godot every 5 cm it was 0.90 to 1.25 m for a person and 0.65 to 1.15 m for a
+  small child, and a thing to pick up was reached only on three bands of height with 24 cm misses between them:
+  nobody had put a thing on a coffee table. A rule's numbers come out of a sweep kept in a file (`ranges.json`,
+  `space.json`), and the document's tables are written from the files (`anim_rules.py tables`).
+- **What the hand's IK carries is the middle of the closed hand, not the wrist.** Standing her nearer a high handle
+  by the distance her *wrist* was short made a handle at 1.10 m worse (3.4 cm off, from 0.6): the middle of her
+  hand is 9 cm under her wrist with the arm raised. The clip now records the shoulder, the arm and where a handle
+  sits in the hand at the grab, and the stand is worked out from those.
+- **Skin the body to measure room.** Joints say a walking person is 44 cm wide; her skin says 61. Furniture
+  clearances came from `space.mjs` skinning a third of the body's points at every frame, not from the skeleton.
+- **A rule nobody checks is a wish.** ANIMRULES holds every seat, bed and door the kit and the prop generator make
+  to the ranges, and lists the ones that are out on purpose with why (`rules.json`): the bar stool and the futon
+  were found that way, not remembered.

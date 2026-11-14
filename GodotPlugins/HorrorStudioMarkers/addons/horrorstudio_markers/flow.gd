@@ -131,7 +131,27 @@ static func reach_of(m: HSNpcMarker, record: Dictionary, high: float = NAN) -> D
 	var x := float(at[0])
 	if m.left_hand and info.is_empty():
 		x = -x                                             # (no record: the left hand's reach is the right's mirrored)
-	return {"clip": clip, "at": [x, float(at[1]), float(at[2])]}
+	var z := float(at[2])
+	if m.action == "open" and not is_nan(high):            # (a handle's own height: she stands nearer to a lower or a higher one than her clip was made for)
+		z = handle_ahead(info.get("door", {}), high)
+	return {"clip": clip, "at": [x, float(at[1]), z]}
+
+
+## how far in front of her a handle `high` m over the floor has to be for her hand to get to it (the starter's
+## motion.gd handle_ahead, the same rule: where the clip stands her, or nearer when her arm doesn't reach it from
+## there; `d`: the clip's `door` record: its shoulder, arm and grip)
+static func handle_ahead(d: Dictionary, high: float) -> float:
+	var hp: Array = d.get("handle", HANDLE_AT)
+	var sh: Array = d.get("shoulder", [])
+	var g: Array = d.get("grip", [])
+	var arm := float(d.get("arm", 0.0))
+	if sh.size() != 3 or g.size() != 3 or arm <= 0.0:
+		return float(hp[2])                               # (baked before this: where the clip stands her)
+	var up := high - float(g[1]) - float(sh[1])           # her wrist over her shoulder, with the middle of her hand on the handle
+	var far := 0.96 * arm
+	var flat := sqrt(maxf(0.0, far * far - up * up))
+	var toes := 0.55 * float(hp[2])                       # no nearer than this: her feet are in front of her
+	return clampf(float(sh[2]) + flat + float(g[2]), toes, float(hp[2]))
 
 
 ## where she stands to sit, lie down or put a hand out at a marker: {pos, yaw} (pos.y the pin's: the floor is the

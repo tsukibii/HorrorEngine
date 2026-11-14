@@ -21,6 +21,11 @@
         (sat with its legs hanging, no leg in the chair), onto a 60 cm seat (lifted the rest of the way), into a 45 cm
         bed and out (nothing of it in the bed), and at a door whose handle is a metre up (its hand on the handle,
         carried there by the hand's IK). Ends "GDSMALL ok".
+    python tools/godot/motion_check.py ranges [--reuse] [--quick] [--only=normal_woman]
+        what heights her hand really gets to (docs/ANIMATION_RULES.md's numbers; motion_range_test.gd): a door's handle
+        at every 5 cm from 0.6 to 1.5 m and a thing to pick up at every 10 cm from the floor to 2.1 m, on the normal
+        woman, the small child and the imp: how far her hand ends from it. Writes Content/Studio/Animation/ranges.json.
+        Ends "GDRANGE ok".
     python tools/godot/motion_check.py shots --glb FILE.glb --clip walk_loop [--n 12] [--view side] [--sheet FILE.jpg]
                                              [--size 480x640] [--wear] [--tag NAME]
         a baked character's clip pictured at n moments on the real mesh in a scratch project, as one sheet
@@ -167,8 +172,9 @@ def check(args):
     import godot_byhand as BH
     v3 = "v3" in args                                        # animations v3's half (motion3_test.gd): the same project, another script
     small = "small" in args                                  # short bodies on a person's furniture (motion_small_test.gd): the same project, three more bodies
-    NAME, TEST = ("GDSMALL", "motion_small_test.gd") if small else ("GDMOTION3", "motion3_test.gd") if v3 else ("GDMOTION", "motion_test.gd")
-    bodies = ["child_small", "goblin", "imp", "normal_woman"] if small else ["normal_woman"]
+    ranges = "ranges" in args                                # what heights her hand gets to (motion_range_test.gd): the modelling rules' numbers
+    NAME, TEST = ("GDRANGE", "motion_range_test.gd") if ranges else ("GDSMALL", "motion_small_test.gd") if small else ("GDMOTION3", "motion3_test.gd") if v3 else ("GDMOTION", "motion_test.gd")
+    bodies = ["child_small", "goblin", "imp", "normal_woman"] if small or ranges else ["normal_woman"]
     g = godot_bin()
     if not g:
         sys.exit(f"{NAME} FAILED: no godot (tools/godot_setup.sh on a cloud session)")
@@ -206,7 +212,7 @@ def check(args):
     (proj / "main.tscn").write_text("\n".join(lines), encoding="utf-8")
     shutil.copy(Path(__file__).with_name(TEST), proj / TEST)
     more = ["--"] + [x for x in args if x.startswith("--only=")] if any(x.startswith("--only=") for x in args) else []
-    r = subprocess.run([g, "--headless", "--path", str(proj), "--fixed-fps", "60", "-s", TEST] + more, capture_output=True, text=True, timeout=1200)
+    r = subprocess.run([g, "--headless", "--path", str(proj), "--fixed-fps", "60", "-s", TEST] + more, capture_output=True, text=True, timeout=2400)
     got = [ln for ln in r.stdout.splitlines() if ln.startswith("MOTION ")]
     for ln in got:
         if not ln.startswith("MOTION result "):
@@ -215,6 +221,8 @@ def check(args):
     if res is None:
         sys.exit(f"{NAME} FAILED: Godot said nothing: " + (r.stdout + r.stderr)[-3000:])
     errs = list(res.get("errors", []))
+    if ranges:                                               # kept for the rules: Content/Studio/Animation/ranges.json
+        (ROOT / "Content" / "Studio" / "Animation" / "ranges.json").write_text(json.dumps({"_note": "What heights her hand gets to in Godot, cm off: python tools/godot/motion_check.py ranges --reuse (docs/ANIMATION_RULES.md quotes it)", "bodies": res.get("notes", {})}, indent=1), encoding="utf-8")
     out = (r.stdout + r.stderr).splitlines()
     errs += [f"a script error: {ln.strip()} {out[i + 1].strip() if i + 1 < len(out) else ''}" for i, ln in enumerate(out) if "SCRIPT ERROR" in ln or "Parse Error" in ln][:8]
     for e in errs:

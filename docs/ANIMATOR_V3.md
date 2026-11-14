@@ -522,6 +522,14 @@ Nothing to do differently: the same `sit(seat)`, `sleep(bed, pillow)`, `open(han
 - **The handle** (`open()`): from `grab` to `release` the middle of her closed hand (`HSHandIK.grip_frame`) is
   carried onto the handle's marker, as far as her arm goes (`bring`, `"handle"`, `most` 0.35 m). The adult's hand is
   now on the handle too, not 7 cm from it.
+- **A handle higher or lower than her clip's** (`motion.gd` `handle_ahead`, the Markers' `HSNpcFlow.handle_ahead`;
+  DECISIONS 2026-11-14, later): the clip records her shoulder, her arm's length and where a handle sits in her
+  closed hand at the frame she takes hold (`door.shoulder`, `door.arm`, `door.grip`). From those, how far in front
+  of the handle she stands is worked out for the handle's real height: where the clip stands her while her arm
+  reaches, nearer when it wouldn't, never nearer than 0.55 of the clip's distance (her feet are in front of her).
+  Measured every 5 cm (`motion_check.py ranges`, `Content/Studio/Animation/ranges.json`): a person holds a handle
+  from 0.90 to 1.25 m within a centimetre (0.85 m: 2.5 cm off), a small child from 0.65 to 1.15 m, an imp from 0.60
+  to 0.90 m. A character baked before this has no such record and stands where the clip says, as before.
 
 ### 10.7 The plan
 

@@ -552,7 +552,8 @@ func open(handle: Node3D, door: Node = null, how := "push", left := false) -> vo
 	var m: Dictionary = clip_info(clip).get("door", {})
 	var f := _front(handle)
 	var hp: Array = m.get("handle", [-0.14, 1.0, 0.45])
-	var stand := handle.global_position - _turned(Vector3(hp[0], 0, hp[2]), atan2(f.x, f.z))
+	var ahead := handle_ahead(m, handle.global_position.y - _floor_at(handle.global_position))
+	var stand := handle.global_position - _turned(Vector3(hp[0], 0, ahead), atan2(f.x, f.z))
 	var steps: Array = [_go(stand, false, null, atan2(f.x, f.z))]
 	var step := {"k": "clip", "clip": clip, "on": {"open": func(): _use(door)}}
 	# her hand onto the handle itself, from the moment she takes it until she lets go. Her clip was made for a handle
@@ -572,6 +573,25 @@ func open(handle: Node3D, door: Node = null, how := "push", left := false) -> vo
 	steps.append({"k": "idle"})
 	steps.append({"k": "done", "what": "open"})
 	_begin(steps)
+
+
+## how far in front of her a handle `high` m over the floor has to be for her hand to get to it. Her clip was made
+## for one height (the record's `door.handle`) and stands her that far from it; the middle of her closed hand is put on
+## the handle by her hand's IK, so her wrist has to get to where that leaves it, and it only can within her arm's
+## length of her shoulder: for a handle too low or too high for that from where the clip stands her, she stands
+## nearer, never further (`m`: the clip's `door` record: its shoulder, arm and grip)
+static func handle_ahead(m: Dictionary, high: float) -> float:
+	var hp: Array = m.get("handle", [-0.14, 1.0, 0.45])
+	var sh: Array = m.get("shoulder", [])
+	var g: Array = m.get("grip", [])
+	var arm := float(m.get("arm", 0.0))
+	if sh.size() != 3 or g.size() != 3 or arm <= 0.0:
+		return float(hp[2])                               # (baked before this: where the clip stands her)
+	var up := high - float(g[1]) - float(sh[1])           # her wrist over her shoulder, with the middle of her hand on the handle
+	var far := 0.96 * arm
+	var flat := sqrt(maxf(0.0, far * far - up * up))
+	var toes := 0.55 * float(hp[2])                       # no nearer than this: her feet are in front of her
+	return clampf(float(sh[2]) + flat + float(g[2]), toes, float(hp[2]))
 
 
 ## reach for something (a node or a point) and come back: level "" (by how high it is), "low", "mid" or "high"

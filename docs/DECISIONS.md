@@ -2,6 +2,33 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-14, later: rules for modelling, small movements that show she's alive, holding things in any pose (the user)
+
+After the short NPCs' report:
+
+- **"Can you add interior, furniture and street rules for yourself so if I use claude to model in the future it can
+  stick to rules that dont break the animations."**
+- **"Can we add some 'add life' animations, meaning animations that make it seem characters are alive, stuff like
+  looking at an object they are holding, scratching, little life flourish stuff, is there a way we could add these
+  animations as ik blendables meaning if the lower body and chest is in a position e.g. walking or sitting, we can
+  still blend in these animations."**
+- **"Is there a way we can use ik to allow them to hold objects in any of the current animation positions."**
+- **"Dont need to do facial expressiosn for these isnce thats a diff system."**
+
+What follows from it:
+
+- **The rules are a document Claude reads before it models** (`docs/ANIMATION_RULES.md`, pointed at from CLAUDE.md
+  and the `/build-map` skill), with its numbers measured from the clips and in Godot, not guessed, and a check that
+  holds the studio's own furniture to them (docs/ANIMATION_RULES.md says which).
+- **A flourish is an upper-body clip the Animator makes from her body**, blended in Godot over whatever her legs and
+  trunk are doing by a layer that runs after her animation (the Look plugin's `HSGesture`), her hand carried onto
+  where it's going (her head, her other arm, what she holds) by the hand's IK, since her head and chest aren't where
+  the clip was made when she walks or sits. Her legs and pelvis are never touched by it.
+- **Holding is a pose kept by IK** (`HSHandIK`'s carry): while she holds a thing her arm takes the way that thing is
+  carried, in her chest's own space, over any clip; a cup stays upright. How a thing is carried is said on its grip.
+- **No face**: these are the body's. Expressions stay the face system's, over any of them.
+- The plan and what was built: docs/ANIMATOR_V3.md §11 (life), §12 (carry); the branch `even-more-animations-v3`.
+
 ## 2026-11-14, short NPCs: a person's furniture used by any body; the peek is seen from in front (the user, on animations v3's first report)
 
 - **"For the animations you said there are issues with the sitting/sleeping for imps and goblins etc. What about

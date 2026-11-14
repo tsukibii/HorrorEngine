@@ -381,8 +381,14 @@ export function opening(rig, body, set, X = null) {
           via = mixA(straight, arc, clamp((q - 1) / 0.4, 0, 1)); } }
       c.arms.r = armTo(home, "r", tgt, k, { palm: kind === "slide" ? [1, 0, 0.2] : [0.3, -1, 0], pole: [-0.75, -0.6, -0.2], curl: lerp(0.3, 0.95, sm(tg - 0.08, tg + 0.06, t) * (1 - sm(tr - 0.05, tr + 0.1, t))), wrist: -8 * DEG * turn, ...(via ? { via } : {}) });
       return c; };
+    // (shoulder, arm, grip: her shoulder as she takes hold of it, her arm's length, and where the middle of her
+    //  closed hand is from her wrist then. In the game that middle is put on the handle, wherever the handle is, so
+    //  her wrist has to get to `grip` short of it: a handle lower than this was made for is out of her arm's reach
+    //  from where the clip stands her, and whoever plays it stands her nearer by these: motion.gd handle_ahead())
+    const grab = build(rig, ctrl(Math.round(tg * FPS))), gs = grab.solve(), A = rig.armR, hold = Q.rot(gs.D[A.hand], [0, 1, 2].map(k => A.handDir[k] * 0.085 * (A.handLen / 0.17) + A.palm0[k] * 0.022));
+    const shAt = [gs.P[A.up * 3], gs.P[A.up * 3 + 1], gs.P[A.up * 3 + 2]];
     return { name, loop: false, n, fps: FPS, secs: (n - 1) / FPS, ctrl, events: [{ t: tg, name: "grab" }, { t: to, name: "open" }, { t: tr, name: "release" }],
-      meta: { door: { kind, hand: "r", handle: handle.map(v => +v.toFixed(3)), travel: travel.map(v => +v.toFixed(3)), opens: +(te - to).toFixed(2) } } };
+      meta: { door: { kind, hand: "r", handle: handle.map(v => +v.toFixed(3)), travel: travel.map(v => +v.toFixed(3)), opens: +(te - to).toFixed(2), shoulder: shAt.map(v => +v.toFixed(3)), arm: +arm.toFixed(3), grip: hold.map(v => +v.toFixed(3)) } } };
   };
   return [mk("open_push", "push"), mk("open_pull", "pull"), mk("open_slide", "slide")];
 }

@@ -89,6 +89,24 @@ height. For peak the back doesnt need to look good since it will ever only face 
   child, GDSMALL in Godot, MARKERS' door.
 - **The peek's back** is left as it is: the user said it's only ever seen from in front.
 
+**The user's next message, and its first part built** (DECISIONS 2026-11-14, later): *"Can you add interior,
+furniture and street rules for yourself so if I use claude to model in the future it can stick to rules that dont
+break the animations."* (Its other two parts, small movements that show she's alive blended over whatever she's
+doing, and holding things in any pose, come after this in the same section once built.)
+- **docs/ANIMATION_RULES.md**: what an interior, a piece of furniture and a street have to be for her clips to work,
+  with a short list first (§0) and every number measured. CLAUDE.md's Rules say to read it before sizing or placing
+  anything a character uses or walks past; the `/build-map` skill and the four builders' docs point at it.
+- **Where the numbers come from**: `node tools/animator/space.mjs --write` (the room every clip takes up, her skin
+  at every frame, eleven bodies: `Content/Studio/Animation/space.json`) and `python tools/godot/motion_check.py
+  ranges --reuse` (GDRANGE: a handle's and a pick-up's height swept in Godot, `ranges.json`);
+  `python tools/anim_rules.py tables` writes the document's tables from them.
+- **Held by** ANIMRULES (`python tools/anim_rules.py check`, in check_all with `--quick`): the tables current, the
+  files to the clips, and every seat, bed and door the kit and the prop generator make inside the ranges of
+  `Content/Studio/Animation/rules.json`, or listed there with why not.
+- **A door's handle at any height she can reach**: where she stands is worked out from the clip's own shoulder, arm
+  and grip (`handle_ahead`), so a person holds a handle from 0.90 to 1.25 m and a small child from 0.65 to 1.15 m.
+  A character baked before this stands where the clip says, as before: bake her again for it.
+
 **The user has still seen none of it in motion**: their feedback so far came from the report and its pictures. What
 eyes will find: how a clip reads on their own characters, the gizmo under a real mouse (it was only ever dragged by
 a test and pictured under xvfb), a blow in play, a child of their own getting onto one of their chairs (the pictures

@@ -1,5 +1,9 @@
 # The scene builder
 
+> **Characters use what you make here.** Before sizing or placing a seat, a bed, a door, a table, a stair or a
+> pavement, read [docs/ANIMATION_RULES.md](ANIMATION_RULES.md): the sizes and the free floor a character's animations
+> need (measured), held by `python tools/anim_rules.py check` (ANIMRULES).
+
 `tools/director/builder.html` (the desk's **Scene builder** button, or `http://127.0.0.1:8780/builder.html`) is
 a top-down floor plan of one level: rooms you drag and resize, plus doors, sliding doors, openings and windows. Beside
 it is the same level seen from the player's eye at the game's field of view, so you can walk the place before it's

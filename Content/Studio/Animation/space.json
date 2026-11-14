@@ -1,0 +1,3151 @@
+{
+ "_note": "The room her clips take up, metres: node tools/animator/space.mjs --write (docs/ANIMATION_RULES.md quotes it; --check holds it)",
+ "bodies": {
+  "skinny_man": {
+   "height": 1.8,
+   "shoulder": 1.48,
+   "leg": 0.96,
+   "arm": 0.55,
+   "furniture": {
+    "mode": "fit",
+    "seat": 0.45,
+    "bed": 0.45,
+    "handle": 1,
+    "table": 0.86
+   },
+   "own": {
+    "mode": "own",
+    "seat": 0.491,
+    "bed": 0.491,
+    "handle": 1.111,
+    "table": 0.95
+   },
+   "clips": {
+    "stand": {
+     "wide": 0.54,
+     "left": 0.27,
+     "right": 0.26,
+     "front": 0.2,
+     "back": 0.13,
+     "up": 1.81
+    },
+    "walk": {
+     "wide": 0.55,
+     "left": 0.28,
+     "right": 0.28,
+     "front": 0.53,
+     "back": 0.54,
+     "up": 1.8,
+     "speed": 1.35
+    },
+    "run": {
+     "wide": 0.53,
+     "left": 0.26,
+     "right": 0.26,
+     "front": 0.49,
+     "back": 0.59,
+     "up": 1.76,
+     "speed": 3.23
+    },
+    "sneak": {
+     "wide": 0.7,
+     "left": 0.35,
+     "right": 0.35,
+     "front": 0.47,
+     "back": 0.24,
+     "up": 1.66,
+     "speed": 0.46
+    },
+    "crawl": {
+     "wide": 0.58,
+     "left": 0.29,
+     "right": 0.29,
+     "front": 0.89,
+     "back": 0.82,
+     "up": 0.71,
+     "speed": 0.42
+    },
+    "scuttle": {
+     "wide": 0.9,
+     "left": 0.45,
+     "right": 0.45,
+     "front": 0.87,
+     "back": 0.49,
+     "up": 0.62,
+     "speed": 1.43
+    },
+    "creep": {
+     "wide": 0.88,
+     "left": 0.44,
+     "right": 0.44,
+     "front": 0.86,
+     "back": 0.28,
+     "up": 1.51,
+     "speed": 0.59
+    },
+    "sit": {
+     "wide": 0.67,
+     "left": 0.34,
+     "right": 0.34,
+     "front": 0.25,
+     "back": 0.6,
+     "up": 1.81,
+     "height": 0.45,
+     "high": false,
+     "before": 0.3,
+     "behind": 0.54,
+     "before_low": 0.29,
+     "before_mid": 0.3,
+     "before_high": 0.26,
+     "stands": 0.06
+    },
+    "bed": {
+     "wide": 2.02,
+     "left": 0.87,
+     "right": 1.01,
+     "front": 0.25,
+     "back": 0.97,
+     "up": 1.81,
+     "height": 0.45,
+     "high": false,
+     "before": 0.3,
+     "behind": 0.92,
+     "before_low": 0.29,
+     "before_mid": 0.3,
+     "before_high": 0.26,
+     "stands": 0.06,
+     "head": [
+      0.68,
+      0.59,
+      -0.55
+     ],
+     "to_head": 0.87,
+     "to_feet": 1.01
+    },
+    "door_push": {
+     "wide": 0.56,
+     "left": 0.26,
+     "right": 0.28,
+     "front": 0.47,
+     "back": 0.12,
+     "up": 1.81,
+     "handle": [
+      -0.15,
+      1,
+      0.29
+     ],
+     "travel": [
+      0.05,
+      -0.02,
+      0.26
+     ],
+     "stands": 0.29,
+     "behind": 0.12
+    },
+    "door_pull": {
+     "wide": 0.67,
+     "left": 0.28,
+     "right": 0.33,
+     "front": 0.25,
+     "back": 0.16,
+     "up": 1.81,
+     "handle": [
+      -0.15,
+      1,
+      0.29
+     ],
+     "travel": [
+      -0.1,
+      -0.02,
+      -0.27
+     ],
+     "stands": 0.29,
+     "behind": 0.16
+    },
+    "door_slide": {
+     "wide": 1.27,
+     "left": 0.26,
+     "right": 0.64,
+     "front": 0.31,
+     "back": 0.12,
+     "up": 1.81,
+     "handle": [
+      -0.15,
+      1,
+      0.29
+     ],
+     "travel": [
+      -0.52,
+      0,
+      0
+     ],
+     "stands": 0.29,
+     "behind": 0.12
+    },
+    "reach_low": {
+     "wide": 0.77,
+     "left": 0.38,
+     "right": 0.3,
+     "front": 0.6,
+     "back": 0.13,
+     "up": 1.81,
+     "at": [
+      -0.11,
+      0.1,
+      0.4
+     ]
+    },
+    "reach_mid": {
+     "wide": 0.58,
+     "left": 0.26,
+     "right": 0.29,
+     "front": 0.59,
+     "back": 0.12,
+     "up": 1.81,
+     "at": [
+      -0.14,
+      0.86,
+      0.46
+     ]
+    },
+    "reach_high": {
+     "wide": 0.89,
+     "left": 0.26,
+     "right": 0.45,
+     "front": 0.42,
+     "back": 0.16,
+     "up": 1.97,
+     "at": [
+      -0.14,
+      1.9,
+      0.33
+     ]
+    },
+    "peek": {
+     "wide": 1.01,
+     "left": 0.47,
+     "right": 0.5,
+     "front": 0.29,
+     "back": 0.18,
+     "up": 1.81,
+     "edge": [
+      -0.27,
+      0,
+      0.22
+     ]
+    },
+    "scare": {
+     "wide": 0.98,
+     "left": 0.49,
+     "right": 0.49,
+     "front": 1.18,
+     "back": 0.67,
+     "up": 1.81,
+     "reach": 1.09
+    },
+    "punch": {
+     "wide": 0.58,
+     "left": 0.28,
+     "right": 0.29,
+     "front": 0.88,
+     "back": 0.17,
+     "up": 1.81,
+     "at": [
+      0,
+      1.43,
+      0.86
+     ]
+    },
+    "swing": {
+     "wide": 0.96,
+     "left": 0.35,
+     "right": 0.48,
+     "front": 0.56,
+     "back": 0.37,
+     "up": 1.93
+    },
+    "knock": {
+     "wide": 0.67,
+     "left": 0.26,
+     "right": 0.33,
+     "front": 0.43,
+     "back": 0.14,
+     "up": 1.81,
+     "at": [
+      -0.1,
+      1.48,
+      0.4
+     ]
+    },
+    "cower": {
+     "wide": 0.84,
+     "left": 0.21,
+     "right": 0.42,
+     "front": 0.53,
+     "back": 0.18,
+     "up": 1.48
+    }
+   }
+  },
+  "normal_woman": {
+   "height": 1.63,
+   "shoulder": 1.33,
+   "leg": 0.87,
+   "arm": 0.44,
+   "furniture": {
+    "mode": "fit",
+    "seat": 0.45,
+    "bed": 0.45,
+    "handle": 1,
+    "table": 0.86
+   },
+   "own": {
+    "mode": "own",
+    "seat": 0.45,
+    "bed": 0.45,
+    "handle": 0.999,
+    "table": 0.86
+   },
+   "clips": {
+    "stand": {
+     "wide": 0.54,
+     "left": 0.27,
+     "right": 0.24,
+     "front": 0.2,
+     "back": 0.14,
+     "up": 1.63
+    },
+    "walk": {
+     "wide": 0.54,
+     "left": 0.27,
+     "right": 0.27,
+     "front": 0.47,
+     "back": 0.46,
+     "up": 1.62,
+     "speed": 1.34
+    },
+    "run": {
+     "wide": 0.48,
+     "left": 0.24,
+     "right": 0.24,
+     "front": 0.45,
+     "back": 0.52,
+     "up": 1.59,
+     "speed": 3.17
+    },
+    "sneak": {
+     "wide": 0.6,
+     "left": 0.3,
+     "right": 0.3,
+     "front": 0.43,
+     "back": 0.22,
+     "up": 1.5,
+     "speed": 0.42
+    },
+    "crawl": {
+     "wide": 0.52,
+     "left": 0.26,
+     "right": 0.26,
+     "front": 0.8,
+     "back": 0.75,
+     "up": 0.57,
+     "speed": 0.38
+    },
+    "scuttle": {
+     "wide": 0.78,
+     "left": 0.39,
+     "right": 0.39,
+     "front": 0.77,
+     "back": 0.43,
+     "up": 0.51,
+     "speed": 1.18
+    },
+    "creep": {
+     "wide": 0.79,
+     "left": 0.4,
+     "right": 0.4,
+     "front": 0.73,
+     "back": 0.25,
+     "up": 1.37,
+     "speed": 0.53
+    },
+    "sit": {
+     "wide": 0.55,
+     "left": 0.27,
+     "right": 0.27,
+     "front": 0.2,
+     "back": 0.53,
+     "up": 1.63,
+     "height": 0.45,
+     "high": false,
+     "before": 0.25,
+     "behind": 0.48,
+     "before_low": 0.25,
+     "before_mid": 0.25,
+     "before_high": 0.25,
+     "stands": 0.05
+    },
+    "bed": {
+     "wide": 1.84,
+     "left": 0.79,
+     "right": 0.92,
+     "front": 0.21,
+     "back": 0.85,
+     "up": 1.63,
+     "height": 0.45,
+     "high": false,
+     "before": 0.26,
+     "behind": 0.8,
+     "before_low": 0.26,
+     "before_mid": 0.25,
+     "before_high": 0.25,
+     "stands": 0.05,
+     "head": [
+      0.61,
+      0.61,
+      -0.49
+     ],
+     "to_head": 0.79,
+     "to_feet": 0.92
+    },
+    "door_push": {
+     "wide": 0.52,
+     "left": 0.26,
+     "right": 0.25,
+     "front": 0.49,
+     "back": 0.13,
+     "up": 1.63,
+     "handle": [
+      -0.14,
+      1,
+      0.34
+     ],
+     "travel": [
+      0.05,
+      -0.02,
+      0.26
+     ],
+     "stands": 0.34,
+     "behind": 0.13
+    },
+    "door_pull": {
+     "wide": 0.64,
+     "left": 0.27,
+     "right": 0.32,
+     "front": 0.31,
+     "back": 0.17,
+     "up": 1.63,
+     "handle": [
+      -0.14,
+      1,
+      0.34
+     ],
+     "travel": [
+      -0.1,
+      -0.02,
+      -0.27
+     ],
+     "stands": 0.34,
+     "behind": 0.17
+    },
+    "door_slide": {
+     "wide": 1.16,
+     "left": 0.26,
+     "right": 0.58,
+     "front": 0.37,
+     "back": 0.13,
+     "up": 1.63,
+     "handle": [
+      -0.14,
+      1,
+      0.34
+     ],
+     "travel": [
+      -0.52,
+      0,
+      0
+     ],
+     "stands": 0.34,
+     "behind": 0.13
+    },
+    "reach_low": {
+     "wide": 0.69,
+     "left": 0.35,
+     "right": 0.26,
+     "front": 0.57,
+     "back": 0.14,
+     "up": 1.64,
+     "at": [
+      -0.1,
+      0.1,
+      0.36
+     ]
+    },
+    "reach_mid": {
+     "wide": 0.53,
+     "left": 0.26,
+     "right": 0.27,
+     "front": 0.52,
+     "back": 0.13,
+     "up": 1.64,
+     "at": [
+      -0.13,
+      0.86,
+      0.42
+     ]
+    },
+    "reach_high": {
+     "wide": 0.75,
+     "left": 0.26,
+     "right": 0.38,
+     "front": 0.39,
+     "back": 0.13,
+     "up": 1.72,
+     "at": [
+      -0.13,
+      1.66,
+      0.3
+     ]
+    },
+    "peek": {
+     "wide": 0.88,
+     "left": 0.41,
+     "right": 0.44,
+     "front": 0.27,
+     "back": 0.14,
+     "up": 1.63,
+     "edge": [
+      -0.25,
+      0,
+      0.2
+     ]
+    },
+    "scare": {
+     "wide": 0.84,
+     "left": 0.42,
+     "right": 0.42,
+     "front": 1.02,
+     "back": 0.62,
+     "up": 1.64,
+     "reach": 0.94
+    },
+    "punch": {
+     "wide": 0.52,
+     "left": 0.25,
+     "right": 0.26,
+     "front": 0.74,
+     "back": 0.14,
+     "up": 1.63,
+     "at": [
+      0,
+      1.28,
+      0.73
+     ]
+    },
+    "swing": {
+     "wide": 0.89,
+     "left": 0.33,
+     "right": 0.45,
+     "front": 0.47,
+     "back": 0.32,
+     "up": 1.74
+    },
+    "knock": {
+     "wide": 0.6,
+     "left": 0.26,
+     "right": 0.3,
+     "front": 0.34,
+     "back": 0.13,
+     "up": 1.63,
+     "at": [
+      -0.08,
+      1.33,
+      0.32
+     ]
+    },
+    "cower": {
+     "wide": 0.72,
+     "left": 0.19,
+     "right": 0.36,
+     "front": 0.51,
+     "back": 0.19,
+     "up": 1.33
+    }
+   }
+  },
+  "chubby_woman": {
+   "height": 1.6,
+   "shoulder": 1.31,
+   "leg": 0.85,
+   "arm": 0.41,
+   "furniture": {
+    "mode": "fit",
+    "seat": 0.45,
+    "bed": 0.45,
+    "handle": 1,
+    "table": 0.86
+   },
+   "own": {
+    "mode": "own",
+    "seat": 0.441,
+    "bed": 0.441,
+    "handle": 0.982,
+    "table": 0.842
+   },
+   "clips": {
+    "stand": {
+     "wide": 0.56,
+     "left": 0.28,
+     "right": 0.27,
+     "front": 0.2,
+     "back": 0.15,
+     "up": 1.61
+    },
+    "walk": {
+     "wide": 0.61,
+     "left": 0.31,
+     "right": 0.31,
+     "front": 0.44,
+     "back": 0.46,
+     "up": 1.59,
+     "speed": 1.12
+    },
+    "run": {
+     "wide": 0.56,
+     "left": 0.28,
+     "right": 0.28,
+     "front": 0.42,
+     "back": 0.55,
+     "up": 1.54,
+     "speed": 2.83
+    },
+    "sneak": {
+     "wide": 0.64,
+     "left": 0.32,
+     "right": 0.32,
+     "front": 0.39,
+     "back": 0.2,
+     "up": 1.5,
+     "speed": 0.34
+    },
+    "crawl": {
+     "wide": 0.51,
+     "left": 0.26,
+     "right": 0.26,
+     "front": 0.76,
+     "back": 0.71,
+     "up": 0.58,
+     "speed": 0.27
+    },
+    "scuttle": {
+     "wide": 0.78,
+     "left": 0.39,
+     "right": 0.39,
+     "front": 0.76,
+     "back": 0.42,
+     "up": 0.52,
+     "speed": 0.89
+    },
+    "creep": {
+     "wide": 0.89,
+     "left": 0.44,
+     "right": 0.44,
+     "front": 0.7,
+     "back": 0.22,
+     "up": 1.39,
+     "speed": 0.4
+    },
+    "sit": {
+     "wide": 0.59,
+     "left": 0.29,
+     "right": 0.29,
+     "front": 0.24,
+     "back": 0.53,
+     "up": 1.6,
+     "height": 0.45,
+     "high": false,
+     "before": 0.28,
+     "behind": 0.48,
+     "before_low": 0.25,
+     "before_mid": 0.28,
+     "before_high": 0.26,
+     "stands": 0.05
+    },
+    "bed": {
+     "wide": 1.8,
+     "left": 0.78,
+     "right": 0.9,
+     "front": 0.21,
+     "back": 0.83,
+     "up": 1.6,
+     "height": 0.45,
+     "high": false,
+     "before": 0.26,
+     "behind": 0.78,
+     "before_low": 0.25,
+     "before_mid": 0.25,
+     "before_high": 0.26,
+     "stands": 0.05,
+     "head": [
+      0.6,
+      0.62,
+      -0.48
+     ],
+     "to_head": 0.78,
+     "to_feet": 0.9
+    },
+    "door_push": {
+     "wide": 0.56,
+     "left": 0.28,
+     "right": 0.26,
+     "front": 0.49,
+     "back": 0.14,
+     "up": 1.61,
+     "handle": [
+      -0.14,
+      1,
+      0.33
+     ],
+     "travel": [
+      0.05,
+      -0.02,
+      0.26
+     ],
+     "stands": 0.33,
+     "behind": 0.14
+    },
+    "door_pull": {
+     "wide": 0.64,
+     "left": 0.29,
+     "right": 0.32,
+     "front": 0.32,
+     "back": 0.18,
+     "up": 1.61,
+     "handle": [
+      -0.14,
+      1,
+      0.33
+     ],
+     "travel": [
+      -0.1,
+      -0.02,
+      -0.27
+     ],
+     "stands": 0.33,
+     "behind": 0.18
+    },
+    "door_slide": {
+     "wide": 1.14,
+     "left": 0.28,
+     "right": 0.57,
+     "front": 0.37,
+     "back": 0.14,
+     "up": 1.61,
+     "handle": [
+      -0.14,
+      1,
+      0.33
+     ],
+     "travel": [
+      -0.52,
+      0,
+      0
+     ],
+     "stands": 0.33,
+     "behind": 0.14
+    },
+    "reach_low": {
+     "wide": 0.69,
+     "left": 0.34,
+     "right": 0.27,
+     "front": 0.59,
+     "back": 0.15,
+     "up": 1.61,
+     "at": [
+      -0.1,
+      0.1,
+      0.35
+     ]
+    },
+    "reach_mid": {
+     "wide": 0.56,
+     "left": 0.28,
+     "right": 0.27,
+     "front": 0.51,
+     "back": 0.14,
+     "up": 1.61,
+     "at": [
+      -0.13,
+      0.86,
+      0.41
+     ]
+    },
+    "reach_high": {
+     "wide": 0.74,
+     "left": 0.28,
+     "right": 0.37,
+     "front": 0.38,
+     "back": 0.14,
+     "up": 1.68,
+     "at": [
+      -0.13,
+      1.61,
+      0.29
+     ]
+    },
+    "peek": {
+     "wide": 0.85,
+     "left": 0.41,
+     "right": 0.43,
+     "front": 0.27,
+     "back": 0.15,
+     "up": 1.6,
+     "edge": [
+      -0.25,
+      0,
+      0.2
+     ]
+    },
+    "scare": {
+     "wide": 0.84,
+     "left": 0.42,
+     "right": 0.42,
+     "front": 0.99,
+     "back": 0.61,
+     "up": 1.62,
+     "reach": 0.9
+    },
+    "punch": {
+     "wide": 0.55,
+     "left": 0.28,
+     "right": 0.26,
+     "front": 0.71,
+     "back": 0.15,
+     "up": 1.6,
+     "at": [
+      0,
+      1.26,
+      0.7
+     ]
+    },
+    "swing": {
+     "wide": 0.9,
+     "left": 0.36,
+     "right": 0.45,
+     "front": 0.45,
+     "back": 0.33,
+     "up": 1.72
+    },
+    "knock": {
+     "wide": 0.58,
+     "left": 0.28,
+     "right": 0.29,
+     "front": 0.34,
+     "back": 0.14,
+     "up": 1.61,
+     "at": [
+      -0.09,
+      1.31,
+      0.3
+     ]
+    },
+    "cower": {
+     "wide": 0.69,
+     "left": 0.21,
+     "right": 0.35,
+     "front": 0.5,
+     "back": 0.2,
+     "up": 1.31
+    }
+   }
+  },
+  "child_8": {
+   "height": 1.27,
+   "shoulder": 1.01,
+   "leg": 0.66,
+   "arm": 0.37,
+   "furniture": {
+    "mode": "fit",
+    "seat": 0.45,
+    "bed": 0.45,
+    "handle": 1,
+    "table": 0.86
+   },
+   "own": {
+    "mode": "own",
+    "seat": 0.339,
+    "bed": 0.339,
+    "handle": 0.76,
+    "table": 0.654
+   },
+   "clips": {
+    "stand": {
+     "wide": 0.38,
+     "left": 0.19,
+     "right": 0.18,
+     "front": 0.15,
+     "back": 0.09,
+     "up": 1.27
+    },
+    "walk": {
+     "wide": 0.38,
+     "left": 0.19,
+     "right": 0.19,
+     "front": 0.35,
+     "back": 0.36,
+     "up": 1.26,
+     "speed": 1.17
+    },
+    "run": {
+     "wide": 0.33,
+     "left": 0.16,
+     "right": 0.16,
+     "front": 0.34,
+     "back": 0.4,
+     "up": 1.24,
+     "speed": 2.68
+    },
+    "sneak": {
+     "wide": 0.43,
+     "left": 0.21,
+     "right": 0.22,
+     "front": 0.32,
+     "back": 0.17,
+     "up": 1.17,
+     "speed": 0.32
+    },
+    "crawl": {
+     "wide": 0.38,
+     "left": 0.19,
+     "right": 0.19,
+     "front": 0.6,
+     "back": 0.57,
+     "up": 0.5,
+     "speed": 0.29
+    },
+    "scuttle": {
+     "wide": 0.59,
+     "left": 0.29,
+     "right": 0.29,
+     "front": 0.6,
+     "back": 0.34,
+     "up": 0.44,
+     "speed": 0.99
+    },
+    "creep": {
+     "wide": 0.6,
+     "left": 0.3,
+     "right": 0.3,
+     "front": 0.58,
+     "back": 0.19,
+     "up": 1.07,
+     "speed": 0.4
+    },
+    "sit": {
+     "wide": 0.42,
+     "left": 0.21,
+     "right": 0.21,
+     "front": 0.19,
+     "back": 0.43,
+     "up": 1.27,
+     "height": 0.45,
+     "high": true,
+     "before": 0.23,
+     "behind": 0.39,
+     "before_low": 0.23,
+     "before_mid": 0.16,
+     "before_high": 0.22,
+     "stands": 0.04
+    },
+    "bed": {
+     "wide": 1.39,
+     "left": 0.63,
+     "right": 0.7,
+     "front": 0.19,
+     "back": 0.68,
+     "up": 1.27,
+     "height": 0.45,
+     "high": true,
+     "before": 0.23,
+     "behind": 0.64,
+     "before_low": 0.23,
+     "before_mid": 0.16,
+     "before_high": 0.22,
+     "stands": 0.04,
+     "head": [
+      0.46,
+      0.55,
+      -0.4
+     ],
+     "to_head": 0.63,
+     "to_feet": 0.7
+    },
+    "door_push": {
+     "wide": 0.37,
+     "left": 0.19,
+     "right": 0.17,
+     "front": 0.55,
+     "back": 0.08,
+     "up": 1.27,
+     "handle": [
+      -0.1,
+      1,
+      0.42
+     ],
+     "travel": [
+      0.04,
+      -0.02,
+      0.23
+     ],
+     "stands": 0.42,
+     "behind": 0.08
+    },
+    "door_pull": {
+     "wide": 0.53,
+     "left": 0.2,
+     "right": 0.27,
+     "front": 0.47,
+     "back": 0.12,
+     "up": 1.27,
+     "handle": [
+      -0.1,
+      1,
+      0.42
+     ],
+     "travel": [
+      -0.09,
+      -0.02,
+      -0.24
+     ],
+     "stands": 0.42,
+     "behind": 0.12
+    },
+    "door_slide": {
+     "wide": 0.96,
+     "left": 0.19,
+     "right": 0.48,
+     "front": 0.47,
+     "back": 0.08,
+     "up": 1.27,
+     "handle": [
+      -0.1,
+      1,
+      0.42
+     ],
+     "travel": [
+      -0.47,
+      0,
+      0
+     ],
+     "stands": 0.42,
+     "behind": 0.08
+    },
+    "reach_low": {
+     "wide": 0.51,
+     "left": 0.25,
+     "right": 0.21,
+     "front": 0.45,
+     "back": 0.09,
+     "up": 1.28,
+     "at": [
+      -0.08,
+      0.1,
+      0.27
+     ]
+    },
+    "reach_mid": {
+     "wide": 0.45,
+     "left": 0.19,
+     "right": 0.22,
+     "front": 0.36,
+     "back": 0.08,
+     "up": 1.28,
+     "at": [
+      -0.1,
+      0.86,
+      0.32
+     ]
+    },
+    "reach_high": {
+     "wide": 0.59,
+     "left": 0.19,
+     "right": 0.29,
+     "front": 0.29,
+     "back": 0.1,
+     "up": 1.33,
+     "at": [
+      -0.1,
+      1.28,
+      0.23
+     ]
+    },
+    "peek": {
+     "wide": 0.66,
+     "left": 0.32,
+     "right": 0.33,
+     "front": 0.21,
+     "back": 0.11,
+     "up": 1.27,
+     "edge": [
+      -0.18,
+      0,
+      0.16
+     ]
+    },
+    "scare": {
+     "wide": 0.66,
+     "left": 0.33,
+     "right": 0.33,
+     "front": 0.8,
+     "back": 0.47,
+     "up": 1.28,
+     "reach": 0.74
+    },
+    "punch": {
+     "wide": 0.37,
+     "left": 0.19,
+     "right": 0.19,
+     "front": 0.6,
+     "back": 0.11,
+     "up": 1.27,
+     "at": [
+      0,
+      0.98,
+      0.58
+     ]
+    },
+    "swing": {
+     "wide": 0.67,
+     "left": 0.26,
+     "right": 0.34,
+     "front": 0.38,
+     "back": 0.25,
+     "up": 1.32
+    },
+    "knock": {
+     "wide": 0.44,
+     "left": 0.19,
+     "right": 0.22,
+     "front": 0.29,
+     "back": 0.09,
+     "up": 1.27,
+     "at": [
+      -0.07,
+      1.01,
+      0.27
+     ]
+    },
+    "cower": {
+     "wide": 0.56,
+     "left": 0.13,
+     "right": 0.28,
+     "front": 0.41,
+     "back": 0.13,
+     "up": 1.04
+    }
+   }
+  },
+  "child_small": {
+   "height": 1.1,
+   "shoulder": 0.88,
+   "leg": 0.57,
+   "arm": 0.32,
+   "furniture": {
+    "mode": "fit",
+    "seat": 0.45,
+    "bed": 0.45,
+    "handle": 1,
+    "table": 0.86
+   },
+   "own": {
+    "mode": "own",
+    "seat": 0.294,
+    "bed": 0.294,
+    "handle": 0.658,
+    "table": 0.567
+   },
+   "clips": {
+    "stand": {
+     "wide": 0.33,
+     "left": 0.17,
+     "right": 0.15,
+     "front": 0.13,
+     "back": 0.07,
+     "up": 1.1
+    },
+    "walk": {
+     "wide": 0.33,
+     "left": 0.17,
+     "right": 0.17,
+     "front": 0.3,
+     "back": 0.31,
+     "up": 1.09,
+     "speed": 1.1
+    },
+    "run": {
+     "wide": 0.29,
+     "left": 0.14,
+     "right": 0.14,
+     "front": 0.29,
+     "back": 0.34,
+     "up": 1.08,
+     "speed": 2.61
+    },
+    "sneak": {
+     "wide": 0.37,
+     "left": 0.19,
+     "right": 0.19,
+     "front": 0.28,
+     "back": 0.14,
+     "up": 1.02,
+     "speed": 0.28
+    },
+    "crawl": {
+     "wide": 0.33,
+     "left": 0.16,
+     "right": 0.16,
+     "front": 0.52,
+     "back": 0.49,
+     "up": 0.44,
+     "speed": 0.25
+    },
+    "scuttle": {
+     "wide": 0.51,
+     "left": 0.25,
+     "right": 0.25,
+     "front": 0.52,
+     "back": 0.3,
+     "up": 0.38,
+     "speed": 0.86
+    },
+    "creep": {
+     "wide": 0.52,
+     "left": 0.26,
+     "right": 0.26,
+     "front": 0.5,
+     "back": 0.16,
+     "up": 0.93,
+     "speed": 0.35
+    },
+    "sit": {
+     "wide": 0.36,
+     "left": 0.18,
+     "right": 0.18,
+     "front": 0.16,
+     "back": 0.37,
+     "up": 1.1,
+     "height": 0.45,
+     "high": true,
+     "before": 0.2,
+     "behind": 0.34,
+     "before_low": 0.2,
+     "before_mid": 0.14,
+     "before_high": 0.19,
+     "stands": 0.03
+    },
+    "bed": {
+     "wide": 1.21,
+     "left": 0.55,
+     "right": 0.6,
+     "front": 0.16,
+     "back": 0.59,
+     "up": 1.1,
+     "height": 0.45,
+     "high": true,
+     "before": 0.19,
+     "behind": 0.56,
+     "before_low": 0.16,
+     "before_mid": 0.14,
+     "before_high": 0.19,
+     "stands": 0.03,
+     "head": [
+      0.4,
+      0.54,
+      -0.34
+     ],
+     "to_head": 0.55,
+     "to_feet": 0.6
+    },
+    "door_push": {
+     "wide": 0.32,
+     "left": 0.16,
+     "right": 0.16,
+     "front": 0.48,
+     "back": 0.07,
+     "up": 1.11,
+     "handle": [
+      -0.09,
+      1,
+      0.34
+     ],
+     "travel": [
+      0.04,
+      -0.02,
+      0.2
+     ],
+     "stands": 0.34,
+     "behind": 0.07
+    },
+    "door_pull": {
+     "wide": 0.59,
+     "left": 0.17,
+     "right": 0.3,
+     "front": 0.4,
+     "back": 0.1,
+     "up": 1.12,
+     "handle": [
+      -0.09,
+      1,
+      0.34
+     ],
+     "travel": [
+      -0.08,
+      -0.02,
+      -0.21
+     ],
+     "stands": 0.34,
+     "behind": 0.1
+    },
+    "door_slide": {
+     "wide": 0.85,
+     "left": 0.16,
+     "right": 0.43,
+     "front": 0.39,
+     "back": 0.07,
+     "up": 1.11,
+     "handle": [
+      -0.09,
+      1,
+      0.34
+     ],
+     "travel": [
+      -0.4,
+      0,
+      0
+     ],
+     "stands": 0.34,
+     "behind": 0.07
+    },
+    "reach_low": {
+     "wide": 0.43,
+     "left": 0.21,
+     "right": 0.17,
+     "front": 0.38,
+     "back": 0.08,
+     "up": 1.1,
+     "at": [
+      -0.07,
+      0.1,
+      0.24
+     ]
+    },
+    "reach_mid": {
+     "wide": 0.41,
+     "left": 0.16,
+     "right": 0.21,
+     "front": 0.31,
+     "back": 0.07,
+     "up": 1.1,
+     "at": [
+      -0.08,
+      0.86,
+      0.28
+     ]
+    },
+    "reach_high": {
+     "wide": 0.51,
+     "left": 0.16,
+     "right": 0.25,
+     "front": 0.25,
+     "back": 0.09,
+     "up": 1.14,
+     "at": [
+      -0.08,
+      1.1,
+      0.2
+     ]
+    },
+    "peek": {
+     "wide": 0.57,
+     "left": 0.28,
+     "right": 0.29,
+     "front": 0.18,
+     "back": 0.1,
+     "up": 1.1,
+     "edge": [
+      -0.16,
+      0,
+      0.14
+     ]
+    },
+    "scare": {
+     "wide": 0.57,
+     "left": 0.29,
+     "right": 0.29,
+     "front": 0.7,
+     "back": 0.41,
+     "up": 1.11,
+     "reach": 0.64
+    },
+    "punch": {
+     "wide": 0.32,
+     "left": 0.16,
+     "right": 0.16,
+     "front": 0.52,
+     "back": 0.1,
+     "up": 1.1,
+     "at": [
+      0,
+      0.85,
+      0.51
+     ]
+    },
+    "swing": {
+     "wide": 0.58,
+     "left": 0.22,
+     "right": 0.29,
+     "front": 0.33,
+     "back": 0.21,
+     "up": 1.15
+    },
+    "knock": {
+     "wide": 0.38,
+     "left": 0.16,
+     "right": 0.19,
+     "front": 0.25,
+     "back": 0.08,
+     "up": 1.1,
+     "at": [
+      -0.06,
+      0.88,
+      0.23
+     ]
+    },
+    "cower": {
+     "wide": 0.48,
+     "left": 0.11,
+     "right": 0.24,
+     "front": 0.36,
+     "back": 0.11,
+     "up": 0.9
+    }
+   }
+  },
+  "child_12": {
+   "height": 1.49,
+   "shoulder": 1.21,
+   "leg": 0.8,
+   "arm": 0.43,
+   "furniture": {
+    "mode": "fit",
+    "seat": 0.45,
+    "bed": 0.45,
+    "handle": 1,
+    "table": 0.86
+   },
+   "own": {
+    "mode": "own",
+    "seat": 0.407,
+    "bed": 0.407,
+    "handle": 0.909,
+    "table": 0.79
+   },
+   "clips": {
+    "stand": {
+     "wide": 0.43,
+     "left": 0.21,
+     "right": 0.21,
+     "front": 0.16,
+     "back": 0.11,
+     "up": 1.5
+    },
+    "walk": {
+     "wide": 0.45,
+     "left": 0.22,
+     "right": 0.22,
+     "front": 0.43,
+     "back": 0.45,
+     "up": 1.49,
+     "speed": 1.28
+    },
+    "run": {
+     "wide": 0.41,
+     "left": 0.2,
+     "right": 0.2,
+     "front": 0.41,
+     "back": 0.49,
+     "up": 1.46,
+     "speed": 2.96
+    },
+    "sneak": {
+     "wide": 0.55,
+     "left": 0.27,
+     "right": 0.28,
+     "front": 0.38,
+     "back": 0.2,
+     "up": 1.37,
+     "speed": 0.38
+    },
+    "crawl": {
+     "wide": 0.45,
+     "left": 0.22,
+     "right": 0.22,
+     "front": 0.71,
+     "back": 0.68,
+     "up": 0.57,
+     "speed": 0.35
+    },
+    "scuttle": {
+     "wide": 0.7,
+     "left": 0.35,
+     "right": 0.35,
+     "front": 0.7,
+     "back": 0.41,
+     "up": 0.5,
+     "speed": 1.17
+    },
+    "creep": {
+     "wide": 0.71,
+     "left": 0.36,
+     "right": 0.36,
+     "front": 0.68,
+     "back": 0.23,
+     "up": 1.25,
+     "speed": 0.49
+    },
+    "sit": {
+     "wide": 0.48,
+     "left": 0.24,
+     "right": 0.24,
+     "front": 0.19,
+     "back": 0.49,
+     "up": 1.49,
+     "height": 0.45,
+     "high": false,
+     "before": 0.24,
+     "behind": 0.44,
+     "before_low": 0.21,
+     "before_mid": 0.24,
+     "before_high": 0.22,
+     "stands": 0.05
+    },
+    "bed": {
+     "wide": 1.67,
+     "left": 0.72,
+     "right": 0.84,
+     "front": 0.19,
+     "back": 0.8,
+     "up": 1.49,
+     "height": 0.45,
+     "high": false,
+     "before": 0.24,
+     "behind": 0.75,
+     "before_low": 0.21,
+     "before_mid": 0.24,
+     "before_high": 0.22,
+     "stands": 0.05,
+     "head": [
+      0.54,
+      0.57,
+      -0.45
+     ],
+     "to_head": 0.72,
+     "to_feet": 0.84
+    },
+    "door_push": {
+     "wide": 0.44,
+     "left": 0.21,
+     "right": 0.22,
+     "front": 0.56,
+     "back": 0.1,
+     "up": 1.49,
+     "handle": [
+      -0.12,
+      1,
+      0.44
+     ],
+     "travel": [
+      0.05,
+      -0.02,
+      0.26
+     ],
+     "stands": 0.44,
+     "behind": 0.1
+    },
+    "door_pull": {
+     "wide": 0.6,
+     "left": 0.23,
+     "right": 0.3,
+     "front": 0.45,
+     "back": 0.14,
+     "up": 1.49,
+     "handle": [
+      -0.12,
+      1,
+      0.44
+     ],
+     "travel": [
+      -0.1,
+      -0.02,
+      -0.27
+     ],
+     "stands": 0.44,
+     "behind": 0.14
+    },
+    "door_slide": {
+     "wide": 1.1,
+     "left": 0.21,
+     "right": 0.55,
+     "front": 0.47,
+     "back": 0.1,
+     "up": 1.49,
+     "handle": [
+      -0.12,
+      1,
+      0.44
+     ],
+     "travel": [
+      -0.52,
+      0,
+      0
+     ],
+     "stands": 0.44,
+     "behind": 0.1
+    },
+    "reach_low": {
+     "wide": 0.59,
+     "left": 0.3,
+     "right": 0.23,
+     "front": 0.5,
+     "back": 0.11,
+     "up": 1.49,
+     "at": [
+      -0.09,
+      0.1,
+      0.33
+     ]
+    },
+    "reach_mid": {
+     "wide": 0.47,
+     "left": 0.21,
+     "right": 0.23,
+     "front": 0.37,
+     "back": 0.1,
+     "up": 1.49,
+     "at": [
+      -0.11,
+      0.86,
+      0.38
+     ]
+    },
+    "reach_high": {
+     "wide": 0.69,
+     "left": 0.21,
+     "right": 0.34,
+     "front": 0.35,
+     "back": 0.12,
+     "up": 1.59,
+     "at": [
+      -0.11,
+      1.53,
+      0.27
+     ]
+    },
+    "peek": {
+     "wide": 0.78,
+     "left": 0.37,
+     "right": 0.39,
+     "front": 0.24,
+     "back": 0.14,
+     "up": 1.49,
+     "edge": [
+      -0.22,
+      0,
+      0.18
+     ]
+    },
+    "scare": {
+     "wide": 0.78,
+     "left": 0.39,
+     "right": 0.39,
+     "front": 0.95,
+     "back": 0.56,
+     "up": 1.5,
+     "reach": 0.87
+    },
+    "punch": {
+     "wide": 0.44,
+     "left": 0.22,
+     "right": 0.22,
+     "front": 0.7,
+     "back": 0.13,
+     "up": 1.49,
+     "at": [
+      0,
+      1.17,
+      0.69
+     ]
+    },
+    "swing": {
+     "wide": 0.78,
+     "left": 0.28,
+     "right": 0.39,
+     "front": 0.45,
+     "back": 0.3,
+     "up": 1.59
+    },
+    "knock": {
+     "wide": 0.52,
+     "left": 0.21,
+     "right": 0.26,
+     "front": 0.33,
+     "back": 0.11,
+     "up": 1.49,
+     "at": [
+      -0.08,
+      1.21,
+      0.32
+     ]
+    },
+    "cower": {
+     "wide": 0.66,
+     "left": 0.17,
+     "right": 0.33,
+     "front": 0.45,
+     "back": 0.16,
+     "up": 1.22
+    }
+   }
+  },
+  "goblin": {
+   "height": 1.15,
+   "shoulder": 0.89,
+   "leg": 0.56,
+   "arm": 0.4,
+   "furniture": {
+    "mode": "fit",
+    "seat": 0.45,
+    "bed": 0.45,
+    "handle": 1,
+    "table": 0.86
+   },
+   "own": {
+    "mode": "own",
+    "seat": 0.294,
+    "bed": 0.294,
+    "handle": 0.67,
+    "table": 0.556
+   },
+   "clips": {
+    "stand": {
+     "wide": 0.36,
+     "left": 0.18,
+     "right": 0.17,
+     "front": 0.24,
+     "back": 0.08,
+     "up": 1.15
+    },
+    "walk": {
+     "wide": 0.4,
+     "left": 0.2,
+     "right": 0.2,
+     "front": 0.32,
+     "back": 0.3,
+     "up": 1.14,
+     "speed": 1.11
+    },
+    "run": {
+     "wide": 0.36,
+     "left": 0.18,
+     "right": 0.18,
+     "front": 0.38,
+     "back": 0.33,
+     "up": 1.12,
+     "speed": 2.6
+    },
+    "sneak": {
+     "wide": 0.47,
+     "left": 0.24,
+     "right": 0.24,
+     "front": 0.41,
+     "back": 0.14,
+     "up": 1.04,
+     "speed": 0.27
+    },
+    "crawl": {
+     "wide": 0.42,
+     "left": 0.21,
+     "right": 0.21,
+     "front": 0.59,
+     "back": 0.49,
+     "up": 0.56,
+     "speed": 0.24
+    },
+    "scuttle": {
+     "wide": 0.63,
+     "left": 0.31,
+     "right": 0.32,
+     "front": 0.62,
+     "back": 0.32,
+     "up": 0.47,
+     "speed": 1.07
+    },
+    "creep": {
+     "wide": 0.57,
+     "left": 0.28,
+     "right": 0.28,
+     "front": 0.68,
+     "back": 0.16,
+     "up": 0.94,
+     "speed": 0.34
+    },
+    "sit": {
+     "wide": 0.52,
+     "left": 0.26,
+     "right": 0.26,
+     "front": 0.28,
+     "back": 0.32,
+     "up": 1.15,
+     "height": 0.45,
+     "high": true,
+     "before": 0.31,
+     "behind": 0.29,
+     "before_low": 0.21,
+     "before_mid": 0.24,
+     "before_high": 0.31,
+     "stands": 0.03
+    },
+    "bed": {
+     "wide": 1.2,
+     "left": 0.6,
+     "right": 0.6,
+     "front": 0.28,
+     "back": 0.66,
+     "up": 1.15,
+     "height": 0.45,
+     "high": true,
+     "before": 0.31,
+     "behind": 0.62,
+     "before_low": 0.2,
+     "before_mid": 0.24,
+     "before_high": 0.31,
+     "stands": 0.03,
+     "head": [
+      0.42,
+      0.63,
+      -0.34
+     ],
+     "to_head": 0.6,
+     "to_feet": 0.6
+    },
+    "door_push": {
+     "wide": 0.51,
+     "left": 0.17,
+     "right": 0.26,
+     "front": 0.68,
+     "back": 0.08,
+     "up": 1.15,
+     "handle": [
+      -0.1,
+      1,
+      0.42
+     ],
+     "travel": [
+      0.05,
+      -0.02,
+      0.25
+     ],
+     "stands": 0.42,
+     "behind": 0.08
+    },
+    "door_pull": {
+     "wide": 0.8,
+     "left": 0.19,
+     "right": 0.4,
+     "front": 0.53,
+     "back": 0.12,
+     "up": 1.15,
+     "handle": [
+      -0.1,
+      1,
+      0.42
+     ],
+     "travel": [
+      -0.1,
+      -0.02,
+      -0.26
+     ],
+     "stands": 0.42,
+     "behind": 0.12
+    },
+    "door_slide": {
+     "wide": 1.13,
+     "left": 0.17,
+     "right": 0.56,
+     "front": 0.52,
+     "back": 0.08,
+     "up": 1.15,
+     "handle": [
+      -0.1,
+      1,
+      0.42
+     ],
+     "travel": [
+      -0.5,
+      0,
+      0
+     ],
+     "stands": 0.42,
+     "behind": 0.08
+    },
+    "reach_low": {
+     "wide": 0.56,
+     "left": 0.28,
+     "right": 0.23,
+     "front": 0.44,
+     "back": 0.09,
+     "up": 1.15,
+     "at": [
+      -0.06,
+      0.1,
+      0.23
+     ]
+    },
+    "reach_mid": {
+     "wide": 0.57,
+     "left": 0.17,
+     "right": 0.28,
+     "front": 0.33,
+     "back": 0.08,
+     "up": 1.15,
+     "at": [
+      -0.1,
+      0.86,
+      0.27
+     ]
+    },
+    "reach_high": {
+     "wide": 0.66,
+     "left": 0.18,
+     "right": 0.33,
+     "front": 0.29,
+     "back": 0.11,
+     "up": 1.24,
+     "at": [
+      -0.1,
+      1.18,
+      0.19
+     ]
+    },
+    "peek": {
+     "wide": 0.73,
+     "left": 0.36,
+     "right": 0.35,
+     "front": 0.34,
+     "back": 0.08,
+     "up": 1.15,
+     "edge": [
+      -0.17,
+      0,
+      0.26
+     ]
+    },
+    "scare": {
+     "wide": 0.69,
+     "left": 0.34,
+     "right": 0.34,
+     "front": 0.88,
+     "back": 0.41,
+     "up": 1.15,
+     "reach": 0.79
+    },
+    "punch": {
+     "wide": 0.44,
+     "left": 0.2,
+     "right": 0.22,
+     "front": 0.68,
+     "back": 0.1,
+     "up": 1.15,
+     "at": [
+      0.02,
+      0.86,
+      0.67
+     ]
+    },
+    "swing": {
+     "wide": 0.69,
+     "left": 0.26,
+     "right": 0.34,
+     "front": 0.46,
+     "back": 0.21,
+     "up": 1.17
+    },
+    "knock": {
+     "wide": 0.51,
+     "left": 0.17,
+     "right": 0.26,
+     "front": 0.27,
+     "back": 0.08,
+     "up": 1.15,
+     "at": [
+      -0.04,
+      0.92,
+      0.24
+     ]
+    },
+    "cower": {
+     "wide": 0.66,
+     "left": 0.13,
+     "right": 0.33,
+     "front": 0.54,
+     "back": 0.12,
+     "up": 0.91
+    }
+   }
+  },
+  "ghoul": {
+   "height": 1.9,
+   "shoulder": 1.54,
+   "leg": 1.02,
+   "arm": 0.67,
+   "furniture": {
+    "mode": "fit",
+    "seat": 0.45,
+    "bed": 0.45,
+    "handle": 1,
+    "table": 0.86
+   },
+   "own": {
+    "mode": "own",
+    "seat": 0.526,
+    "bed": 0.526,
+    "handle": 1.158,
+    "table": 1.015
+   },
+   "clips": {
+    "stand": {
+     "wide": 0.63,
+     "left": 0.32,
+     "right": 0.31,
+     "front": 0.38,
+     "back": 0.1,
+     "up": 1.91
+    },
+    "walk": {
+     "wide": 0.64,
+     "left": 0.32,
+     "right": 0.32,
+     "front": 0.58,
+     "back": 0.57,
+     "up": 1.89,
+     "speed": 1.43
+    },
+    "run": {
+     "wide": 0.62,
+     "left": 0.31,
+     "right": 0.31,
+     "front": 0.64,
+     "back": 0.63,
+     "up": 1.84,
+     "speed": 3.45
+    },
+    "sneak": {
+     "wide": 0.84,
+     "left": 0.42,
+     "right": 0.42,
+     "front": 0.72,
+     "back": 0.26,
+     "up": 1.69,
+     "speed": 0.49
+    },
+    "crawl": {
+     "wide": 0.74,
+     "left": 0.37,
+     "right": 0.37,
+     "front": 0.99,
+     "back": 0.87,
+     "up": 0.86,
+     "speed": 0.45
+    },
+    "scuttle": {
+     "wide": 1.06,
+     "left": 0.53,
+     "right": 0.53,
+     "front": 0.93,
+     "back": 0.51,
+     "up": 0.77,
+     "speed": 1.43
+    },
+    "creep": {
+     "wide": 0.97,
+     "left": 0.48,
+     "right": 0.48,
+     "front": 1.15,
+     "back": 0.29,
+     "up": 1.49,
+     "speed": 0.63
+    },
+    "sit": {
+     "wide": 0.94,
+     "left": 0.47,
+     "right": 0.47,
+     "front": 0.48,
+     "back": 0.5,
+     "up": 1.9,
+     "height": 0.45,
+     "high": false,
+     "before": 0.54,
+     "behind": 0.44,
+     "before_low": 0.54,
+     "before_mid": 0.5,
+     "before_high": 0.48,
+     "stands": 0.06
+    },
+    "bed": {
+     "wide": 2.15,
+     "left": 0.9,
+     "right": 1.08,
+     "front": 0.48,
+     "back": 1.11,
+     "up": 1.9,
+     "height": 0.45,
+     "high": false,
+     "before": 0.54,
+     "behind": 1.05,
+     "before_low": 0.54,
+     "before_mid": 0.5,
+     "before_high": 0.48,
+     "stands": 0.06,
+     "head": [
+      0.68,
+      0.79,
+      -0.6
+     ],
+     "to_head": 0.9,
+     "to_feet": 1.08
+    },
+    "door_push": {
+     "wide": 0.84,
+     "left": 0.31,
+     "right": 0.42,
+     "front": 0.67,
+     "back": 0.09,
+     "up": 1.91,
+     "handle": [
+      -0.16,
+      1,
+      0.43
+     ],
+     "travel": [
+      0.05,
+      -0.02,
+      0.26
+     ],
+     "stands": 0.43,
+     "behind": 0.09
+    },
+    "door_pull": {
+     "wide": 0.91,
+     "left": 0.33,
+     "right": 0.46,
+     "front": 0.46,
+     "back": 0.13,
+     "up": 1.91,
+     "handle": [
+      -0.16,
+      1,
+      0.43
+     ],
+     "travel": [
+      -0.1,
+      -0.02,
+      -0.27
+     ],
+     "stands": 0.43,
+     "behind": 0.13
+    },
+    "door_slide": {
+     "wide": 1.44,
+     "left": 0.31,
+     "right": 0.72,
+     "front": 0.55,
+     "back": 0.09,
+     "up": 1.91,
+     "handle": [
+      -0.16,
+      1,
+      0.43
+     ],
+     "travel": [
+      -0.52,
+      0,
+      0
+     ],
+     "stands": 0.43,
+     "behind": 0.09
+    },
+    "reach_low": {
+     "wide": 0.94,
+     "left": 0.47,
+     "right": 0.44,
+     "front": 0.7,
+     "back": 0.12,
+     "up": 1.91,
+     "at": [
+      -0.12,
+      0.1,
+      0.42
+     ]
+    },
+    "reach_mid": {
+     "wide": 0.8,
+     "left": 0.31,
+     "right": 0.4,
+     "front": 0.64,
+     "back": 0.09,
+     "up": 1.91,
+     "at": [
+      -0.15,
+      0.86,
+      0.49
+     ]
+    },
+    "reach_high": {
+     "wide": 1.07,
+     "left": 0.31,
+     "right": 0.53,
+     "front": 0.5,
+     "back": 0.11,
+     "up": 2.15,
+     "at": [
+      -0.15,
+      2.07,
+      0.35
+     ]
+    },
+    "peek": {
+     "wide": 1.23,
+     "left": 0.62,
+     "right": 0.57,
+     "front": 0.53,
+     "back": 0.1,
+     "up": 1.91,
+     "edge": [
+      -0.28,
+      0,
+      0.41
+     ]
+    },
+    "scare": {
+     "wide": 1.07,
+     "left": 0.54,
+     "right": 0.54,
+     "front": 1.51,
+     "back": 0.72,
+     "up": 1.9,
+     "reach": 1.37
+    },
+    "punch": {
+     "wide": 0.76,
+     "left": 0.34,
+     "right": 0.38,
+     "front": 1.18,
+     "back": 0.1,
+     "up": 1.9,
+     "at": [
+      0.04,
+      1.47,
+      1.17
+     ]
+    },
+    "swing": {
+     "wide": 1.18,
+     "left": 0.45,
+     "right": 0.59,
+     "front": 0.82,
+     "back": 0.29,
+     "up": 2.03
+    },
+    "knock": {
+     "wide": 0.9,
+     "left": 0.31,
+     "right": 0.45,
+     "front": 0.47,
+     "back": 0.09,
+     "up": 1.9,
+     "at": [
+      -0.06,
+      1.59,
+      0.42
+     ]
+    },
+    "cower": {
+     "wide": 1.08,
+     "left": 0.22,
+     "right": 0.54,
+     "front": 0.79,
+     "back": 0.16,
+     "up": 1.44
+    }
+   }
+  },
+  "ogre": {
+   "height": 2.6,
+   "shoulder": 2.21,
+   "leg": 1.35,
+   "arm": 1.07,
+   "furniture": {
+    "mode": "fit",
+    "seat": 0.45,
+    "bed": 0.45,
+    "handle": 1,
+    "table": 0.86
+   },
+   "own": {
+    "mode": "own",
+    "seat": 0.703,
+    "bed": 0.703,
+    "handle": 1.656,
+    "table": 1.344
+   },
+   "clips": {
+    "stand": {
+     "wide": 1.41,
+     "left": 0.71,
+     "right": 0.7,
+     "front": 0.44,
+     "back": 0.31,
+     "up": 2.61
+    },
+    "walk": {
+     "wide": 1.58,
+     "left": 0.79,
+     "right": 0.79,
+     "front": 0.77,
+     "back": 0.79,
+     "up": 2.59,
+     "speed": 1.23
+    },
+    "run": {
+     "wide": 1.55,
+     "left": 0.78,
+     "right": 0.78,
+     "front": 0.85,
+     "back": 0.97,
+     "up": 2.46,
+     "speed": 2.97
+    },
+    "sneak": {
+     "wide": 1.62,
+     "left": 0.81,
+     "right": 0.81,
+     "front": 1,
+     "back": 0.34,
+     "up": 2.43,
+     "speed": 0.43
+    },
+    "crawl": {
+     "wide": 1.24,
+     "left": 0.62,
+     "right": 0.62,
+     "front": 1.37,
+     "back": 1.12,
+     "up": 1.3,
+     "speed": 0.31
+    },
+    "scuttle": {
+     "wide": 1.72,
+     "left": 0.86,
+     "right": 0.86,
+     "front": 1.4,
+     "back": 0.62,
+     "up": 1.37,
+     "speed": 1.04
+    },
+    "creep": {
+     "wide": 1.93,
+     "left": 0.96,
+     "right": 0.96,
+     "front": 1.69,
+     "back": 0.33,
+     "up": 2.27,
+     "speed": 0.52
+    },
+    "sit": {
+     "wide": 1.72,
+     "left": 0.86,
+     "right": 0.86,
+     "front": 0.98,
+     "back": 0.88,
+     "up": 2.61,
+     "height": 0.45,
+     "high": false,
+     "before": 1.05,
+     "behind": 0.81,
+     "before_low": 1.05,
+     "before_mid": 0.96,
+     "before_high": 0.67,
+     "stands": 0.08
+    },
+    "bed": {
+     "wide": 2.91,
+     "left": 1.27,
+     "right": 1.45,
+     "front": 0.89,
+     "back": 1.61,
+     "up": 2.61,
+     "height": 0.45,
+     "high": false,
+     "before": 0.97,
+     "behind": 1.53,
+     "before_low": 0.97,
+     "before_mid": 0.9,
+     "before_high": 0.64,
+     "stands": 0.08,
+     "head": [
+      1.04,
+      0.91,
+      -0.77
+     ],
+     "to_head": 1.27,
+     "to_feet": 1.45
+    },
+    "door_push": {
+     "wide": 1.39,
+     "left": 0.69,
+     "right": 0.69,
+     "front": 1.12,
+     "back": 0.35,
+     "up": 2.61,
+     "handle": [
+      -0.27,
+      1,
+      0.87
+     ],
+     "travel": [
+      0.05,
+      -0.02,
+      0.26
+     ],
+     "stands": 0.87,
+     "behind": 0.35
+    },
+    "door_pull": {
+     "wide": 1.46,
+     "left": 0.73,
+     "right": 0.69,
+     "front": 0.86,
+     "back": 0.41,
+     "up": 2.61,
+     "handle": [
+      -0.27,
+      1,
+      0.87
+     ],
+     "travel": [
+      -0.1,
+      -0.02,
+      -0.27
+     ],
+     "stands": 0.87,
+     "behind": 0.41
+    },
+    "door_slide": {
+     "wide": 1.7,
+     "left": 0.69,
+     "right": 0.85,
+     "front": 1.04,
+     "back": 0.35,
+     "up": 2.61,
+     "handle": [
+      -0.27,
+      1,
+      0.87
+     ],
+     "travel": [
+      -0.52,
+      0,
+      0
+     ],
+     "stands": 0.87,
+     "behind": 0.35
+    },
+    "reach_low": {
+     "wide": 1.58,
+     "left": 0.79,
+     "right": 0.69,
+     "front": 1.01,
+     "back": 0.32,
+     "up": 2.61,
+     "at": [
+      -0.15,
+      0.1,
+      0.56
+     ]
+    },
+    "reach_mid": {
+     "wide": 1.39,
+     "left": 0.69,
+     "right": 0.69,
+     "front": 1.17,
+     "back": 0.3,
+     "up": 2.61,
+     "at": [
+      -0.25,
+      0.86,
+      0.65
+     ]
+    },
+    "reach_high": {
+     "wide": 1.83,
+     "left": 0.69,
+     "right": 0.92,
+     "front": 0.71,
+     "back": 0.3,
+     "up": 3.22,
+     "at": [
+      -0.25,
+      3.08,
+      0.47
+     ]
+    },
+    "peek": {
+     "wide": 2.07,
+     "left": 1.03,
+     "right": 0.91,
+     "front": 0.68,
+     "back": 0.3,
+     "up": 2.78,
+     "edge": [
+      -0.45,
+      0,
+      0.5
+     ]
+    },
+    "scare": {
+     "wide": 1.83,
+     "left": 0.91,
+     "right": 0.91,
+     "front": 2.22,
+     "back": 0.99,
+     "up": 2.62,
+     "reach": 2.02
+    },
+    "punch": {
+     "wide": 1.39,
+     "left": 0.7,
+     "right": 0.7,
+     "front": 1.73,
+     "back": 0.33,
+     "up": 2.61,
+     "at": [
+      0.05,
+      2.11,
+      1.71
+     ]
+    },
+    "swing": {
+     "wide": 1.81,
+     "left": 0.86,
+     "right": 0.9,
+     "front": 1.17,
+     "back": 0.55,
+     "up": 2.87
+    },
+    "knock": {
+     "wide": 1.51,
+     "left": 0.69,
+     "right": 0.75,
+     "front": 0.68,
+     "back": 0.3,
+     "up": 2.61,
+     "at": [
+      -0.09,
+      2.28,
+      0.56
+     ]
+    },
+    "cower": {
+     "wide": 1.63,
+     "left": 0.42,
+     "right": 0.81,
+     "front": 0.96,
+     "back": 0.4,
+     "up": 2.17
+    }
+   }
+  },
+  "imp": {
+   "height": 0.9,
+   "shoulder": 0.69,
+   "leg": 0.44,
+   "arm": 0.28,
+   "furniture": {
+    "mode": "fit",
+    "seat": 0.45,
+    "bed": 0.45,
+    "handle": 0.86,
+    "table": 0.749
+   },
+   "own": {
+    "mode": "own",
+    "seat": 0.234,
+    "bed": 0.234,
+    "handle": 0.521,
+    "table": 0.437
+   },
+   "clips": {
+    "stand": {
+     "wide": 0.31,
+     "left": 0.15,
+     "right": 0.15,
+     "front": 0.15,
+     "back": 0.07,
+     "up": 0.9
+    },
+    "walk": {
+     "wide": 0.31,
+     "left": 0.15,
+     "right": 0.15,
+     "front": 0.27,
+     "back": 0.24,
+     "up": 0.89,
+     "speed": 0.95
+    },
+    "run": {
+     "wide": 0.31,
+     "left": 0.16,
+     "right": 0.16,
+     "front": 0.27,
+     "back": 0.25,
+     "up": 0.88,
+     "speed": 2.34
+    },
+    "sneak": {
+     "wide": 0.32,
+     "left": 0.16,
+     "right": 0.16,
+     "front": 0.28,
+     "back": 0.11,
+     "up": 0.83,
+     "speed": 0.21
+    },
+    "crawl": {
+     "wide": 0.3,
+     "left": 0.15,
+     "right": 0.15,
+     "front": 0.45,
+     "back": 0.4,
+     "up": 0.4,
+     "speed": 0.19
+    },
+    "scuttle": {
+     "wide": 0.45,
+     "left": 0.22,
+     "right": 0.22,
+     "front": 0.46,
+     "back": 0.24,
+     "up": 0.34,
+     "speed": 0.75
+    },
+    "creep": {
+     "wide": 0.43,
+     "left": 0.22,
+     "right": 0.22,
+     "front": 0.48,
+     "back": 0.13,
+     "up": 0.75,
+     "speed": 0.27
+    },
+    "sit": {
+     "wide": 0.35,
+     "left": 0.18,
+     "right": 0.18,
+     "front": 0.18,
+     "back": 0.26,
+     "up": 0.94,
+     "height": 0.45,
+     "high": true,
+     "before": 0.21,
+     "behind": 0.24,
+     "before_low": 0.18,
+     "before_mid": 0.16,
+     "before_high": 0.21,
+     "stands": 0.03
+    },
+    "bed": {
+     "wide": 0.96,
+     "left": 0.47,
+     "right": 0.48,
+     "front": 0.18,
+     "back": 0.48,
+     "up": 0.95,
+     "height": 0.45,
+     "high": true,
+     "before": 0.21,
+     "behind": 0.46,
+     "before_low": 0.16,
+     "before_mid": 0.16,
+     "before_high": 0.21,
+     "stands": 0.03,
+     "head": [
+      0.33,
+      0.57,
+      -0.26
+     ],
+     "to_head": 0.47,
+     "to_feet": 0.48
+    },
+    "door_push": {
+     "wide": 0.35,
+     "left": 0.15,
+     "right": 0.17,
+     "front": 0.46,
+     "back": 0.06,
+     "up": 0.93,
+     "handle": [
+      -0.08,
+      0.86,
+      0.27
+     ],
+     "travel": [
+      0.03,
+      -0.01,
+      0.18
+     ],
+     "stands": 0.27,
+     "behind": 0.06
+    },
+    "door_pull": {
+     "wide": 0.7,
+     "left": 0.16,
+     "right": 0.35,
+     "front": 0.38,
+     "back": 0.09,
+     "up": 0.93,
+     "handle": [
+      -0.08,
+      0.86,
+      0.27
+     ],
+     "travel": [
+      -0.07,
+      -0.01,
+      -0.18
+     ],
+     "stands": 0.27,
+     "behind": 0.09
+    },
+    "door_slide": {
+     "wide": 0.82,
+     "left": 0.15,
+     "right": 0.41,
+     "front": 0.37,
+     "back": 0.06,
+     "up": 0.94,
+     "handle": [
+      -0.08,
+      0.86,
+      0.27
+     ],
+     "travel": [
+      -0.35,
+      0,
+      0
+     ],
+     "stands": 0.27,
+     "behind": 0.06
+    },
+    "reach_low": {
+     "wide": 0.36,
+     "left": 0.18,
+     "right": 0.16,
+     "front": 0.34,
+     "back": 0.07,
+     "up": 0.9,
+     "at": [
+      -0.05,
+      0.1,
+      0.18
+     ]
+    },
+    "reach_mid": {
+     "wide": 0.4,
+     "left": 0.15,
+     "right": 0.2,
+     "front": 0.26,
+     "back": 0.06,
+     "up": 0.9,
+     "at": [
+      -0.07,
+      0.75,
+      0.21
+     ]
+    },
+    "reach_high": {
+     "wide": 0.47,
+     "left": 0.15,
+     "right": 0.23,
+     "front": 0.22,
+     "back": 0.08,
+     "up": 0.93,
+     "at": [
+      -0.07,
+      0.88,
+      0.15
+     ]
+    },
+    "peek": {
+     "wide": 0.55,
+     "left": 0.27,
+     "right": 0.28,
+     "front": 0.22,
+     "back": 0.07,
+     "up": 0.9,
+     "edge": [
+      -0.13,
+      0,
+      0.17
+     ]
+    },
+    "scare": {
+     "wide": 0.5,
+     "left": 0.25,
+     "right": 0.25,
+     "front": 0.63,
+     "back": 0.34,
+     "up": 0.91,
+     "reach": 0.56
+    },
+    "punch": {
+     "wide": 0.3,
+     "left": 0.15,
+     "right": 0.15,
+     "front": 0.48,
+     "back": 0.08,
+     "up": 0.9,
+     "at": [
+      0.01,
+      0.67,
+      0.47
+     ]
+    },
+    "swing": {
+     "wide": 0.51,
+     "left": 0.21,
+     "right": 0.26,
+     "front": 0.31,
+     "back": 0.17,
+     "up": 0.91
+    },
+    "knock": {
+     "wide": 0.35,
+     "left": 0.15,
+     "right": 0.17,
+     "front": 0.22,
+     "back": 0.06,
+     "up": 0.9,
+     "at": [
+      -0.04,
+      0.71,
+      0.2
+     ]
+    },
+    "cower": {
+     "wide": 0.46,
+     "left": 0.09,
+     "right": 0.23,
+     "front": 0.39,
+     "back": 0.1,
+     "up": 0.72
+    }
+   }
+  },
+  "hag": {
+   "height": 1.5,
+   "shoulder": 1.25,
+   "leg": 0.87,
+   "arm": 0.44,
+   "furniture": {
+    "mode": "fit",
+    "seat": 0.45,
+    "bed": 0.45,
+    "handle": 1,
+    "table": 0.86
+   },
+   "own": {
+    "mode": "own",
+    "seat": 0.45,
+    "bed": 0.45,
+    "handle": 0.939,
+    "table": 0.861
+   },
+   "clips": {
+    "stand": {
+     "wide": 0.5,
+     "left": 0.25,
+     "right": 0.23,
+     "front": 0.39,
+     "back": 0.11,
+     "up": 1.5
+    },
+    "walk": {
+     "wide": 0.49,
+     "left": 0.24,
+     "right": 0.25,
+     "front": 0.47,
+     "back": 0.46,
+     "up": 1.49,
+     "speed": 1.34
+    },
+    "run": {
+     "wide": 0.49,
+     "left": 0.24,
+     "right": 0.24,
+     "front": 0.51,
+     "back": 0.52,
+     "up": 1.44,
+     "speed": 3.18
+    },
+    "sneak": {
+     "wide": 0.64,
+     "left": 0.32,
+     "right": 0.32,
+     "front": 0.57,
+     "back": 0.22,
+     "up": 1.32,
+     "speed": 0.42
+    },
+    "crawl": {
+     "wide": 0.57,
+     "left": 0.29,
+     "right": 0.29,
+     "front": 0.76,
+     "back": 0.75,
+     "up": 0.56,
+     "speed": 0.38
+    },
+    "scuttle": {
+     "wide": 0.77,
+     "left": 0.39,
+     "right": 0.39,
+     "front": 0.68,
+     "back": 0.43,
+     "up": 0.62,
+     "speed": 1.2
+    },
+    "creep": {
+     "wide": 0.76,
+     "left": 0.38,
+     "right": 0.38,
+     "front": 0.85,
+     "back": 0.25,
+     "up": 1.15,
+     "speed": 0.53
+    },
+    "sit": {
+     "wide": 0.69,
+     "left": 0.35,
+     "right": 0.34,
+     "front": 0.4,
+     "back": 0.45,
+     "up": 1.5,
+     "height": 0.45,
+     "high": false,
+     "before": 0.45,
+     "behind": 0.4,
+     "before_low": 0.4,
+     "before_mid": 0.4,
+     "before_high": 0.45,
+     "stands": 0.05
+    },
+    "bed": {
+     "wide": 1.83,
+     "left": 0.64,
+     "right": 0.92,
+     "front": 0.4,
+     "back": 0.88,
+     "up": 1.5,
+     "height": 0.45,
+     "high": false,
+     "before": 0.45,
+     "behind": 0.83,
+     "before_low": 0.39,
+     "before_mid": 0.4,
+     "before_high": 0.45,
+     "stands": 0.05,
+     "head": [
+      0.46,
+      0.79,
+      -0.51
+     ],
+     "to_head": 0.64,
+     "to_feet": 0.92
+    },
+    "door_push": {
+     "wide": 0.69,
+     "left": 0.24,
+     "right": 0.35,
+     "front": 0.68,
+     "back": 0.1,
+     "up": 1.5,
+     "handle": [
+      -0.13,
+      1,
+      0.43
+     ],
+     "travel": [
+      0.05,
+      -0.02,
+      0.26
+     ],
+     "stands": 0.43,
+     "behind": 0.1
+    },
+    "door_pull": {
+     "wide": 0.74,
+     "left": 0.26,
+     "right": 0.37,
+     "front": 0.44,
+     "back": 0.14,
+     "up": 1.5,
+     "handle": [
+      -0.13,
+      1,
+      0.43
+     ],
+     "travel": [
+      -0.1,
+      -0.02,
+      -0.27
+     ],
+     "stands": 0.43,
+     "behind": 0.14
+    },
+    "door_slide": {
+     "wide": 1.31,
+     "left": 0.24,
+     "right": 0.65,
+     "front": 0.51,
+     "back": 0.1,
+     "up": 1.5,
+     "handle": [
+      -0.13,
+      1,
+      0.43
+     ],
+     "travel": [
+      -0.52,
+      0,
+      0
+     ],
+     "stands": 0.43,
+     "behind": 0.1
+    },
+    "reach_low": {
+     "wide": 0.68,
+     "left": 0.34,
+     "right": 0.33,
+     "front": 0.54,
+     "back": 0.12,
+     "up": 1.5,
+     "at": [
+      -0.1,
+      0.1,
+      0.36
+     ]
+    },
+    "reach_mid": {
+     "wide": 0.65,
+     "left": 0.24,
+     "right": 0.33,
+     "front": 0.47,
+     "back": 0.1,
+     "up": 1.5,
+     "at": [
+      -0.12,
+      0.86,
+      0.42
+     ]
+    },
+    "reach_high": {
+     "wide": 0.72,
+     "left": 0.24,
+     "right": 0.36,
+     "front": 0.41,
+     "back": 0.1,
+     "up": 1.64,
+     "at": [
+      -0.12,
+      1.58,
+      0.3
+     ]
+    },
+    "peek": {
+     "wide": 0.86,
+     "left": 0.4,
+     "right": 0.43,
+     "front": 0.5,
+     "back": 0.1,
+     "up": 1.5,
+     "edge": [
+      -0.23,
+      0,
+      0.42
+     ]
+    },
+    "scare": {
+     "wide": 0.77,
+     "left": 0.38,
+     "right": 0.38,
+     "front": 1.13,
+     "back": 0.62,
+     "up": 1.5,
+     "reach": 1.03
+    },
+    "punch": {
+     "wide": 0.6,
+     "left": 0.3,
+     "right": 0.3,
+     "front": 0.89,
+     "back": 0.11,
+     "up": 1.5,
+     "at": [
+      0.02,
+      1.18,
+      0.88
+     ]
+    },
+    "swing": {
+     "wide": 0.94,
+     "left": 0.37,
+     "right": 0.47,
+     "front": 0.63,
+     "back": 0.19,
+     "up": 1.66
+    },
+    "knock": {
+     "wide": 0.66,
+     "left": 0.24,
+     "right": 0.33,
+     "front": 0.41,
+     "back": 0.1,
+     "up": 1.5,
+     "at": [
+      -0.06,
+      1.26,
+      0.32
+     ]
+    },
+    "cower": {
+     "wide": 0.8,
+     "left": 0.19,
+     "right": 0.4,
+     "front": 0.65,
+     "back": 0.16,
+     "up": 1.11
+    }
+   }
+  }
+ }
+}

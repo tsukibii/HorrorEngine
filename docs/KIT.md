@@ -1,5 +1,9 @@
 # The kit: room things from numbers
 
+> **Characters use what you make here.** Before sizing or placing a seat, a bed, a door, a table, a stair or a
+> pavement, read [docs/ANIMATION_RULES.md](ANIMATION_RULES.md): the sizes and the free floor a character's animations
+> need (measured), held by `python tools/anim_rules.py check` (ANIMRULES).
+
 Most of what makes a room read as real is rectangles: the gaps between floor boards and tiles, the 3 mm reveals
 between cabinet doors, the step where a ceiling drops, the window's frame and sill, the switch plate by the door.
 They aren't textures. They're small changes in depth that light falls into, so the bake and Lumen turn them into the

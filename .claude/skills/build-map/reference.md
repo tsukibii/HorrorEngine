@@ -137,3 +137,28 @@ prop generator table's or chair's `"pbr": {"wood": ...}`).
   crape_myrtle, black_pine, cedar, shrub, small_hornbeam; Blender's module: `python tools/retarget.py setup`).
 - A bend: centre C and radius R: the road's points C + R(cos θ, sin θ) every 15°; its walks R ± (width/2 + walk); a
   wall along it at R + width/2 + walk + 0.175; trees down a walk's middle; poles at the kerb, `turn` = θ.
+
+## 7. Rules that keep the animations working (docs/ANIMATION_RULES.md: read it; `python tools/anim_rules.py check`)
+
+A character doesn't collide with furniture and doesn't see the room: the model is where her clips expect it.
+
+- **Seats** (sofa_3, loveseat, dining_chair, bench, school_chair; `props/` chairs): seat 0.40 to 0.50 m (works 0.33
+  to 0.57); **0.35 m of clear floor in front of the seat's edge**; a chair she sits down on is 0.35 m from the table;
+  0.55 m behind the edge before a back (a dining chair is 0.42 deep: its marker goes 0.10 m in front of its edge);
+  0.70 m wide. Not seats: zabuton, floor_cushion, zaisu, futon, low_table, the bar stool.
+- **Beds** (bed_single, bed_double): mattress 0.50; **one long side free with 0.35 m of floor**; 0.95 m deep from
+  that side, 1.95 m long; nothing but a flat duvet and a pillow under 0.12 m on it. A futon needs a character baked
+  for it.
+- **Doors**: handle 0.95 to 1.05 m (the kit's: 0.95; works 0.90 to 1.25); 0.80 by 2.00 m to walk through; **0.45 m
+  of clear, level floor in front on the side a character opens it from**; pushed from the side its hinges are on
+  her left, pulled from the side they're on her right (right hand); `swing` accordingly.
+- **Things a character takes**: within 0.30 m of the edge of what they're on, standing room in front; on the floor
+  to 0.3 m, on a counter at 0.8 to 1.0 m, or on a shelf at 1.3 to 1.6 m (the rules' last table says what's in between).
+- **Ways**: 0.75 m between pieces of furniture where a character walks (0.90 where it can be); nothing under 1.0 m
+  high across her way (she'd walk on top of it); ceilings 2.1 m.
+- **Stairs**: risers 0.20 m or less where characters use them (apartment, motel); level floor wherever a character
+  sits, lies, opens, takes, peeks or fights.
+- **Streets**: pavements 1.2 m clear; a door's landing 0.6 m deep and level; a bench as a seat; entrance steps 0.20 m
+  a riser.
+- **Short and tall**: children, goblins and imps use the same furniture; a handle at 0.90 to 1.15 m suits a child
+  and a person; a ghoul wants doors 2.05 m high, an ogre a doorway 1.7 by 2.8 m.

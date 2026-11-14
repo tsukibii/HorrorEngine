@@ -1,5 +1,9 @@
 # The street builder
 
+> **Characters use what you make here.** Before sizing or placing a seat, a bed, a door, a table, a stair or a
+> pavement, read [docs/ANIMATION_RULES.md](ANIMATION_RULES.md): the sizes and the free floor a character's animations
+> need (measured), held by `python tools/anim_rules.py check` (ANIMRULES).
+
 `tools/director/street.html` (the dashboard's **Street builder** tile, or `http://127.0.0.1:8780/street.html`, the
 desk's server) makes the outside world: streets, the outsides of buildings, lamps, poles and wires, fences and the
 clutter of a lived-in street. It's the map the enterable buildings go into: those are made in the scene builder
