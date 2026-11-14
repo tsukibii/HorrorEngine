@@ -19,6 +19,9 @@
 // hanging one.
 // A turtleneck's collar (a neck's `cover`: DECISIONS 2026-11-14, "about 2/3rds of the neck covered only"): its front edge
 // that share of the way from the pit of the neck to under the chin on every body, at least 8 mm short of the chin.
+// And the rule for everything ("anything that goes above the 2/3rd neck and is a top/coat etc should come down to
+// 2/3rd"): no part of any garment cut as a shell (a collar's roll, a hood's, a strap; a halter's strings aside) above
+// the two-thirds line of the neck (pieces.js neckCap) on any body, cut or hung.
 // Ends "TAILOR ok".
 //
 //   node tools/character/tailor/check.mjs
@@ -28,7 +31,7 @@ import { loadMhr, namedBody, grownBody, bodyWeights, ROOT } from "./node.mjs";
 import * as PO from "../pose.js";
 import * as TAILOR from "../tailor.js";
 import { height, frame } from "./frame.js";
-import { bust, sleeveEnd } from "./pieces.js";
+import { bust, sleeveEnd, neckCap } from "./pieces.js";
 import { normals } from "./mesh.js";
 import { guide } from "./guides.js";
 
@@ -59,6 +62,7 @@ for (const [name, d] of Object.entries(designs)) {
 }
 
 const COLLARS = [];                                                 // each turtleneck's share of the neck's front, as cut
+const NECKS = { n: 0, worst: 0 };                                   // the garments held to two thirds of the neck, and the most any reached over it
 const sum = g => { let h = 0; for (const q of g.parts) { for (let i = 0; i < q.P.length; i += 97) h = (h * 31 + Math.round(q.P[i] * 1e5)) % 1e9; h = (h + q.T.length) % 1e9; } return h; };
 const look = (label, B, g, hung = false) => {
   let tris = 0, lo = 1e9, hi = -1e9;
@@ -97,6 +101,12 @@ const look = (label, B, g, hung = false) => {
   for (const [what, y, got] of want) {                                             // hung, a hem or a leg may fall a hand lower
     const off = got - y, tol = (what === "straps" ? 0.06 : 0.035) * F.s;
     if (off > tol || off < -(hung && got !== hi ? 0.1 * F.s : tol)) errs.push(`${label}: its ${what} at ${got.toFixed(3)} m, not ${y.toFixed(3)}`);
+  }
+  if (p.kind === "shell" || p.kind === undefined) {                               // nothing of any garment up the neck past two thirds of it (pieces.js neckCap): a collar's roll, a hood's, a strap
+    const cap = neckCap(F); let over = 0, where = "";
+    for (const q of g.parts) if (!/_cord$/.test(q.name)) for (let i = 0; i < q.P.length; i += 3) { const d = q.P[i + 1] - cap(q.P[i], q.P[i + 2]); if (d > over) { over = d; where = q.name; } }
+    NECKS.n++; NECKS.worst = Math.max(NECKS.worst, over);
+    if (over > 0.0005) errs.push(`${label}: ${where} reaches ${(over * 1000).toFixed(1)} mm above two thirds of the neck`);
   }
   if (p.neck && p.neck.cover !== undefined) {                                      // a turtleneck: its collar's front edge that share of the way up the neck's front, never to the chin
     let top = -1e9;
@@ -244,4 +254,4 @@ for (const [bust, names] of [[2, ["casual: red sweater dress", "t-shirt and skir
   console.log(`  guides: ${names.length} designs' lines and handles on the body alone, as their cuts' (${Date.now() - t} ms)`);
 }
 if (errs.length) { console.error(errs.map(e => "TAILOR FAIL: " + e).join("\n")); process.exit(1); }
-console.log(`TAILOR ok (${Object.keys(designs).length} designs on ${BODIES.length} bodies, ${Object.keys(outfits).length} outfits, ${HUNG.reduce((a, [, , o]) => a + o.length, 0)} hung; turtlenecks' collars ${COLLARS.length ? Math.min(...COLLARS).toFixed(2) + " to " + Math.max(...COLLARS).toFixed(2) : "none"} of the neck's front; ${((Date.now() - t0) / 1000).toFixed(0)} s)`);
+console.log(`TAILOR ok (${Object.keys(designs).length} designs on ${BODIES.length} bodies, ${Object.keys(outfits).length} outfits, ${HUNG.reduce((a, [, , o]) => a + o.length, 0)} hung; turtlenecks' collars ${COLLARS.length ? Math.min(...COLLARS).toFixed(2) + " to " + Math.max(...COLLARS).toFixed(2) : "none"} of the neck's front, nothing of ${NECKS.n} garments above two thirds of the neck (the most ${(NECKS.worst * 1000).toFixed(2)} mm); ${((Date.now() - t0) / 1000).toFixed(0)} s)`);

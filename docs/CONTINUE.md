@@ -65,7 +65,9 @@ turtleneck's collar ran up to the chin; it should cover about two thirds of the 
   HSCharacterLook node's Cloth switch and for the runtime's cast bodies.
 - **The turtlenecks**: `neck.cover` (0.66 of the neck's front, from its pit to under the chin, measured on each body:
   the frame's `neckPitY`, `chinY`) in place of a rise in metres, on the turtleneck, the sweater dress's sweater and
-  the lace blouse's stand collar; their cards made again.
+  the lace blouse's stand collar; their cards made again. Then, on the user's answer, **the rule for everything**:
+  `pieces.js` `neckCap`, the two-thirds line every shell is cut at and every finished part and library garment is
+  brought under (hood collars, two library suits, a child's cami strap were over it); a halter's strings left.
 - **Pictures**: `docs/fabric_sheets/swatches.jpg` (every set on a ball of cloth, close up and in four dyes) and
   `outfits.jpg` (the six outfits worn), both the Studio's own renderer (`python tools/fabricpbr.py demo`);
   `godot_sets.jpg`, `godot_outfits.jpg` (each outfit as the file has it, then on the cloth shader) and
@@ -80,8 +82,9 @@ turtleneck's collar ran up to the chin; it should cover about two thirds of the 
 **The user has seen none of it yet.** Expect feedback on what a picture can't settle: how each fabric reads on their
 own characters under their own lights in Godot (the fuzz's strength was set by eye on balls of cloth: `sheen` and
 `halo` in each set's `SETS` entry, then `python tools/fabricpbr.py <Set>` and `godot <Set>`; or the garment's Fuzz
-row), whether "spin cotton" meant a T-shirt's jersey (it was read so), and whether the lace blouse's high collar
-should have come down with the turtlenecks (it did: one line in designs.json to put back).
+row), and whether a halter's strings should come under the neck's two-thirds line with everything else (they were
+left: strings tied behind the neck). Settled the same day: "spin cotton" is the T-shirt's jersey; anything on a top
+or coat above two thirds of the neck comes down, the lace blouse's collar with them.
 
 **Not built**, in the order I'd take them (TAILOR §1k and GODOT_LOOK §5x end with the same list):
 

@@ -2,6 +2,25 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-14, last, two thirds of the neck is the most for any top or coat; spun cotton jersey confirmed (the user, on the summary)
+
+- **"Spin cotton jersey is fine, yes, anthin g that goes above the 2/3rd neck and is a top/coat etc should come down to
+  2/3rd"**
+- **So the two-thirds line is a rule for every garment, not a number on three designs** (`tailor/pieces.js`
+  `neckCap`: the line a turtleneck is cut at, held within 3.5 cm of the neck and climbing steeply further out, so
+  nothing on the shoulders is touched): every garment cut as a shell is cut at it (`cutter`), everything added to a cut
+  afterwards (a collar's lift and roll, a hood's, the cloth's own thickness) is brought down onto it (`making`), and a
+  library garment's points above it are brought down too (`tailor/library.js` `capNeck`; hats, glasses and the other
+  rigid things as made). The lace blouse's stand collar stays down with the turtlenecks.
+- **What was over it, measured on seven bodies before the change**: the hoodie's and the rain jacket's hood collars
+  (up to 13 mm on the broadest body), shirt, jacket and coat collars by their own thickness on that body (2 to 5 mm),
+  two library suits' collars (16 mm and 5 mm on the feminine body), and on the eight-year-old a cami top's strap,
+  which ran 3.4 cm up the side of the neck. Now nothing: TAILOR holds every shell on nine bodies to it, LIBRARY the
+  two suits; all 89 baked library garments measure under it.
+- **Left alone**: a halter's strings (a bikini top's cords tie behind the neck; they are strings, not cloth over the
+  neck: say if they should come down too).
+- **"spin cotton" was a T-shirt's spun cotton jersey**: `CottonJersey001` stands.
+
 ## 2026-11-14, later, the turtlenecks: two thirds of the neck, not up to the chin (the user, mid-way through the fabric sets)
 
 - **"all the turtle necks in this game are wrong, anything with a 'turtle neck currently goess down to the bottom of
@@ -27,7 +46,7 @@ The user's answers, newest first. They override the plan, the research and the d
   picked is the colour worn**, on any set.
 - **The sets asked for, and how each was read**: knitted wool (a hand knit's stockinette in a three-ply yarn; and its
   2 x 2 rib), wool (a 2/2 twill flannel, brushed), cotton (a shirt's poplin), **"spin cotton" read as spun cotton: a
-  T-shirt's ring-spun single jersey** (say if another cloth was meant), leather (a jacket's full-grain cowhide),
+  T-shirt's ring-spun single jersey** (confirmed by the user the same day), leather (a jacket's full-grain cowhide),
   spandex (a nylon and elastane jersey), sheer hosiery (a 20 denier tight on the leg), fluffy cotton (a thick sock's
   brushed terry), matte leather (a shoe's calf). One not asked for, because jeans are in so many outfits and it shows
   what a dye mask is for: denim (its weft left white).

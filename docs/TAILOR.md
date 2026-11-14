@@ -453,7 +453,7 @@ on MHR's average body is high, so hems and waistlines are measured from the crot
 | Piece field | Means |
 |---|---|
 | `kind` | `shell` (cut from the skin) or `skirt` (rings) |
-| `neck` | `false`, or `{shape: round \| v \| square, depth, back, width, tilt, rise, cover}` (`rise`: metres up the neck, a mock neck or a stand collar; **`cover`**: a share of the neck's front, from its pit to under the chin: a turtleneck's is 0.66, whatever the body's neck; its neckband is then the roll) |
+| `neck` | `false`, or `{shape: round \| v \| square, depth, back, width, tilt, rise, cover}` (`rise`: metres up the neck, a mock neck or a stand collar; **`cover`**: a share of the neck's front, from its pit to under the chin: a turtleneck's is 0.66, whatever the body's neck; its neckband is then the roll; 0.66 is also the most any shell reaches: `neckCap`) |
 | `sleeve` | `short`, `cap`, `elbow`, `wrist` (each with an offset down the arm: `elbow+0.06`, rolled to below the elbow), or metres from the shoulder joint; the wrist and the elbow are found on the body and checked against MHR's own joints |
 | `hem` | `{at, front, back, side}`: a top's hem; `front`/`back` lengthen it there, `side` raises the sides |
 | `waist` | `{at, drop, rise}`: a bottom's waistline, `drop` lower in front, `rise` higher at the back |
@@ -613,6 +613,15 @@ close one per outfit, and fixed outfit by outfit. What read wrong, and the rule 
   turtleneck, the sweater dress's sweater and the lace blouse's stand collar all use 0.66 (the blouse's 1 cm dip at
   the front taken out: on a 4.8 cm neck it was a fifth of the collar). TAILOR measures it: 0.67 to 0.69 of the neck's
   front on all nine bodies, at least 8 mm short of the chin.
+- **Two thirds of the neck is the most for anything** (the user, the same day: "anything that goes above the 2/3rd
+  neck and is a top/coat etc should come down to 2/3rd"): `pieces.js` `neckCap(F)` is that line as a height at (x, z):
+  round the neck and a collar's width off it (3.5 cm) the line a turtleneck is cut at, lower under the chin and higher
+  at the nape; further out it climbs steeply, so nothing lying on the shoulders is touched. `cutter` cuts every shell
+  at it; `making` brings every finished part down onto it (a collar's lift and roll, a hood's, the cloth's thickness:
+  a few millimetres on the broadest bodies); `library.js` `capNeck` does the same for a library garment that isn't
+  rigid. A halter's strings (`_cord` parts) are left. Measured before: hood collars up to 13 mm over on the full
+  masculine body, ordinary collars 2 to 5 mm by their thickness there, two library suits 16 and 5 mm, and a cami
+  top's strap 3.4 cm up the side of an eight-year-old's neck. TAILOR holds every shell on every body to it.
 - **A turtleneck's collar is soft**: a modest height, the neckline hugging the neck (`open` 0.002, little ease), a
   thinner cloth and a narrow rib neckband; risen 7.5 cm with a thick band it was a brace up to the jaw.
 - **A turned cuff must not hold the wrist** (`hold: 0` on a coat's cuff): held, the sleeve's fullness bloused above

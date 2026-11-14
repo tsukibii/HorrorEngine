@@ -3257,6 +3257,15 @@ pale one shows.
   base", which the frame finds at the neck's sides; at the front the chin is 1 to 2 cm over that line (under it on the
   masculine base), so every collar ran to the chin, and the user saw it at once. Measure the thing the number is
   about (the pit of the neck, the chin) and cut by a share of it.
+- **A rule is for everything it names, so measure everything.** The turtlenecks were fixed as three designs with a
+  number each; the user's answer was the rule itself ("anything that goes above the 2/3rd neck ... should come down").
+  Measured across every top, jacket, full garment and library garment on seven bodies, the three designs were the
+  least of it: hood collars stood up to 13 mm over on the broadest body, two library suits 16 and 5 mm, and a cami's
+  strap ran up an eight-year-old's neck. The rule went into the cut itself (one line every shell is cut at, and
+  every finished part brought under), and into the check for every garment, not into more designs' numbers.
+- **A limit measured against the wrong line reads as a fault.** The first table had the three turtlenecks 12 to 16 mm
+  "over": the line they were held to was a round neckline's with its default 1.2 cm dip at the front, not their own.
+  When a measure contradicts a check that just passed, look at the measure first.
 - **A wait that never ends is a question nobody asked.** The tool that makes a character waited on the Studio's page
   for `window.__body.SCULPT`, as the other tools do; in this cloud session it never came, three times, and each time it
   was put down to the page drawing slowly on the CPU. The page was up in 16 seconds: its sculpt is built on face
