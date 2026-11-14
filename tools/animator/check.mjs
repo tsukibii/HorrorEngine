@@ -199,6 +199,19 @@ ok(clips.chubby_woman.walk_loop.stats.arm_l > clips.skinny_man.walk_loop.stats.a
   ok(s("chubby_woman").soft_belly > s("normal_woman").soft_belly * 1.5, "the chubby woman's belly moves more", `${s("chubby_woman").soft_belly} and ${s("normal_woman").soft_belly} mm`);
   const press = clips.normal_woman.sit_loop.frames[0].pose.off.get(W.plan.find(b => b.name === "soft_seat_l").j); ok(press[1] > 0.008, "sat, the seat is pressed flat", `${(press[1] * 1000).toFixed(0)} mm`); }
 
+// The peek's hands against its wall (the wall: everything ahead of its back face, from its end on toward her middle).
+// `deep`: how far any joint of either hand gets into it at any frame of the three clips (the left hand's past its
+// back, the right's under whichever of its back and its end is nearer); held, how square the right palm is to the
+// wall's end and the left to its back; how far a wrist is bent at the most. The hands were first carried on the way
+// their forearms pointed: the left's fingertips ended 11 cm past the wall's back on a person and 21 on a ghoul, out
+// of the wall's other side on the mesh, and every check passed
+const peekHands = (R, C) => { const e = C.peek_out.meta.peek.edge, hs = Math.max(1, R.armL.handLen / 0.175); let deep = 0, bend = 0;
+  for (const c of [C.peek_out, C.peek_loop, C.peek_back]) for (const F of c.frames) { const P = F.solved.P, I = F.pose.info;
+    for (const s of ["l", "r"]) { const A = R.arm(s), js = [A.hand]; for (const ch of A.fingers) for (const j of ch) { js.push(j); for (const k of R.J[j].kids) js.push(k); }
+      for (const j of js) { const x = P[j * 3] - e[0], z = P[j * 3 + 2] - e[2]; if (x > 0 && z > 0) deep = Math.max(deep, s === "l" ? z : Math.min(x, z)); }
+      bend = Math.max(bend, Math.acos(clamp1(V.dot(V.norm(V.sub(I["wristAt_" + s], I["elbowAt_" + s])), I["handDir_" + s]))) / DEG); } }
+  const I = C.peek_loop.frames[0].pose.info; return { deep, bend, hs, onEnd: I.palm_r[0], onBack: I.palm_l[2] }; };
+const peekSays = h => `${(h.deep * 1000).toFixed(0)} mm into it at the most (a fingertip pressed on it), the palms ${h.onEnd.toFixed(2)} and ${h.onBack.toFixed(2)} square to it, a wrist bent ${h.bend.toFixed(0)} degrees at the most`;
 // ---- 6b. animations v3 (docs/ANIMATOR_V3.md): the low gaits, all fours, peeking, the scares, the fights, the small acts ---------
 const v3 = {};
 for (const [n, ctx] of Object.entries(ctxs)) {
@@ -241,6 +254,7 @@ for (const [n, ctx] of Object.entries(ctxs)) {
     ok(apart(first(o), idle0) < 2 && apart(last(o), first(l)) < 6 && apart(first(b), first(l)) < 6 && apart(last(b), idle0) < 2, `${n}: the peek starts stood, ends as it's held, and comes back`, `${apart(last(o), first(l)).toFixed(1)} degrees from the hold`);
     ok(hd[0] < e[0] - 0.03 && Math.abs(at(o, 0, "c_head")[0]) < 0.05, `${n}: her head goes out past the wall's edge`, `${cm(e[0] - hd[0])} cm past it`);
     ok(Math.hypot(w[0] - e[0], w[2] - e[2]) < 0.14 && w[1] > 0.52 * H && w[1] < hd[1] - 0.2 * H / 1.63, `${n}: her hand on the wall's end, under her face`, `${cm(Math.hypot(w[0] - e[0], w[2] - e[2]))} cm from it, ${cm(w[1])} cm up, her head at ${cm(hd[1])}`);
+    { const h = peekHands(R, C); ok(h.deep < 0.009 * h.hs && h.onEnd > 0.9 && h.onBack > 0.9 && h.bend < 50, `${n}: her hands flat on the wall, the right on its end and the left on its back, and no finger in the wall at any frame`, peekSays(h)); }
     ok(ev(o, "out").length === 1 && ev(b, "hidden").length === 1 && C.peek_l_loop.meta.peek.edge[0] > 0 && at(C.peek_l_loop, 0, "c_head")[0] > -e[0] + 0.03 && C.peek_l_loop.meta.peek.side === "l", `${n}: its moments, and the same to her left`); }
   // the scares: coiled from the first frame, a peak, how long to show her, back to the idle
   for (const nm of ["scare_lunge", "scare_loom", "scare_snap", "scare_claw"]) { const c = C[nm], sc = c.meta.scare, from = nm === "scare_claw" ? first(C.crawl_idle_loop) : idle0;
@@ -329,6 +343,7 @@ for (const [n, ctx] of Object.entries(ctxs)) {
       let least = 9; for (const c of [o, l, C.peek_back]) for (const F of c.frames) if ((F.c.arms.r.hand || 0) && F.pose.info.armReach_r < least) least = F.pose.info.armReach_r;
       ok(e[2] > front + 0.01 && hd[0] < e[0] - 0.03 * sc && Math.hypot(w[0] - e[0], w[2] - e[2]) < 0.16 * Math.max(1, R.armR.handLen / 0.175) && reach > 0.4 && least > 0.34, `${n}: peeking, the wall stands clear of its front, its head goes out past the wall's end, its hand is on it and its arm never folded flat`,
         `the wall ${((e[2] - front) * 100).toFixed(0)} cm past its front (${(front * 100).toFixed(0)} cm ahead of its feet), the head ${((e[0] - hd[0]) * 100).toFixed(0)} cm out, the arm at ${reach.toFixed(2)} of its length held and ${least.toFixed(2)} at the least`); }
+    { const h = peekHands(R, C); ok(h.deep < 0.009 * h.hs && h.onEnd > 0.9 && h.onBack > 0.9 && h.bend < 62, `${n}: peeking, its hands flat on the wall and no finger in it at any frame, however long its fingers`, peekSays(h)); }
     // the scares, the blows, the mouth, on its own sizes
     { const sc0 = C.scare_lunge.meta.scare, cl = C.scare_claw, cp = Math.min(cl.frames.length - 1, Math.round(cl.meta.scare.peak * cl.fps)), pm = C.punch.meta.punch, h = Math.round(C.punch.events.find(e => e.name === "hit").t * C.punch.fps), k = V.mad(at(C.punch, h, "r_wrist"), C.punch.frames[h].pose.info.handDir_r, 0.5 * R.armR.handLen);
       ok(sc0.peak > 0.1 && sc0.peak < 0.75 && sc0.show > sc0.peak + 0.3 && sc0.reach > 0.5 * arm && at(cl, cp, "r_wrist")[1] > 0.3 * sc && at(cl, cp, "l_wrist")[1] < 0.05 * Math.max(1, R.armL.handLen / 0.175) + 0.03, `${n}: its lunge has a peak and a reach, its claw a hand up with the other still down`, `the lunge ${(sc0.reach * 100).toFixed(0)} cm out at ${sc0.peak} s`);

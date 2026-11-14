@@ -326,7 +326,8 @@ woman's dressed character (a sheet a group in `docs/animator_sheets/2026-11-14_v
   and of the **loom**.
 - **The peek's hand** was on the wall's end at her shoulder's height, which is where her face comes out: she stood
   with her cheek on her hand. It's below her leaning shoulder now (107 cm up on the woman, her head at 137), the
-  elbow behind her. From in front, behind a wall, what comes out is her head, her shoulder and her forearm.
+  elbow behind her. From in front, behind a wall, what comes out is her head, her shoulder and her forearm. (Her hand
+  itself was still behind the wall, and her other hand in it: §8.6.)
 - **Eating**, with nothing in the hand, the fist stopped at her collarbone: it was placed for a thing standing a
   hand's breadth out of the fist. The top of the fist is at her lips now; with a thing in it, the game's hand IK
   takes the hand back out by the thing's own length (0.0 cm from her lips, as before).
@@ -360,8 +361,57 @@ and a bat with grips, someone to hit; `gizmo`: the grip's gizmo in the editor), 
 - Drinking: the Devices plugin's water bottle with a grip, taken from a table and brought to her lips, her fingers
   round it, its mouth 0.0 cm from them.
 
+### 8.6 On the creatures' meshes, and in the editor (`sheets3 --who`, `gizmo`, `guide3`)
+
+The same sheets on two creatures exported from the Character Studio and baked (`creature_ghoul`, 190 cm with hands
+27 cm long; `creature_goblin`, 115 cm; `node tools/character/creatures.mjs make --only ghoul,goblin --export`, then
+`node tools/animator/bake.mjs`; sheets in `docs/animator_sheets/2026-11-14_v3_creature_*.jpg`). The low gaits, the
+scares and the fights read as what they are on both. One thing didn't:
+
+- **The ghoul's fingers came out of the front of the wall it was peeking round.** Not the hand on the wall's end:
+  the other one. It was put in front of her chest "flat on the wall", by the arm's own rules, which carry a hand on
+  the way its forearm points; her forearm pointed at the wall, so her hand went into it. Measured on every body: the
+  left hand's fingertips ended 11 cm past the wall's back on the three people (inside a wall that thick, out of a
+  thinner one), 13 on a goblin, 15 on a hag, 21 on a ghoul, 29 on an ogre. The right hand never touched the wall's
+  end at all: its fingers lay on behind the wall, the palm facing back at her. Every check passed, because none
+  asked where a finger was.
+- **Both hands are laid flat on the wall now**, their turn given outright as a hand planted on the floor's is
+  (`pose.js` `handQ`, with a new `handK`: how much of it, so a hand turns flat as it gets there), each wrist as far
+  off the wall as that hand's deepest finger joint (`quad.js` `handDrop`). The right is on the wall's end, under her
+  face: palm to it, fingers up and forward along it, the elbow hanging under her shoulder behind it. Seen from in
+  front that's a hand round the wall's end beside her face, which on a ghoul is the picture a peek is for. The left
+  is flat on the wall's back, up beside her shoulder, fingers up, the elbow under it.
+- **The left hand goes out to her side and up**, the forearm swinging up along the wall like a clock's hand. Brought
+  straight up in front of her, a forearm and a hand (41 cm on a person) don't fit between her and a wall under
+  20 cm away. It goes all the way through the lean, as the right does: started late and eased twice, the swing was over in
+  seven frames of coming back and the upper arm turned 36 degrees in one of them.
+- **The wall stands clear of her hands where they hang**, as it does of her face and her belly: an ogre's wrists
+  hang 15 cm behind where its belly put the wall, and its hands are 41 cm long. Its wall is 11 cm past its belly
+  now.
+- **A frame's hand found in the wall has its wrist put back out** (`acting.js` `clear`: the left's off the wall's
+  back, the right's off whichever of its back and its end is nearer): the last of it: 6 cm for an ogre's left hand half way
+  through, under 1 cm for a person's right, 1.6 for a ghoul's.
+- **ANIMATOR holds it**, on the three people and the five creatures, at every frame of the three clips: no joint of
+  either hand further into the wall than a fingertip pressed on it (5 to 7 mm on people, 4 to 14 on creatures), the
+  palms square to the wall held (0.97), a wrist bent 39 to 40 degrees at the most on people and 38 to 56 on
+  creatures, nothing turning more than 17 degrees in a frame (it was 24).
+
+**The grip's gizmo, pictured in Godot's editor** (`python tools/godot/motion_check.py gizmo`: `grip_editor_shots.gd`
+installed as a plugin of its own, under xvfb). Its first pictures had a progress box across the middle ("Updating
+Scene Groups", then "Loading editor"): a plugin's `_enter_tree` runs long before the editor has finished starting,
+and the project's first scan being over doesn't mean it has. It waits now until nothing is scanning and no
+`ProgressDialog` is showing for a few seconds, frames each prop with the view's own Focus Selection (F) and zooms by
+the wheel to a distance, instead of guessing at an orbit.
+
+**The guide's pictures** are put together from all of this by `python tools/godot/motion_check.py guide3`
+(`guides/animator/img/v3_*.jpg`, `grip_*.jpg`).
+
 ## 9. Not there
 
+- **How thick the wall is.** A peek knows where the wall's end and its back are, not its front. The fingers of the
+  hand on its end lie along the end for a hand's length (7 cm past the wall's back on the test woman, 11 on a
+  ghoul, 16 on an ogre), so on a wall thinner than that their tips stand out past its front. They don't hook round the front corner
+  either: that would need the thickness.
 - **Sitting, sleeping and doors on a creature.** Those clips are for a person's furniture: a seat 45 cm high, a bed,
   a handle a metre up. An imp's hand can't get to that handle and an ogre's has to come down to it; a goblin's hands
   don't reach its thighs sat on a seat as high as its legs. The clips are made and play, the hand stops short (an

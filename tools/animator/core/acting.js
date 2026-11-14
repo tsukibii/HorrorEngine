@@ -7,6 +7,7 @@ import { V, Q, DEG, clamp, lerp, sm, sm2, hump, rx, ry, rz } from "./m.js";
 import { ankleAt } from "./pose.js";
 import { params, FPS } from "./gait.js";
 import { stance, basePose, homeOf, armTo, leanFrame, pelvisY, mixA, bez } from "./acts.js";
+import { handDrop } from "./quad.js";
 
 const TAU = 2 * Math.PI, r3 = v => v.map(x => +x.toFixed(3));
 
@@ -36,6 +37,11 @@ export const handScale = (rig, sc) => Math.max(sc, rig.armL.handLen / 0.175);
 export const headScale = (body, sc) => [Math.max(sc, body.headR[0] / 0.088), Math.max(sc, body.headR[1] / 0.112), Math.max(sc, body.headR[2] / 0.103)];
 // a hand's knuckles in a built pose (the middle of the fist's front)
 export const knuckles = (rig, info, s) => V.mad(info["wristAt_" + s], info["handDir_" + s], 0.5 * rig.arm(s).handLen);
+// A hand laid flat on something upright: its own turn in the world (pose.js handQ). `along`: the way its fingers point,
+// in the surface; `into`: the way into the surface, which the palm faces; `tilt`, degrees: the fingers tipped toward
+// it from the wrist (the heel of a hand is thicker than its fingers), as a hand planted on the floor's are
+const laid = (rig, s, along, into, tilt = 8) => { const A = rig.arm(s), d = tilt * DEG, n0 = V.norm(into), f0 = V.norm(V.perp(along, n0));
+  return Q.frame(A.handDir, A.palm0, V.add(V.mul(f0, Math.cos(d)), V.mul(n0, Math.sin(d))), V.sub(V.mul(n0, Math.cos(d)), V.mul(f0, Math.sin(d)))); };
 const clipOf = (name, n, ctrl, events, meta, loop = false) => ({ name, loop, n, fps: FPS, secs: (loop ? n : n - 1) / FPS, ctrl, events, meta });
 
 // ---- a peek round a wall's edge ---------------------------------------------------------------------------------------
@@ -44,28 +50,58 @@ const clipOf = (name, n, ctrl, events, meta, loop = false) => ({ name, loop, n, 
     edge. Mirrored: to her left. */
 export function peeking(rig, body, set, X = null) {
   const p = params(body, set), S = stance(rig, body, p, X), base = basePose(rig, body, set, X), sc = p.sc, shY = body.shoulderY + body.floor, arm = body.upper + body.fore;
-  // The wall stands clear of her front as she stands: her face, her chest, her belly. On a person that's a hand's
+  // The wall stands clear of her front as she stands: her face, her chest, her belly, her fingertips as her hands
+  // hang (an ogre's hang ahead of its belly, and are 41 cm long). On a person that's a hand's
   // breadth past her toes; a hunched creature's face is a foot ahead of its feet (a hag's, a ghoul's), and a wall
   // put by her height alone stood inside its head
-  const P0 = base.pose.solve().P, face = P0[rig.head * 3 + 2] + (body.headC[2] + body.headR[2] - rig.J[rig.head].at[2]), front = Math.max(face, ...body.slabs.map(s => s.zf));
-  const xe = -(body.shoulderHalf + 0.085 * sc), zw = Math.max(0.2 * sc, front + 0.03 * sc), edge = [xe, 0, zw];
+  const P0 = base.pose.solve().P, face = P0[rig.head * 3 + 2] + (body.headC[2] + body.headR[2] - rig.J[rig.head].at[2]), tips = Math.max(...[rig.armL, rig.armR].flatMap(A => A.fingers.flat().flatMap(j => [j, ...rig.J[j].kids])).map(j => P0[j * 3 + 2])), front = Math.max(face, tips, ...body.slabs.map(s => s.zf));
+  const hang = Math.max(P0[rig.armL.hand * 3 + 2], P0[rig.armR.hand * 3 + 2]) + 0.62 * rig.armL.handLen;   // (and of her hands turned any way where they hang: an ogre's wrists hang 15 cm behind where its belly put the wall, its hands 41 cm long)
+  const xe = -(body.shoulderHalf + 0.085 * sc), zw = Math.max(0.2 * sc, front + 0.03 * sc, hang), edge = [xe, 0, zw];
   const lean = (u, o = {}) => { const c = standing(rig, body, p, S, base, { k: sm(0, 0.35, u), side: -0.105 * sc * u, fwd: 0.02 * sc * u, down: 0.035 * sc * u, pitch: (7 * u + (o.dp || 0)) * DEG, yaw: -7 * DEG * u, roll: (27 * u + (o.lean || 0)) * DEG,
       proll: 7 * DEG * u, look: [(2 + (o.hp || 0)) * DEG * u, (-6 + (o.hy || 0)) * DEG * u], head: { roll: (15 + (o.tilt || 0)) * DEG * u }, feet: { l: { pitch: -16 * DEG * u } }, squat: 0.4 * u });
     c.breath = o.breath || 0; return c; };
-  // Her hand on the wall's end, under her face. The end is a line up the wall, so how high the hand is on it is
-  // free: it's put below her shoulder as she leans, as far from it as leaves the arm half bent (0.48 of its length:
-  // a long arm's hand ends lower down the wall). It was first at her shoulder's own height, which is where her face
-  // comes out: on the mesh she stood with her cheek on her hand. Below, her face is out over it, and the elbow
-  // points back behind her instead of folding flat
-  const hs = handScale(rig, sc), S1 = homeOf(rig, lean(1)).shoulder.r, hx = xe - 0.03 * hs, hz = zw - 0.075 * hs, flat = Math.hypot(hx - S1[0], hz - S1[2]);
-  const hy = S1[1] - Math.sqrt(Math.max((0.2 * arm) ** 2, (0.48 * arm) ** 2 - flat * flat));
+  // Her hands are laid on the wall, their own turn given outright as a hand planted on the floor's is (quad.js planted,
+  // pose.js handQ), each wrist as far off the wall as the hand's deepest finger joint (handDrop: a ghoul's fingers are
+  // half as long again as its size makes them). They were first taken there by the arm's own rules, which carry a hand
+  // on the way its forearm points: the right hand's fingers went on behind the wall, and the left, put in front of her
+  // chest with her forearm pointing at the wall, went into it: a person's fingertips 11 cm past its back, hidden in a
+  // wall that thick and through a thinner one; a ghoul's 21 cm, out of the other side on the mesh.
+  // The right hand on the wall's end, under her face: the palm to it, the fingers up and forward along it (seen from
+  // in front, a hand round the wall's end beside her face), the heel of the hand behind the wall's back. The elbow
+  // hangs under her shoulder, behind the hand, so the forearm comes up to the wrist the way the fingers go on.
+  // The end is a line up the wall, so how high the hand is on it is free: it's put below her shoulder as she leans, as
+  // far from it as leaves the arm half bent (0.48 of its length: a long arm's hand ends lower down the wall). It was
+  // first at her shoulder's own height, which is where her face comes out: on the mesh she stood with her cheek on
+  // her hand.
+  const hs = handScale(rig, sc), off = Math.max(0.028 * sc, handDrop(rig, { tilt: 8, curl: 0.1 }) - 0.003 * sc), S1 = homeOf(rig, lean(1)).shoulder;
+  const hx = xe - off, hz = zw - 0.075 * hs, flat = Math.hypot(hx - S1.r[0], hz - S1.r[2]), hy = S1.r[1] - Math.sqrt(Math.max((0.2 * arm) ** 2, (0.48 * arm) ** 2 - flat * flat));
+  const onEnd = laid(rig, "r", [0, Math.sin(35 * DEG), Math.cos(35 * DEG)], [1, 0, 0]);
+  // The left hand flat on the wall's back, up beside her left shoulder as she leans, its fingers up and a little
+  // toward the wall's end; the elbow down under it, so the forearm stands along the wall and the wrist is hardly bent
+  const dz = zw - off - S1.l[2], rl = Math.sqrt(Math.max((0.2 * arm) ** 2, (0.45 * arm) ** 2 - dz * dz)), lw = [S1.l[0] + rl * Math.cos(20 * DEG), S1.l[1] + rl * Math.sin(20 * DEG), zw - off];
+  const onBack = laid(rig, "l", [-0.25, 0.97, 0], [0, 0, 1]);
+  // Kept out of the wall on their way. Until a hand has turned flat it points the way its forearm does, and a wrist
+  // within a hand's length of the wall then has its fingers in it (the left hand's 10 cm on a person and 31 on an
+  // ogre, half way through the lean). Where a frame's hand is found in the wall its wrist is put back out by as much:
+  // the left's off the wall's back, the right's off whichever of the wall's back and its end it's nearer under. A
+  // fingertip's own joint may be `press` in: the pad of a finger pressed on it
+  const press = 0.006 * hs, hand = Object.fromEntries(["l", "r"].map(s => { const A = rig.arm(s), js = [A.hand]; for (const ch of A.fingers) for (const j of ch) { js.push(j); for (const k of rig.J[j].kids) js.push(k); } return [s, js]; }));
+  const clear = c => { for (let it = 0; it < 4; it++) { const P = homeOf(rig, c).pose.solve().P; let moved = false;
+      for (const s of ["l", "r"]) { let worst = 0, ax = 2;
+        for (const j of hand[s]) { const x = P[j * 3] - xe, z = P[j * 3 + 2] - zw; if (x <= 0 || z <= 0) continue; const d = s === "l" ? z : Math.min(x, z); if (d > worst) { worst = d; ax = s === "l" || z < x ? 2 : 0; } }
+        if (worst > press) { const W = c.arms[s].hand.slice(); W[ax] -= worst - 0.5 * press; c.arms[s].hand = W; moved = true; } }
+      if (!moved) break; } return c; };
   const frame = (u, o = {}) => {                              // u: 0 stood behind it .. 1 leant out
-    const c = lean(u, o), home = homeOf(rig, c), wob = o.hand || [0, 0, 0];
+    const c = lean(u, o), home = homeOf(rig, c), wob = o.hand || [0, 0, 0], on = sm(0.4, 0.95, u);   // (on: the hands turned flat to the wall as they get to it)
     // (the arm goes with the lean, all the way through it: sent in a burst in the middle of it, as it first was, the elbow swung round 27 degrees in a frame on a person and 37 on a ghoul's longer arm)
-    const W0 = home.info.wristAt_r, via = [(W0[0] + hx) / 2, (W0[1] + hy) / 2 - 0.02 * sc, W0[2] + 0.35 * (hz - W0[2])];   // (up beside her first, then out to the wall: a way that stays inside the arm's reach on any body)
-    c.arms.r = armTo(home, "r", [hx + wob[0], hy + wob[1], hz + wob[2]], sm(0.02, 0.9, u), { palm: [1, 0, 0.15], pole: [-0.5, -0.8, -0.35], curl: 0.66, wrist: -8 * DEG, via, near: 0.36 * arm });   // (her palm on the wall's end, the fingers round its front)
-    c.arms.l = armTo(home, "l", [0.07 * sc, shY - 0.21 * sc, zw - 0.045 * sc], sm2(0.2, 1, u) * 0.999, { palm: [0, 0.1, 1], pole: [0.75, -0.6, -0.3], curl: 0.2, wrist: -30 * DEG });
-    return c; };
+    const W0 = home.info.wristAt_r, via = [Math.min((W0[0] + hx) / 2, hx - 0.12 * hs), (W0[1] + hy) / 2 - 0.02 * sc, W0[2] + 0.35 * (hz - W0[2])];   // (up beside her and out past the wall's end first, then forward to it: a way that stays inside the arm's reach on any body)
+    c.arms.r = { ...armTo(home, "r", [hx + wob[0], hy + wob[1], hz + wob[2]], sm(0.02, 0.9, u), { palm: [1, 0, 0.15], pole: [-0.16, -0.73, -0.66], curl: 0.12, via, near: 0.36 * arm }), handQ: onEnd, handK: on, thumbFlat: on };
+    // (the left hand goes out to her side and up, the forearm swinging up along the wall: brought straight up in front of her, a forearm and a hand don't fit between her and the wall)
+    const L0 = home.info.wristAt_l, SL = home.shoulder.l, viaL = [SL[0] + 0.85 * arm, SL[1] - 0.4 * arm, Math.min(SL[2] + 0.1 * arm, zw - rig.armL.handLen)];   // (and a hand's length back from the wall until it has turned flat to it)
+    const kl = clamp(u / 0.97, 0, 1) * 0.999, PL = [0.3, -0.95, 0];   // (all the way through the lean, as the right arm goes: started a fifth of the way in and eased again, the forearm's swing up the wall was over in seven frames of coming back, the upper arm turning 36 degrees in one)
+    c.arms.l = { ...armTo(home, "l", lw, kl, { palm: [0, 0.1, 1], pole: PL, curl: 0.1, via: viaL }), handQ: onBack, handK: on, thumbFlat: on };
+    c.arms.l.curl = lerp(home.c.arms.l.curl ?? 0.45, 0.1, sm(0, 0.5, kl));   // (the fingers straightened before the palm has turned to the wall: curled, they point into it)
+    return clear(c); };
   const long = clamp((arm / body.height - 0.31) / 0.08, 0, 1);  // (an arm long for the body it's on, a ghoul's, an ogre's, has further to fold away: it's given a little longer)
   const To = clamp(1.15 - 0.2 * p.pw + 0.25 * p.heavy, 0.8, 1.7) + 0.1 * long, no = Math.round(To * FPS) + 1, Tb = clamp(0.95 - 0.1 * p.pw + 0.2 * p.heavy, 0.8, 1.4) + 0.2 * long, nb = Math.round(Tb * FPS) + 1, Nl = 6 * FPS;
   const out = f => frame(sm2(0.04, 0.96, f / (no - 1)) * (0.94 + 0.06 * sm(0.5, 1, f / (no - 1)))), back = f => frame(1 - sm2(0, 0.9, f / (nb - 1)));

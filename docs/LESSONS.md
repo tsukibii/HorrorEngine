@@ -3292,3 +3292,19 @@ pale one shows.
   thing's direction from the forearm's and the wrist's, not from where you'd like it to point.
 - **A card's defaults are the kind's, unless the card says.** The Jump scare card made a marker that faced its arrow
   and not you: `face_player` defaults to off, which is right for a Wait. A card carries the fields it starts with.
+- **"Her hand on the wall" was checked at the wrist.** The peek's rule was the wrist within 14 cm of the wall's end;
+  it passed with one hand's fingers lying on behind the wall and the other hand's 11 cm into it (21 on a ghoul, 29
+  on an ogre). On a person the wall in the picture was 12 cm thick and hid them; the ghoul's came out of its front.
+  A hand put on something is checked at every joint of the hand, against the thing, at every frame, and looked at on
+  the body with the longest fingers. And a hand carried somewhere by its wrist points the way its forearm does: to
+  lie on a surface it's turned outright (`handQ`, eased in by `handK`), with the arm brought to it so the wrist
+  isn't asked for more than a wrist bends.
+- **Two eases in a row are a burst.** The left hand's way was `sm2(0.2, 1, u)` of a lean that was itself `sm2` of
+  time: most of it happened in a quarter of the clip, a forearm's half turn in seven frames. A thing that goes with
+  another goes by the other's own parameter, straight.
+- **A wall "clear of her front" has to be clear of her hands too.** The wall was put by her face and her belly; an
+  ogre's hands hang ahead of its belly and are 41 cm long, so any turn of a hanging hand was in the wall.
+- **A plugin's `_enter_tree` is not "the editor has started".** Pictures of the editor taken a few frames after it,
+  and even after the first scan had finished, had "Updating Scene Groups" and "Loading editor" boxes across them.
+  Wait until nothing is scanning and no `ProgressDialog` has been showing for some seconds; frame things with the
+  view's own Focus Selection, not a guessed orbit.

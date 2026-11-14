@@ -33,6 +33,9 @@
     python tools/godot/motion_check.py gizmo [--out DIR]
         the grip's gizmo pictured in Godot's editor itself (grip_editor_shots.gd, a plugin of its own in the check's
         project, under xvfb): a water bottle's grip selected, the whole editor and the 3D view close; a bat's
+    python tools/godot/motion_check.py guide3 [--date 2026-11-14]
+        the Animator guide's pictures of animations v3 (guides/animator/img/v3_*.jpg, grip_*.jpg) put together from
+        what the three above made: sheets3 for the normal woman, creature_ghoul and creature_goblin, shots3, gizmo
 
 Godot is $GODOT, else godot; under xvfb when there's no display to draw on (the pictures).
 """
@@ -390,7 +393,57 @@ def gizmo_shots(args):
     print("GRIPSHOTS ok" if not rep["errors"] else "GRIPSHOTS FAILED")
 
 
+def guide3(args):
+    """the Animator guide's v3 pictures, from the sheets (sheets3), the game's pictures (shots3) and the editor's (gizmo)"""
+    from PIL import Image
+    opt = lambda k, d=None: args[args.index(k) + 1] if k in args else d
+    date, sheets, img = opt("--date", "2026-11-14"), ROOT / "docs" / "animator_sheets", ROOT / "guides" / "animator" / "img"
+    game, giz = KEEP / "anim_normal_woman_game", KEEP / "grip_gizmo"
+    sh = lambda name, who="": Image.open(sheets / f"{date}_v3_{who + '_' if who else ''}{name}.jpg").convert("RGB")
+    row = lambda im, r, h=330: im.crop((0, r * h, im.width, (r + 1) * h))          # (a sheet's row: one clip, eight moments)
+    def stack(rows, out):
+        w = max(r.width for r in rows)
+        c = Image.new("RGB", (w, sum(r.height for r in rows)), (30, 30, 32))
+        y = 0
+        for r in rows:
+            c.paste(r, (0, y))
+            y += r.height
+        c.save(img / out, quality=86)
+        print(f"  {img / out}  {c.size[0]}x{c.size[1]}")
+    def beside(files, out, h=600):
+        ims = [Image.open(f).convert("RGB") for f in files]
+        ims = [im.resize((round(im.width * h / im.height), h), Image.LANCZOS) for im in ims]
+        c = Image.new("RGB", (sum(im.width for im in ims), h), (30, 30, 32))
+        x = 0
+        for im in ims:
+            c.paste(im, (x, 0))
+            x += im.width
+        c.save(img / out, quality=86)
+        print(f"  {img / out}  {c.size[0]}x{c.size[1]}")
+    need = [sheets / f"{date}_v3_{n}.jpg" for n in ["low", "peek", "scares", "fight", "mouth", "creature_ghoul_low", "creature_ghoul_peek", "creature_ghoul_scares", "creature_goblin_low", "creature_goblin_scares"]]
+    need += [game / f"{n}.jpg" for n in ["head_left", "head_right", "head_behind", "drink_take", "drink_sip", "swing_up", "swing_hit", "punch_hit"]] + [giz / f"{n}.jpg" for n in ["grip_editor", "grip_bottle", "grip_bat"]]
+    missing = [str(f) for f in need if not f.is_file()]
+    if missing:
+        sys.exit("guide3: these aren't made yet (sheets3 for the normal woman, creature_ghoul and creature_goblin; shots3; gizmo):\n  " + "\n  ".join(missing))
+    gh, gb = "creature_ghoul", "creature_goblin"
+    stack([sh("low")], "v3_low.jpg")
+    stack([row(sh("low", gh), 1), row(sh("low", gb), 1), row(sh("low", gh), 3), row(sh("low", gb), 3), row(sh("scares", gh), 0), row(sh("scares", gb), 0)], "v3_creatures.jpg")
+    stack([row(sh("peek"), 0), row(sh("peek"), 1), row(sh("peek", gh), 0), row(sh("peek", gh), 2)], "v3_peek.jpg")
+    stack([sh("scares", gh)], "v3_scares.jpg")
+    stack([sh("mouth")], "v3_mouth.jpg")
+    stack([sh("fight")], "v3_fight.jpg")
+    beside([game / f"{n}.jpg" for n in ["head_left", "head_right", "head_behind"]], "v3_head.jpg")
+    beside([game / f"{n}.jpg" for n in ["drink_take", "drink_sip"]], "v3_drink.jpg")
+    beside([game / f"{n}.jpg" for n in ["swing_up", "swing_hit", "punch_hit"]], "v3_blows.jpg")
+    for n in ["grip_editor", "grip_bottle", "grip_bat"]:
+        Image.open(giz / f"{n}.jpg").convert("RGB").save(img / f"{n}.jpg", quality=86)
+        print(f"  {img / (n + '.jpg')}")
+    print("GUIDE3 ok")
+
+
 def main():
+    if sys.argv[1:] and sys.argv[1] == "guide3":
+        return guide3(sys.argv[2:])
     if sys.argv[1:] and sys.argv[1] == "gizmo":
         return gizmo_shots(sys.argv[2:])
     if sys.argv[1:] and sys.argv[1] == "shots3":

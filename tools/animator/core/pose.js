@@ -58,6 +58,8 @@ export function ankleAt(F, ankleH, o, yaw, pitch) {
     c.legs.l/.r { ankle, yaw, pitch, roll, toe, knee }   the ankle's place, the foot's heading, pitch (toes up) and roll, the toes' bend, the knee turned out
     c.arms.l/.r { flex, abd, rot, elbow, pron, wrist, curl, hang }   angles from the hanging arm; or { hand: [x,y,z], pole, palm, ... } the wrist's place
                 `handQ`: the hand's turn in the world, outright (a hand laid flat on something); the forearm's twist follows it
+                `handK`: how much of `handQ` is taken, 0..1 (1 when not given): a hand on its way to being laid on something
+                turns to it as it gets there, from where the arm's own rules had it
                 `dev`: the hand tipped sideways at the wrist toward its little finger (radians; below 0 toward its thumb)
                 `pron`: the hand's turn about the forearm, counted from the body (0: the palm to the body's middle; rising: turned over,
                 toward the back when the arm hangs, toward the floor when the forearm points ahead; with `pronArm`, counted from the
@@ -124,12 +126,12 @@ export function build(rig, c) {
     }
     let dTw = g * (pron - A.pron0), Dw = Q.mul(Q.axis(df, dTw), Dl), n = Q.rot(Dw, A.palm0), wr = ac.wrist || 0;
     let Dhand = wr ? Q.mul(Q.axis(V.cross(df, n), wr), Dw) : Dw;
-    if (ac.handQ) {                                          // the hand's turn in the world given outright (a hand laid flat on the floor): the forearm takes the part of it that's about its own length
+    if (ac.handQ && (ac.handK ?? 1) > 0) {                   // the hand's turn in the world given outright (a hand laid flat on the floor): the forearm takes the part of it that's about its own length
       // (the forearm's share of it is kept inside what a forearm turns, about the middle of its range as the palm's rule
       //  above: a hand asked round past either end is the wrist's to make up, and the further past, the less the forearm
       //  follows, so the twist bones never flip from one end of the range to the other between two frames. A ghoul's
       //  swing asked for a half turn and got one, in a frame)
-      Dhand = ac.handQ; dTw = Q.twist(Q.mul(Dhand, Q.conj(Dl)), df);
+      Dhand = (ac.handK ?? 1) >= 1 ? ac.handQ : Q.slerp(Dhand, ac.handQ, ac.handK); dTw = Q.twist(Q.mul(Dhand, Q.conj(Dl)), df);
       const MID = 0.7, HALF = 1.9; let d = A.pron0 + g * dTw - MID; if (d > Math.PI) d -= 2 * Math.PI; else if (d < -Math.PI) d += 2 * Math.PI;
       if (Math.abs(d) > HALF) { const o = (Math.abs(d) - HALF) / (Math.PI - HALF); d = Math.sign(d) * HALF * (1 - o * o * (3 - 2 * o)); }
       pron = MID + d; dTw = g * (pron - A.pron0); Dw = Q.mul(Q.axis(df, dTw), Dl); }

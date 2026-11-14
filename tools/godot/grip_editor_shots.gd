@@ -23,6 +23,63 @@ func frames(n: int) -> void:
 		await get_tree().process_frame
 
 
+func secs(t: float) -> void:
+	await get_tree().create_timer(t).timeout
+
+
+## the editor still starting, or at something: its scan of the project, and its own progress boxes ("Updating Scene
+## Groups", "Loading editor"), which are drawn over the middle of the window
+func busy() -> bool:
+	if EditorInterface.get_resource_filesystem().is_scanning():
+		return true
+	for w in get_tree().root.find_children("*", "ProgressDialog", true, false):
+		if w is CanvasItem and (w as CanvasItem).is_visible_in_tree():
+			return true
+		if w is Window and (w as Window).visible:
+			return true
+	return false
+
+
+func settled() -> void:
+	var quiet := 0
+	for i in 400:
+		quiet = 0 if busy() else quiet + 1
+		if quiet >= 5:
+			return
+		await secs(0.5)
+	errors.append("the editor never settled")
+
+
+func pick(n: Node) -> void:
+	EditorInterface.get_selection().clear()
+	EditorInterface.get_selection().add_node(n)
+	EditorInterface.edit_node(n)
+	await frames(8)
+
+
+## a key sent to the 3D view (F: the view's own Focus Selection)
+func key(code: Key) -> void:
+	for down in [true, false]:
+		var e := InputEventKey.new()
+		e.keycode = code
+		e.physical_keycode = code
+		e.pressed = down
+		surface.gui_input.emit(e)
+		await frames(3)
+
+
+## the view brought to `dist` metres from `at` by the wheel (the view's own zoom steps)
+func zoom_to(at: Vector3, dist: float) -> void:
+	for i in 80:
+		var d := cam.global_position.distance_to(at)
+		if d > dist * 1.08:
+			await wheel(-1)
+		elif d < dist * 0.92:
+			await wheel(1)
+		else:
+			break
+
+
 func wheel(n: int) -> void:
 	for i in absi(n):
 		var e := InputEventMouseButton.new()
@@ -71,10 +128,11 @@ func _done() -> void:
 
 
 func _run() -> void:
-	get_tree().create_timer(240.0).timeout.connect(func() -> void:
+	get_tree().create_timer(400.0).timeout.connect(func() -> void:
 		errors.append("it never ended")
 		_done())
-	await frames(40)
+	await secs(3.0)
+	await settled()                                              # (the editor's first scan and its loading done: a picture taken before has a progress box over its middle)
 	var cfg = JSON.parse_string(FileAccess.get_file_as_string("res://grip_shots.json"))
 	out_dir = String((cfg if cfg is Dictionary else {}).get("out", ""))
 	if out_dir == "":
@@ -82,9 +140,21 @@ func _run() -> void:
 		_done()
 		return
 	DirAccess.make_dir_recursive_absolute(out_dir)
-	# the scene: a bottle with a grip to drink it by, a bat with a grip to swing it by
+	# the scene: a table, a bottle on it with a grip to drink it by, a bat stood on it with a grip to swing it by
 	var root := Node3D.new()
 	root.name = "Props"
+	var table := MeshInstance3D.new()
+	table.name = "Table"
+	var top := BoxMesh.new()
+	top.size = Vector3(1.4, 0.04, 0.9)
+	table.mesh = top
+	var oak := StandardMaterial3D.new()
+	oak.albedo_color = Color(0.46, 0.4, 0.34)
+	oak.roughness = 0.8
+	table.material_override = oak
+	root.add_child(table)
+	table.owner = root
+	table.position = Vector3(0, -0.02, 0)
 	var bottle_file := "res://addons/horrorstudio_devices/shop/models/water_bottle.glb"
 	var bottle: Node3D = (load(bottle_file) as PackedScene).instantiate() as Node3D if ResourceLoader.exists(bottle_file) else Node3D.new()
 	bottle.name = "WaterBottle"
@@ -113,7 +183,7 @@ func _run() -> void:
 	bat.material_override = wood
 	root.add_child(bat)
 	bat.owner = root
-	bat.position = Vector3(3.0, 0.39, 0)                         # (well aside: each is pictured alone)
+	bat.position = Vector3(0.45, 0.39, 0)
 	var g2 := HSGrip.new()
 	g2.name = "Grip"
 	bat.add_child(g2)
@@ -128,14 +198,19 @@ func _run() -> void:
 	ResourceSaver.save(ps, "res://grip_demo.tscn")
 	root.free()
 	EditorInterface.open_scene_from_path("res://grip_demo.tscn")
-	await frames(30)
-	var scene := EditorInterface.get_edited_scene_root()
+	var scene: Node = null
+	for i in 400:
+		await frames(1)
+		scene = EditorInterface.get_edited_scene_root()
+		if scene != null and scene.name == "Props":
+			break
 	if scene == null or scene.name != "Props":
 		errors.append("the scene didn't open")
 		_done()
 		return
 	EditorInterface.set_main_screen_editor("3D")
 	await frames(10)
+	await settled()
 	vp = EditorInterface.get_editor_viewport_3d(0)
 	cam = vp.get_camera_3d()
 	for c in vp.get_parent().get_parent().get_children():
@@ -145,29 +220,26 @@ func _run() -> void:
 		errors.append("no 3D view")
 		_done()
 		return
-	# the bottle's grip: the whole editor, then the view close
-	var grip := scene.get_node("WaterBottle/Grip") as Node3D
-	EditorInterface.get_selection().clear()
-	EditorInterface.get_selection().add_node(grip)
-	EditorInterface.edit_node(grip)
-	await frames(10)
-	await orbit(Vector2(-70, 14))
-	for i in 60:                                                 # in, until the bottle fills the view
-		if cam.global_position.distance_to(Vector3(0, 0.1, 0)) < 0.62:
-			break
-		await wheel(-1)
-	await pan(Vector2(0, 46))
+	# the bottle's grip: the view on the bottle (the view's own Focus Selection), turned a little and brought in; then
+	# its grip picked: the whole editor with the grip's fields in the Inspector, then the view alone
+	await pick(scene.get_node("WaterBottle"))
+	await key(KEY_F)
+	await frames(30)
+	await orbit(Vector2(-60, 0))
+	await zoom_to(Vector3(0, 0.1, 0), 0.42)
+	await pick(scene.get_node("WaterBottle/Grip"))
 	did.append("the camera %.2f m from the bottle" % cam.global_position.distance_to(Vector3(0, 0.1, 0)))
 	await shot("grip_editor", false)
+	await zoom_to(Vector3(0, 0.1, 0), 0.31)
+	await frames(40)                                             # (the view's zoom bar gone again)
 	await shot("grip_bottle", true)
-	# the bat's: moved to the middle, the bottle aside
-	(scene.get_node("WaterBottle") as Node3D).position = Vector3(-3, 0, 0)
-	(scene.get_node("Bat") as Node3D).position = Vector3(0, 0.39, 0)
-	var grip2 := scene.get_node("Bat/Grip") as Node3D
-	EditorInterface.get_selection().clear()
-	EditorInterface.get_selection().add_node(grip2)
-	EditorInterface.edit_node(grip2)
-	await wheel(7)
-	await pan(Vector2(0, 60))
+	# the bat's: the view on its handle, the bat going up out of it to its end
+	await pick(scene.get_node("Bat"))
+	await key(KEY_F)
+	await frames(30)
+	await zoom_to(Vector3(0.45, 0.39, 0), 0.8)
+	await frames(40)
+	await pick(scene.get_node("Bat/Grip"))
+	did.append("the camera %.2f m from the bat" % cam.global_position.distance_to(Vector3(0.45, 0.39, 0)))
 	await shot("grip_bat", true)
 	_done()

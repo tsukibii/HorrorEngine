@@ -129,7 +129,7 @@ export function crawlIdle(rig, body, set) {
   const G = kneeling(rig, body, set), N = 8 * FPS;
   return { name: "crawl_idle_loop", loop: true, n: N, fps: FPS, secs: N / FPS, ctrl: f => allFours(rig, body, set, idleAt(G, (f % N) / FPS), G), events: [], meta: {} };
 }
-export { kneeling, planted };
+export { kneeling, planted, handDrop };
 
 // ---- hands and feet ---------------------------------------------------------------------------------------------------
 /** a creature's scuttle: on its hands and the balls of its feet, low and quick, the back rounded: "scuttle_loop".

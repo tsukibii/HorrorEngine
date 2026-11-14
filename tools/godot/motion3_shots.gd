@@ -195,7 +195,7 @@ func _initialize() -> void:
 		look_from(Vector3(0, head_y - 0.12 * k, 0.1 * k), 0.0 if String(item[0]) != "head_behind" else 28.0, 6.0, 2.9 * k, 30.0)
 		await shot(String(item[0]))
 		var ht: Node = load(LOOK + "head_track.gd").of(her)
-		notes.append("%s: her head turned %.0f degrees, following %s" % [item[0], rad_to_deg(float(ht.yaw)) if ht != null else 0.0, str(ht.following) if ht != null else "?"])
+		notes.append("%s: her head turned %.0f degrees, following %s" % [item[0], rad_to_deg(float(ht.yaw)) * float(ht.weight) if ht != null else 0.0, str(ht.following) if ht != null else "?"])   # (yaw: where it's turned to at its full weight; let go of, the weight goes to nothing)
 	m.head_follow(false)
 	you.visible = false
 

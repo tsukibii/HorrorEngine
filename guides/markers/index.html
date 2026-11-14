@@ -83,6 +83,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#stairs">Stairs</a></li>
     <li><a href="#dance">A dance of your own</a></li>
     <li><a href="#monsters">Faces, looks, scares, being shot</a></li>
+    <li><a href="#v3">Sneaking, eating, fighting, jump scares</a></li>
     <li><a href="#try">Try it</a></li>
     <li><a href="#game">In the game</a></li>
     <li><a href="#rules">The rules, and what's not there</a></li>
@@ -203,6 +204,7 @@ Meanwhile the character holds what they're in: standing they idle, sitting they 
 <table class="keys">
   <tr><td>Start here</td><td>Put at the pin, facing its arrow, and shown. At once, only when you're not looking, or fading in.</td></tr>
   <tr><td>Walk, Run</td><td>To the pin, through its bends, then turns to the arrow. Or <span class="ui">Comes to you</span> and stops short.</td></tr>
+  <tr><td>Sneak, Crawl</td><td>A Walk at a low pace: she goes low, and stays low where it leaves her. <a href="#v3">Section 15</a>.</td></tr>
   <tr><td>Wait</td><td>Stays put, idling (or in a loop you pick), for some seconds or until the next marker can start. <span class="ui">Keeps turning to face you</span>.</td></tr>
   <tr><td>Talk</td><td>A Wait you can talk to, that stays until you do.</td></tr>
   <tr><td>Sit</td><td>Click the seat's front edge; the arrow is the way the knees point. Stays sat until a later marker moves them (they stand up first by themselves).</td></tr>
@@ -210,6 +212,9 @@ Meanwhile the character holds what they're in: standing they idle, sitting they 
   <tr><td>Grab</td><td>Click where the hand should go. Three reaches: the floor, a table (about 0.86 m), a shelf (about 1.65 m); the nearest to the pin's height is used.</td></tr>
   <tr><td>Pick up, Put down</td><td>Pick the thing in the 3D view: it goes into the hand, and stays there until a Put down leaves it at its pin.</td></tr>
   <tr><td>Open door</td><td>Click the handle, pick the door. The arrow points into the door.</td></tr>
+  <tr><td>Eat, Drink</td><td>Pick the thing: she takes it and brings it to her mouth. <a href="#v3">Section 15</a>.</td></tr>
+  <tr><td>Attack</td><td>A punch, or a swing of what she holds, at you or at someone you pick. <a href="#v3">Section 15</a>.</td></tr>
+  <tr><td>Jump scare</td><td>There in the scare's first frame, shown, gone. <a href="#v3">Section 15</a>.</td></tr>
   <tr><td>Animation</td><td>Any animation of the model's, or a file (a Kimodo dance). Once, several times, or looping.</td></tr>
   <tr><td>Event, Scare, Look</td><td>Nothing with the body: what's under <span class="ui">Then</span>, at once. A Scare is heard by the Fear node; a Look changes skin and eyes.</td></tr>
   <tr><td>Choice</td><td>Takes the first of its ways whose flags are on.</td></tr>
@@ -297,8 +302,41 @@ markers: <span class="ui">Wait</span> (you can talk; the answer turns on <code>g
 </ul>
 </section>
 
+<section id="v3">
+<h2><span class="n">15</span>Sneaking, crawling, eating, fighting, jump scares</h2>
+<p>Six more cards and one more row, for a character baked by the Animator since animations v3 (53 clips; the
+<a href="../animator/index.html#low">Animator's guide</a>, sections 10 to 14, shows each). A character baked before
+that hasn't the clips: <span class="ui">Problems</span> says which marker wants which, and baking her again in the
+Animator's page gives them to her.</p>
+<figure><img src="img/10_attack.jpg" alt="Godot's editor: an Attack marker picked in the NPC Markers tab, its form saying what she does, at whom and how many times"><figcaption>An Attack marker's form. The palette on its left has the new cards: Sneak, Crawl, Eat, Drink, Attack, and further down Jump scare.</figcaption></figure>
+<table class="keys">
+  <tr><td>Sneak, Crawl</td><td>A Walk whose <span class="ui">Pace</span> is low. The form's Pace has four: <b>sneak</b> (a careful walk on bent knees),
+  <b>crawl</b> (hands and knees), <b>creep</b> (a creature's hunched prowl) and <b>scuttle</b> (hands and feet, fast). Same pin, bends,
+  stairs and "take N seconds" as any walk, each at its own clip's speed, so her feet and hands don't slide. Where it ends she
+  <b>stays low</b>: a Wait, a Talk or the next low Walk keeps her there; a plain Walk or Run, a Sit, a Grab or an Attack stands her up first.</td></tr>
+  <tr><td>Eat, Drink</td><td>Pick the thing in the 3D view. She takes it (or it's what she already holds from a Pick up) and brings it to her mouth.
+  Eaten, it's gone after two bites (hidden, not deleted). Drunk from, it stays in her hand for the next marker; a Put down leaves it at a pin.</td></tr>
+  <tr><td>Attack</td><td><span class="ui">Does</span>: throws a punch, or swings what she holds (a bat from a Pick up a marker earlier; with an empty hand, her fist).
+  <span class="ui">At</span>: you, or anyone you pick. She walks to where the blow reaches, turns with them until it's thrown, and it's carried
+  onto where they are at that moment. <span class="ui">Times</span>: how many blows, catching up with them in between.</td></tr>
+  <tr><td>Jump scare</td><td>One marker for the whole thing: she's put at the pin already in the scare, turned to you, and hidden again when it's been
+  shown. <b>Lunge</b> (thrown at you from a crouch), <b>loom</b> (risen over you), <b>snap</b> (her head snapping up to you), <b>claw</b> (clawed up
+  from all fours). <span class="ui">When you're not looking</span> waits for that first; <span class="ui">She stays after</span> leaves her there.</td></tr>
+  <tr><td>Head</td><td>A row on <b>every</b> marker: <span class="ui">follows you</span> (or someone picked), <span class="ui">is her animation's again</span>, or nothing
+  said (as the marker before left it). Following, her head turns to you on top of whatever she's doing, within an arc: 160 degrees
+  unless you set another, half to each side of straight ahead. Past it she lets go and looks ahead again. Needs the Look plugin.</td></tr>
+</table>
+<div class="note"><b>Where a hand closes on a thing.</b> Put a <span class="node">HSGrip</span> (the Look plugin's) under a prop and drag its handles in the 3D view:
+how thick the prop is where it's held, how long the handle is, where its mouth or its end is. Her fingers close to that size and the
+bottle's rim meets her lips. A prop with no grip is held by a guess from its size. The Animator's guide,
+<a href="../animator/index.html#grip">section 13</a>, shows the gizmo.</div>
+<div class="note"><b>Being hit.</b> A blow that lands tells whoever it landed on: a character with a Motion node reels; the starter kit's player
+has its view knocked aside and its <code>hit(by, kind)</code> signal fires, for your game to count blows or end the night. The character's own
+<code>struck(target, kind)</code> signal says it too.</div>
+</section>
+
 <section id="try">
-<h2><span class="n">15</span>Try it</h2>
+<h2><span class="n">16</span>Try it</h2>
 <p><span class="ui">Try it</span> plays the picked marker in the 3D view; <span class="ui">From here</span> it and what
 follows; <span class="ui">Play</span> beside the quest all of it. A copy of the character plays; the real one isn't
 touched and nothing is saved.</p>
@@ -306,7 +344,7 @@ touched and nothing is saved.</p>
 </section>
 
 <section id="game">
-<h2><span class="n">16</span>In the game</h2>
+<h2><span class="n">17</span>In the game</h2>
 <div class="pair">
 <figure><img src="img/play_talk.jpg" alt="The game: Alex's name and line at the foot of the view, the two answers on one line under it with a dash between, no panel"><figcaption>Aim at someone you can talk to (a ring, <em>Talk</em> and their name) and press <kbd>E</kbd>. The lines come one after another, each for as long as it takes to read; <kbd>E</kbd> or a click hurries them. The answers: <kbd>A</kbd> / <kbd>D</kbd> or the arrows move, <kbd>Enter</kbd> picks, or click one.</figcaption></figure>
 <figure><img src="img/play_f7.jpg" alt="The game with a label over Alex: the quest, the marker, what it waits for"><figcaption><kbd>F7</kbd>: over each character, their quest, their marker and what it's waiting for.</figcaption></figure>
@@ -316,7 +354,7 @@ touched and nothing is saved.</p>
 </section>
 
 <section id="rules">
-<h2><span class="n">17</span>The rules, and what's not there</h2>
+<h2><span class="n">18</span>The rules, and what's not there</h2>
 <ul>
   <li>Markers run top to bottom. A marker starts when the one before is done and its Starts when is so.</li>
   <li>Quests run in order; one with chips cuts in; never back up the list; a quest runs once.</li>
