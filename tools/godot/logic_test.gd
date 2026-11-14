@@ -442,6 +442,32 @@ func stage_scan() -> void:
 	texts.sort()
 	ok(texts == PackedStringArray(["tip:flag:eve_garden", "tip:flag:met_eve", "tip:flag:unused_e", "warn:flag:eve_kitchen", "warn:flag:knows_e", "warn:task:book_e"]),
 		"E: what can't work: asked and never on, switched and never asked, a task nothing lists, a quest's own flag used outside it, one written down and unused", str(texts))
+	# things that wait for each other
+	var ring := Node3D.new()
+	ring.name = "RingE"
+	was.add_child(ring)
+	main = ring
+	var r_her := standin(o + Vector3(6, 0, 0), "HerR")
+	var r_npc := npc_for(r_her, "Rae")
+	var r_walk := mk(quest(r_npc, "One"), "walk", o + Vector3(7, 0, 0), {"start_when": "r_door_open", "set_flags": "+rae_gone"})
+	var r_door := thing("DoorR", o + Vector3(6, 0, -3), "res://starter/door.gd")
+	r_door.set("locked_by", "r_key")
+	logic(r_door, {"on": "signal", "on_signal": "opened", "set_flags": "+r_door_open"})
+	var r_key := thing("KeyR", o + Vector3(7, 0, -3), "res://starter/pickup.gd", Vector3(0.2, 0.2, 0.2), false)
+	r_key.set("item", "r_key")
+	logic(r_key, {"needs": "rae_gone"})
+	main = was
+	var locks := HSLogicScan.deadlocks(HSLogicScan.scan(ring))
+	ok(locks.size() == 1 and (locks[0]["keys"] as Array).size() == 3, "E: a circle found: a key that needs her gone, who needs the door open, which needs the key", str(locks.map(func(d): return d["keys"])))
+	var ring_probs := HSLogicScan.problems(HSLogicScan.scan(ring)).filter(func(p): return String(p["text"]).contains("wait for each other"))
+	ok(ring_probs.size() == 1 and String(ring_probs[0]["text"]).contains("r_key") and String(ring_probs[0]["text"]).contains("rae_gone") and String(ring_probs[0]["text"]).contains("r_door_open"),
+		"E: said once, as a Problem, with who asks for what", String(ring_probs[0]["text"]) if not ring_probs.is_empty() else "")
+	var spare := thing("SpareR", o + Vector3(8, 0, -3), "res://starter/pickup.gd", Vector3(0.2, 0.2, 0.2), false)
+	spare.set("item", "r_key")
+	spare.reparent(ring)
+	ok(HSLogicScan.deadlocks(HSLogicScan.scan(ring)).is_empty(), "E: a second key that asks for nothing: no circle any more")
+	ok(HSLogicScan.deadlocks(found).is_empty(), "E: and none in a room where everything can happen")
+	ring.queue_free()
 	# a rename moves every use
 	var plan := HSLogicScan.rename_plan(found, "flag", "eve_gone", "eve_left")
 	for ch2 in plan:

@@ -320,7 +320,7 @@ static func what(node: Node) -> String:
 		return "Logic"
 	var sc: Script = node.get_script()
 	if sc == null:
-		return node.get_class()
+		return "thing" if node is Node3D else node.get_class()
 	var g := String(sc.get_global_name())
 	if g != "":
 		return g.trim_prefix("HSNpc").trim_prefix("HS") if g.begins_with("HS") else g
@@ -523,6 +523,13 @@ static func problems(found: Dictionary, notes := {}) -> Array:
 		if not adds:
 			out.append({"kind": "task", "name": name, "level": "warn", "node": tasks[name][0]["node"],
 				"text": "The task '%s' is used (%s) and nothing puts it on the list." % [name, place(tasks[name][0]["node"])]})
+	for d in deadlocks(found):
+		var first := String(d["keys"][0])
+		var names := PackedStringArray()
+		for k in (d["keys"] as Array):
+			names.append("'%s'" % String(k).get_slice(":", 1))
+		out.append({"kind": first.get_slice(":", 0), "name": first.substr(first.find(":") + 1), "level": "warn", "node": d["node"],
+			"text": "%s wait for each other, so none can ever happen: %s." % [" and ".join(names) if names.size() < 3 else ", ".join(names.slice(0, -1)) + " and " + names[-1], "; ".join(d["why"])]})
 	var items: Dictionary = found.get("item", {})
 	for name in items:
 		var given := false
@@ -532,6 +539,92 @@ static func problems(found: Dictionary, notes := {}) -> Array:
 		if not given:
 			out.append({"kind": "item", "name": name, "level": "tip", "node": items[name][0]["node"],
 				"text": "'%s' is asked for (%s) and nothing in this scene gives it (the laptop's shop, a script?)." % [name, place(items[name][0]["node"])]})
+	return out
+
+
+# ---- things that wait for each other ----------------------------------------------------------------------------------------------
+const GATES := ["needs", "start_when", "starts_when", "when", "locked_by"]     # the fields that say whether a node may do its thing at all
+
+
+# what a node itself asks before it does anything: {"flag:x": true, "item:y": true, "task:z": true}
+static func _own_asks(node: Node) -> Dictionary:
+	var out := {}
+	for u in uses_of(node):
+		if String(u["prop"]) in GATES and String(u["role"]) == "needs":
+			out["%s:%s" % [u["kind"], u["name"]]] = true
+	return out
+
+
+# Everything that must be so before a node can switch, tick or give anything: its own conditions; a marker's quest
+# and the ways it's inside; a thing's Logic (its 'works only when'); a Logic's thing (a door's own lock).
+static func _gate(node: Node) -> Dictionary:
+	var out := _own_asks(node)
+	if node is HSNpcMarker or node is HSNpcWay:
+		var p := node.get_parent()
+		while p != null and not (p is HSNpc):
+			out.merge(_own_asks(p))
+			p = p.get_parent()
+	elif node is HSLogic:
+		var t := (node as HSLogic).thing_node()
+		if (node as HSLogic).on != "itself" and t != null and t != node:
+			out.merge(_own_asks(t))
+	else:
+		for c in node.get_children():
+			if c is HSLogic and (c as HSLogic).thing_node() == node:
+				out.merge(_own_asks(c))
+	return out
+
+
+## Names that wait for each other, so none can ever happen: a key that can only be taken once someone has walked, who
+## only walks once a door is open, which only opens with the key. Each: {keys: ["flag:a", "item:b"...], why: [text]},
+## a circle read off who turns each on and what every one of them asks first.
+static func deadlocks(found: Dictionary) -> Array:
+	var needs := {}                                             # key -> {key: the node that asks}: what everything that makes it so asks first
+	for kind in ["flag", "item", "task"]:
+		for name in (found.get(kind, {}) as Dictionary):
+			var all = null
+			for u in (found[kind][name] as Array):
+				if not (String(u["role"]) in ["on", "flip", "start", "gives", "ticks"]):
+					continue
+				var g := _gate(u["node"]) if String(u["prop"]) != "" and String(u["role"]) != "start" else {}
+				var mine := {}
+				for k in g:
+					mine[k] = u["node"]
+				if all == null:
+					all = mine
+				else:
+					for k2 in (all as Dictionary).keys():
+						if not mine.has(k2):
+							(all as Dictionary).erase(k2)
+			if all != null and not (all as Dictionary).is_empty():
+				needs["%s:%s" % [kind, name]] = all
+	var out := []
+	var seen := {}
+	for start in needs:
+		var path := [start]
+		var stack := [(needs[start] as Dictionary).keys()]
+		while not stack.is_empty():
+			var top: Array = stack[-1]
+			if top.is_empty():
+				stack.pop_back()
+				path.pop_back()
+				continue
+			var next = top.pop_back()
+			if next == start:
+				var keys := path.duplicate()
+				var canon := keys.duplicate()
+				canon.sort()
+				if not seen.has(str(canon)):
+					seen[str(canon)] = true
+					var why := PackedStringArray()
+					for i in keys.size():
+						var a := String(keys[i])
+						var b := String(keys[(i + 1) % keys.size()])
+						why.append("%s needs %s (%s)" % [a.get_slice(":", 1), b.get_slice(":", 1), place((needs[a] as Dictionary)[b])])
+					out.append({"keys": keys, "why": why, "node": (needs[String(keys[0])] as Dictionary)[String(keys[1 % keys.size()])]})
+			elif needs.has(next) and not (next in path) and path.size() < 12:
+				path.append(next)
+				stack.append((needs[next] as Dictionary).keys())
 	return out
 
 

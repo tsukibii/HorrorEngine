@@ -166,7 +166,9 @@ a face's rule, a conversation's): words apart by commas, all of them must be so;
 | `@shot`, `@down` | she's been hit; she's been shot down |
 
 The first four are the starter Story's own words (`holds`), so a flag set by a pickup, an event area or the laptop
-starts a marker, and a flag a marker sets is heard by everything else. Without a Story in the scene the plugin keeps
+starts a marker, and a flag a marker sets is heard by everything else. **How a marker and a thing are tied without
+typing a flag twice, and where every flag's two ends can be seen, is docs/FLAGS.md** (the Flags and Things tabs, the
+Logic node: DECISIONS 2026-11-14). Without a Story in the scene the plugin keeps
 the flags itself. In the tab a condition is built from a menu and shown as chips ("flag alex_kitchen", "not seen",
 "after 3 s"); nobody types the words unless they want to.
 

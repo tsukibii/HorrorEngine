@@ -63,6 +63,11 @@ back to that, so a flag a death took away is set again the next time.
 A Logic is also something to fire: a marker's *Fires*, an area's Target or a signal calls its `fire()` and its Then
 happens (while its needs are so).
 
+**A plain mesh becomes something to use.** A lamp, a button, a painting has no `use()` for E to find. A Logic set off
+by *it's used* gives such a thing a box round what's drawn (on the layer only E's aim finds: nobody walks into it),
+and E on it is "it's used": one card makes a button that flips a flag. Not round anything over 6 m across (a Logic
+left under a whole room would take every E in it): that's said in the output instead.
+
 ## 3. The scan: every flag's two ends
 
 `HSLogicScan` (`scan.gd`) reads a scene without running it: every flag, task and thing carried, and for each every
@@ -82,7 +87,11 @@ From it:
   flag is one name everywhere (so it can always be used elsewhere, which was the point), and the tab can show just a
   quest's. A flag can be **pinned** to a quest or a character (`res://flags.json`): then using it outside is a Problem.
 - **what can't work**: a flag asked for and never turned on; one switched and never asked for (a tip); a task used and
-  never put on the list; a pinned flag used outside its home; a flag written down and used nowhere.
+  never put on the list; a pinned flag used outside its home; a flag written down and used nowhere; and **names that
+  wait for each other** (`deadlocks`): for every flag, task and thing carried, what *everything* that could make it
+  so asks first (a marker's own condition and its quest's, a thing's Logic, a door's own lock); a circle in that is
+  said once, with who asks for what: "'door_opened', 'cellar_key' and 'ann_walk_done' wait for each other, so none can
+  ever happen". (Found by the editor check's own scene, which had tied itself into one.)
 - **a rename** that moves every use (inside a condition its `!` and prefix kept, inside a switch its sign), one undo
   step; **taking a flag out** of everything the same way.
 
@@ -111,8 +120,9 @@ switched, amber where it's needed.
 ## 5. The Things tab
 
 1. **Make it a…**: cards for what the kit can make of the node selected in the scene: **Logic** (§2), **Pickup**,
-   **Note**, **Food**, **Seat**, **Show / hide**, and things placed by a click in the 3D view: **Area** (an event
-   when you walk in), **Scare**, **Checkpoint**, **Rule** (a Logic on its own), **Flag switch**, **Quest marker**.
+   **Note**, **Food**, **Show / hide**, **Quest marker**, and things placed by a click in the 3D view: **Area** (an
+   event when you walk in), **Scare**, **Checkpoint**; **Rule** (a Logic on its own, by itself). (As built: no Seat
+   card, since the starter's seats are scenes dropped onto furniture; no Flag switch, since a Rule does that and more.)
    **Set up the scene** adds what a game needs and the scene lacks: the player, the Story, the HUD, the Sound node.
 2. **The scene's things**: every node that asks or switches something, a row each: what it is, *works only when*,
    *then*. A click selects it.
@@ -157,24 +167,34 @@ why something waits can be read off the screen.
       waiting for a door and a safe waiting for a marker, a checkpoint, the scan and its renames
 
 **C. The editor**
-- [ ] flags switched as chips; the chips' menu with the whole scene's names
-- [ ] the Flags tab: show, the list, the one picked, new, rename everywhere, delete, on at the start, notes and
-      pinning (`res://flags.json`), use it on the selected thing, badges in the 3D view
-- [ ] the Things tab: the cards, set up the scene, the scene's things, the thing's form (its Logic, its own fields)
-- [ ] the two gestures: a thing clicked from a marker's condition, a marker's pin clicked from a thing's
-- [ ] the Inspector's pickers
-- [ ] the NPC Markers tab uses the same scan, pickers and Problems
+- [x] flags switched as chips; the chips' menu with the whole scene's names
+- [x] the Flags tab: show, the list, the one picked, new, rename everywhere, delete, on at the start, notes and
+      pinning (`res://flags.json`), use it on the selected thing, marks in the 3D view
+- [x] the Things tab: the cards, set up the scene, the scene's things, the thing's form (its Logic, its own fields)
+- [x] the two gestures: a thing clicked from a marker's condition, a marker's pin clicked from a thing's
+- [x] the Inspector's pickers
+- [x] the NPC Markers tab uses the same scan, pickers and Problems (its Then's flags are chips too)
+- [x] seen in the first pictures and fixed: Set up the scene had run the HUD inside the editor and saved its
+      insides; the player, its flashlight and the HUD listed as things
+- [x] things that wait for each other, as a Problem
 
 **D. In the game**
-- [ ] F7 lists the flags and tasks
+- [x] F7 lists the flags, the tasks and the pocket; F7 heard in one place (two characters flipped it back)
+- [x] a plain mesh with a Logic is something to use with E
 
 **E. Checked, written, shipped**
-- [ ] LOGICEDITOR: the two tabs driven in the editor itself, headless
-- [ ] MARKERS and MARKERSEDITOR still pass
-- [ ] `godot_byhand.py install --starter`; the guide; the plugin's README and CLAUDE.md; CLAUDE.md, CONTINUE
+- [x] LOGICEDITOR: the two tabs driven in the editor itself, headless, and the scene they saved played as a game
+- [x] MARKERS and MARKERSEDITOR still pass
+- [x] `godot_byhand.py install --starter`; the guide `guides/flags/` with pictures of the real thing; the plugin's
+      README and CLAUDE.md; CLAUDE.md, CONTINUE, LESSONS
 
 ## 9. Later
 
 - the HUD's prompt over a thing that can't be used yet (now: its line when you try)
 - flags kept between scenes of one game (now: a Story per scene)
+- flags switched while the game runs, from F7's board (now: it shows them)
+- the Flags tab's list live while the game plays from the editor (now: F7 in the game)
+- cards for the rest of the starter kit (a seat on furniture, a cue, a hunt and its spots, the laptop, a parcel)
+- a conversation's answers' flags as chips in the NPC Markers tab (now: a text box; its Then's are chips)
+- tutorial v2 built with Things and Flags, to find what a whole game needs of them
 - the Director's and the desk's games (they have their own facts and conditions)

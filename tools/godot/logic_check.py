@@ -11,7 +11,12 @@
 
     python tools/godot/logic_check.py --editor [--reuse] [--shots DIR]
         LOGICEDITOR: the Flags and Things tabs driven in the editor itself on the same project (logic_editor_test.gd,
-        installed as a plugin of its own). --shots: pictures of the editor, under xvfb.
+        installed as a plugin of its own), then the scene they built and saved played as a game (logic_play_test.gd).
+        --shots: pictures of the editor, under xvfb.
+
+    python tools/godot/logic_check.py guide DIR
+        the guide's pictures (guides/flags/img): the editor's from DIR (a run with --editor --shots DIR), the game's
+        one made now under xvfb (logic_shots.gd: F7's flag board), all as JPEGs.
 
 Godot is $GODOT, else godot.
 """
@@ -253,6 +258,20 @@ def editor(args):
     for word in ["_LogicReach", "_Ghost", "_Talk"]:
         if word in saved:
             errs.append(f"the saved scene holds '{word}': something made for the game was saved")
+    # what the tabs built and saved, played as a game
+    if saved and not errs:
+        shutil.copy(HERE / "logic_play_test.gd", proj / "logic_play_test.gd")
+        r2 = run([g, "--headless", "--path", str(proj), "--fixed-fps", "60", "-s", "logic_play_test.gd"], timeout=600)
+        got = [ln for ln in r2.stdout.splitlines() if ln.startswith("LOGICPLAY ")]
+        for ln in got:
+            if not ln.startswith("LOGICPLAY result") and "ERROR" not in ln:
+                print("  played: " + ln[10:])
+        res = next((json.loads(ln.split(" ", 2)[2]) for ln in got if ln.startswith("LOGICPLAY result ")), None)
+        if res is None:
+            errs.append("the saved scene wouldn't play: " + (r2.stdout + r2.stderr)[-1500:])
+        else:
+            errs += ["played: " + e for e in res.get("errors", [])]
+        errs += [f"a script error in play: {ln.strip()}" for ln in (r2.stdout + r2.stderr).splitlines() if "SCRIPT ERROR" in ln or "Parse Error" in ln][:10]
     for e in errs:
         print("ERROR: " + e)
     if "--verbose" in args:
@@ -261,6 +280,62 @@ def editor(args):
     return 1 if errs else 0
 
 
+def jpeg(src, dst):
+    """a picture as a JPEG (Pillow, else ffmpeg)"""
+    try:
+        from PIL import Image
+        Image.open(src).convert("RGB").save(dst, quality=88, optimize=True)
+        return True
+    except ImportError:
+        pass
+    ff = shutil.which("ffmpeg")
+    if not ff:
+        return False
+    return run([ff, "-y", "-loglevel", "error", "-i", str(src), "-q:v", "3", str(dst)], timeout=120).returncode == 0
+
+
+def guide(args):
+    """the guide's pictures (guides/flags/img): the editor's from DIR (a run with --editor --shots DIR), the game's
+    one made now under xvfb (logic_shots.gd: F7), all as JPEGs; every picture the guide shows must be there"""
+    g = godot_bin()
+    src = Path(args[args.index("guide") + 1]).resolve() if len(args) > args.index("guide") + 1 else None
+    if not g or src is None or not src.is_dir():
+        sys.exit("guide: python tools/godot/logic_check.py guide DIR  (DIR: the pictures of a run with --editor --shots DIR)")
+    proj = ROOT / "Saved" / "Godot" / "_logic"
+    if not (proj / "logic_scene.tscn").is_file():
+        sys.exit("guide: run the editor check first (python tools/godot/logic_check.py --editor --shots DIR)")
+    shutil.copy(HERE / "logic_shots.gd", proj / "logic_shots.gd")
+    env = dict(os.environ)
+    if os.path.exists("/usr/share/vulkan/icd.d/lvp_icd.json") and not env.get("DISPLAY"):
+        env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
+    cmd = [g, "--path", str(proj), "--rendering-driver", "vulkan", "--resolution", "1280x720", "--fixed-fps", "60", "-s", "logic_shots.gd", "--", "--out=" + str(src)]
+    if shutil.which("xvfb-run"):
+        cmd = ["xvfb-run", "-a", "-s", "-screen 0 1280x720x24"] + cmd
+    r = run(cmd, timeout=600, env=env)
+    for ln in r.stdout.splitlines():
+        if ln.startswith("LOGICSHOTS "):
+            print("  " + ln[11:])
+    out = ROOT / "guides" / "flags" / "img"
+    out.mkdir(parents=True, exist_ok=True)
+    made = 0
+    for png in sorted(src.glob("*.png")):
+        if jpeg(png, out / (png.stem + ".jpg")):
+            made += 1
+        else:
+            sys.exit("guide: no Pillow and no ffmpeg to make the JPEGs with")
+    import re
+    page = ROOT / "guides" / "flags" / "index.html"
+    want = re.findall(r'src="img/([^"]+)"', page.read_text(encoding="utf-8")) if page.is_file() else []
+    missing = [w for w in want if not (out / w).is_file()]
+    unused = [f.name for f in sorted(out.glob("*.jpg")) if f.name not in want]
+    for w in missing:
+        print("ERROR: the guide shows img/%s, which wasn't made" % w)
+    for u in unused:
+        print("ERROR: img/%s is made and the guide doesn't show it" % u)
+    print(f"guide: {made} pictures in {out}" if not missing and not unused else f"guide FAILED ({len(missing) + len(unused)})")
+    return 1 if missing or unused else 0
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
-    sys.exit(editor(a) if "--editor" in a else game(a))
+    sys.exit(guide(a) if "guide" in a else editor(a) if "--editor" in a else game(a))

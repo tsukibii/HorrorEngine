@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flags and things: one logic for markers and everything else</title>
+<!-- The Flags and Things tabs and the Logic node of the HorrorStudio Markers plugin (GodotPlugins/HorrorStudioMarkers;
+     docs/FLAGS.md; DECISIONS 2026-11-14, flags and things). Nothing loads from outside: the pictures in img/ are the
+     editor's own and the game's, made by the plugin's check (python tools/godot/logic_check.py --editor --shots DIR,
+     then python tools/godot/logic_check.py guide DIR). -->
+<style>
+:root{--bg:#121214;--panel:#1b1b1f;--panel2:#232329;--line:#33333b;--text:#e6e3dc;--dim:#9a978f;--accent:#81c784;--warn:#e0a030;--cue:#9fd39a}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{display:grid;grid-template-columns:250px minmax(0,1fr);max-width:1240px;margin:0 auto}
+nav.toc{position:sticky;top:0;height:100vh;overflow:auto;padding:28px 18px 28px 22px;border-right:1px solid var(--line);font-size:13.5px}
+nav.toc .brand{font-weight:700;letter-spacing:.06em;color:var(--accent);font-size:12px;text-transform:uppercase;margin-bottom:14px}
+nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:s}
+nav.toc li{counter-increment:s}
+nav.toc li a{display:flex;gap:8px;padding:4px 8px;border-radius:6px;color:var(--text)}
+nav.toc li a::before{content:counter(s);color:var(--dim);min-width:18px;text-align:right;font-variant-numeric:tabular-nums}
+nav.toc li a:hover,nav.toc li a.on{background:var(--panel2);text-decoration:none}
+nav.toc li a.on{color:var(--accent)}
+nav.toc .back{display:block;margin-top:18px;color:var(--dim);font-size:12.5px}
+main{padding:34px 44px 90px;min-width:0}
+header.hero{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:10px}
+header.hero h1{font-size:34px;line-height:1.15;margin:0 0 10px;letter-spacing:-.01em}
+header.hero p{color:var(--dim);font-size:16.5px;margin:0;max-width:740px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--dim);background:var(--panel)}
+section{padding-top:30px;max-width:920px}
+h2{font-size:24px;margin:16px 0 6px;display:flex;align-items:baseline;gap:12px}
+h2 .n{color:var(--accent);font-size:15px;font-variant-numeric:tabular-nums;font-weight:600}
+h3{font-size:16.5px;margin:22px 0 4px}
+p{margin:8px 0}
+ul,ol.steps{padding-left:22px;margin:8px 0}
+li{margin:3px 0}
+kbd{font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:2px 6px;color:var(--text);white-space:nowrap}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow:auto;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ui{font-weight:600;color:#f2e6cc}
+.node{font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfe3f2}
+figure{margin:16px 0 20px;max-width:100%}
+figure img{display:block;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.45);background:var(--panel)}
+figcaption{color:var(--dim);font-size:13px;margin-top:7px}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;margin:14px 0}
+.pair figure{margin:0}
+.tip{border-left:3px solid var(--accent);background:linear-gradient(90deg,rgba(129,199,132,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.tip b{color:var(--accent)}
+.note{border-left:3px solid var(--cue);background:linear-gradient(90deg,rgba(159,211,154,.08),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet{border-left:3px solid var(--warn);background:linear-gradient(90deg,rgba(224,160,48,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet b{color:var(--warn)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:12px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h4{margin:0 0 4px;font-size:14px}
+.card p{margin:0;color:var(--dim);font-size:13.5px}
+table.keys{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+table.keys td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.keys td:first-child{white-space:nowrap;width:1%}
+.tree{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;overflow:auto}
+.tree i{color:var(--dim);font-style:normal}
+footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:var(--dim);font-size:13px}
+@media (max-width:900px){.wrap{display:block}nav.toc{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 16px}nav.toc ol{columns:2;column-gap:14px}main{padding:22px 16px 60px}header.hero h1{font-size:27px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc">
+  <div class="brand">Flags and things</div>
+  <ol>
+    <li><a href="#what">What it is</a></li>
+    <li><a href="#setup">Set up the scene</a></li>
+    <li><a href="#cards">Make a thing</a></li>
+    <li><a href="#logic">A thing's Logic</a></li>
+    <li><a href="#tie">Tie a marker and a thing</a></li>
+    <li><a href="#flags">The Flags tab</a></li>
+    <li><a href="#whose">Whose a flag is</a></li>
+    <li><a href="#inspector">In the Inspector</a></li>
+    <li><a href="#problems">Problems</a></li>
+    <li><a href="#game">In the game: F7</a></li>
+    <li><a href="#words">The words, and what's not there</a></li>
+  </ol>
+  <a class="back" href="../markers/index.html">← NPC markers</a>
+  <a class="back" href="../index.html">← All guides</a>
+</nav>
+<main>
+<header class="hero">
+  <h1>Flags and things</h1>
+  <p>A door that only opens once someone has left. A character who only walks once a door is open. A button that
+  switches the lights. One name ties them, a <b>flag</b>, and you never type it twice: you pick it, or you click the
+  thing.</p>
+  <div class="chips"><span class="chip">Godot 4.7</span><span class="chip">games built by hand</span><span class="chip">the Flags and Things tabs</span><span class="chip">no code</span></div>
+</header>
+
+<section id="what">
+<h2><span class="n">1</span>What it is</h2>
+<p>A <b>flag</b> is a name that's on or off: <code>alex_gone</code>, <code>cellar_open</code>. Nothing has to list it
+first. Anything can <b>ask</b> for it (a marker's <span class="ui">Starts when</span>, a door) and anything can
+<b>switch</b> it (a marker's <span class="ui">Then</span>, a pickup, an answer in a conversation).</p>
+<p>Two tabs sit along the bottom of the editor beside <a href="../markers/index.html">NPC Markers</a>:</p>
+<div class="cols">
+  <div class="card"><h4>Things</h4><p>Everything in the scene that isn't a character: doors, pickups, notes, areas, lamps. Cards make them; a form says what each works only when, and what it does then.</p></div>
+  <div class="card"><h4>Flags</h4><p>Every flag the scene names, with both its ends: who turns it on, who needs it. Rename one and every use moves.</p></div>
+  <div class="card"><h4>Logic</h4><p>The one node behind it: put under anything, that thing can ask for flags and switch them, in the same three lines a marker has.</p></div>
+</div>
+<figure><img src="img/04_flags.jpg" alt="Godot's editor with the Flags tab along the bottom: a list of flags, each with who turns it on and who needs it; in the 3D view small chips over a door and a marker"><figcaption>The flag <code>door_opened</code> picked: the door turns it on, Ann's Walk needs it. Both are marked in the room.</figcaption></figure>
+</section>
+
+<section id="setup">
+<h2><span class="n">2</span>Set up the scene</h2>
+<p>Open <span class="ui">Things</span>. In a scene that's only a room, press <span class="ui">Set up the scene</span>:
+it adds what a game needs and the scene lacks, and nothing twice: the <span class="node">Player</span>, the
+<span class="node">Story</span> (the objective, the to-do list, the flags), the <span class="node">Hud</span> and
+<span class="node">Sound</span>.</p>
+<figure><img src="img/01_things_empty.jpg" alt="The Things tab on a room with only a door: cards on the left, the door in the list"><figcaption>A room with a door. The cards on the left, the scene's things in the middle, the form of whatever is selected on the right.</figcaption></figure>
+<div class="note">A project made before this needs the newer player once (it's the player that asks a thing's Logic
+before using it): <code>python tools/godot_byhand.py install ~/Games/MyGame --starter</code>. Scripts of yours that
+differed are kept in <code>starter_before/</code>. The tab's Problems says so when it's needed.</div>
+</section>
+
+<section id="cards">
+<h2><span class="n">3</span>Make a thing</h2>
+<p>Select a model in the scene, click a card:</p>
+<table class="keys">
+<tr><td><span class="ui">Logic</span></td><td>It works only when its flags are so, and switches flags when it's used. On anything, even a plain mesh: a lamp, a button, a painting become something you can press <kbd>E</kbd> on.</td></tr>
+<tr><td><span class="ui">Pickup</span></td><td>Taken with <kbd>E</kbd> into the pocket under its name. A door locked by that name opens for it.</td></tr>
+<tr><td><span class="ui">Note</span></td><td>Read with <kbd>E</kbd>: its words on a card.</td></tr>
+<tr><td><span class="ui">Food</span></td><td>Taken, then eaten by holding the left button.</td></tr>
+<tr><td><span class="ui">Show / hide</span></td><td>There, or not, by flags (<span class="ui">Shown when</span>, <span class="ui">Hidden when</span>).</td></tr>
+<tr><td><span class="ui">Quest marker</span></td><td>A guide marker over it while its Needs hold.</td></tr>
+</table>
+<p>And these go where you click in the 3D view (the card stays pressed until you do; <kbd>Esc</kbd> lets it go):</p>
+<table class="keys">
+<tr><td><span class="ui">Area</span></td><td>A box that does something when you walk in: an objective, a task, a line, a flag.</td></tr>
+<tr><td><span class="ui">Scare</span></td><td>A box that scares when you walk in.</td></tr>
+<tr><td><span class="ui">Checkpoint</span></td><td>Walking in keeps the game; dying comes back here.</td></tr>
+<tr><td><span class="ui">Rule</span></td><td>Not a place: something that happens by itself the moment its flags are so.</td></tr>
+</table>
+<figure><img src="img/02_things_cards.jpg" alt="The Things tab after a few cards: a key made a pickup, a sheet of paper a note, a lamp with Logic, an area and a rule, all in the list"><figcaption>A few clicks later. Each row says what the thing is, what it works only when, and what it does then.</figcaption></figure>
+</section>
+
+<section id="logic">
+<h2><span class="n">4</span>A thing's Logic</h2>
+<p>Select a thing: its form is three lines, the same three a marker has.</p>
+<div class="cols">
+  <div class="card"><h4>Works only when</h4><p>Chips: flags that must be on (or off), a task done, something carried. While they aren't so, <kbd>E</kbd> on it does nothing but say its <span class="ui">Else says</span> line.</p></div>
+  <div class="card"><h4>When</h4><p>It's used (<kbd>E</kbd>); or one of its own signals (a door's <i>opened</i>, an area's <i>body entered</i>); or by itself, once its needs are so. Once, or every time.</p></div>
+  <div class="card"><h4>Then</h4><p>Flags switched (green: on, red: off, blue: flipped), a task ticked or added, a line, a sound, things fired.</p></div>
+</div>
+<figure><img src="img/03_things_form.jpg" alt="The key selected: its form says Only when ann_walk_done, When it's used"><figcaption>The key can only be taken once Ann's walk is done. The chips' <span class="ui">+</span> lists every flag the scene has.</figcaption></figure>
+<p>Under the Logic, <span class="ui">Its own</span>: the fields the thing's script already has (a door's
+<span class="ui">Locked by</span>, an area's <span class="ui">Needs</span> and <span class="ui">Sets</span>), each
+with the same pickers. So "can only open the door while this flag is on" is the door's Logic, <span class="ui">Only
+when</span>, one tick.</p>
+</section>
+
+<section id="tie">
+<h2><span class="n">5</span>Tie a marker and a thing, one click each</h2>
+<h3>A marker waits for a thing</h3>
+<ol class="steps">
+  <li>In <span class="ui">NPC Markers</span>, on the marker's <span class="ui">Starts when</span>, press <span class="ui">+</span>
+  and choose <span class="ui">A thing… (click it in the 3D view)</span>.</li>
+  <li>Click the door.</li>
+</ol>
+<p>The door gets a Logic that turns a flag on when it's opened (<code>door_opened</code>, named after it), and the
+marker waits for that flag. A pickup's flag comes on when it's taken, an area's when you walk in.</p>
+<h3>A thing waits for a marker</h3>
+<ol class="steps">
+  <li>In <span class="ui">Things</span>, on the thing's <span class="ui">Only when</span>, press <span class="ui">+</span>
+  and choose <span class="ui">A character's marker… (click its pin)</span>.</li>
+  <li>Click the pin.</li>
+</ol>
+<p>That marker's <span class="ui">Then</span> turns a flag on when it's done (<code>ann_walk_done</code>), and the
+thing asks for it.</p>
+<div class="tip"><b>Or pick.</b> Every <span class="ui">+</span> lists the flags that exist, the nearest first: this
+quest's, this character's, the game's. A flag made for a marker is one tick away on anything else.</div>
+</section>
+
+<section id="flags">
+<h2><span class="n">6</span>The Flags tab</h2>
+<p>Every flag, task and thing carried the scene names. Each row: whose it is, a tick for <i>on when the game
+starts</i>, who turns it on, who needs it. On the left: a search box, and what's shown (everything, the game's, one
+character's, one quest's, things', problems).</p>
+<p>Pick one. On the right:</p>
+<ul>
+  <li><b>Name</b>: type over it and press <kbd>Enter</kbd>. It's renamed in every marker, conversation, Logic and
+  script that names it; one <kbd>Ctrl</kbd>+<kbd>Z</kbd> takes it all back.</li>
+  <li><b>Note</b>: what it means, for you.</li>
+  <li><b>Switched by</b> and <b>Needed by</b>: every use as a row. Click one and you're there: a marker opens in NPC
+  Markers, a thing in Things.</li>
+  <li><b>Use it</b>: on whatever is selected in the scene (<span class="ui">needs it on</span>, <span class="ui">needs
+  it off</span>, <span class="ui">turns it on</span>, <span class="ui">turns it off</span>), or press
+  <span class="ui">Click a thing…</span> and click it in the 3D view.</li>
+  <li>The bin takes it out of everything.</li>
+</ul>
+<p><span class="ui">+ Flag</span> writes one down before anything uses it (type its name in the search box first).
+Typing a new name in any picker makes one too.</p>
+</section>
+
+<section id="whose">
+<h2><span class="n">7</span>Whose a flag is</h2>
+<p>A flag is one name everywhere: that's what lets a marker's flag open a door. But you don't have to look at all of
+them at once. Who a flag belongs to is worked out from who uses it:</p>
+<table class="keys">
+<tr><td>one quest's</td><td>only that quest's markers use it</td></tr>
+<tr><td>one character's</td><td>only that character's markers do</td></tr>
+<tr><td>the game's</td><td>a thing uses it, or two characters</td></tr>
+<tr><td>by itself</td><td>the kit sets it: <code>talked:ann</code>, <code>shot:ann</code>, <code>down:ann</code> for every character with markers</td></tr>
+</table>
+<p>Click a character or a quest under <span class="ui">Show</span> and only its flags are listed. If you want a flag
+to stay a quest's own, set <span class="ui">Belongs to</span>: using it anywhere else then shows as a Problem.</p>
+</section>
+
+<section id="inspector">
+<h2><span class="n">8</span>In the Inspector</h2>
+<p>The same chips are in the Inspector, on any node whose script has a field that names flags: a cue's
+<span class="ui">Needs</span>, a shown thing's <span class="ui">Shown When</span>, a hunt's <span class="ui">Ends
+When</span>, a door's <span class="ui">Locked By</span>, a script of your own with an exported <code>needs</code>.
+The scene's flags are in each one's <span class="ui">+</span>.</p>
+<figure><img src="img/05_inspector.jpg" alt="An event area selected: in the Inspector its Needs field is a chip, door_opened, with a plus beside it"><figcaption>An event area's own Needs, as a chip. The Things tab shows the same field in the area's form.</figcaption></figure>
+</section>
+
+<section id="problems">
+<h2><span class="n">9</span>Problems</h2>
+<p>Both tabs count what can't work, and each takes you there:</p>
+<ul>
+  <li>a flag something asks for and nothing turns on (a typo, usually);</li>
+  <li>a flag switched that nothing asks for yet (a tip);</li>
+  <li>a task used that nothing puts on the list;</li>
+  <li>a quest's own flag used outside it;</li>
+  <li><b>things that wait for each other</b>: a key that can only be taken once Ann has walked, who only walks once
+  the door is open, which only opens with the key. None of it can ever happen, and it says so, with who asks for
+  what.</li>
+</ul>
+</section>
+
+<section id="game">
+<h2><span class="n">10</span>In the game: F7</h2>
+<p><kbd>F7</kbd> shows, over each character, what they're doing and waiting for, and at the left every flag the scene
+names: the ones that are on bright, the rest dim; the tasks; the pocket. When something doesn't happen, its flag is
+there, and it's dim.</p>
+<figure><img src="img/play_f7.jpg" alt="The game with F7 on: a list of flags at the left with one bright, tasks and the pocket under it; over a character a chip saying what she waits for"><figcaption>Ann waits for <code>door_opened</code>, and <code>door_opened</code> is dim.</figcaption></figure>
+</section>
+
+<section id="words">
+<h2><span class="n">11</span>The words, and what's not there</h2>
+<p>You never have to type these, but a condition is words apart by commas, all of which must be so:</p>
+<table class="keys">
+<tr><td><code>name</code></td><td>the flag is on (<code>!name</code>: off)</td></tr>
+<tr><td><code>task:id</code></td><td>that task is ticked</td></tr>
+<tr><td><code>on:id</code></td><td>that task is on the list and not ticked yet</td></tr>
+<tr><td><code>item:name</code></td><td>you carry it</td></tr>
+</table>
+<p>Flags switched: <code>+name</code> on, <code>-name</code> off, <code>~name</code> flipped.</p>
+<p>From a script, if you want one:</p>
+<pre>HSNpcCond.set_flag(get_tree(), "cellar_open")          # a flag, with or without a Story
+if HSLogic.may_use(thing, self):                       # ask a thing's Logic yourself
+    thing.use(self)
+    HSLogic.was_used(thing, self)</pre>
+<div class="notyet"><b>Not there yet.</b> A prompt over a thing that can't be used yet (now: its line when you try).
+Flags kept between two scenes of one game (now: each scene's Story keeps its own). The Director's and the desk's
+games have their own facts; this is for games built by hand.</div>
+<footer>The design: <code>docs/FLAGS.md</code>. Checked by <code>python tools/godot/logic_check.py</code> (LOGIC) and
+<code>python tools/godot/logic_check.py --editor</code> (LOGICEDITOR: these tabs driven in the editor itself, then the
+scene they built played).</footer>
+</section>
+</main>
+</div>
+<script>
+const links=[...document.querySelectorAll('nav.toc li a')],secs=links.map(a=>document.querySelector(a.getAttribute('href')));
+const on=()=>{let i=0;secs.forEach((s,k)=>{if(s&&s.getBoundingClientRect().top<140)i=k});links.forEach((a,k)=>a.classList.toggle('on',k===i))};
+addEventListener('scroll',on,{passive:true});on();
+</script>
+</body>
+</html>

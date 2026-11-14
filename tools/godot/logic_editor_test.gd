@@ -311,6 +311,9 @@ func _run() -> void:
 		press(pin[0]["at"])
 	await frames(4)
 	ok(walk.set_flags == "+ann_walk_done" and key_logic.needs == "ann_walk_done", "the walk's pin clicked: its Then turns 'ann_walk_done' on and the key asks for it", "%s | %s" % [walk.set_flags, key_logic.needs])
+	var circle: Array = wiring.problems().filter(func(p): return String(p["text"]).contains("wait for each other"))
+	ok(circle.size() == 1 and String(circle[0]["text"]).contains("cellar_key") and String(circle[0]["text"]).contains("ann_walk_done") and String(circle[0]["text"]).contains("door_opened"),
+		"Problems sees what was just tied into a circle: the key waits for Ann, Ann for the door, the door for the key", String(circle[0]["text"]) if not circle.is_empty() else "")
 	await shot("03_things_form")
 
 	# ---- the Flags tab ----
@@ -333,7 +336,7 @@ func _run() -> void:
 	await show_filter("things")
 	ok("lamp_lit" in names_in(flags.table) and not ("talked:ann" in names_in(flags.table)), "filtered to things")
 	await show_filter("problems")
-	ok("power_on" in names_in(flags.table) and not ("door_opened" in names_in(flags.table)), "filtered to problems", str(names_in(flags.table)))
+	ok("power_on" in names_in(flags.table) and "door_opened" in names_in(flags.table) and not ("talked:ann" in names_in(flags.table)), "filtered to problems: the flag nothing turns on, the circle's flag", str(names_in(flags.table)))
 	await show_filter("all")
 	flags.search.text = "lamp"
 	flags.refresh_table()
