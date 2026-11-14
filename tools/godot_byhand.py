@@ -16,6 +16,10 @@ Godot instead of through Director I can"; guides/godot_by_hand): what guides/god
         the same add-ons into a project you have (again after a pull of the studio: they're copies; one the project
         didn't have yet is switched on in its project.godot); starter/, sfx/ and music/ only if they aren't there
         (they're yours to change)
+    python tools/godot_byhand.py install ~/Games/MyGame --starter
+        and the studio's starter scripts over the project's (when a plugin needs a newer one: the Logic node needs a
+        player.gd that asks a thing's Logic before it uses it); a script that differed from the studio's is kept in
+        starter_before/ first, so nothing of yours is lost
     python tools/godot_byhand.py exports ~/Games/MyGame [--link]
         the studio's Exports/ (interiors, streets, characters) copied into the project's exports/; --link makes them
         links instead, so an export from the studio's editors is in the project at once (Godot imports it on focus)
@@ -89,6 +93,26 @@ def enable(proj):
         text = text.rstrip("\n") + f"\n\n[editor_plugins]\n\nenabled=PackedStringArray({more})\n"
     pg.write_text(text, encoding="utf-8")
     return added
+
+
+def refresh_starter(proj):
+    """the studio's starter scripts over a project's (install --starter); one that differed is kept in starter_before/
+    first (a folder Godot ignores); -> the names kept there"""
+    kept = []
+    dst = proj / "starter"
+    dst.mkdir(exist_ok=True)
+    for f in sorted(STARTER.iterdir()):
+        if not f.is_file():
+            continue
+        t = dst / f.name
+        if t.is_file() and t.read_bytes() != f.read_bytes():
+            before = proj / "starter_before"
+            before.mkdir(exist_ok=True)
+            (before / ".gdignore").touch()
+            shutil.copy2(t, before / f.name)
+            kept.append(f.name)
+        shutil.copy2(f, t)
+    return kept
 
 
 def install(proj, starter=True):
@@ -250,6 +274,9 @@ def main(argv):
             print(f"no project.godot in {proj}: python tools/godot_byhand.py new {proj}")
             return 1
         did = install(proj, starter=False)
+        if "--starter" in argv:
+            kept = refresh_starter(proj)
+            did.append("starter (the studio's scripts" + (f"; yours that differed are in starter_before/: {', '.join(kept)})" if kept else ")"))
         print(f"into {proj}: {', '.join(did)}")
     else:
         if not (proj / "project.godot").exists():

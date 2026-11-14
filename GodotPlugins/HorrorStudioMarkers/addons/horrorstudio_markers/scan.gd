@@ -54,6 +54,19 @@ const SETS := ["on", "off", "flip", "start", "ticks", "adds", "gives"]          
 const ASKS := ["needs", "needs_not", "open", "not_open"]                         # roles that ask
 
 
+## A field of lines as lines. (In the editor a script that isn't a tool is a stand-in for itself, and a list nobody
+## has set yet reads as a plain empty Array there, not as the PackedStringArray it's declared as.)
+static func lines(v) -> PackedStringArray:
+	if v is PackedStringArray:
+		return v
+	if v is Array:
+		var out := PackedStringArray()
+		for x in (v as Array):
+			out.append(str(x))
+		return out
+	return PackedStringArray()
+
+
 ## is this script one of the studio's (the starter kit's, a HorrorStudio plugin's)?
 static func studio(node: Object) -> bool:
 	var sc: Script = node.get_script() if node != null else null
@@ -73,7 +86,8 @@ static func fields_of(node: Object) -> Array:
 		if prop in PLAIN and not mine:
 			continue
 		var enc := String(FIELDS[prop])
-		if typeof(node.get(prop)) != int(TYPES[enc]):
+		var have := typeof(node.get(prop))
+		if have != int(TYPES[enc]) and not (int(TYPES[enc]) == TYPE_PACKED_STRING_ARRAY and have == TYPE_ARRAY):
 			continue
 		if enc == "task" and prop == "tick" and node.has_method("tick"):       # (the Story's own tick() is a method, not a field)
 			continue
@@ -103,7 +117,7 @@ static func names_in(value, enc: String) -> Array:
 					"item":
 						out.append({"kind": "item", "name": a, "role": "needs_not" if neg else "needs"})
 		"conds":
-			for line in (value as PackedStringArray):
+			for line in lines(value):
 				out.append_array(names_in(String(line), "cond"))
 		"lock":
 			var s := String(value).strip_edges()
@@ -116,26 +130,26 @@ static func names_in(value, enc: String) -> Array:
 			for f in HSNpcCond.switched(String(value)):
 				out.append({"kind": "flag", "name": String(f["name"]), "role": {"+": "on", "-": "off", "~": "flip"}[String(f["op"])]})
 		"switches":
-			for line in (value as PackedStringArray):
+			for line in lines(value):
 				out.append_array(names_in(String(line), "switch"))
 		"flag":
 			var f := String(value).strip_edges().trim_prefix("+").strip_edges()
 			if f != "":
 				out.append({"kind": "flag", "name": f, "role": "on"})
 		"flags":
-			for line in (value as PackedStringArray):
+			for line in lines(value):
 				for f2 in HSNpcCond.switched(String(line)):
 					out.append({"kind": "flag", "name": String(f2["name"]), "role": "start"})
 		"task":
 			if String(value).strip_edges() != "":
 				out.append({"kind": "task", "name": String(value).strip_edges(), "role": "ticks"})
 		"tasks":
-			for line in (value as PackedStringArray):
+			for line in lines(value):
 				var id := String(line).get_slice(":", 0).strip_edges()
 				if id != "":
 					out.append({"kind": "task", "name": id, "role": "adds"})
 		"task_flags":
-			for line in (value as PackedStringArray):
+			for line in lines(value):
 				var at := String(line).find(":")
 				if at <= 0:
 					continue
@@ -149,7 +163,7 @@ static func names_in(value, enc: String) -> Array:
 			if String(value).strip_edges() != "":
 				out.append({"kind": "item", "name": String(value).strip_edges(), "role": "gives"})
 		"rules":
-			for line in (value as PackedStringArray):
+			for line in lines(value):
 				var cut := String(line).find("=>")
 				if cut >= 0:
 					out.append_array(names_in(String(line).substr(0, cut), "cond"))
@@ -273,6 +287,13 @@ static func place(node: Node) -> String:
 		elif node is HSNpcWay:
 			parts.append("%s %s" % [HSNpcFlow.label_of(node), (node as HSNpcWay).title()])
 		return " › ".join(parts)
+	if node is HSLogic:                                        # a thing's Logic is said as the thing; one by itself as a rule
+		var lg := node as HSLogic
+		var t := lg.thing_node()
+		if lg.on == "itself" and lg.thing.is_empty():
+			return "%s (rule)" % lg.name
+		if t != null and t != node:
+			return "%s (%s)" % [t.name, what(t)]
 	return "%s (%s)" % [node.name, what(node)]
 
 
@@ -348,9 +369,9 @@ static func _switch_renamed(text: String, old: String, new: String) -> String:
 	return ", ".join(ws)
 
 
-static func _lines(value: PackedStringArray, change: Callable) -> PackedStringArray:
+static func _lines(value, change: Callable) -> PackedStringArray:
 	var out := PackedStringArray()
-	for line in value:
+	for line in lines(value):
 		var now := String(change.call(String(line)))
 		if now.strip_edges() != "" or String(line).strip_edges() == "":
 			out.append(now)
@@ -442,6 +463,8 @@ static func rename_plan(found: Dictionary, kind: String, old: String, new: Strin
 			continue
 		seen[[node, prop]] = true
 		var was = node.get(prop)
+		if int(TYPES[String(u["enc"])]) == TYPE_PACKED_STRING_ARRAY:
+			was = lines(was)
 		var now = renamed(was, String(u["enc"]), kind, old, new)
 		if typeof(now) != typeof(was) or now != was:
 			out.append([node, prop, now])

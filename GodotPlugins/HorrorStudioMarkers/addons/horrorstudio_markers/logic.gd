@@ -14,6 +14,9 @@
 ##
 ## The thing is its parent (or `thing`). The starter's player asks it before it uses a thing (`allows`) and tells it
 ## after (`used`); nothing else has to know it's there. With no Story in the scene the flags are the plugin's own.
+##
+## A thing with no use() of its own (a lamp, a button, a painting: just a mesh) becomes something to use: its Logic
+## puts a box round what's drawn (found only by E's aim; nothing bumps into it), and E on it is "it's used".
 class_name HSLogic
 extends Node
 
@@ -21,6 +24,7 @@ signal refused                                ## it was tried while its needs ar
 signal done                                   ## it did its Then
 
 const WHENS := {"used": "it's used (E)", "signal": "one of its signals", "itself": "by itself, when its needs are so"}
+const REACH_MOST := 6.0                       ## a thing with no use() bigger than this isn't given a box to use it by
 
 @export var thing: NodePath                   ## what this is the logic of; empty: its parent
 @export_group("Works only when")
@@ -73,12 +77,14 @@ func _ready() -> void:
 		set_process(false)
 		return
 	add_to_group("hs_logic")
+	HSFlagBoard.of(get_tree())                                # (F7 lists the flags)
 	var t := thing_node()
 	if on == "signal" and t != null and on_signal != "" and t.has_signal(on_signal):
 		t.connect(on_signal, _heard)
 	set_process(on == "itself")
 	_hook()
 	_player_asks.call_deferred()
+	_reach.call_deferred()
 
 
 func _exit_tree() -> void:
@@ -94,6 +100,51 @@ func _player_asks() -> void:
 	if pl != null and not pl.has_method("logic_of"):
 		_warned = true
 		push_warning("HSLogic (%s): this project's player uses things without asking their Logic (its starter/player.gd is from before it). Copy the studio's over it: python tools/godot_byhand.py install <this project> --starter" % get_path())
+
+
+# A thing with no use() of its own: a box round what's drawn under it, whose use() is this Logic's (never saved).
+# Not round something too big to be one thing (a Logic left under a whole room): that would take every E in it.
+func _reach() -> void:
+	var t := thing_node() as Node3D
+	if on != "used" or t == null or not t.is_inside_tree() or t.has_method("use") or t.has_node("_LogicReach"):
+		return
+	var box := AABB()
+	var first := true
+	var shapes: Array = t.find_children("*", "GeometryInstance3D", true, false)
+	if t is GeometryInstance3D:
+		shapes.append(t)
+	for g in shapes:
+		var ab: AABB = (g as GeometryInstance3D).get_aabb()
+		if ab.size == Vector3.ZERO:
+			continue
+		var local: AABB = t.global_transform.affine_inverse() * (g as Node3D).global_transform * ab
+		box = local if first else box.merge(local)
+		first = false
+	if first:
+		box = AABB(Vector3(-0.07, 0.0, -0.07), Vector3(0.14, 0.14, 0.14))
+	if maxf(box.size.x, maxf(box.size.y, box.size.z)) > REACH_MOST:
+		push_warning("HSLogic (%s): %s is %.1f m across, too big to be one thing to use with E. Put the Logic under the thing itself, or point its Thing at it." % [get_path(), t.name, maxf(box.size.x, maxf(box.size.y, box.size.z))])
+		return
+	box = box.grow(0.03)
+	var body := StaticBody3D.new()
+	body.name = "_LogicReach"
+	body.set_script(preload("res://addons/horrorstudio_markers/logic_body.gd"))
+	body.set("logic", self)
+	body.collision_layer = 2                                   # (the layer only E's aim finds: nobody walks into it)
+	body.collision_mask = 0
+	var shape := CollisionShape3D.new()
+	var bs := BoxShape3D.new()
+	bs.size = Vector3(maxf(box.size.x, 0.14), maxf(box.size.y, 0.14), maxf(box.size.z, 0.14))
+	shape.shape = bs
+	shape.position = box.get_center()
+	body.add_child(shape)
+	t.add_child(body)
+
+
+## E on a thing that has no use() of its own (its reach box calls this): asked, then its Then
+func press(by: Node = null) -> void:
+	if allows(by):
+		run()
 
 
 ## the thing this is the logic of

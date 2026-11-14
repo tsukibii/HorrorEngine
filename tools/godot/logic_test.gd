@@ -205,6 +205,21 @@ func stage_gate() -> void:
 	hit = await use_at(crate, 0.5)
 	ok(hit == null and HSLogic.of(crate) == [far], "A: a Logic elsewhere in the scene, pointed at the thing, is asked too")
 	ok(not HSLogic.may_use(crate) and HSLogic.may_use(door.get_node("Mesh")), "A: may_use for a script of your own")
+	# a mesh with no script at all: its Logic makes it something to use
+	var button := thing("ButtonA", o + Vector3(0, 0, 4), "", Vector3(0.3, 0.3, 0.1), false)
+	button.position.y = 1.0
+	var bl := logic(button, {"needs": "power_a", "locked_says": "Dead.", "set_flags": "~lift_a", "once": false})
+	put(o + Vector3(0, 0.1, 5.2))
+	await frames(4)
+	var reach := button.get_node_or_null("_LogicReach") as StaticBody3D
+	ok(reach != null and reach.collision_layer == 2 and reach.collision_mask == 0, "A: a plain mesh with a Logic gets a box only E's aim finds")
+	hit = await use_at(button, 0.15)
+	ok(hit == reach and bl.times == 0 and line() == "Dead.", "A: E on it while its needs aren't so: its line, nothing else", line())
+	story.call("set_flag", "power_a")
+	await use_at(button, 0.15)
+	ok(bl.times == 1 and bool(story.call("is_set", "lift_a")), "A: its needs so: E does its Then (a button that flips a flag)")
+	await use_at(button, 0.15)
+	ok(bl.times == 2 and not bool(story.call("is_set", "lift_a")), "A: and again (not a once)")
 
 
 # ---- B. used, a signal, by itself: then --------------------------------------------------------------------------------------------
@@ -418,7 +433,7 @@ func stage_scan() -> void:
 	ok(HSLogicScan.home_of(flags["eve_kitchen"]) == "eve/Night one" and HSLogicScan.home_of(flags["met_eve"]) == "eve/Night one" and HSLogicScan.home_of(flags["eve_gone"]) == ""
 		and HSLogicScan.home_of(flags["talked:eve"]) == "", "E: whose a flag is: one quest's, or the game's once a thing uses it",
 		"%s | %s" % [HSLogicScan.home_of(flags["eve_kitchen"]), HSLogicScan.home_of(flags["eve_gone"])])
-	ok(HSLogicScan.place(talk) == "Eve › Night one › 1 Talk" and HSLogicScan.place(door) == "DoorE (door)" and HSLogicScan.place(door.get_node("Logic")) == "Logic (Logic)",
+	ok(HSLogicScan.place(talk) == "Eve › Night one › 1 Talk" and HSLogicScan.place(door) == "DoorE (door)" and HSLogicScan.place(door.get_node("Logic")) == "DoorE (door)",
 		"E: where a use is, in plain words", HSLogicScan.place(talk))
 	var probs := HSLogicScan.problems(found, {"eve_kitchen": {"home": "eve/Night two"}, "unused_e": {}})
 	var texts := PackedStringArray()
@@ -474,6 +489,41 @@ func stage_alone() -> void:
 	story.add_to_group("hs_story")
 
 
+# ---- G. F7: the flags on the screen -----------------------------------------------------------------------------------------------
+func stage_board() -> void:
+	var o := origin()
+	var a := npc_for(standin(o, "HerG1"), "Gia")
+	var b := npc_for(standin(o + Vector3(2, 0, 0), "HerG2"), "Gus")
+	mk(quest(a, "One"), "wait", Vector3.ZERO, {"start_when": "gate_g"})
+	mk(quest(b, "One"), "wait", Vector3.ZERO, {"start_when": "gate_g, never_g", "set_flags": "+gus_done"})
+	var lamp := thing("LampG", o + Vector3(0, 0, 2), "", Vector3(0.2, 0.2, 0.2), false)
+	logic(lamp, {"set_flags": "+gate_g", "tick": "book"})
+	await frames(6)
+	var boards := root.find_children("_HSFlagBoard*", "CanvasLayer", false, false)
+	ok(boards.size() == 1 and boards[0] is HSFlagBoard, "G: one flag board under the root, however many characters and Logic nodes", str(boards.size()))
+	var board := boards[0] as HSFlagBoard
+	board.most = 1000                                         # (every stage's flags are in this one scene)
+	ok(not HSNpc.debug and not board.showing(), "G: nothing shown until F7")
+	var ev := InputEventKey.new()
+	ev.physical_keycode = KEY_F7
+	ev.keycode = KEY_F7
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	await frames(4)
+	ok(HSNpc.debug and board.showing(), "G: F7 turns it on once (two characters don't flip it back)")
+	var t := board.text()
+	ok(t.contains("○ gate_g") and t.contains("○ gus_done") and not t.contains("talked:gia"), "G: every flag the scene names, the ones that are off dim; the kit's own only once on", t.replace("\n", " / ").substr(0, 160))
+	story.call("set_flag", "gate_g")
+	await secs(0.4)
+	t = board.text()
+	ok(t.contains("● gate_g") and t.find("● gate_g") < t.find("○ gus_done"), "G: a flag turned on is bright, and first")
+	ok(t.contains("TASKS") and (t.contains("☐ book") or t.contains("☑ book")), "G: the to-do list's tasks", "")
+	ok(a.debug_text().contains("Gia"), "G: and each character's chip, as before", a.debug_text())
+	Input.parse_input_event(ev)
+	await frames(4)
+	ok(not HSNpc.debug and not board.showing(), "G: F7 again: off")
+
+
 func _initialize() -> void:
 	create_timer(600.0).timeout.connect(func() -> void:
 		bad("the test never ended")
@@ -488,7 +538,7 @@ func _initialize() -> void:
 	player = main.get_node("Player") as CharacterBody3D
 	eye = player.get_node("Eye") as Camera3D
 	story = main.get_node("Story")
-	for st in [["gate", stage_gate], ["then", stage_then], ["tie", stage_tie], ["checkpoint", stage_checkpoint], ["scan", stage_scan], ["alone", stage_alone]]:
+	for st in [["gate", stage_gate], ["then", stage_then], ["tie", stage_tie], ["checkpoint", stage_checkpoint], ["scan", stage_scan], ["board", stage_board], ["alone", stage_alone]]:
 		if wants(st[0]):
 			await (st[1] as Callable).call()
 	print("LOGIC result " + JSON.stringify({"errors": errors}))

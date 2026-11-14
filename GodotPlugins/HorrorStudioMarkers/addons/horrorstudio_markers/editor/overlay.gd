@@ -244,7 +244,60 @@ func draw(c: Control) -> void:
 						_bends(c, cam, k, list, m, from["pos"], col)
 				else:
 					_badge(c, cam, k, list, stacks, from["pos"], node, String(row["label"]), m.title(), m.note, Glyphs.of_marker(m), col, a, font, bold, picked, hov)
+	_uses(c, cam, k, list, font)
 	_legend(c, legend, font, bold)
+
+
+# where a node is in the room, for a mark over it (null: nowhere, a node with no place)
+func _where(node: Node):
+	if node is HSNpcMarker:
+		var m := node as HSNpcMarker
+		return m.place() if m.is_placed() else (HSNpcFlow.starts_of(m)[0]["pos"] as Vector3)
+	if node is HSNpcWay or node is HSNpcQuest or node is HSNpc:
+		var npc := HSNpcFlow.npc_of(node) as HSNpc
+		var her := npc.character_node() if npc != null else null
+		return her.global_position if her != null else null
+	if node is HSLogic:
+		var t := (node as HSLogic).thing_node()
+		return (t as Node3D).global_position if t is Node3D else null
+	return (node as Node3D).global_position if node is Node3D else null
+
+
+# the flag picked in the Flags tab: a small chip over every node that uses it, green where it's switched, amber
+# where it's asked for; a click on one goes there (docs/FLAGS.md §4)
+func _uses(c: Control, cam: Camera3D, k: Vector2, list: Array, font: Font) -> void:
+	if plugin.cur_name.size() != 2 or plugin.wiring == null:
+		return
+	var s := Glyphs.scale()
+	var kind := String(plugin.cur_name[0])
+	var stack := {}
+	for u in plugin.wiring.uses(kind, String(plugin.cur_name[1])):
+		var node := u["node"] as Node
+		if not is_instance_valid(node) or not node.is_inside_tree():
+			continue
+		var at3 = _where(node)
+		if at3 == null or _behind(cam, at3):
+			continue
+		var sets: bool = String(u["role"]) in HSLogicScan.SETS
+		var col := Color("#81C784") if sets else Color("#FFB74D")
+		var base := _to2(cam, k, at3)
+		var key := Vector2i(base / (8.0 * s))
+		var n := int(stack.get(key, 0))
+		stack[key] = n + 1
+		var who := "" if node is HSNpcMarker else (String((node as HSLogic).thing_node().name) if node is HSLogic and (node as HSLogic).thing_node() != null else String(node.name)) + ": "
+		var text := who + HSLogicScan.role_says(String(u["role"]), kind)
+		var fs := int(11 * s)
+		var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 30 * s
+		var at := base + Vector2(0, -(46 + 24 * n) * s)
+		var hov: bool = hover.get("kind") == "use" and hover.get("node") == node
+		c.draw_line(base, at + Vector2(0, 10 * s), Color(col.r, col.g, col.b, 0.7), 1.4 * s, true)
+		c.draw_circle(base, 3.2 * s, col)
+		var rect := Rect2(at - Vector2(12 * s, 10 * s), Vector2(w, 20 * s))
+		c.draw_style_box(Glyphs.box(Color(0.07, 0.08, 0.1, 0.92 if hov else 0.82), 10, 0, col, 1), rect)
+		var tex := Glyphs.icon({"flag": "flag", "task": "task", "item": "carry"}.get(kind, "flag"), col, 12)
+		c.draw_texture(tex, rect.position + Vector2(6 * s, (rect.size.y - tex.get_size().y) * 0.5))
+		c.draw_string(font, rect.position + Vector2(22 * s, 14 * s), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, 0.95))
+		list.append({"kind": "use", "node": node, "index": 0, "at": rect.get_center(), "r": maxf(rect.size.x * 0.5, 12.0 * s)})
 
 
 func _key(p: Vector3) -> Vector3i:
@@ -471,9 +524,10 @@ func _named(n: Node) -> Node:
 func input(cam: Camera3D, e: InputEvent) -> int:
 	if plugin == null or plugin.scene_root() == null:
 		return EditorPlugin.AFTER_GUI_INPUT_PASS
-	if e is InputEventKey and e.pressed and (e as InputEventKey).keycode == KEY_ESCAPE and (not plugin.armed.is_empty() or plugin.picking.is_valid()):
+	if e is InputEventKey and e.pressed and (e as InputEventKey).keycode == KEY_ESCAPE and (not plugin.armed.is_empty() or plugin.picking.is_valid() or plugin.picking_pin.is_valid()):
 		plugin.arm({})
 		plugin.picking = Callable()
+		plugin.picking_pin = Callable()
 		plugin.update_overlays()
 		return EditorPlugin.AFTER_GUI_INPUT_STOP
 	if e is InputEventMouseMotion:
@@ -498,9 +552,10 @@ func input(cam: Camera3D, e: InputEvent) -> int:
 		if hr.get("kind") == "bend":
 			plugin.delete_node(hr["node"], "delete a bend")
 			return EditorPlugin.AFTER_GUI_INPUT_STOP
-		if not plugin.armed.is_empty() or plugin.picking.is_valid():
+		if not plugin.armed.is_empty() or plugin.picking.is_valid() or plugin.picking_pin.is_valid():
 			plugin.arm({})
 			plugin.picking = Callable()
+			plugin.picking_pin = Callable()
 			return EditorPlugin.AFTER_GUI_INPUT_STOP
 		return EditorPlugin.AFTER_GUI_INPUT_PASS
 	if mb.button_index != MOUSE_BUTTON_LEFT:
@@ -510,10 +565,28 @@ func input(cam: Camera3D, e: InputEvent) -> int:
 			var u := under_mouse(cam, mb.position)
 			var to: Callable = plugin.picking
 			plugin.picking = Callable()
-			plugin.dock.say("")
+			plugin.say("")
 			if not u.is_empty() and u.get("node") is Node:
 				to.call(_named(u["node"]), u["pos"])
 			plugin.update_overlays()
+			return EditorPlugin.AFTER_GUI_INPUT_STOP
+		if plugin.picking_pin.is_valid():                      # a marker's pin (or its badge) for whoever asked
+			var hp := hit(cam, mb.position)
+			if hp.get("kind") in ["pin", "badge"] and hp.get("node") is HSNpcMarker:
+				var to2: Callable = plugin.picking_pin
+				plugin.picking_pin = Callable()
+				plugin.say("")
+				to2.call(hp["node"])
+				plugin.update_overlays()
+			return EditorPlugin.AFTER_GUI_INPUT_STOP
+		if not plugin.armed.is_empty() and plugin.armed.has("how"):   # a card of the Things tab: put where it's clicked
+			var tc: Dictionary = plugin.armed
+			var where := point_at(cam, mb.position)
+			if not mb.shift_pressed:
+				plugin.arm({})
+			var made: Node = plugin.wiring.make(tc, null, where)
+			if made != null and plugin.things_dock != null:
+				plugin.things_dock.made_thing(made, tc)
 			return EditorPlugin.AFTER_GUI_INPUT_STOP
 		if not plugin.armed.is_empty():
 			var card: Dictionary = plugin.armed
@@ -532,6 +605,9 @@ func input(cam: Camera3D, e: InputEvent) -> int:
 		if h2["kind"] == "plus":
 			var b: HSNpcBend = plugin.add_bend(h2["node"], h2["where"], int(h2["index"]))
 			drag = {"kind": "bend", "node": b, "index": 0, "was": b.global_transform, "press": mb.position, "moved": false, "fresh": true}
+			return EditorPlugin.AFTER_GUI_INPUT_STOP
+		if h2["kind"] == "use":                                # a flag's mark over who uses it: go there
+			plugin.go_to(h2["node"])
 			return EditorPlugin.AFTER_GUI_INPUT_STOP
 		var node: Node3D = h2["node"] as Node3D
 		if h2["kind"] in ["pin", "badge"]:

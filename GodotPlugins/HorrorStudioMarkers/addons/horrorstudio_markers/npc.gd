@@ -66,6 +66,7 @@ func _ready() -> void:
 		return
 	add_to_group("hs_npc")
 	add_to_group("hs_scare")
+	HSFlagBoard.of(get_tree())                                # (F7: the one place it's heard, and the flags beside the chips)
 	start.call_deferred()
 
 
@@ -96,11 +97,6 @@ func _physics_process(dt: float) -> void:
 		runner.tick(dt)
 	if debug or _label != null:
 		_show_debug()
-
-
-func _unhandled_key_input(event: InputEvent) -> void:
-	if not Engine.is_editor_hint() and event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).physical_keycode == KEY_F7:
-		debug = not debug
 
 
 func _show_debug() -> void:

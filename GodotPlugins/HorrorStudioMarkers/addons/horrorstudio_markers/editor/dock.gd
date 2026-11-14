@@ -11,6 +11,7 @@ extends EditorDock
 const Glyphs := preload("res://addons/horrorstudio_markers/editor/glyphs.gd")
 const CondEdit := preload("res://addons/horrorstudio_markers/editor/cond_edit.gd")
 const Dial := preload("res://addons/horrorstudio_markers/editor/dial.gd")
+const SwitchEdit := preload("res://addons/horrorstudio_markers/editor/switch_edit.gd")
 const KIND_TITLES := [["appear", "Start here"], ["walk", "Walk (or run)"], ["wait", "Wait (or talk)"], ["sit", "Sit"], ["sleep", "Sleep"], ["grab", "Grab, pick up, open"],
 	["animation", "Animation"], ["event", "Event"], ["disappear", "Disappear"], ["choice", "Choice"], ["repeat", "Repeat"]]
 const STAYS := [["next", "until the next marker can start"], ["secs", "for some seconds"], ["talked", "until you talk"]]
@@ -338,19 +339,12 @@ func tested() -> void:
 		say("")
 
 
+# the scene's flags and tasks for the pickers: everything the scene names (markers, things, the Story) and what's
+# written down in the Flags tab
 func _scan() -> void:
-	var r: Node = plugin.scene_root()
-	var set := HSNpcFlow.flags_set(r)
-	_flags = PackedStringArray()
-	for f in set.keys():
-		_flags.append(str(f))
-	for n in plugin.npcs():
-		for k in ["talked:", "shot:", "down:"]:
-			var w: String = k + (n as HSNpc).id()
-			if not (w in _flags):
-				_flags.append(w)
-	_flags.sort()
-	_tasks = HSNpcFlow.tasks_known(r)
+	plugin.wiring.touch()
+	_flags = plugin.wiring.names("flag")
+	_tasks = plugin.wiring.names("task")
 
 
 func _count_problems() -> void:
@@ -941,10 +935,26 @@ func _cond(n: Object, prop: String, none: String, about_her := true, waits := tr
 	ce.about_her = about_her
 	ce.waits = waits
 	ce.flags = _flags
+	ce.groups = plugin.wiring.flag_groups(n as Node)           # (this quest's flags first, then the character's, then the game's)
 	ce.tasks = _tasks
+	ce.items = plugin.wiring.names("item")
+	ce.links = [["A thing… (click it in the 3D view)", _link_thing]]
 	ce.text = str(n.get(prop))
 	ce.changed.connect(func(t: String) -> void: _put(n, prop, t))
 	return ce
+
+
+## A condition tied to a thing in one gesture (docs/FLAGS.md §6): click a door, a pickup, an area in the 3D view; it
+## gets a Logic that turns a flag on when it's used (a door: opened; an area: walked into), and the condition asks
+## for that flag. `ce`: the chips that asked.
+func _link_thing(ce: Control) -> void:
+	plugin.pick_in_view("the thing (a door, a pickup, an area)", func(node: Node, _at: Vector3) -> void:
+		var thing: Node = plugin.wiring.thing_of(node)
+		var flag: String = plugin.wiring.link_thing(thing)
+		if flag == "" or not is_instance_valid(ce):
+			return
+		ce.add_word(flag)
+		say("%s turns '%s' on; this waits for it." % [thing.name, flag]))
 
 
 # a field set from the form (undoable); the form made again when it changes which rows there are
@@ -1577,7 +1587,12 @@ func _form_then(m: HSNpcMarker) -> void:
 	af.pressed.connect(_pick_fire.bind(m, af))
 	fr.add_child(af)
 	_row(t, "Fires", fr)
-	_row(t, "Flags", _text(m, "set_flags", "+met_her, -door_locked"), "Switched when the marker is done: +name on, -name off, ~name flipped.")
+	var se := SwitchEdit.new()
+	se.name = "F_set_flags"
+	se.groups = plugin.wiring.flag_groups(m)
+	se.text = m.set_flags
+	se.changed.connect(func(tx: String) -> void: _put(m, "set_flags", tx))
+	_row(t, "Flags", se, "Switched when the marker is done: + on, − off, ~ flipped. Anything can ask for them: another marker, a door's Logic.")
 	var tasks := [["", "(none)"]]
 	for id in _tasks:
 		tasks.append([id, id])
