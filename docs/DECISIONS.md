@@ -2,6 +2,13 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-14, the tutorial is updated in bulk, later (the user, on the flags and things branch)
+
+- **"make a note for what we'll need to updatge in the tutorial and then make a pr. I have otehr parallel branches
+  that will need updated for tutoria lso will leave that to do in a bulk new branch later"**
+- So: a branch that changes what tutorial v2 shows doesn't touch the tutorial; it adds a section to
+  `docs/TUTORIAL_TODO.md`. The tutorial, its builder and TUTORIAL2 are brought up to date once, on a branch of their own.
+
 ## 2026-11-14, flags and things: the markers tied to everything else (the user, once the marker system was merged)
 
 - **"review and enhance the horrorplugin, especially on how to easily tie in the marker system with other elements

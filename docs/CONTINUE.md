@@ -80,6 +80,10 @@ tabs "tabs"); the Things cards cover the starter kit's everyday things and not a
 5. a conversation's answers' flags as chips in the NPC Markers tab;
 6. flags kept between scenes.
 
+**The tutorial is not updated on this branch, on purpose** (the user, 2026-11-14: other parallel branches need it
+too; one bulk branch later). What this branch changes for it is listed in `docs/TUTORIAL_TODO.md`; a later branch
+adds its own section there. TUTORIAL2 wasn't run here (it needs the desk's server): run it in that branch first.
+
 **The pictures** of the guide: `python tools/godot/logic_check.py --editor --reuse --shots DIR`, then
 `python tools/godot/logic_check.py guide DIR` (both under xvfb; 3 minutes on a CPU).
 
