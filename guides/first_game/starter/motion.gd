@@ -18,6 +18,13 @@
 ##     m.eat($Apple)                # takes it and eats it (drink the same); with nothing given, what she holds
 ##     m.head_follow(true)          # her head follows the player within `head_range` degrees (the look plugin's HSHeadTrack)
 ##     m.look_around()  m.knock($Door/Spot)  m.cower()  m.take_hit()
+## And life and carrying (DECISIONS 2026-11-14, later; docs/ANIMATOR_V3.md §11, §12; the look plugin's HSGesture):
+##     m.alive_now(true)            # now and then a small movement, laid over whatever she's doing (standing, walking,
+##                                  #   sitting): a scratch, a look at what she holds, a stretch. Or tick Alive in the Inspector
+##     m.life("scratch_head")       # one now ("": one that suits what she's doing)
+##     m.pick_up($Cup, true)        # kept: carried from then on whatever she does (walks, sits, sneaks), by its grip's
+##                                  #   Carry (at her side, in front of her, to her chest, over her shoulder, raised)
+##     m.hold($Lantern, false, "raised")   # put straight into her hand and carried; drop() lets go of it
 ## A thing she picks up sits in her hand by its HSGrip (a node of the look plugin's put under the prop: where a hand
 ## takes it, how thick it is there, where the mouth goes), her fingers closed round it; with none, by its size.
 ## One thing after another: each call takes the place of what she was doing (sat, she stands first; asleep, she
@@ -51,11 +58,17 @@ signal struck(target: Node, kind: String)             ## a punch or a swing of h
 @export_group("Head")
 @export var head_follows := false                     ## her head follows the player (the look plugin's HSHeadTrack): head_follow() switches it
 @export_range(0.0, 360.0, 1.0, "degrees") var head_range := 160.0   ## the whole arc she follows in: half to each side of straight ahead
+@export_group("Life")
+@export var alive := false                            ## small movements now and then while she stands, walks or sits: a scratch, a look at what she holds, a stretch (the look plugin's HSGesture: laid over what she's doing, never instead of it). alive_now() switches it
+@export var life_every := Vector2(6.0, 14.0)          ## seconds between them, from and to
+@export var life_only: PackedStringArray = []         ## only these ("scratch_head", "look_hand", "stretch"...); empty: any she has that suit what she's doing
 @export_group("Blows")
 @export var hit_m := 0.3                              ## how near her fist (or what she swings) has to get for a blow to land
 @export var short_of_you := 0.16                      ## how far short of the player's eye a blow stops (in your face, not through it)
 
 const LOOK := "res://addons/horrorstudio_look/"
+const HANDS_OFF := ["peek", "scare_", "cower", "lie_down", "get_up", "sleep", "hit_react", "reach_low", "sit_down", "stand_up"]   # clips that want both her hands: what she carries goes where the clip has her hand, for as long
+const ONE_HAND := ["reach_", "open_", "punch", "swing", "eat", "drink", "knock"]   # clips that want one: their own (the left when the clip's name ends _l)
 ## a way of going: its loop, the loop she rests in after, and how fast when her record doesn't say
 const GAITS := {"walk": ["walk_loop", "", 1.3], "run": ["run_loop", "", 3.0], "sneak": ["sneak_loop", "crouch_loop", 0.42], "crawl": ["crawl_loop", "crawl_idle_loop", 0.38],
 	"creep": ["creep_loop", "creep_idle_loop", 0.53], "scuttle": ["scuttle_loop", "crawl_idle_loop", 1.2]}
@@ -81,6 +94,8 @@ var _held: Node3D
 var _held_side := "r"
 var _held_grip := {}                                  # how what she holds is held (HSGrip.grip_of)
 var _ik: Node                                         # her hands' IK (the look plugin's HSHandIK), when the project has it
+var _gesture: Node                                    # what lays a flourish or a carry pose over her clips (the look plugin's HSGesture), when the project has it
+var _carry_how := ""                                  # how what she holds is carried ("": as its grip says)
 var _side := ""                                       # the bed's side she lay down to ("": her left, "_r": her right)
 var _ready_now := false
 
@@ -150,6 +165,8 @@ func setup() -> void:
 		load("res://addons/horrorstudio_look/jiggle.gd").attach(h)
 	if head_follows:
 		head_follow(true)
+	if alive:
+		alive_now(true)
 	for p in problems:
 		push_warning("motion.gd (%s): %s" % [h.name, p])
 	_ready_now = true
@@ -197,6 +214,17 @@ func hand_ik() -> Node:
 		var cls := _look("hand_ik.gd")
 		_ik = cls.attach(her()) if cls != null else null
 	return _ik
+
+
+## what lays her flourishes and her carry poses over her clips (the look plugin's HSGesture), or null
+func gesture() -> Node:
+	if not is_instance_valid(_gesture):
+		var cls := _look("gesture.gd")
+		_gesture = cls.attach(her()) if cls != null else null
+		if _gesture != null:
+			hand_ik()                                         # (a hand that touches her is put on her by her hands' IK)
+			_gesture.doing = _doing()
+	return _gesture
 
 
 # ---- what she can be asked ----------------------------------------------------------------------------------------------
@@ -333,6 +361,97 @@ func head_follow(on := true, target = null, range_degrees := -1.0) -> Node:
 		t.follow_player()
 	head_follows = on
 	return t
+
+
+## small movements now and then, laid over whatever she's doing (standing, walking, sitting): a scratch, a look at
+## what she holds, a hand through her hair, a stretch. `every`: seconds between them, from and to. The look plugin's
+## HSGesture (null without it); her clips are the Animator's `life_` ones, so a character baked before them has none
+func alive_now(on := true, every := Vector2.ZERO) -> Node:
+	var g := gesture()
+	alive = on
+	if g == null:
+		return null
+	if every != Vector2.ZERO:
+		life_every = every
+	g.every = life_every
+	g.only = life_only
+	g.alive = on
+	return g
+
+
+## one small movement now: "scratch_head", "look_hand", "rub_neck", "stretch"... ("": one that suits what she's
+## doing). False when she can't just now: an act has her, that hand is busy, she hasn't got it
+func life(what := "", left := false) -> bool:
+	var g := gesture()
+	if g == null:
+		return false
+	var n: String = what if what != "" else String(g.pick())
+	return n != "" and bool(g.play(n, {"left": left}))
+
+
+## a thing put in her hand, and carried from now on whatever she does: walking, sitting, sneaking (no reaching for it:
+## pick_up(thing, true) walks to it and takes it). how: "side", "front", "chest", "shoulder", "raised"; "": as its
+## grip says (an HSGrip's Carry), else in front of her if it's drunk from and at her side if not
+func hold(thing: Node3D, left := false, how := "") -> void:
+	if is_instance_valid(_held) and _held != thing:
+		drop()
+	_take(thing, left)
+	_carry_start(how)
+
+
+## how what she holds is carried from now on ("": as its grip says)
+func carry(how := "") -> void:
+	_carry_start(how)
+
+
+func _carry_start(how := "") -> void:
+	if not is_instance_valid(_held):
+		return
+	var g := gesture()
+	var gcls := _look("grip.gd")
+	if g == null or gcls == null:
+		return
+	_carry_how = how
+	var by: Array = gcls.carry_of(_held_grip)
+	g.carry(_held_side, how if how != "" else String(by[0]), {"thing": _held, "upright": bool(by[1])})
+
+
+# what she's doing, in the layer's words: a flourish is laid over standing, walking and sitting, and nothing else
+func _doing() -> String:
+	if asleep or (not _step.is_empty() and String(_step["k"]) in ["clip", "hold", "turn"]):
+		return "busy"
+	if seated:
+		return "sit"
+	if now == "walk":
+		return "walk"
+	if now == "idle" and stance == "":
+		return "stand"
+	return "busy"
+
+
+# each tick: the layer told what she's doing; a hand an act needs taken back from the carry, and given back after
+func _tell_gesture() -> void:
+	if not is_instance_valid(_gesture):
+		return
+	var d := _doing()
+	_gesture.doing = d
+	if d == "busy" and String(_gesture.now) != "":
+		_gesture.stop(0.15)
+	for side in ["l", "r"]:
+		if String(_gesture.carrying(side)) == "":
+			continue
+		var off := asleep
+		if not _step.is_empty() and String(_step["k"]) == "clip":
+			var cn := String(_step["clip"])
+			for w in HANDS_OFF:
+				off = off or cn.begins_with(w)
+			for w in ONE_HAND:
+				off = off or (cn.begins_with(w) and ("l" if cn.ends_with("_l") else "r") == side)
+			if _step.has("bring") and String(_step["bring"]["side"]) == side:
+				off = true
+		if now in ["crawl", "scuttle"] or stance in ["crawl_idle_loop"]:
+			off = true
+		_gesture.carry_pause(side, off)
 
 
 ## where to hit someone, or look at them: what their aim_point() says, a little under the player's eye, their upper
@@ -622,6 +741,8 @@ func _let_go() -> void:
 	var ik := hand_ik()
 	if ik != null:
 		ik.release(_held_side)
+	if is_instance_valid(_gesture):
+		_gesture.carry_off(_held_side)
 
 
 ## any animation by name: her model's, or one of `more`; looped until she's asked for something else when `loop`
@@ -734,7 +855,10 @@ func _take(thing: Node3D, left: bool) -> void:
 
 
 func _put_away(keep: bool) -> void:
-	if keep or not is_instance_valid(_held):
+	if keep:
+		_carry_start(_carry_how)                              # kept: carried from here on, whatever she does next
+		return
+	if not is_instance_valid(_held):
 		return
 	_held.visible = false
 	_let_go()
@@ -931,6 +1055,7 @@ func _set_lift(v: float) -> void:
 
 
 func _physics_process(dt: float) -> void:
+	_tell_gesture()
 	if _step.is_empty():
 		return
 	var h := her()
@@ -1035,4 +1160,4 @@ func _events(n: String, t: float, looped: bool) -> void:
 ## what she has and is doing, a check's
 func report() -> Dictionary:
 	return {"clips": _names.keys(), "now": now, "busy": busy, "seated": seated, "asleep": asleep, "stance": stance, "held": _held.name if is_instance_valid(_held) else "", "baked": not record.is_empty(), "problems": problems,
-		"walk": speed_of(false), "run": speed_of(true)}
+		"walk": speed_of(false), "run": speed_of(true), "doing": _doing(), "life": _gesture.report() if is_instance_valid(_gesture) else {}}

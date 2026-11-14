@@ -15,7 +15,7 @@ const KIND_TITLES := [["appear", "Start here"], ["walk", "Walk (or run)"], ["wai
 	["animation", "Animation"], ["event", "Event"], ["disappear", "Disappear"], ["choice", "Choice"], ["repeat", "Repeat"], ["attack", "Attack (a punch, a swing)"], ["scare", "Jump scare"]]
 const STAYS := [["next", "until the next marker can start"], ["secs", "for some seconds"], ["talked", "until you talk"]]
 const HOWS := [["now", "at once"], ["unseen", "when you're not looking"], ["fade", "fading (the look plugin)"]]
-const REBUILD := ["kind", "stay", "action", "loop", "talk", "to_player", "pace", "clip_file", "look", "talks", "face_rules", "fire", "target", "take_secs", "head", "attack_at", "head_at", "scare_kind"]   # fields that change which rows the form has
+const REBUILD := ["kind", "stay", "action", "loop", "talk", "to_player", "pace", "clip_file", "look", "talks", "face_rules", "fire", "target", "take_secs", "head", "attack_at", "head_at", "scare_kind", "alive"]   # fields that change which rows the form has
 const CLIP_FOLDERS := ["res://animations"]
 
 var plugin: EditorPlugin
@@ -1030,6 +1030,32 @@ func _form_npc(npc: HSNpc) -> void:
 	_row(w, "Run speed", _num(npc, "run_speed", 0.0, 12.0, 0.05, " m/s"), "0: the speed the run was made at.")
 	w.add_child(_check(npc, "waits_for_player", "Waits a moment when you're in the way"))
 	w.add_child(_check(npc, "solid", "Solid: you can't walk through"))
+	var lf := _sec("Life")
+	var al := _check(npc, "alive", "Small movements now and then", "While standing, walking or sitting: a scratch, a look at what's in the hand, a hand through the hair, a stretch, laid over whatever is playing. A marker can switch it from there on (its Head section). The character's .glb has to be baked by the Animator with its life clips, and the project needs the Look plugin.")
+	lf.add_child(al)
+	if npc.alive:
+		var ev := HBoxContainer.new()
+		for k in 2:
+			var sp := SpinBox.new()
+			sp.min_value = 1.0
+			sp.max_value = 120.0
+			sp.step = 0.5
+			sp.suffix = " s"
+			sp.value = npc.life_every[k]
+			sp.value_changed.connect(func(v: float) -> void:
+				if _busy:
+					return
+				var e: Vector2 = npc.life_every
+				e[k] = v
+				_put(npc, "life_every", Vector2(minf(e.x, e.y), maxf(e.x, e.y))))
+			ev.add_child(sp)
+			if k == 0:
+				var to := Label.new()
+				to.text = " to "
+				ev.add_child(to)
+		_row(lf, "Every", ev, "Seconds from one to the next: somewhere between the two, a new number each time.")
+	_row(lf, "Carries things", _pick(npc, "carries", [["as its grip says", "as the thing's grip says"], ["side", "at the side"], ["front", "in front"], ["chest", "to the chest"], ["shoulder", "over the shoulder"], ["raised", "raised (a lantern)"]]),
+		"How a thing kept in the hand (a Grab's Pick up with Keep in hand) is carried while walking, sitting or waiting. A thing's own HSGrip says for that thing: drunk from, it's carried in front and kept upright.")
 	var sh := _sec("If shot down")
 	_row(sh, "Then", _pick(npc, "when_shot_down", [[0, "the quest stops (a later quest brings them back)"], [1, "gone for good"], [2, "can't be killed: up again and on"]]),
 		"What the weapons plugin's HSHitReact going down means for these markers. Flags either way: shot:%s, down:%s." % [npc.id(), npc.id()])
@@ -1340,6 +1366,7 @@ func _form_face(m: HSNpcMarker) -> void:
 			hy.pressed.connect(func() -> void: _put(m, "head_at", NodePath("")))
 			hr.add_child(hy)
 		_row(hd, "Looks at", hr)
+	_row(hd, "Small movements", _pick(m, "life", [["keep", "as they were"], ["lively", "now and then"], ["still", "none"]]), "From here on, until another marker says: a scratch, a look at what's in the hand, a stretch, laid over standing, walking and sitting. As they were: the character's own Alive.")
 	var f := _sec("Face and look")
 	_row(f, "Face", _pick(m, "face", _face_items("as it was")), "Worn from here on, until another marker's.")
 	if m.face != "":

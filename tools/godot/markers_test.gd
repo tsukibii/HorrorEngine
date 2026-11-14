@@ -230,7 +230,7 @@ func _initialize() -> void:
 	story = main.get_node("Story")
 	for st in [["order", stage_order], ["gates", stage_gates], ["quests", stage_quests], ["talk", stage_talk], ["repeat", stage_repeat], ["hide", stage_hide],
 			["sit", stage_sit], ["clips", stage_clips], ["speed", stage_speed], ["stairs", stage_stairs], ["faces", stage_faces], ["looks", stage_looks],
-			["shot", stage_shot], ["checkpoint", stage_checkpoint], ["event", stage_event], ["you", stage_you], ["problems", stage_problems], ["tester", stage_tester], ["v3", stage_v3]]:
+			["shot", stage_shot], ["checkpoint", stage_checkpoint], ["event", stage_event], ["you", stage_you], ["problems", stage_problems], ["tester", stage_tester], ["v3", stage_v3], ["life", stage_life]]:
 		if wants(st[0]):
 			await (st[1] as Callable).call()
 	print("MARKERS result " + JSON.stringify({"errors": errors}))
@@ -1581,3 +1581,170 @@ func stage_v3() -> void:
 	npc.queue_free()
 	her.queue_free()
 	cup.queue_free()
+
+
+# U. life: small movements laid over what she's doing, switched by her HSNpc and by a marker; a thing she keeps
+#    carried whatever she does; nothing of it while she's shot down; kept in a checkpoint
+func stage_life() -> void:
+	const LOOKP := "res://addons/horrorstudio_look/"
+	if not ResourceLoader.exists(LOOKP + "gesture.gd"):
+		bad("U: the look plugin's gesture.gd isn't in the project")
+		return
+	var o := origin()
+	box(o + Vector3(3, 0.225, 8.7), Vector3(1.2, 0.45, 0.6), "SofaU")
+	var her := woman(o, "HerU")
+	var npc := new_npc(her, "Una", {"alive": true, "life_every": Vector2(0.7, 1.1)})
+	var q := quest(npc, "One")
+	mk(q, "appear", o, 0.0)
+	var w1 := mk(q, "wait", Vector3.ZERO, 0.0, {"stay": "secs", "stay_secs": 7.0})
+	var w2 := mk(q, "wait", Vector3.ZERO, 0.0, {"stay": "secs", "stay_secs": 3.5, "life": "still"})
+	var walk := mk(q, "walk", o + Vector3(0, 0, 8.0), 0.0, {"life": "lively", "face_arrow": false})
+	mk(q, "walk", o + Vector3(3, 0, 10.0), 180.0)
+	var sit := mk(q, "sit", o + Vector3(3, 0.45, 9.0), 0.0, {"stay": "secs", "stay_secs": 7.0})
+	put(o + Vector3(9, 0.1, 9))
+	go(npc)
+	await frames(6)
+	var run: HSNpcRunner = npc.runner
+	var g: Node = run.body.gesture()
+	ok(g != null and bool(g.alive) and (g.flourishes() as Array).size() >= 20, "U: Alive on her HSNpc: the look plugin's layer is on her, with her own flourishes", "%d flourishes" % ((g.flourishes() as Array).size() if g != null else 0))
+	if g == null:
+		return
+	var began: Array = []                                          # [its clip, what she was doing, the marker she was at]
+	g.started.connect(func(n: String) -> void: began.append([n, run.body.report()["doing"], run.cur]))
+	await watch(func() -> bool: return run.cur == w2, 14.0, func() -> void: pass)      # (that nothing below her chest moves for one is GDLIFE's to measure)
+	var standing := began.filter(func(b: Array) -> bool: return b[2] == w1)
+	var fits := func(list: Array, what: String) -> bool:
+		for b in list:
+			if b[1] != what or not (what in (g.life_of(String(b[0])).get("over", []) as Array)):
+				return false
+		return true
+	ok(standing.size() >= 2 and fits.call(standing, "stand"), "U: standing at a Wait she moves a little, now and then, with flourishes made to be laid over standing", "%d in 7 s: %s" % [standing.size(), ", ".join(standing.map(func(b: Array) -> String: return String(b[0]).trim_prefix("life_")))])
+	await secs(0.6)
+	var n_before := began.size()
+	var quiet := String(g.now) == "" and not bool(g.alive)
+	await watch(func() -> bool: return run.cur == walk, 6.0, func() -> void: pass)
+	ok(quiet and began.size() == n_before, "U: a marker's 'none' stops them from there on", "%d began while she waited still" % (began.size() - n_before))
+	await watch(func() -> bool: return run.cur == sit and run.phase == "stay", 30.0, func() -> void: pass)
+	var walking := began.filter(func(b: Array) -> bool: return b[2] == walk)
+	ok(bool(g.alive) and walking.size() >= 1 and fits.call(walking, "walk"), "U: a later marker's 'now and then' starts them again, over her walk only the ones made for walking", "%d: %s" % [walking.size(), ", ".join(walking.map(func(b: Array) -> String: return String(b[0]).trim_prefix("life_")))])
+	var n_sat := began.size()
+	await watch(func() -> bool: return run.finished, 12.0, func() -> void: pass)
+	var sat := began.slice(n_sat).filter(func(b: Array) -> bool: return b[2] == sit)
+	ok(sat.size() >= 1 and fits.call(sat, "sit"), "U: and sat, the ones made for sitting", "%d: %s" % [sat.size(), ", ".join(sat.map(func(b: Array) -> String: return String(b[0]).trim_prefix("life_")))])
+	var busy := began.filter(func(b: Array) -> bool: return b[1] == "busy" or b[1] == "")
+	ok(busy.is_empty(), "U: none ever began while an act had her (turning, sitting down)", str(busy.size()))
+	# a checkpoint keeps what the last marker said
+	var snap: Dictionary = run.snapshot()
+	run._life = {"on": false}
+	run._life_apply()
+	var off_now := not bool(g.alive)
+	run.restore(snap)
+	ok(off_now and bool(g.alive) and (snap.get("life", {}) as Dictionary).get("on", false) == true, "U: a checkpoint puts back whether she's lively", str(snap.get("life")))
+	npc.queue_free()
+	her.queue_free()
+
+	# ---- a thing she keeps: carried from the Grab on, whatever she does; her hand given to the next Grab and taken back ----
+	o = origin()
+	box(o + Vector3(0.3, 0.43, 1.75), Vector3(0.7, 0.86, 0.5), "TableU")
+	box(o + Vector3(4.0, 0.43, 6.75), Vector3(0.7, 0.86, 0.5), "TableU2")
+	her = woman(o, "HerU2")
+	npc = new_npc(her, "Uma", {"carries": "front"})
+	q = quest(npc, "One")
+	var can := MeshInstance3D.new()
+	can.name = "Can"
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.033
+	cm.bottom_radius = 0.033
+	cm.height = 0.12
+	can.mesh = cm
+	main.add_child(can)
+	can.global_position = o + Vector3(0.3, 0.92, 1.6)
+	mk(q, "appear", o, 0.0)
+	var pick := mk(q, "grab", can.global_position, 0.0, {"action": "pick_up", "keep_in_hand": true})
+	var cw := mk(q, "wait", Vector3.ZERO, 0.0, {"stay": "secs", "stay_secs": 1.2})
+	var cwalk := mk(q, "walk", o + Vector3(4.0, 0, 5.0), 0.0, {"face_arrow": false})
+	var down_m := mk(q, "grab", o + Vector3(4.0, 0.92, 6.6), 0.0, {"action": "put_down"})
+	var after := mk(q, "wait", Vector3.ZERO, 0.0, {"stay": "secs", "stay_secs": 1.0})
+	put(o + Vector3(9, 0.1, 9))
+	go(npc)
+	pick.target = pick.get_path_to(can)
+	await frames(6)
+	run = npc.runner
+	var wrist := probe(her, "r_wrist")
+	var shoulder := probe(her, "r_uparm")
+	var ahead := func() -> float: return (her.global_basis.inverse() * (wrist.global_position - shoulder.global_position)).z
+	await watch(func() -> bool: return run.cur == cw and run.phase == "stay", 25.0, func() -> void: pass)
+	await secs(0.9)
+	var rep: Dictionary = run.body.report()
+	ok(rep["held"] == "Can" and rep["carried"] == "front" and ahead.call() > 0.1, "U: a thing kept in her hand is carried from there on, the way her HSNpc says (in front of her)", "carried '%s', her wrist %.0f cm ahead of her shoulder" % [rep["carried"], ahead.call() * 100.0])
+	var least := [9.0, 9.0]
+	var lo := [9.0]
+	var hi := [-9.0]
+	var seen := [0]
+	var each2 := func() -> void:
+		if run.cur == cwalk and run.phase == "run" and run.body.now == "walk":
+			seen[0] += 1
+			if seen[0] > 40:                                            # (once her arm has settled into her walk)
+				least[0] = minf(least[0], ahead.call())
+				var y := wrist.global_position.y - shoulder.global_position.y
+				lo[0] = minf(lo[0], y)
+				hi[0] = maxf(hi[0], y)
+		elif run.cur == down_m:
+			var cs: Dictionary = run.body.gesture().report()["carries"]
+			if cs.has("r"):
+				least[1] = minf(least[1], float(cs["r"]["hold"]))
+	await watch(func() -> bool: return run.cur == after and run.phase == "stay", 40.0, each2)
+	ok(seen[0] > 60 and least[0] > 0.1 and hi[0] - lo[0] < 0.05, "U: walking, it stays in front of her and doesn't swing with her arm", "her wrist never under %.0f cm ahead of her shoulder, up and down %.1f cm" % [least[0] * 100.0, (hi[0] - lo[0]) * 100.0])
+	await secs(0.5)
+	rep = run.body.report()
+	ok(least[1] < 0.3 and rep["held"] == "" and rep["carried"] == "" and can.global_position.distance_to(o + Vector3(4.0, 0.92, 6.6)) < 0.05, "U: putting it down, the carry gives her hand to the reach, and it's over when the thing is down", "the carry let go to %.2f; then held '%s', carried '%s'" % [least[1], rep["held"], rep["carried"]])
+	npc.queue_free()
+	her.queue_free()
+	can.queue_free()
+
+	# ---- shot down: nothing of it ----
+	o = origin()
+	her = woman(o, "HerU3")
+	var react := Node.new()
+	react.name = "React"
+	react.set_script(made(REACT))
+	her.add_child(react)
+	npc = new_npc(her, "Ula", {"alive": true, "life_every": Vector2(0.5, 0.8), "when_shot_down": 2, "back_up_secs": 3.0})
+	q = quest(npc, "One")
+	mk(q, "appear", o, 0.0)
+	mk(q, "wait", Vector3.ZERO, 0.0, {"stay": "secs", "stay_secs": 12.0})
+	put(o + Vector3(9, 0.1, 9))
+	go(npc)
+	await frames(6)
+	run = npc.runner
+	g = run.body.gesture()
+	var began3: Array = []
+	g.started.connect(func(n: String) -> void: began3.append([n, run.down]))
+	await secs(2.5)
+	var before := began3.size()
+	react.call("go_down")
+	await frames(30)
+	var stopped := String(g.now) == ""
+	await watch(func() -> bool: return not run.down, 6.0, func() -> void: pass)
+	var while_down := began3.filter(func(b: Array) -> bool: return b[1])
+	await secs(3.0)
+	ok(before >= 1 and stopped and while_down.is_empty() and began3.size() > before, "U: shot down, she's still: none began while she was down; up again, they do", "%d before, %d while down, %d after" % [before, while_down.size(), began3.size() - before])
+	npc.queue_free()
+	her.queue_free()
+
+	# ---- someone with nothing to play them: said, not an error ----
+	o = origin()
+	var block := standin(o, "HerU4")
+	npc = new_npc(block, "Ugo", {"alive": true})
+	q = quest(npc, "One")
+	mk(q, "appear", o, 0.0)
+	go(npc)
+	await frames(6)
+	run = npc.runner
+	ok((run.problems as Array).any(func(p) -> bool: return "no small movements" in String(p)), "U: Alive on someone with no skeleton: said in her problems, nothing breaks", str(run.problems))
+	var tab := HSNpcFlow.problems(npc, PackedStringArray(["idle_loop", "walk_loop"]), null, null).filter(func(p): return "Small movements are on" in String(p["text"]))
+	var tab2 := HSNpcFlow.problems(npc, PackedStringArray(["idle_loop", "walk_loop", "life_sigh"]), null, null).filter(func(p): return "Small movements are on" in String(p["text"]))
+	ok(tab.size() == 1 and tab2.is_empty(), "U: the tab's Problems says when she was baked before the life clips", "%d, %d" % [tab.size(), tab2.size()])
+	npc.queue_free()
+	block.queue_free()
+

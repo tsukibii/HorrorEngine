@@ -569,6 +569,30 @@ func _run() -> void:
 	plug.set_prop(attack, "head_range", 120.0)
 	await frames(2)
 	ok(hp != null and attack.head == "follow" and is_equal_approx(attack.head_range, 120.0), "any marker's form: the head follows you, within a range", "%s, %.0f degrees" % [attack.head, attack.head_range])
+	# small movements: a marker's row, and the character's own switch
+	var lf := field("F_life") as OptionButton
+	if lf != null:
+		lf.select(1)
+		lf.item_selected.emit(1)
+	await frames(3)
+	ok(lf != null and attack.life == "lively", "any marker's form: small movements now and then from there on", attack.life)
+	plug.pick_node(npc)
+	await frames(2)
+	dock.refresh()
+	await frames(3)
+	var alive_box := field("F_alive") as CheckBox
+	var had_alive := alive_box != null                         # (asked now: ticking it builds the form again, and the box is gone)
+	var had_every := field("F_carries") != null
+	if alive_box != null:
+		alive_box.button_pressed = true
+	await frames(4)
+	var on_now: bool = npc.alive
+	var every_row := false
+	for sp in dock.form.find_children("*", "SpinBox", true, false):
+		every_row = every_row or (sp as SpinBox).suffix == " s" and is_equal_approx((sp as SpinBox).value, npc.life_every.x)
+	undo()
+	await frames(4)
+	ok(had_alive and had_every and on_now and every_row and not npc.alive, "the character's form: Alive ticked (how often shows with it, how a kept thing is carried), undone", "ticked %s, the Every row %s, after undo %s" % [on_now, every_row, npc.alive])
 	for mk3 in [js, attack, eat, sneak]:                      # (taken out again: what follows counts the rows it had)
 		plug.delete_node(mk3)
 	await frames(3)
@@ -756,3 +780,14 @@ func _guide(alex: Node3D, bob: Node3D, sofa: Node3D) -> void:
 			(dock.form.get_parent() as ScrollContainer).scroll_vertical = int(sec2.position.y) - 26
 		await redraw()
 		await shot("10_attack")
+	# life: the character's own form at its Life section (Alive ticked: how often shows with it; how a kept thing is carried)
+	plug.set_prop(npc, "alive", true)
+	plug.pick_node(npc)
+	await frames(6)
+	dock.refresh()
+	await frames(4)
+	var sec3 := dock.form.find_child("Sec_Life", true, false) as Control
+	if sec3 != null:
+		(dock.form.get_parent() as ScrollContainer).scroll_vertical = int(sec3.position.y) - 26
+	await redraw()
+	await shot("11_life")

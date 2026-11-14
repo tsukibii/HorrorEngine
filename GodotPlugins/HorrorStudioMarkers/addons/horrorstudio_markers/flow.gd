@@ -400,6 +400,12 @@ static func problems(npc: Node, clips: PackedStringArray = [], setters = null, k
 	var qs := quests(npc)
 	if qs.is_empty():
 		out.append({"node": npc, "text": "No quest yet: add one, then drop markers in the 3D view.", "level": "tip"})
+	if not clips.is_empty() and (bool(npc.get("alive")) or _any_lively(npc)):   # small movements asked for on a character baked before them
+		var has := false
+		for c in clips:
+			has = has or String(c).begins_with("life_")
+		if not has:
+			out.append({"node": npc, "text": "Small movements are on, but the character has none of her own. Bake her again in the Animator: it makes them.", "level": "warn"})
 	var mine := {}
 	if npc.has_method("id"):
 		for k in ["talked:", "shot:", "down:"]:
@@ -552,6 +558,14 @@ static func _container_problems(container: Node, npc: Node, clips: PackedStringA
 			elif not (t.has_method("fire") or t.has_method("start")):
 				out.append({"node": m, "text": "%s fires '%s', which has no fire() to call." % [lab, t.name], "level": "warn"})
 	return hidden
+
+
+# a marker anywhere under a node that switches her small movements on
+static func _any_lively(n: Node) -> bool:
+	for c in n.get_children():
+		if (c is HSNpcMarker and (c as HSNpcMarker).life == "lively") or _any_lively(c):
+			return true
+	return false
 
 
 static func _has_clip(clips: PackedStringArray, n: String) -> bool:

@@ -16,6 +16,7 @@ extends Node3D
 
 const SHAPES := ["handle", "ball", "pinch"]
 const USES := ["", "eat", "drink"]
+const CARRIES := ["", "side", "front", "chest", "shoulder", "raised"]
 
 @export_enum("Handle", "Ball", "Pinch") var shape := 0:                 ## a handle to close a fist round (a bat, a bottle, a can); a ball in the whole hand (an apple); a small thing between finger and thumb (a key, a pill)
 	set(v):
@@ -37,6 +38,8 @@ const USES := ["", "eat", "drink"]
 	set(v):
 		use = v
 		update_gizmos()
+@export_enum("As it suits it", "At her side", "In front of her", "To her chest", "Over her shoulder", "Raised") var carry := 0   ## how it's carried while she does other things (HSGesture, docs/ANIMATOR_V3.md §12): a bottle at her side, a cup in front of her, a book to her chest, a bat over her shoulder, a lantern raised. Left alone: in front of her if it's drunk from, else at her side
+@export var upright := false                                           ## kept the way up it stands, however her hand turns: a cup, a candle, a lantern, a plate
 @export var mouth := Vector3(0, 0.08, 0):                              ## where the mouth goes when it's eaten or drunk from (the rim, the bite), from here
 	set(v):
 		mouth = v
@@ -53,6 +56,21 @@ func shape_name() -> String:
 
 func use_name() -> String:
 	return USES[clampi(use, 0, 2)]
+
+
+func carry_name() -> String:
+	return CARRIES[clampi(carry, 0, 5)]
+
+
+## how a thing held this way is carried while she does other things, and whether it's kept upright: [how, upright].
+## What its grip says; left alone, in front of her and upright if it's drunk from, else at her side
+static func carry_of(grip: Dictionary) -> Array:
+	var how := String(grip.get("carry", ""))
+	var up := bool(grip.get("upright", false))
+	if how == "":
+		how = "front" if String(grip.get("use", "")) == "drink" else "side"
+		up = up or String(grip.get("use", "")) == "drink"
+	return [how, up]
 
 
 ## the grip under a thing (or the thing itself); null when it has none
@@ -74,7 +92,7 @@ static func grip_of(thing: Node3D) -> Dictionary:
 	if g == null:
 		return guess(thing)
 	var x := thing.global_transform.affine_inverse() * g.global_transform
-	return {"xform": x, "size": g.size, "length": g.length, "shape": g.shape_name(), "use": g.use_name(), "mouth": x * g.mouth, "tip": x * g.tip, "hand": ["", "r", "l"][clampi(g.hand, 0, 2)], "guessed": false}
+	return {"xform": x, "size": g.size, "length": g.length, "shape": g.shape_name(), "use": g.use_name(), "mouth": x * g.mouth, "tip": x * g.tip, "hand": ["", "r", "l"][clampi(g.hand, 0, 2)], "carry": g.carry_name(), "upright": g.upright, "guessed": false}
 
 
 ## a grip guessed from a thing's own size: its longest side the handle, taken a third of the way up from the end

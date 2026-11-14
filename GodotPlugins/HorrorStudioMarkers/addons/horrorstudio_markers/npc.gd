@@ -40,6 +40,10 @@ static var debug := false                     ## F7: what every character is doi
 @export var solid := false                    ## you can't walk through her (off: you can; nothing of hers can trap you)
 @export var step_sounds := true               ## her steps heard (the starter's Sound node)
 @export var catch_up := true                  ## a quest that starts while she isn't where it expects: she's put there when you can't see it
+@export_group("Life")
+@export var alive := false                    ## small movements now and then while she stands, walks or sits: a scratch, a look at what she holds, a stretch (the look plugin's HSGesture, her .glb baked by the Animator with its life clips); a marker can switch it from there on
+@export var life_every := Vector2(6.0, 14.0)  ## seconds between them, from and to
+@export_enum("as its grip says", "side", "front", "chest", "shoulder", "raised") var carries := "as its grip says"   ## how a thing she keeps in her hand is carried while she walks, sits or waits (an HSGrip's Carry says for one thing)
 @export_group("Talk")
 @export var talk_prompt := "Talk"             ## the word beside the ring when you aim at them (their name goes under it)
 @export_group("Shot")

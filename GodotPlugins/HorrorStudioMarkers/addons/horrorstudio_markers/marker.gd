@@ -33,7 +33,7 @@ const USED_BY := {
 	"action": ["grab"], "target": ["grab"], "door_opens": ["grab"], "left_hand": ["grab", "attack"], "keep_in_hand": ["grab"],
 	"attack": ["attack"], "attack_at": ["attack"], "attack_times": ["attack"],
 	"scare_kind": ["scare"], "scare_stays": ["scare"],
-	"head": BODY + ["event"], "head_range": BODY + ["event"], "head_at": BODY + ["event"],
+	"head": BODY + ["event"], "head_range": BODY + ["event"], "head_at": BODY + ["event"], "life": BODY + ["event"],
 	"head_right": ["sleep"],
 	"clip": ["wait", "animation"], "clip_file": ["animation"], "loop": ["animation"], "times": ["animation"],
 	"anim_speed": ["wait", "sit", "sleep", "grab", "animation", "attack"], "blend": BODY,
@@ -90,6 +90,7 @@ const USED_BY := {
 @export_enum("keep", "follow", "free") var head := "keep"   ## from here on: her head follows you ("follow"), is her animation's again ("free"), or as it was ("keep")
 @export_range(0.0, 360.0, 1.0, "degrees") var head_range := 160.0   ## the whole arc she follows in, half to each side of straight ahead
 @export var head_at: NodePath                            ## who she looks at: empty, you
+@export_enum("keep", "lively", "still") var life := "keep"   ## from here on: small movements now and then ("lively": a scratch, a look at what she holds, a stretch), none ("still"), or as it was ("keep": her HSNpc's Alive until a marker says)
 
 @export_group("Sleep")
 @export var head_right := false                          ## her head goes to her right as she sits on the edge (off: to her left)

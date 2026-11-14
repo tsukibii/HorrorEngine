@@ -64,6 +64,7 @@ var _look := {}
 var _look_name := ""
 var _scared := false                       # a Jump scare marker's scare has been thrown
 var _head := {}                            # her head, as the last marker that said left it: {on, range, at (a path from her HSNpc)}; {}: nothing said yet
+var _life := {}                            # her small movements, as the last marker that said left them: {on}; {}: nothing said yet (her HSNpc's Alive)
 var _rule_face := ""
 var _noted := {}
 var _fading := false
@@ -98,6 +99,9 @@ func begin(of_npc: Node, character: Node3D, as_preview := false) -> void:
 		body.hide_now()
 	else:
 		body.stand("")
+	var how := String(npc.get("carries")) if npc.get("carries") != null else ""
+	body.carry_how = how if how in ["side", "front", "chest", "shoulder", "raised"] else ""
+	_life_apply()
 	for p in problems:
 		push_warning("HSNpc (%s): %s" % [npc.name, p])
 
@@ -252,9 +256,11 @@ func tick(dt: float) -> void:
 		elif due:
 			_quest_switch()
 		if down:
+			body.layer_tick(true)                              # (down: no scratch, nothing carried)
 			return
 	if not preview:
 		_player_things(dt)
+	body.layer_tick()
 	body.tick(dt)
 	face.tick(dt)
 	if talking:
@@ -471,6 +477,7 @@ func _start(m: HSNpcMarker) -> void:
 		"scare":
 			_scared = false
 	_head_from(m)
+	_life_from(m)
 	npc.marker_started.emit(m)
 
 
@@ -700,6 +707,29 @@ func sound(what: String) -> void:
 
 
 # ---- her face and her look ----------------------------------------------------------------------------------------------------
+# her small movements from a marker on: now and then, none, or as they were
+func _life_from(m: HSNpcMarker) -> void:
+	if m.life == "keep":
+		return
+	_life = {"on": m.life == "lively"}
+	_life_apply()
+
+
+func _life_apply() -> void:
+	if her == null or preview:
+		return
+	var on := bool(_life["on"]) if not _life.is_empty() else bool(npc.get("alive"))
+	var every: Vector2 = npc.get("life_every") if npc.get("life_every") is Vector2 else Vector2(6.0, 14.0)
+	var g := body.alive(on, every)
+	var why := ""
+	if on and g == null:
+		why = "no small movements: they need a character with a skeleton, and the look plugin in the project"
+	elif on and (g.flourishes() as Array).is_empty():
+		why = "no small movements: the character has none of her own (bake the .glb again in the Animator: it makes them)"
+	if why != "" and not (why in problems):
+		problems.append(why)
+
+
 # her head from a marker on: following someone, her animation's again, or as it was
 func _head_from(m: HSNpcMarker) -> void:
 	if m.head == "keep":
@@ -1036,7 +1066,7 @@ func snapshot() -> Dictionary:
 	return {"qi": qi, "began": began.duplicate(), "finished": finished, "halted": halted, "dead": dead, "shot": shot, "down": down,
 		"cur": npc.get_path_to(cur) if cur != null and is_instance_valid(cur) else NodePath(""),
 		"at": npc.get_path_to(at) if at != null and is_instance_valid(at) else NodePath(""),
-		"talked": talked, "asked": asked.duplicate(), "body": body.snapshot(), "face": face.snapshot(), "look": _look.duplicate(), "look_name": _look_name, "head": _head.duplicate()}
+		"talked": talked, "asked": asked.duplicate(), "body": body.snapshot(), "face": face.snapshot(), "look": _look.duplicate(), "look_name": _look_name, "head": _head.duplicate(), "life": _life.duplicate()}
 
 
 func restore(d: Dictionary) -> void:
@@ -1055,6 +1085,8 @@ func restore(d: Dictionary) -> void:
 		body.head(false)
 	else:
 		_head_apply()
+	_life = (d.get("life", {}) as Dictionary).duplicate()
+	_life_apply()
 	if ResourceLoader.exists(LOOK_SWITCH) and her.get_node_or_null("HSLookSwitch") != null:
 		_apply_look(load(LOOK_SWITCH).call("attach", her), 0.0)
 	qi = int(d.get("qi", -1))
@@ -1221,6 +1253,7 @@ func _snap(m: HSNpcMarker) -> void:
 		body.hold_clip = "crawl_idle_loop"
 	if m.head != "keep":
 		_head_from(m)
+	_life_from(m)
 	if m.face != "":
 		face.wear(m.face, m.face_amount, 0.01)
 

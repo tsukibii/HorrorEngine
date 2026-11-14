@@ -39,6 +39,7 @@ const EYE_PITCH := 13.0
 @export var snappy := false                         ## in sudden steps instead of smoothly (a creature)
 @export var forward := Vector3(0, 0, 1)             ## the way a model faces in its own space (a Studio export, any glTF: +Z)
 
+var hold_off := 0.0                                 ## 0..1: how much of the follow is held off for now (HSGesture sets it while she looks at something of her own, her hand, what she holds: she looks back at you after)
 var following := false                              ## the target is in her range and she's on it
 var weight := 0.0                                   ## how much of the correction is on, 0..1 (eased)
 var yaw := 0.0                                      ## where her head is turned, from straight ahead: radians, to her left
@@ -244,8 +245,9 @@ func _process_modification_with_delta(delta: float) -> void:
 		var most := deg_to_rad(turn_speed) * delta * (3.0 if snappy else 1.0)
 		yaw += clampf(wrapf(_goal.x - yaw, -PI, PI) * k, -most, most)
 		pitch += clampf((_goal.y - pitch) * k, -most, most)
-	var dy := wrapf(yaw - clip_yaw, -PI, PI) * weight * amount if _have else 0.0
-	var dp := (pitch - clip_pitch) * weight * amount if _have else 0.0
+	var on := weight * amount * (1.0 - clampf(hold_off, 0.0, 1.0))
+	var dy := wrapf(yaw - clip_yaw, -PI, PI) * on if _have else 0.0
+	var dp := (pitch - clip_pitch) * on if _have else 0.0
 	if absf(dy) + absf(dp) > 1e-5:
 		# the turn shared out down the chain, parents first: about her own up for the yaw, about the level axis across where she then faces for the pitch
 		var s := body_share if (_spine >= 0 and _chest >= 0) else 0.0
@@ -275,7 +277,7 @@ func _process_modification_with_delta(delta: float) -> void:
 			var want := Vector2.ZERO
 			if seen and tp != Vector3.INF:
 				var tl := hb.inverse() * (local - ge.origin).normalized()
-				want = Vector2(clampf(atan2(tl.x, tl.z), -deg_to_rad(EYE_YAW), deg_to_rad(EYE_YAW)), clampf(asin(clampf(tl.y, -1.0, 1.0)), -deg_to_rad(EYE_PITCH), deg_to_rad(EYE_PITCH))) * amount
+				want = Vector2(clampf(atan2(tl.x, tl.z), -deg_to_rad(EYE_YAW), deg_to_rad(EYE_YAW)), clampf(asin(clampf(tl.y, -1.0, 1.0)), -deg_to_rad(EYE_PITCH), deg_to_rad(EYE_PITCH))) * amount * (1.0 - clampf(hold_off, 0.0, 1.0))
 			_eye[i] = (_eye[i] as Vector2).lerp(want, ke)
 			var ev: Vector2 = _eye[i]
 			if ev.length() > 1e-4:
@@ -287,5 +289,5 @@ func _process_modification_with_delta(delta: float) -> void:
 
 ## what it's doing, for a check or a debug label: degrees
 func report() -> Dictionary:
-	return {"following": following, "weight": weight, "yaw": rad_to_deg(yaw), "pitch": rad_to_deg(pitch), "clip_yaw": rad_to_deg(clip_yaw), "clip_pitch": rad_to_deg(clip_pitch),
+	return {"following": following, "weight": weight, "hold_off": hold_off, "yaw": rad_to_deg(yaw), "pitch": rad_to_deg(pitch), "clip_yaw": rad_to_deg(clip_yaw), "clip_pitch": rad_to_deg(clip_pitch),
 		"range": range_degrees, "facing": facing, "bones": {"head": _head, "neck": _neck, "chest": _chest, "spine": _spine, "eyes": _eyes.size()}}

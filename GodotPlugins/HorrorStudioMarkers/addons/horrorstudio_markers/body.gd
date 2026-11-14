@@ -70,6 +70,10 @@ var _files := {}
 var _mode_was := Node.PROCESS_MODE_INHERIT
 var _own: AnimationPlayer
 var _ik: Node                              # her hands' IK (the look plugin's HSHandIK)
+var _gesture: Node                         # what lays her flourishes and her carry poses over her clips (the look plugin's HSGesture)
+var carry_how := ""                        ## how what she keeps in her hand is carried: side, front, chest, shoulder, raised; "": as its grip says
+const HANDS_OFF := ["peek", "scare_", "cower", "lie_down", "get_up", "sleep", "hit_react", "reach_low", "sit_down", "stand_up"]   # clips that want both her hands: what she carries goes where the clip has her hand, for as long
+const ONE_HAND := ["reach_", "open_", "punch", "swing", "eat", "drink", "knock"]   # clips that want one: their own (the left when the clip's name ends _l)
 
 
 # ---- finding what she has -------------------------------------------------------------------------------------------------
@@ -198,6 +202,91 @@ func ik() -> Node:
 		var cls := look_script("hand_ik.gd")
 		_ik = cls.attach(her) if cls != null and her != null else null
 	return _ik
+
+
+## what lays her flourishes and her carry poses over her clips (the look plugin's HSGesture), or null: without the
+## plugin, or on the tester's copy of her, her clips play as they are
+func gesture() -> Node:
+	if not is_instance_valid(_gesture):
+		var cls := look_script("gesture.gd")
+		_gesture = cls.attach(her) if cls != null and her != null and not bool(set["preview"]) else null
+		if _gesture != null:
+			ik()                                               # (a hand that touches her is put on her by her hands' IK)
+			_gesture.doing = _doing()
+	return _gesture
+
+
+## small movements now and then, laid over whatever she's doing (standing, walking, sitting): a scratch, a look at
+## what she holds, a stretch. `every`: seconds between them, from and to. -> the layer, or null (no look plugin; a
+## character baked before the Animator's life clips has none to play)
+func alive(on: bool, every := Vector2(6.0, 14.0)) -> Node:
+	var g: Node = gesture() if on else (_gesture if is_instance_valid(_gesture) else null)
+	if g == null:
+		return null
+	g.every = every
+	g.alive = on
+	if not on and String(g.now) != "":
+		g.stop(0.2)
+	return g
+
+
+## one small movement now: "scratch_head", "look_hand", "stretch"... ("": one that suits what she's doing). False
+## when she can't just now
+func flourish(what := "", left := false) -> bool:
+	var g := gesture()
+	if g == null:
+		return false
+	var n: String = what if what != "" else String(g.pick())
+	return n != "" and bool(g.play(n, {"left": left}))
+
+
+# what she's doing, in the layer's words: a flourish is laid over standing, walking and sitting, and nothing else
+func _doing() -> String:
+	if her == null or hidden or released or posture == "lying":
+		return "busy"
+	if not _step.is_empty():
+		return "walk" if String(_step["k"]) in ["path", "follow"] and now == "walk" else "busy"   # (a run, a sneak, a crawl: her arms are the gait's)
+	if posture == "sitting":
+		return "sit"
+	return "stand" if hold_clip == "" and now == "idle" else "busy"
+
+
+## every frame, whatever else happens (the runner's): the layer told what she's doing, and a hand an act needs taken
+## back from the carry and given back after. `quiet`: nothing of hers now (she's down)
+func layer_tick(quiet := false) -> void:
+	if not is_instance_valid(_gesture):
+		return
+	var d := "busy" if quiet else _doing()
+	_gesture.doing = d
+	if d == "busy" and String(_gesture.now) != "":
+		_gesture.stop(0.15)
+	for s in ["l", "r"]:
+		if String(_gesture.carrying(s)) == "":
+			continue
+		var off := quiet or posture == "lying" or hidden
+		if not _step.is_empty() and String(_step["k"]) == "clip":
+			var cn := String(_step["clip"])
+			for w in HANDS_OFF:
+				off = off or cn.begins_with(w)
+			for w in ONE_HAND:
+				off = off or (cn.begins_with(w) and ("l" if cn.ends_with("_l") else "r") == s)
+			if _step.has("bring") and String(_step["bring"]["side"]) == s:
+				off = true
+		if now in ["crawl", "scuttle"] or hold_clip == "crawl_idle_loop":
+			off = true
+		_gesture.carry_pause(s, off)
+
+
+# what she keeps in her hand carried from now on, whatever she does: as `carry_how` says, else as its grip does
+func _carry_start() -> void:
+	if not is_instance_valid(held) or held_grip.is_empty():
+		return
+	var g := gesture()
+	var gcls := look_script("grip.gd")
+	if g == null or gcls == null:
+		return
+	var by: Array = gcls.carry_of(held_grip)
+	g.carry(held_side, carry_how if carry_how != "" else String(by[0]), {"thing": held, "upright": bool(by[1])})
 
 
 ## her head follows someone (the look plugin's HSHeadTrack): on or off, who (a node; null: the player), within how
@@ -1095,7 +1184,10 @@ func _take(thing: Node3D, left: bool) -> void:
 
 
 func _put_away(keep: bool) -> void:
-	if keep or not is_instance_valid(held):
+	if not is_instance_valid(held):
+		return
+	if keep:
+		_carry_start()                                         # (kept: carried from here on, whatever she does)
 		return
 	held.visible = false
 	_let_go()
@@ -1105,6 +1197,8 @@ func _put_away(keep: bool) -> void:
 func _let_go() -> void:
 	if is_instance_valid(_ik):
 		_ik.release(held_side)
+	if is_instance_valid(_gesture):
+		_gesture.carry_off(held_side)
 
 
 func _use(door: Node) -> void:
@@ -1181,4 +1275,6 @@ func restore(d: Dictionary) -> void:
 
 func report() -> Dictionary:
 	return {"now": now, "busy": busy, "posture": posture, "hidden": hidden, "baked": not record.is_empty(), "clips": names.keys(), "problems": problems,
-		"walk": pace(false), "run": pace(true), "playing": _playing, "held": String(held.name) if is_instance_valid(held) else ""}
+		"walk": pace(false), "run": pace(true), "playing": _playing, "held": String(held.name) if is_instance_valid(held) else "",
+		"doing": _doing(), "life": String(_gesture.now) if is_instance_valid(_gesture) else "", "alive": bool(_gesture.alive) if is_instance_valid(_gesture) else false,
+		"carried": String(_gesture.carrying(held_side)) if is_instance_valid(_gesture) and is_instance_valid(held) else ""}
