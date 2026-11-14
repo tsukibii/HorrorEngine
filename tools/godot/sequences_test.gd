@@ -340,9 +340,20 @@ func stage_key() -> void:
 		"4: she takes the key off its hook, comes to you and hands it over: it's in your pocket as 'Cellar key'", "you carry: %s" % str((story.get("items") as Dictionary).keys()))
 	ok(flat(d).length() < 1.35 and flat(d).length() > 0.7 and ang(yaw_of(her("Aya")), rad_to_deg(atan2(d.x, d.z))) < 12.0 and is_equal_approx(float(story.get("cash")), cash0),
 		"4: stood a step from you, turned to you; no money with it", "%.2f m from you" % flat(d).length())
-	await watch(func() -> bool: return story.has_task("cellar") and aya.at != null and aya.at.name == "Wait2" and not aya.body.busy, 30.0, t["each"])
+	var pulled := [0.0, 0.0]                                        # once the key's handed over: how far the hand-over's IK still carries her hand, and for how long that's been watched
+	var each2 := func() -> void:
+		(t["each"] as Callable).call()
+		var ik: Node = aya.body.ik()
+		if ik != null and aya.at != null and aya.at.name != "Hand to you":
+			pulled[1] += 1.0 / 60.0
+			if pulled[1] > 0.5 and ik.bringing("r") and ik.last.has("r"):
+				pulled[0] = maxf(pulled[0], float(ik.last["r"]["moved"]))
+	await watch(func() -> bool: return story.has_task("cellar") and aya.at != null and aya.at.name == "Wait2" and not aya.body.busy, 30.0, each2)
 	ok(story.has_task("cellar") and flat(her("Aya").global_position).distance_to(Vector2(2.6, 1.3)) < 0.1 and not is_instance_valid(aya.body.held),
 		"4: the cellar task is on your list and she's back at her spot, her hand empty")
+	await watch(func() -> bool: return pulled[1] > 1.2, 3.0, each2)
+	ok(pulled[1] > 1.0 and pulled[0] < 0.005, "4: and her hand is her animation's again: nothing still pulls it to where she handed the key over",
+		"carried %.1f cm by the hand-over's IK, half a second after it and on" % (pulled[0] * 100.0))
 
 
 # ---- 5: a customer at the till ------------------------------------------------------------------------------------------------------
@@ -381,14 +392,28 @@ func stage_customer() -> void:
 	if g != null:
 		g.started.connect(func(n: String) -> void: began.append([n, ken.body.report()["doing"], ken.cur]))
 	var held := {}
+	var can := {"near": 9.0, "side": "r", "pulled": 0.0, "walked": 0.0}     # the can as he leaves: how near his head while he looks at it, which hand, how far the hand-over's IK still carries that hand
 	var each := func() -> void:
 		(t["each"] as Callable).call()
 		if is_instance_valid(ken.body.held):
 			held[String(ken.body.held.name)] = true
+			can["side"] = ken.body.held_side
+			var looking: bool = g != null and String(g.now) == ("life_look_hand_l" if ken.body.held_side == "l" else "life_look_hand")
+			if looking:
+				can["near"] = minf(float(can["near"]), (ken.body.held as Node3D).global_position.distance_to(ken.body.head_point()))
+			var ik: Node = ken.body.ik()
+			if ken.body.now == "walk" and ik != null:
+				can["walked"] = float(can["walked"]) + 1.0 / 60.0
+				if float(can["walked"]) > 0.6 and not looking and ik.bringing(ken.body.held_side) and ik.last.has(ken.body.held_side):
+					can["pulled"] = maxf(float(can["pulled"]), float(ik.last[ken.body.held_side]["moved"]))
 	await watch(func() -> bool: return flag("ken_gone"), 60.0, each)
 	ok(absf(float(story.get("cash")) - cash0 - 1.5) < 0.001 and not story.has("soda") and held.has("Soda"), "5: back at the counter with it: he pays, then takes it", "cash +%.2f, in his hand: %s" % [float(story.get("cash")) - cash0, held.keys()])
-	var looks := began.filter(func(b: Array) -> bool: return String(b[0]).begins_with("life_look_hand") and b[1] == "walk")
-	ok(looks.size() >= 1, "5: on his way out he looks at the can in his hand, without stopping", str(began.map(func(b: Array) -> String: return "%s over %s" % [b[0], b[1]])))
+	var its_look := "life_look_hand_l" if String(can["side"]) == "l" else "life_look_hand"
+	var looks := began.filter(func(b: Array) -> bool: return String(b[0]) == its_look and b[1] == "walk")
+	ok(looks.size() >= 1 and float(can["near"]) < 0.5, "5: on his way out he looks at the can, with the hand that holds it, without stopping",
+		"%s; the can %.0f cm from his head at the nearest" % [str(began.map(func(b: Array) -> String: return "%s over %s" % [b[0], b[1]])), float(can["near"]) * 100.0])
+	ok(float(can["walked"]) > 1.0 and float(can["pulled"]) < 0.005, "5: and that hand is his walk's and his look's: nothing still pulls it back to the counter",
+		"carried %.1f cm by the hand-over's IK while he walks" % (float(can["pulled"]) * 100.0))
 	ok(flag("ken_gone") and not man.visible and man.process_mode == Node.PROCESS_MODE_DISABLED, "5: out of the door, he's hidden and switched off, and the flag ken_gone is on")
 
 

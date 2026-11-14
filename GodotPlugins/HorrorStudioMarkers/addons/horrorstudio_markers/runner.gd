@@ -64,7 +64,7 @@ var _look := {}
 var _look_name := ""
 var _scared := false                       # a Jump scare marker's scare has been thrown
 var _gesture := {}                         # a Small movement marker's: {asked, t}
-var _along := {}                           # a small movement to lay over what comes next, as soon as she can: {what, left, t}
+var _along := {}                           # a small movement to lay over what comes next, as soon as she can: {what, left, hers (the hand that holds what she looks at: that hand or none), t}
 var _dt := 0.0                             # this tick's seconds (a running marker's own clock)
 var _late := false                         # this marker's Then (its line, sound, things fired) waits for the moment it happens: one that comes "when you're not looking"
 var _head := {}                            # her head, as the last marker that said left it: {on, range, at (a path from her HSNpc)}; {}: nothing said yet
@@ -273,7 +273,7 @@ func tick(dt: float) -> void:
 	body.layer_tick()
 	if not _along.is_empty():                                  # a small movement asked for over what she does next: the moment she can
 		_along["t"] = float(_along["t"]) + dt
-		if body.flourish(String(_along["what"]), bool(_along["left"])) or float(_along["t"]) > 8.0:
+		if body.flourish(String(_along["what"]), bool(_along["left"]), bool(_along.get("hers", false))) or float(_along["t"]) > 8.0:
 			_along = {}
 	body.tick(dt)
 	face.tick(dt)
@@ -649,14 +649,15 @@ func _run_done(m: HSNpcMarker) -> bool:
 			var g: Node = body.gesture()
 			if g == null:
 				return true                                    # (no look plugin: said in her problems)
-			var left := body.held_side == "l" if m.gesture == "look_hand" and is_instance_valid(body.held) else m.left_hand   # (a look at what she holds: the hand that holds it)
+			var hers := m.gesture == "look_hand" and is_instance_valid(body.held)    # a look at what she holds: the hand that holds it, and never her empty one
+			var left := body.held_side == "l" if hers else m.left_hand
 			if m.gesture_along:                                # not waited for: laid over what the next markers have her do
-				_along = {"what": m.gesture_name(), "left": left, "t": 0.0}
+				_along = {"what": m.gesture_name(), "left": left, "hers": hers, "t": 0.0}
 				return true
 			if not bool(_gesture.get("asked", false)):
 				if body.busy:
 					return false
-				if body.flourish(m.gesture_name(), left):
+				if body.flourish(m.gesture_name(), left, hers):
 					_gesture["asked"] = true
 					_gesture["on"] = true
 				elif float(_gesture["t"]) > 1.5:               # she can't just now (it isn't made for what she's doing, her hand is full, she hasn't got it): passed over

@@ -558,7 +558,23 @@ func stage_grip() -> void:
 	if not guess["guessed"] or guess["shape"] != "handle" or absf(float(guess["size"]) - 0.03) > 0.002 or m.held() != stick or absf(sy) < 0.98:
 		bad("a thing with no grip: guessed %s; held %s, its length %.3f along her knuckles" % [guess, m.held(), sy])
 	m.drop()
-	say("a thing in her hand: " + "; ".join(said) + "; a stick with no grip held by its length")
+	# a bring whose clip stops telling it the time (it ended before the bring did, or was cut short) lets go by itself
+	await reset_her()
+	await frames(20)
+	ik.bring("r", {"target": her.global_position + her.global_basis * Vector3(-0.15, 1.1, 0.42), "peak": 0.5, "rise": 0.3, "hold": 0.6, "fall": 0.4, "most": 0.5})
+	for i in 40:                                               # told the time for two thirds of a second: on its target, held there
+		ik.at("r", float(i) / 60.0)
+		await frames(1)
+	var told_w: float = float(ik.last["r"]["weight"]) if ik.last.has("r") else 0.0
+	var told_moved: float = float(ik.last["r"]["moved"]) if ik.last.has("r") else 0.0
+	await frames(5)                                            # (under a tenth of a second untold: still on; a clip's driver ticks with the physics, a frame can come between two tellings)
+	var still_on: bool = ik.bringing("r") and ik.last.has("r") and float(ik.last["r"]["weight"]) > 0.95
+	await frames(12)                                           # letting go: part of the way
+	var part_w: float = float(ik.last["r"]["weight"]) if ik.last.has("r") else 0.0
+	await frames(20)                                           # half a second untold in all: gone, her hand her clip's again
+	if told_w < 0.95 or told_moved < 0.05 or not still_on or part_w <= 0.05 or part_w >= 0.95 or ik.bringing("r") or ik.last.has("r"):
+		bad("a bring nobody tells the time any more: told, weight %.2f and her hand carried %.1f cm; a twelfth of a second untold, still on: %s; then letting go at weight %.2f; half a second untold, still bringing: %s" % [told_w, told_moved * 100.0, still_on, part_w, ik.bringing("r")])
+	say("a thing in her hand: " + "; ".join(said) + "; a stick with no grip held by its length; a bring whose clip has stopped lets go by itself in %.2f s" % (ik.LET_GO + ik.LET_GO_SECS))
 
 
 # ---- a punch carried onto who it's thrown at ---------------------------------------------------------------------------------------

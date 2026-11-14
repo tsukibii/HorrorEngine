@@ -72,6 +72,26 @@ func orbit(by: Vector2) -> void:
 	await frames(2)
 
 
+# the editor at rest: nothing being scanned or imported (its progress box is drawn over the 3D view), for 2 s on end
+func progress_up() -> bool:
+	for n in get_tree().root.find_children("*", "", true, false):
+		if n.get_class() == "ProgressDialog":
+			if (n is Window and (n as Window).visible) or (n is CanvasItem and (n as CanvasItem).is_visible_in_tree()):
+				return true
+	return false
+
+
+func settle(most := 600.0) -> void:
+	var quiet := 0.0
+	var t := 0.0
+	while quiet < 2.0 and t < most:
+		await secs(0.25)
+		t += 0.25
+		quiet = 0.0 if (EditorInterface.get_resource_filesystem().is_scanning() or progress_up()) else quiet + 0.25
+	if t >= most:
+		errors.append("the editor never came to rest (still importing after %d s)" % int(most))
+
+
 func shot(name: String) -> void:
 	await frames(8)
 	var img := EditorInterface.get_base_control().get_viewport().get_texture().get_image()
@@ -151,6 +171,7 @@ func _run() -> void:
 			c.visible = false
 	plug.all_quests = false
 	plug.hidden.clear()
+	await settle()                                             # (a project opened in the editor for the first time imports its characters' pictures for a minute)
 	var turned := false
 	for v in views:
 		var npc := root.get_node_or_null(str(v["npc"])) as HSNpc
@@ -163,6 +184,8 @@ func _run() -> void:
 			await orbit(Vector2(float(cfg.get("orbit", [0, 0])[0]), float(cfg.get("orbit", [0, 0])[1])))
 			turned = true
 			await focus(Vector3(v["at"][0], v["at"][1], v["at"][2]), Vector3(v["size"][0], v["size"][1], v["size"][2]))
+		await wheel(int(v.get("zoom", 2)))                         # (F frames the box tightly: a step or two back, so the walls and the way in are in the picture)
+		await secs(2.2)                                            # (the view's own "6.8 m" beside it, shown for a moment after a zoom, gone)
 		plug.solo = npc
 		plug.pick_node(quest, false)
 		await frames(4)

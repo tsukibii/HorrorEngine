@@ -165,8 +165,22 @@ sequences + jumpscares and guides on utilizing our iks."*
   come when it happens; a blow thrown from inside its reach is thrown from where she stands (she turned her back on
   you: fixed in the markers' body and the starter's `motion.gd`, held by GDMOTION3); a look at a cup she carries
   keeps it upright (`gesture.gd`, held by GDLIFE); a quest asked to start *after N s* is a Problem.
-- **Checks on the last commit**: SEQUENCES, MARKERS (the new stage `hands`), MARKERSEDITOR (the new cards), LOGIC,
-  LOGICEDITOR, GDMOTION, GDMOTION3, GDLIFE, CHECKS.
+- **Then the guide's pictures found six more that every number had passed**, all fixed: a Pickup that is itself a
+  mesh put an empty model in the pocket (the starter's `pickup.gd`, `food.gd`); a thing put down keeps the way up it
+  stood; a hand-over is an upright reach, not a bow; the picture script goes back to the player's eye between
+  pictures (a head with nobody to follow follows the camera in use); **a look at what a hand holds is that hand's
+  or nobody's** (the layer's `play` takes `this_hand`; the customer looked at his empty palm); and **a hand IK's
+  bring ends with its clip** (`hand_ik.gd` `LET_GO`: a clip shorter than its envelope left his fist pulled 40 cm
+  behind him for the rest of the scene). SEQUENCES holds the last two in recipes 4 and 5 (49 measures now),
+  MARKERS in its stage `hands`, GDMOTION3 in its stage `grip`.
+- **The pictures**: 24 of the game (`python tools/godot/sequences.py --pictures --reuse [--only tidy,customer]`,
+  about a minute a picture here) and 4 of the tab (`--editor --reuse --only evening,apple,customer,corner`: the
+  guide shows those four; a picture in `img/` that the page doesn't show fails SEQGUIDE). The markers guide's own
+  pictures were taken again too (its palette has the five new cards).
+- **Your own characters in it**: `python tools/godot/sequences.py --cast woman=NAME,man=NAME,creature=NAME --keep DIR`
+  (exports in `Exports/characters`, baked by the Animator there).
+- **Checks on the last commit**: SEQUENCES, MARKERS, MARKERSEDITOR, GDMOTION, GDMOTION3, GDSMALL, GDLIFE, ANIMATOR,
+  CHECKS (SEQGUIDE is in it now). LOGIC and LOGICEDITOR on the commit before: nothing of theirs has changed since.
 
 **What the user hasn't seen**: any of it moving. The recipes' pictures are stills made under xvfb; the timings (how
 long she looks at the mug, the 2.5 s the last customer waits for your back, the 1.5 s of the peek) are guesses to be

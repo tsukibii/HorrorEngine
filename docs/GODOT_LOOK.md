@@ -1759,6 +1759,12 @@ Mixamo skeleton's as far as they go): no record, so a character baked before it 
   was turned). GDMOTION3 holds a swing to a hand carried no more than 25 cm and a bat turned no more than 45
   degrees: a correction that does most of the work is a clip that's wrong (the first swing passed at "4.5 cm from
   who it's swung at" with the hand dragged down to her hip).
+  **A bring ends with its clip.** Its envelope is counted in the clip's own time, so a clip that ends before the
+  envelope has fallen (a hand held out from a door clip's `release` to past its end), or one that's cut short, would
+  leave the hand pulled toward the target for good: a customer walked out of a shop with the hand he'd held out
+  dragged 40 cm behind him. A timed bring that nobody has told the time for 0.12 s (`LET_GO`: a clip's driver ticks
+  with the physics, so a frame or two can pass between two tellings) lets go by itself over a quarter of a second
+  (`LET_GO_SECS`), from whatever weight it had, and is gone. GDMOTION3 holds it.
 - `mouth()`: between her lips, from the teeth's bone.
 
 Measured (GDMOTION3): a bottle 6.5 cm thick and a bat 3.5 cm picked up: her hand closes 0.0 cm from the grip, the
@@ -1799,7 +1805,8 @@ mirrors: `tools/animator/core/life.js`), laid over the pose she's in. The rule i
 `alive` on, she does one every `every` seconds (6 to 14, a new number each time) that suits what she's doing (the
 clip's `over`: stand, walk, sit), with a hand that's free, never the one before again, and none while an act has
 her (`doing` is "busy"). `play("scratch_head")` does one now ({"left": true}: her other hand's; when that hand
-holds something, the other's by itself); `stop()` lets it go. `only` narrows them. `started`, `finished`.
+holds something or is being carried somewhere by its IK, the other's by itself, unless `"this_hand": true` says
+that hand or none: a look at what it holds); `stop()` lets it go. `only` narrows them. `started`, `finished`.
 
 **A carry**: `carry(side, how, {thing, upright})` keeps the arm that holds a thing in one of her five `carry_`
 poses, each one pose made from her body so the arm clears her own bust, belly and hips: `side` (hanging, a fist),

@@ -43,7 +43,7 @@ func v3(a) -> Vector3:
 
 
 func own(n: Node, parent: Node) -> Node:
-	parent.add_child(n)
+	parent.add_child(n, true)                                  # (readable names, as the tabs add a node: a second bend is "Bend2", never "@Node3D@5")
 	n.owner = root_node
 	return n
 

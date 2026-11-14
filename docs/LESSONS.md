@@ -30,6 +30,28 @@ the fix.
   loop that can't end: find the `while`s under the last line printed.** And run a new check with its output
   streaming, not collected at the end: the run looked slow for twenty minutes when it was stuck in its first
   conversation. The whole check takes one minute.
+- **Then the pictures found three more that every number had passed.** The apple "in her hand" (the check read its
+  name) was an empty node: `find_children` doesn't return the node itself, so a Pickup that *is* the mesh copied
+  nothing into the pocket. The book "0.0 cm from its pin" lay on the shelf at the angle her fist had held it. Her
+  hand "held out" 23 cm was at her belly, bowed as for a table. **A measure says the thing is where it should be;
+  only a picture says it looks like the thing.** Look at every picture before it goes in a guide.
+- **A camera that isn't the player's is still "you" to anything that follows you.** A head that follows nobody in
+  particular follows the camera in use. Pictures from beside her turned every head toward the tripod, and the next
+  picture from the player's eye showed the back of hers. The picture script goes back to the player's eye between
+  pictures.
+- **Anything driven by someone else's clock has to notice when that clock stops.** A hand's IK is an envelope over
+  its clip's time, taken away when the clip's time passes the envelope's end. The hand-over's envelope fell 0.36 s
+  after its clip was over: nobody told it the time again, so it stayed, at four fifths of its weight, pulling his
+  hand toward where he'd held it out. The customer walked out of the shop with that hand 40 cm behind him; and
+  because the hand "was being brought somewhere", the layer played his look at the can with his other, empty hand.
+  Every number had passed ("a look at his hand, over a walk"). The picture from his other side showed an open
+  palm and a fist at his hip. A bring nobody tells the time lets go by itself now, and a look at what a hand holds
+  is that hand's or nobody's.
+- **`begins_with` accepts the wrong hand.** `life_look_hand_l` begins with `life_look_hand`. A check that names the
+  thing it wants, names all of it.
+- **Read where a time comes from before waiting differently for it.** The conversation's picture had no line, twice
+  "fixed" in the picture script by waiting another way. The HUD times a line by the wall clock; the talk box by the
+  game's. On a machine that takes a tenth of a second a frame, a line's five seconds were over 40 frames in.
 - **GDScript again**: `@export_enum` can't hold an empty option (use a word, `any`); a lambda can change what a
   captured dictionary holds, never which dictionary a local names; a constant put "after the line that starts
   with `const X`" lands inside X when X is three lines long.

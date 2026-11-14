@@ -22,6 +22,9 @@ func frames(n: int) -> void:
 
 
 func shot(name: String) -> void:
+	var until := float(hud.get("line_until")) if hud != null and hud.get("line_until") != null else 0.0
+	var left := until - Time.get_ticks_msec() / 1000.0
+	hold_line()                                                # (a line that's up stays up while the picture is drawn, and is given back the time it had left)
 	RenderingServer.render_loop_enabled = true
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
@@ -29,9 +32,13 @@ func shot(name: String) -> void:
 	made.append(name)
 	print("SEQSHOTS pictured " + name)
 	RenderingServer.render_loop_enabled = false
+	if until > 0.0 and float(hud.get("line_until")) > 0.0:
+		hud.set("line_until", Time.get_ticks_msec() / 1000.0 + maxf(left, 0.05))
 	eye.make_current()                                         # (a head that follows "you" follows the camera in use: back to the player's eye between pictures)
 	if hud != null:
 		hud.visible = true
+	if story is CanvasLayer:
+		(story as CanvasLayer).visible = true
 
 
 func put(p: Vector3) -> void:
@@ -82,7 +89,9 @@ func spect(from: Vector3, at: Vector3, fov := 45.0) -> void:
 	cam.fov = fov
 	cam.make_current()
 	if hud != null:
-		hud.visible = false                                    # (a picture from beside her isn't the player's view: no HUD on it)
+		hud.visible = false                                    # (a picture from beside her isn't the player's view: no HUD on it, no list, no line)
+	if story is CanvasLayer:
+		(story as CanvasLayer).visible = false
 
 
 # a camera round a character: `yaw_deg` from in front of them (plus: round to their left), `dist` away, `h` up, looking `look_h` up them
@@ -97,6 +106,8 @@ func eye_view(at = null) -> void:
 	eye.make_current()
 	if hud != null:
 		hud.visible = true
+	if story is CanvasLayer:
+		(story as CanvasLayer).visible = true
 
 
 # so `n` frames after `cond` was first so
@@ -138,23 +149,29 @@ func box() -> HSNpcTalkBox:
 	return HSNpcTalkBox.of(root.get_tree())
 
 
-# E, and her lines hurried on to the last (with its answers, when it has them): the conversation left open
+# a line without the name in front of it ("Aya: There." -> "There.")
+func bare(line: String) -> String:
+	var i := line.find(": ")
+	return line.substr(i + 2) if i > 0 and i < 24 else line
+
+
+# E, and her lines left to play to the last (with its answers, when it has them): the conversation open on it
 func ask() -> void:
 	player.call("use")
 	await frames(3)
 	var b := box()
-	for i in 10:
-		if not b.open_now or b.stage != "lines":
-			break
-		var before := String(b.showing()["text"])
-		b.advance()
-		await frames(3)
-		if not b.open_now:
-			break
-		if b.stage == "answers" or String(b.showing()["text"]) == before:
-			break
-		if b.lines().size() > 0 and String(b.showing()["text"]) == String(b.lines()[b.lines().size() - 1]).get_slice(": ", 1):
-			break
+	var last: String = bare(String(b.lines()[b.lines().size() - 1])) if b.open_now and b.lines().size() > 0 else ""
+	await wait_for(func() -> bool: return not b.open_now or b.stage == "answers" or String(b.showing()["text"]) == last, 25.0)
+	hold_line()
+	await frames(20)                                           # (the line eased in)
+
+
+# the HUD times a line by the wall clock. On a machine with no graphics card a frame of this scene takes a tenth of a
+# second and a picture a minute, so a line is over before it's pictured: it's kept up from here (the conversation's
+# own end, or the next line, takes it down as ever)
+func hold_line() -> void:
+	if hud != null and hud.get("line_until") != null and float(hud.get("line_until")) > 0.0:
+		hud.set("line_until", Time.get_ticks_msec() / 1000.0 + 900.0)
 
 
 # the answer picked (-1: none to pick), and the rest hurried through
@@ -245,7 +262,6 @@ func flat_shots() -> void:
 	look(Vector3(2.6, 1.42, 1.3))
 	await frames(10)
 	await ask()
-	await frames(70)                                           # (her line eased in, her head on you)
 	eye_view()
 	if wants("tidy"):
 		await shot("tidy_3_talk")
@@ -265,8 +281,8 @@ func apple_shots() -> void:
 	look(Vector3(2.6, 1.2, 1.3))
 	await moments([
 		{"name": "apple_1_take", "when": after(func() -> bool: return is_instance_valid(aya.body.held), 4), "view": func() -> void: eye_view(Vector3(2.5, 1.2, 1.3))},
-		{"name": "apple_2_eat", "when": func() -> bool: return aya.body.now == "eat" and is_instance_valid(aya.body.held) and aya.body.held.global_position.distance_to(head_of(her("Aya"))) < 0.15,
-			"view": func() -> void: eye_view(Vector3(2.6, 1.4, 1.3))},
+		{"name": "apple_2_eat", "when": after(func() -> bool: return aya.body.now == "eat" and is_instance_valid(aya.body.held) and aya.body.held.global_position.distance_to(head_of(her("Aya"))) < 0.14, 4),
+			"view": func() -> void: see(her("Aya"), -52.0, 1.15, 1.45, 1.42, 36.0)},
 	], func() -> bool: return flag("aya_fed"), 45.0)
 
 
@@ -278,7 +294,7 @@ func key_shots() -> void:
 	await moments([
 		{"name": "key_1_hook", "when": after(func() -> bool: return is_instance_valid(aya.body.held) and aya.body.held == key, 3),
 			"view": func() -> void: spect(Vector3(2.45, 1.4, 2.8), Vector3(3.75, 1.0, 2.0), 46.0)},
-		{"name": "key_2_hand", "when": after(func() -> bool: return aya.cur == give and aya.body.now == "reach_mid", 40),
+		{"name": "key_2_hand", "when": after(func() -> bool: return aya.at == give and aya.body.now.begins_with("open_push"), 88),
 			"view": func() -> void: eye_view(her("Aya").global_position + Vector3(0, 1.2, 0))},
 	], func() -> bool: return story.has("cellar_key") and aya.at != null and aya.at.name == "Wait2" and not aya.body.busy, 70.0)
 
@@ -295,7 +311,6 @@ func customer_shots() -> void:
 	look(Vector3(-1.4, 1.5, 5.95))
 	await frames(12)
 	await ask()
-	await frames(70)
 	eye_view()
 	if wants("customer"):
 		await shot("customer_1_ask")
@@ -311,10 +326,10 @@ func customer_shots() -> void:
 	var give := main.get_node("Ken markers/%s/Choice/Served/Hand to you" % q) as HSNpcMarker
 	var g: Node = ken.body.gesture()
 	var list := [
-		{"name": "customer_2_pay", "when": after(func() -> bool: return ken.cur == give and ken.body.now == "reach_mid", 42), "view": func() -> void: eye_view(Vector3(-1.4, 1.2, 5.9))},
+		{"name": "customer_2_pay", "when": after(func() -> bool: return ken.at == give and ken.body.now.begins_with("open_push"), 90), "view": func() -> void: eye_view(Vector3(-1.4, 1.2, 5.9))},
 		{"name": "customer_3_take", "when": after(func() -> bool: return is_instance_valid(ken.body.held), 5), "view": func() -> void: eye_view(Vector3(-1.4, 1.2, 5.9))},
-		{"name": "customer_4_leave", "when": func() -> bool: return g != null and String(g.now).begins_with("life_look_hand") and float(g.t) > 1.2 and ken.body.now == "walk",
-			"view": func() -> void: see(man, 24.0, 2.3, 1.3, 1.15, 40.0)},
+		{"name": "customer_4_leave", "when": func() -> bool: return g != null and String(g.now) == "life_look_hand" and float(g.t) > 1.2 and ken.body.now == "walk",
+			"view": func() -> void: see(man, -34.0, 2.1, 1.35, 1.2, 38.0)},
 	]
 	await moments(list if wants("customer") else [], func() -> bool: return flag("ken_gone"), 70.0)
 

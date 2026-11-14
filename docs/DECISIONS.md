@@ -50,6 +50,15 @@ What follows from it:
   from where she stands now: the markers' body and the starter's motion.gd); a look at a cup she carries tipped it
   over (it's kept upright through the look now); a quest asked to start *after N s* never started (Problems says
   so).
+- **What the pictures found after every number had passed, and fixed**: a Pickup that *is* its mesh put an empty
+  model in your pocket, so the apple "in her hand" was nothing (the starter's pickup.gd and food.gd); the book lay
+  on the shelf at the angle her fist had held it (put down the way up it stood); her hand "held out" was at her
+  belly, bowed as for a table (a hand-over is an upright reach now); every head turned to the picture's camera
+  (the picture script's); the customer looked at his empty palm while the can hung in his other fist (a look at
+  what a hand holds is that hand's or nobody's); and that fist trailed 40 cm behind him as he left, pulled by a
+  hand IK whose clip had ended before it let go (the Look plugin's HSHandIK: a bring nobody tells the time any
+  more lets go by itself; held by GDMOTION3, MARKERS and SEQUENCES). 28 pictures in the guide: 24 of the game, 4
+  of the tab on a recipe.
 - **Not built, and said in the guide**: eating and drinking sat down (she stands up to eat); a thing handed between
   two characters; a marker that follows you about.
 

@@ -1918,6 +1918,10 @@ func stage_hands() -> void:
 		"W: and its money; her hand is empty, the thing gone from the room", "cash +%.2f" % (float(story.get("cash")) - cash0))
 	await watch(func() -> bool: return HSNpcCond.holds("w_ticket", self, null), 12.0, func() -> void: pass)
 	ok(story.has("ticket_w") and HSNpcCond.holds("w_ticket", self, null), "W: with nothing in her hand, an item by its name alone")
+	await secs(0.7)
+	var ik_w: Node = run.body.ik()
+	ok(ik_w == null or not ik_w.bringing("r"), "W: and once it's handed over her hand is her animation's again (the hand-over's clip ends before its IK has let go: it lets go by itself)",
+		"still brought %.1f cm" % ((float(ik_w.last["r"]["moved"]) * 100.0) if ik_w != null and ik_w.last.has("r") else 0.0))
 	story.take("cellar_key")
 	story.take("ticket_w")
 	story.pay(3.5)

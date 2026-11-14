@@ -97,7 +97,9 @@ static func of(character: Node) -> HSGesture:
 
 # ---- what's asked of it ---------------------------------------------------------------------------------------------------
 ## one flourish now. name: "scratch_head" or "life_scratch_head"; o: {left: her other hand's, speed, force: whatever
-## she's doing}. False when she hasn't got it, a hand it needs is busy, or it isn't made to be laid over what she's doing.
+## she's doing, this_hand: that hand or not at all (when it's busy her other hand's is played instead, unless this
+## says no: a look at what that hand holds)}. False when she hasn't got it, a hand it needs is busy, or it isn't made to be
+## laid over what she's doing.
 func play(name: String, o: Dictionary = {}) -> bool:
 	_ensure()
 	var n := name if name.begins_with("life_") else "life_" + name
@@ -108,6 +110,8 @@ func play(name: String, o: Dictionary = {}) -> bool:
 		return false
 	var hand := String(meta.get("hand", ""))
 	if hand in SIDES and not _free(hand, bool(meta.get("free", true))):       # that hand's busy: her other hand's, when she has it
+		if bool(o.get("this_hand", false)):
+			return false                                       # (asked of this hand and no other: a look at what it holds)
 		var other := n.trim_suffix("_l") if n.ends_with("_l") else n + "_l"
 		var m2 := life_of(other)
 		if m2.is_empty() or not _free(String(m2.get("hand", "")), bool(m2.get("free", true))):

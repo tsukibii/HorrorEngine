@@ -193,7 +193,8 @@ at the object"). Where *Small movements now and then* is chance, a **Small movem
 the moment you want it: *Looks at her hand (or what's in it)*, *Checks her wrist*, *Scratches her head*, *Stretches*
 and the rest of her `life_` clips by name, or *One that suits*. It's the same layer (`HSGesture`): nothing below her
 chest changes, so sat on the sofa she stays sat and walking she goes on walking; a look at what she holds uses the
-hand that holds it, and a movement whose hand is full uses her other hand's. The marker is done when her hand is
+hand that holds it and waits for that hand (just after it took the thing, a third of a second), and any other
+movement whose hand is full or busy uses her other hand's. The marker is done when her hand is
 back (the look at her hand takes 3.1 s on the test woman). With *Over what comes next* it isn't waited for: the next
 marker starts at once and the movement is laid over it the moment it can be (she gets up, sets off, and checks her
 wrist as she walks); it's given up after 8 s of never being possible. One made for a body that can't do it cleanly

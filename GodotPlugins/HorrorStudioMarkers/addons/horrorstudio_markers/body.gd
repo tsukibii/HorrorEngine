@@ -247,12 +247,12 @@ func alive(on: bool, every := Vector2(6.0, 14.0)) -> Node:
 
 ## one small movement now: "scratch_head", "look_hand", "stretch"... ("": one that suits what she's doing). False
 ## when she can't just now
-func flourish(what := "", left := false) -> bool:
+func flourish(what := "", left := false, this_hand := false) -> bool:
 	var g := gesture()
 	if g == null:
 		return false
 	var n: String = what if what != "" else String(g.pick())
-	return n != "" and bool(g.play(n, {"left": left}))
+	return n != "" and bool(g.play(n, {"left": left, "this_hand": this_hand}))   # (`this_hand`: that hand or not at all, never her other one)
 
 
 # what she's doing, in the layer's words: a flourish is laid over standing, walking and sitting, and nothing else

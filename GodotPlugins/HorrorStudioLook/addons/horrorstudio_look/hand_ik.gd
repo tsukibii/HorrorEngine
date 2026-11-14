@@ -33,6 +33,8 @@ const LIMITS := [deg_to_rad(92.0), deg_to_rad(112.0), deg_to_rad(80.0)]   # how 
 var hands := {}                                     # side -> {up, low, hand, size, c, n, t, f (rest, her own space), inv (the wrist's rest undone), fingers: [{bones, rests, parents, d0, k, base, p1, len}], ok}
 var grips := {}                                     # side -> {size, shape, w, goal, secs, pose: {bone: Quaternion}}
 var brings := {}                                    # side -> {point, anchor, target, peak, peaks, rise, hold, fall, aim, freeze, most, t, w, offset}
+const LET_GO := 0.12                                # s: a timed bring nobody has told the time for this long lets go (a clip's driver ticks with the physics: several frames can pass between two tellings)
+const LET_GO_SECS := 0.25                           # s: and over this long, from whatever weight it had
 var last := {}                                      # side -> {point, target, error (m), weight}: what the last frame did, in the world (a check's)
 var _ready_for: Skeleton3D
 
@@ -118,6 +120,7 @@ func at(side: String, t: float) -> void:
 		return
 	var b: Dictionary = brings[side]
 	b["t"] = t
+	b["told"] = 0.0                                        # (told the time just now: see LET_GO)
 	if b["timed"]:
 		var w := 0.0
 		var end := 0.0
@@ -422,6 +425,14 @@ func _process_modification_with_delta(delta: float) -> void:
 	for side in brings.keys():
 		var b: Dictionary = brings[side]
 		var h: Dictionary = hands.get(side, {})
+		if b["timed"] and b.has("told"):                    # a clip that ended before its bring did (or was cut short) tells it the time no more: the hand lets go by itself
+			b["told"] = float(b["told"]) + delta
+			if float(b["told"]) > LET_GO:
+				b["w"] = move_toward(float(b["w"]), 0.0, delta / LET_GO_SECS)
+				if float(b["w"]) <= 0.0:
+					brings.erase(side)
+					last.erase(side)
+					continue
 		var w: float = b["w"]
 		if h.is_empty() or w <= 0.0005:
 			last.erase(side)

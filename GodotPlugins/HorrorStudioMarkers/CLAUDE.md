@@ -107,6 +107,9 @@ phasing, the Weapons plugin's hit reaction (any child of her with `hit` and `dow
 - **A Small movement marker never changes what she's doing** (`_start` leaves `hold_clip` alone for `gesture`):
   it's the layer's, over her loop. *Over what comes next* is kept in the runner (`_along`) and asked for every
   frame until the layer takes it (8 s), since the next marker's first step is a turn, and a turn is "busy".
+  **A look at what she holds is asked of the hand that holds it and no other** (`flourish(what, left, this_hand)`;
+  `hers` in `_run_done` and `_along`): the layer plays a flourish with her other hand when the one asked is busy,
+  and right after a Take from you that hand's IK is still letting go, so the customer looked at his empty palm.
 - **A Wait with no loop of its own leaves her as she is** (sat, lying, peeking, low): `_start`'s `wait` case. A
   posture that isn't standing has its own held loop in `body.gd` `_hold`, its `_begin` pre-step to leave it
   (`stand_up`, `get_up`, `peek_back`), and its `*_now` for `_snap`: a new posture gets all three.

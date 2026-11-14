@@ -8,6 +8,10 @@
         as a character's markers. sequences_test.gd then plays each recipe as a player would (walking in, E,
         answers, looking away) and measures what happens. Ends "SEQUENCES ok".
 
+    python tools/godot/sequences.py --keep DIR --cast woman=NAME,man=NAME,creature=NAME
+        the same project with your own characters in the three parts: Studio exports by name (Exports/characters/NAME),
+        baked into the project by the Animator as they go in.
+
     python tools/godot/sequences.py --pictures [--reuse] [--only a,b]
         the guide's pictures of the game, under xvfb (sequences_shots.gd), into guides/sequences/img.
 
@@ -304,7 +308,7 @@ VIEWS = [
     {"id": "tidy", "npc": "Aya markers", "quest": "Tidying up", "pick": "Put down", "at": [2.7, 0.8, -0.2], "size": [3.4, 1.6, 4.6]},
     {"id": "apple", "npc": "Aya markers", "quest": "The apple", "pick": "Take from you", "at": [1.0, 0.8, 0.6], "size": [8.0, 1.6, 4.0]},
     {"id": "key", "npc": "Aya markers", "quest": "The cellar key", "pick": "Hand to you", "at": [2.7, 0.8, 1.2], "size": [3.4, 1.6, 3.4]},
-    {"id": "customer", "npc": "Ken markers", "quest": "A can of soda", "pick": "Choice", "at": [0.0, 0.8, 7.0], "size": [8.0, 1.6, 7.0]},
+    {"id": "customer", "npc": "Ken markers", "quest": "A can of soda", "pick": "Choice", "at": [0.3, 0.8, 7.5], "size": [8.0, 1.6, 8.5], "zoom": 3},
     {"id": "last", "npc": "Rin markers", "quest": "The last customer", "pick": "Start here2", "at": [0.0, 0.8, 6.5], "size": [8.0, 1.6, 6.5]},
     {"id": "corner", "npc": "It markers", "quest": "Round the corner", "pick": "Peek", "at": [8.6, 0.8, 1.6], "size": [7.5, 1.6, 5.5]},
     {"id": "cellar", "npc": "It markers", "quest": "Out of the dark", "pick": "Punch", "at": [10.6, 0.8, 4.6], "size": [4.0, 1.6, 7.6]},
@@ -466,13 +470,18 @@ def xvfb(cmd, size="1280x720"):
     return cmd, env
 
 
-def characters(proj, name):
-    """the three models baked into the project's characters/: -> {model: where it came from}"""
+def characters(proj, name, args=()):
+    """the three models baked into the project's characters/: -> {model: where it came from}. `--cast
+    woman=NAME,man=NAME,creature=NAME`: your own Studio exports (Exports/characters/NAME) in their places"""
     out = {}
     (proj / "characters").mkdir(exist_ok=True)
     scratch = ROOT / "Saved" / "Animator" / "check"
+    cast = dict(x.split("=", 1) for x in args[args.index("--cast") + 1].split(",")) if "--cast" in args else {}
     for model, (export, body) in MODELS.items():
+        export = cast.get(model, export)
         src = ROOT / "Exports" / "characters" / export / f"{export}.glb"
+        if model in cast and not src.is_file():
+            sys.exit(f"{name} FAILED: --cast {model}={export}: {src} isn't there (Export for Godot in the Character Studio)")
         if not src.is_file() or os.environ.get("SEQ_PLAIN"):
             r = run(["node", str(ROOT / "tools" / "animator" / "bodies.mjs"), "--out", str(scratch), body], timeout=900)
             if "BODIES ok" not in r.stdout:
@@ -501,7 +510,7 @@ def project(args, name):
         shutil.rmtree(proj, ignore_errors=True)
         if BH.main(["new", str(proj), "--name", "Sequences"]):
             sys.exit(f"{name} FAILED: godot_byhand.py new")
-        mark.write_text(json.dumps({"characters": characters(proj, name)}, indent=1), encoding="utf-8")
+        mark.write_text(json.dumps({"characters": characters(proj, name, args)}, indent=1), encoding="utf-8")
     else:
         BH.install(proj, starter=True)
         print(f"  reusing {proj}")
@@ -546,6 +555,9 @@ def game(args):
     for word in ["_Ghost", "_Talk", "_MarkerClips", "_LogicReach", "hs_given"]:
         if word in saved:
             errs.append(f"the built scene holds '{word}': something made for the game was saved")
+    unnamed = re.findall(r'\[node name="(@[^"]*)"', saved)
+    if unnamed:
+        errs.append(f"the built scene has nodes nobody named ({', '.join(unnamed[:4])}): the tabs would have named them")
     if GUIDE.joinpath("index.html").is_file() and tables(["--check"]):
         errs.append("the guide's tables aren't the data's")
     errs += guide_check()
