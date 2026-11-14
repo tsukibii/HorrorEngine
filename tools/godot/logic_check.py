@@ -248,6 +248,8 @@ def editor(args):
     saved = (proj / "logic_scene.tscn").read_text(encoding="utf-8") if (proj / "logic_scene.tscn").is_file() else ""
     if "Logic" not in saved:
         errs.append("the scene wasn't saved with its Logic nodes")
+    if '[node name="@' in saved or saved.count("[node name=") > 60:
+        errs.append("the saved scene holds nodes a script made for itself (%d nodes)" % saved.count("[node name="))
     for word in ["_LogicReach", "_Ghost", "_Talk"]:
         if word in saved:
             errs.append(f"the saved scene holds '{word}': something made for the game was saved")

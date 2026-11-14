@@ -298,6 +298,8 @@ func things() -> Array:
 			if t != null and not (t in out):
 				out.append(t)
 		elif n.get_script() != null and (n.has_method("use") or not HSLogicScan.fields_of(n).is_empty()):
+			if n is CharacterBody3D or n.has_method("logic_of") or not _saved_here(n):
+				continue                                           # (the player isn't a thing; nor is what's inside an instanced scene)
 			if not (n in out):
 				out.append(n)
 	return out
@@ -599,8 +601,9 @@ func setup_scene() -> PackedStringArray:
 		st.set_script(load("res://starter/story.gd"))
 		adds.append(st)
 	if not has.call("horrorstudio_ui/hud.gd") and ResourceLoader.exists("res://addons/horrorstudio_ui/hud.gd"):
-		var hud: Node = (load("res://addons/horrorstudio_ui/hud.gd") as Script).new()
+		var hud := CanvasLayer.new()                             # (set_script, never Script.new(): that would run the HUD for real inside the editor)
 		hud.name = "Hud"
+		hud.set_script(load("res://addons/horrorstudio_ui/hud.gd"))
 		adds.append(hud)
 	if not has.call("starter/sound.gd") and ResourceLoader.exists("res://starter/sound.gd"):
 		var snd := Node.new()

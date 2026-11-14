@@ -433,7 +433,7 @@ func stage_scan() -> void:
 	ok(HSLogicScan.home_of(flags["eve_kitchen"]) == "eve/Night one" and HSLogicScan.home_of(flags["met_eve"]) == "eve/Night one" and HSLogicScan.home_of(flags["eve_gone"]) == ""
 		and HSLogicScan.home_of(flags["talked:eve"]) == "", "E: whose a flag is: one quest's, or the game's once a thing uses it",
 		"%s | %s" % [HSLogicScan.home_of(flags["eve_kitchen"]), HSLogicScan.home_of(flags["eve_gone"])])
-	ok(HSLogicScan.place(talk) == "Eve › Night one › 1 Talk" and HSLogicScan.place(door) == "DoorE (door)" and HSLogicScan.place(door.get_node("Logic")) == "DoorE (door)",
+	ok(HSLogicScan.place(talk) == "Eve › Night one › 1 Talk" and HSLogicScan.place(door) == "DoorE (door)" and HSLogicScan.place(sw.get_parent()) == "RoomE" and HSLogicScan.place(door.get_node("Logic")) == "DoorE (door)",
 		"E: where a use is, in plain words", HSLogicScan.place(talk))
 	var probs := HSLogicScan.problems(found, {"eve_kitchen": {"home": "eve/Night two"}, "unused_e": {}})
 	var texts := PackedStringArray()

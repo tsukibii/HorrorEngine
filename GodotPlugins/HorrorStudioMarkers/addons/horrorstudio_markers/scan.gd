@@ -74,24 +74,41 @@ static func studio(node: Object) -> bool:
 	return path.begins_with("res://starter/") or path.begins_with("res://addons/horrorstudio_")
 
 
-## the fields of a node that hold names: [[prop, encoding]]
+static var _fields := {}                   # a script (by id) -> [when read (ms), [[prop, encoding]]]
+
+
+## The fields of a node that hold names: [[prop, encoding]]. Only fields the script exports, of the type the table
+## says (read off the script's own property list, so a list nobody has set yet still counts); kept a few seconds a
+## script, since every node with it has the same.
 static func fields_of(node: Object) -> Array:
+	if node == null:
+		return []
+	var sc: Script = node.get_script()
+	if sc == null:
+		return []
+	var id := sc.get_instance_id()
+	var now := Time.get_ticks_msec()
+	if _fields.has(id) and now - int(_fields[id][0]) < 3000:
+		return _fields[id][1]
 	var out := []
-	if node == null or node.get_script() == null:
-		return out
 	var mine := studio(node)
-	for prop in FIELDS:
-		if not (prop in node):
-			continue
-		if prop in PLAIN and not mine:
-			continue
-		var enc := String(FIELDS[prop])
-		var have := typeof(node.get(prop))
-		if have != int(TYPES[enc]) and not (int(TYPES[enc]) == TYPE_PACKED_STRING_ARRAY and have == TYPE_ARRAY):
-			continue
-		if enc == "task" and prop == "tick" and node.has_method("tick"):       # (the Story's own tick() is a method, not a field)
-			continue
-		out.append([prop, enc])
+	var seen := {}
+	var s: Script = sc
+	while s != null:                                           # (its own, and what it extends)
+		for p in s.get_script_property_list():
+			var prop := String(p["name"])
+			if seen.has(prop) or not FIELDS.has(prop) or (int(p["usage"]) & PROPERTY_USAGE_STORAGE) == 0 or (int(p["usage"]) & PROPERTY_USAGE_SCRIPT_VARIABLE) == 0:
+				continue
+			seen[prop] = true
+			if prop in PLAIN and not mine:
+				continue
+			var enc := String(FIELDS[prop])
+			if int(p["type"]) != int(TYPES[enc]):
+				continue
+			out.append([prop, enc])
+		s = s.get_base_script()
+	out.sort_custom(func(a, b) -> bool: return FIELDS.keys().find(a[0]) < FIELDS.keys().find(b[0]))
+	_fields[id] = [now, out]
 	return out
 
 
@@ -293,8 +310,8 @@ static func place(node: Node) -> String:
 		if lg.on == "itself" and lg.thing.is_empty():
 			return "%s (rule)" % lg.name
 		if t != null and t != node:
-			return "%s (%s)" % [t.name, what(t)]
-	return "%s (%s)" % [node.name, what(node)]
+			return place(t)
+	return "%s (%s)" % [node.name, what(node)] if node.get_script() != null else String(node.name)
 
 
 ## what kind of thing a node is, by its script: "door", "pickup", "Logic", "event area"

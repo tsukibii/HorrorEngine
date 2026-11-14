@@ -60,6 +60,7 @@ var picks := {}                            ## the tester: a Choice -> which of i
 var view_quest := {}                       ## each character's quest last looked at (by instance id)
 var _own := false
 var _poll := 0.0
+var _owned := {}                           ## a node added or taken out (by id) -> the nodes under it the scene saves
 
 
 func _enter_tree() -> void:
@@ -368,14 +369,27 @@ func pick_pin(to: Callable) -> void:
 
 
 # ---- changes, each undoable ---------------------------------------------------------------------------------------------------
-func _own_all(n: Node, owner_: Node) -> void:
-	if n != owner_:
-		n.owner = owner_
-		if n.scene_file_path != "":                            # (an instanced scene: its insides stay its own)
-			return
+# a node and what's under it that is saved with the scene when it's added: not the insides of an instanced scene, not
+# what's made for the game or the tester (names with _)
+func _built(n: Node) -> Array:
+	var out := [n]
+	if n.scene_file_path != "":
+		return out
 	for c in n.get_children():
 		if not String(c.name).begins_with("_"):
-			_own_all(c, owner_)
+			out.append_array(_built(c))
+	return out
+
+
+# What's saved with the scene is decided once, when a node is first added (what was built for it then) or taken out
+# (what the scene owned then): never what a node's own script makes under itself afterwards.
+func _own_all(n: Node, owner_: Node) -> void:
+	var id := n.get_instance_id()
+	if not _owned.has(id):
+		_owned[id] = _built(n)
+	for m in (_owned[id] as Array):
+		if is_instance_valid(m) and m != owner_ and (m == n or n.is_ancestor_of(m)):
+			(m as Node).owner = owner_
 
 
 ## A field's new value put on an undo action. (A script that isn't a tool is a stand-in for itself in the editor, and
@@ -438,6 +452,8 @@ func delete_node(n: Node, label := "") -> void:
 		return
 	var parent := n.get_parent()
 	var at := n.get_index()
+	var r := scene_root()
+	_owned[n.get_instance_id()] = _built(n).filter(func(m: Node) -> bool: return m == n or m.owner == r)
 	if n == cur or (cur != null and is_instance_valid(cur) and n.is_ancestor_of(cur)):
 		cur = null
 	if n == cur_quest:
