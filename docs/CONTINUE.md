@@ -36,12 +36,73 @@ from sliders), eye looks as cards in the Studio and the lashes on the lid's skin
 `make-up-enhanced` on 2026-11-13 (tsukibii/HorrorEngine#27, into main, merged); then on `more-body-presets` (from
 main): a fourth body card, v2 pear, and the Hips & thighs slider, then two head cards after two pictures (merged,
 PR #28); on `animation-v2` (from main): the Animator v2, a character's own animations made from its body (merged,
-PR #29); and 2026-11-13 and 14 on `marker-system` (from main): **NPC markers**, a character's whole part in a game
-placed as markers (§0 below). Read this after CLAUDE.md's start
+PR #29); 2026-11-13 and 14 on `marker-system` (from main): **NPC markers**, a character's whole part in a game
+placed as markers (the pull request tsukibii/HorrorEngine#30 into main, open when this was written); and 2026-11-14 on
+`even-more-animations-v3` (from `marker-system`): **animations v3**, creatures' clips, a head that follows you, a
+grip on props, fights (§0 below). Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Where `marker-system` stopped (2026-11-14)
+## 0. Where `even-more-animations-v3` stopped (2026-11-14)
+
+**The branch** is made from `marker-system`, so it carries the markers; `marker-system`'s own pull request
+(tsukibii/HorrorEngine#30, into main) was open and unmerged when this was written. This branch has **no pull request**:
+the user asked for the branch, not for one. If #30 merges first, this one goes into main as its own pull request.
+
+**Built** (docs/ANIMATOR_V3.md, every box of its plan ticked; DECISIONS 2026-11-14, animations v3):
+- **The Animator**: 29 more clips, 53 in all, `VERSION` 3 (a character baked before wants baking again): sneak and
+  crouch, a creature's creep, a crawl on hands and knees, a scuttle on hands and feet, a peek round a wall's end
+  (out, held, back), four jump scares (lunge, loom, snap, claw), a punch, a swing and being hit, eating and drinking,
+  looking round, a knock, cowering; the left hand's as mirrors.
+- **On creatures**: ANIMATOR makes every clip on five of the Studio's creature cards too (goblin, ghoul, ogre, imp,
+  hag) and holds them to the same rules. That found the elbow's hinge (now MHR's own, a constant: `rig.js` `ELBOW`)
+  and a dozen sizes that were a person's times the body's height.
+- **In Godot** (the Look plugin): `HSHeadTrack` (her head follows you within an arc, 160 degrees unless set),
+  `HSGrip` with its gizmo (a node under a prop: where a hand closes on it, how thick, where its mouth and its tip
+  are), `HSHandIK` (her fingers closed to that size; a point on her hand carried onto a target as a clip plays).
+  The starter's `motion.gd` has `sneak_to`, `crawl_to`, `creep_to`, `scuttle_to`, `peek`, `scare`, `punch`, `swing`,
+  `eat`, `drink`, `look_around`, `knock`, `cower`, `head_follow`; `act.gd` its acts; the starter's player hears a
+  blow (`struck`, `hit`).
+- **In the NPC Markers tab**: a Walk's low paces (the Sneak and Crawl cards), Eat and Drink, an Attack card, a Jump
+  scare card, and a Head row on every marker.
+- **Pictures and guides**: the clips on the normal woman, a ghoul and a goblin (`docs/animator_sheets/2026-11-14_v3_*`),
+  the Animator's guide sections 10 to 14, the Markers' guide section 15.
+- **Checks**: ANIMATOR (40 s, in check_all), ANIMATORPAGE (55 s), GDMOTION then GDMOTION3
+  (`python tools/godot/motion_check.py`, then `python tools/godot/motion_check.py v3 --reuse`), MARKERS (1 minute),
+  MARKERSEDITOR (1 minute). All passed on the last commit.
+
+**The user has seen none of it**: they were away for the whole of it. Their next message is the first feedback, and
+it will be about what eyes find: how a clip reads on their own characters, the gizmo under a real mouse (it was only
+ever dragged by a test and pictured under xvfb), a blow in play.
+
+**What I'd say is weakest, if asked**:
+- **The peek's other hand** is flat on the wall up beside her shoulder, like a hand held up. It's there because a
+  forearm and a hand don't fit between her and a wall 20 cm away; from in front it's hidden. A hand low on the wall,
+  or on her thigh, may read better from behind.
+- **The swing lands low and one-handed**: on someone standing, about their waist. One swing, no overhead, no
+  two-handed bat.
+- **The scares are poses thrown fast**, not acted: a lunge is 0.98 s. They want sound, a face (the markers' Face
+  row) and a look to land; nobody has seen one in play.
+- **Sitting, sleeping and doors on a creature** are still a person's furniture (ANIMATOR_V3 §9).
+- Every picture was drawn on a CPU (lavapipe): the look is the game's, the frame rate isn't.
+
+**Not built** (ANIMATOR_V3 §9, MARKERS §11), in the order I'd take them:
+1. a **Peek card** in the Markers tab (`m.peek` is the starter's and an act's; a marker can't ask for one yet);
+2. furniture by the body: a seat by its legs, a handle by its shoulder (`set.seat`, `set.handle` exist; nothing
+   offers them), so a goblin can sit and an ogre open a door;
+3. a wall's thickness for the peek (fingers round its front corner);
+4. a two-handed swing, an overhead one, a kick, a grab that holds you; beckoning, pointing, waving;
+5. which clips to bake (all 53 go in: 10.3 MB where 24 made 6.5);
+6. the head and the grip for the Director's and the desk's cast (they're the starter kit's and the markers').
+
+**The pictures again**, each under xvfb on a CPU: `python tools/godot/motion_check.py sheets3` (6 minutes; then
+`--who creature_ghoul`, `--who creature_goblin`), `python tools/godot/motion_check.py shots3` (after a GDMOTION run:
+it uses that project), `python tools/godot/motion_check.py gizmo`, then `python tools/godot/motion_check.py guide3`.
+The two creatures are Studio exports on this machine only (`Exports/characters/creature_ghoul`, `creature_goblin`,
+not tracked): `node tools/character/creatures.mjs make --only ghoul,goblin --export` with the Studio's server
+running, then `node tools/animator/bake.mjs Exports/characters/<name>/<name>.glb`.
+
+## Before that (2026-11-14, `marker-system`, tsukibii/HorrorEngine#30): NPC markers
 
 **Built** (docs/MARKERS.md, its plan's boxes all ticked): the **HorrorStudio Markers** plugin
 (`GodotPlugins/HorrorStudioMarkers`), in every project `godot_byhand.py new` makes and switched on in an older one by
@@ -53,7 +114,7 @@ talking with answers to flags, faces by flag, looks, Disappear (not drawn, not a
 (three policies), checkpoints, F7. The editor side: the **NPC Markers** tab along the bottom (characters with a
 colour, an eye and solo; the palette; the storyboard; the marker's form in plain words; Problems), the markers in the
 3D view as map pins placed and dragged by mouse, the tester (a marker, from here, a quest, on a copy). The guide:
-`guides/markers/index.html`. Checks: MARKERS (4 minutes), MARKERSEDITOR (1 minute).
+`guides/markers/index.html`. Checks: MARKERS (1 minute), MARKERSEDITOR (1 minute).
 
 **The user's first feedback, done** (DECISIONS 2026-11-14): the conversations were drawn in a new boxed panel with
 numbered answers; they're now the prior style (the HUD's own line, one-line answers with a dash and ring prompt when
@@ -78,7 +139,7 @@ the mock-up's are: say so if the user asks.
 2. doors opened on the way of a walk (now: an Open door marker before it);
 3. a Follow marker (after you along your trail, as the starter's chase does), and the hunt's nodes as cards (a
    marker's Event can already `fire` a cue, a scare area, a hunt's `start`);
-4. the head and eyes turning to you while they wait (the body can face you);
+4. ~~the head and eyes turning to you while they wait~~ (built on `even-more-animations-v3`: the Head row);
 5. a line's own time (now by its length: `read_secs`), and a marker's "Then: a line" through the HUD's line too (it
    goes through the Story's `say`, which draws its own label);
 6. feet planted on each step of a stair (they glide over the risers; ANIMATOR_V2 §12's foot IK is the same work);

@@ -176,7 +176,7 @@ swings at.
 - [x] `motion.gd`: the new gaits, peek, scare, punch, swing, eat, drink, the small acts, `head_follow`; `act.gd`;
       `moves.gd`; GDMOTION
 - [x] The markers: paces, eat and drink, Attack, the head, Jump scare; MARKERS, MARKERSEDITOR
-- [ ] Sheets of pictures, the guides (the Animator's, the markers'), CLAUDE.md, CONTINUE, LESSONS; every check
+- [x] Sheets of pictures, the guides (the Animator's, the markers'), CLAUDE.md, CONTINUE, LESSONS; every check
 
 ## 8. As built
 

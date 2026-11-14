@@ -1753,6 +1753,12 @@ Mixamo skeleton's as far as they go): no record, so a character baked before it 
   clip had it; `aim` first turns the hand about `anchor` so the point leads at the target (what she holds pointed at
   her mouth, or at who she swings at); `freeze`: from the peak on, how far the point had to be moved then is kept (a
   blow thrown doesn't home; a fist rapping on a door keeps rapping, on the door); `peaks`: a second bite.
+  The turn of `aim` comes in late (by the square of the envelope's weight): in step with the rise it pointed a bat at
+  its target before the arm had swung it there. `last[side]` says what the correction did at the peak: `error` (how
+  far the point ended from the target), `moved` (how far the hand was carried) and `turned` (how far what it holds
+  was turned). GDMOTION3 holds a swing to a hand carried no more than 25 cm and a bat turned no more than 45
+  degrees: a correction that does most of the work is a clip that's wrong (the first swing passed at "4.5 cm from
+  who it's swung at" with the hand dragged down to her hip).
 - `mouth()`: between her lips, from the teeth's bone.
 
 Measured (GDMOTION3): a bottle 6.5 cm thick and a bat 3.5 cm picked up: her hand closes 0.0 cm from the grip, the
