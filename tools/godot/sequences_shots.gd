@@ -251,7 +251,7 @@ func flat_shots() -> void:
 			"view": func() -> void: spect(Vector3(-2.3, 1.4, -2.55), Vector3(-3.05, 0.95, -1.0), 42.0)},
 		{"name": "evening_2_carry", "when": after(func() -> bool: return mio.cur == m_walk2 and mio.body.now == "walk", 75),
 			"view": func() -> void: see(her("Mio"), 22.0, 2.4, 1.25, 1.05, 40.0)},
-		{"name": "evening_3_look", "when": func() -> bool: return mg != null and String(mg.now) == "life_look_hand" and float(mg.t) > 1.35,
+		{"name": "evening_3_look", "when": func() -> bool: return mg != null and String(mg.now) == "life_look_hand" and float(mg.t) > 1.35 and mio.body.posture == "sitting",   # (the marker's look, sat: with small movements on she may look at the mug on her way too)
 			"view": func() -> void: spect(Vector3(1.95, 1.05, -0.15), Vector3(0.6, 0.85, -2.25), 38.0)},
 		{"name": "tidy_1_floor", "when": after(func() -> bool: return aya.cur == a_pick and is_instance_valid(aya.body.held) and aya.body.held == book, 2),
 			"view": func() -> void: spect(Vector3(1.95, 0.8, 1.6), Vector3(2.1, 0.5, -0.3), 45.0)},

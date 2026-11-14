@@ -34,6 +34,7 @@ var hands := {}                                     # side -> {up, low, hand, si
 var grips := {}                                     # side -> {size, shape, w, goal, secs, pose: {bone: Quaternion}}
 var brings := {}                                    # side -> {point, anchor, target, peak, peaks, rise, hold, fall, aim, freeze, most, t, w, offset}
 const LET_GO := 0.12                                # s: a timed bring nobody has told the time for this long lets go (a clip's driver ticks with the physics: several frames can pass between two tellings)
+const LET_GO_FRAMES := 6                            # and for more frames than this on end (one long frame, a hitch, is not a clip that has stopped)
 const LET_GO_SECS := 0.25                           # s: and over this long, from whatever weight it had
 var last := {}                                      # side -> {point, target, error (m), weight}: what the last frame did, in the world (a check's)
 var _ready_for: Skeleton3D
@@ -121,6 +122,7 @@ func at(side: String, t: float) -> void:
 	var b: Dictionary = brings[side]
 	b["t"] = t
 	b["told"] = 0.0                                        # (told the time just now: see LET_GO)
+	b["untold"] = 0
 	if b["timed"]:
 		var w := 0.0
 		var end := 0.0
@@ -427,8 +429,9 @@ func _process_modification_with_delta(delta: float) -> void:
 		var h: Dictionary = hands.get(side, {})
 		if b["timed"] and b.has("told"):                    # a clip that ended before its bring did (or was cut short) tells it the time no more: the hand lets go by itself
 			b["told"] = float(b["told"]) + delta
-			if float(b["told"]) > LET_GO:
-				b["w"] = move_toward(float(b["w"]), 0.0, delta / LET_GO_SECS)
+			b["untold"] = int(b.get("untold", 0)) + 1
+			if float(b["told"]) > LET_GO and int(b["untold"]) > LET_GO_FRAMES:
+				b["w"] = move_toward(float(b["w"]), 0.0, minf(delta, 0.05) / LET_GO_SECS)
 				if float(b["w"]) <= 0.0:
 					brings.erase(side)
 					last.erase(side)

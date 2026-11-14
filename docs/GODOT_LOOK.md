@@ -1763,8 +1763,9 @@ Mixamo skeleton's as far as they go): no record, so a character baked before it 
   envelope has fallen (a hand held out from a door clip's `release` to past its end), or one that's cut short, would
   leave the hand pulled toward the target for good: a customer walked out of a shop with the hand he'd held out
   dragged 40 cm behind him. A timed bring that nobody has told the time for 0.12 s (`LET_GO`: a clip's driver ticks
-  with the physics, so a frame or two can pass between two tellings) lets go by itself over a quarter of a second
-  (`LET_GO_SECS`), from whatever weight it had, and is gone. GDMOTION3 holds it.
+  with the physics, so a frame or two can pass between two tellings) and for more than six frames on end
+  (`LET_GO_FRAMES`: one long frame, a hitch, isn't a clip that has stopped) lets go by itself over a quarter of a
+  second (`LET_GO_SECS`), from whatever weight it had, and is gone. GDMOTION3 holds it.
 - `mouth()`: between her lips, from the teeth's bone.
 
 Measured (GDMOTION3): a bottle 6.5 cm thick and a bat 3.5 cm picked up: her hand closes 0.0 cm from the grip, the

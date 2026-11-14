@@ -180,7 +180,10 @@ sequences + jumpscares and guides on utilizing our iks."*
 - **Your own characters in it**: `python tools/godot/sequences.py --cast woman=NAME,man=NAME,creature=NAME --keep DIR`
   (exports in `Exports/characters`, baked by the Animator there).
 - **Checks on the last commit**: SEQUENCES, MARKERS, MARKERSEDITOR, GDMOTION, GDMOTION3, GDSMALL, GDLIFE, ANIMATOR,
-  CHECKS (SEQGUIDE is in it now). LOGIC and LOGICEDITOR on the commit before: nothing of theirs has changed since.
+  CHECKS (SEQGUIDE is in it now), GDPLAY. LOGIC and LOGICEDITOR on the commit before: nothing of theirs has changed
+  since. **GDTESTROOM**: every station but 13 (played to 12, then `--from n_bath` to the end); 13 wants five made
+  props (`props/suitcase_hardshell`, `clothes_folded_tee`, `journal_diary`, `closet_sliding`, `closet_wardrobe`)
+  and this container has no Blender to make them, as before; nothing GDTESTROOM runs differs from main.
 
 **What the user hasn't seen**: any of it moving. The recipes' pictures are stills made under xvfb; the timings (how
 long she looks at the mug, the 2.5 s the last customer waits for your back, the 1.5 s of the peek) are guesses to be

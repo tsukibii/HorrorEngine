@@ -47,6 +47,13 @@ the fix.
   Every number had passed ("a look at his hand, over a walk"). The picture from his other side showed an open
   palm and a fist at his hip. A bring nobody tells the time lets go by itself now, and a look at what a hand holds
   is that hand's or nobody's.
+- **Fixing one thing frees another to happen sooner: take every picture again after a fix.** With her hand no
+  longer "busy" for the whole walk, her own small movements could use it, and "sat, she looks at the mug" was
+  pictured with her still on her feet, looking at it on the way: the picture's moment asked for the look, not
+  for the look *sat*. It went out in a commit; the contact sheet made for the report showed it. A sheet of every
+  picture is looked at before the push, not after.
+- **A rule that counts seconds must survive one long frame.** "Untold for 0.12 s" is also what a hitch looks like:
+  one frame of 0.3 s would have dropped a punch's IK mid-swing. It's seconds *and* frames on end now.
 - **`begins_with` accepts the wrong hand.** `life_look_hand_l` begins with `life_look_hand`. A check that names the
   thing it wants, names all of it.
 - **Read where a time comes from before waiting differently for it.** The conversation's picture had no line, twice
