@@ -49,3 +49,21 @@ then each branch leaves a section here saying what it changes for the tutorial. 
       button's flag, F7's board listing the tutorial's flags.
 - [ ] new pictures for the changed sections (`--pictures`); the two tabs' own pictures can be taken from the
       tutorial's scene with `logic_editor_test.gd`'s `shot()` way rather than the test room's.
+
+## From `advanced-pbrs`: clothing fabric sets and the cloth shader (docs/TAILOR.md §1k, docs/GODOT_LOOK.md §5x)
+
+**Must (or the tutorial is wrong or stale):**
+- [ ] §34 *Every system in it*: add a row for the cloth shader (`HSCloth`, the HSCharacterLook node's **Cloth**
+      switch, on by default): a character whose garments wear a fabric set in the Character Studio wears it in the
+      game with nothing to set up.
+- [ ] Her export made again: the tutorial's character was exported before the fabric sets and the collar rule, so her
+      file carries no fabric records and her collar is as it was. Dress her in sets (the PBR set picker, or a
+      **Fabric sets** outfit) and export again, or say she wears the older fabrics.
+- [ ] TUTORIAL2 run again: the look plugin grew (`cloth.gd`, the packs in `textures/cloth/`, 16 MB) and the
+      character look node calls `HSCloth.wear`. It wasn't run on this branch (it needs the desk's server).
+
+**Should:**
+- [ ] §30 *Her looks* or the character's section: one picture of her knit or her tights close up, and the two
+      numbers a player of the editor can turn (`cloth_fuzz`, `cloth_detail`).
+- [ ] A line on `HSCloth.dress(mesh, 0, "Leather001", colour)` for a prop of cloth made by hand (a curtain, a sofa)
+      whose second UV is in metres, if the tutorial ever dresses one.

@@ -1,0 +1,39 @@
+{
+ "maps": {
+  "albedo": "Leather001_1K-JPG_Color.jpg",
+  "normal": "Leather001_1K-JPG_NormalGL.jpg",
+  "rough": "Leather001_1K-JPG_Roughness.jpg",
+  "ao": "Leather001_1K-JPG_AmbientOcclusion.jpg",
+  "height": "Leather001_1K-JPG_Displacement.jpg",
+  "sheen": "Leather001_1K-JPG_Sheen.jpg"
+ },
+ "normal": "gl",
+ "tile_m": 0.08,
+ "source": "ours: tools/fabricpbr.py Leather001",
+ "url": "",
+ "licence": "ours",
+ "tint": true,
+ "label": "leather: a jacket's full-grain cowhide, semi-aniline, its grain in plates of 2 to 3 mm with finer creases inside them, follicle pores, a soft polish",
+ "group": "fabric",
+ "family": "hide",
+ "relief_m": 0.000331,
+ "fabric": {
+  "v": 1,
+  "kind": "hide",
+  "mean": [
+   0.7157,
+   0.6951,
+   0.6469
+  ],
+  "rough": 0.502,
+  "cavity": 0.45,
+  "sheen": 0.08,
+  "sheen_rough": 0.5,
+  "sheen_dye": 0.9,
+  "wrap": 0.04,
+  "halo": 0.0,
+  "spec": 0.5,
+  "crease": "leather",
+  "macro": 0.045
+ }
+}

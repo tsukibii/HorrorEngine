@@ -216,6 +216,11 @@ skin, eye, hair) puts the studio's skin, eyes and hair on it when the game runs:
   <code>wetness</code>, <code>sweat</code> (beads), <code>drips</code>, <code>oil</code>;</li>
   <li><b>the eyes</b>: the refracting cornea, the wet layer, the tear line, an idle blink;</li>
   <li><b>the hair</b>: the salon's bake worn MetaHuman's way (two highlights, light through it from behind);</li>
+  <li><b>her clothes</b> (<code>cloth</code> on): a garment that wears one of the studio's fabric sets in the Character Studio
+  (a PBR set named "knitted wool · WoolKnit001", "leather · Leather001"…) wears it here too: the weave or the knit at its real
+  size, the dye deeper down between the yarns, and the soft glow off its hairs where the cloth turns away from you or a lamp is
+  behind it (<code>cloth_fuzz</code> 0 none to 2 well brushed; <code>cloth_detail</code> the weave's relief). Sheer tights let the skin
+  through, less at a slant. Nothing to set up: the export says which fabric each garment wears;</li>
   <li><b>animal ears that flop</b>: the Character Studio's animal ears (Accessories) come with a chain of bones each, and
   they swing as she moves and settle back (<code>jiggle</code> on, <code>jiggle_amount</code> 0 still to 2 very floppy).
   It is <span class="node">HSJiggle</span>, which you can also put under any character yourself: it springs every chain of
@@ -225,6 +230,7 @@ skin, eye, hair) puts the studio's skin, eyes and hair on it when the game runs:
   <figure><img src="img/skin.jpg" width="1280" height="720" alt="Skin spheres dry, sweating and oiled"><figcaption>The skin dry, sweating and oiled.</figcaption></figure>
   <figure><img src="img/hair.jpg" width="1280" height="720" alt="Card hair on the hair shader"><figcaption>Card hair on the hair shader.</figcaption></figure>
 </div>
+<figure><img src="img/cloth.jpg" width="1500" height="1088" alt="Balls of cloth in four fabrics, each magnified twice and in four dyes"><figcaption>Four of the fabric sets in Godot (a shirt's cotton, sheer hosiery over skin, leather, knitted wool): the weave magnified on the left, then at a garment's distance in cream, red, navy and black. You can put one on any mesh of your own whose second UV is in metres: <code>HSCloth.dress(mesh_instance, 0, "WoolKnit001", Color("#8a2432"))</code>.</figcaption></figure>
 <figure><img src="img/ears.jpg" width="1280" height="560" alt="A child with a bull's horns and tagged cow ears, at rest and thrown sideways"><figcaption>A Studio export's cow ears at rest, and a moment after she's thrown sideways: the ears and the tag lag behind the head. The horns ride the head whole.</figcaption></figure>
 <p>It needs <code>HumanShaders/</code> at the project's root. In a shipped game, keep the character's <code>.glb</code> in the
 export (<code>*.glb</code> in the preset's non-resource filters): the look reads its records from it.</p>

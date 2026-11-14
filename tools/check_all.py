@@ -14,7 +14,7 @@ CHECKS = [["story_check.py"], ["level_check.py"], ["shots_sheet.py", "--plan"]]
 STUDIO = [["pbr.py", "check"], ["sfx.py", "check"], ["face_capture.py", "check"], ["uv_templates.py", "check"],   # once, not per game: the PBR shelf, the sound shelf, the expression library, the texture templates,
           ["street.py", "check"], ["skin_detail.py", "check"], ["eye_patch.py", "check"], ["fabric_bake.py", "check"],   # the streets, the skin's detail tiles, the grafted eyes, the made fabrics,
           ["face_export.mjs", "--check"], ["face_morphs.mjs", "--check"],                                            # the library baked for Godot (FACEEXPORT), a Studio export's face shapes (FACEMORPHS)
-          ["propgen.py", "thumbs", "--check"], ["woodpbr.py", "check"], ["weapon_fx.py", "check"],                     # the props' kept pictures and sticker passes (THUMBS), the made wood sets (WOODPBR), the weapons' effect maps (WEAPONFX),
+          ["propgen.py", "thumbs", "--check"], ["woodpbr.py", "check"], ["fabricpbr.py", "check"], ["weapon_fx.py", "check"],                     # the props' kept pictures and sticker passes (THUMBS), the made wood sets (WOODPBR), the weapons' effect maps (WEAPONFX),
           ["score/moods.mjs", "--check"],                                                                               # the music's moods as beds (MOODS),
           ["godot_byhand.py", "ready", "--check"],                                                                      # the ready-made exports made from their sets as they are (READYMADE),
           ["character/growtest.mjs"],                                                                                   # the Character Studio's ages, proportions and creatures (GROW),

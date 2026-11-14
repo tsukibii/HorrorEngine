@@ -58,6 +58,21 @@ for (const [bname, make] of bodies) {
     if (g.cover.length !== P.length / 3 || g.cover.reduce((a, v) => a + v, 0) !== b.cover.length) fail(`${id} on ${bname}: the skin it hides isn't the bake's`);
   }
 }
+// 3b. the neck: nothing soft past two thirds of it (pieces.js neckCap): a suit whose collar stood higher is brought
+// down onto that line on the body it stood highest on; a hat is left as made
+{
+  const high = ["culturalibre_heroine_suit_1", "mindfront_m_suit_01"].filter(id => all.includes(id));
+  const b = mhrBody(m, bodyWeights("feminine"), 1.62, bodySculpt("feminine")), P = Float32Array.from(b.P), W = new Wearer(base, P, T), cap = W.cap();
+  if (!cap) fail("the feminine body's neck can't be read for its two-thirds line");
+  else for (const id of high) {
+    const g = W.wear(bake(id), "lib:" + id), stiff = W.wear(bake(id), "lib:" + id, "#ffffff", { rigid: true }); let over = 0, was = 0;
+    for (const [G, put] of [[g.outer[0].P, v => { over = Math.max(over, v); }], [stiff.outer[0].P, v => { was = Math.max(was, v); }]]) for (let i = 0; i < G.length; i += 3) put(G[i + 1] - cap(G[i], G[i + 2]));
+    if (!(over < 1e-6)) fail(`${id}: ${(over * 1000).toFixed(1)} mm above two thirds of the neck`);
+    if (!(g.stats.capped > 0 && was > 0.002)) fail(`${id}: nothing of it stood above two thirds of the neck to bring down (${(was * 1000).toFixed(1)} mm as made, ${g.stats.capped} points moved)`);
+    if (stiff.stats.capped) fail(`${id}: worn as a rigid thing it was still brought down`);
+    layerNote.push(`${id}: ${g.stats.capped} points of its collar brought down ${(was * 1000).toFixed(0)} mm to two thirds of the neck`);
+  }
+}
 // 4. layers: a top worn over a skirt (and a dress over underwear) is set outside it where they lie together
 {
   const pairs = [["elvs_pleated_plaid_mini_skirt", "punkduck_spaghetti_strap_tank_top", "skirts", "shirts"], ["punkduck_sport_briefs", "mindfront_f_dress_02", "underwear", "dress"]].filter(p => all.includes(p[0]) && all.includes(p[1]));

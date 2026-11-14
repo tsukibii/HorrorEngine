@@ -1,5 +1,5 @@
 {
-  "about": "outfits for the tailor: garments made in order, each over the ones before ([design, colour, look, edit]: the edit a garment's own, as the Studio keeps it, a fit): a bottom first and the top hangs over it; a top first and it's tucked in; `meta` by outfit: its group (casual, smart, business, uniform, sleep, swim, underwear; designer: after the user's references), what it's after, and the accessories put on with it (a hat, sunglasses: accessories.js kinds)",
+  "about": "outfits for the tailor: garments made in order, each over the ones before ([design, colour, look, edit]: the edit a garment's own, as the Studio keeps it, a fit): a bottom first and the top hangs over it; a top first and it's tucked in; `meta` by outfit: its group (fabrics: every garment in one of the clothing fabric sets, tools/fabricpbr.py; casual, smart, business, uniform, sleep, swim, underwear; designer: after the user's references), what it's after, and the accessories put on with it (a hat, sunglasses: accessories.js kinds)",
   "outfits": {
     "work uniform": [["crew-socks", "#2a2c30"], ["work-boots", "#5a3e26"], ["work-shirt", "#7f97ad"], ["work-trousers", "#2c3440"]],
     "work uniform (long sleeves)": [["crew-socks", "#2a2c30"], ["work-boots", "#3a2c20"], ["work-shirt-long", "#8a9a86"], ["work-trousers", "#3a3a32"]],
@@ -81,7 +81,13 @@
     "casual: houndstooth shorts": [["ankle-socks", "#f0eee8"], ["loafers", "#1c1816"], ["cami-top", "#7a2a2a", {"surface": "satin", "pbr": "pbr/Procedural/fabric_satin"}], ["loose-shorts", "#e8e6e0"]],
     "casual: micro skirt": [["ankle-socks", "#f0eee8"], ["sneakers", "#f2f0ea"], ["t-shirt", "#ece8e2"], ["micro-skirt", "#2a2c34"]],
     "casual: micro pleated skirt": [["knee-socks", "#1c1e26"], ["loafers", "#1c1816"], ["crop-tee", "#ece8e2"], ["micro-pleated-skirt", "#2a2a40", {"pattern": {"kind": "plaid", "colors": ["#2a2a40", "#5a2a30", "#d8d0c0"], "size": 0.07}}]],
-    "casual: red sweater dress": [["sweater-dress-skirt", "#a3152d"], ["sweater-dress", "#a3152d", null, {"sleeve": "wrist-0.09"}]]
+    "casual: red sweater dress": [["sweater-dress-skirt", "#a3152d"], ["sweater-dress", "#a3152d", null, {"sleeve": "wrist-0.09"}]],
+    "fabrics: cream knit over a wool skirt and sheer tights": [["tights", "#1a1a1c", {"pbr": "pbr/fabric/HosierySheer001_1K-JPG", "denier": 0.42}], ["loafers", "#2b1d17", {"pbr": "pbr/fabric/LeatherMatte001_1K-JPG"}], ["pleated-skirt", "#3a3f4a", {"pbr": "pbr/fabric/WoolFlannel001_1K-JPG"}], ["turtleneck", "#ebe3d2", {"pbr": "pbr/fabric/WoolKnit001_1K-JPG"}]],
+    "fabrics: tee and jeans under a leather jacket": [["ankle-socks", "#f0eee8", {"pbr": "pbr/fabric/CottonFluffy001_1K-JPG"}], ["sneakers", "#efede8", {"pbr": "pbr/fabric/LeatherMatte001_1K-JPG"}], ["jeans", "#222c44", {"pbr": "pbr/fabric/Denim001_1K-JPG"}], ["t-shirt", "#f1eee6", {"pbr": "pbr/fabric/CottonJersey001_1K-JPG"}], ["leather-jacket", "#191817", {"pbr": "pbr/fabric/Leather001_1K-JPG"}]],
+    "fabrics: poplin shirt and flannel trousers": [["crew-socks", "#232a3a", {"pbr": "pbr/fabric/CottonFluffy001_1K-JPG"}], ["loafers", "#17130f", {"pbr": "pbr/fabric/LeatherMatte001_1K-JPG"}], ["suit-trousers", "#33363d", {"pbr": "pbr/fabric/WoolFlannel001_1K-JPG"}], ["shirt", "#c9d8ea", {"pbr": "pbr/fabric/CottonPoplin001_1K-JPG"}]],
+    "fabrics: spandex set and fluffy socks": [["boy-shorts", "#1d1f24", {"pbr": "pbr/fabric/Spandex001_1K-JPG"}], ["crew-socks", "#f1efe9", {"pbr": "pbr/fabric/CottonFluffy001_1K-JPG"}], ["sneakers", "#e9e7e2", {"pbr": "pbr/fabric/LeatherMatte001_1K-JPG"}], ["leggings", "#1d1f24", {"pbr": "pbr/fabric/Spandex001_1K-JPG"}], ["sports-bra", "#1f6f78", {"pbr": "pbr/fabric/Spandex001_1K-JPG"}]],
+    "fabrics: red rib jumper and leather skirt": [["over-knee-socks", "#16161a", {"pbr": "pbr/fabric/CottonFluffy001_1K-JPG"}], ["ankle-boots", "#141210", {"pbr": "pbr/fabric/LeatherMatte001_1K-JPG"}], ["mini-skirt", "#161515", {"pbr": "pbr/fabric/Leather001_1K-JPG"}], ["knit-top", "#8f1f2c", {"pbr": "pbr/fabric/WoolRib001_1K-JPG"}]],
+    "fabrics: wine sweater dress and sheer tights": [["tights", "#2a1d1a", {"pbr": "pbr/fabric/HosierySheer001_1K-JPG", "denier": 0.38}], ["ankle-boots", "#1a1512", {"pbr": "pbr/fabric/LeatherMatte001_1K-JPG"}], ["sweater-dress-skirt", "#6e1a2a", {"pbr": "pbr/fabric/WoolKnit001_1K-JPG"}], ["sweater-dress", "#6e1a2a", {"pbr": "pbr/fabric/WoolKnit001_1K-JPG"}, {"sleeve": "wrist-0.09"}]]
   },
   "meta": {
     "hanbok: lace jeogori and pleated skirt": {"group": "designer", "after": "image 1: a white lace jeogori with its ribbon over a black pleated mini skirt, over-the-knee socks, a black beret", "accessories": [{"kind": "hat", "style": "beret", "colour": "#141416", "tilt": 18}]},
@@ -164,6 +170,12 @@
     "casual: houndstooth shorts": {"group": "casual"},
     "casual: micro skirt": {"group": "casual"},
     "casual: micro pleated skirt": {"group": "casual"},
-    "casual: red sweater dress": {"group": "casual", "after": "the user's Daz3D picture (DECISIONS 2026-11-11): an oversized red rib-knit turtleneck sweater dress, its sleeves pushed up the forearms; cut as a long sweater hanging free over a straight skirt of the same knit (a top is cut from the skin and stops at the legs: the long coat's way)"}
+    "casual: red sweater dress": {"group": "casual", "after": "the user's Daz3D picture (DECISIONS 2026-11-11): an oversized red rib-knit turtleneck sweater dress, its sleeves pushed up the forearms; cut as a long sweater hanging free over a straight skirt of the same knit (a top is cut from the skin and stops at the legs: the long coat's way)"},
+    "fabrics: cream knit over a wool skirt and sheer tights": {"group": "fabrics", "after": "the clothing fabric sets (tools/fabricpbr.py): knitted wool (a cream turtleneck), wool flannel (a pleated skirt), sheer hosiery (black tights), matte leather (loafers)"},
+    "fabrics: tee and jeans under a leather jacket": {"group": "fabrics", "after": "the clothing fabric sets (tools/fabricpbr.py): spun cotton (a white tee), leather (a black jacket), denim (jeans: its warp dyed, its weft white), fluffy cotton (socks), matte leather (white sneakers)"},
+    "fabrics: poplin shirt and flannel trousers": {"group": "fabrics", "after": "the clothing fabric sets (tools/fabricpbr.py): cotton poplin (a pale blue shirt), wool flannel (charcoal trousers), fluffy cotton (navy socks), matte leather (black loafers)"},
+    "fabrics: spandex set and fluffy socks": {"group": "fabrics", "after": "the clothing fabric sets (tools/fabricpbr.py): spandex (a teal sports bra, black leggings), fluffy cotton (white socks), matte leather (sneakers)"},
+    "fabrics: red rib jumper and leather skirt": {"group": "fabrics", "after": "the clothing fabric sets (tools/fabricpbr.py): ribbed knitted wool (a red jumper), leather (a black mini skirt), fluffy cotton (over-the-knee socks), matte leather (ankle boots)"},
+    "fabrics: wine sweater dress and sheer tights": {"group": "fabrics", "after": "the clothing fabric sets (tools/fabricpbr.py): knitted wool (a wine sweater dress), sheer hosiery (tights), matte leather (ankle boots)"}
   }
 }

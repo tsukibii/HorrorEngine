@@ -3231,6 +3231,55 @@ pale one shows.
 - **Look at the panel at the size it opens at.** The tab was laid out with the palette over the storyboard; at the
   bottom panel's own height the storyboard got a row and a half. The palette became a column of its own and the
   tab's least height went up. A picture of the editor as it opens says this; the layout's code doesn't.
+
+## Fabric that reads as cloth (2026-11-14, `advanced-pbrs`: the clothing fabric sets, the cloth shaders)
+
+- **A dye that takes in part is a power, not a blend.** The first denim mixed the undyed white and the navy by the
+  mask in linear light: at 75% that is a pale grey-blue, and the jeans came out grey. A dye's depth goes by its amount
+  in the exponent (`undyed * (dye / undyed) ^ mask`), and the mask is divided by its own mean so the colour picked is
+  still the cloth's colour from afar. The same thought as the hollows between yarns (`dye ^ (1 + cavity)`): colour
+  through a dyed thing multiplies, it never averages.
+- **Know what a lobe can't do before measuring it.** The check lit a wool ball from straight behind and looked for the
+  fuzz along its outline: nothing, to four decimals, and an hour went on the shader. Charlie's distribution is zero
+  where the half vector lies along the normal, which is exactly the lit outline under a light behind. The test was
+  wrong, not the code; and the missing glow was real (knitwear does light up against a lamp), so it became a term of
+  its own (the halo) with its own measure. Work the geometry out on paper for one point first.
+- **A debug colour added in `light()` is added once a light**, lit or not: a light with no energy still ran, and its
+  term painted the whole ball. Multiply a debug term by the light's colour, or the picture lies.
+- **A trick that reads a texture at another scale reads everything in it at that scale.** The slow unevenness sampled
+  the colour map seven times larger to break up the tiling: on the poplin its yarns came through seven times their
+  size, as a plaid of stripes over the shirt. Read it from a blurred mip (`textureLod`, the sixth), where only the slow
+  mottle is left. It showed on a garment, not on the swatch balls: look at the thing worn.
+- **White fuzz turns black cloth grey.** The fuzz lobe's colour was half white whatever the dye; black socks were
+  charcoal. A dyed fibre is dyed through: the lobe carries the dye's square root (Filament's default), lighter and
+  less saturated, and black stays black.
+- **A length in metres on a neck is not a share of the neck.** The turtlenecks' collars rose 5.5 cm over "the neck's
+  base", which the frame finds at the neck's sides; at the front the chin is 1 to 2 cm over that line (under it on the
+  masculine base), so every collar ran to the chin, and the user saw it at once. Measure the thing the number is
+  about (the pit of the neck, the chin) and cut by a share of it.
+- **A rule is for everything it names, so measure everything.** The turtlenecks were fixed as three designs with a
+  number each; the user's answer was the rule itself ("anything that goes above the 2/3rd neck ... should come down").
+  Measured across every top, jacket, full garment and library garment on seven bodies, the three designs were the
+  least of it: hood collars stood up to 13 mm over on the broadest body, two library suits 16 and 5 mm, and a cami's
+  strap ran up an eight-year-old's neck. The rule went into the cut itself (one line every shell is cut at, and
+  every finished part brought under), and into the check for every garment, not into more designs' numbers.
+- **A limit measured against the wrong line reads as a fault.** The first table had the three turtlenecks 12 to 16 mm
+  "over": the line they were held to was a round neckline's with its default 1.2 cm dip at the front, not their own.
+  When a measure contradicts a check that just passed, look at the measure first.
+- **A wait that never ends is a question nobody asked.** The tool that makes a character waited on the Studio's page
+  for `window.__body.SCULPT`, as the other tools do; in this cloud session it never came, three times, and each time it
+  was put down to the page drawing slowly on the CPU. The page was up in 16 seconds: its sculpt is built on face
+  landmarks that the server gets from MediaPipe's worker, which wasn't set up (and then lacked libEGL). Probe the
+  thing being waited on after the first timeout, not the third: print the page's errors and its state as it loads.
+  The tool now asks the server for the landmarks first and says what's missing.
+- **A name is not an identity.** Godot's cloth shader found each garment's fabric by its material's name in the
+  file's JSON; a pair of jeans has a waistband and a belt both named `jeans_band`, and the belt was dressed as denim.
+  A count that didn't add up (20 surfaces dressed, 19 records) found it. Godot 4.7 keeps a glTF material's extras on
+  the material itself: read the record there, and guess by name only where there is none.
+- **Two CPU-bound jobs at once time each other out here.** The Studio's page takes minutes to start when it draws on
+  the CPU; with the outfit sheets rendering beside it, it passed its ten minute wait. One browser job at a time in a
+  cloud session.
+
 - **`Script.new()` runs a script for real, even in the editor.** Set up the scene made the HUD with
   `load("hud.gd").new()`: that isn't the editor's stand-in for a script that isn't a tool, it's the script itself,
   so its `_ready` built the whole HUD inside the edited scene, and adding it "with its children owned" then saved 48

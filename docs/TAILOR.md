@@ -17,7 +17,7 @@ references (§2) is in.
 | Step | What | Where |
 |---|---|---|
 | Measure | horizontal slices of the body: the crotch (where the legs part), the armpit (where the arms leave the torso), the neck's base and axis, the bust, the waist, the hips (the seat at its fullest), the knee; each arm's centre line from the shoulder joint, its seam plane, elbow, wrist and fingertip | `tailor/scan.js`, `tailor/frame.js` |
-| Cut lines | each garment kind as values on the body, positive on the cloth: the neckline (a cone round the neck's base dipped into a round, V or square neck; it starts where the cloth is, so loose garments don't climb the neck; `rise` takes it up the neck instead, a turtleneck), the hem (longer at the front or back for shirt-tails), the waistline (lower in front), sleeves cut square to the arm at a length along it, trouser legs at a height, a front opening (a V from `from` to the neck; `shift` slides it sideways on the way down: a wrap front's diagonal, a jeogori's) | `tailor/pieces.js` `neckline`, `opening`, `cutter` (which also says which line is nearest: `V.which`, for the guides) |
+| Cut lines | each garment kind as values on the body, positive on the cloth: the neckline (a cone round the neck's base dipped into a round, V or square neck; it starts where the cloth is, so loose garments don't climb the neck; `rise` takes it up the neck instead by metres (a stand collar), `cover` by a share of the neck itself: a turtleneck's collar ends two thirds of the way from the pit of the neck to under the chin, on any body (the frame's `neckPitY` and `chinY`: DECISIONS 2026-11-14)), the hem (longer at the front or back for shirt-tails), the waistline (lower in front), sleeves cut square to the arm at a length along it, trouser legs at a height, a front opening (a V from `from` to the neck; `shift` slides it sideways on the way down: a wrap front's diagonal, a jeogori's) | `tailor/pieces.js` `neckline`, `opening`, `cutter` (which also says which line is nearest: `V.which`, for the guides) |
 | Lift | the body's own mesh under the garment, plus a margin, lifted along the skin's normals by the **ease** (the body, the sleeves, the legs, a flare to the hem, more round the crotch; `shoulder`: a pad round each shoulder joint, above the armpit, so a jacket's shoulder is built rather than the body's slope: the art review, 2026-10-27), plus how far out the clothes already worn reach | `shell`, `shoulderPad`, `layers` |
 | Relax | `tension` rounds of smoothing along the cloth's normals only, each followed by a push back out to its ease from the body: a stretched membrane that lies on what bulges and bridges what dips (under the bust, the waist, the spine, the small of the back). More rounds hang it looser. It's held back at the armpits and between the legs so it doesn't web them | `tailor/fit.js` `relax` |
 | Refine | split in four (about 5 mm triangles), settled four more rounds at that size, then cut along the lines: the cut edges are interpolated, so every hem and neckline is one clean curve | `shell`, `mesh.js` `cut` |
@@ -345,10 +345,101 @@ fine `rib` (cuffs, socks, hems), for a whole garment.
 `sweater-dress` and `sweater-dress-skirt`, usable alone and in any colour). A knit dress to mid-thigh can't be one
 shell: a shell's hem can't pass the crotch (below it the skin is two legs: the long coat's reason, §4). So it is two
 garments of the same chunky knit that read as one: a **straight skirt** from the hips to mid-thigh, its hem a rib
-band, and over it a **long turtleneck sweater** hanging free to just above the crotch (a folded rib neck 5 cm up the
-neck, rib cuffs, sleeves to the wrist; the outfit wears them 9 cm short of it, as the picture's). The first try tucked the sweater into
+band, and over it a **long turtleneck sweater** hanging free to just above the crotch (a folded rib neck two thirds of the way up the
+neck (`cover`: DECISIONS 2026-11-14), rib cuffs, sleeves to the wrist; the outfit wears them 9 cm short of it, as the picture's). The first try tucked the sweater into
 the skirt: it bunched at the hips; hanging free over the skirt the join is hidden under the sweater's hem and the ribs
 run on. Its ease is at the limits skinning carries (body 16 mm as a jacket's, sleeves 14).
+
+## 1k. Fabric sets made from code: the cloth's own surface, and a dye over it (DECISIONS 2026-11-14)
+
+The user: "researching the latest techinques for creating hyper realistic clothing fabric pbrs ... then create new
+beautiful clothing fabric pbrs that work well with being tinted (maybe base pbrs should all be white or cream so tints
+apply well) ... knitted wool, wool, cotton, spin cotton, leather, spandex, sheer hosier, fluffy cotton (for socks), matte
+leather (for shoes)". The research: docs/research/fabric_pbr.md.
+
+**The sets** (`tools/fabricpbr.py`, numpy and Pillow, no Blender; into the project's own sets in git,
+`pbr/fabric/<Set>_1K-JPG/`, 1024 px, made at twice that and brought down). Each is built from what the cloth is made of
+at its real size, as a height first:
+
+| Set | What | A repeat |
+|---|---|---|
+| `WoolKnit001` | knitted wool: a hand knit's stockinette, 18 stitches and 24 rows to 10 cm, a three-ply worsted yarn with its halo | 6.6 cm |
+| `WoolRib001` | knitted wool, ribbed: a 2 x 2 rib in a finer two-ply yarn (cuffs, hems, a fitted jumper) | 4.8 cm |
+| `WoolFlannel001` | wool: a 2/2 twill flannel, milled and brushed so its nap half hides the weave | 3.2 cm |
+| `CottonPoplin001` | cotton: a shirt's poplin, plain weave, 52 ends and 28 picks a cm | 2.4 cm |
+| `CottonJersey001` | spun cotton: a T-shirt's single jersey, 28 gauge, ring-spun yarn with its hairs | 2.4 cm |
+| `Denim001` | denim: a 3/1 twill, its warp dyed and its weft left white, the dye worn off its ridges | 3.2 cm |
+| `CottonFluffy001` | fluffy cotton: a thick sock's brushed terry, a 1 x 1 rib under a pile of loops and loose fibre | 3.8 cm |
+| `Spandex001` | spandex: a nylon and elastane jersey of filament yarn, smooth, a soft sheen | 2.4 cm |
+| `HosierySheer001` | sheer hosiery: a 20 denier tight as it sits on the leg, the skin through its loops | 1.6 cm |
+| `Leather001` | leather: a jacket's full-grain cowhide, plates of 2 to 3 mm with finer creases, pores, a soft polish | 8 cm |
+| `LeatherMatte001` | matte leather: a shoe's calf, a tight fine grain, hardly a highlight | 6 cm |
+
+- **Weaves**: every warp and weft a flattened tube with its own width, wander and slubs, crimped over and under the
+  other by the weave's draft (`DRAFTS`: plain, 2/1, 2/2 and 3/1 twill, five-harness satin, basket), its fibres' twist as
+  fine ridges. A repeat is a whole number of the draft's repeats.
+- **Knits**: the yarn's own centre line loop by loop (`x = w t/2pi + b sin 2t, y = -h cos t, z = -d cos 2t`: Crane's
+  curve; legs in front, heads and sinkers behind), every ply its own tube wound round it, drawn as balls along its path
+  with the highest kept (`stamp`); a rib by purling wales (their loops the other way round, set back).
+- **Hides**: cells inside cells, each scale's borders creases of their own depth (some nearly gone), the cells
+  pillowed; follicle pores; a fine tooth; the hide's own slow lie.
+- **Hairs**: stray fibres drawn as curled hairs over all of it, by a hairiness a millimetre.
+- Then every map from that one height and what's known of each point (which yarn, how deep, how hairy): the normal at
+  the cloth's real relief, a horizon occlusion, the roughness (a crown's, a hollow's, a hair's; what the normals lose
+  when brought down given to it: Toksvig), the colour.
+
+**The maps**: the imported sets' five (`_Color`, `_NormalGL`, `_Roughness`, `_AmbientOcclusion`, `_Displacement`) and
+three more: `_Sheen` (how hairy each point is), `_Opacity` (a sheer knit's yarn against its holes), `_Tint` (where a
+dye takes: a denim's weft stays white). The shelf knows the new words (`storykit/pbr.py` `WORDS`).
+
+**The colour is the undyed cloth's**: white or cream, nearly neutral, never above bleached cotton (sRGB 217 to 234),
+with nothing of the light in it. A garment's colour is laid over it by the set's **`fabric` block** in its meta.json:
+`mean` (the map's mean: the dye is laid over the map divided by it, so **the colour picked is the colour worn**),
+`cavity` (down between the yarns the light meets the dye more than once: the colour to the power 1 + cavity there),
+`sheen`, `sheen_rough`, `sheen_dye` (the fuzz lobe: its strength, its roughness, how much of the dye its hairs carry),
+`halo` (a light behind the cloth caught in its hairs along its outline), `wrap` (how far the diffuse light wraps past
+the terminator), `spec`, `macro` (a slow unevenness over many repeats), `cover` and `denier` (a sheer knit), `dye_mean`
+(a `_Tint` map's mean), `crease` (the surface its creases behave as, §1d).
+
+**In the Studio** (`tailor/look.js`): a garment whose PBR set has a `fabric` block is a physical material, not the
+standard one:
+
+- the dye rules above (the map over its mean; the hollows deeper; a dye that takes in part as a power of its amount,
+  not a blend: `undyed * (dye / undyed) ^ (mask / its mean)`);
+- **a fuzz lobe** (three's sheen: Charlie's distribution), strongest where `_Sheen` says the cloth is hairy, its colour
+  the dye's square root (lighter, less saturated: a hair lit through), taken **off the cloth's own surface** (its
+  creases, not its weave: the hairs stand off the cloth), in the sky's light too, and **the halo** for a light behind;
+- **a wrapped diffuse**, so a knit's shaded side isn't black speckle; the weave's occlusion with the light that bounces
+  between pale yarns given back (Jimenez's fit);
+- **a sheer knit blended** by its `_Opacity` map brought to the garment's denier (denser: a haze of filaments between
+  the loops; sheerer: thinner yarn), denser seen at a slant; no shadow on the leg under it;
+- two of three's own light lines are changed for it (`FAB_LIGHTS`); with another three they stay as they are.
+
+A garment's **PBR set** picker lists the fabric sets first, by what they are ("knitted wool · WoolKnit001"); under it
+**Fuzz** (0 none, 1 as the fabric has it, 2 well brushed) and, on a sheer set, **Denier**. The outfits' **Fabric sets**
+tab (`outfits.json` group `fabrics`) has six outfits with every garment in a set: a cream knit over a wool skirt and
+sheer tights; a tee, a leather jacket and jeans; a poplin shirt and flannel trousers; a spandex set; a red rib jumper
+and a leather skirt; a wine sweater dress.
+
+**In a file** (Export for Godot): the dye alone is baked on the garment's layout (the weave left out: `uFabFlat`), and
+the material says which fabric it wears (`studioCloth` in its extras: the set, its repeat, its numbers, the garment's
+fuzz and denier, whether its normal map is its creases). Godot's side is the look plugin's `HSCloth` (GODOT_LOOK §5x),
+which draws the weave again at its real size on the second UV: the garment in the game as it was in the Studio.
+
+**Tools**: `python tools/fabricpbr.py [sets]` (made; `--size 2048` larger), `list`, `godot` (the packs for the look
+plugin), `check` (FABRICPBR, in check_all: every set tiles, its colour pale and neutral, its normals whole, its
+roughness its family's, its repeat a whole number of its yarns, its fabric block whole, the same twice, and the sets
+and packs on disk the ones this code makes); `node tools/character/tailor/swatch.mjs` (every set on a ball of cloth,
+close up and at a garment's distance in four dyes: `docs/fabric_sheets/swatches.jpg`; `outfits.jpg` the six outfits worn; `godot_sets.jpg`, `godot_outfits.jpg` and `godot_character.jpg` the same in Godot); `tailor/sheet.mjs` and `thumbs.mjs` read
+the project's own sets; `node tools/character/tailor/outfitglb.mjs --outfit NAME --out FILE.glb` (an outfit as cut and hung, written
+straight to a .glb with the fabric records the export writes: no page, seconds); `node tools/character/fabricpeople.mjs`
+(a character dressed in a fabrics outfit and exported: the Studio's server running, MediaPipe set up for it);
+`python tools/godot/cloth_check.py [--outfits] [--person NAME]` (GDCLOTH).
+
+**A new set**: an entry in `SETS` (its family, its repeat in mm as a whole number of its yarns or stitches, its
+yarn's or loop's numbers, its hairs, its `fabric` block), then `python tools/fabricpbr.py <Set>`, `godot <Set>`,
+`check`, and a look at it on the swatch sheet. Not made: velvet, satin, suede, corduroy, lace (the parts are there: a
+pile is hairs and a fuzz lobe, a satin is a draft); anisotropy for a satin's highlight; light through thin cloth.
 
 ## 2. The designs are data
 
@@ -362,7 +453,7 @@ on MHR's average body is high, so hems and waistlines are measured from the crot
 | Piece field | Means |
 |---|---|
 | `kind` | `shell` (cut from the skin) or `skirt` (rings) |
-| `neck` | `false`, or `{shape: round \| v \| square, depth, back, width, tilt, rise}` (`rise`: metres up the neck, a turtleneck or a mock neck; its neckband is then the roll) |
+| `neck` | `false`, or `{shape: round \| v \| square, depth, back, width, tilt, rise, cover}` (`rise`: metres up the neck, a mock neck or a stand collar; **`cover`**: a share of the neck's front, from its pit to under the chin: a turtleneck's is 0.66, whatever the body's neck; its neckband is then the roll; 0.66 is also the most any shell reaches: `neckCap`) |
 | `sleeve` | `short`, `cap`, `elbow`, `wrist` (each with an offset down the arm: `elbow+0.06`, rolled to below the elbow), or metres from the shoulder joint; the wrist and the elbow are found on the body and checked against MHR's own joints |
 | `hem` | `{at, front, back, side}`: a top's hem; `front`/`back` lengthen it there, `side` raises the sides |
 | `waist` | `{at, drop, rise}`: a bottom's waistline, `drop` lower in front, `rise` higher at the back |
@@ -512,7 +603,26 @@ close one per outfit, and fixed outfit by outfit. What read wrong, and the rule 
   lapels along it and no fastened button (one decorative, on the left front's edge). Cut closed and loosened, a blazer
   is a cardigan; the coat was a dressing gown. `blazer-open` is the design for it; the office and school blazers stay
   closed.
-- **A turtleneck's collar is soft**: a modest `rise`, the neckline hugging the neck (`open` 0.002, little ease), a
+- **A turtleneck's collar ends two thirds up the neck** (the user, 2026-11-14: "anything with a 'turtle neck' currently
+  goess down to the bottom of the chin which isnt how it should work, it should be about 2/3rds of the neck covered
+  only"): its height was a `rise` in metres above the neck's base, but that base is found at the neck's sides, where
+  the shoulders stop spreading, and the chin's underside is only 1 to 2 cm above it at the front (below it on the
+  masculine base): any rise over a centimetre reached the chin. Now `cover` is a share of the neck's own front, which
+  the frame measures on each body (`neckPitY`: where the body's front along its middle is furthest back; `chinY`:
+  where it stands a finger proud of the neck's own line): 6.3 cm on the feminine base, 4.8 on the masculine. The
+  turtleneck, the sweater dress's sweater and the lace blouse's stand collar all use 0.66 (the blouse's 1 cm dip at
+  the front taken out: on a 4.8 cm neck it was a fifth of the collar). TAILOR measures it: 0.67 to 0.69 of the neck's
+  front on all nine bodies, at least 8 mm short of the chin.
+- **Two thirds of the neck is the most for anything** (the user, the same day: "anything that goes above the 2/3rd
+  neck and is a top/coat etc should come down to 2/3rd"): `pieces.js` `neckCap(F)` is that line as a height at (x, z):
+  round the neck and a collar's width off it (3.5 cm) the line a turtleneck is cut at, lower under the chin and higher
+  at the nape; further out it climbs steeply, so nothing lying on the shoulders is touched. `cutter` cuts every shell
+  at it; `making` brings every finished part down onto it (a collar's lift and roll, a hood's, the cloth's thickness:
+  a few millimetres on the broadest bodies); `library.js` `capNeck` does the same for a library garment that isn't
+  rigid. A halter's strings (`_cord` parts) are left. Measured before: hood collars up to 13 mm over on the full
+  masculine body, ordinary collars 2 to 5 mm by their thickness there, two library suits 16 and 5 mm, and a cami
+  top's strap 3.4 cm up the side of an eight-year-old's neck. TAILOR holds every shell on every body to it.
+- **A turtleneck's collar is soft**: a modest height, the neckline hugging the neck (`open` 0.002, little ease), a
   thinner cloth and a narrow rib neckband; risen 7.5 cm with a thick band it was a brace up to the jaw.
 - **A turned cuff must not hold the wrist** (`hold: 0` on a coat's cuff): held, the sleeve's fullness bloused above
   it into a balloon.
