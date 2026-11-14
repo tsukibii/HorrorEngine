@@ -237,15 +237,31 @@ func rise() -> void:
 	stood.emit()
 
 
-## what's in front of the eye, if it (or a node above it) can be used
+## what's in front of the eye, if it (or a node above it) can be used. A thing with Logic (the Markers plugin's
+## HSLogic under it: "works only when these flags are so", "when it's used, switch these") is asked first and told
+## after: what it says no to isn't used (it says why itself), and null comes back.
 func use() -> Node:
 	aim.force_raycast_update()
 	var n: Node = aim.get_collider()
 	while n != null and not n.has_method("use"):
 		n = n.get_parent()
-	if n != null:
-		n.use(self)
+	if n == null:
+		return null
+	var logic := logic_of(n)
+	for l in logic:
+		if not l.allows(self):
+			return null
+	n.use(self)
+	for l in logic:
+		if is_instance_valid(l):
+			l.used(self)
 	return n
+
+
+## the Logic nodes of a thing (the group hs_logic: anything with thing_node(), allows(by) and used(by))
+func logic_of(thing: Node) -> Array:
+	return get_tree().get_nodes_in_group("hs_logic").filter(func(l: Node) -> bool:
+		return l.has_method("thing_node") and l.has_method("allows") and l.has_method("used") and l.thing_node() == thing)
 
 
 func _physics_process(dt: float) -> void:
