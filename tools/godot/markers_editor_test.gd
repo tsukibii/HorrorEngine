@@ -119,6 +119,15 @@ func hot(kind: String, node: Node = null) -> Dictionary:
 	return {}
 
 
+## how many markers have a pin drawn now
+func pins() -> int:
+	var seen := {}
+	for h in plug.overlay.hot.get(surface.get_instance_id(), []) if surface != null else []:
+		if h["kind"] == "pin":
+			seen[h["node"]] = true
+	return seen.size()
+
+
 func card(id: String) -> Dictionary:
 	for c in plug.CARDS:
 		if c["id"] == id:
@@ -244,19 +253,21 @@ func _run() -> void:
 
 	# ---- drawn in the 3D view ----
 	await redraw()
-	var pins := 0
+	ok(pins() == 4, "the 3D view draws a pin for each placed marker", "%d pins" % pins())
+	var on_place := false
+	var head_over := false
 	for h in plug.overlay.hot.get(surface.get_instance_id(), []):
-		if h["kind"] == "pin":
-			pins += 1
-	ok(pins == 4, "the 3D view draws a pin for each placed marker", "%d pins" % pins)
-	ok(not hot("pin", walk).is_empty() and (hot("pin", walk)["at"] as Vector2).distance_to(scr(walk.global_position)) < 1.5, "each where its marker is")
+		if h["kind"] == "pin" and h["node"] == walk:
+			on_place = on_place or (h["at"] as Vector2).distance_to(scr(walk.global_position)) < 1.5
+			head_over = head_over or (h["at"] as Vector2).y < scr(walk.global_position).y - 15.0
+	ok(on_place and head_over, "each a map pin: its point on its marker's place, its head over it")
 	ok(not hot("badge", wait).is_empty(), "and a badge where she waits")
 	await shot("02_markers")
 
 	# ---- a pin dragged, undone ----
 	plug.pick_node(walk)
 	await redraw()
-	drag(hot("pin", walk)["at"], scr(Vector3(2.0, 0, 3.0)))
+	drag(scr(walk.global_position), scr(Vector3(2.0, 0, 3.0)))        # (taken by its point)
 	await frames(2)
 	ok(walk.global_position.distance_to(Vector3(2.0, 0, 3.0)) < 0.04, "a pin dragged rides the floor to where it's let go", str(walk.global_position))
 	undo()
@@ -265,6 +276,17 @@ func _run() -> void:
 	redo()
 	await frames(2)
 	ok(walk.global_position.distance_to(Vector3(2.0, 0, 3.0)) < 0.04, "and redo moves it again")
+	await redraw()
+	var head_at := Vector2.ZERO
+	for h in plug.overlay.hot.get(surface.get_instance_id(), []):
+		if h["kind"] == "pin" and h["node"] == walk and (h["at"] as Vector2).y < scr(walk.global_position).y - 15.0:
+			head_at = h["at"]
+	var lift := scr(walk.global_position) - head_at
+	drag(head_at, scr(Vector3(1.0, 0, 3.0)) - lift)                 # taken by its head: its point lands where it's put, not under the mouse
+	await frames(2)
+	ok(walk.global_position.distance_to(Vector3(1.0, 0, 3.0)) < 0.05, "a pin taken by its head keeps its point where it was under the hand", str(walk.global_position))
+	undo()
+	await frames(2)
 	# ---- its arrow ----
 	await redraw()
 	var tip := hot("arrow", walk)
@@ -336,8 +358,31 @@ func _run() -> void:
 		await secs(1.6)                                        # (an undo done behind the editor's back: the tab sees it at its next look)
 		ok(is_equal_approx(walk.take_secs, 0.0) and is_equal_approx((field("F_take_secs") as SpinBox).value, 0.0), "undo takes it back, in the form too",
 			"%.1f, the form %.1f" % [walk.take_secs, (field("F_take_secs") as SpinBox).value])
+	var dial := field("Dial")
+	var px := field("F_pos_x") as SpinBox
+	ok(dial != null and px != null and is_equal_approx(px.value, snappedf(walk.global_position.x, 0.01)), "the form has its place as numbers and a facing dial")
+	if dial != null and px != null:
+		dial.turning.emit(deg_to_rad(90.0))
+		dial.turned.emit(deg_to_rad(90.0))
+		await frames(2)
+		ok(absf(yaw_of(walk) - 90.0) < 0.5 and is_equal_approx((field("F_facing") as SpinBox).value, 90.0), "the dial turned: she faces that way", "%.0f deg" % yaw_of(walk))
+		px.value = 2.5
+		await frames(2)
+		ok(is_equal_approx(walk.global_position.x, 2.5), "a number typed for its place moves the pin")
+		undo()
+		undo()
+		await secs(1.6)
 	var sw := field("F_start_when")
 	if sw != null:
+		sw.flags = PackedStringArray(["met_alex"])
+		sw.toggle_flag("met_alex")
+		await frames(2)
+		ok(walk.start_when == "met_alex", "a flag ticked in the menu is asked for", walk.start_when)
+		sw = field("F_start_when")
+		sw.toggle_flag("met_alex")
+		await frames(2)
+		ok(walk.start_when == "", "and unticked, not any more")
+		sw = field("F_start_when")
 		sw.add_word("@wait:2")
 		await frames(2)
 		ok(walk.start_when == "@wait:2", "a chip added to Starts when", walk.start_when)
@@ -393,18 +438,10 @@ func _run() -> void:
 	dock._card(card("walk"))
 	press(scr(Vector3(1.0, 0, -2.0)))
 	await redraw()
-	var shown_pins := 0
-	for h in plug.overlay.hot.get(surface.get_instance_id(), []):
-		if h["kind"] == "pin":
-			shown_pins += 1
-	ok(shown_pins == 1, "only the picked quest's markers are drawn", "%d pins" % shown_pins)
+	ok(pins() == 1, "only the picked quest's markers are drawn", "%d pins" % pins())
 	plug.all_quests = true
 	await redraw()
-	shown_pins = 0
-	for h in plug.overlay.hot.get(surface.get_instance_id(), []):
-		if h["kind"] == "pin":
-			shown_pins += 1
-	ok(shown_pins >= 6, "'All quests' draws them all", "%d pins" % shown_pins)
+	ok(pins() >= 6, "'All quests' draws them all", "%d pins" % pins())
 	plug.all_quests = false
 
 	# ---- a second character; who's shown ----

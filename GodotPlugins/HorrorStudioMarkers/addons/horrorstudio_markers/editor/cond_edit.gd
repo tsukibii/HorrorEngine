@@ -82,6 +82,17 @@ func add_word(word: String) -> void:
 	_emit(HSNpcCond.with_word(text, word))
 
 
+## a flag asked for, or not any more (its tick in the menu)
+func toggle_flag(flag: String) -> void:
+	var ws := HSNpcCond.words(text)
+	for i in ws.size():
+		var p := HSNpcCond.parse(ws[i])
+		if String(p["kind"]) == "flag" and String(p["arg"]) == flag:
+			remove_at(i)
+			return
+	add_word(flag)
+
+
 func remove_at(i: int) -> void:
 	_emit(HSNpcCond.without_word(text, i))
 
@@ -119,10 +130,17 @@ func _show_menu(from: Control) -> void:
 		add.call("You can't see her", "@unseen")
 		add.call("She's been shot", "@shot")
 		add.call("She's been shot down", "@down")
-	_menu.add_separator("A flag is on")
+	_menu.add_separator("Flags (ticked: must be on)")
 	words.append("")
-	for f in flags:
-		add.call(f, f)
+	var have := {}
+	for w in HSNpcCond.words(text):
+		var pw := HSNpcCond.parse(w)
+		if String(pw["kind"]) == "flag" and not bool(pw["neg"]):
+			have[String(pw["arg"])] = true
+	for f in flags:                                            # (the user's "Boolean Flags Trigger": the scene's flags, a tick each)
+		_menu.add_check_item(f)
+		_menu.set_item_checked(_menu.item_count - 1, have.has(f))
+		words.append("?" + f)
 	add.call("New flag…", "new_flag")
 	if not tasks.is_empty():
 		_menu.add_separator("A quest (task)")
@@ -136,6 +154,9 @@ func _show_menu(from: Control) -> void:
 	_menu.index_pressed.connect(func(i: int) -> void:
 		var w := String(words[i])
 		if w == "":
+			return
+		if w.begins_with("?"):                                 # a flag's tick: on, or off again
+			toggle_flag(w.substr(1))
 			return
 		add_word(w)
 		if w in ["new_flag", "item:key"] or w.begins_with("@wait") or w.begins_with("@near") or w.begins_with("@far"):

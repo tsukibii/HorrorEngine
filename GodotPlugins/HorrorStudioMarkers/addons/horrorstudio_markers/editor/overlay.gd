@@ -1,8 +1,10 @@
 @tool
 ## The markers in the 3D view (docs/MARKERS.md §8): drawn over it, translucent, and moved there by mouse.
-##   draw(control)        every shown character's markers: numbered pins in her colour, the path between them with
-##                        chevrons the way she walks, an arrow on each pin for the way she faces, small badges for
-##                        what happens where she stands (a wait, a talk, an event, a choice and its ways), a legend
+##   draw(control)        every shown character's markers: map pins in her colour, each with its kind's drawing and
+##                        its number, its point on the place (the user's mock-up); the path between them with
+##                        chevrons the way she walks, an arrow from each pin for the way she faces, small round
+##                        badges over a place for what happens where she stands (a wait, a talk, an event, a choice
+##                        and its ways), a legend
 ##   input(camera, event) a click on a pin picks it; a drag moves it over the floor under the mouse; the arrow's tip
 ##                        dragged round turns it; a bend dragged, the + on a path clicked for a new one; a card armed
 ##                        in the tab placed by a click; something picked for a field
@@ -10,8 +12,9 @@
 extends RefCounted
 
 const Glyphs := preload("res://addons/horrorstudio_markers/editor/glyphs.gd")
-const PIN := 13.0                          # a pin's radius, pixels (times the editor's scale)
-const BADGE := 10.0
+const PIN := 13.0                          # a pin's head's radius, pixels (times the editor's scale)
+const HEAD := 27.0                         # how far its head is over its point
+const BADGE := 10.5
 const ARROW := 0.6                         # the facing arrow's length, metres
 
 var plugin: EditorPlugin
@@ -96,30 +99,69 @@ func _path(c: Control, cam: Camera3D, k: Vector2, pts: PackedVector3Array, col: 
 		c.draw_polyline(run, col, w, true)
 
 
-func _chip(c: Control, at: Vector2, text: String, icon: String, a: float, font: Font, strong: bool) -> void:
+# a marker's words beside its pin: its title, and its note after it, on a dark chip the room shows through
+func _chip(c: Control, at: Vector2, title: String, note: String, a: float, font: Font, bold: Font, strong: bool) -> void:
 	var s := Glyphs.scale()
 	var fs := int(11 * s)
-	var tw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x if text != "" else 0.0
-	var isz := 14.0 * s
-	var rect := Rect2(at, Vector2(isz + (tw + 5 * s if text != "" else 0.0) + 8 * s, 18 * s))
-	c.draw_style_box(Glyphs.box(Color(0.06, 0.07, 0.09, (0.82 if strong else 0.66) * a), 5, 0), rect)
-	c.draw_texture(Glyphs.icon(icon, Color(1, 1, 1, 0.95), 14), rect.position + Vector2(4 * s, 2 * s), Color(1, 1, 1, a))
-	if text != "":
-		c.draw_string(font, rect.position + Vector2(isz + 7 * s, 13 * s), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, 0.95 * a))
+	var tw := bold.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var nw := font.get_string_size("  " + note, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x if note != "" else 0.0
+	var rect := Rect2(at, Vector2(tw + nw + 12 * s, 18 * s))
+	c.draw_style_box(Glyphs.box(Color(0.06, 0.07, 0.09, (0.84 if strong else 0.68) * a), 5, 0), rect)
+	c.draw_string(bold, rect.position + Vector2(6 * s, 13 * s), title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, 0.97 * a))
+	if note != "":
+		c.draw_string(font, rect.position + Vector2(6 * s + tw, 13 * s), "  " + note, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, 0.66 * a))
 
 
-func _disc(c: Control, at: Vector2, r: float, col: Color, label: String, font: Font, picked: bool, hovered: bool) -> void:
+# a marker's number on a small dark disc at the corner of its pin or badge
+func _number(c: Control, at: Vector2, label: String, a: float, bold: Font) -> void:
+	if label == "":
+		return
 	var s := Glyphs.scale()
-	c.draw_circle(at, r + 2.5 * s, Color(0, 0, 0, 0.45 * col.a))
-	c.draw_circle(at, r, col)
-	c.draw_arc(at, r, 0, TAU, 28, Color(1, 1, 1, (1.0 if picked or hovered else 0.75) * col.a), (2.6 if picked else 1.4) * s, true)
+	var fs := int((9 if label.length() <= 2 else 8) * s)
+	var tw := bold.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var half := Vector2(maxf(7.5 * s, tw * 0.5 + 3.5 * s), 7.5 * s)
+	var box := Glyphs.box(Color(0.07, 0.08, 0.1, 0.96 * a), 8, 0, Color(1, 1, 1, 0.9 * a), 1)
+	c.draw_style_box(box, Rect2(at - half, half * 2.0))
+	c.draw_string(bold, at + Vector2(-tw * 0.5, fs * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, 0.98 * a))
+
+
+# a map pin: its point on the place, its head over it with the kind's drawing in it, its number at its corner; -> its head's middle
+func _pin(c: Control, tip: Vector2, col: Color, icon: String, label: String, bold: Font, picked: bool, hovered: bool) -> Vector2:
+	var s := Glyphs.scale()
+	var r := PIN * s
+	var head := tip + Vector2(0, -HEAD * s)
+	var a := col.a
+	var rim := Color(1, 1, 1, (1.0 if picked or hovered else 0.82) * a)
+	c.draw_set_transform(tip, 0.0, Vector2(1.0, 0.42))
+	c.draw_circle(Vector2.ZERO, 6.5 * s, Color(0, 0, 0, 0.38 * a))             # (its shadow on the floor)
+	c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	var w := r * 0.66
+	var e := (2.6 if picked else 1.6) * s
+	c.draw_colored_polygon(PackedVector2Array([head + Vector2(-w - e, r * 0.7), head + Vector2(w + e, r * 0.7), tip + Vector2(0, e * 1.6)]), rim)
+	c.draw_circle(head, r + e, rim)
+	c.draw_colored_polygon(PackedVector2Array([head + Vector2(-w, r * 0.7), head + Vector2(w, r * 0.7), tip]), Color(col.r, col.g, col.b, 1.0) if a > 0.9 else col)
+	c.draw_circle(head, r, Color(col.r, col.g, col.b, 1.0) if a > 0.9 else col)
 	if picked:
-		c.draw_arc(at, r + 4.5 * s, 0, TAU, 32, Color(1, 1, 1, 0.9), 1.6 * s, true)
-	if label != "":
-		var fs := int((11 if label.length() <= 2 else 9) * s)
-		var tw := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		var dark := col.get_luminance() > 0.55
-		c.draw_string(font, at + Vector2(-tw * 0.5, fs * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0, 0, 0, 0.9) if dark else Color(1, 1, 1, 0.97))
+		c.draw_arc(head, r + 6.0 * s, 0, TAU, 36, Color(1, 1, 1, 0.9), 1.6 * s, true)
+	var dark := col.get_luminance() > 0.62
+	var tex := Glyphs.icon(icon, Color(0.05, 0.06, 0.08) if dark else Color.WHITE, 17)
+	c.draw_texture(tex, head - Vector2(tex.get_size()) * 0.5, Color(1, 1, 1, a))
+	_number(c, head + Vector2(r * 0.82, -r * 0.82), label, a, bold)
+	return head
+
+
+# a round badge: something that happens where she stands
+func _dot(c: Control, at: Vector2, r: float, col: Color, icon: String, label: String, bold: Font, picked: bool, hovered: bool) -> void:
+	var s := Glyphs.scale()
+	var a := col.a
+	c.draw_circle(at, r + (2.6 if picked else 1.5) * s, Color(1, 1, 1, (1.0 if picked or hovered else 0.8) * a))
+	c.draw_circle(at, r, Color(col.r, col.g, col.b, 1.0) if a > 0.9 else col)
+	if picked:
+		c.draw_arc(at, r + 5.5 * s, 0, TAU, 32, Color(1, 1, 1, 0.9), 1.6 * s, true)
+	var dark := col.get_luminance() > 0.62
+	var tex := Glyphs.icon(icon, Color(0.05, 0.06, 0.08) if dark else Color.WHITE, 13)
+	c.draw_texture(tex, at - Vector2(tex.get_size()) * 0.5, Color(1, 1, 1, a))
+	_number(c, at + Vector2(r * 0.86, -r * 0.86), label, a, bold)
 
 
 func draw(c: Control) -> void:
@@ -157,10 +199,9 @@ func draw(c: Control) -> void:
 				var from: Dictionary = starts[0]
 				var depth := int(row["depth"])
 				if node is HSNpcWay:
-					_badge(c, cam, k, list, stacks, from["pos"], node, String(row["label"]), (node as HSNpcWay).title(), "way", col, a, font, bold, picked, hov)
+					_badge(c, cam, k, list, stacks, from["pos"], node, String(row["label"]), (node as HSNpcWay).title(), "", "way", col, a, font, bold, picked, hov)
 					continue
 				var m := node as HSNpcMarker
-				var text := m.title() + ((": " + m.note) if m.note != "" else "")
 				if m.is_placed():
 					var pin := m.place()
 					if m.kind == "walk":
@@ -193,15 +234,16 @@ func draw(c: Control) -> void:
 								c.draw_circle(t2 + un * 2 * s, (8.0 if hot_tip else 6.5) * s, Color(col.r, col.g, col.b, 1.0))
 								c.draw_arc(t2 + un * 2 * s, (8.0 if hot_tip else 6.5) * s, 0, TAU, 20, Color.WHITE, 1.5 * s, true)
 								list.append({"kind": "arrow", "node": node, "index": 0, "at": t2 + un * 2 * s, "r": 11.0 * s})
-					_disc(c, p2, PIN * s, col, String(row["label"]), bold, picked, hov)
-					list.append({"kind": "pin", "node": node, "index": 0, "at": p2, "r": (PIN + 3.0) * s})
-					stacks[_key(pin)] = int(stacks.get(_key(pin), 0)) + 1
+					var head := _pin(c, p2, col, Glyphs.of_marker(m), String(row["label"]), bold, picked, hov)
+					list.append({"kind": "pin", "node": node, "index": 0, "at": head, "r": (PIN + 4.0) * s})
+					list.append({"kind": "pin", "node": node, "index": 0, "at": p2, "r": 7.0 * s})
+					stacks[_key(pin)] = maxf(float(stacks.get(_key(pin), 0.0)), HEAD + PIN)
 					if here or picked:
-						_chip(c, p2 + Vector2((PIN + 6) * s, -9 * s), text, Glyphs.of_marker(m), a, font, picked)
+						_chip(c, head + Vector2((PIN + 11) * s, -9 * s), m.title(), m.note, a, font, bold, picked)
 					if m.kind == "walk" and picked:
 						_bends(c, cam, k, list, m, from["pos"], col)
 				else:
-					_badge(c, cam, k, list, stacks, from["pos"], node, String(row["label"]), text, Glyphs.of_marker(m), col, a, font, bold, picked, hov)
+					_badge(c, cam, k, list, stacks, from["pos"], node, String(row["label"]), m.title(), m.note, Glyphs.of_marker(m), col, a, font, bold, picked, hov)
 	_legend(c, legend, font, bold)
 
 
@@ -209,20 +251,22 @@ func _key(p: Vector3) -> Vector3i:
 	return Vector3i(roundi(p.x * 4.0), roundi(p.y * 4.0), roundi(p.z * 4.0))
 
 
-# something that happens where she stands: a small badge over that place, stacked over what's already there
-func _badge(c: Control, cam: Camera3D, k: Vector2, list: Array, stacks: Dictionary, where: Vector3, node: Node, label: String, text: String, icon: String,
+# something that happens where she stands: a round badge over that place, stacked over what's already there (its pin,
+# other badges); `stacks`: how high each place is already built, pixels over its point
+func _badge(c: Control, cam: Camera3D, k: Vector2, list: Array, stacks: Dictionary, where: Vector3, node: Node, label: String, title: String, note: String, icon: String,
 		col: Color, a: float, font: Font, bold: Font, picked: bool, hov: bool) -> void:
 	if _behind(cam, where):
 		return
 	var s := Glyphs.scale()
-	var n := int(stacks.get(_key(where), 0))
-	stacks[_key(where)] = n + 1
-	var at := _to2(cam, k, where) + Vector2(0, -(PIN + 4.0 + (BADGE * 2.0 + 3.0) * n + BADGE) * s) if n > 0 else _to2(cam, k, where)
-	var r := (BADGE if n > 0 or node is HSNpcWay else PIN - 1.0) * s
-	_disc(c, at, r, Color(col.r * 0.55, col.g * 0.55, col.b * 0.55, col.a) if node is HSNpcWay else col, label, bold, picked, hov)
+	var r := (BADGE - (1.5 if node is HSNpcWay else 0.0)) * s
+	var top := float(stacks.get(_key(where), 0.0))
+	var up := top + 4.0 + r / s if top > 0.0 else 13.0
+	stacks[_key(where)] = up + r / s
+	var at := _to2(cam, k, where) + Vector2(0, -up * s)
+	_dot(c, at, r, Color(col.r * 0.6, col.g * 0.6, col.b * 0.6, col.a) if node is HSNpcWay else col, icon, label, bold, picked, hov)
 	list.append({"kind": "badge", "node": node, "index": 0, "at": at, "r": r + 3.0 * s})
 	if a >= 1.0 or picked:
-		_chip(c, at + Vector2(r + 5 * s, -9 * s), text, icon, a, font, picked)
+		_chip(c, at + Vector2(r + 11 * s, -9 * s), title, note, a, font, bold, picked)
 
 
 # a picked Walk's handles: its bends, and a + on each stretch of its path for a new one
@@ -494,7 +538,11 @@ func input(cam: Camera3D, e: InputEvent) -> int:
 			plugin.pick_node(node)
 		if h2["kind"] == "badge" or node == null:
 			return EditorPlugin.AFTER_GUI_INPUT_STOP
-		drag = {"kind": h2["kind"], "node": node, "index": int(h2["index"]), "was": node.global_transform, "press": mb.position, "moved": false}
+		var grab := Vector2.ZERO
+		var ctl := _control_of(cam)
+		if h2["kind"] == "pin" and ctl != null:                # (picked up by its head: its point stays as far from the mouse as it was)
+			grab = _to2(cam, _k(ctl, cam.get_viewport() as SubViewport), node.global_position) - mb.position
+		drag = {"kind": h2["kind"], "node": node, "index": int(h2["index"]), "was": node.global_transform, "press": mb.position, "moved": false, "grab": grab}
 		return EditorPlugin.AFTER_GUI_INPUT_STOP
 	if not drag.is_empty():                                    # let go: one undo step from where it was
 		var d := drag
@@ -507,6 +555,7 @@ func input(cam: Camera3D, e: InputEvent) -> int:
 		plugin.update_overlays()
 		if plugin.dock != null:
 			plugin.dock.refresh_board()
+			plugin.dock.refresh_form()
 		return EditorPlugin.AFTER_GUI_INPUT_STOP
 	return EditorPlugin.AFTER_GUI_INPUT_PASS
 
@@ -522,5 +571,5 @@ func _drag_to(cam: Camera3D, pos: Vector2) -> void:
 		if Vector2(d.x, d.z).length() > 0.05:
 			n.global_transform = Transform3D(Basis(Vector3.UP, atan2(d.x, d.z)), n.global_position)
 		return
-	var at := point_at(cam, pos, n.global_position.y)
+	var at := point_at(cam, pos + (drag.get("grab", Vector2.ZERO) as Vector2), n.global_position.y)
 	n.global_transform = Transform3D(n.global_transform.basis, at)

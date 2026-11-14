@@ -10,6 +10,7 @@ extends EditorDock
 
 const Glyphs := preload("res://addons/horrorstudio_markers/editor/glyphs.gd")
 const CondEdit := preload("res://addons/horrorstudio_markers/editor/cond_edit.gd")
+const Dial := preload("res://addons/horrorstudio_markers/editor/dial.gd")
 const KIND_TITLES := [["appear", "Start here"], ["walk", "Walk (or run)"], ["wait", "Wait (or talk)"], ["sit", "Sit"], ["sleep", "Sleep"], ["grab", "Grab, pick up, open"],
 	["animation", "Animation"], ["event", "Event"], ["disappear", "Disappear"], ["choice", "Choice"], ["repeat", "Repeat"]]
 const STAYS := [["next", "until the next marker can start"], ["secs", "for some seconds"], ["talked", "until you talk to her"]]
@@ -998,6 +999,8 @@ func _form_marker(m: HSNpcMarker) -> void:
 	if m.kind != "choice" and m.kind != "repeat":
 		var st := _sec("Starts when")
 		st.add_child(_cond(m, "start_when", "at once (when the marker before is done)"))
+	if m.is_placed():
+		_form_where(m, npc)
 	match m.kind:
 		"walk":
 			var b := _sec("The walk")
@@ -1109,6 +1112,75 @@ func _form_marker(m: HSNpcMarker) -> void:
 		_form_talk(m, npc)
 	if m.kind in HSNpcMarker.BODY or m.kind in ["event", "disappear"]:
 		_form_then(m)
+
+
+# where its pin is and the way she faces there: numbers and a dial, for what the mouse does in the 3D view
+func _form_where(m: HSNpcMarker, npc: HSNpc) -> void:
+	var wh := _sec("Where")
+	var row := HBoxContainer.new()
+	var was := [m.global_transform]
+	for axis in 3:
+		var sb := SpinBox.new()
+		sb.name = "F_pos_%s" % "xyz"[axis]
+		sb.min_value = -100000.0
+		sb.max_value = 100000.0
+		sb.step = 0.01
+		sb.prefix = ["x", "y", "z"][axis]
+		sb.value = m.global_position[axis]
+		sb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		sb.tooltip_text = ["Across", "Up: the height of the floor, the seat, the shelf", "Along"][axis] + " (metres). Or drag the pin in the 3D view."
+		sb.value_changed.connect(func(v: float) -> void:
+			if _busy or not plugin.valid(m):
+				return
+			var pos := m.global_position
+			pos[axis] = v
+			plugin.place_node(m, Transform3D(m.global_transform.basis, pos), m.global_transform, "move " + String(m.name))
+			_form_vals = _vals(m)
+			plugin.update_overlays())
+		row.add_child(sb)
+	_row(wh, "Pin", row)
+	if m.kind == "walk" and not m.face_arrow:
+		return
+	var frow := HBoxContainer.new()
+	var dial := Dial.new()
+	dial.name = "Dial"
+	dial.color = npc.color if npc != null else Color.WHITE
+	dial.yaw = m.yaw()
+	frow.add_child(dial)
+	var deg := SpinBox.new()
+	deg.name = "F_facing"
+	deg.min_value = 0.0
+	deg.max_value = 360.0
+	deg.step = 1.0
+	deg.suffix = "°"
+	deg.value = fposmod(rad_to_deg(m.yaw()), 360.0)
+	deg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	deg.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	frow.add_child(deg)
+	var turn := func(y: float, keep: bool) -> void:
+		if not plugin.valid(m):
+			return
+		var to := Transform3D(Basis(Vector3.UP, y), m.global_position)
+		if keep:
+			m.global_transform = was[0]
+			plugin.place_node(m, to, was[0], "turn " + String(m.name))
+			was[0] = to
+			_form_vals = _vals(m)
+		else:
+			m.global_transform = to
+		plugin.update_overlays()
+	dial.turning.connect(func(y: float) -> void:
+		_busy = true
+		deg.value = fposmod(rad_to_deg(y), 360.0)
+		_busy = false
+		turn.call(y, false))
+	dial.turned.connect(func(y: float) -> void: turn.call(y, true))
+	deg.value_changed.connect(func(v: float) -> void:
+		if _busy:
+			return
+		dial.yaw = deg_to_rad(v)
+		turn.call(deg_to_rad(v), true))
+	_row(wh, "She faces", frow, "The way she faces there, seen from above.")
 
 
 func _form_face(m: HSNpcMarker) -> void:
