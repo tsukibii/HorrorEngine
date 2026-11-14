@@ -150,7 +150,7 @@ def roots():
 IMG = (".jpg", ".jpeg", ".png", ".tga", ".tif", ".tiff", ".exr")
 WEB = (".jpg", ".jpeg", ".png")                 # what the desk can show (and what's preferred when both are there)
 KEEP = ("tile_m", "tile_v_m", "source", "url", "licence", "note", "by_hand", "tint", "label", "group", "family", "relief_m", "wear", "recipe",
-        "cells")
+        "cells", "fabric")                      # (`fabric`: a clothing fabric set's own numbers for the cloth shaders: tools/fabricpbr.py, TAILOR §1k)
 # the maps a set can have, as `by_hand` names them: a file name, or "" for none (`normal_dx`: a DirectX normal)
 SLOTS = ("albedo", "normal", "normal_dx", "rough", "metal", "ao", "height", "opacity", "orm")
 # the last word(s) of a map's file name, after its resolution (2k, 4K-JPG) is taken off: Poly Haven, ambientCG and plain names
@@ -163,6 +163,8 @@ WORDS = {
     "height": ("disp", "displacement", "height", "bump"),
     "metal": ("metal", "metalness", "metallic"),
     "opacity": ("opacity", "alpha", "mask"),
+    "sheen": ("sheen", "fuzz"),                 # a clothing fabric's hairiness: where its fuzz lobe is strongest (tools/fabricpbr.py)
+    "tint": ("tint", "dye"),                    # where a dye takes on it (a denim's weft stays white)
     "arm": ("arm", "orm"),                      # packed AO/rough/metal (R, G, B): the clothes use it; Unreal takes the separate maps
 }
 _RES = re.compile(r"^\d+k(-(jpg|png|exr))?$|^\d+$")

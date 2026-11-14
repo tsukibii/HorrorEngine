@@ -1,0 +1,39 @@
+{
+ "maps": {
+  "albedo": "WoolFlannel001_1K-JPG_Color.jpg",
+  "normal": "WoolFlannel001_1K-JPG_NormalGL.jpg",
+  "rough": "WoolFlannel001_1K-JPG_Roughness.jpg",
+  "ao": "WoolFlannel001_1K-JPG_AmbientOcclusion.jpg",
+  "height": "WoolFlannel001_1K-JPG_Displacement.jpg",
+  "sheen": "WoolFlannel001_1K-JPG_Sheen.jpg"
+ },
+ "normal": "gl",
+ "tile_m": 0.032,
+ "source": "ours: tools/fabricpbr.py WoolFlannel001",
+ "url": "",
+ "licence": "ours",
+ "tint": true,
+ "label": "wool: a 2/2 twill flannel, 26 ends and 22 picks a cm in a woollen yarn, milled and brushed so its nap half hides the weave",
+ "group": "fabric",
+ "family": "weave",
+ "relief_m": 0.000377,
+ "fabric": {
+  "v": 1,
+  "kind": "weave",
+  "mean": [
+   0.7158,
+   0.6677,
+   0.5712
+  ],
+  "rough": 0.964,
+  "cavity": 0.6,
+  "sheen": 0.8,
+  "sheen_rough": 0.6,
+  "sheen_dye": 0.88,
+  "wrap": 0.35,
+  "halo": 0.45,
+  "spec": 0.3,
+  "crease": "wool",
+  "macro": 0.035
+ }
+}

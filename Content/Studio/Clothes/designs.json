@@ -423,7 +423,7 @@
     },
     "turtleneck": {
       "label": "Turtleneck sweater", "slot": "top", "color": "#ece4d4", "thickness": 0.0022, "surface": "knit",
-      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.0, "width": 0.06, "rise": 0.055, "open": 0.002}, "sleeve": "wrist", "hem": {"at": "crotch+0.12"}, "ease": {"body": 0.0055, "sleeve": 0.008, "shoulder": 0.003}, "tension": 14, "drape": {"density": 0.3, "bend": 1.2e-05, "slack": 0.02}},
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.0, "width": 0.06, "cover": 0.66, "open": 0.002}, "sleeve": "wrist", "hem": {"at": "crotch+0.12"}, "ease": {"body": 0.0055, "sleeve": 0.008, "shoulder": 0.003}, "tension": 14, "drape": {"density": 0.3, "bend": 1.2e-05, "slack": 0.02}},
       "details": [
         {"kind": "neckband", "width": 0.045, "lift": 0.0015, "surface": "rib"},
         {"kind": "cuff", "length": 0.055, "lift": 0.0018, "surface": "rib"},
@@ -837,7 +837,7 @@
     },
     "lace-blouse": {
       "label": "Lace blouse (gothic)", "slot": "top", "color": "#0f0f11", "buttons": "#e8e0d0", "thickness": 0.0014, "surface": "laced",
-      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.01, "width": 0.06, "rise": 0.03}, "sleeve": "wrist", "hem": {"at": "crotch+0.07", "back": 0.015}, "ease": {"body": 0.009, "sleeve": 0.014}, "tension": 12, "drape": {"density": 0.12, "bend": 6e-06, "slack": 0.03}},
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.0, "width": 0.06, "cover": 0.66}, "sleeve": "wrist", "hem": {"at": "crotch+0.07", "back": 0.015}, "ease": {"body": 0.009, "sleeve": 0.014}, "tension": 12, "drape": {"density": 0.12, "bend": 6e-06, "slack": 0.03}},
       "details": [{"kind": "edgeband", "width": 0.012, "lift": 0.0015}, {"kind": "buttons", "from": "bust-0.04", "to": "crotch+0.13", "count": 5, "r": 0.005}, {"kind": "cuff", "length": 0.055, "lift": 0.0015, "hold": true}]
     },
     "loose-shorts": {
@@ -857,8 +857,8 @@
     },
     "sweater-dress": {
       "label": "Sweater dress, turtleneck (the sweater)", "slot": "top", "color": "#a3152d", "thickness": 0.0032, "surface": "chunky",
-      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.0, "width": 0.064, "rise": 0.05, "open": 0.004}, "sleeve": "wrist+0.01", "hem": {"at": "crotch+0.02"}, "ease": {"body": 0.016, "sleeve": 0.014, "shoulder": 0.006}, "tension": 40, "drape": {"density": 0.42, "bend": 2.5e-05, "slack": 0.03}},
-      "details": [{"kind": "neckband", "width": 0.06, "lift": 0.003, "surface": "rib"}, {"kind": "cuff", "length": 0.06, "lift": 0.002, "surface": "rib"}]
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.0, "width": 0.064, "cover": 0.66, "open": 0.004}, "sleeve": "wrist+0.01", "hem": {"at": "crotch+0.02"}, "ease": {"body": 0.016, "sleeve": 0.014, "shoulder": 0.006}, "tension": 40, "drape": {"density": 0.42, "bend": 2.5e-05, "slack": 0.03}},
+      "details": [{"kind": "neckband", "width": 0.048, "lift": 0.003, "surface": "rib"}, {"kind": "cuff", "length": 0.06, "lift": 0.002, "surface": "rib"}]
     },
     "sweater-dress-skirt": {
       "label": "Sweater dress (its skirt, worn under the sweater)", "slot": "bottom", "color": "#a3152d", "thickness": 0.0032, "surface": "chunky",

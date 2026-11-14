@@ -1,0 +1,43 @@
+{
+ "maps": {
+  "albedo": "HosierySheer001_1K-JPG_Color.jpg",
+  "normal": "HosierySheer001_1K-JPG_NormalGL.jpg",
+  "rough": "HosierySheer001_1K-JPG_Roughness.jpg",
+  "ao": "HosierySheer001_1K-JPG_AmbientOcclusion.jpg",
+  "height": "HosierySheer001_1K-JPG_Displacement.jpg",
+  "sheen": "HosierySheer001_1K-JPG_Sheen.jpg",
+  "opacity": "HosierySheer001_1K-JPG_Opacity.png"
+ },
+ "normal": "gl",
+ "tile_m": 0.016,
+ "source": "ours: tools/fabricpbr.py HosierySheer001",
+ "url": "",
+ "licence": "ours",
+ "tint": true,
+ "label": "sheer hosiery: a 20 denier nylon tight as it sits on the leg, its loops opened to 0.8 by 0.5 mm, the skin through them",
+ "group": "fabric",
+ "family": "sheer",
+ "relief_m": 9.1e-05,
+ "fabric": {
+  "v": 1,
+  "kind": "sheer",
+  "mean": [
+   0.8166,
+   0.8166,
+   0.8166
+  ],
+  "rough": 0.586,
+  "cavity": 0.2,
+  "sheen": 0.5,
+  "sheen_rough": 0.4,
+  "sheen_dye": 0.85,
+  "wrap": 0.2,
+  "halo": 0.15,
+  "spec": 0.55,
+  "aniso": 0.3,
+  "crease": "sheer",
+  "macro": 0.0,
+  "denier": 20,
+  "cover": 0.372
+ }
+}

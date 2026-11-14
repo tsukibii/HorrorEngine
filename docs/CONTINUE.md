@@ -42,7 +42,10 @@ the markers tied to everything else (merged, PR #31; "Before that", below); and 
 `even-more-animations-v3` (from `marker-system`, with main merged into it that evening): **animations v3**,
 creatures' clips, a head that follows you, a grip on props, fights; then, after the user's first feedback, **short
 NPCs on a person's furniture**; then **rules for modelling, small movements laid over whatever she's doing, and a
-thing carried in any pose** (§0 below). Read this after CLAUDE.md's start
+thing carried in any pose**, then **a guide of sequences made of markers** (§0 below; pull request to main opened
+2026-11-14 with main merged in again); beside it, 2026-11-14 on `advanced-pbrs` (from main, merged, PR #32):
+**clothing fabric sets made from code**, the Studio's and Godot's cloth shaders, and two thirds of the neck as the
+most any top or coat reaches ("Beside it: where `advanced-pbrs` stopped", below). Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
@@ -50,8 +53,8 @@ not an order. Overwrite this file at the end of the next session.
 
 **The branch** was made from `marker-system` (merged since: tsukibii/HorrorEngine#30), and **main was merged into
 it on 2026-11-14** at the user's word, once flags and things (tsukibii/HorrorEngine#31) was in: so it carries the
-markers, the Logic node and the Flags and Things tabs. This branch has **no pull request**: the user asked for the
-branch, not for one.
+markers, the Logic node and the Flags and Things tabs. The user asked for **a pull request to main** on 2026-11-14, once the guide
+of sequences was in, with main (advanced PBRs, tsukibii/HorrorEngine#32) merged in first.
 
 **Built** (docs/ANIMATOR_V3.md, every box of its plan ticked; DECISIONS 2026-11-14, animations v3):
 - **The Animator**: 29 more clips, 53 in all, `VERSION` 3 (a character baked before wants baking again): sneak and
@@ -248,6 +251,69 @@ not tracked): `node tools/character/creatures.mjs make --only ghoul,goblin --exp
 running, then `node tools/animator/bake.mjs Exports/characters/<name>/<name>.glb`.
 
 ## Before that (2026-11-14, `claude/trusting-cray-2v2ntr`, merged in PR #31): flags and things
+
+## Beside it (merged in PR #32): where `advanced-pbrs` stopped (2026-11-14)
+
+**Asked** (DECISIONS 2026-11-14, advanced PBRs): research the latest ways of making hyper-realistic clothing fabric
+PBRs, make new ones that tint well (white or cream bases), demo clothing in them: knitted wool, wool, cotton, spun
+cotton, leather, spandex, sheer hosiery, fluffy cotton for socks, matte leather for shoes. Then, mid-way: every
+turtleneck's collar ran up to the chin; it should cover about two thirds of the neck.
+
+**Built**:
+
+- **The research**: docs/research/fabric_pbr.md. Honest about its limits: the papers and most textile pages couldn't
+  be opened from the cloud session (search extracts and GitHub sources only).
+- **The sets**: `tools/fabricpbr.py` (numpy; no Blender), eleven in `pbr/fabric/` (1K, in git): `WoolKnit001`,
+  `WoolRib001`, `WoolFlannel001`, `CottonPoplin001`, `CottonJersey001` (spun cotton), `Denim001`, `CottonFluffy001`,
+  `Spandex001`, `HosierySheer001`, `Leather001`, `LeatherMatte001`. Each the undyed cloth with `_Sheen`, `_Opacity`,
+  `_Tint` beside the usual five maps and a `fabric` block for the shaders (TAILOR §1k).
+- **The Studio**: `tailor/look.js` wears a fabric set as a physical material (the dye rules, the fuzz lobe and its
+  halo, a wrapped diffuse, a sheer knit blended); the PBR set picker lists them first, with Fuzz and Denier rows; the
+  outfits' **Fabric sets** tab has six outfits; the export bakes the dye alone and says the fabric (`studioCloth`).
+- **Godot**: the look plugin's `HSCloth` (`cloth.gd`, `cloth.gdshaderinc`, the packs in `textures/cloth/`): the same
+  terms as the Studio's, with its own `light()` since Godot has no fuzz lobe (GODOT_LOOK §5x). On by the
+  HSCharacterLook node's Cloth switch and for the runtime's cast bodies.
+- **The turtlenecks**: `neck.cover` (0.66 of the neck's front, from its pit to under the chin, measured on each body:
+  the frame's `neckPitY`, `chinY`) in place of a rise in metres, on the turtleneck, the sweater dress's sweater and
+  the lace blouse's stand collar; their cards made again. Then, on the user's answer, **the rule for everything**:
+  `pieces.js` `neckCap`, the two-thirds line every shell is cut at and every finished part and library garment is
+  brought under (hood collars, two library suits, a child's cami strap were over it); a halter's strings left.
+- **Pictures**: `docs/fabric_sheets/swatches.jpg` (every set on a ball of cloth, close up and in four dyes) and
+  `outfits.jpg` (the six outfits worn), both the Studio's own renderer (`python tools/fabricpbr.py demo`);
+  `godot_sets.jpg`, `godot_outfits.jpg` (each outfit as the file has it, then on the cloth shader) and
+  `godot_character.jpg` (`fabric_demo`, made, dressed and exported in the Studio's page, in Godot), from GDCLOTH.
+- **Checks**: FABRICPBR (in check_all), GDCLOTH (`python tools/godot/cloth_check.py --person fabric_demo --outfits`:
+  ok), TAILOR with the collars' share (ok: 0.67 to 0.69 on nine bodies; 23 minutes). GDPLAY and DIRECTOR ok.
+  **GDTESTROOM stops at station 6 in a cloud session with or without this branch** ("her skin ... on 0 materials":
+  the station wants a baked body, `tools/godot/bake.mjs`, which isn't on the machine): it wasn't a measure of this
+  work. Not run: the Studio's page checks (STUDIO, WARDROBE, LIBRARYPAGE...); `look.js` changed, so a local run of
+  those is the first thing to ask the user for (docs/RUN_LOCALLY.md).
+
+**The user has seen none of it yet.** Expect feedback on what a picture can't settle: how each fabric reads on their
+own characters under their own lights in Godot (the fuzz's strength was set by eye on balls of cloth: `sheen` and
+`halo` in each set's `SETS` entry, then `python tools/fabricpbr.py <Set>` and `godot <Set>`; or the garment's Fuzz
+row), and whether a halter's strings should come under the neck's two-thirds line with everything else (they were
+left: strings tied behind the neck). Settled the same day: "spin cotton" is the T-shirt's jersey; anything on a top
+or coat above two thirds of the neck comes down, the lace blouse's collar with them.
+
+**Not built**, in the order I'd take them (TAILOR §1k and GODOT_LOOK §5aa end with the same list):
+
+1. **More sets**: velvet, satin, suede, corduroy, lace, a sweatshirt's fleece. The generator has the parts.
+2. **Anisotropy** for a satin and a filament knit (a thread-direction map; three.js and Godot both have the term).
+3. **The designs' own defaults**: only the six "fabrics:" outfits name the new sets. The other 81 outfits still wear
+   their drawn surfaces (or the Blender-made sets where baked). Switching a design's `pbr` to a new set changes every
+   outfit that uses it: the user's call, design by design.
+4. **A sheer knit inside the skin's shader** in Godot (no blending to sort), and its cover by how far it's stretched.
+5. **Light through thin cloth**, the cloth wet.
+
+**In a cloud session** the Studio's page needs MediaPipe set up before any tool that drives it (`fabricpeople.mjs`,
+`people.mjs`, the page checks): `python tools/face_mesh.py setup` and `apt-get install -y libegl1`. Without them the
+page comes up but never builds its sculpt (it asks the server for MHR's face landmarks, which come from MediaPipe's
+worker), and a tool waiting on `window.__body.SCULPT` waits for nothing: twenty minutes went on that here before the
+page was probed. `fabricpeople.mjs` now asks first and says so. The page draws on the CPU there: one browser job at a
+time. `tools/godot/cloth_check.py --outfits` needs none of it (the outfits written straight from the tailor).
+
+## Beside it (merged in PR #31): where `claude/trusting-cray-2v2ntr` stopped (2026-11-14): flags and things
 
 **Asked** (DECISIONS 2026-11-14, flags and things): review the plugin; tie the marker system to interactables easily;
 maybe a tab for global flags, filtered by quest, maybe non-global ones; a marker's flag easy to use elsewhere ("can

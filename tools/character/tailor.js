@@ -7,7 +7,7 @@
 // The designs are data: Content/Studio/Clothes/designs.json; outfits in outfits.json.
 // Plain ES module: the Studio page (tools/character/index.html) and node (tools/character/tailor/cli.mjs) run it.
 import { bodyFrame } from "./tailor/frame.js";
-import { prepare, shell, skirt, shoeShell, detail, buttons, thicken, lifted, cut, handles, soles, waistline, sleeveEnd, bust } from "./tailor/pieces.js";
+import { prepare, shell, skirt, shoeShell, detail, buttons, thicken, lifted, cut, handles, soles, waistline, sleeveEnd, bust, neckCap } from "./tailor/pieces.js";
 import { halterCords } from "./tailor/cords.js";
 import { unwrap } from "./tailor/uv.js";
 import { height } from "./tailor/frame.js";
@@ -64,6 +64,11 @@ export function* making(B, name, design, opts = {}) {
   const p = fitted(design.piece), color = opts.color || design.color || "#888888", trim = design.trim || color;
   const G = p.kind === "skirt" ? skirt(B, p, under.map(g => ({ outer: g.outer[0] }))) : p.kind === "shoe" ? shoeShell(B, design.sole ? { ...p, soleTop: (design.sole.rise ?? 0.008) * F.s } : p) : shell(B, p, under);
   const th = (design.thickness ?? 0.002) * s, parts = [];
+  // nothing of a garment up the neck past two thirds of it (pieces.js neckCap; DECISIONS 2026-11-14): its cut is held to
+  // that line by cutter(); what's added to the cut (a collar's lift and roll, the cloth's thickness and rim) is brought
+  // down onto it here, a few millimetres at the most
+  const CAP = p.kind === "shell" || p.kind === undefined ? neckCap(F) : null;
+  const capped = Q => { if (CAP && Q) for (let i = 0; i < Q.length; i += 3) { const c = CAP(Q[i], Q[i + 2]); if (Q[i + 1] > c) Q[i + 1] = c; } return Q; };
   // the drape: the cut cloth hung on the body; everything on it is cut where the cloth was cut and sewn where it hangs.
   // Tucked into what closes round the waist over it later (opts.tuck), its sleeves held inside the sleeves over it
   // (opts.cover); its front closed where it's buttoned
@@ -78,7 +83,7 @@ export function* making(B, name, design, opts = {}) {
   const at = hung ? hung.P : null, outer = [at ? { P: at, T: G.outer.T } : G.outer];
   // a bottom's legs are panels from its waist down; a coverall's from a waist seam
   const legsTo = p.legs ? (p.waist ? height(F, p.waist.at) + 0.05 * s : F.crotchY + 0.2 * s) : -1;
-  const part = (pname, col, m, fabric, surface, mAt = null) => parts.push({ name: pname, color: col, fabric, surface, ...unwrap(F, m.P, m.T, m.S, { rings: G.rings, legsTo, at: mAt, shoe: p.kind === "shoe", top: p.kind === "shell" && p.neck !== false, stack: p.stack, loose: (p.ease?.leg ?? p.ease?.body ?? 0.008) + (p.ease?.flare ?? 0) * 0.5 + (p.legs?.straight ? 0.05 * p.legs.straight : 0) }) });
+  const part = (pname, col, m, fabric, surface, mAt = null) => parts.push({ name: pname, color: col, fabric, surface, ...unwrap(F, /_cord$/.test(pname) ? m.P : capped(m.P), m.T, m.S, { rings: G.rings, legsTo, at: /_cord$/.test(pname) ? mAt : capped(mAt), shoe: p.kind === "shoe", top: p.kind === "shell" && p.neck !== false, stack: p.stack, loose: (p.ease?.leg ?? p.ease?.body ?? 0.008) + (p.ease?.flare ?? 0) * 0.5 + (p.legs?.straight ? 0.05 * p.legs.straight : 0) }) });
   const thick = (P, T, Pat, ...a) => [thicken(P, T, ...a), Pat ? thicken(Pat, T, ...a).P : null];   // the cut's and the hanging cloth's (the same points)
   part(name, color, ...insert(thick(G.outer.P, G.outer.T, at, th, design.rim ?? 0.7, design.edge ?? 0.82), true));
   if (design.sole) {                                                 // a shoe's soles, under the floor
@@ -90,6 +95,7 @@ export function* making(B, name, design, opts = {}) {
     const D = detail(F, G, d); if (!D) continue;
     if (p.kind === "shoe" && design.sole) { const v0 = D.value, top = ((design.sole.rise ?? 0.008) + 0.0015) * s; D.value = (x, y, z, nx, ny, nz) => Math.min(v0(x, y, z, nx, ny, nz), y - top); }   // a shoe's pieces stop at the sole's top: under it they poked out through its wall
     const L = lifted(cut, G.outer, D.value, D.lift, at); if (!L) continue;
+    capped(L.P); capped(L.at);                                      // a collar's roll, a hood's: lifted off the cloth, never past two thirds of the neck
     if (d.kind !== "collar" && d.kind !== "neckband") outer.push(L.at ? { P: L.at, T: L.T } : L);   // what goes over it eases over pockets and belts, not the roll of a collar
     const dt = (d.thickness ?? design.thickness ?? 0.002) * s * 0.8;
     part(`${name}_${d.name || d.kind}`, d.color || (d.trim ? trim : color), ...insert(thick(L.P, L.T, L.at, dt, d.rim ?? 0.45, d.edge ?? 0.62), !d.trim && !d.color, d.surface));   // (`name`: a part the look can colour on its own, a sneaker's tongue)
@@ -98,6 +104,7 @@ export function* making(B, name, design, opts = {}) {
     const C = halterCords(F, B, at || G.outer.P, { ...p.bra, under: bust(F).under + (p.bra.drop ?? 0) * s - (p.bra.band ?? 0.01) * s * 0.4 });
     if (C.T.length) { outer.push({ P: C.P, T: C.T }); part(`${name}_cord`, color, C, false); }
   }
+  for (const q of parts) if (!/_cord$/.test(q.name)) capped(q.P);    // (and the points a part's seams add between two of its own: one inside the line's flat, one out on its climb)
   const tris = parts.reduce((a, q) => a + q.T.length / 3, 0), verts = parts.reduce((a, q) => a + q.P.length / 3, 0);
   // its look (tailor/look.js): the design's fabric, pattern and trim, then the garment's own
   const look = { color, surface: design.surface, trim: design.trimSurface, pattern: design.pattern, denier: design.denier, crease: p.kind === "shoe" ? { crinkle: 0, fold: 0, drape: 0, seam: 0, ...(design.crease || {}) } : design.crease, ...(p.kind === "shoe" ? { shoe: true } : {}), ...(opts.look || {}) };   // (a shoe: its hems' stitching, no cloth wrinkles, no puckers at its fabric's seams: they aren't its panels)

@@ -1,0 +1,41 @@
+{
+ "maps": {
+  "albedo": "Denim001_1K-JPG_Color.jpg",
+  "normal": "Denim001_1K-JPG_NormalGL.jpg",
+  "rough": "Denim001_1K-JPG_Roughness.jpg",
+  "ao": "Denim001_1K-JPG_AmbientOcclusion.jpg",
+  "height": "Denim001_1K-JPG_Displacement.jpg",
+  "sheen": "Denim001_1K-JPG_Sheen.jpg",
+  "tint": "Denim001_1K-JPG_Tint.jpg"
+ },
+ "normal": "gl",
+ "tile_m": 0.032,
+ "source": "ours: tools/fabricpbr.py Denim001",
+ "url": "",
+ "licence": "ours",
+ "tint": true,
+ "label": "denim: a 3/1 twill of ring-spun yarn, 26 ends and 18 picks a cm, its warp dyed and its weft left white, the dye worn off the twill's ridges, slubs along its yarns",
+ "group": "fabric",
+ "family": "weave",
+ "relief_m": 0.000557,
+ "fabric": {
+  "v": 1,
+  "kind": "weave",
+  "mean": [
+   0.7933,
+   0.778,
+   0.719
+  ],
+  "rough": 0.853,
+  "cavity": 0.5,
+  "sheen": 0.34,
+  "sheen_rough": 0.55,
+  "sheen_dye": 0.85,
+  "wrap": 0.25,
+  "halo": 0.1,
+  "spec": 0.45,
+  "crease": "denim",
+  "macro": 0.03,
+  "dye_mean": 0.643
+ }
+}

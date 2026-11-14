@@ -1,0 +1,40 @@
+{
+ "maps": {
+  "albedo": "LeatherMatte001_1K-JPG_Color.jpg",
+  "normal": "LeatherMatte001_1K-JPG_NormalGL.jpg",
+  "rough": "LeatherMatte001_1K-JPG_Roughness.jpg",
+  "ao": "LeatherMatte001_1K-JPG_AmbientOcclusion.jpg",
+  "height": "LeatherMatte001_1K-JPG_Displacement.jpg",
+  "sheen": "LeatherMatte001_1K-JPG_Sheen.jpg"
+ },
+ "normal": "gl",
+ "tile_m": 0.06,
+ "source": "ours: tools/fabricpbr.py LeatherMatte001",
+ "url": "",
+ "licence": "ours",
+ "tint": true,
+ "label": "matte leather: a shoe's calf, a tight fine grain under a matte finish, pores close up, hardly a highlight",
+ "group": "fabric",
+ "family": "hide",
+ "relief_m": 0.000113,
+ "fabric": {
+  "v": 1,
+  "kind": "hide",
+  "mean": [
+   0.7302,
+   0.7088,
+   0.6602
+  ],
+  "rough": 0.732,
+  "cavity": 0.35,
+  "sheen": 0.22,
+  "sheen_rough": 0.65,
+  "sheen_dye": 0.9,
+  "wrap": 0.08,
+  "halo": 0.04,
+  "spec": 0.45,
+  "crease": "leather",
+  "macro": 0.035,
+  "shoe": true
+ }
+}

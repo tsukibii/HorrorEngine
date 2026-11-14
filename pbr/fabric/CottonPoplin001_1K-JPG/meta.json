@@ -1,0 +1,39 @@
+{
+ "maps": {
+  "albedo": "CottonPoplin001_1K-JPG_Color.jpg",
+  "normal": "CottonPoplin001_1K-JPG_NormalGL.jpg",
+  "rough": "CottonPoplin001_1K-JPG_Roughness.jpg",
+  "ao": "CottonPoplin001_1K-JPG_AmbientOcclusion.jpg",
+  "height": "CottonPoplin001_1K-JPG_Displacement.jpg",
+  "sheen": "CottonPoplin001_1K-JPG_Sheen.jpg"
+ },
+ "normal": "gl",
+ "tile_m": 0.024,
+ "source": "ours: tools/fabricpbr.py CottonPoplin001",
+ "url": "",
+ "licence": "ours",
+ "tint": true,
+ "label": "cotton: a shirt's poplin, plain weave, 52 ends and 28 picks a cm of combed 40s yarn (a fine rib across it)",
+ "group": "fabric",
+ "family": "weave",
+ "relief_m": 0.000221,
+ "fabric": {
+  "v": 1,
+  "kind": "weave",
+  "mean": [
+   0.7943,
+   0.7792,
+   0.7346
+  ],
+  "rough": 0.833,
+  "cavity": 0.5,
+  "sheen": 0.3,
+  "sheen_rough": 0.5,
+  "sheen_dye": 0.85,
+  "wrap": 0.25,
+  "halo": 0.12,
+  "spec": 0.45,
+  "crease": "cotton",
+  "macro": 0.03
+ }
+}

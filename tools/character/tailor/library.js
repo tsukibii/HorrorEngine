@@ -7,7 +7,11 @@
 // proto/fit.py Warp, push_out), in plain typed arrays: the Studio page, its worker and node run the same code.
 // The result is a part as the tailor's own (tailor.js: P, T, N, UV in metres, PART, S), with UVO: the garment's own UV
 // for its own texture (tailor/look.js `own`).
+// A garment that climbs the neck past two thirds of it is brought down to that line (DECISIONS 2026-11-14: "anything
+// that goes above the 2/3rd neck and is a top/coat etc should come down to 2/3rd"; pieces.js neckCap, the tailor's own).
 import { normals, adjacency, Surface, PointGrid, smooth } from "./mesh.js";
+import { frame } from "./frame.js";
+import { neckCap } from "./pieces.js";
 
 export const K = 16, EPS = 0.004, EASE = 0.003;
 // layers (the prototype's rule, docs/research/clothing_v2/fit_test.md §7, lightly: only the upper garment moves): a
@@ -143,6 +147,18 @@ export class Wearer {
     const f = frames(base, P, T); this.R = f.R; this.s = f.s;
     this.near = new Nearest(base);
     this.skin = new Surface(P, T, null, 0.012);
+  }
+  /** the two-thirds line of this body's neck (pieces.js neckCap), found once; null on a body whose frame can't be read */
+  cap() {
+    if (this._cap === undefined) { try { this._cap = neckCap(frame(this.P, this.T)); } catch { this._cap = null; } }
+    return this._cap;
+  }
+  /** a garment's points above that line brought down onto it (a high collar: a few millimetres to a couple of
+      centimetres); how many moved */
+  capNeck(G) {
+    const cap = this.cap(); let n = 0;
+    if (cap) for (let i = 0; i < G.length; i += 3) { const c = cap(G[i], G[i + 2]); if (G[i + 1] > c) { G[i + 1] = c; n++; } }
+    return n;
   }
   /** the baked points on this body (float32, a point a baked point): the warp alone */
   warp(rest) {
@@ -368,11 +384,12 @@ export class Wearer {
     const fell = o.rigid ? 0 : this.hang(G, W, A, o.gravity ?? GRAVITY);   // (o.gravity: 0 as fitted, GRAVITY a light fall, 1 heavy)
     if (fell) this.pushOut(G, A, EASE, 2);
     const lifted = o.under?.length && !o.rigid ? this.over(G, A, o.under) : 0;   // (o.under: the outsides of what's worn under it; o.rigid: a shoe, a hat: as made)
+    const capped = o.rigid ? 0 : this.capNeck(G);              // nothing soft up the neck past two thirds of it
     const Nw = normals(G, W);                                 // smooth across the UV seams
     const P = new Float32Array(m * 3), N = new Float32Array(m * 3);
     for (let i = 0; i < m; i++) { const j = src[i] * 3; P[i * 3] = G[j]; P[i * 3 + 1] = G[j + 1]; P[i * 3 + 2] = G[j + 2]; N[i * 3] = Nw[j]; N[i * 3 + 1] = Nw[j + 1]; N[i * 3 + 2] = Nw[j + 2]; }
     const cover = new Uint8Array(this.P.length / 3); for (const i of bake.cover) cover[i] = 1;
     const part = { name, color, fabric: true, P, T: Uint32Array.from(tris), N, UV: Float32Array.from(uv2), UVO: Float32Array.from(uv), PART: new Float32Array(m), S: new Float32Array(m).fill(1) };
-    return { name, library: bake.head.id, parts: [part], outer: [{ P: G, T: W }], cover, handles: [], stats: { triangles: tris.length / 3, vertices: m, moved, fell, lifted, ms: Date.now() - t0 } };
+    return { name, library: bake.head.id, parts: [part], outer: [{ P: G, T: W }], cover, handles: [], stats: { triangles: tris.length / 3, vertices: m, moved, fell, lifted, capped, ms: Date.now() - t0 } };
   }
 }

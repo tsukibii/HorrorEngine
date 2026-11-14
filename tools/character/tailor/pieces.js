@@ -12,10 +12,28 @@ const front = (z, cz, w = 0.03) => smooth(cz - w, cz + w, z);      // 0 at the b
 
 /** the neckline: a cone round the neck's base (it rises away from the neck, so the shoulders are never cut), dipped
     at the front (and the back) into a scoop, a V or a square; `rise` (metres) takes the whole line up the neck instead,
-    for a turtleneck or a mock neck (the cloth climbs the neck and the neckband is its roll) */
+    for a mock neck or a stand collar (the cloth climbs the neck and the neckband is its roll); `cover` (0..1) takes it
+    up by a share of the neck itself: a turtleneck's collar ends that far up the neck seen from the front, from the
+    pit of the neck to under the chin (the frame's neckPitY and chinY), whatever the body's neck (the user, 2026-11-14:
+    "it should be about 2/3rds of the neck covered only": a rise in metres reached the chin on a short neck) */
+export const NECK_COVER = 0.66, NECK_TILT = 0.03;
+/** the two-thirds line of the neck as a height at (x, z): the most of the neck any garment covers (the user,
+    2026-11-14: "anything that goes above the 2/3rd neck and is a top/coat etc should come down to 2/3rd"). Round the
+    neck, and a collar's width off it (3.5 cm: a hood's roll, a coat's collar stood up), it is the line a turtleneck is
+    cut at (its front that share of the way from the pit of the neck to under the chin, lower under the chin and higher
+    at the nape); further out it climbs steeply, so nothing lying on the shoulders is ever touched by it. cutter() cuts
+    every shell at it, and making() keeps every part of a garment (a collar's roll, a hood's, the cloth's own
+    thickness) under it */
+export function neckCap(F, cover = NECK_COVER) {
+  const s = F.s, N = F.neck, top = F.neckPitY + cover * (F.chinY - F.neckPitY), tilt = NECK_TILT * s, r1 = N.r + 0.035 * s;
+  return (x, z) => { const dx = x - N.cx, dz = z - N.cz, rho = Math.hypot(dx, dz); return top + tilt * (1 - (rho > 1e-6 ? dz / rho : 0)) + 3 * Math.max(0, rho - r1); };
+}
 export function neckline(F, o = {}) {
-  const s = F.s, N = F.neck, depth = (o.depth ?? 0.012) * s, back = (o.back ?? 0.0) * s, w = (o.width ?? 0.085) * s, rise = (o.rise ?? 0) * s;
-  const tilt = (o.tilt ?? 0.022) * s, k = 1.6, r0 = N.r + ((o.open ?? 0.004) + (o.ease ?? 0)) * s, shape = o.shape || "round";   // the cone starts where the cloth is
+  const s = F.s, N = F.neck, depth = (o.depth ?? 0.012) * s, back = (o.back ?? 0.0) * s, w = (o.width ?? 0.085) * s;
+  const covered = o.cover !== undefined && F.neckPitY !== undefined, risen = covered || (o.rise ?? 0) > 0;
+  const tilt = (o.tilt ?? (covered ? NECK_TILT : 0.022)) * s;       // (a collar that covers lies a little steeper: lower under the chin, higher at the nape)
+  const rise = covered ? F.neckPitY + Math.min(1, Math.max(0, o.cover)) * (F.chinY - F.neckPitY) - N.y + tilt : (o.rise ?? 0) * s;   // its front edge at that share of the neck's front
+  const k = 1.6, r0 = N.r + ((o.open ?? 0.004) + (o.ease ?? 0)) * s, shape = o.shape || "round";   // the cone starts where the cloth is
   const g = u => { u = Math.min(1, Math.abs(u)); return shape === "v" ? 1 - u : shape === "square" ? (u < 0.85 ? 1 : 1 - smooth(0.85, 1, u)) : Math.sqrt(1 - u * u); };
   const cutY = (x, y, z) => {
     const dx = x - N.cx, dz = z - N.cz, rho = Math.hypot(dx, dz), c = rho > 1e-6 ? dz / rho : 0;
@@ -23,7 +41,7 @@ export function neckline(F, o = {}) {
     const cone = k * Math.max(0, rho - r0);
     const fr = front(z, N.cz, 0.025 * s), G = g(dx / w) * fr, B = g(dx / w) * (1 - fr);
     const yc = base + (1 - Math.max(G, B * (back > 0))) * cone - depth * G - back * B;
-    return rise > 0 ? Math.min(yc, base + 0.012 * s) : yc;           // risen, the line is level all round: the neck widens toward the jaw, and the cone would climb it
+    return risen ? Math.min(yc, base + 0.012 * s) : yc;              // risen, the line is level all round: the neck widens toward the jaw, and the cone would climb it
   };
   const v = (x, y, z) => cutY(x, y, z) - y;
   v.cutY = cutY;
@@ -228,11 +246,13 @@ export function cutter(F, p) {
   const waist = p.waist ? waistline(F, p.waist.at, p.waist) : null;
   const legY = p.legs ? height(F, p.legs.to) : null, open = p.open ? opening(F, p.open) : null, shoe = p.shoe ? shoeLine(F, p.shoe) : null;
   const under = p.bra ? bra(F, p.bra) : p.brief ? brief(F, p.brief, waist) : null;   // underwear: its own shape, within the rest
+  const cap = F.neckPitY !== undefined && !p.shoe ? neckCap(F) : null;   // nothing up the neck past two thirds of it: a collar risen too far, a strap that found a small child's neck
   const at = (x, y, z, w) => {
     const a = F.arm(x, y, z);
     let v = under ? Math.min(1, under(x, y, z)) : 1, k = under ? "under" : "";
     const take = (u, kind) => { if (u < v) { v = u; k = kind; } };
     if (neck) take(neck(x, y, z), "neck");
+    if (cap && !a) take(cap(x, z) - y, "neck");
     if (open && !a) take(open.value(x, y, z), "open");
     if (a) take(ends ? ends[a.side] - a.t : -1, "sleeve");
     else {

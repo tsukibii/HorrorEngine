@@ -81,7 +81,7 @@ const st = { clothes: [] }, SHAPE = new Map();
 const pieceOf = c => edited(DESIGNS[c.design], c.edit).piece || {};
 function pbrOf(c) {                                    // as the Studio's: a garment's PBR set off the shelf, its repeat, its tint
   const ref = c.pbr ?? DESIGNS[c.design]?.pbr, m = ref && SHELF[ref]; if (!m) return null;
-  return { ref, base: "pbrfile/" + ref.replace(/^pbr\//, "").split("/").map(encodeURIComponent).join("/"), maps: m.maps, normal: m.normal, orm: m.orm, tile_m: c.pbrTile ?? (m.tile_m && m.tile_m !== 2 ? m.tile_m : 0.3), tint: !!(c.pbrTint ?? m.tint) };
+  return { ref, base: "pbrfile/" + ref.replace(/^pbr\//, "").split("/").map(encodeURIComponent).join("/"), maps: m.maps, normal: m.normal, orm: m.orm, fabric: m.fabric, tile_m: c.pbrTile ?? (m.tile_m && m.tile_m !== 2 ? m.tile_m : 0.3), tint: !!(c.pbrTint ?? m.tint) };
 }
 const lookOf = c => { const d = DESIGNS[c.design] || {}; return { color: c.color, surface: c.surface ?? d.surface, trim: d.trimSurface, pattern: c.pattern ?? d.pattern, denier: c.denier ?? d.denier, prints: c.prints || [], parts: c.parts, pbr: pbrOf(c), crease: { ...(d.crease || {}), ...(c.crease || {}) } }; };
 const KEEP = ["surface", "pattern", "prints", "parts", "pbr", "denier", "crease"];   // what an outfit's third field carries (outfits.json's look)

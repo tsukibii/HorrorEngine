@@ -49,7 +49,18 @@ if (!jobs.length) { console.error("nothing to picture"); process.exit(1); }
 
 const KEYS = [["P", Float32Array], ["T", Uint32Array], ["N", Float32Array], ["UV", Float32Array], ["PART", Float32Array], ["S", Float32Array], ["CRZ", Float32Array]];
 const three = readFileSync(join(ROOT, "tools", "director", "vendor", "three.module.min.js"));
-const SHELF = join(ROOT, "assets", "pbr");
+// a garment's PBR set off the shelf (assets/pbr), the project's own sets in git (pbr/: the clothing fabric sets, tools/fabricpbr.py) or the old place, as the Studio's pbrOf
+// gives it to tailor/look.js; a set that isn't on this machine: the garment's drawn surface
+const SHELVES = [process.env.STUDIO_PBR || join(ROOT, "assets", "pbr"), join(ROOT, "pbr"), join(ROOT, "Content", "Studio", "PBR")];
+const shelfFile = (...rel) => SHELVES.map(d => join(d, ...rel)).find(f => existsSync(f));
+const withSet = l => {
+  if (!l || typeof l.pbr !== "string") return l;
+  const rel = l.pbr.replace(/^pbr\//, ""), f = shelfFile(...rel.split("/"), "meta.json"), { pbr, ...rest } = l;
+  if (!f) return rest;
+  const m = JSON.parse(readFileSync(f));
+  return { ...rest, pbr: { ref: pbr, base: "/pbrfile/" + rel.split("/").map(encodeURIComponent).join("/"), maps: m.maps, normal: m.normal, orm: m.orm, fabric: m.fabric,
+    tile_m: l.pbrTile ?? (m.tile_m && m.tile_m !== 2 ? m.tile_m : 0.3), tint: !!(l.pbrTint ?? m.tint) } };
+};
 let current = null;                                                // the job the page is showing: its parts as one binary
 const page = () => `<!doctype html><html><head><style>body{margin:0;background:#20232a}canvas{display:block}</style>
 <script type="importmap">{"imports":{"three":"/three.js"}}</script></head><body>
@@ -88,7 +99,7 @@ const server = createServer((q, r) => {
   if (u === "/three.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(three); }
   if (/^\/tailor\/[a-z]+\.js$/.test(u)) { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(readFileSync(join(ROOT, "tools", "character", u))); }
   if (u === "/data.bin" && current) { r.writeHead(200, { "content-type": "application/octet-stream" }); return r.end(current); }
-  if (u.startsWith("/pbrfile/")) { const rel = decodeURIComponent(u.slice(9)).split("/"), f = join(SHELF, ...rel); if (!rel.includes("..") && /\.(png|jpe?g)$/i.test(f) && existsSync(f)) { r.writeHead(200, { "content-type": /png$/i.test(f) ? "image/png" : "image/jpeg" }); return r.end(readFileSync(f)); } }
+  if (u.startsWith("/pbrfile/")) { const rel = decodeURIComponent(u.slice(9)).split("/"), f = rel.includes("..") ? null : shelfFile(...rel); if (f && /\.(png|jpe?g)$/i.test(f)) { r.writeHead(200, { "content-type": /png$/i.test(f) ? "image/png" : "image/jpeg" }); return r.end(readFileSync(f)); } }
   r.writeHead(404); r.end();
 }).listen(0, "127.0.0.1");
 await new Promise(r => server.once("listening", r));
@@ -106,7 +117,7 @@ for (const job of jobs) {
   let worn;
   try { worn = TAILOR.dress(B, job.list, designs, { drape: job.drape }); } catch (e) { console.error(`${job.name}: ${e.message}`); continue; }
   const parts = worn.flatMap(g => g.parts), lookOf = new Map(worn.flatMap(g => g.parts.map(q => [q.name, g.look])));
-  const head = parts.map(q => ({ name: q.name, color: q.color, fabric: q.fabric, surface: q.surface, look: lookOf.get(q.name), n: Object.fromEntries(KEYS.map(([k]) => [k, q[k].length])) }));
+  const head = parts.map(q => ({ name: q.name, color: q.color, fabric: q.fabric, surface: q.surface, look: withSet(lookOf.get(q.name)), n: Object.fromEntries(KEYS.map(([k]) => [k, q[k].length])) }));
   current = Buffer.concat([Buffer.from(new Float32Array(b.P).buffer), Buffer.from(new Uint32Array(b.T).buffer), ...parts.flatMap(q => KEYS.map(([k, A]) => Buffer.from(new A(q[k]).buffer)))]);
   // the view: the whole figure for an outfit; a design alone framed on where it is (its parts' heights)
   const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
