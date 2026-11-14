@@ -1,14 +1,20 @@
 @tool
 ## HorrorStudio Markers in the editor (docs/MARKERS.md §7 to §9): the NPC Markers tab along the bottom (editor/dock.gd),
 ## the markers drawn over the 3D view and moved there by mouse (editor/overlay.gd), the tester (editor/tester.gd).
-## This file holds what they share: who's picked, who's shown, what a click in the 3D view will do, and every change
-## to the scene, each through the editor's undo.
+## And flags and things (docs/FLAGS.md): the Flags tab (editor/flags_dock.gd), the Things tab (editor/things_dock.gd),
+## what they share (editor/wiring.gd), the pickers in the Inspector (editor/inspector.gd).
+## This file holds what they all share: who's picked, who's shown, what a click in the 3D view will do, and every
+## change to the scene, each through the editor's undo.
 extends EditorPlugin
 
 const Dock := preload("res://addons/horrorstudio_markers/editor/dock.gd")
 const Overlay := preload("res://addons/horrorstudio_markers/editor/overlay.gd")
 const Tester := preload("res://addons/horrorstudio_markers/editor/tester.gd")
 const Glyphs := preload("res://addons/horrorstudio_markers/editor/glyphs.gd")
+const Wiring := preload("res://addons/horrorstudio_markers/editor/wiring.gd")
+const FlagsDock := preload("res://addons/horrorstudio_markers/editor/flags_dock.gd")
+const ThingsDock := preload("res://addons/horrorstudio_markers/editor/things_dock.gd")
+const Inspector := preload("res://addons/horrorstudio_markers/editor/inspector.gd")
 
 ## the palette: a card makes a marker of a kind with a few fields set
 const CARDS := [
@@ -33,6 +39,12 @@ const CARDS := [
 ]
 
 var dock: Control
+var flags_dock: Control                    ## the Flags tab
+var things_dock: Control                   ## the Things tab
+var wiring: RefCounted                     ## the scene's flags and things, and the changes that tie them
+var inspector: EditorInspectorPlugin
+var cur_name: Array = []                   ## the flag, task or thing carried picked in the Flags tab: [kind, name] (the 3D view marks its uses)
+var picking_pin := Callable()              ## a click on a marker's pin in the 3D view hands the marker to this
 var overlay: RefCounted
 var tester: RefCounted
 var cur_npc: HSNpc                         ## the character picked in the tab
@@ -48,6 +60,7 @@ var picks := {}                            ## the tester: a Choice -> which of i
 var view_quest := {}                       ## each character's quest last looked at (by instance id)
 var _own := false
 var _poll := 0.0
+var _owned := {}                           ## a node added or taken out (by id) -> the nodes under it the scene saves
 
 
 func _enter_tree() -> void:
@@ -55,10 +68,25 @@ func _enter_tree() -> void:
 	overlay.plugin = self
 	tester = Tester.new()
 	tester.plugin = self
+	wiring = Wiring.new()
+	wiring.plugin = self
 	dock = Dock.new()
 	dock.name = "NPCMarkers"
 	dock.plugin = self
 	add_dock(dock)
+	flags_dock = FlagsDock.new()
+	flags_dock.name = "Flags"
+	flags_dock.plugin = self
+	flags_dock.wiring = wiring
+	add_dock(flags_dock)
+	things_dock = ThingsDock.new()
+	things_dock.name = "Things"
+	things_dock.plugin = self
+	things_dock.wiring = wiring
+	add_dock(things_dock)
+	inspector = Inspector.new()
+	inspector.plugin = self
+	add_inspector_plugin(inspector)
 	set_force_draw_over_forwarding_enabled()
 	set_input_event_forwarding_always_enabled()
 	EditorInterface.get_selection().selection_changed.connect(_on_selection)
@@ -80,18 +108,29 @@ func _exit_tree() -> void:
 		get_undo_redo().history_changed.disconnect(_on_history)
 	if get_undo_redo().version_changed.is_connected(_on_version):
 		get_undo_redo().version_changed.disconnect(_on_version)
-	if dock != null:
-		remove_dock(dock)
-		dock.queue_free()
-		dock = null
+	if inspector != null:
+		remove_inspector_plugin(inspector)
+		inspector = null
+	for d in [dock, flags_dock, things_dock]:
+		if d != null:
+			remove_dock(d)
+			d.queue_free()
+	dock = null
+	flags_dock = null
+	things_dock = null
 
 
 func _handles(object: Object) -> bool:
-	return object is HSNpc or object is HSNpcQuest or object is HSNpcMarker or object is HSNpcWay or object is HSNpcBend
+	return object is HSNpc or object is HSNpcQuest or object is HSNpcMarker or object is HSNpcWay or object is HSNpcBend or object is HSLogic
 
 
-func _make_visible(visible: bool) -> void:                 # one of its nodes picked in the scene: the tab comes up
-	if visible and dock != null and not dock.is_visible_in_tree():
+func _make_visible(visible: bool) -> void:                 # one of its nodes picked in the scene: its tab comes up
+	if not visible:
+		return
+	if selected() is HSLogic:
+		if things_dock != null and not things_dock.is_visible_in_tree():
+			things_dock.make_visible()
+	elif dock != null and not dock.is_visible_in_tree():
 		dock.make_visible()
 
 
@@ -106,8 +145,9 @@ func _process(dt: float) -> void:
 	_poll += dt
 	if _poll > 0.7:
 		_poll = 0.0
-		if dock != null and dock.is_visible_in_tree():
-			dock.tick()
+		for d in [dock, flags_dock, things_dock]:
+			if d != null and d.is_visible_in_tree():
+				d.tick()
 
 
 func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
@@ -163,12 +203,58 @@ func valid(n) -> bool:
 # ---- what's picked ------------------------------------------------------------------------------------------------------------
 func _on_selection() -> void:
 	var nodes := EditorInterface.get_selection().get_selected_nodes()
+	if flags_dock != null and flags_dock.is_visible_in_tree() and not cur_name.is_empty():
+		flags_dock.refresh_form()                              # (its "Use it on the thing selected" names who's selected)
 	if nodes.size() != 1:
 		return
 	var n: Node = nodes[0]
-	if not _handles(n) or n == cur or (n is HSNpc and n == cur_npc and cur == null):
+	if things_dock != null and not (n is HSNpc or n is HSNpcQuest or n is HSNpcMarker or n is HSNpcWay or n is HSNpcBend):
+		things_dock.show_thing(n)
+	if n is HSLogic or not _handles(n) or n == cur or (n is HSNpc and n == cur_npc and cur == null):
 		return
 	pick_node(n, false)
+
+
+## the one node selected in the scene (null: none, or several)
+func selected() -> Node:
+	var nodes := EditorInterface.get_selection().get_selected_nodes()
+	return nodes[0] if nodes.size() == 1 and valid(nodes[0]) else null
+
+
+## Go to a node from a list: one of a character's markers opens in NPC Markers; anything else is selected in the
+## scene and shown in the Things tab (raise: the tab comes up)
+func go_to(n: Node, raise := true) -> void:
+	if not valid(n):
+		return
+	if n is HSNpc or n is HSNpcQuest or n is HSNpcMarker or n is HSNpcWay or n is HSNpcBend:
+		pick_node(n)
+		return
+	var sel := EditorInterface.get_selection()
+	var now := sel.get_selected_nodes()
+	if now.size() != 1 or now[0] != n:
+		sel.clear()
+		sel.add_node(n)
+	if things_dock != null:
+		things_dock.show_thing(n)
+		if raise and not things_dock.is_visible_in_tree():
+			things_dock.make_visible()
+
+
+## a flag, a task or a thing carried shown in the Flags tab
+func show_name(kind: String, name: String) -> void:
+	if flags_dock == null:
+		return
+	if not flags_dock.is_visible_in_tree():
+		flags_dock.make_visible()
+	flags_dock.filter = "all"
+	flags_dock.pick(kind, name)
+
+
+## a line under whichever tab is shown
+func say(t: String) -> void:
+	for d in [dock, flags_dock, things_dock]:
+		if d != null and (d.is_visible_in_tree() or d == dock):
+			d.say(t)
 
 
 ## a node of ours picked: the tab and the 3D view follow; select: also in the editor (the Inspector, the move gizmo)
@@ -211,19 +297,29 @@ func _on_scene_changed(_root = null) -> void:
 	cur = null
 	armed = {}
 	picking = Callable()
+	picking_pin = Callable()
+	cur_name = []
+	wiring.touch()
 	var list := npcs()
 	if not list.is_empty():
 		pick_node(list[0], false)
 	elif dock != null:
 		dock.refresh()
+	for d in [flags_dock, things_dock]:
+		if d != null:
+			d.set("picked", [])
+			d.set("thing", null)
+			d.refresh()
 	update_overlays()
 
 
 ## something was done to the scene (an action committed). Godot's undo manager says so with history_changed; its
 ## version_changed is for an undo or a redo only (measured in 4.7: a commit sends the first and not the second)
 func _on_history() -> void:
-	if dock != null:
-		dock.changed(_own)
+	wiring.touch()
+	for d in [dock, flags_dock, things_dock]:
+		if d != null:
+			d.changed(_own)
 	_own = false
 	update_overlays()
 
@@ -231,8 +327,10 @@ func _on_history() -> void:
 ## an undo or a redo: never the form's own doing, so the tab reads everything again
 func _on_version() -> void:
 	_own = false
-	if dock != null:
-		dock.changed(false)
+	wiring.touch()
+	for d in [dock, flags_dock, things_dock]:
+		if d != null:
+			d.changed(false)
 	update_overlays()
 
 
@@ -245,8 +343,8 @@ func look_soon() -> void:
 func arm(card: Dictionary) -> void:
 	armed = card
 	picking = Callable()
-	if dock != null:
-		dock.say(("Click in the 3D view to place '%s'.  Shift keeps placing, Esc cancels." % card.get("title", "")) if not card.is_empty() else "")
+	picking_pin = Callable()
+	say(("Click in the 3D view to place '%s'.  Shift keeps placing, Esc cancels." % card.get("title", "")) if not card.is_empty() else "")
 	update_overlays()
 
 
@@ -254,19 +352,54 @@ func arm(card: Dictionary) -> void:
 func pick_in_view(what: String, to: Callable) -> void:
 	armed = {}
 	picking = to
+	picking_pin = Callable()
 	picking_what = what
-	if dock != null:
-		dock.say("Click %s in the 3D view.  Esc cancels." % what)
+	say("Click %s in the 3D view.  Esc cancels." % what)
+	update_overlays()
+
+
+## the next click on a marker's pin in the 3D view hands that marker to `to`
+func pick_pin(to: Callable) -> void:
+	armed = {}
+	picking = Callable()
+	picking_pin = to
+	picking_what = "a marker's pin"
+	say("Click a marker's pin in the 3D view.  Esc cancels.")
 	update_overlays()
 
 
 # ---- changes, each undoable ---------------------------------------------------------------------------------------------------
-func _own_all(n: Node, owner_: Node) -> void:
-	if n != owner_:
-		n.owner = owner_
+# a node and what's under it that is saved with the scene when it's added: not the insides of an instanced scene, not
+# what's made for the game or the tester (names with _)
+func _built(n: Node) -> Array:
+	var out := [n]
+	if n.scene_file_path != "":
+		return out
 	for c in n.get_children():
 		if not String(c.name).begins_with("_"):
-			_own_all(c, owner_)
+			out.append_array(_built(c))
+	return out
+
+
+# What's saved with the scene is decided once, when a node is first added (what was built for it then) or taken out
+# (what the scene owned then): never what a node's own script makes under itself afterwards.
+func _own_all(n: Node, owner_: Node) -> void:
+	var id := n.get_instance_id()
+	if not _owned.has(id):
+		_owned[id] = _built(n)
+	for m in (_owned[id] as Array):
+		if is_instance_valid(m) and m != owner_ and (m == n or n.is_ancestor_of(m)):
+			(m as Node).owner = owner_
+
+
+## A field's new value put on an undo action. (A script that isn't a tool is a stand-in for itself in the editor, and
+## the stand-in silently refuses a PackedStringArray for a list nobody has set yet, which reads as a plain Array: it
+## takes an Array first, and the real type after that. Measured in 4.7.)
+func do_prop(ur: EditorUndoRedoManager, node: Object, prop: String, value) -> void:
+	if value is PackedStringArray and typeof(node.get(prop)) == TYPE_ARRAY:
+		ur.add_do_property(node, prop, Array(value))
+	ur.add_do_property(node, prop, value)
+	ur.add_undo_property(node, prop, node.get(prop))
 
 
 func set_prop(node: Object, prop: String, value, label := "") -> void:
@@ -277,8 +410,7 @@ func set_prop(node: Object, prop: String, value, label := "") -> void:
 	_own = true
 	var ur := get_undo_redo()
 	ur.create_action("Markers: " + (label if label != "" else prop.replace("_", " ")), UndoRedo.MERGE_ENDS, scene_root())
-	ur.add_do_property(node, prop, value)
-	ur.add_undo_property(node, prop, node.get(prop))
+	do_prop(ur, node, prop, value)
 	ur.commit_action()
 
 
@@ -290,8 +422,7 @@ func set_props(node: Object, values: Dictionary, label: String) -> void:
 	var ur := get_undo_redo()
 	ur.create_action("Markers: " + label, UndoRedo.MERGE_DISABLE, scene_root())
 	for k in values:
-		ur.add_do_property(node, k, values[k])
-		ur.add_undo_property(node, k, node.get(k))
+		do_prop(ur, node, k, values[k])
 	ur.commit_action()
 
 
@@ -321,6 +452,8 @@ func delete_node(n: Node, label := "") -> void:
 		return
 	var parent := n.get_parent()
 	var at := n.get_index()
+	var r := scene_root()
+	_owned[n.get_instance_id()] = _built(n).filter(func(m: Node) -> bool: return m == n or m.owner == r)
 	if n == cur or (cur != null and is_instance_valid(cur) and n.is_ancestor_of(cur)):
 		cur = null
 	if n == cur_quest:

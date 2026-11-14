@@ -3231,4 +3231,23 @@ pale one shows.
 - **Look at the panel at the size it opens at.** The tab was laid out with the palette over the storyboard; at the
   bottom panel's own height the storyboard got a row and a half. The palette became a column of its own and the
   tab's least height went up. A picture of the editor as it opens says this; the layout's code doesn't.
-
+- **`Script.new()` runs a script for real, even in the editor.** Set up the scene made the HUD with
+  `load("hud.gd").new()`: that isn't the editor's stand-in for a script that isn't a tool, it's the script itself,
+  so its `_ready` built the whole HUD inside the edited scene, and adding it "with its children owned" then saved 48
+  of its own labels into the user's scene. It showed in the first picture of the tab (a Scene dock full of
+  `@Label@20101`), not in any check. A node for the editor is `Node.new()` then `set_script()`; and what's saved with
+  a scene is decided when a node is first added (what was built for it), never "everything under it now".
+- **The editor's stand-in for a script refuses a list's first value.** On a script that isn't a tool, an exported
+  `PackedStringArray` nobody has set reads as a plain empty `Array`, and setting a `PackedStringArray` on it does
+  nothing, silently (the stand-in compares the new value with the default, and an Array against a packed array
+  compares as "no change"). An `Array` is taken, and after that the packed type is too. A probe plugin of ten lines
+  said so in a minute, after an afternoon's worth of guessing would not have: `plugin.do_prop()` sets both.
+- **A test that stops on a script error leaves the editor waiting for ever.** The editor check's own plugin had a
+  parse error, so no test ran and nothing quit; another time it stopped half way with the scene unsaved, and quitting
+  asked "save?" of nobody. The runner has a timeout and reads what was said anyway; the test saves before it quits;
+  the test script is parse-checked on its own first (`godot --headless --check-only -s`).
+- **Each one listening for a key flips it once each.** F7 was heard by every character with markers: one character,
+  it worked; two, and it flipped twice and nothing showed. Nothing tested two. A key that toggles something shared
+  is heard in one place.
+- **A reach test out of reach passes.** "E on the key does nothing while its flag is off" passed from 2.1 m away,
+  where E reaches nothing at all. A refusal is counted (the Logic's `refused`), not inferred from nothing happening.

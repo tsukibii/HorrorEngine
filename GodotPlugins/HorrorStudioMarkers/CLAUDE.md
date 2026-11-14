@@ -3,7 +3,10 @@
 The studio's own Godot plugin for a character's whole part in a game built by hand, placed in the scene as markers
 (DECISIONS 2026-11-13, the marker system; the user's mock-up "NPC Path & Animation Sequencer": "place markers in the
 scene for each npc ... the markers correspond with the quests ... the goal is that even a young child would know how
-to use it"). **docs/MARKERS.md is the design: its §6 rules are what the runner must keep.** `tools/godot_byhand.py`
+to use it"). **docs/MARKERS.md is the design: its §6 rules are what the runner must keep.** **And flags and things** (DECISIONS
+2026-11-14: "how to easily tie in the marker system with other elements (interactables) ... a new tab for global
+flags"): the Flags and Things tabs, the Logic node, the scene's scan, pickers in the Inspector, F7's flag board;
+**docs/FLAGS.md is their design.** `tools/godot_byhand.py`
 copies `addons/horrorstudio_markers/` into every by-hand project and switches it on. It needs none of the other
 plugins; it uses them when they're there (by script path or by what a node can do, never by class name): the starter
 kit's Story (group `hs_story`), player (`hs_player`) and Sound (`hs_sound`), the UI plugin's HUD (an `HSHud` in the
@@ -27,7 +30,16 @@ phasing, the Weapons plugin's hit reaction (any child of her with `hit` and `dow
 | `editor/dock.gd` | the tab (an EditorDock, bottom): built in `_ready`, filled from the scene by `refresh()`; the storyboard a Tree (drag to reorder: `_drop_spot`; `refresh_board` brings its rows up to date **in place** when they're the same rows, `_dress`, so nothing jumps while a field is typed in; when another marker is picked or the rows are made again, the picked one's row is scrolled into view, `_show_row`); `refresh_form` starts another marker's form at its top and leaves the same one's scroll where it was; `changed(own)`: the form's own change updates the rows and the quest's row at once and leaves the form's fields alone, anything else marks it stale (`_sig = "?"`) and asks the plugin for a look next frame (`look_soon`); the form built for what's picked (`refresh_form`; `REBUILD` lists the fields that change its rows; `_vals` notices a change from outside); `_put` is the form's setter (not `_set`: that's Object's). `candidates`, `problems`, `timing`, `set_target`, `add_way`, `ways_for_answers`, `_talks`/`_save_talks` are what the check calls |
 | `editor/overlay.gd` | the 3D view: `draw(control)` (pins, badges, paths, arrows, handles, the legend; it fills `hot`: what can be clicked, by control) and `input(camera, event)` (place, pick, drag, turn, bend); `under_mouse` (the nearer of a collider and a mesh: a `TriangleMesh` a mesh, kept) |
 | `editor/tester.gd` | the tester: a `_Ghost` copy of her (no owner), the real one hidden, an `HSNpcRunner` with `preview`; stopped by `_apply_changes` (a save, a play, a scene switch) |
-| `editor/cond_edit.gd`, `editor/dial.gd`, `editor/glyphs.gd` | a condition as chips; the facing dial; the drawings (SVG strokes rasterised at the editor's scale, kept) |
+| `editor/cond_edit.gd`, `editor/dial.gd`, `editor/glyphs.gd` | a condition as chips (`groups`: the scene's flags nearest first; `items`; `links`: one-gesture ties, each `[label, Callable(this editor)]`); the facing dial; the drawings (SVG strokes rasterised at the editor's scale, kept) |
+| `logic.gd`, `logic_body.gd` | **flags and things** (docs/FLAGS.md): `HSLogic` (@tool, a Node under anything; `thing` for one kept elsewhere): `needs` / `locked_says`, `on` (`used`, `signal` + `on_signal`, `itself`), `once`, then `set_flags`, `tick`, `add_tasks`, `say`, `sound`, `fires`. `allows(by)` and `used(by)` are what the starter's player calls (its `logic_of(thing)`: the group `hs_logic`); `press(by)` for a thing with no `use()` of its own (`_reach`: a `_LogicReach` box on layer 2 with `logic_body.gd`, not round anything over `REACH_MOST` across); `run()`, `fire()`; `times` kept at the Story's `kept` and put back at `revived`; statics `may_use`, `was_used`, `of` |
+| `scan.gd` | `HSLogicScan`: the scene read, nothing run. `FIELDS` (field name -> encoding: cond, conds, lock, switch, switches, flag, flags, task, tasks, task_flags, item, rules, talks), `PLAIN` (names only trusted on the studio's scripts), `fields_of(node)` (off the script's own property list: exported, the table's type; kept 3 s a script), `names_in(value, enc)`, `uses_of`, `scan(root)` -> `{flag, task, item, nodes}` of uses `{node, prop, enc, kind, name, role}`, `home_of` (whose a flag is), `place` / `what` / `role_says` (plain words), `renamed` / `rename_plan`, `deadlocks` (names that wait for each other: `_gate` is what a setter asks first), `problems(found, notes)`, `lines(v)` (a list field as lines, whatever the editor's stand-in says it is) |
+| `flag_board.gd` | `HSFlagBoard`: one CanvasLayer under the root (`of(tree)`, a static keeps it one), the only place F7 is heard; with `HSNpc.debug` on it lists the scene's flags (on first, bright), the tasks, the pocket (`text()`, `read()`, `most`) |
+| `editor/wiring.gd` | what the three tabs share: `found()` (the scan, kept until `touch()`), `names`, `uses`, `home`, `flag_groups(ctx)`, `problems`; the flags written down (`res://flags.json`: `notes`, `declare`, `set_note`, through undo); the Story (`story`, `starts_on`, `set_start`); `rename(kind, old, new)` ("" takes it out; one undo step; nodes another scene owns are skipped and said); `things()`, `logics(thing)`, `default_when(thing)`, `signals_of`, `logic_for`, `ask(node, word)`, `switch(node, word)`, `link_thing`, `link_marker`, `thing_of(clicked)`; `CARDS`, `cant`, `make(card, node, at)`, `setup_scene()`, `player_asks()` |
+| `editor/panel.gd` | the base of the two new docks: the look, `_sec`, `_row`, `_text`, `_check`, `_pick`, `_lines`, `_cond`, `_switches`, `_name`, `field(node, prop, enc)` (a field drawn with the picker of its encoding), `_put` (the form's setter) |
+| `editor/flags_dock.gd` | the Flags tab: `shows` (the filter tree: `filter` all, game, things, problems, `npc:<id>`, `quest:<id>/<label>`), `kinds`, `table`, `form`; `pick(kind, name)`, `rename`, `remove`, `use_on(node, flag, how)` are what the check calls |
+| `editor/things_dock.gd` | the Things tab: the cards (`_card`, `made_thing`), `list`, `show_thing(node)` (it follows the scene's selection), the form (`_form_logic` per Logic, then the thing's own fields), `add_fire` |
+| `editor/switch_edit.gd` | flags switched as chips (`add_flag(name, sign)`, `toggle_flag`, `set_at`, statics `parts`, `joined`) |
+| `editor/inspector.gd` | the EditorInspectorPlugin: a field of the scan's table on any node drawn with chips or a name picker (`Field`); it changes through `plugin.set_prop` |
 
 ## Checking it
 
@@ -40,6 +52,14 @@ phasing, the Weapons plugin's hit reaction (any child of her with `hit` and `dow
   clicks sent through the 3D view's own input, drags, undo, the form, a conversation into a Choice, who's shown,
   Problems, the tester, a save. Run it after any change to `plugin.gd` or `editor/`. `--shots` pictures the editor
   under xvfb (the guide's pictures).
+- `python tools/godot/logic_check.py [--reuse] [--only a,b]` (LOGIC): a by-hand project, `tools/godot/logic_test.gd`
+  builds things with a Logic and markers in code and plays them (gate, then, tie, checkpoint, scan, board, alone).
+  Run it after any change to `logic.gd`, `scan.gd`, `flag_board.gd`, `cond.gd` or the starter's `player.gd`.
+- `python tools/godot/logic_check.py --editor [--reuse] [--shots DIR]` (LOGICEDITOR): `logic_editor_test.gd` drives
+  the Things and Flags tabs in the editor (cards, forms, both one-click ties, the list and filters, a rename and its
+  undo, a flag written down and taken out, the Inspector's chips, a list field on a stand-in script), then
+  `logic_play_test.gd` plays the scene they saved. Run it after any change to `plugin.gd` or `editor/`.
+  `python tools/godot/logic_check.py guide DIR` gathers the guide's pictures (and `logic_shots.gd` makes F7's).
 - A quick loop while working: copy the add-on into `Saved/Godot/_markers/addons/`, then
   `godot --headless --path Saved/Godot/_markers --check-only -s res://addons/horrorstudio_markers/<file>.gd` parses
   one file; the checks' `--reuse` keeps the project.
@@ -75,3 +95,18 @@ phasing, the Weapons plugin's hit reaction (any child of her with `hit` and `dow
   it's opened (`make_visible()`), and the check does that.
 - A test that's killed leaves its test plugin in the scratch project's project.godot: the check takes it out before it
   starts.
+- **A field's change goes through `plugin.set_prop` / `do_prop`**, never a bare `add_do_property`: a script that isn't
+  a tool is a stand-in in the editor, and the stand-in refuses a `PackedStringArray` for a list nobody has set
+  (`do_prop` sets an `Array` first). Read such a list with `HSLogicScan.lines()`.
+- **A node made for the editor is `Node.new()` then `set_script()`**, never `Script.new()` (that runs the script for
+  real in the editor). What's saved with the scene is decided once, when a node is first added (`_built`) or taken
+  out (`_owned`): never what a node's script makes under itself.
+- **A new field that names flags** goes in `HSLogicScan.FIELDS` with its encoding (and `SAYS`): the scan, the Flags
+  tab, a rename, Problems, the Things form and the Inspector all read that one table. A name too plain to trust on
+  anyone's script goes in `PLAIN`.
+- **A flag is one name everywhere.** "Whose it is" is worked out for showing and for a Problem, never to fence a
+  flag in: the user's point was to use a marker's flag on a door.
+- F7 is heard by the flag board alone (each character hearing it flipped it once each).
+- **A thing may get its script after its Logic is ready** (an interior's door: `interior.gd` sets `door.gd` in its
+  own `_ready`, which comes after its children's). Anything a Logic needs of its thing's script (a signal, `use()`,
+  `locked_says`) is looked for when it's needed or deferred with retries (`_listen`), never once in `_ready`.

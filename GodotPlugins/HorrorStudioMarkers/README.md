@@ -49,9 +49,39 @@ beside a character in the tab shows or hides her markers; the ring shows only he
   **Enter**, or a click. No panel, no numbers, two answers at the most: the studio's own style for lines and choices
   (DECISIONS 2026-10-30, evening). With an `HSHud` in the scene it's that HUD's own line, choice and ring; with none
   the plugin draws the same. You stand still meanwhile; she starts nothing.
-- **F7**: over each character, their quest, their marker and what it's waiting for.
+- **F7**: over each character, their quest, their marker and what it's waiting for; at the left, the scene's flags
+  (on: bright), the tasks, the pocket.
 - Her flags: `talked:<name>`, `shot:<name>`, `down:<name>` (her name in small letters), set by themselves.
 - It speaks the starter kit's Story's words (tasks, flags, items) and works without a Story (it keeps the flags).
+
+## Flags and things: the markers tied to everything else
+
+Two more tabs beside NPC Markers, and one node (the guide: `guides/flags/index.html`; the design: `docs/FLAGS.md`).
+
+- **Things**: select a model and click a card: **Pickup**, **Note**, **Food**, **Show / hide**, **Quest marker**, or
+  **Logic**; **Area**, **Scare** and **Checkpoint** go where you click in the 3D view; a **Rule** happens by itself.
+  **Set up the scene** adds the player, the Story, the HUD and Sound a scene lacks. Every thing of the scene is in
+  one list (what it is, what it works only when, what it does then), and the one selected has a form with chips.
+- **Logic** (`HSLogic`, a node under anything): **Works only when** (flags, tasks, things carried: while they aren't
+  so, E on the thing only says its line) → **When** (it's used; one of its own signals, a door's `opened`; by itself,
+  once its needs are so) → **Then** (flags switched, a task, a line, a sound, things fired). On a plain mesh it also
+  makes the mesh something to use with E: a button, a lamp.
+- **One click ties a marker and a thing**: on a marker's Starts when, **+** → *A thing… (click it)*, click the door:
+  the door turns a flag on when it's opened and the marker waits for it. On a thing's Only when, **+** → *A
+  character's marker… (click its pin)*: the marker turns a flag on when it's done and the thing asks for it.
+- **Flags**: every flag, task and thing carried the scene names, with who turns it on and who needs it; shown for
+  everything, the game, one character, one quest, things, or problems. Type over a flag's name: it's renamed
+  everywhere, one undo. **Use it** on what's selected, or on a thing you click. A flag picked is marked over every
+  node that uses it in the 3D view.
+- **Whose a flag is** is worked out from who uses it (one quest's, one character's, the game's); it can be pinned.
+  A flag is still one name everywhere: that's what lets a marker's flag open a door.
+- **In the Inspector** any script's `needs`, `*_when`, `locked_by`, `set_flags`, `fact`, `tick` are drawn with the
+  same chips and pickers.
+- **Problems**: a flag asked for and never turned on, a task nothing lists, a quest's own flag used elsewhere, and
+  **things that wait for each other** (a key that needs her gone, who needs the door open, which needs the key).
+- **F7** in the game also lists the flags (on: bright; off: dim), the tasks and the pocket.
+
+A project from before this needs the newer player once: `python tools/godot_byhand.py install <project> --starter`.
 
 ## From a script (if you want one)
 
@@ -59,9 +89,14 @@ beside a character in the tab shows or hides her markers; the ring shows only he
 $"Alex markers".jump_to($"Alex markers/Night two/Walk")     # straight to a marker
 $"Alex markers".marker_done.connect(func(m): print(m.name))
 HSNpcCond.set_flag(get_tree(), "met_alex")                   # a flag, with or without a Story
+if HSLogic.may_use(thing, self):                             # ask a thing's Logic yourself (the starter's player does)
+    thing.use(self)
+    HSLogic.was_used(thing, self)
 ```
 
 ## Checking it
 
 `python tools/godot/markers_check.py` (MARKERS: the game side) and `python tools/godot/markers_check.py --editor`
-(MARKERSEDITOR: the tab, driven in the editor itself).
+(MARKERSEDITOR: the tab, driven in the editor itself). Flags and things: `python tools/godot/logic_check.py` (LOGIC)
+and `python tools/godot/logic_check.py --editor` (LOGICEDITOR: the two tabs driven in the editor, then the scene
+they built played).
