@@ -3,7 +3,9 @@
 The user's request (DECISIONS 2026-11-14, animations v3), on the branch `even-more-animations-v3`. It adds to the
 Animator v2 (docs/ANIMATOR_V2.md: read that first; nothing in it changes) and to what plays its clips in Godot.
 
-**The plan is §7, ticked as built. §8 says what was measured; §9 what's left.**
+**The plan is §7, ticked as built. §8 says what was measured; §9 what's left.** Later the same day: §10 the
+furniture by her size (children, goblins, imps), §11 life (small movements laid over whatever she's doing) and §12
+carrying (a thing held in any pose), each with its own plan, what was built and what's not there.
 
 ## 1. What was asked, and how it's read
 
@@ -626,21 +628,21 @@ isnce thats a diff system."*
 
 ### 11.2 The flourishes
 
-Right hand's, with the left's as mirrors (`_l`) where a hand or a side is in it.
+Right hand's, with the left's as mirrors (`_l`) where a hand or a side is in it: 19, 33 clips on a person.
 
 | Clip | What | Over | Hand |
 |---|---|---|---|
 | `life_look_hand` | her hand brought up in front of her chest, turned over, looked at: what she holds, or her nails | stand, walk, sit | any (made for a thing in it) |
-| `life_scratch_head` | fingertips to the back of her head, four scratches, her head tilting into them | stand, walk, sit | free |
-| `life_rub_neck` | a palm on the back of her neck, squeezed twice, her head tipped back and rolled | stand, walk, sit | free |
-| `life_scratch_arm` | her other upper arm scratched, looked at | stand, sit | free |
-| `life_rub_nose` | the side of a finger across her nose, twice | stand, walk, sit | free |
+| `life_scratch_head` | fingertips to the back of her head on her hand's side, four scratches, her head tilting into them | stand, walk, sit | free |
+| `life_rub_neck` | a palm on the side of her neck away from her hand, her fingers round the back of it, kneaded twice, her head tipped away | stand, walk, sit | free |
+| `life_scratch_arm` | her other upper arm scratched near its shoulder, looked at | stand, sit | free |
+| `life_rub_nose` | the top of a loose fist across the end of her nose, twice | stand, walk, sit | free |
 | `life_wipe_brow` | the back of her hand across her forehead | stand, walk, sit | free |
-| `life_check_wrist` | her forearm up across her, the back of her wrist looked at | stand, walk, sit | any |
-| `life_brush_off` | her other shoulder brushed twice, looked at | stand, walk, sit | free |
+| `life_check_wrist` | her forearm level in front of the bottom of her chest, a loose fist, the back of her wrist looked at (a watch) | stand, walk, sit | any |
+| `life_brush_off` | the top of her other shoulder brushed twice, looked at | stand, walk, sit | free |
 | `life_tuck_hair` | fingertips from her temple back over her ear | stand, walk, sit | free |
 | `life_chin` | a knuckle under her chin, held: thinking | stand, sit | free |
-| `life_scratch_belly` | her side scratched | stand, walk, sit | free |
+| `life_scratch_belly` | her side scratched, about level with her navel | stand, walk, sit | free |
 | `life_hand_hip` | a hand on her hip a while, her weight settling | stand | free |
 | `life_flex_hand` | her hand opened wide and closed, twice, at her side | stand, walk, sit | free |
 | `life_stretch` | both arms up over her head, her back arched, and down | stand, sit | both free |
@@ -650,25 +652,130 @@ Right hand's, with the left's as mirrors (`_l`) where a hand or a side is in it.
 | `life_glance` | a look off to one side and back | stand, walk, sit | any |
 | `life_neck_stretch` | her head tipped to one shoulder, held, to the other | stand, sit | any |
 
-Where a hand goes is by her own parts, as everywhere in v3: the head's own size and middle (`body.headC`,
-`headR`), her mouth, her neck's joints, her trunk's slabs at her own belly and hips, her other arm's joints. A
-target her arm can't get to (an imp's crown) is slid toward one it can (its temple).
+Where a hand goes is by her own parts, as everywhere in v3: her skull's own shape (`measure.js` `headAt`: a grid
+round its middle with her ears and her nose taken off it, not the box they make), her eyes, her mouth, her jaw's
+end, her neck's joint, her trunk's slabs at her own belly and hips, her other arm's joints and thickness. **A
+flourish is tried a few ways and the first her body can do cleanly is the one made** (`firstClean`): a scratch
+further down toward her ear where her arm doesn't get to her crown (an imp's), her forearm from further out where
+it can't pass her bust, a hand on her chest where a big head is in the way of her shoulder. **One she can't do
+cleanly any of the ways isn't made for her**: her record says which and why (`skipped`), the page lists them, and
+the game only ever picks among the ones she has.
 
 ### 11.3 The plan
 
-- [ ] `core/life.js`: the flourishes, the left hand's as mirrors; each one's record (`life`: hand, head, trunk, in,
-      out, touch, over, free)
-- [ ] `core/layer.js`: the layer in JavaScript (the same rule Godot runs): a flourish over any base clip's pose, the
+- [x] `core/life.js`: the flourishes, the left hand's as mirrors; each one's record (`life`: hand, head, in, out,
+      touch, over, free, weight)
+- [x] `core/layer.js`: the layer in JavaScript (the same rule Godot runs): a flourish over any base clip's pose, the
       touch by a two-bone solve; used by the page and by ANIMATOR
-- [ ] ANIMATOR: every flourish on the three people, five creatures and three children: starts and ends in the idle,
+- [x] ANIMATOR: every flourish on the three people, five creatures and three children: starts and ends in the idle,
       legs and pelvis the idle's own, no turn over 34 degrees a frame, the hand on what it touches, nothing of the
       arm in the body or the head; laid over the walk and the sit: legs and pelvis the base's to the bit, the hand
       still on what it touches
-- [ ] the page: a Life kind, each flourish shown over standing, walking or sitting
-- [ ] Look plugin: `gesture.gd` `HSGesture` (the layer, `alive`, `play`), `HSHeadTrack.hold_off`, the hand's anchor
+- [x] the page: a Life kind (and a Carry kind), each flourish shown over standing, walking or sitting
+- [x] Look plugin: `gesture.gd` `HSGesture` (the layer, `alive`, `play`), `HSHeadTrack.hold_off`, the hand's anchor
       through `HSHandIK`
-- [ ] the starter's `motion.gd` (`alive`, `life()`), `act.gd`, the Markers (an Alive switch on a character)
-- [ ] GDLIFE (`python tools/godot/motion_check.py life`), pictures, the Animator's guide, notes
+- [x] the starter's `motion.gd` (`alive`, `life()`), `act.gd`, the Markers (an Alive switch on a character, a
+      marker's Small movements)
+- [x] GDLIFE (`python tools/godot/motion_check.py life`), pictures, the Animator's guide, notes
+
+### 11.4 As built
+
+**In the Animator** (`core/life.js`, `core/layer.js`; `VERSION` 5: a character baked before wants baking again; 96
+clips on a person, the test body 13.1 MB where 53 clips made it 10.3).
+
+- **Made on the idle's first pose as it's baked** (`lifeBase`: the idle's own clearance applied to it), so a
+  flourish starts and ends on the idle's first key exactly and needs no clearance of its own (`clear: false`: that
+  was most of what making one cost). Nothing below her chest is written.
+- **A hand taken somewhere and brought back** (`oneHand`): a point of the hand (her fingertips, her palm, the
+  knuckle of a loose fist, the back of her hand) is solved onto a place on her, frame after frame (`wristFor`: the
+  arm built, the point read off the hand as built, the wrist moved by what's missing). The hand's turn where it
+  lands is given outright (the way her fingers point and the way her palm faces: `along`, `palm`), never left to
+  the forearm; her elbow is put behind her hand (where her forearm would be with a straight wrist), and where the
+  wrist would still bend over 48 degrees the hand is turned toward the forearm by what's over. On its way there
+  and back the hand turns from its own forearm, the wrist passes a point half way (`mid`), and the way is moved out
+  in front of her while her arm would pass through her.
+- **How well it does is judged** (`judge`, `LIMITS`): her elbow no deeper in her padded shape than lies against her
+  ribs (14 mm), her forearm not in her (3 mm), no joint of the hand deeper in her skull than a fingertip presses
+  (12 mm), no bone turning more than 34 degrees in a frame, the arm never folded flat, the hand's point within 4 mm
+  of what it touches, the wrist bent 62 degrees at the most. Clean, or within 4 mm of clean: made. Else the next
+  way; none: not made.
+- **Its record** (`meta.life`): `hand` (r, l, both, or none), `head` (add; look: she's looking at something of her
+  own), `in` and `out` (seconds), `over`, `free`, `weight`, and for a hand that touches her `touch`: `{bone, side?,
+  from, to, point}`, the point in the wrist's own space.
+- **The layer** (`layer.js` `lay(rig, base, life, t)`), the rule itself: the flourish's arm slerped from the base to
+  the clip by `sm(0, in, t) × (1 − sm(secs − out, secs, t))`; her spine, neck, head and other collarbone the clip's
+  turn from its first frame put on top of the base's; the touch: `rel = Bclip⁻¹ × (Hclip × point)`, target
+  `Bnow × rel`, the arm's two bones solved again (`solveArm`, the Look plugin's `HSHandIK._solve` ported) for a
+  wrist moved by `(target − was) × wt`, 25 cm at the most.
+- **The page**: kinds Life and Carry; a flourish shown *over her: standing, walking, sitting* (the chips its `over`
+  allows), laid by `lay()` over the idle, the walk or the seat as they play; the ones not made for her body listed
+  with why.
+
+**What ANIMATOR holds** (section 6e, on all eleven bodies; 73 s where the check took 44): which flourishes each
+body has (below), and that the ones every body must have are there; each starts and ends in the idle's first pose;
+nothing below her chest moves (compared number by number: an angle between two float32 turns has a floor of 0.04
+degrees); `judge` within its pass; the touch's record well formed and its miss under 4 mm; then **the layer over
+`walk_loop` and over `sit_loop`**: every joint the layer doesn't own identical to the base's, the base given back
+at both ends, the hand's point within 4 mm of where the clip has it on the bone it touches (measured 0.0 to
+0.3 mm; the blend alone leaves it 21 to 91 mm off), the wrist under 80 degrees; the carry poses' geometry.
+
+| Body | Flourishes | Not made for it |
+|---|---|---|
+| skinny man, normal woman, chubby woman | 19 | |
+| children (8 years, 1.10 m, 12 years) | 19 | |
+| ghoul 190 cm, imp 90 cm | 19 | |
+| goblin 115 cm | 18 | the stretch (its elbows through its ribs on the way down) |
+| hag 150 cm | 16 | a hand on her neck (her head is on her shoulder), hair tucked, the stretch |
+| ogre 260 cm | 14 | her nose, her hair, her chin (a forearm can't pass that chest), the stretch, her hands rubbed |
+
+**What the pictures showed** (`python tools/godot/motion_check.py sheetslife`, `shotslife`: on the dressed normal
+woman in Godot; `docs/animator_sheets/2026-11-14_life_*.jpg`). Every number above was already passing:
+
+- **A hand on its way to her head had her elbow out at her shoulder's height while the hand was still at her
+  chest**: a wing. The elbow's side was blended at the hand's pace; it now starts for the side it's held on once
+  the hand is 0.42 of the way there (`late`, for the scratch and the brow), and rises with the hand.
+- **The wrist check was an arm held out nearly straight with a limp claw on the end.** Three things: a hand held in
+  the air was pushed out in front of her without limit while her forearm was in her (now only while her arm stays
+  bent: 0.82 of its length); her hand was half closed, its fingers hanging from a level hand (a loose fist now);
+  and the wrist was asked to her middle, which this skeleton's short arm reaches only nearly straight (it's held on
+  her hand's own side of her middle, her elbow by her side).
+- **Brushing off her shoulder read as a hand on her heart**: it was on her chest under her collarbone. It's on the
+  top of her shoulder now, from by her collarbone out over the shoulder's point; the chest stays as the way for a
+  creature whose head is in the way of its shoulder.
+- **Her palms rubbed with every finger spread** (a hand at rest draws its fingers together: 0.4, not 0.2).
+- **The dressed woman had no knuckle under her chin**: fuller in the bust than the test body, her forearm couldn't
+  come up in front of her. Two more ways: from further out to her side, from out in front of her.
+- **Her brow's wipe came up late and all at once** (its half-way point was low): half way there her hand is at her
+  chest now.
+
+`docs/animator_sheets/2026-11-14_life_game.jpg` is the layer in a game: the same scratch standing, walking and sat,
+her brow and her neck as she walks, her chin and a stretch on a chair, a hand on her head while it follows someone.
+
+**In Godot** (docs/GODOT_LOOK.md §5z has the layer; GDLIFE its numbers): the Look plugin's `HSGesture`; the
+starter's `motion.gd`: `alive` (and `life_every`, `life_only`) in the Inspector, `alive_now(on, every)`,
+`life(what, left)`, and it tells the layer what she's doing each tick (`stand`, `walk`, `sit`, or `busy`: an act has
+her, she's asleep, she's low); `act.gd`: the acts `life` (one by name, or one that suits), `alive`, `still`. **In
+the NPC Markers tab** (docs/MARKERS.md §4): a character's *Small movements now and then* with how often, and on any
+marker *Small movements: as they were, now and then, none* from there on, carried marker to marker and kept in a
+checkpoint as her head's following is; none while she's shot down; Problems says when she was baked before them.
+MARKERS's stage `life`: standing at a Wait 2 in 7 s, all made for standing; a marker's *none* stops them; over her
+walk only ones made for walking, sat only ones made for sitting; none ever began while an act had her.
+
+### 11.5 Not there
+
+- **No faces**, by the user's word: a flourish never touches a face shape, an eye or the jaw.
+- **Only over standing, walking and sitting.** Not over a run, a sneak, a crawl, lying down, or while an act has
+  her: there she's "busy" and none is picked.
+- **A flourish is made standing.** Over a seat its hand's way isn't planned again round her thighs or the seat's
+  arms: the ones whose way passes low (a hand on her hip) aren't offered sat; the rest keep clear by how they're
+  made, not by a check on the seated pose.
+- **It doesn't know the room.** A stretch under a low shelf or a scratch beside a wall goes through them: the
+  modelling rules (docs/ANIMATION_RULES.md) give her the room.
+- **A creature has the ones its body can do** (the table above). Nothing is made in their place.
+- **The two sides are held separately**: ANIMATOR holds `layer.js`, GDLIFE holds `gesture.gd`, each to its own
+  measures on the same clips. Nothing compares one's pose with the other's number for number.
+- **A Director's or a desk game's cast doesn't have it**: the runtime's `play.gd` plays a body's own idle, walk and
+  sitting, with no layer over them. The starter's `motion.gd` and the Markers do.
 
 ## 12. Carrying: a thing held in any pose
 
@@ -687,9 +794,9 @@ she sits with her hands on her knees. **Carrying** is a pose for the arm that ho
 - **Kept by the same layer** (`HSGesture.carry(side, how)`): the holding arm takes the carry pose, over a walk, a
   run, a sneak, a seat, an idle. At her side it keeps a share of the walk's swing; sat, "side" becomes "front" (a
   hand on a thigh has nowhere to put a bottle).
-- **Then IK**: the arm is solved again so the hand hangs or stays level however her chest leans (`plumb`: a sneak
-  pitches her chest 35 degrees; the cup doesn't go with it), a thing that should stay the way up it stands is turned
-  so (`upright`: a cup, a candle, a lantern), and the hand is kept off her thighs.
+- **Then IK**: the arm is turned again so the hand hangs or stays level however her chest leans (`plumb`: a sneak
+  pitches her chest over; the cup doesn't go with it), and a thing that should stay the way up it stands is turned
+  so (`upright`: a cup, a candle, a lantern). (Keeping the thing off her thighs was planned here too: §12.4.)
 - **A prop says how it's carried**: `HSGrip.carry` and `upright`, guessed when it has no grip (drunk from: front and
   upright; long: at her side).
 - **Acts take the hand back**: eating, drinking, a swing, a door: the carry lets go as the act's clip starts and
@@ -698,10 +805,67 @@ she sits with her hands on her knees. **Carrying** is a pose for the arm that ho
 
 ### 12.2 The plan
 
-- [ ] `core/life.js` `carrying()`: the five poses and their mirrors, clear of her body
-- [ ] `HSGesture`: `carry(side, how, thing)`, plumb, upright, off her thighs; `HSGrip.carry`, `upright`
-- [ ] `motion.gd`: a kept thing is carried (`pick_up(thing, true)`, `hold(thing)`), `carry(how)`; acts take the hand
+- [x] `core/life.js` `carrying()`: the five poses and their mirrors, clear of her body
+- [x] `HSGesture`: `carry(side, how, thing)`, plumb, upright; `HSGrip.carry`, `upright`
+- [x] `motion.gd`: a kept thing is carried (`pick_up(thing, true)`, `hold(thing)`), `carry(how)`; acts take the hand
       and give it back; the Markers the same
+- [ ] off her thighs: a thing carried at her side kept clear of her leg (§12.4)
 - [ ] reaching at any height: two neighbouring reach clips mixed by the thing's height (`HSGesture.mix`), her feet
-      kept where they stand; the modelling rules' pick-up heights measured again
-- [ ] GDLIFE: a thing carried walking, sitting and sneaking (level, off her thighs, where the pose has it), pictures
+      kept where they stand; the modelling rules' pick-up heights measured again (§12.4)
+- [x] GDLIFE: a thing carried walking, sitting and sneaking (level, where the pose has it), pictures
+
+### 12.3 As built
+
+**The poses** (`life.js` `carrying()`; one pose each, two keys, with the record `meta.carry = {hand, how, plumb,
+keep}`): `carry_side` (the idle's arm a little forward and bent, a fist; plumb 1, keep 0.35), `carry_front` (her
+upper arm hanging, her forearm level and pointing ahead, her thumb up: a cup stands in the fist; plumb 0.7),
+`carry_chest` (her hand in front of her breastbone, over her bust), `carry_shoulder` (her fist in front of her
+shoulder, her forearm up, its thumb side back: a bat lies there), `carry_raised` (in front of her about level with
+her chin; plumb 0.7), and `_l`. Each is tried against her own shape: the elbow swung round until her arm is clear
+of her, and where no swing clears it (a broad belly under a level forearm) the hand moved out a little at a time;
+the side pose is carried out by its own angle until it's clear, as the idle's arm is. `docs/animator_sheets/
+2026-11-14_life_carry.jpg` has the five on the dressed woman.
+
+**In Godot** (GODOT_LOOK §5z): `HSGesture.carry(side, how, {thing, upright, secs})`, `carry_off`, `carry_pause`,
+`carrying(side)`. The arm goes to the pose over 0.35 s and stays there over any clip. Walking, `side` keeps 0.35 of
+what her arm was doing (her walk's swing); standing and sat it's the pose alone. **Plumb**: the chest's tilt from
+the pose's own chest is taken out of the upper arm (its twist about the world's up kept), by the pose's `plumb`.
+**Upright**: the hand is turned so the thing's own +Y is the world's up, 65 degrees at the most. Sat, `side` is
+shown as `front`. Whoever moves her says when an act needs the hand: the starter's `motion.gd` and the Markers'
+`body.gd` pause the carry for clips that want both hands (a peek, a scare, lying down, getting up, sitting down,
+standing up, a reach to the floor) and for the hand a one-hand clip uses (a reach, a door, a punch, a swing, eating,
+drinking, a knock), and it's carried again after.
+
+**`HSGrip`**: `carry` (as it's used, side, front, chest, shoulder, raised) and `upright` in the Inspector;
+`HSGrip.carry_of(grip)`: what it says, else in front of her and upright when it's drunk from, at her side when not.
+
+**The starter's `motion.gd`**: `hold(thing, left, how)` puts a thing in her hand and carries it; a thing kept by
+`pick_up(thing, true)` is carried from the moment her hand comes back; `carry(how)` changes how; `drop()` and
+`put_down` end it. `act.gd`: the acts `hold` and `drop`, with a `carry` to pick how. **The Markers**: a Grab's Pick
+up with *Keep in hand* carries it from there on; an HSNpc's *Carries things* says how (as the thing's grip says, at
+the side, in front, to the chest, over the shoulder, raised).
+
+**Measured** (GDLIFE): a cup with an HSGrip that says it's drunk from, picked up and kept: carried in front of her,
+leaning 0.0 degrees standing and walking, the hand that holds it travelling 0.7 cm against her chest where her
+other hand swings 28.1 cm; sat, its foot 28 cm over her thigh; a look at it and back; a sip from it 0.0 cm from her
+lips with the carry let go, and carried again after. A bottle put in her hand with nothing said: at her side, 37%
+of her walk's swing; sneaking, her chest 22 degrees over, the arm is hung back 21; sat in front of her, stood at
+her side again; alive with it, 9 flourishes in 40 s and none with the hand that holds it, 65 of 400 picks a look at
+it. Chest, shoulder, raised: each where it says. MARKERS's stage `life`: a can kept by a Grab is carried in front of
+her (her HSNpc says so), her wrist 20 cm ahead of her shoulder, 0.2 cm up and down as she walks; putting it down,
+the carry lets the reach have her hand (to 0.00), and it's over when the thing is down.
+`docs/animator_sheets/2026-11-14_life_game.jpg`: a mug carried standing, walking and sat and looked at as she
+walks, a bottle at her side walking and sneaking.
+
+### 12.4 Not there
+
+- **Kept off her thighs.** A long thing carried at her side isn't kept clear of her leg, her skirt or the
+  furniture she passes: the pose keeps her *arm* clear of her body, and nothing knows the thing's own size. Sat, the
+  side pose is swapped for the front one, which is the case that showed.
+- **Reaching at any height.** The plan's mixing of two neighbouring reach clips by the thing's height isn't built.
+  A thing is still taken at the three heights her reach clips are made for, with her hand carried the rest of the
+  way by `HSHandIK` (30 cm at the most): the pick-up heights in docs/ANIMATION_RULES.md §5 stand as measured there.
+- **Two hands.** A box, a tray, a body: every carry is one arm's.
+- **Weight.** A heavy thing is carried as a light one: no lean away from it, no slower walk.
+- **A hand that's carrying isn't offered to a flourish that wants it empty**, so a character with both hands full
+  only looks at what she holds, glances, sighs and rolls her shoulders.

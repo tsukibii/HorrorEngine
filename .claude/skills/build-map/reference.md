@@ -156,6 +156,9 @@ A character doesn't collide with furniture and doesn't see the room: the model i
   to 0.3 m, on a counter at 0.8 to 1.0 m, or on a shelf at 1.3 to 1.6 m (the rules' last table says what's in between).
 - **Ways**: 0.75 m between pieces of furniture where a character walks (0.90 where it can be); nothing under 1.0 m
   high across her way (she'd walk on top of it); ceilings 2.1 m.
+- **Where a character stands, waits or sits** (she may be given small movements: a scratch, a stretch): 0.50 m free
+  to each side and in front of her from her waist up, nothing lower than 2.3 m over her (a shelf, a lamp, a bunk).
+  Where she stops facing something with a thing in her hand (a counter, a door): 0.45 m from it.
 - **Stairs**: risers 0.20 m or less where characters use them (apartment, motel); level floor wherever a character
   sits, lies, opens, takes, peeks or fights.
 - **Streets**: pavements 1.2 m clear; a door's landing 0.6 m deep and level; a bench as a seat; entrance steps 0.20 m

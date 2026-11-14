@@ -35,8 +35,11 @@ phasing, the Weapons plugin's hit reaction (any child of her with `hit` and `dow
   woman baked, `tools/godot/markers_test.gd` builds markers in code and plays them headless: every kind and every rule
   measured (stages order, gates, quests, talk, repeat, hide, sit, clips, speed, stairs, faces, looks, shot,
   checkpoint, event, you, problems, tester, v3: the low paces, her head, eating by a grip, an attack on you, a jump
-  scare, their Problems). Run it after any change to the runtime files, and after a change to the Look plugin's
-  `head_track.gd`, `hand_ik.gd` or `grip.gd` (the stage `v3` plays them).
+  scare, their Problems; life: small movements standing, walking and sat, a marker's none and now and then, a
+  checkpoint, a kept thing carried and put down, none while she's down, her Problems). Run it after any change to
+  the runtime files, and after a change to the Look plugin's `head_track.gd`, `hand_ik.gd`, `grip.gd` or `gesture.gd`
+  (the stages `v3` and `life` play them). **A character baked before the Animator's life clips has none**: a run
+  with `--reuse` keeps the project's old bake, so after the Animator's `VERSION` goes up run it once without.
 - `python tools/godot/markers_check.py --editor [--reuse] [--shots DIR]` (MARKERSEDITOR): `markers_editor_test.gd`
   installed as a plugin of its own drives the tab in the editor itself (headless): a character added, cards placed by
   clicks sent through the 3D view's own input, drags, undo, the form, a conversation into a Choice, who's shown,
@@ -66,6 +69,13 @@ phasing, the Weapons plugin's hit reaction (any child of her with `hit` and `dow
   without it still parses and plays (the clip as it was made, no head following; Problems says so). The IK is only
   ever a correction after her clip: a blow, a bite or a grab must already read right with it off.
 - **In the tester nothing reaches into the scene**: an Attack plays its clip where she stands, a head is a note.
+- **Her small movements and what she carries are the Look plugin's `HSGesture`, told what she's doing** (`body.gd`
+  `gesture()`, `layer_tick()`, called by the runner every frame before `body.tick`, and with `quiet` while she's
+  down): this driver plays her clips itself, so the layer can't read what she's doing off a loop's name. `_doing()`
+  says "stand" (her idle, no loop of her own), "walk" (a path at a walk), "sit", else "busy"; a flourish is only
+  ever started on the first three. Never made on the tester's copy (`set.preview`): they come when they like, and a
+  preview must show the same thing twice. A new clip that uses a hand goes in `HANDS_OFF` (both) or `ONE_HAND` (its
+  own) here **and in the starter's motion.gd**, or a carried thing stays in its carry pose through it.
 - **An editor test that fails to parse hangs the editor** (the test plugin never quits it): parse it first
   (`--check-only`), and type every variable read off an untyped node (`var who: Node = dock.find_child(...)`).
 - **A marker's end state must be reachable at once** (`_snap`): the tester starts from it and a checkpoint restores

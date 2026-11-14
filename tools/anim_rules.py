@@ -88,6 +88,11 @@ def tables():
         lo, mi, hi, pk = e["reach_low"]["at"], e["reach_mid"]["at"], e["reach_high"]["at"], e["peek"]
         t["hands"].append(f"| {LABEL[n]} | {cm(lo[1])}, {cm(mi[1])}, {cm(hi[1])}; {cm(lo[2])}, {cm(mi[2])}, {cm(hi[2])} | {cm(-pk['edge'][0])}, {cm(pk['edge'][2])}; {cm(pk['left'] + pk['right'])} | {cm(e['scare']['front'])} | {cm(e['punch']['front'])} | "
                           f"{cm(e['swing']['up'])}, {cm(e['swing']['wide'])} | {cm(e['knock']['at'][1])}, {cm(e['knock']['at'][2])} |")
+    t["life"] = ["| | small movements: wide, in front, behind, up | the stretch: wide, up | a thing carried in front: her hand ahead of where she stands | raised: her hand ahead | at her side: wide |", "|---|---|---|---|---|---|"]
+    for n in rows:
+        st = B[n]["clips"].get("stretch")
+        t["life"].append(f"| {LABEL[n]} | {c(n, 'life', 'wide')}, {c(n, 'life', 'front')}, {c(n, 'life', 'back')}, {c(n, 'life', 'up')} | {(cm(st['wide']) + ', ' + cm(st['up'])) if st else 'not made for it'} | "
+                         f"{c(n, 'carry_front', 'front')} | {c(n, 'carry_raised', 'front')} | {c(n, 'carry_side', 'wide')} |")
     R = load("ranges.json")["bodies"] if (HERE / "ranges.json").is_file() else {}
     t["ranges"] = ["| | a door's handle: held within 1 cm | within 3 cm | a thing to pick up, what it stands on: her hand's grip on it within 2 cm | within 5 cm |", "|---|---|---|---|---|"]
     span = lambda d, lim, f: runs([float(k) for k, v in sorted(d.items(), key=lambda kv: float(kv[0])) if f(v) <= lim])

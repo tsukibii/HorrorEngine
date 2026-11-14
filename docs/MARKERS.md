@@ -164,6 +164,25 @@ like her face and her look, and kept by a checkpoint. It's the Look plugin's `HS
 (GODOT_LOOK §5x): a little of the turn goes into her chest, her eyes lead when her model has eye bones. Without the
 Look plugin in the project the row does nothing and Problems says so.
 
+**Small movements, and what she keeps in her hand** (DECISIONS 2026-11-14, later: "'add life' animations ...
+looking at an object they are holding, scratching, little life flourish stuff"; docs/ANIMATOR_V3.md §11, §12).
+On the character (her HSNpc, the tab's form with her picked) *Life*: **Small movements now and then**, with how
+often (6 to 14 s unless set). While she stands, walks or sits at her markers she scratches her head, rubs her neck,
+looks at what's in her hand, stretches: the Animator's `life_` clips, laid over whatever she's playing by the Look
+plugin's `HSGesture` (GODOT_LOOK §5z), so her legs go on walking and her seat stays sat. Never while a marker's own
+act has her (a Grab, an Attack, a jump scare, sitting down, a custom animation), never while she's hidden or shot
+down. On any marker, in its *Head* section, **Small movements: as they were, now and then, none**: from there on,
+carried from marker to marker and quest to quest and kept by a checkpoint, as her head's following is (someone
+stalking you is switched to none at the marker where the stalking starts). Off unless ticked. She needs to have
+been baked by the Animator since its life clips (Problems says when she wasn't), and the project the Look plugin.
+
+**A thing she keeps** (a Grab's Pick up with *Keep in hand*) **is carried** from there on, whatever she does: at
+her side, in front of her, to her chest, over her shoulder, or raised, with her walk and her seat going on under
+it. *Carries things*, on the character, says how; left at *as the thing's grip says*, a prop's own `HSGrip` does
+(its Carry and Upright: a cup that's drunk from is carried in front of her and kept upright; anything else at her
+side). The next Grab, Eat, Drink or Attack takes her hand for as long as it needs and gives it back; Put down ends
+it.
+
 **Eat and drink.** The thing is held where its **grip** says (the Look plugin's `HSGrip` under the prop: a ring to
 put where a hand closes round it, sized by a handle to the prop's thickness, with a point for the side that's bitten
 or the rim that's drunk from; a prop with none is gripped by a guess from its size). Her fingers close to the grip's
@@ -306,7 +325,8 @@ A **copy** of the character is made for it (never saved; the real one is hidden 
 touched), put in the state the markers before leave her in, and run by the same runner as the game with every
 *Starts when* passed after a moment (its words shown), conversations shown as captions and their first answer taken,
 the Choice's ways taken as picked in the storyboard. Nothing is fired, no flag is set, no sound played. Stop, or
-saving the scene, ends it.
+saving the scene, ends it. (The copy makes no small movements, which come when they like, and takes nothing of the
+scene's into its hand, so it carries nothing.)
 
 ## 10. The plan
 
@@ -368,6 +388,16 @@ saving the scene, ends it.
 - [x] the cards (Sneak, Crawl, Eat, Drink, Attack, Jump scare), their form rows, their drawings; Problems for a
       character with no such clip or an attack at nobody
 - [x] MARKERS (the stage `v3`) and MARKERSEDITOR (the new cards)
+
+**G. Life and carrying** (DECISIONS 2026-11-14, later; docs/ANIMATOR_V3.md §11, §12)
+- [x] an HSNpc's **Life**: *Small movements now and then* (and how often), *Carries things*; in the tab's character
+      form
+- [x] *Small movements* on every marker (as they were, now and then, none), carried on, kept by a checkpoint
+- [x] `HSNpcBody`: the Look plugin's `HSGesture` under her (`gesture()`, `alive()`, `flourish()`), told each frame
+      what she's doing; a thing kept in her hand carried from there on, her hand given to a later act and taken back
+- [x] none while she's hidden, shot down, or an act has her; never in the tester's copy
+- [x] Problems for a character baked before the life clips, or with no skeleton
+- [x] MARKERS (the stage `life`) and MARKERSEDITOR (the two form rows)
 
 ## 11. Later (not in this round)
 

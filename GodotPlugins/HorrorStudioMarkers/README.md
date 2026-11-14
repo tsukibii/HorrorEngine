@@ -33,8 +33,9 @@ design and its rules: `docs/MARKERS.md`.
 - *Then*: flags switched, a task ticked or added, a line, a sound, things fired (a scare area, a cue).
 - On any marker: her **face** (and faces by flag), her **look** (skin and eyes, with the Look plugin), her **head**
   (it follows you, or someone you pick, within an arc: 160 degrees unless you set it, 80 to each side; carried on
-  until a marker gives it back to her animation), and **You can talk to ... here**: her lines, your answers, each
-  answer's flags, face and reply.
+  until a marker gives it back to her animation), her **small movements** (now and then, or none, from there on),
+  and **You can talk to ... here**: her lines, your answers, each answer's flags, face and reply.
+- On the character: **Small movements now and then** (how often), and how she **carries things**.
 
 Her state is carried from marker to marker and quest to quest: where she stands, sat or asleep, low or upright,
 hidden, her face, her look, who her head follows, what she holds. A quest that doesn't end in Disappear leaves her
@@ -54,6 +55,23 @@ Sneak, Crawl, Eat, Drink, Attack, Jump scare and the head want two things (docs/
 
 An Attack that lands says so: the HSNpc's `struck(target, kind)`, and the target's own `take_hit(by)` or
 `struck(by, kind)` when it has one (the starter kit's player has: a fright).
+
+## Life: small movements, and a thing kept in her hand
+
+Pick the character in the tab and tick **Small movements now and then** (docs/ANIMATOR_V3.md §11): while she
+stands, walks or sits at her markers she scratches her head, rubs her neck, looks at what's in her hand, stretches,
+every 6 to 14 seconds unless you set it. They're laid over whatever she's playing (her legs go on walking, her seat
+stays sat), never while a marker's own act has her, never while she's hidden or shot down. Any marker can switch
+them from there on (its Head section: *as they were, now and then, none*): someone who turns on you is set to
+*none* at the marker where it starts.
+
+**A thing she keeps** (a Grab's Pick up with *Keep in hand*) **is carried** from there on, walking, sitting or
+waiting: *Carries things*, on the character, says how (at the side, in front, to the chest, over the shoulder,
+raised), or leave it to the thing's own `HSGrip` (its Carry and Upright: a cup that's drunk from is carried in
+front of her, upright). The next Grab, Eat, Drink or Attack takes her hand and gives it back; Put down ends it.
+
+Both want a character **baked by the Animator since its life clips** (96 clips on a person; Problems says when she
+wasn't) and the Look plugin (its `HSGesture`). The tester's copy doesn't do them.
 
 ## In the 3D view
 

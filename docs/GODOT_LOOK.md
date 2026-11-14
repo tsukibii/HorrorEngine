@@ -1768,6 +1768,72 @@ tipped 52 degrees; eating, an apple's bitten side 0.0 cm from them at both bites
 up lands 2.3 and 2.6 cm from them, 2.9 cm when they step 30 cm aside as it's thrown; the end of a swung bat 2.0 cm
 from who it's swung at; knuckles 0.3, 0.1 and 1.1 cm from a spot knocked on.
 
+## 5z. Small movements laid over what she's doing, and a thing carried in any pose (`gesture.gd` `HSGesture`; DECISIONS 2026-11-14, later)
+
+The user: "'add life' animations ... looking at an object they are holding, scratching, little life flourish stuff
+... as ik blendables meaning if the lower body and chest is in a position e.g. walking or sitting, we can still
+blend in these animations. Is there a way we can use ik to allow them to hold objects in any of the current
+animation positions." docs/ANIMATOR_V3.md §11, §12.
+
+**`HSGesture`**, a SkeletonModifier3D, the first under her skeleton (`attach` puts it before her head's follower,
+her hands' IK and her soft tissue: they work on the pose it leaves). Her clip plays as it was made; after it, each
+frame, the layer adds two things, and with neither on she is exactly her clip.
+
+**A flourish**: one of her `life_` clips (the Animator makes 19 from her body and bakes them, the left hand's as
+mirrors: `tools/animator/core/life.js`), laid over the pose she's in. The rule is `tools/animator/core/layer.js`'s
+`lay()`, the same sums in GDScript:
+
+- **its arm**, from the collarbone down to the fingertips: each bone's own turn slerped from the pose's to the
+  clip's by a weight that rises over the clip's first `in` seconds and falls over its last `out`;
+- **her spine, her neck, her head and her other collarbone**: only how far the clip has turned each from where the
+  clip started (`first⁻¹ × now`), put on top of what the pose has them doing;
+- **her pelvis, her legs, her soft tissue, her other arm**: never touched;
+- **a touch**: where the clip's hand is on her (her head, her neck, her other arm, her side, her hip: the clip's
+  `touch` says which bone, from when to when, and which point of the hand), the layer works out where that point is
+  in the clip's own bone, carries it to the bone as it is in the pose she's really in, and hands it to `HSHandIK`
+  (`bring`, by a weight of its own). The blend alone leaves the hand 2 to 9 cm off a head that a walk bobs or a
+  follower has turned; with it the point is where the clip has it;
+- **a look**: a flourish that looks at her hand (`head: "look"`) holds her head's follower off while it lasts
+  (`HSHeadTrack.hold_off`), and gives her head back after.
+
+`alive` on, she does one every `every` seconds (6 to 14, a new number each time) that suits what she's doing (the
+clip's `over`: stand, walk, sit), with a hand that's free, never the one before again, and none while an act has
+her (`doing` is "busy"). `play("scratch_head")` does one now ({"left": true}: her other hand's; when that hand
+holds something, the other's by itself); `stop()` lets it go. `only` narrows them. `started`, `finished`.
+
+**A carry**: `carry(side, how, {thing, upright})` keeps the arm that holds a thing in one of her five `carry_`
+poses, each one pose made from her body so the arm clears her own bust, belly and hips: `side` (hanging, a fist),
+`front` (her forearm level, the thing in front of her), `chest` (held to her), `shoulder` (over it: a bat),
+`raised` (a lantern). Over any clip: the arm is slerped to the pose (at her side a share of her walk's swing is
+kept, `keep` 0.35), then two corrections by the pose's record: **plumb** (however her chest leans, the upper arm
+hangs as the pose has it against the world: a sneak pitches her chest 22 degrees and the arm doesn't go with it)
+and **upright** (the hand turned so the thing's own +Y is the world's up, 65 degrees at the most: a cup, a candle,
+a lantern). Sat, `side` is shown as `front` (a hand hanging at a thigh has nowhere to put a bottle). An act that
+needs the hand takes it (`carry_pause`: eating, drinking, a blow, a door, a reach) and it's carried again after;
+`carry_off(side)` lets go. A flourish plays from the carry pose and back to it, and the ones that want an empty
+hand are never picked for the hand that holds.
+
+**`HSGrip`** says how its prop is carried: `carry` (as it's used, side, front, chest, shoulder, raised) and
+`upright`; with nothing said, a thing that's drunk from is carried in front of her and upright, anything else at
+her side (`HSGrip.carry_of`).
+
+Who uses it: the starter's `motion.gd` (`alive`, `life_every`, `life_only`, `life(what)`, `hold(thing)`,
+`carry(how)`; a thing kept by `pick_up(thing, true)` is carried from then on), `act.gd` (the acts `life`, `alive`,
+`still`, `hold`, `drop`), the Markers (an HSNpc's Alive and Carries, a marker's Small movements: docs/MARKERS.md).
+The Animator's page shows every flourish over standing, walking and sitting by the same rule in JavaScript.
+
+Measured (GDLIFE, `python tools/godot/motion_check.py life`, on the normal woman): 20 flourishes played standing,
+her pelvis and legs her idle's to 0.00 mm, a hand that touches her within 0.2 mm of where it touches; over her
+walk at 1.34 m/s her legs and her other arm the walk's to 0.00 mm, her hand 0.0 mm from her head (its IK carried
+it 11 mm); sat, 6 of them, 0.0 mm; with her head turned 56 degrees to follow you, her hand ends 0.0 mm from it
+(carried 70 mm: the blend alone leaves it in the air), and a look at her hand takes her head off you and puts it
+back; `alive`, 13 in 40 s standing (12 different ones), none while she opens a door; a cup carried in front of her
+leans 0.0 degrees standing and walking, the hand that holds it travelling 0.7 cm against her chest where her other
+hand swings 28.1; sat, its foot 28 cm over her thigh; a sip from it 0.0 cm from her lips with the carry let go; a
+bottle at her side keeps 37% of the walk's swing; sneaking, the arm is hung back 21 of the 22 degrees her chest
+leans. On a goblin: 32 flourish clips of its own (18 and their mirrors: its body can't do the stretch cleanly, so
+the Animator made none), its hand 0.0 mm from its head.
+
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 
 A street baked in Blender (`tools/street.py bake`, docs/STREET_TEXTURING.md) comes as plain glTF:

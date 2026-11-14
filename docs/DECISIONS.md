@@ -24,10 +24,28 @@ What follows from it:
   trunk are doing by a layer that runs after her animation (the Look plugin's `HSGesture`), her hand carried onto
   where it's going (her head, her other arm, what she holds) by the hand's IK, since her head and chest aren't where
   the clip was made when she walks or sits. Her legs and pelvis are never touched by it.
-- **Holding is a pose kept by IK** (`HSHandIK`'s carry): while she holds a thing her arm takes the way that thing is
-  carried, in her chest's own space, over any clip; a cup stays upright. How a thing is carried is said on its grip.
+- **Holding is a pose kept over any clip** (the same layer's `carry`): while she holds a thing her arm takes the way
+  that thing is carried (at her side, in front, to her chest, over her shoulder, raised), hung by gravity however
+  her chest leans; a cup stays upright. How a thing is carried is said on its grip.
 - **No face**: these are the body's. Expressions stay the face system's, over any of them.
 - The plan and what was built: docs/ANIMATOR_V3.md §11 (life), §12 (carry); the branch `even-more-animations-v3`.
+
+Decided while building it (Claude's; the user can turn any of them over):
+
+- **Off unless switched on.** A character's *Alive* is unticked by default (the starter's Motion node, an HSNpc):
+  she who hunts you shouldn't scratch her head. A marker can switch it from there on.
+- **Only over standing, walking and sitting**, which is what was asked for; a run, a sneak, a crawl and any act she
+  was asked for play as they are.
+- **A flourish a body can't do cleanly isn't made for it.** An ogre has 14 of the 19, a hag 16, a goblin 18: where a
+  forearm would have to pass through a chest or a hand through a head, there is none, and the game picks among the
+  ones she has. Nothing is made in their place.
+- **A thing with nothing said**: drunk from, it's carried in front of her and kept upright; anything else at her side.
+- **Not built, and said so** (ANIMATOR_V3 §11.5, §12.4): reaching for a thing at any height (it's still the floor, a
+  table or a shelf, as the modelling rules say), carrying with two hands, a long thing kept off her leg, small
+  movements in a Director's or a desk game's cast.
+- **The modelling rules got two more** from measuring these: 0.50 m free to each side and in front of where she
+  stands, waits or sits with small movements on, nothing lower than 2.3 m over her; 0.45 m between her and what she
+  faces with a thing carried in front of her.
 
 ## 2026-11-14, short NPCs: a person's furniture used by any body; the peek is seen from in front (the user, on animations v3's first report)
 

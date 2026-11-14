@@ -67,10 +67,11 @@ the user asked for the branch, not for one. If #30 merges first, this one goes i
   scare card, and a Head row on every marker.
 - **Pictures and guides**: the clips on the normal woman, a ghoul and a goblin (`docs/animator_sheets/2026-11-14_v3_*`),
   the Animator's guide sections 10 to 14, the Markers' guide section 15.
-- **Checks**: ANIMATOR (44 s, in check_all), ANIMATORPAGE (65 s), GDMOTION then GDMOTION3 and GDSMALL
-  (`python tools/godot/motion_check.py`, then `python tools/godot/motion_check.py v3 --reuse` and
-  `python tools/godot/motion_check.py small --reuse`), MARKERS (1 minute), MARKERSEDITOR (1 minute). All passed on
-  the last commit.
+- **Checks**: ANIMATOR (73 s, in check_all), ANIMATORPAGE (80 s), GDMOTION then GDMOTION3, GDSMALL and GDLIFE
+  (`python tools/godot/motion_check.py`, then `python tools/godot/motion_check.py v3 --reuse`,
+  `python tools/godot/motion_check.py small --reuse` and `python tools/godot/motion_check.py life --reuse`), MARKERS
+  (2 minutes; **once without `--reuse` after the Animator's `VERSION` goes up**: the project keeps its old bake),
+  MARKERSEDITOR (1 minute). All passed on the last commit.
 
 **The user's first feedback on it, and what was built for it** (DECISIONS 2026-11-14, short NPCs; ANIMATOR_V3 §10):
 *"What about children npcs (really short npcs), can you figure out a way to adjust the animations proportionally to
@@ -89,10 +90,9 @@ height. For peak the back doesnt need to look good since it will ever only face 
   child, GDSMALL in Godot, MARKERS' door.
 - **The peek's back** is left as it is: the user said it's only ever seen from in front.
 
-**The user's next message, and its first part built** (DECISIONS 2026-11-14, later): *"Can you add interior,
+**The user's next message, in three parts, all built** (DECISIONS 2026-11-14, later). First: *"Can you add interior,
 furniture and street rules for yourself so if I use claude to model in the future it can stick to rules that dont
-break the animations."* (Its other two parts, small movements that show she's alive blended over whatever she's
-doing, and holding things in any pose, come after this in the same section once built.)
+break the animations."*
 - **docs/ANIMATION_RULES.md**: what an interior, a piece of furniture and a street have to be for her clips to work,
   with a short list first (§0) and every number measured. CLAUDE.md's Rules say to read it before sizing or placing
   anything a character uses or walks past; the `/build-map` skill and the four builders' docs point at it.
@@ -107,10 +107,39 @@ doing, and holding things in any pose, come after this in the same section once 
   and grip (`handle_ahead`), so a person holds a handle from 0.90 to 1.25 m and a small child from 0.65 to 1.15 m.
   A character baked before this stands where the clip says, as before: bake her again for it.
 
+Second and third: *"Can we add some 'add life' animations ... looking at an object they are holding, scratching,
+little life flourish stuff, is there a way we could add these animations as ik blendables meaning if the lower body
+and chest is in a position e.g. walking or sitting, we can still blend in these animations. Is there a way we can
+use ik to allow them to hold objects in any of the current animation positions. Dont need to do facial expressiosn
+for these"* (ANIMATOR_V3 §11, §12; GODOT_LOOK §5z):
+- **The Animator makes 19 small movements from her body** (`core/life.js`: a scratch of her head, her neck, her nose,
+  her brow, her hair, her chin, her other arm and shoulder, her side, a hand on her hip, her wrist and her hand
+  looked at, her hand flexed, a stretch, her hands rubbed, her shoulders, a sigh, a glance, her neck; the left
+  hand's as mirrors) **and five carry poses** (side, front, chest, shoulder, raised). `VERSION` 5: 96 clips on a
+  person, **a character baked before wants baking again**. Each flourish is tried a few ways and the first her body
+  can do cleanly is made; one it can't do isn't (an ogre has 14, a hag 16, a goblin 18).
+- **The layer** is one rule in two places: `tools/animator/core/layer.js` (the page shows every flourish over
+  standing, walking and sitting; ANIMATOR holds it) and the Look plugin's `gesture.gd` `HSGesture` (the first
+  modifier under her skeleton). The flourish's arm, how far it turns her trunk and head added to what they're
+  doing, nothing below her chest; a hand that touches her kept on the bone it touches by `HSHandIK`. **Change the
+  two together.**
+- **Carrying** is the same layer's `carry(side, how)`: the holding arm kept in a carry pose over any clip, hung by
+  gravity however her chest leans, an upright thing kept upright; an `HSGrip`'s Carry and Upright say how.
+- **Who uses it**: the starter's `motion.gd` (`alive`, `life()`, `hold()`, `carry()`; a thing kept by
+  `pick_up(thing, true)` is carried) and `act.gd`; the Markers (an HSNpc's *Small movements now and then* and
+  *Carries things*, a marker's *Small movements*). Off unless switched on.
+- **Held by** ANIMATOR's section 6e (73 s now), ANIMATORPAGE (80 s), **GDLIFE** (`python tools/godot/motion_check.py
+  life --reuse`, 1 minute), MARKERS's stage `life`, MARKERSEDITOR. The modelling rules got the room they take
+  (`space.mjs`'s `life`, `stretch`, `carry_*` groups; ANIMATION_RULES §6 and its new table).
+- **Pictures**: `docs/animator_sheets/2026-11-14_life_*.jpg` (the flourishes and carry poses on the dressed woman
+  and a goblin; `life_game.jpg` the layer and the carry in a game); the Animator's guide sections 16 and 17, the
+  Markers' guide section 16.
+
 **The user has still seen none of it in motion**: their feedback so far came from the report and its pictures. What
 eyes will find: how a clip reads on their own characters, the gizmo under a real mouse (it was only ever dragged by
 a test and pictured under xvfb), a blow in play, a child of their own getting onto one of their chairs (the pictures
-are a plain test body's and the goblin's: no dressed Studio child was made).
+are a plain test body's and the goblin's: no dressed Studio child was made), **and whether the small movements read
+as alive or as fidgeting**: how often (6 to 14 s) and which ones are a guess nobody has watched for a minute.
 
 **What I'd say is weakest, if asked**:
 - **Getting onto a high seat is one way for everybody**: bottom to the front, slide back. Nobody climbs with a knee,
@@ -122,6 +151,14 @@ are a plain test body's and the goblin's: no dressed Studio child was made).
   row) and a look to land; nobody has seen one in play.
 - **An imp can't reach a person's door handle**: 86 cm is as high as its hand goes; at a metre it stops 7 cm short
   and the door opens all the same.
+- **The small movements were judged from eight stills a clip.** Looking at them on the dressed woman found six
+  things no number had (an elbow out like a wing on the way to her head, a wrist check held out like a limp claw, a
+  shoulder brushed off that read as a hand on her heart...: ANIMATOR_V3 §11.4), and there will be more in motion:
+  the timing of each (how long her hand stays, how fast it comes back) is by ear, not by eye.
+- **A flourish is made standing.** Over a seat or a walk it's the same arm, laid on: nothing plans it round her
+  thighs, a chair's arms or a wall beside her.
+- **A carried thing doesn't know its own size**: a bottle at her side lies across her fist and nothing keeps a long
+  one off her leg; nobody carries with two hands.
 - Every picture was drawn on a CPU (lavapipe): the look is the game's, the frame rate isn't.
 
 **Not built** (ANIMATOR_V3 §9, MARKERS §11), in the order I'd take them:
@@ -130,8 +167,13 @@ are a plain test body's and the goblin's: no dressed Studio child was made).
    Studio's Age slider; about ten minutes a character on a CPU with its clothes);
 3. climbing: onto something over her hips, down from it; a step;
 4. a two-handed swing, an overhead one, a kick, a grab that holds you; beckoning, pointing, waving;
-5. which clips to bake (all 53 go in: 10.3 MB where 24 made 6.5);
-6. the head and the grip for the Director's and the desk's cast (they're the starter kit's and the markers').
+5. which clips to bake (all 96 go in: 13.1 MB on the test body where 53 made 10.3 and 24 made 6.5);
+6. the head, the grip, the small movements and carrying for the Director's and the desk's cast (they're the starter
+   kit's and the markers');
+7. **reaching for a thing at any height**: two neighbouring reach clips mixed by the thing's height, her feet kept
+   (planned in ANIMATOR_V3 §12.2, not built: she still takes a thing from the floor, a table or a shelf, and the
+   modelling rules say so);
+8. small movements over a run, a sneak and a crawl; carrying with two hands; a carried thing kept off her leg.
 
 **The pictures again**, each under xvfb on a CPU: `python tools/godot/motion_check.py furniture --who creature_goblin`
 and `--glb Saved/Animator/pics/child_small.glb --plain` (after `node tools/animator/bodies.mjs --out Saved/Animator/pics
@@ -139,6 +181,12 @@ child_small` and `node tools/animator/bake.mjs Saved/Animator/pics/child_small.g
 a sheet), the page's own by `node tools/animator/pagetest.mjs --out docs/animator_sheets --real anim_chubby_woman`;
 `python tools/godot/motion_check.py sheets3` (6 minutes; then `--who creature_ghoul`, `--who creature_goblin`), `python tools/godot/motion_check.py shots3` (after a GDMOTION run:
 it uses that project), `python tools/godot/motion_check.py gizmo`, then `python tools/godot/motion_check.py guide3`.
+Life and carrying: `node tools/animator/bake.mjs Exports/characters/anim_normal_woman/anim_normal_woman.glb`, then
+`python tools/godot/motion_check.py sheetslife` (4 sheets, 4 minutes; `--who creature_goblin`), `python
+tools/godot/motion_check.py shotslife` (14 pictures in 2 minutes, after a GDMOTION or GDLIFE run: it uses that
+project), then `python tools/godot/motion_check.py guidelife`; the Markers' editor pictures by `python
+tools/godot/markers_check.py --editor --reuse --shots Saved/Markers/shots` then `python tools/godot/markers_check.py
+guide Saved/Markers/shots`.
 The two creatures are Studio exports on this machine only (`Exports/characters/creature_ghoul`, `creature_goblin`,
 not tracked): `node tools/character/creatures.mjs make --only ghoul,goblin --export` with the Studio's server
 running, then `node tools/animator/bake.mjs Exports/characters/<name>/<name>.glb`.

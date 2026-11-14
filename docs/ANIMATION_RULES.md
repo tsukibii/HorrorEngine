@@ -33,6 +33,8 @@ studio's own furniture to §2 to §4.
 | A thing she takes | within 0.30 m of the edge of what it's on | see §5 for its height | her hand stops short |
 | Where she walks | 0.75 m wide, nothing under 1.0 m high over it | | she brushes through it, or walks on top of it |
 | Where she does anything but walk | level floor | | her feet float or sink |
+| Where she stands, waits or sits with small movements on | 0.50 m free to each side and in front of her from her waist up, nothing lower than 2.3 m over her | | an elbow in the wall, a stretch through the shelf |
+| What she faces with a thing carried in front of her | 0.45 m from where she stands | | the cup is in the counter |
 
 ## 1. What she knows and what she doesn't
 
@@ -141,6 +143,21 @@ She walks to where her hand reaches it, takes it, straightens.
 - **A scare**: 1.2 m of free floor in front of her (a lunge reaches 1.18 m) and 1.0 m across.
 - **A blow**: a punch reaches 0.88 m, and she walks to where it lands. 1.0 m across.
 - **A knock**: on something upright at 1.3 to 1.5 m up (0.8 of her height); she stands 0.3 to 0.4 m from it.
+- **Small movements** (docs/ANIMATOR_V3.md §11: a scratch, a look at her hand, a stretch, laid over standing,
+  walking and sitting when a character's *Alive* is on). They never move her feet, but her arms go out: a person
+  with an elbow up is **0.93 m wide** (0.47 to a side of her middle), **0.42 m in front** and 0.27 m behind where
+  she stands, and no taller than she is; **the stretch** takes her hands to **2.22 m** (a man of 1.80 m; 1.95 for a
+  woman of 1.63 m) and 1.01 m wide. So where she stands, waits or sits alive: **0.50 m free to each side and in
+  front of her from her waist up, and nothing lower than 2.3 m over her** (a shelf, a lamp, a beam, the top of a
+  bunk). In a narrower place (a corridor of 0.75 m, a phone box, a bunk) leave her still there: a marker's *Small
+  movements: none*, or `life_only` without the stretch. Walking, she does only the ones made for walking: the way's
+  0.75 m still holds, 0.90 where she'll scratch her head as she goes.
+- **A thing carried** (§12 there): in front of her, her hand is **0.30 m ahead** of where she stands and the thing
+  that much and its own size; raised, 0.43 m ahead, her hand about level with her chin (a lantern's top over that
+  by its own height); at her side, no wider than her arms. **What she stops in front of with a thing carried in
+  front of her is 0.45 m away** (a counter she faces, a door she waits at, someone she talks to): nearer, the thing
+  is in it. Nothing knows the thing's own size: a long thing (a bat over her shoulder, a pole at her side) passes
+  through a door frame or her own leg, so keep what she carries short where it matters.
 
 ## 7. Stairs, steps, slopes
 
@@ -289,6 +306,26 @@ Centimetres. Written by `python tools/anim_rules.py tables`; don't edit between 
 | ogre, 2.60 m | 10, 86, 308; 56, 65, 47 | 45, 50; 194 | 222 | 173 | 287, 181 | 228, 56 |
 <!-- hands:end -->
 
+**Small movements and carrying**: the room her arms take while her feet stay where they are (the left hand's are
+mirrors: "wide" is both sides).
+
+<!-- life:begin -->
+| | small movements: wide, in front, behind, up | the stretch: wide, up | a thing carried in front: her hand ahead of where she stands | raised: her hand ahead | at her side: wide |
+|---|---|---|---|---|---|
+| **a person** (the most of the three adults) | 93, 42, 27, 184 | 101, 222 | 30 | 43 | 55 |
+| a man, 1.80 m | 93, 42, 27, 184 | 101, 222 | 30 | 43 | 53 |
+| a woman, 1.63 m | 77, 40, 20, 166 | 94, 195 | 24 | 40 | 52 |
+| a heavy woman, 1.60 m | 70, 41, 20, 163 | 94, 191 | 24 | 39 | 55 |
+| a boy of 12, 1.49 m | 72, 39, 21, 152 | 83, 180 | 24 | 36 | 41 |
+| a girl of 8, 1.27 m | 61, 34, 16, 129 | 71, 151 | 21 | 30 | 37 |
+| a small child, 1.10 m | 53, 29, 14, 112 | 61, 131 | 18 | 26 | 32 |
+| hag, 1.50 m | 74, 59, 10, 152 | not made for it | 46 | 55 | 49 |
+| goblin, 1.15 m | 66, 42, 17, 117 | not made for it | 30 | 32 | 36 |
+| imp, 0.90 m | 47, 28, 13, 92 | 49, 110 | 20 | 23 | 30 |
+| ghoul, 1.90 m | 107, 72, 24, 194 | 130, 249 | 56 | 60 | 62 |
+| ogre, 2.60 m | 182, 91, 48, 273 | not made for it | 63 | 73 | 140 |
+<!-- life:end -->
+
 **What heights her hand gets to, in Godot** (GDRANGE: a handle every 5 cm from 0.6 to 1.5 m; a thing on something
 every 10 cm from the floor to 2.1 m).
 
@@ -310,6 +347,9 @@ every 10 cm from the floor to 2.1 m).
 - **Her feet aren't corrected to the floor in Godot.** A seat or a bed off its made-for height by up to 12 cm leaves
   her feet that far over or under the floor as she sits.
 - **A thing between two of her reaches** is taken with her hand a few centimetres off it (§11's last table).
+- **Her small movements don't know the room, and a thing she carries doesn't know its own size.** An elbow goes
+  through a wall beside her, a stretch through a shelf over her, a pole at her side through a door frame (§6).
+- **She carries with one hand.** A box, a tray, a body: not there.
 
 ## 13. How it's held
 
@@ -319,8 +359,10 @@ every 10 cm from the floor to 2.1 m).
 - `node tools/animator/space.mjs --check`: **SPACE**: `space.json` is what the clips measure (within 1.5 cm).
 - `python tools/godot/motion_check.py ranges --reuse`: **GDRANGE**: the heights her hand gets to, measured again.
 - `python tools/godot/motion_check.py small --reuse`: **GDSMALL**: short bodies on a person's chair, bed and door.
+- `python tools/godot/motion_check.py life --reuse`: **GDLIFE**: small movements over standing, walking and sitting
+  with her feet where they were; a cup and a bottle carried.
 
-**When a clip changes** (the Animator's `acts.js`, `motion.gd`'s `open` or reach): `node tools/animator/space.mjs
+**When a clip changes** (the Animator's `acts.js` or `life.js`, `motion.gd`'s `open` or reach): `node tools/animator/space.mjs
 --write`, `python tools/godot/motion_check.py ranges --reuse`, `python tools/anim_rules.py tables`, then bring the
 numbers in §0 to §10 up to date by hand from §11. **When a new piece of furniture is made**: run ANIMRULES; a seat, a
 bed or a door outside the ranges is changed, or listed in `rules.json` with the reason it isn't for the clips.

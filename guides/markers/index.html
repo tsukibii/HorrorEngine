@@ -84,6 +84,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#dance">A dance of your own</a></li>
     <li><a href="#monsters">Faces, looks, scares, being shot</a></li>
     <li><a href="#v3">Sneaking, eating, fighting, jump scares</a></li>
+    <li><a href="#life">Small movements, and carrying</a></li>
     <li><a href="#try">Try it</a></li>
     <li><a href="#game">In the game</a></li>
     <li><a href="#rules">The rules, and what's not there</a></li>
@@ -335,8 +336,35 @@ has its view knocked aside and its <code>hit(by, kind)</code> signal fires, for 
 <code>struck(target, kind)</code> signal says it too.</div>
 </section>
 
+<section id="life">
+<h2><span class="n">16</span>Small movements, and carrying</h2>
+<p>Someone who only ever does what their markers say stands like a statue in between. Two things fix that, both on the
+<b>character</b> (click their name in the Characters list) in the form's <span class="ui">Life</span> section. They want a
+character baked by the Animator since its life clips (96 clips: open her in the Animator, Bake) and the Look plugin, which
+every <code>godot_byhand.py</code> project has.</p>
+<figure><img src="img/11_life.jpg" alt="The NPC Markers tab with a character picked: the Life section of the form, Small movements now and then ticked, how often, and how things are carried"><figcaption>A character's form at its Life section: <span class="ui">Small movements now and then</span> ticked, how often, and how a kept thing is carried.</figcaption></figure>
+<table class="keys">
+  <tr><td>Small movements now and then</td><td>While she stands, walks or sits at her markers she scratches her head, rubs her neck, looks at what's in
+  her hand, stretches: one every so often (<span class="ui">Every</span>: 6 to 14 seconds unless you set it), laid over whatever she's playing, so her
+  legs go on walking and she stays sat. Never while a marker's own act has her (a Grab, an Attack, a jump scare, sitting down, an animation of
+  your own), never while she's hidden or shot down. The <a href="../animator/index.html#life">Animator's guide, section 16</a>, shows them all.</td></tr>
+  <tr><td>Small movements, on a marker</td><td>In any marker's <span class="ui">Head</span> section: <span class="ui">as they were</span>, <span class="ui">now and then</span>, <span class="ui">none</span>,
+  from that marker on. Someone friendly who turns on you: <span class="ui">none</span> at the marker where it starts. Someone waiting for you at a
+  counter: <span class="ui">now and then</span> at the Wait.</td></tr>
+  <tr><td>Carries things</td><td>A Grab's <span class="ui">Pick up</span> with <span class="ui">Keep in hand</span> used to leave the thing wherever her hand's animation took it.
+  Now it's <b>carried</b> from there on, walking, sitting or waiting: <span class="ui">at the side</span>, <span class="ui">in front</span>, <span class="ui">to the chest</span>,
+  <span class="ui">over the shoulder</span>, <span class="ui">raised</span> (a lantern), or <span class="ui">as the thing's grip says</span> (its HSGrip's Carry and Upright: a cup that's
+  drunk from is carried in front of her and kept upright; anything else at her side). The next Grab, Eat, Drink or Attack takes her hand for as
+  long as it needs and gives it back; <span class="ui">Put down</span> ends it. The <a href="../animator/index.html#carry">Animator's guide, section 17</a>, shows the five.</td></tr>
+</table>
+<div class="tip"><b>She looks at what she holds.</b> With both on, a character carrying something looks at it now and then and does the rest
+with her other hand. That is a whole little scene from two ticks: Pick up (keep in hand), Walk, Sit, Wait.</div>
+<div class="note"><b>The tester doesn't show them.</b> They come when they like, and <span class="ui">Try it</span> has to show the same thing twice; it also
+never takes a thing of your scene's into the copy's hand. Play the game to see them.</div>
+</section>
+
 <section id="try">
-<h2><span class="n">16</span>Try it</h2>
+<h2><span class="n">17</span>Try it</h2>
 <p><span class="ui">Try it</span> plays the picked marker in the 3D view; <span class="ui">From here</span> it and what
 follows; <span class="ui">Play</span> beside the quest all of it. A copy of the character plays; the real one isn't
 touched and nothing is saved.</p>
@@ -344,7 +372,7 @@ touched and nothing is saved.</p>
 </section>
 
 <section id="game">
-<h2><span class="n">17</span>In the game</h2>
+<h2><span class="n">18</span>In the game</h2>
 <div class="pair">
 <figure><img src="img/play_talk.jpg" alt="The game: Alex's name and line at the foot of the view, the two answers on one line under it with a dash between, no panel"><figcaption>Aim at someone you can talk to (a ring, <em>Talk</em> and their name) and press <kbd>E</kbd>. The lines come one after another, each for as long as it takes to read; <kbd>E</kbd> or a click hurries them. The answers: <kbd>A</kbd> / <kbd>D</kbd> or the arrows move, <kbd>Enter</kbd> picks, or click one.</figcaption></figure>
 <figure><img src="img/play_f7.jpg" alt="The game with a label over Alex: the quest, the marker, what it waits for"><figcaption><kbd>F7</kbd>: over each character, their quest, their marker and what it's waiting for.</figcaption></figure>
@@ -354,7 +382,7 @@ touched and nothing is saved.</p>
 </section>
 
 <section id="rules">
-<h2><span class="n">18</span>The rules, and what's not there</h2>
+<h2><span class="n">19</span>The rules, and what's not there</h2>
 <ul>
   <li>Markers run top to bottom. A marker starts when the one before is done and its Starts when is so.</li>
   <li>Quests run in order; one with chips cuts in; never back up the list; a quest runs once.</li>
@@ -362,8 +390,8 @@ touched and nothing is saved.</p>
   <li><span class="ui">Problems</span> (bottom left) lists what can't work as it is: a flag nothing turns on, a way after "otherwise", a Repeat that never ends before other markers. Each takes you to its marker.</li>
 </ul>
 <div class="notyet"><b>Not there yet</b>: doors opened on the way of a walk (use an Open door marker before it); a
-marker that keeps following you; the head and eyes turning to you; feet planted on each step of a stair; a navigation
-mesh (the path you draw is the path walked). Games built with the Director or exported from the desk don't use
+marker that keeps following you; feet planted on each step of a stair; a navigation
+mesh (the path you draw is the path walked); small movements while she runs, sneaks or crawls; carrying with two hands. Games built with the Director or exported from the desk don't use
 markers.</div>
 </section>
 

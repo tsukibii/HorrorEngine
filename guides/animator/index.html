@@ -86,6 +86,8 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#grip">Things in her hand: the grip</a></li>
     <li><a href="#fight">Fights</a></li>
     <li><a href="#short">Children and other short characters</a></li>
+    <li><a href="#life">Small movements: she's alive</a></li>
+    <li><a href="#carry">Carrying things</a></li>
     <li><a href="#director">In the Director</a></li>
     <li><a href="#rules">Good to know</a></li>
   </ol>
@@ -98,10 +100,12 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
   <p>A character's own animations, made from her body. Export her from the Character Studio, open her here, move five
   sliders, bake. Her walk, her run, how she sits, sleeps, opens a door and picks something up are written into her own
   file, ready for Godot; and since animations v3 how she sneaks, crawls, creeps and scuttles, peeks round a wall,
-  lunges at you, punches, swings what she holds, eats and drinks. Nothing is recorded motion: a tall thin man, a short
+  lunges at you, punches, swings what she holds, eats and drinks; and the small things that make her look alive: a
+  scratch, a look at what's in her hand, a stretch, laid over whatever she's doing, and a cup carried while she walks
+  or sits. Nothing is recorded motion: a tall thin man, a short
   heavy woman, a goblin and a ghoul get different ones because they have different bodies.</p>
-  <div class="chips"><span class="chip">the dashboard's Animator v2 tile</span><span class="chip">53 clips</span><span class="chip">people and creatures</span><span class="chip">bones only: any expression over any clip</span>
-  <span class="chip">Godot 4.7</span><span class="chip">motion.gd</span><span class="chip">act.gd</span><span class="chip">HSHeadTrack</span><span class="chip">HSGrip</span></div>
+  <div class="chips"><span class="chip">the dashboard's Animator v2 tile</span><span class="chip">96 clips</span><span class="chip">people and creatures</span><span class="chip">bones only: any expression over any clip</span>
+  <span class="chip">Godot 4.7</span><span class="chip">motion.gd</span><span class="chip">act.gd</span><span class="chip">HSHeadTrack</span><span class="chip">HSGrip</span><span class="chip">HSGesture</span></div>
 </header>
 
 <section id="what">
@@ -177,19 +181,22 @@ far each soft part moves.</div>
 <tr><td><code>punch</code>, <code>swing</code>, <code>hit_react</code></td><td>A punch; an overhead swing of whatever she holds; being hit. (<code>_l</code>: her left hand.) <a href="#fight">More</a>.</td></tr>
 <tr><td><code>eat</code>, <code>drink</code></td><td>Her hand to her mouth: two bites; one long sip with her head back. (<code>_l</code>: her left hand.) <a href="#grip">More</a>.</td></tr>
 <tr><td><code>look_around</code>, <code>knock</code>, <code>cower</code></td><td>Looking to both sides; three raps on a door; crouched with her arms up over her head.</td></tr>
+<tr><td><code>life_&hellip;</code> (19)</td><td>Small movements of her arms, her shoulders and her head, laid over whatever else she's doing: a scratch, a look at her hand, a stretch. (<code>_l</code>: her left hand.) <a href="#life">More</a>.</td></tr>
+<tr><td><code>carry_side</code>, <code>carry_front</code>, <code>carry_chest</code>, <code>carry_shoulder</code>, <code>carry_raised</code></td><td>One pose each: how the arm that holds a thing is carried. (<code>_l</code>: her left arm.) <a href="#carry">More</a>.</td></tr>
 </table>
 <figure><img src="img/page_sit.jpg" alt="Sit, played as the whole of it"><figcaption>Sit and Sleep also play as <span class="ui">the whole of it</span>: down, there a while, up.</figcaption></figure>
 </section>
 
 <section id="bake">
 <h2><span class="n">5</span>Bake</h2>
-<p><span class="ui">Bake into the file</span> writes all 53 clips into her own <code>.glb</code>, in place, in a few seconds. The
+<p><span class="ui">Bake into the file</span> writes all 96 clips into her own <code>.glb</code>, in place, in a few seconds. The
 list then says <b>baked</b>. Bake again any time with other sliders: the file isn't any bigger for it.</p>
 <figure><img src="img/page_baked.jpg" alt="A baked character in the page"><figcaption>Baked: her clips are in her file.</figcaption></figure>
 <div class="note">If you export her again from the Studio (new clothes), her file is fresh again. Open her here: the sliders
 start where she was last baked. Bake.</div>
-<div class="note">A character baked before animations v3 (14 November) has 24 clips and none of the new ones: open her,
-Bake. Godot and the NPC Markers tab say which clip she lacks.</div>
+<div class="note">A character baked before animations v3 (14 November) has 24 clips and none of the new ones; one baked
+before the small movements (later that day) has 53 and no <code>life_</code> or <code>carry_</code> clips: open her,
+Bake. Godot and the NPC Markers tab say what she lacks.</div>
 <p>From the command line:</p>
 <pre>node tools/animator/bake.mjs Exports/characters/anna/anna.glb --style 0.6 --strength 0.5</pre>
 </section>
@@ -216,6 +223,8 @@ m.scare("lunge", player, true)    # a jump scare, now: turned to you, thrown at 
 m.head_follow(true)               # her head follows you (within 160 degrees unless you say another)
 m.drink($Table/Bottle)            # takes it by its grip, drinks; m.eat($Apple) eats it
 m.punch(player)                   # goes to where it reaches, turns with them, lands it; m.swing(player) swings what she holds
+m.alive_now(true)                 # small movements now and then, over whatever she's doing; m.life("scratch_head"): one now
+m.hold($Table/Mug)                # a thing in her hand, carried from now on: walking, sitting, sneaking; m.drop() lets go
 await m.done                      # "walk", "sit", "sleep", "open", "pick_up", "peek", "scare", "punch", "drink"...</pre>
 <p>She moves at the speed her walk was made for, so her feet keep step. Asked for something while she's sat or asleep,
 she gets up first. Each call takes the place of the one before.</p>
@@ -242,7 +251,8 @@ marker where her head should be (the pillow) picks which way she lies.</td></tr>
 <tr><td><b>Who</b></td><td>The character (her Motion node is found under her).</td></tr>
 <tr><td><b>Act</b></td><td>walk_to, run_to, sit, stand_up, sleep, wake_up, open, reach, pick_up, play, face; and sneak_to,
 crawl_to, creep_to, scuttle_to, rise, peek, scare (its <b>Scare kind</b>, <b>Then hide</b>), punch, swing, eat, drink, look_around, knock,
-cower, head_follow, head_free.</td></tr>
+cower, head_follow, head_free; and life (one small movement: its name in <b>Clip</b>, or one that suits), alive, still,
+hold (the <b>Target</b> in her hand, carried as <b>Carry</b> says), drop.</td></tr>
 <tr><td><b>Target</b></td><td>Where, or what: a marker, a seat's, a handle's, a thing. <b>Also</b>: the door for open, the pillow for sleep.</td></tr>
 <tr><td><b>Needs</b></td><td>The Story's words. She does it by herself when they come to hold: <code>task:key</code> (that task ticked),
 <code>on:find_key</code> (on your list), a flag's name.</td></tr>
@@ -445,34 +455,131 @@ of the above, an adult for her bed clips, which no longer snap an elbow as she l
 bed's corner.</div>
 </section>
 
+<section id="life">
+<h2><span class="n">16</span>Small movements: she's alive</h2>
+<p>Someone standing in an idle loop reads as a statue. The Animator makes <b>19 small movements</b> from her body with
+the rest of her clips, and Godot <b>lays them over whatever she's doing</b>: her arm does the scratch while her legs go
+on walking, or she stays sat. Nothing below her chest is touched, and her face is left alone (expressions are their
+own layer).</p>
+<figure><img src="img/life_over.jpg" alt="The same scratch of her head: standing, walking, and sat on a chair"><figcaption>One clip, <code>life_scratch_head</code>, three times: standing, walking, sat. Her legs are the walk's and the seat's; only her arm, and a little of her chest and head, are the scratch's.</figcaption></figure>
+<h3>Switch it on</h3>
+<ol class="steps">
+  <li>On her <b>Motion</b> node, in the Inspector's <b>Life</b> group, tick <b>Alive</b>. That's all: every 6 to 14 seconds she
+  does one that suits what she's doing, with a hand that's free, never the same twice running.</li>
+  <li><b>Life Every</b>: the seconds between them, from and to. <b>Life Only</b>: only these (<code>scratch_head</code>,
+  <code>look_hand</code>...) when you want fewer.</li>
+</ol>
+<pre>m.alive_now(true)                 # on; m.alive_now(false) off
+m.alive_now(true, Vector2(3, 6))  # more often
+m.life("rub_neck")                # one now, by its name
+m.life()                          # one that suits what she's doing
+m.life("look_hand", true)         # with her left hand</pre>
+<p>Without a script: an <a href="#acts">act</a> with <b>Act</b> <span class="ui">alive</span>, <span class="ui">still</span>, or
+<span class="ui">life</span> (its name in <b>Clip</b>). In the <b>NPC Markers</b> tab: pick the character, tick
+<span class="ui">Small movements now and then</span>; any marker's Head section can switch them from there on.</p>
+<h3>What they are</h3>
+<table class="keys">
+<tr><td>Her head</td><td><code>scratch_head</code> (the back of it, her head tilting into her hand), <code>tuck_hair</code> (from her temple back over her ear),
+<code>wipe_brow</code>, <code>rub_nose</code>, <code>chin</code> (a knuckle under it, held: thinking), <code>rub_neck</code>.</td></tr>
+<tr><td>Her body</td><td><code>scratch_arm</code> and <code>brush_off</code> (her other arm, her other shoulder, looked at), <code>scratch_belly</code>,
+<code>hand_hip</code> (a while, her weight settling).</td></tr>
+<tr><td>Her hands</td><td><code>look_hand</code> (brought up and turned over: what she holds, or her nails), <code>check_wrist</code> (a watch),
+<code>flex_hand</code>, <code>rub_hands</code>.</td></tr>
+<tr><td>No hand at all</td><td><code>stretch</code> (both arms up, her back arched), <code>roll_shoulders</code>, <code>sigh</code>, <code>glance</code> (off to one side and back),
+<code>neck_stretch</code>.</td></tr>
+</table>
+<figure><img src="img/life_head.jpg" alt="Six small movements about her head, eight moments of each"><figcaption>About her head: a scratch, her neck, her nose, her brow, her hair, her chin.</figcaption></figure>
+<figure><img src="img/life_body.jpg" alt="Seven small movements about her body and her hands"><figcaption>Her other arm, her shoulder brushed off, her side, a hand on her hip, her wrist looked at, her hand looked at, her hand flexed.</figcaption></figure>
+<figure><img src="img/life_both.jpg" alt="A stretch, her hands rubbed, a glance and her neck stretched"><figcaption>A stretch, her palms rubbed, a glance, her neck. (Her shoulders rolled and a sigh are too small for a still.)</figcaption></figure>
+<h3>What she does with them</h3>
+<table class="keys">
+<tr><td><b>Standing, walking, sitting</b></td><td>Each one knows what it can be laid over. A hand on her hip is for standing; a stretch isn't for walking. Running, sneaking, crawling, asleep, or in the middle of
+anything you asked of her (a door, a punch, sitting down), she does none.</td></tr>
+<tr><td><b>A hand that's busy</b></td><td>Holding something, she uses her other hand; with both full she looks at what she holds, glances, sighs, rolls her shoulders.</td></tr>
+<tr><td><b>Her head</b></td><td>If her <a href="#head">head follows you</a>, it goes on following: her hand is put on her head where her head really is. A look at her hand takes her eyes off you, and gives them back.</td></tr>
+</table>
+<figure><img src="img/life_more.jpg" alt="Wiping her brow and rubbing her neck as she walks; a knuckle under her chin and a stretch, sat"><figcaption>As she walks: her brow, her neck. Sat: her chin, a stretch.</figcaption></figure>
+<div class="pair">
+<figure><img src="img/life_follow.jpg" alt="Her head turned to her left, her right hand scratching it"><figcaption>Her head is turned to someone on her left, and her hand still finds it.</figcaption></figure>
+<figure><img src="img/page_life.jpg" alt="The Animator's page: a small movement shown over her walk"><figcaption>In the Animator: the <span class="ui">Life</span> kind, with <span class="ui">over her: standing, walking, sitting</span> to see each one laid over the others.</figcaption></figure>
+</div>
+<h3>Creatures</h3>
+<p>A goblin, a ghoul or an ogre gets the ones its body can do. Each is tried a few ways (a scratch further down toward
+the ear where the arm doesn't reach the crown; a hand on the chest where a big head is in the way of the shoulder), and
+one that can't be done cleanly any way isn't made: an ogre has 14 of the 19 (its forearm can't pass that chest to its
+nose or its chin). The Animator's page lists what wasn't made and why; in the game she only ever picks among the ones she has.</p>
+<figure><img src="img/life_goblin.jpg" alt="A goblin scratching its head, rubbing its nose, brushing off its chest and checking its wrist"><figcaption>A goblin 1.15 m tall: the same clips made for its own arms and its own big head.</figcaption></figure>
+<div class="tip"><b>Measured</b> (in Godot, on the test woman): with a scratch laid over her walk her legs and her other arm are the walk's to a hundredth of a millimetre,
+and her fingertips are 0.0 mm from where the clip has them on her head, carried the last 11 mm by her hand's IK. With her head turned 56 degrees to follow you they're still on it (carried 70 mm).</div>
+<div class="note">Under her skeleton this is one node, <span class="node">HSGesture</span> (the Look plugin's). You never need to touch it, but its own
+settings are there: <b>Amount</b> (0.5: half as big), <b>Every</b>, <b>Only</b>.</div>
+</section>
+
+<section id="carry">
+<h2><span class="n">17</span>Carrying things</h2>
+<p>A thing in her hand used to go wherever her hand's clip took it: swung by a walking arm, pressed through her thigh
+when she sat with her hands on her knees. Now a thing she keeps is <b>carried</b>: the arm that holds it is kept in a
+carry pose over any clip, while the rest of her walks, sits, sneaks or stands.</p>
+<figure><img src="img/carry_cup.jpg" alt="A woman carrying a mug in front of her: standing, walking, looking at it as she walks, and sat"><figcaption>A mug whose grip says it's drunk from: carried in front of her and kept upright, standing, walking and sat. Third: a look at it as she walks.</figcaption></figure>
+<pre>m.pick_up($Table/Mug, true)       # walks to it, takes it, and keeps it: carried from then on
+m.hold($Bottle)                   # straight into her hand (no reaching), carried
+m.carry("shoulder")               # how: side, front, chest, shoulder, raised
+m.drop()                          # lets go of it where it is</pre>
+<figure><img src="img/carry_poses.jpg" alt="The five carry poses from the front and the side"><figcaption>The five, each made so her arm clears her own body: at her side, in front, to her chest, over her shoulder, raised.</figcaption></figure>
+<table class="keys">
+<tr><td><b>side</b></td><td>Her arm hanging, a fist: a bottle, a bag, a bat held low. It keeps a little of her walk's swing.</td></tr>
+<tr><td><b>front</b></td><td>Her forearm level, the thing in front of her: a cup, a candle, a flashlight, a plate, a phone.</td></tr>
+<tr><td><b>chest</b></td><td>Held to her: a book, a doll.</td></tr>
+<tr><td><b>shoulder</b></td><td>Her fist by her shoulder, the thing lying back over it: a bat, an axe, an umbrella.</td></tr>
+<tr><td><b>raised</b></td><td>In front of her about level with her chin: a lantern, a torch.</td></tr>
+</table>
+<p><b>The prop can say how.</b> On its <a href="#grip">grip</a> (<span class="node">HSGrip</span>): <b>Carry</b> (one of the five) and <b>Upright</b> (it stays the way
+up it stands however her arm turns: a cup, a candle, a lantern). With nothing said, a thing that's drunk from is carried
+in front of her and upright; anything else at her side.</p>
+<figure><img src="img/carry_bottle.jpg" alt="A bottle carried at her side as she walks and as she sneaks"><figcaption>A bottle with nothing said, at her side: walking, and sneaking, where her chest leans over and her arm still hangs.</figcaption></figure>
+<table class="keys">
+<tr><td><b>Sitting</b></td><td>A thing carried at her side is brought in front of her while she's sat (a hand hanging by a thigh has nowhere to put it).</td></tr>
+<tr><td><b>Using the hand</b></td><td>Eating, drinking, a punch, a swing, a door, picking something else up: the carry lets go of her arm for as long as that takes, and takes it back.</td></tr>
+<tr><td><b>Alive</b></td><td>With <a href="#life">small movements</a> on she looks at what she's carrying now and then, and does the rest with her other hand.</td></tr>
+<tr><td><b>In the NPC Markers tab</b></td><td>A Grab's <span class="ui">Pick up</span> with <span class="ui">Keep in hand</span> carries it from there on; <span class="ui">Carries things</span> on the character says how.</td></tr>
+</table>
+<div class="tip"><b>Measured:</b> a cup carried in front of her leans 0.0 degrees standing and walking, and the hand that holds it moves 0.7 cm against her chest
+where her other hand swings 28 cm; sat it's 28 cm over her thigh; a sip from it lands 0.0 cm from her lips and it's carried again after.</div>
+<div class="notyet"><b>Not there yet</b>: carrying with two hands (a box, a tray); a long thing at her side kept off her leg; a heavy thing carried as if it were heavy.</div>
+</section>
+
 <section id="director">
-<h2><span class="n">16</span>In the Director</h2>
+<h2><span class="n">18</span>In the Director</h2>
 <p>A character whose model was baked plays her own idle, walk, run and sitting wherever a move is left empty, and her
 walk keeps step with how fast a behaviour moves her. The Animate tab says which moves her model carries; fill the
-rest from the library as before, or leave them.</p>
+rest from the library as before, or leave them. (Small movements and carrying aren't in the Director yet: the starter's
+Motion node and the NPC Markers tab have them.)</p>
 </section>
 
 <section id="rules">
-<h2><span class="n">17</span>Good to know</h2>
+<h2><span class="n">19</span>Good to know</h2>
 <ul>
   <li><b>A seat that isn't 45 cm high</b>: she's raised or lowered to meet it, up to 12 cm. Her feet float or sink by that much.
   A small character whose legs hang anyway (<a href="#short">section 15</a>) is raised up to 30 cm.</li>
   <li><b>A handle that isn't a metre up</b>: her hand is carried onto it as she takes hold of it, as far as her arm goes.
   <b>A thing between two heights</b>: she stands so her hand lands near it; it can be off by a few centimetres.</li>
   <li><b>She walks in straight lines</b> between the places you give her (<code>m.go([a, b, c])</code> for a way round something).</li>
-  <li><b>What she picks up is put away</b> (hidden) as she straightens, unless you say keep it in her hand.</li>
+  <li><b>What she picks up is put away</b> (hidden) as she straightens, unless you say keep it in her hand: then it's <a href="#carry">carried</a>.</li>
   <li><b>The left hand's clips start with her weight on the other leg</b>: the blend into them is a small shift of weight.</li>
   <li><b>A thing in her hand is held by its grip</b> (section 13). A door's handle is held too: the middle of her closed hand is put on it.</li>
-  <li><b>The head, the grip and the blows need the Look plugin</b> in the project (every <code>godot_byhand.py</code> project has it). Without it the clips play as they were made.</li>
+  <li><b>Small movements never move her feet</b>, so they can't make her slide; but they don't know the room either: give her the
+  space the modelling rules ask for (<code>docs/ANIMATION_RULES.md</code>), or a stretch goes through a low shelf.</li>
+  <li><b>The head, the grip, the blows, the small movements and carrying need the Look plugin</b> in the project (every <code>godot_byhand.py</code> project has it). Without it the clips play as they were made.</li>
   <li><b>A thing lying flat is taken with her fingers a little into what it lies on</b>: her hand knows where the grip is, not where the table's top is.</li>
 </ul>
 <div class="notyet"><b>Not there yet</b>: feet corrected in Godot; a turn on the spot; walking up stairs (the NPC Markers tab does stairs);
-climbing onto something over her head; a kick, a two-handed swing; waving, pointing, beckoning.</div>
+climbing onto something over her head; a kick, a two-handed swing; waving, pointing, beckoning; small movements over a
+run, a sneak or a crawl; reaching for a thing at any height (she takes it from the floor, a table or a shelf).</div>
 </section>
 
 <footer>The Animator v2 and animations v3 (<code>tools/animator</code>, <code>docs/ANIMATOR_V2.md</code>, <code>docs/ANIMATOR_V3.md</code>). The page's
 pictures are its own test's (<code>node tools/animator/pagetest.mjs --out</code>); Godot's are <code>python tools/godot/motion_check.py sheets</code>,
-<code>sheets3</code>, <code>shots3</code>, <code>gizmo</code> and <code>furniture</code>: the three test characters, made by <code>node tools/animator/people.mjs</code>, and two
+<code>sheets3</code>, <code>shots3</code>, <code>gizmo</code>, <code>furniture</code>, <code>sheetslife</code> and <code>shotslife</code> (put together by <code>guide3</code> and <code>guidelife</code>): the three test characters, made by <code>node tools/animator/people.mjs</code>, and two
 creatures by <code>node tools/character/creatures.mjs make --only ghoul,goblin --export</code>.</footer>
 </main>
 </div>

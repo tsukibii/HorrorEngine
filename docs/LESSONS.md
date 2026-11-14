@@ -3355,3 +3355,49 @@ pale one shows.
 - **A rule nobody checks is a wish.** ANIMRULES holds every seat, bed and door the kit and the prop generator make
   to the ranges, and lists the ones that are out on purpose with why (`rules.json`): the bar stool and the futon
   were found that way, not remembered.
+
+## Small movements laid over a clip, and a thing carried (2026-11-14, later, `even-more-animations-v3`: ANIMATOR_V3 §11, §12)
+
+- **A copy made by `structuredClone` slowed every later pose for the rest of the process.** A flourish's frames are
+  made ahead and handed out as copies. Copied with `structuredClone`, one clip's worth of them through `pose.js`
+  `build()` left the engine's inline caches for that function polluted: the next body's walk took 9 s to make
+  instead of 2.5, and ANIMATOR went from 44 s to 280 and then out of memory. A copy written by hand (the same
+  object shape as the makers' own controls) cost nothing. When a hot function gets slower *after* an unrelated step,
+  look at what kind of object that step fed it.
+- **The hand's turn where it lands is said outright, never left to the forearm.** With the palm rule (a palm that
+  faces a way, the fingers wherever the forearm points) a hand on her other arm put her elbow 86 mm into her chest
+  and a hand on her neck wrung her wrist 75 degrees in a frame. A hand laid on her is given the way its fingers
+  point and the way its palm faces; her elbow then goes behind her hand, and only what's left over a wrist's bend
+  (48 degrees) is taken off the hand.
+- **A pole that points along the way the hand travels flips the arm.** Swinging the elbow frame by frame to keep it
+  clear turned it 170 degrees between two frames and changed the pose the clip started from. The elbow's side is
+  fixed once, where the hand is held (square to the line from shoulder to wrist), and the *way* is moved out of her
+  instead. And where the elbow goes late: blended at the hand's pace it was out at her shoulder's height while her
+  hand was still at her chest.
+- **A limit on reach belongs to the way, not to its ends.** Capping how far the wrist may be from the shoulder bent
+  the hanging arm it started from (29 degrees off the idle): the cap is faded in after the start and out before the
+  hold.
+- **A head's box isn't her skull.** A goblin's ears and an ogre's nose made the bounding ellipsoid 4 cm bigger than
+  the head a hand lands on: hands were "in her head" a centimetre off her skin, and scratches floated. The skull is
+  a grid of radii round its middle with what sticks out opened away (`measure.js` `headAt`).
+- **One clip doesn't fit eleven bodies; a few ways, and none, does.** A hand to the nose can't pass an ogre's chest
+  whatever the elbow does. Each flourish is tried a few ways, the first clean one is made, and one with no clean way
+  isn't made for that body: the record says which, and nothing downstream assumes she has them all.
+- **An angle between two float32 turns has a floor.** "Nothing below her chest moves" failed at 0.039 degrees on
+  joints that were bit for bit the base's: `2 acos(|dot|)` of two equal unit quaternions stored as floats. Compare
+  the numbers, or allow a tenth of a degree.
+- **The numbers passed and the pictures didn't, again.** Every flourish was inside every limit when the first sheet
+  on the dressed character showed a wing, a limp claw, a hand on her heart and spread fingers. A limit says a clip
+  isn't broken; only a picture says what it reads as. Make the sheet before writing the check's last lines.
+- **A check that reuses a project reuses its bake.** MARKERS with `--reuse` said "0 flourishes" for twenty minutes'
+  worth of new code: the project's character had been baked by the version before. After the Animator's `VERSION`
+  goes up, the first run of any check that keeps a project is without `--reuse`.
+- **A freed node compares equal to null.** The editor test kept a checkbox, ticked it (which builds the form again
+  and frees the box), and then asked `box != null`: false, with everything it had done having worked. Ask before the
+  thing that frees it.
+- **A measure against a pose that moves isn't a measure.** "Her foot stays where her idle has it" compared her foot
+  with where it was a moment before the flourish: the idle sways 5 to 7 mm in that time by itself. Compare with the
+  base sampled at the same instant (GDLIFE does), or don't.
+- **Drawing nothing between pictures made the game's pictures six times faster.** Fourteen pictures of a dressed
+  character took 12 minutes on a software renderer because every frame of walking to the next picture was drawn.
+  `RenderingServer.render_loop_enabled = false` between them: 2 minutes, the same pictures.
