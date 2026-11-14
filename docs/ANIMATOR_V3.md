@@ -161,14 +161,14 @@ swings at.
 ## 7. The plan
 
 - [x] The request in DECISIONS, this design
-- [ ] `tools/animator/sticks.mjs`: a clip as rows of stick figures (side, front), to look at one without Godot
-- [ ] Clips: sneak and crouch; creep and its stance (`stealth.js`)
-- [ ] Clips: crawl, all fours, scuttle (`quad.js`)
-- [ ] Clips: peek out, held, back
-- [ ] Clips: the four scares
-- [ ] Clips: punch, swing, hit_react
-- [ ] Clips: eat, drink; look_around, knock, cower
-- [ ] `animate.js` kinds, `VERSION` 3, the page's kinds and labels; ANIMATOR holds each new clip to its rules;
+- [x] `tools/animator/sticks.mjs`: a clip as rows of stick figures (side, front), to look at one without Godot
+- [x] Clips: sneak and crouch; creep and its stance (`stealth.js`)
+- [x] Clips: crawl, all fours, scuttle (`quad.js`)
+- [x] Clips: peek out, held, back
+- [x] Clips: the four scares
+- [x] Clips: punch, swing, hit_react
+- [x] Clips: eat, drink; look_around, knock, cower
+- [x] `animate.js` kinds, `VERSION` 3, the page's kinds and labels; ANIMATOR holds each new clip to its rules;
       ANIMATORPAGE
 - [ ] `HSHeadTrack`; measured (the range, both behaviours past it, the switch, the speed)
 - [ ] `HSHandIK`: the arm's IK and the envelope; the fingers' wrap; measured
@@ -180,7 +180,30 @@ swings at.
 
 ## 8. As built
 
-(filled in as it's built)
+### 8.1 The clips (29 new, 53 in all; a baked test body 10.2 MB from 2.0, where 24 clips made it 6.5)
+
+Measured by ANIMATOR on the three test bodies (the skinny man, the normal woman, the chubby woman):
+
+- **Sneak** 0.46, 0.42, 0.34 m/s, **creep** 0.59, 0.53, 0.40, **crawl** 0.42, 0.38, 0.27, the scuttle 1.2 to 1.4 m/s at
+  a stride every half second. The sneak's pelvis is held 9 to 10 cm under where it stands and the creep's 16 to 17;
+  the trunk leant 21 and 41 degrees; a planted foot, knee or hand stays within 12 mm of where it was put (15 for the
+  scuttle).
+- **The crawl**: knees 5.4 to 8 cm (on the floor, carried just over it), wrists from 2.8 cm, fingertips never more than
+  4 mm under, the hips rising 3.3 cm over each knee, the back level within a few centimetres.
+- **What it took in `pose.js`**: a hand's turn given outright (`handQ`: a hand laid flat on the floor however the arm
+  above it leans, and a swinging fist turned as a hand holds a hammer) and `thumbFlat` (a rig's thumb rests below
+  its palm; flat on a floor it has to come round into the palm's plane). Nothing else in the first 24 clips' code
+  changed: gait.js and acts.js only export what they had.
+- **The scuttle's legs are a person's**, not a lizard's: feet behind the hips, knees ahead and a little out, the
+  pelvis tucked 38 degrees under a rounded back. The first try carried the knees out to the sides over feet set under
+  them: the thighs' twist against the pelvis came out at 180 degrees and flipped every other frame.
+- **A hand's path never passes close to its own shoulder**: the swing's first path brought the hand from behind the
+  head straight down past the shoulder, the arm folded flat there and the elbow's side was anybody's guess (60
+  degrees a frame). It goes over the top now, never nearer than half the arm's length.
+- **A blow's or a scare's bones may turn up to 56 degrees in a frame** (everything else 34): a lunge's arms come from
+  behind the ribs to straight out in a fifth of a second.
+- **The swing lands with what's in the fist pointing up and ahead** (`meta.swing.axis`: 0.2, 0.8, 0.55 for the normal
+  woman): the palm faces her own middle all the way, as a hand holds a hammer.
 
 ## 9. Not there
 

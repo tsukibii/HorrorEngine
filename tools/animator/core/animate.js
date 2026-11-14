@@ -5,12 +5,17 @@ import { readRig } from "./rig.js";
 import { measure, recipeBody, recipeCharacter, meshPoints, readMhrRig, summary } from "./measure.js";
 import { gait, params } from "./gait.js";
 import { idle, sitting, sleeping, opening, reaching, mirrored } from "./acts.js";
+import { prowl, lowStance } from "./stealth.js";
+import { crawl, crawlIdle, scuttle } from "./quad.js";
+import { peeking, mouthing, lookAround, knocking, cowering } from "./acting.js";
+import { scares } from "./scare.js";
+import { fighting } from "./fight.js";
 import { poses, tracksOf } from "./clips.js";
 import { unbake, writeClips, record } from "./bake.js";
 import { proxies, clearance, worstArm } from "./clear.js";
 import { softRig, softMotion, softPlan, softUse } from "./soft.js";
 
-export const VERSION = 2;                                     // (2: the soft bones are jiggle bones, each at its flesh's root; 1: springs at its middle)
+export const VERSION = 3;                                     // (3: animations v3's clips, docs/ANIMATOR_V3.md; 2: the soft bones are jiggle bones, each at its flesh's root; 1: springs at its middle)
 export const DEFAULTS = { style: null, strength: 0.5, weight: 0, soft: 1, bounce: 0.5 };
 
 /** the settings a character starts from: the walk's style from the body itself (the recipe's base, or its shape) */
@@ -37,9 +42,9 @@ export function attach(glb, { mhrRig = null } = {}) {
 }
 
 /** the clips of a studied character, as makers (each { name, loop, n, fps, ctrl(frame), events, meta }). `only`:
-    kinds to make (idle, walk, run, sit, sleep, open, reach); the acts with one hand or one side also made mirrored
-    (`_l`: the left hand; the head to her right) */
-export const KINDS = ["idle", "walk", "run", "sit", "sleep", "open", "reach"];
+    kinds to make (KINDS); the acts with one hand or one side also made mirrored (`_l`: the left hand, to her left;
+    the head to her right) */
+export const KINDS = ["idle", "walk", "run", "sit", "sleep", "open", "reach", "sneak", "crawl", "creature", "peek", "scare", "fight", "eat", "acting"];
 export function makers(rig, body, set, only = null, X = null) {
   const list = [], want = n => !only || only.includes(n);
   if (want("idle")) list.push(idle(rig, body, set, X));
@@ -49,6 +54,17 @@ export function makers(rig, body, set, only = null, X = null) {
   if (want("sleep")) { const s = sleeping(rig, body, set, X); list.push(...s, ...s.map(c => mirrored(c, c.name.replace(/(_loop)?$/, m => "_r" + m)))); }
   if (want("open")) { const o = opening(rig, body, set, X); list.push(...o, ...o.map(c => mirrored(c, c.name + "_l"))); }
   if (want("reach")) { const r = reaching(rig, body, set, X); list.push(...r, ...r.map(c => mirrored(c, c.name + "_l"))); }
+  // animations v3 (docs/ANIMATOR_V3.md §2)
+  const gaitOf = g => ({ ...g, meta: { stride: +g.stride.toFixed(3) } });
+  if (want("sneak")) list.push(gaitOf(prowl(rig, body, set, "sneak")), lowStance(rig, body, set, "sneak"));
+  if (want("crawl")) list.push(gaitOf(crawl(rig, body, set)), crawlIdle(rig, body, set));
+  if (want("creature")) list.push(gaitOf(prowl(rig, body, set, "creep")), lowStance(rig, body, set, "creep"), gaitOf(scuttle(rig, body, set)));
+  const both = (clips, tag = "_l") => [...clips, ...clips.map(c => mirrored(c, c.name.replace(/(_loop)?$/, m => tag + m)))];   // (the other hand's, the other side's)
+  if (want("peek")) list.push(...both(peeking(rig, body, set, X)));
+  if (want("scare")) list.push(...scares(rig, body, set, X));
+  if (want("fight")) { const f = fighting(rig, body, set, X); list.push(...f, ...f.filter(c => c.name !== "hit_react").map(c => mirrored(c, c.name + "_l"))); }
+  if (want("eat")) list.push(...both(mouthing(rig, body, set, X)));
+  if (want("acting")) list.push(...lookAround(rig, body, set, X), ...knocking(rig, body, set, X), ...cowering(rig, body, set, X));
   return list;
 }
 

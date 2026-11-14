@@ -10,13 +10,13 @@ import { params, FPS } from "./gait.js";
 import { armDepth } from "./clear.js";
 
 const TAU = 2 * Math.PI, legLen = (l1, l2, knee) => Math.sqrt(l1 * l1 + l2 * l2 + 2 * l1 * l2 * Math.cos(knee));
-const ease = t => sm2(0, 1, t), mixA = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
-const bez = (a, m, b, t) => mixA(mixA(a, m, t), mixA(m, b, t), t);
+export const ease = t => sm2(0, 1, t), mixA = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+export const bez = (a, m, b, t) => mixA(mixA(a, m, t), mixA(m, b, t), t);
 // from one direction round to another at an even rate
-function turnV(a, b, t) { a = V.norm(a); b = V.norm(b); const d = clamp(V.dot(a, b), -1, 1), th = Math.acos(d); if (th < 1e-3 || th > 3.1) return V.norm(mixA(a, b, t)); const s = Math.sin(th); return V.norm(V.add(V.mul(a, Math.sin((1 - t) * th) / s), V.mul(b, Math.sin(t * th) / s))); }
+export function turnV(a, b, t) { a = V.norm(a); b = V.norm(b); const d = clamp(V.dot(a, b), -1, 1), th = Math.acos(d); if (th < 1e-3 || th > 3.1) return V.norm(mixA(a, b, t)); const s = Math.sin(th); return V.norm(V.add(V.mul(a, Math.sin((1 - t) * th) / s), V.mul(b, Math.sin(t * th) / s))); }
 /** the standing pose's numbers for this body and these sliders; with the body's solid shapes (`X`), the arms hang as
     far out as it takes to clear the hips and the thighs: every act's arms start from there */
-function stance(rig, body, p, X = null) {
+export function stance(rig, body, p, X = null) {
   const S = stance0(rig, body, p); if (!X) return S;
   const c = { legs: feet(body, S), arms: { l: { ...S.arm }, r: { ...S.arm } }, chest: { pitch: S.lean }, head: {}, pelvis: { pos: [0, 0, 0], pitch: S.tilt } };
   c.pelvis.pos[1] = pelvisY(rig, body, c.legs.l.ankle, [0, 0], 1, 3 * DEG);
@@ -31,7 +31,7 @@ function stance0(rig, body, p) {
   return { width, toe, lean, head, arm, tilt: (3 * p.fem - 1 * p.masc) * DEG };
 }
 /** the pelvis joint's height for a leg planted at `ankle`, the hip over `at` (x, z of the pelvis), the knee bent `knee` */
-function pelvisY(rig, body, ankle, at, g, knee, turn = null) {
+export function pelvisY(rig, body, ankle, at, g, knee, turn = null) {
   let hp = rig.leg(g > 0 ? "l" : "r").hip; if (turn) hp = Q.rot(turn, hp);
   const dx = ankle[0] - (at[0] + hp[0]), dz = ankle[2] - (at[1] + hp[2]), d = legLen(body.thigh, body.shank, knee);
   return ankle[1] + Math.sqrt(Math.max(1e-6, d * d - dx * dx - dz * dz)) - hp[1];
@@ -42,7 +42,7 @@ const mirrorQ = q => [q[0], -q[1], -q[2], q[3]], mx = v => v && [-v[0], v[1], v[
 export function mirror(c) {
   const turn = o => o && (o.q ? { ...o, q: mirrorQ(o.q) } : { ...o, yaw: -(o.yaw || 0), roll: -(o.roll || 0) });
   const leg = l => ({ ...l, ankle: mx(l.ankle), yaw: -(l.yaw || 0), roll: -(l.roll || 0), ...(l.q ? { q: mirrorQ(l.q) } : {}), ...(l.pole ? { pole: mx(l.pole) } : {}), ...(l.poleYaw != null ? { poleYaw: -l.poleYaw } : {}) });
-  const arm = a => ({ ...a, ...(a.hand ? { hand: mx(a.hand) } : {}), ...(a.pole ? { pole: mx(a.pole) } : {}), ...(a.palm ? { palm: mx(a.palm) } : {}) });
+  const arm = a => ({ ...a, ...(a.hand ? { hand: mx(a.hand) } : {}), ...(a.pole ? { pole: mx(a.pole) } : {}), ...(a.palm ? { palm: mx(a.palm) } : {}), ...(a.handQ ? { handQ: mirrorQ(a.handQ) } : {}) });
   return { ...c, pelvis: { ...turn(c.pelvis), pos: mx(c.pelvis.pos) }, chest: turn(c.chest), head: turn(c.head), legs: { l: leg(c.legs.r), r: leg(c.legs.l) }, arms: { l: arm(c.arms.r), r: arm(c.arms.l) },
     ...(c.clav ? { clav: { l: c.clav.r, r: c.clav.l } } : {}) };
 }
@@ -70,15 +70,15 @@ export function idle(rig, body, set, X = null) {
 // An arm taken by its wrist from where it hangs to a place, `k` of the way along a curve. "Where it hangs" is on the
 // body as it is in this frame (`home`: the frame built with its arms by their angles): at k = 0 it is that arm exactly,
 // so a hand leaves the side and comes back to it wherever the body has got to meanwhile
-function homeOf(rig, c) { const pose = build(rig, c), { P } = pose.solve(), at = j => [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]]; return { c, pose, info: pose.info, shoulder: { l: at(rig.armL.up), r: at(rig.armR.up) } }; }
-function armTo(home, s, to, k, o = {}) {
+export function homeOf(rig, c) { const pose = build(rig, c), { P } = pose.solve(), at = j => [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]]; return { c, pose, info: pose.info, shoulder: { l: at(rig.armL.up), r: at(rig.armR.up) } }; }
+export function armTo(home, s, to, k, o = {}) {
   const W0 = home.info["wristAt_" + s], E0 = home.info["elbowAt_" + s], S0 = home.shoulder[s], g = s === "l" ? 1 : -1, out = o.via || [(W0[0] + to[0]) / 2 + g * 0.04, (W0[1] + to[1]) / 2 + 0.02, (W0[2] + to[2]) / 2 + 0.05];
   const pole0 = V.sub(E0, S0), pole1 = o.pole || [g * 0.5, -0.75, -0.45], palm1 = o.palm || [0, -1, 0];
   // (the palm: the hanging arm's own turn, and `k` of the way to facing where it's asked: an angle blended, never two directions, which whip round when they face opposite ways)
   return { hand: bez(W0, out, to, k), pole: turnV(pole0, pole1, ease(k)), pron: home.info["pron_" + s], pronArm: true, palm: V.norm(palm1), palmK: ease(k), curl: lerp(home.c.arms[s].curl ?? 0.45, o.curl ?? 0.45, k), wrist: (o.wrist || 0) * k, free: true };
 }
 // the base pose (the idle's first frame) built once
-function basePose(rig, body, set, X) { const c = idle(rig, body, set, X).ctrl(0), h = homeOf(rig, c); return { ...h, pelvis: c.pelvis.pos.slice() }; }
+export function basePose(rig, body, set, X) { const c = idle(rig, body, set, X).ctrl(0), h = homeOf(rig, c); return { ...h, pelvis: c.pelvis.pos.slice() }; }
 
 // ---- sitting ----------------------------------------------------------------------------------------------------------
 // where a body ends up on a seat `H` high: the pelvis joint's place (from where it stood), how it's tilted
@@ -92,7 +92,7 @@ function seated(rig, body, p, S, H) {
 // faces there: at the thigh. "Top" is the thigh's own (the side its knee bends toward), not the world's: as she gets
 // up and the thigh comes upright the hand stays on its front with the palm to it, and from there back to her side.
 // (A palm simply asked to face the floor would, on an arm coming down toward the knee, face away from the leg.)
-function onThighs(rig, body, pose, p, legs) {
+export function onThighs(rig, body, pose, p, legs) {
   const out = {}, { P, D } = pose.solve(), fwd = Q.rot(D[rig.pelvis], [0, 0, 1]);
   for (const s of ["l", "r"]) { const g = s === "l" ? 1 : -1, K = pose.info["kneeAt_" + s], L = rig.leg(s), H = [P[L.up * 3], P[L.up * 3 + 1], P[L.up * 3 + 2]], along = V.norm(V.sub(H, K));
     const bent = V.perp(V.sub(K, V.lerp(H, legs[s].ankle, 0.5)), along), lb = V.len(bent), top = V.norm(V.add(V.mul(bent, sm(0.02, 0.1, lb) / (lb || 1)), V.mul(V.norm(V.perp(fwd, along)), 1 - sm(0.02, 0.1, lb))));
@@ -101,7 +101,7 @@ function onThighs(rig, body, pose, p, legs) {
     out["palm_" + s] = V.norm(V.add(V.mul(top, -1), V.mul(along, -0.1))); }
   return out;
 }
-const baseLegs = base => ({ l: { ankle: base.c.legs.l.ankle.slice(), yaw: base.c.legs.l.yaw, pitch: 0 }, r: { ankle: base.c.legs.r.ankle.slice(), yaw: base.c.legs.r.yaw, pitch: 0 } });   // the feet where the idle has them: no act shuffles them
+export const baseLegs = base => ({ l: { ankle: base.c.legs.l.ankle.slice(), yaw: base.c.legs.l.yaw, pitch: 0 }, r: { ankle: base.c.legs.r.ankle.slice(), yaw: base.c.legs.r.yaw, pitch: 0 } });   // the feet where the idle has them: no act shuffles them
 function sitFrame(rig, body, p, S, base, Z, a) {              // a: { down 0..1 (stood .. sat), lean, rock, hands 0..1, press, breath, drop }
   const c = { legs: baseLegs(base), breath: a.breath || 0, press: { seat: a.press || 0 } }, dn = a.down, kz = Math.pow(dn, 0.8), ky = Math.pow(dn, 1.25);   // (the hips go back before they go down; `down` comes eased already)
   const sp = base.pelvis, pos = [sp[0] * (1 - kz), lerp(sp[1], Z.pos[1], ky) - (a.sink || 0), lerp(sp[2], Z.pos[2], kz)];
@@ -200,7 +200,7 @@ export function sleeping(rig, body, set, X = null) {
 
 // ---- a hand to something: a door's handle, a thing to pick up --------------------------------------------------------
 // the standing body leaning into a reach: where the pelvis and the chest go for a hand that has to get to `to`
-function leanFrame(rig, body, p, S, base, a) {               // a: { fwd (m), down (m), pitch, yaw, side (m), heel 0..1, look: [pitch, yaw], squat 0..1 }
+export function leanFrame(rig, body, p, S, base, a) {               // a: { fwd (m), down (m), pitch, yaw, side (m), heel 0..1, look: [pitch, yaw], squat 0..1 }
   const c = { legs: baseLegs(base), breath: 0 }, sp = base.pelvis, k = a.k ?? 1, heel = (a.heel || 0) * 24 * DEG;
   for (const s of ["l", "r"]) if (heel > 0) { const A0 = c.legs[s].ankle; c.legs[s].pitch = -heel; c.legs[s].toe = heel; c.legs[s].ankle = [A0[0], body.ankleH * Math.cos(heel) + body.foot.ballAhead * Math.sin(heel), A0[2] + body.foot.ballAhead * (1 - Math.cos(heel)) + body.ankleH * Math.sin(heel)]; }
   const at = [sp[0] * (1 - k) + (a.side || 0), sp[2] + (a.fwd || 0)], ystand = pelvisY(rig, body, c.legs.l.ankle, at, 1, (3 + 2 * p.weak) * DEG);

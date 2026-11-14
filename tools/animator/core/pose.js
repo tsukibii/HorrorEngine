@@ -57,6 +57,7 @@ export function ankleAt(F, ankleH, o, yaw, pitch) {
     c.head   { yaw, roll, pitch | q }           the head's turn in the world; the neck half way
     c.legs.l/.r { ankle, yaw, pitch, roll, toe, knee }   the ankle's place, the foot's heading, pitch (toes up) and roll, the toes' bend, the knee turned out
     c.arms.l/.r { flex, abd, rot, elbow, pron, wrist, curl, hang }   angles from the hanging arm; or { hand: [x,y,z], pole, palm, ... } the wrist's place
+                `handQ`: the hand's turn in the world, outright (a hand laid flat on something); the forearm's twist follows it
                 `pron`: the hand's turn about the forearm, counted from the body (0: the palm to the body's middle; rising: turned over,
                 toward the back when the arm hangs, toward the floor when the forearm points ahead; with `pronArm`, counted from the
                 elbow's own axis instead); `curl`: 0 a flat hand, 0.45 a hand at rest, 1.3 a loose fist with the thumb laid along
@@ -120,8 +121,10 @@ export function build(rig, c) {
       const w = clamp((across - 0.2) / 0.4, 0, 1), o = clamp((Math.abs(d) - HALF) / (Math.PI - HALF), 0, 1), heed = w * w * (3 - 2 * w) * (1 - o * o * (3 - 2 * o));
       pron += (MID + clamp(d, -HALF, HALF) - pron) * heed * (ac.palmK ?? 1);
     }
-    const dTw = g * (pron - A.pron0), Dw = Q.mul(Q.axis(df, dTw), Dl), n = Q.rot(Dw, A.palm0), wr = ac.wrist || 0;
-    const Dhand = wr ? Q.mul(Q.axis(V.cross(df, n), wr), Dw) : Dw;
+    let dTw = g * (pron - A.pron0), Dw = Q.mul(Q.axis(df, dTw), Dl), n = Q.rot(Dw, A.palm0), wr = ac.wrist || 0;
+    let Dhand = wr ? Q.mul(Q.axis(V.cross(df, n), wr), Dw) : Dw;
+    if (ac.handQ) {                                          // the hand's turn in the world given outright (a hand laid flat on the floor): the forearm takes the part of it that's about its own length
+      Dhand = ac.handQ; dTw = Q.twist(Q.mul(Dhand, Q.conj(Dl)), df); Dw = Q.mul(Q.axis(df, dTw), Dl); pron = A.pron0 + g * dTw; }
     pose.D[A.up] = Du; pose.D[A.low] = Dl; pose.D[A.wtw] = Dw; pose.D[A.hand] = Dhand;
     const tw = Q.twist(Q.mul(Q.conj(pose.D[A.clav]), Du), A.du0);
     for (const t of A.upTw) pose.D[t.j] = Q.mul(Du, Q.axis(A.du0, -(1 - t.f) * tw));
@@ -137,10 +140,14 @@ export function build(rig, c) {
     const mid = A.fingers[2] && A.fingers[2].length ? dirOf(A.fingers[2]) : along;
     A.fingers.forEach((chain, fi) => { if (!chain.length) return; const d0 = dirOf(chain); let k = V.norm(V.cross(d0, nh)), acc = 0;
       if (fi === 0) {                                          // the thumb
-        const ka = V.cross(d0, along), la = V.len(ka), room = Math.asin(Math.min(1, la)), add = 0.5 * fist + 0.38 * open * (1 - fist), bend = 0.3 * open * (1 - 0.6 * fist), amt = 0.07 * open + 0.105 * fist;
+        // (`thumbFlat`: a hand laid flat on something: the thumb, which rests below the palm, brought round the hand's own length into the palm's plane)
+        let Dt = Dhand, dt = d0, kt = k;
+        if (ac.thumbFlat) { const side = V.perp(V.perp(d0, nh), along), ls = V.len(side); if (ls > 1e-4) { const sd = V.mul(side, 1 / ls), ang = Math.atan2(V.dot(d0, nh), V.dot(d0, sd)), sgn = Math.sign(V.dot(V.cross(along, sd), nh)) || 1, Rf = Q.axis(along, -sgn * ang * ac.thumbFlat);
+            Dt = Q.mul(Rf, Dhand); dt = Q.rot(Rf, d0); kt = V.norm(V.cross(dt, nh)); } }
+        const ka = V.cross(dt, along), la = V.len(ka), room = Math.asin(Math.min(1, la)), add = 0.5 * fist + 0.38 * open * (1 - fist), bend = 0.3 * open * (1 - 0.6 * fist), amt = 0.07 * open + 0.105 * fist;
         for (const j of chain) { const nm = R.J[j].name, Da = la > 1e-4 ? Q.axis(V.mul(ka, 1 / la), Math.min(add + bend * (/2$/.test(nm) ? 0.5 : /3$/.test(nm) ? 1 : 0), room + 0.3)) : [0, 0, 0, 1];
           acc += amt * (/1$/.test(nm) ? 0.9 : /2$/.test(nm) ? 1.15 : 0.7) + fist * (/2$/.test(nm) ? 0.3 : /3$/.test(nm) ? 0.5 : 0);   // (a fist's thumb bends down over the first finger at its end joints)
-          pose.D[j] = Q.mul(Q.axis(Q.rot(Da, k), acc), Q.mul(Da, Dhand)); }
+          pose.D[j] = Q.mul(Q.axis(Q.rot(Da, kt), acc), Q.mul(Da, Dt)); }
         return; }
       const kg = V.cross(d0, mid), lg = V.len(kg), base = fi !== 2 && lg > 1e-4 ? Q.mul(Q.axis(V.mul(kg, 1 / lg), 0.7 * open * Math.asin(Math.min(1, lg))), Dhand) : Dhand, amt = curl * (1 + 0.12 * (fi - 2));
       if (base !== Dhand) k = V.norm(V.cross(Q.rot(base, Q.rot(Q.conj(Dhand), d0)), nh));

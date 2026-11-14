@@ -9,11 +9,17 @@ import { summary } from "/core/measure.js";
 import { params } from "/core/gait.js";
 
 const $ = s => document.querySelector(s), status = (t, c = "") => { $("#status").textContent = t; $("#status").className = "status " + c; };
-const KIND_LABEL = { idle: "Idle", walk: "Walk", run: "Run", sit: "Sit", sleep: "Sleep", open: "Open a door", reach: "Reach" };
+const KIND_LABEL = { idle: "Idle", walk: "Walk", run: "Run", sit: "Sit", sleep: "Sleep", open: "Open a door", reach: "Reach",
+  sneak: "Sneak", crawl: "Crawl", creature: "Creature", peek: "Peek", scare: "Scare", fight: "Fight", eat: "Eat & drink", acting: "Acting" };   // (the second row: animations v3, docs/ANIMATOR_V3.md)
 const CLIP_LABEL = { idle_loop: "standing", walk_loop: "walking", run_loop: "running", sit_down: "sit down", sit_loop: "sitting", stand_up: "stand up", lie_down: "lie down", sleep_loop: "asleep", get_up: "get up",
   lie_down_r: "lie down (head to her right)", sleep_r_loop: "asleep (head to her right)", get_up_r: "get up (head to her right)", open_push: "push", open_pull: "pull", open_slide: "slide",
   open_push_l: "push (left hand)", open_pull_l: "pull (left hand)", open_slide_l: "slide (left hand)", reach_low: "from the floor", reach_mid: "from a table", reach_high: "from a shelf",
-  reach_low_l: "floor (left hand)", reach_mid_l: "table (left hand)", reach_high_l: "shelf (left hand)" };
+  reach_low_l: "floor (left hand)", reach_mid_l: "table (left hand)", reach_high_l: "shelf (left hand)",
+  sneak_loop: "sneaking", crouch_loop: "crouched", crawl_loop: "crawling", crawl_idle_loop: "on all fours", creep_loop: "creeping", creep_idle_loop: "hunched", scuttle_loop: "scuttling",
+  peek_out: "lean out", peek_loop: "peeking", peek_back: "draw back", peek_out_l: "lean out (to her left)", peek_l_loop: "peeking (to her left)", peek_back_l: "draw back (to her left)",
+  scare_lunge: "lunge", scare_loom: "loom", scare_snap: "head snap", scare_claw: "claw (from all fours)", punch: "punch", swing: "swing", hit_react: "hit", punch_l: "punch (left hand)", swing_l: "swing (left hand)",
+  eat: "eat", drink: "drink", eat_l: "eat (left hand)", drink_l: "drink (left hand)", look_around: "look round", knock: "knock", cower_loop: "cowering" };
+const WHOLE = ["sit", "sleep", "peek"];                        // kinds whose first three clips are one act: into it, held, out of it
 const S = { chars: [], name: "", ctx: null, set: { ...DEFAULTS }, auto: 0, kind: "walk", clip: "", made: new Map(), list: [], playing: true, t: 0, seq: true, bones: new Map(), rest: new Map(), touched: new Set(), model: null, dots: [], mhr: null };
 window.__anim = S;
 
@@ -85,12 +91,12 @@ function clipsOf(kind) {
 async function show(kind, keep = false) {
   S.kind = kind; const t0 = performance.now(); S.list = clipsOf(kind);
   const kinds = $("#kinds"); kinds.innerHTML = ""; for (const k of Object.keys(KIND_LABEL)) { const b = document.createElement("button"); b.textContent = KIND_LABEL[k]; b.className = k === kind ? "on" : ""; b.onclick = () => show(k); kinds.append(b); }
-  if (!keep || !S.list.some(c => c.name === S.clip)) { S.clip = S.list[0].name; S.t = 0; S.seq = kind === "sit" || kind === "sleep"; }
+  if (!keep || !S.list.some(c => c.name === S.clip)) { S.clip = S.list[0].name; S.t = 0; S.seq = WHOLE.includes(kind); }
   chips(); info(performance.now() - t0);
 }
 function chips() {
   const el = $("#clips"); el.innerHTML = "";
-  if (S.kind === "sit" || S.kind === "sleep") { const b = document.createElement("button"); b.textContent = "the whole of it"; b.className = S.seq ? "on" : ""; b.onclick = () => { S.seq = true; S.clip = S.list[0].name; S.t = 0; chips(); }; el.append(b); }
+  if (WHOLE.includes(S.kind)) { const b = document.createElement("button"); b.textContent = "the whole of it"; b.className = S.seq ? "on" : ""; b.onclick = () => { S.seq = true; S.clip = S.list[0].name; S.t = 0; chips(); }; el.append(b); }
   for (const c of S.list) { const b = document.createElement("button"); b.textContent = CLIP_LABEL[c.name] || c.name; b.title = c.name; b.className = !S.seq && c.name === S.clip ? "on" : ""; b.onclick = () => { S.seq = false; S.clip = c.name; S.t = 0; S.playing = true; chips(); info(); }; el.append(b); }
 }
 function info(ms) {

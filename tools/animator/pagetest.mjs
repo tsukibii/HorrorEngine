@@ -69,9 +69,10 @@ const places = [PLACE, ...(REAL ? [path.join(ROOT, "Exports", "characters")] : [
     await page.click("#reset"); await page.waitForTimeout(250);
     return `step ${fem.toFixed(2)} m feminine, ${masc.toFixed(2)} m masculine; ${w0.speed.toFixed(2)} m/s, heavier ${w1.speed.toFixed(2)}, stronger ${w2.speed.toFixed(2)}; the bust ${s0.soft.soft_bust_l} to ${s1.soft.soft_bust_l} mm by softness, ${b0.soft.soft_bust_l} to ${b1.soft.soft_bust_l} by bounce`;
   });
-  await step("every kind of clip made in the page: idle, run, sit, sleep, open, reach", async () => {
+  await step("every kind of clip made in the page: idle to reach, and animations v3's: sneak, crawl, creature, peek, scare, fight, eat, acting", async () => {
     const seen = [];
-    for (let i = 1; i <= 7; i++) { await page.click(`#kinds button:nth-child(${i})`); await page.waitForTimeout(350); const r = await B(() => ({ kind: window.__anim.kind, clips: window.__anim.list.map(c => c.name), nan: window.__anim.list.some(c => c.tracks.some(t => t.r && t.r.some(v => !Number.isFinite(v)))) }));
+    const kinds = await B(() => document.querySelectorAll("#kinds button").length); if (kinds !== 15) throw new Error(`${kinds} kinds of clip offered, not 15`);
+    for (let i = 1; i <= kinds; i++) { await page.click(`#kinds button:nth-child(${i})`); await page.waitForTimeout(350); const r = await B(() => ({ kind: window.__anim.kind, clips: window.__anim.list.map(c => c.name), nan: window.__anim.list.some(c => c.tracks.some(t => t.r && t.r.some(v => !Number.isFinite(v)))) }));
       if (r.nan) throw new Error(`${r.kind}: a track that isn't a number`); if (!r.clips.length) throw new Error(`${r.kind}: no clips`); seen.push(`${r.kind} ${r.clips.length}`);
       if (r.kind === "sit") { await page.waitForTimeout(1800); await shot("animator_sit"); } }
     return seen.join(", ");
@@ -81,7 +82,10 @@ const places = [PLACE, ...(REAL ? [path.join(ROOT, "Exports", "characters")] : [
     await page.click("#bake"); await page.waitForFunction(() => /baked,|failed/.test(document.querySelector("#status").textContent), null, { timeout: 240000 });
     const said = await B(() => document.querySelector("#status").textContent); if (!/baked,/.test(said)) throw new Error(said + "\n" + await B(() => document.querySelector("#log").textContent));
     const g = parseGlb(fs.readFileSync(path.join(PLACE, "normal_woman", "normal_woman.glb"))), rec = g.json.scenes[0].extras.hsMotion, names = (g.json.animations || []).map(a => a.name);
-    for (const n of ["idle_loop", "walk_loop", "run_loop", "sit_down", "sit_loop", "stand_up", "lie_down", "sleep_loop", "get_up", "open_push", "open_pull", "open_slide", "reach_low", "reach_mid", "reach_high"]) if (!names.includes(n)) throw new Error(`no ${n} in the baked file`);
+    for (const n of ["idle_loop", "walk_loop", "run_loop", "sit_down", "sit_loop", "stand_up", "lie_down", "sleep_loop", "get_up", "open_push", "open_pull", "open_slide", "reach_low", "reach_mid", "reach_high",
+      "sneak_loop", "crawl_loop", "creep_loop", "scuttle_loop", "peek_out", "peek_l_loop", "scare_lunge", "scare_claw", "punch", "swing_l", "hit_react", "eat", "drink_l", "look_around", "knock", "cower_loop"]) if (!names.includes(n)) throw new Error(`no ${n} in the baked file`);
+    if (names.length !== 53 || rec.version !== 3) throw new Error(`${names.length} clips, version ${rec.version}: 53 and 3 expected`);
+    if (!(rec.clips.scare_lunge.scare.peak > 0) || !(rec.clips.punch.punch.at.length === 3) || !(rec.clips.crawl_loop.speed > 0.1)) throw new Error("the record lacks a scare's peak, a punch's place or the crawl's speed");
     if (!rec || rec.settings.style !== 0.2) throw new Error(`the record's settings: ${JSON.stringify(rec && rec.settings)}`);
     if (!fs.existsSync(path.join(PLACE, "normal_woman", "normal_woman.motion.json"))) throw new Error("no motion.json beside it");
     const listed = await B(() => window.__anim.chars.find(c => c.name === "normal_woman")); if (!listed.baked || listed.clips.length !== names.length) throw new Error("the list doesn't say it's baked");
