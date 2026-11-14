@@ -1067,7 +1067,8 @@ func _physics_process(dt: float) -> void:
 				var aim := aim_point(_step["chase"])
 				var away := h.global_position - aim
 				away.y = 0.0
-				to = aim + (away.normalized() if away.length() > 0.01 else -h.global_basis.z) * _reach_at(float(_step["reach"]), aim.y - (h.global_position.y + float(_step.get("level", 1.28))))
+				var r := _reach_at(float(_step["reach"]), aim.y - (h.global_position.y + float(_step.get("level", 1.28))))
+				to = h.global_position if away.length() <= r + 0.02 else aim + (away.normalized() if away.length() > 0.01 else -h.global_basis.z) * r   # (near enough already: from where she stands; a step away would turn her back on them)
 			var d := to - h.global_position
 			d.y = 0.0
 			var dist := d.length()

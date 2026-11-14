@@ -392,7 +392,7 @@ static func seconds_of(m: HSNpcMarker, from: Vector3, walk := 1.3, run := 3.0, c
 		"gesture":
 			return clip_secs if clip_secs > 0.0 else 3.0
 		"grab":
-			return 2.3 / maxf(m.anim_speed, 0.05) if m.action in HSNpcMarker.HANDOVER else -1.0
+			return 2.0 / maxf(m.anim_speed, 0.05) if m.action in HSNpcMarker.HANDOVER else -1.0
 		"animation":
 			if m.loop:
 				return m.stay_secs if m.stay == "secs" else -1.0
@@ -431,6 +431,8 @@ static func problems(npc: Node, clips: PackedStringArray = [], setters = null, k
 			mine[k + npc.id()] = true
 	for q in qs:
 		_cond_problems(q, (q as HSNpcQuest).starts_when, "starts when", setters, mine, known_tasks, npc, out)
+		if (q as HSNpcQuest).starts_when.contains("@wait"):      # ("after N s" counts at a marker that's ready: a quest has no such moment)
+			out.append({"node": q, "text": "'%s' starts 'after some seconds': a quest can't wait like that, so it never starts. Take the wait out of the quest's Starts when and put it on its first marker's." % (q as HSNpcQuest).label(), "level": "error"})
 		var rows := board(q)
 		if items(q).is_empty():
 			out.append({"node": q, "text": "'%s' has no markers." % (q as HSNpcQuest).label(), "level": "tip"})

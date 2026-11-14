@@ -1976,8 +1976,12 @@ func stage_hands() -> void:
 	var texts := ""
 	for pr in HSNpcFlow.problems(npc, clips, HSNpcFlow.flags_set(main), HSNpcFlow.tasks_known(main)):
 		texts += str(pr["text"]) + "\n"
+	quest(npc, "Late", "w_never, @wait:2")
+	texts = ""
+	for pr in HSNpcFlow.problems(npc, clips, HSNpcFlow.flags_set(main), HSNpcFlow.tasks_known(main)):
+		texts += str(pr["text"]) + "\n"
 	for need in [["say which thing she takes", "a Take from you with no thing named"], ["she has nothing to hand you", "a Hand to you with nothing"], ["wasn't made for her body", "a small movement her body hasn't got"],
-			["she has no 'peek_out' of her own", "a Peek on a character baked before it"]]:
+			["she has no 'peek_out' of her own", "a Peek on a character baked before it"], ["a quest can't wait like that", "a quest that starts 'after some seconds'"]]:
 		ok(texts.contains(need[0]), "W: Problems says: " + need[1])
 	bad_take.take_item = "apple_w"
 	bad_give.give_item = "ticket_w"

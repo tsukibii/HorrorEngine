@@ -79,4 +79,8 @@ then each branch leaves a section here saying what it changes for the tutorial. 
 **Could:**
 - [ ] One of her parts as a sequence from `guides/sequences` (the hand-over at 304's door, the peek at the corridor's
       corner) in place of a scripted node, tied to a door or a pickup by the Things tab.
+- [ ] The markers' new cards where the tutorial has their scripted twins: **Peek** for her at 308's door,
+      **Take from you** / **Hand to you** for anything that changes hands (the shop's parcel is the laptop's own),
+      **Look at it** on whoever carries something. `guides/sequences` section 9 (*nearer each time you look away*)
+      is `closer.gd`'s idea made of Start here markers: say which the tutorial uses and why.
 

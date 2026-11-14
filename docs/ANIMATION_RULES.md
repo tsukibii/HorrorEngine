@@ -193,7 +193,7 @@ She walks to where her hand reaches it, takes it, straightens.
 | a pillow | where her head should be | |
 | a door | at the handle | into the door |
 | a thing to take | the thing itself (its grip) | |
-| a peek | at the wall's end, on the floor | along the wall, the way she looks out |
+| a peek | at the wall's end, on the floor, on the side she hides | the way she looks out: through the wall's line, at whoever she watches (the wall is in front of her, its end to her right) |
 | a knock | the spot on the door | |
 | a walk | on the floor (a pin rides the floor under the mouse) | the way she faces when she's there |
 

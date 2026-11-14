@@ -55,7 +55,9 @@ func use(by: Node = null) -> void:
 func _copy() -> Node3D:
 	var g := Node3D.new()
 	g.name = "copy_" + str(name)
-	for m in find_children("*", "MeshInstance3D", true, false):
+	var me: Node = self
+	var meshes: Array = ([me] if me is MeshInstance3D else []) + find_children("*", "MeshInstance3D", true, false)   # (the thing itself when it's the mesh: a model the Things tab's card was clicked on)
+	for m in meshes:
 		var mi := m as MeshInstance3D
 		if mi.mesh == null:
 			continue

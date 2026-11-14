@@ -587,9 +587,16 @@ func stage_carry() -> void:
 		bad("sat with the cup: carried '%s', leaning %.1f degrees, its foot %.1f cm over her thigh's bone" % [g.carrying("r"), sat_tilt, (bottom.y - thigh_y) * 100.0])
 	var over_thigh := bottom.y - thigh_y
 	# a look at it while she sits: a flourish from the carry pose and back to it
+	var look_tilt := [0.0]                                         # the cup's lean while she looks at it: it's still kept the way up it stands
+	var meter := func() -> void: look_tilt[0] = maxf(look_tilt[0], tilt_of(cup))
+	physics_frame.connect(meter)
 	var r: Dictionary = await run_one("look_hand")
+	physics_frame.disconnect(meter)
 	if not bool(r["played"]) or float(r["head"]) < 15.0:
 		bad("sat with the cup, look_hand: played %s, her head turned %.0f degrees" % [r["played"], float(r.get("head", 0.0))])
+	if look_tilt[0] > 12.0:
+		bad("looking at the cup in her hand it leans %.0f degrees at the most (kept upright, it shouldn't pour out)" % look_tilt[0])
+	say("a look at the cup she carries: it leans %.1f degrees at the most" % look_tilt[0])
 	await frames(40)
 	if tilt_of(cup) > 8.0:
 		bad("after looking at it the cup leans %.1f degrees" % tilt_of(cup))

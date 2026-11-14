@@ -28,6 +28,31 @@ What follows from it:
   its grip and carried onto handles, mouths and people (HSHandIK, HSGrip), a hand kept on what it touches and a thing
   carried in any pose (HSGesture). The guide has a part on getting the most from each.
 
+**As built** (`guides/sequences/index.html`, `tools/godot/sequences.py`, docs/MARKERS.md §4 and §10 H):
+
+- **Eight recipes**, each a character's quest, all in one scene (a flat, a shop in front of it, a corridor beside
+  it): a mug taken to the sofa and looked at (the user's own example); a book tidied onto a shelf, then a Talk that
+  puts a task on your list; you hand her an apple and she eats it; she fetches a key and hands it to you, and a door's
+  Logic wants it; a customer at your till who asks, waits while you fetch his can, pays, takes it and leaves looking
+  at it; the last customer, nearer each time you look away, then on you; something that peeks round a corner and is
+  behind you when you get there; a crawl, a creep and a blow at the cellar door. Then a part on the IKs, more
+  scenes from the same cards, and a table of what goes wrong and why.
+- **One source**: the place, the things and every marker are data in `tools/godot/sequences.py`. The scene is built
+  from it (`sequences_build.gd`), the check plays it (`sequences_test.gd`, SEQUENCES), and the guide's storyboard
+  tables are written from it (`tables`), so the three can't drift.
+- **New in the Markers plugin for it**: the cards **Small movement** and **Look at it** (one small movement now;
+  waited for, or laid over what comes next), **Take from you** and **Hand to you** (a thing between her hand and
+  your pocket, and money), **Peek**; **a Wait leaves her as she is** (sat stays sat).
+- **What building them found, and fixed in the plugins**: *you see her* now counts her head where it really is (a
+  peek was never "seen": her feet are behind the wall); a marker that comes *when you're not looking* says its
+  line, plays its sound and fires its things when it happens, not when its Starts when opened (the sting came
+  before the scare); a blow thrown from inside its own reach turned her back on you to step away (she throws it
+  from where she stands now: the markers' body and the starter's motion.gd); a look at a cup she carries tipped it
+  over (it's kept upright through the look now); a quest asked to start *after N s* never started (Problems says
+  so).
+- **Not built, and said in the guide**: eating and drinking sat down (she stands up to eat); a thing handed between
+  two characters; a marker that follows you about.
+
 ## 2026-11-14, later: rules for modelling, small movements that show she's alive, holding things in any pose (the user)
 
 After the short NPCs' report:

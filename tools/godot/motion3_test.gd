@@ -102,6 +102,15 @@ func prop(nm: String, mesh: Mesh, at: Vector3, grip := {}) -> MeshInstance3D:
 	return p
 
 
+func watch_until(cond: Callable, secs: float, each: Callable) -> bool:
+	for i in int(secs * 60.0):
+		each.call()
+		if cond.call():
+			return true
+		await physics_frame
+	return cond.call()
+
+
 func reset_her(at := Vector3.ZERO, yaw := 0.0) -> void:
 	m.stop()
 	m.stance = ""
@@ -601,6 +610,19 @@ func stage_blows() -> void:
 	await until(func(): return dones.has("punch"), 10.0)
 	if not hits.is_empty() or not dummy.got.is_empty():
 		bad("a punch at someone 2.2 m off, not walked up to, landed: %s" % [hits])
+	# nearer than her blow reaches (they've walked right up to her): thrown from where she stands, her back never turned on them
+	await reset_her()
+	dummy.set("h", 1.25)
+	dummy.global_position = Vector3(0, 0, 0.5)
+	dummy.got.clear()
+	var turned_most := [0.0]
+	var from0 := her.global_position
+	m.punch(dummy)
+	await watch_until(func(): return dones.has("punch"), 10.0, func(): turned_most[0] = maxf(turned_most[0], rad_to_deg(absf(angle_difference(her.global_rotation.y, 0.0)))))
+	var stepped: float = Vector2(her.global_position.x - from0.x, her.global_position.z - from0.z).length()
+	if dummy.got != ["punch"] or turned_most[0] > 20.0 or stepped > 0.08:
+		bad("a punch at someone 0.5 m in front of her: told %s; she turned %.0f degrees away at the most and stepped %.2f m (she should throw it from where she stands)" % [dummy.got, turned_most[0], stepped])
+	said.append("at someone 0.5 m in front of her she throws it from where she stands (turned %.0f degrees at the most)" % turned_most[0])
 	# at you: it stops short of your eye
 	await reset_her()
 	place_player(20.0, 2.4)

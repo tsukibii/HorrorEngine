@@ -29,6 +29,7 @@ const GUESS := {                           # an unbaked model's clips, found by 
 	"stand_up": ["stand_up", "standup", "standing_up", "stand up"],
 	"lie_down": ["lie_down", "liedown", "lay_down"], "sleep_loop": ["sleep", "lying"], "get_up": ["get_up", "getup", "wake"],
 }
+const HEADS := ["c_head", "head", "Head", "mixamorig_Head", "mixamorig:Head"]
 const HANDS := {false: ["r_wrist", "RightHand", "mixamorig_RightHand", "mixamorig:RightHand", "hand_r", "Hand.R", "hand.R"],
 	true: ["l_wrist", "LeftHand", "mixamorig_LeftHand", "mixamorig:LeftHand", "hand_l", "Hand.L", "hand.L"]}
 
@@ -52,6 +53,7 @@ var skip: Array[RID] = []                  ## bodies her floor ray leaves out (h
 var on_event := Callable()                 ## (name): a clip's own moments: step_l, step_r, grab, open...
 var on_struck := Callable()                ## (target, kind): a blow of hers landed
 var held_side := "r"
+var held_rest := Basis.IDENTITY            ## how what she holds stood before she took it (it's put down that way up)
 var held_grip := {}                        ## how what she holds is held (the look plugin's HSGrip.grip_of)
 var hit_m := 0.3                           ## how near her fist, or what she swings, has to get to land
 var short_of_you := 0.16                   ## how far short of the player's eye a blow stops
@@ -194,6 +196,19 @@ func gait_pace(gait: String) -> float:
 # a script of the look plugin's, when the project has it
 static func look_script(file: String) -> GDScript:
 	return load(LOOK + file) as GDScript if ResourceLoader.exists(LOOK + file) else null
+
+
+## where her head is now (its bone, after her clip), or null when her model has no skeleton or no head bone by a
+## name this knows
+func head_point():
+	var sk := skeleton_of(her) if her != null else null
+	if sk == null:
+		return null
+	for cand in HEADS:
+		var b := sk.find_bone(cand)
+		if b >= 0:
+			return sk.global_transform * sk.get_bone_global_pose(b).origin
+	return null
 
 
 ## her hands' IK (the look plugin's HSHandIK), or null: without it a clip plays as it was made
@@ -567,27 +582,41 @@ func peek(corner: Vector3, front: Vector3, left := false, blend := 0.25) -> void
 
 
 ## a thing changes hands between her and someone (docs/MARKERS.md §4, Take from you and Hand to you): she turns to
-## `to` (where they stand), puts her hand out toward them, and `on_hand` is called the moment it's out: the thing
-## goes from one to the other there. `after`: called as her hand comes back (what she took is carried, or put away)
+## `to` (where they stand) and puts her hand out toward them, stood upright (her push of a door is the arm that does
+## it: a hand to a handle, then on out in front of her; a character with no such clip reaches as for a table).
+## `on_hand` is called the moment her hand is out: the thing goes from one to the other there. `after`: called when
+## her hand is back (what she took is carried, or put away)
 func hand_over(to: Vector3, on_hand: Callable, after := Callable(), left := false, rate := 1.0, blend := 0.25) -> void:
 	if her == null:
 		return
-	var clip := "reach_mid" + ("_l" if left else "")
+	var tag := "_l" if left else ""
+	var clip := "open_push" + tag
+	var moment := "release"
+	var out_at := Vector3(-0.14, 1.0, 0.6)                     # where the clip's own hand is at that moment, from where she stands
+	var info := clip_info(clip)
+	if _event_at(clip, moment) >= 0.0:
+		var h: Array = info.get("door", {}).get("handle", HSNpcFlow.HANDLE_AT)
+		var tr: Array = info.get("door", {}).get("travel", [0.05, -0.02, 0.26])
+		out_at = Vector3(float(h[0]) + float(tr[0]), float(h[1]) + float(tr[1]), float(h[2]) + float(tr[2]))
+	else:
+		clip = "reach_mid" + tag
+		moment = "grab"
+		var r: Array = clip_info(clip).get("reach", {}).get("at", HSNpcFlow.REACH_AT)
+		out_at = Vector3(float(r[0]), float(r[1]), float(r[2]) + 0.15)
 	var d := to - her.global_position
 	d.y = 0.0
 	var yaw := atan2(d.x, d.z) if d.length() > 0.05 else her.global_rotation.y
-	var on := {"grab": on_hand}
-	if after.is_valid():
-		on["put_away"] = after
-	var step := {"k": "clip", "clip": clip, "on": on, "rate": rate, "blend": blend}
-	var grab_t := _event_at(clip, "grab")
-	if grab_t >= 0.0:                                          # her hand carried out toward them: as far as her reach goes and never into them, between her waist and her chest
-		var r: Array = clip_info(clip).get("reach", {}).get("at", HSNpcFlow.REACH_AT)
+	var step := {"k": "clip", "clip": clip, "on": {moment: on_hand}, "rate": rate, "blend": blend}
+	var t := _event_at(clip, moment)
+	if t >= 0.0:                                               # her palm carried out toward them: a forearm's length in front of her and never into them, at the height of her lower chest
 		var tall := float((record.get("body", {}) as Dictionary).get("height", 163.0)) / 100.0 if record.get("body") is Dictionary else 1.63
-		var ahead := clampf(d.length() - 0.32, 0.2, absf(float(r[2])) + 0.06)
-		var pt := Vector3(her.global_position.x, ground() + 0.64 * tall, her.global_position.z) + HSNpcFlow.turned(Vector3(float(r[0]) * 0.5, 0, ahead), yaw)
-		step["bring"] = {"what": "palm", "side": "l" if left else "r", "target": pt, "peak": grab_t, "rise": 0.5, "hold": 0.3, "fall": 0.45, "most": 0.4}
-	_begin([{"k": "turn", "yaw": yaw}, step])
+		var ahead := clampf(d.length() - 0.38, 0.25, absf(out_at.z) + 0.05)
+		var pt := Vector3(her.global_position.x, ground() + 0.68 * tall, her.global_position.z) + HSNpcFlow.turned(Vector3(out_at.x * 0.5, 0, ahead), yaw)
+		step["bring"] = {"what": "palm", "side": "l" if left else "r", "target": pt, "peak": t, "rise": 0.45, "hold": 0.3, "fall": 0.4, "most": 0.4}
+	var steps: Array = [{"k": "turn", "yaw": yaw}, step]
+	if after.is_valid():
+		steps.append({"k": "call", "f": after})
+	_begin(steps)
 
 
 ## a thing put into her hand that wasn't in the scene (what you handed her: a copy of your pocket's model), by its
@@ -669,6 +698,9 @@ func _reach_step(at: Vector3, clip: String, thing: Node3D, keep: bool, put: bool
 			step["bring"] = {"what": "grip", "side": "l" if left else "r", "thing": thing, "peak": grab_t, "rise": 0.45, "hold": 0.04, "fall": 0.4, "freeze": true, "most": 0.3}
 	elif put:
 		on["grab"] = func(): put_down(at)
+		var down_t := _event_at(clip, "grab")
+		if down_t >= 0.0 and is_instance_valid(held):          # what she holds brought the rest of the way to where it's put (a shelf lower than her reach's own)
+			step["bring"] = {"what": "held", "side": "l" if left else "r", "target": at, "peak": down_t, "rise": 0.45, "hold": 0.04, "fall": 0.4, "freeze": true, "most": 0.3}
 	return step
 
 
@@ -750,6 +782,8 @@ func attack(kind: String, target: Node3D, left := false, times := 1, rate := 1.0
 		var arm := 0.86 * reach
 		var dy := aim.y - (her.global_position.y + float(at[1]))
 		var r := 0.97 * (0.14 * reach + sqrt(maxf(0.05 * arm * arm, arm * arm - dy * dy)))
+		if away.length() <= r + 0.02:                          # near enough already: she throws it from where she stands (a step away would turn her back on them)
+			return her.global_position
 		return aim + (away.normalized() if away.length() > 0.01 else -her.global_basis.z) * r
 	var steps: Array = []
 	for i in maxi(times, 1):
@@ -840,6 +874,11 @@ func _bring_start(b: Dictionary) -> void:
 			o["target"] = b["target"]
 		"palm":                                               # her palm held out (what she holds with it, when she holds something)
 			o["target"] = b["target"]
+		"held":                                               # the thing in her hand, onto the place it's put down
+			if not is_instance_valid(held) or held_side != side:
+				return
+			o["point"] = held.transform.origin
+			o["target"] = b["target"]
 		"grip":
 			var thing := b["thing"] as Node3D
 			var gcls := look_script("grip.gd")
@@ -903,6 +942,7 @@ func put_down(at = null) -> void:
 			held.reparent(to, true)
 		if at is Vector3:
 			held.global_position = at
+		held.global_basis = held_rest                          # (the way up it stood before she took it: a book lies flat again, a cup stands)
 		held.visible = true
 		for c in held.find_children("*", "CollisionObject3D", true, false):
 			(c as CollisionObject3D).process_mode = Node.PROCESS_MODE_INHERIT
@@ -1044,6 +1084,9 @@ func _next() -> void:
 			"path":
 				travelled = 0.0
 				return
+			"call":                                            # (something to do between two steps: what her hand took, carried or put away)
+				(_step["f"] as Callable).call()
+				continue
 			_:
 				return
 
@@ -1264,6 +1307,7 @@ func _take(thing: Node3D, left: bool) -> void:
 		(c as CollisionObject3D).process_mode = Node.PROCESS_MODE_DISABLED
 	if thing is RigidBody3D:
 		(thing as RigidBody3D).freeze = true
+	held_rest = thing.global_basis if thing.is_inside_tree() else Basis.IDENTITY
 	thing.reparent(att, true)
 	held = thing
 	held_side = "l" if left else "r"

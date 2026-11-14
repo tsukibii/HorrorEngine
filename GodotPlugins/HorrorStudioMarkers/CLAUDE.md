@@ -110,6 +110,14 @@ phasing, the Weapons plugin's hit reaction (any child of her with `hit` and `dow
 - **A Wait with no loop of its own leaves her as she is** (sat, lying, peeking, low): `_start`'s `wait` case. A
   posture that isn't standing has its own held loop in `body.gd` `_hold`, its `_begin` pre-step to leave it
   (`stand_up`, `get_up`, `peek_back`), and its `*_now` for `_snap`: a new posture gets all three.
+- **A marker that comes "when you're not looking" does its Then when it happens** (`_late`, `_effects_late`): a
+  Start here, a Disappear or a Jump scare whose `how` is `unseen` holds its line, sound and things fired from
+  `_start` until the moment in `_run_done`. A new kind that can wait for the player's eyes does the same.
+- **`seen()` is where she stands and her head where it is** (`body.head_point()`): a peek, a crawl. Anything that
+  asks "can the player see her" asks `seen()`, never a ray to her feet.
+- **The sequences are the plugin's second check** (`tools/godot/sequences.py`, SEQUENCES): eight real scenes, a
+  minute. A change to how markers run is played there as a player would play it; its data is also the guide's
+  tables (`tables` after changing it).
 - **An editor test that fails to parse hangs the editor** (the test plugin never quits it): parse it first
   (`--check-only`), and type every variable read off an untyped node (`var who: Node = dock.find_child(...)`).
 - **A marker's end state must be reachable at once** (`_snap`): the tester starts from it and a checkpoint restores

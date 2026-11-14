@@ -391,6 +391,10 @@ func _process_modification_with_delta(delta: float) -> void:
 	last = {}
 	_carry(sk, delta)
 	_flourish(sk, delta)
+	if now != "":                                              # a flourish with the hand that carries something upright (a look at the cup): still the way up it stands
+		for side in (_life.get("sides", []) as Array):
+			if carries.has(side):
+				_upright(sk, String(side), smoothstep(0.0, 1.0, float(carries[side]["w"])), 150.0)
 	if alive and now == "":
 		_wait -= delta
 		if _wait <= 0.0:
@@ -550,21 +554,30 @@ func _carry(sk: Skeleton3D, delta: float) -> void:
 			if not last.has("plumb"):
 				last["plumb"] = {}
 			last["plumb"][side] = rad_to_deg(sw.get_angle())
-		# kept the way up it stands: her hand turned by what's missing (as far as a wrist turns)
-		var thing = k.get("thing")
-		if bool(k["upright"]) and thing is Node3D and is_instance_valid(thing) and hand >= 0:
-			var gh := sk.get_bone_global_pose(hand)
-			var world_up := (sk.global_transform.basis.orthonormalized().inverse() * Vector3.UP).normalized()
-			var up_now := (gh.basis.orthonormalized() * (thing as Node3D).transform.basis.orthonormalized().y).normalized()
-			if up_now.dot(world_up) < 0.99999:
-				var qu := Quaternion(up_now, world_up)
-				var ang := qu.get_angle()
-				var most := deg_to_rad(65.0)
-				qu = Quaternion.IDENTITY.slerp(qu, w * (minf(1.0, most / ang) if ang > 1e-5 else 1.0))
-				sk.set_bone_global_pose(hand, Transform3D(Basis(qu) * gh.basis, gh.origin))
-				if not last.has("upright"):
-					last["upright"] = {}
-				last["upright"][side] = rad_to_deg(qu.get_angle())
+		_upright(sk, side, w, 65.0)
+
+
+# a thing that's carried upright kept the way up it stands: her hand turned by what's missing, `most` degrees at the
+# most (as far as a wrist turns in a carry; further when a flourish has that hand: a look at the cup lifts it level)
+func _upright(sk: Skeleton3D, side: String, w: float, most_deg: float) -> void:
+	var k: Dictionary = carries.get(side, {})
+	var thing = k.get("thing")
+	var hand := HSHeadTrack._find(sk, HSHandIK.ARM[side][2])
+	if k.is_empty() or not bool(k["upright"]) or not (thing is Node3D) or not is_instance_valid(thing) or hand < 0 or w <= 0.0005:
+		return
+	var gh := sk.get_bone_global_pose(hand)
+	var world_up := (sk.global_transform.basis.orthonormalized().inverse() * Vector3.UP).normalized()
+	var up_now := (gh.basis.orthonormalized() * (thing as Node3D).transform.basis.orthonormalized().y).normalized()
+	if up_now.dot(world_up) >= 0.99999:
+		return
+	var qu := Quaternion(up_now, world_up)
+	var ang := qu.get_angle()
+	var most := deg_to_rad(most_deg)
+	qu = Quaternion.IDENTITY.slerp(qu, w * (minf(1.0, most / ang) if ang > 1e-5 else 1.0))
+	sk.set_bone_global_pose(hand, Transform3D(Basis(qu) * gh.basis, gh.origin))
+	if not last.has("upright"):
+		last["upright"] = {}
+	last["upright"][side] = rad_to_deg(qu.get_angle())
 
 
 ## what it's doing (a check's, a debug label's)

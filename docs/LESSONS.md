@@ -3,6 +3,40 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The sequences: what playing real scenes found that the unit stages hadn't (2026-11-14, `even-more-animations-v3`)
+
+- **A check made of whole scenes finds what a check made of cases can't.** MARKERS has 229 passing lines and every
+  one of these went through it: a creature that crept up to you and then turned its back to punch; a sting that
+  played a second and a half before its scare; a peek nobody could "see"; a mug poured out when she looked at it.
+  Each needed two features meeting (a creep that stops short and an attack that wants its own distance; a Starts
+  when and a "when you're not looking"). **When a system is made of small parts, check it by building the things
+  it's for.**
+- **An approach that can turn out to be a retreat needs its own rule.** "Walk to where the blow reaches" was written
+  for someone further away. From nearer, the same step walked her *away*, and a walk turns her to face where she's
+  going: her back to you as she swung. From inside the reach she now throws it from where she stands.
+- **"When it starts" and "when it happens" are two moments the day one of them can wait.** A marker's Then ran as
+  its Starts when opened. For a scare that then waits for you to look away, that's the sting and the lights with
+  nothing to show for them. Ask, of anything that fires on a start: can the thing itself still be waiting?
+- **"Can you see her" is about her, not about where she stands.** The rays went to points above her feet. Peeking,
+  her head is 30 cm to the side of them and her feet are behind a wall, which is the whole point of a peek.
+- **A correction applied before the thing it corrects is no correction.** The carried cup was turned upright in the
+  carry's step, and then the look's arm was laid over it. The order of two layers is part of each one's meaning:
+  the upright is done again after any flourish that has that hand.
+- **A word that's only true in one place should be refused in the others.** `@wait` counts at a marker that's
+  ready. On a quest it was accepted and never so. Problems says so now; before, it read as "the quest hasn't
+  started yet", for a quarter of an hour.
+- **A helper that takes an index: look at which end it counts from.** The HUD's `choice_pick(k)` is the k-th answer
+  from 1. Given 0 it walked left forever, inside a `while`, and the check hung with nothing printed. **A hang is a
+  loop that can't end: find the `while`s under the last line printed.** And run a new check with its output
+  streaming, not collected at the end: the run looked slow for twenty minutes when it was stuck in its first
+  conversation. The whole check takes one minute.
+- **GDScript again**: `@export_enum` can't hold an empty option (use a word, `any`); a lambda can change what a
+  captured dictionary holds, never which dictionary a local names; a constant put "after the line that starts
+  with `const X`" lands inside X when X is three lines long.
+- **A scripted insert that replaces the end of a function replaces its last line too.** The `match` in
+  `_run_done` ended with a fall-through `return` after it; my replacement of the last case took the `return`
+  with it and every other kind returned nothing. Look at what follows the text you match, not only at the text.
+
 ## The hands and the jiggle: what the user's eye found, and what took a second try (2026-11-13, `animation-v2`)
 
 - **An angle counted from a moving part goes where the part goes.** The hand's turn was counted from the elbow's own

@@ -205,9 +205,10 @@ own keeps her so: Sit → Look at it → Wait 5 s → Look at it is someone sat 
 (a Walk, a Grab, an Attack) stands her up first. A Wait with a loop of its own still stands her up for it.
 
 **A thing changes hands** (the same day: "we get something, give it to the npc, they eat it"; "they're someone that
-walked to the till, ask for something"). Two Grabs with no pin, done where she stands, turned to you, her hand held
-out between her waist and her chest (her reach clip, her palm carried toward you by her hand's IK, never further
-than her arm goes). **Take from you**: the thing named leaves your pocket (the Story's `take`) and is in her hand as
+walked to the till, ask for something"). Two Grabs with no pin, done where she stands, turned to you, stood upright, her
+hand held out at the height of her lower chest (the arm of her door push: a hand to a handle and on out in front
+of her; her palm is carried toward you by her hand's IK, a forearm's length and never into you; a character with no
+such clip reaches as for a table). **Take from you**: the thing named leaves your pocket (the Story's `take`) and is in her hand as
 a copy of the model your pocket had for it (a Pickup's own mesh; a small block when the pocket never had a look for
 it), held by its grip as anything she picks up. *It stays in the hand*: carried from there on, so an Eat or a Drink
 with no thing picked uses it; off, it's put away. If you don't carry it nothing changes hands: give the marker
@@ -226,6 +227,14 @@ through a Wait or a Talk after it. The next marker that moves her draws her back
 left* mirrors it. With her head following you she watches you as you move. Seen from the front only: the wall
 hides the rest (DECISIONS 2026-11-14, short NPCs).
 
+**What "you see her" is, and when a marker that waits for you to look away says its piece** (found building the
+sequences). *You see her* (`@seen`, *when you're not looking*) looks at where she stands (her head, her middle, her
+feet there) **and at her head where it really is**: leant out past a wall's end in a Peek, low on all fours. A
+marker that comes *when you're not looking* (a Start here, a Disappear, a Jump scare) holds its Then's line, sound
+and things fired **until it happens**, not when its Starts when opened: a scare's sting and its flickering lights
+come with the scare. A quest's own Starts when can't be *after N s* (that counts at a marker that's ready); Problems
+says so.
+
 **Eat and drink.** The thing is held where its **grip** says (the Look plugin's `HSGrip` under the prop: a ring to
 put where a hand closes round it, sized by a handle to the prop's thickness, with a point for the side that's bitten
 or the rim that's drunk from; a prop with none is gripped by a guess from its size). Her fingers close to the grip's
@@ -235,8 +244,9 @@ tipped, and it stays in her hand for the next marker (Put down leaves it at a pi
 
 **Attack.** She walks to where the blow reaches (nearer for someone above or below her shoulder), keeps turning with
 them until just before it lands, and her fist or the end of what she holds is carried onto where they are at that
-moment: someone who stepped aside 20 cm is still hit, someone who got away isn't. A blow that gets there (within
-12 cm) says so: the HSNpc's `struck(target, kind)` signal, and the target's `take_hit(by)` or `struck(by, kind)` when
+moment: someone who stepped aside 20 cm is still hit, someone who got away isn't. Already nearer than her blow
+reaches (she crept right up to you), she throws it from where she stands: a step away would turn her back on you.
+A blow that gets there (within 12 cm) says so: the HSNpc's `struck(target, kind)` signal, and the target's `take_hit(by)` or `struck(by, kind)` when
 it has one (the starter's player and Motion both do). On you it's aimed a little under your eye and stops 20 cm short
 of it. *How many blows* repeats it, catching up with them between blows; she gives up a blow after 8 s of not getting
 there. Swing swings whatever she holds by its grip (a bat picked up a marker earlier); with nothing in her hand it's a
@@ -265,7 +275,7 @@ a face's rule, a conversation's): words apart by commas, all of them must be so;
 | `task:id` | that task is ticked |
 | `on:id` | that task is on the to-do list and not ticked: *the quest is open* |
 | `item:name` | you carry it |
-| `@wait:3` | she's been ready for this marker for 3 seconds |
+| `@wait:3` | she's been ready for this marker for 3 seconds (a marker's word: a quest's *Starts when* can't use it, and Problems says so) |
 | `@near:2`, `@far:6` | you're within 2 m of her; further than 6 m |
 | `@seen`, `@unseen` | you can see her (in view, nothing in the way); you can't |
 | `@shot`, `@down` | she's been hit; she's been shot down |
@@ -455,6 +465,10 @@ scene's into its hand, so it carries nothing.)
 - [x] the cards (Small movement, Look at it, Peek, Take from you, Hand to you), their form rows and drawings;
       Problems: a thing not named, nothing to hand over, a movement her body hasn't got, no peek clip
 - [x] MARKERS (the stage `hands`) and MARKERSEDITOR (the cards and their forms)
+- [x] the guide `guides/sequences`: eight recipes built for real by `tools/godot/sequences.py` and played by
+      SEQUENCES; what building them found, fixed: *you see her* counts her head where it is; a marker that waits for
+      you to look away says its piece when it happens; a blow thrown from inside its reach no longer turns her back
+      on you; a look at a cup she carries keeps it upright; a quest asked to wait some seconds is a Problem
 
 ## 11. Later (not in this round)
 

@@ -66,6 +66,7 @@ var _scared := false                       # a Jump scare marker's scare has bee
 var _gesture := {}                         # a Small movement marker's: {asked, t}
 var _along := {}                           # a small movement to lay over what comes next, as soon as she can: {what, left, t}
 var _dt := 0.0                             # this tick's seconds (a running marker's own clock)
+var _late := false                         # this marker's Then (its line, sound, things fired) waits for the moment it happens: one that comes "when you're not looking"
 var _head := {}                            # her head, as the last marker that said left it: {on, range, at (a path from her HSNpc)}; {}: nothing said yet
 var _life := {}                            # her small movements, as the last marker that said left them: {on}; {}: nothing said yet (her HSNpc's Alive)
 var _rule_face := ""
@@ -233,11 +234,16 @@ func spot_seen(feet: Vector3, tall := 1.6) -> bool:
 	return false
 
 
-## you can see her
+## you can see her: where she stands (her head, middle, feet), or her head where it really is (leant out past a
+## wall's end, low on all fours)
 func seen() -> bool:
 	if her == null or body.hidden or not her.visible:
 		return false
-	return spot_seen(her.global_position)
+	if spot_seen(her.global_position):
+		return true
+	var cam := _camera()
+	var hp = body.head_point()
+	return cam != null and hp is Vector3 and cam.is_position_in_frustum(hp) and _clear(cam, hp)
 
 
 # ---- every frame --------------------------------------------------------------------------------------------------------------
@@ -446,7 +452,9 @@ func _start(m: HSNpcMarker) -> void:
 			body.hold_clip = ""
 			body.hold_rate = 1.0
 	_wear(m)
-	_effects(m)
+	_late = m.kind in ["scare", "appear", "disappear"] and m.how == "unseen" and not preview
+	if not _late:                                              # (a scare that waits for you to look away: its sting and its lights with the scare, not when its Starts when opened)
+		_effects(m)
 	match m.kind:
 		"walk":
 			_start_walk(m)
@@ -571,6 +579,7 @@ func _run_done(m: HSNpcMarker) -> bool:
 				var you := player()
 				body.scare(m.scare_kind, you.global_position if m.face_player and you != null and not preview else null, not m.scare_stays)
 				_scared = true
+				_effects_late(m)
 				if not preview:
 					npc.scared.emit()
 					tree.call_group("hs_scare", "scared", her)
@@ -593,6 +602,7 @@ func _run_done(m: HSNpcMarker) -> bool:
 			body.place(spot, m.yaw())
 			if fade:
 				_phase_in()
+			_effects_late(m)
 			return true
 		"disappear":
 			if body.hidden:
@@ -602,6 +612,7 @@ func _run_done(m: HSNpcMarker) -> bool:
 				return false
 			if m.how == "fade" and not preview and _phase_out():
 				return false
+			_effects_late(m)
 			body.interrupt()
 			body.hide_now()
 			return true
@@ -693,6 +704,13 @@ func _finish(m: HSNpcMarker) -> void:
 
 
 # what a marker does as it starts beside her body: a line, a sound, things fired, a scare
+# a marker's Then that was held back for the moment it happens (_start)
+func _effects_late(m: HSNpcMarker) -> void:
+	if _late:
+		_late = false
+		_effects(m)
+
+
 func _effects(m: HSNpcMarker) -> void:
 	if preview:
 		if m.say != "":

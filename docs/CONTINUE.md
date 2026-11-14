@@ -139,6 +139,39 @@ for these"* (ANIMATOR_V3 §11, §12; GODOT_LOOK §5z):
   and a goblin; `life_game.jpg` the layer and the carry in a game); the Animator's guide sections 16 and 17, the
   Markers' guide section 16.
 
+**The user's newest message, sent while that was being finished, both parts done** (DECISIONS 2026-11-14,
+evening): *"merge the latest main into this branch, then make a new tutorial on using the marker system with these
+new animations ... walking to a table, picking up something, then walking to a sofa, sitting on it, and looking at
+the object ... we get something, give it to the npc, they eat it ... a shopkeeper ... chaining interesting horror
+sequences + jumpscares and guides on utilizing our iks."*
+- **Main is merged in** (flags and things): the branch has the Logic node and the Flags and Things tabs.
+- **The guide is `guides/sequences/index.html`**: eight recipes to copy card by card (a mug taken to the sofa and
+  looked at; tidying up, then a Talk that gives you a task; you hand her an apple and she eats it; she fetches a key
+  and hands it to you; a customer at your till; the last customer, nearer each time you look away; a peek round a
+  corner, then behind you; a crawl, a creep and a blow), then a part on getting the most from the IKs, more scenes
+  from the same cards, and a table of what goes wrong.
+- **It's built for real.** `tools/godot/sequences.py` holds the place, the things and every marker as data;
+  `sequences_build.gd` builds `main.tscn` from it as the tabs would save it; `sequences_test.gd` plays every recipe
+  as a player would (**SEQUENCES**, a minute: `python tools/godot/sequences.py --reuse`); the guide's storyboard
+  tables are written from the same data (`python tools/godot/sequences.py tables`); its pictures are Godot's
+  (`--pictures --reuse` the game's, `--editor --reuse` the tab's). The project stays in `Saved/Godot/_sequences`:
+  open it in Godot to walk through all eight (`--keep DIR` for one somewhere else).
+- **The Markers plugin got what the recipes needed** (docs/MARKERS.md §4, §10 H): the cards **Small movement** and
+  **Look at it** (kind `gesture`: one of her small movements now; *Over what comes next* lays it over the next
+  marker), **Peek** (kind `peek`), **Take from you** and **Hand to you** (Grab actions with no pin: the Story's
+  pocket and cash); a Wait leaves her sat, asleep or looking out.
+- **Playing whole scenes found five things the unit stages hadn't**, all fixed (docs/LESSONS.md, the sequences):
+  *you see her* counts her head where it really is; a "when you're not looking" marker's sound and things fired
+  come when it happens; a blow thrown from inside its reach is thrown from where she stands (she turned her back on
+  you: fixed in the markers' body and the starter's `motion.gd`, held by GDMOTION3); a look at a cup she carries
+  keeps it upright (`gesture.gd`, held by GDLIFE); a quest asked to start *after N s* is a Problem.
+- **Checks on the last commit**: SEQUENCES, MARKERS (the new stage `hands`), MARKERSEDITOR (the new cards), LOGIC,
+  LOGICEDITOR, GDMOTION, GDMOTION3, GDLIFE, CHECKS.
+
+**What the user hasn't seen**: any of it moving. The recipes' pictures are stills made under xvfb; the timings (how
+long she looks at the mug, the 2.5 s the last customer waits for your back, the 1.5 s of the peek) are guesses to be
+changed in the data (`sequences.py`, then `tables`) or in the tab.
+
 **The user has still seen none of it in motion**: their feedback so far came from the report and its pictures. What
 eyes will find: how a clip reads on their own characters, the gizmo under a real mouse (it was only ever dragged by
 a test and pictured under xvfb), a blow in play, a child of their own getting onto one of their chairs (the pictures
@@ -166,7 +199,9 @@ as alive or as fidgeting**: how often (6 to 14 s) and which ones are a guess nob
 - Every picture was drawn on a CPU (lavapipe): the look is the game's, the frame rate isn't.
 
 **Not built** (ANIMATOR_V3 §9, MARKERS §11), in the order I'd take them:
-1. a **Peek card** in the Markers tab (`m.peek` is the starter's and an act's; a marker can't ask for one yet);
+1. **eating and drinking sat down** (Eat and Drink are standing clips: she gets up from the sofa; as flourishes
+   made over a seat they'd be the layer's, with the bite by the hand's IK: the guide says she stands), and a thing
+   handed **between two characters** (it's between her and you);
 2. a dressed Studio child made, baked and pictured on the furniture (`tools/animator/people.mjs` is the pattern; the
    Studio's Age slider; about ten minutes a character on a CPU with its clothes);
 3. climbing: onto something over her hips, down from it; a step;
