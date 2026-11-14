@@ -107,7 +107,7 @@ start from it.
 | Wait, Talk | `wait` | stays where she is, idling (or a loop of yours) | stays: N seconds, until you talk to her, until the next can start; faces you |
 | Sit | `sit` | walks the last step to the pin (on the seat's front edge, the arrow the way her knees point), sits, stays sat | stays (as Wait) |
 | Sleep | `sleep` | sits on the bed's edge at the pin, lies down, sleeps | which side her head goes; stays |
-| Grab, Pick up, Put down, Open door | `grab` | a hand to the pin: reaches for it; or takes the thing named into her hand; or puts what she holds at the pin; or opens the door named | which hand, the thing, the door and how it opens |
+| Grab, Pick up, Put down, Open door | `grab` | a hand to the pin, the arrow the way she faces: reaches for it; or takes the thing named into her hand; or puts what she holds at the pin; or opens the door named. Her hand has three reaches (the floor, a table at about 0.86 m, a shelf at about 1.65 m on an adult: the Animator's three clips): the one nearest the pin's height is played | which hand, the thing, the door and how it opens |
 | Animation | `animation` | plays a clip: one of her own by name, or a file (a Kimodo `.npz` in `res://animations/`, a Godot animation) | once, N times, looping (stays as Wait); speed |
 | Event | `event` | nothing with her body: what's under *then*, at once | a scare; let go of her |
 | Disappear | `disappear` | is hidden and switched off: not drawn, not animated, not processed, her colliders out of the physics; she still exists | how: at once, when you're not looking, fading out |
@@ -134,12 +134,14 @@ their own seconds.
 
 **Curves.** A walk goes through its bends as one smooth curve (a centripetal spline: it doesn't swing wide into
 walls), or straight from bend to bend with *sharp corners*. A bend is added by clicking the + on the path, dragged
-like a pin.
+like a pin. A bend is a place in the world: turning a Walk's arrow or moving its pin leaves its bends where they are.
 
-**Stairs.** The path gives where she is on the plan; the floor gives how high: a ray down at each step of the way,
+**Stairs.** The path gives where she is on the plan; the floor gives how high: rays down at each step of the way,
 from just above the path to just below it, so on two storeys she follows the floor the path lies on and not the one
-under or over it; her height eased, so she glides over each riser as the player's eye does. One bend at the foot and
-one at the top of a flight is enough. Where there's no collider she keeps the path's own height.
+under or over it. She rides the highest floor a hand's width ahead of her and behind, eased: up a flight she rises
+before each riser, down it she comes off each step late, and she's never inside one (measured on 18 cm risers: at most
+3.3 cm of height a frame, never more than 4 cm under a step). One bend at the foot and one at the top of a flight
+(*sharp corners*) is enough. Where there's no collider she keeps the path's own height.
 
 **A custom animation (a Kimodo dance).** Drop the `.npz` in `res://animations/`. On an Animation marker pick it under
 *From a file*: it's fitted onto her own skeleton the first time it's needed (the Director's Kimodo reader and
@@ -250,25 +252,25 @@ saving the scene, ends it.
 - [x] the picture and the request read; what's missing; the design (this file); the user's words in DECISIONS
 
 **B. The runtime** (`addons/horrorstudio_markers/`)
-- [ ] the nodes: `HSNpc`, `HSNpcQuest`, `HSNpcMarker` (a kind and its fields; the Inspector shows only its kind's),
+- [x] the nodes: `HSNpc`, `HSNpcQuest`, `HSNpcMarker` (a kind and its fields; the Inspector shows only its kind's),
       `HSNpcWay`, `HSNpcBend`; warnings in the Scene dock for a marker in the wrong place
-- [ ] `HSNpcCond`: the words of §5, with the Story or without; read back as plain words
-- [ ] `HSNpcFlow`: the order and numbers, where each marker starts from, the path of a walk (curve, length, time),
+- [x] `HSNpcCond`: the words of §5, with the Story or without; read back as plain words
+- [x] `HSNpcFlow`: the order and numbers, where each marker starts from, the path of a walk (curve, length, time),
       the problems
-- [ ] `HSNpcBody`: the body driven: appear and disappear (off costs nothing), walk along a path (speed, easing, the
+- [x] `HSNpcBody`: the body driven: appear and disappear (off costs nothing), walk along a path (speed, easing, the
       floor under it, turning), stand, sit, sleep, grab / pick up / put down / open, a clip (her own, a file, Kimodo),
       a loop's speed, the blend; a baked character, any character, a stand-in
-- [ ] `HSNpcRunner`: quests, order, *Starts when*, holding, Choice, Repeat, catching up, *then* (flags, task, line,
+- [x] `HSNpcRunner`: quests, order, *Starts when*, holding, Choice, Repeat, catching up, *then* (flags, task, line,
       sound, fire, scare), hand over
-- [ ] talking: the E body and prompt, `HSNpcTalkBox`, conversations by flags, answers to flags, once
-- [ ] faces: presets on MHR's shapes (and ARKit's), by rule, for a line; face clips from `res://faces/`
-- [ ] looks: through the look plugin (a named look, a skin, eyes); phase and cloak for Appear and Disappear
-- [ ] shot: `shot:` and `down:` flags, the three policies
-- [ ] checkpoints: kept and put back with the Story's
-- [ ] F7: what each character is doing and waiting for
+- [x] talking: the E body and prompt, `HSNpcTalkBox`, conversations by flags, answers to flags, once
+- [x] faces: presets on MHR's shapes (and ARKit's), by rule, for a line; face clips from `res://faces/`
+- [x] looks: through the look plugin (a named look, a skin, eyes); phase and cloak for Appear and Disappear
+- [x] shot: `shot:` and `down:` flags, the three policies
+- [x] checkpoints: kept and put back with the Story's
+- [x] F7: what each character is doing and waiting for
 
 **C. Checked**
-- [ ] MARKERS (`tools/godot/markers_check.py`): a by-hand project, a baked test character and a stand-in, played
+- [x] MARKERS (`tools/godot/markers_check.py`): a by-hand project, a baked test character and a stand-in, played
       headless: every rule of §6 and every kind of §4 measured
 
 **D. The editor**
@@ -282,7 +284,8 @@ saving the scene, ends it.
 
 **E. Checked, written, shipped**
 - [ ] MARKERSEDITOR: the tab driven in the editor itself (headless), a scene made from nothing, saved clean
-- [ ] `godot_byhand.py` installs and enables it; the launcher's rows
+- [x] `godot_byhand.py` installs and enables it (a project made before it gets it switched on by `install`)
+- [ ] the launcher's rows
 - [ ] the guide `guides/markers/` with pictures of the real thing; the plugin's README and CLAUDE.md; CLAUDE.md,
       CONTINUE, GodotPlugins/README
 
