@@ -30,6 +30,55 @@ PLUGIN = ROOT / "GodotPlugins" / "HorrorStudioMarkers" / "addons" / "horrorstudi
 HERE = Path(__file__).resolve().parent
 
 
+EDITOR_SCENE = """[gd_scene load_steps=7 format=3]
+
+[ext_resource type="PackedScene" path="res://characters/normal_woman.glb" id="her"]
+
+[sub_resource type="BoxShape3D" id="floor_s"]
+size = Vector3(30, 0.2, 30)
+
+[sub_resource type="BoxMesh" id="floor_m"]
+size = Vector3(30, 0.2, 30)
+
+[sub_resource type="BoxMesh" id="sofa_m"]
+size = Vector3(1.6, 0.45, 0.7)
+
+[sub_resource type="BoxMesh" id="book_m"]
+size = Vector3(0.14, 0.04, 0.2)
+
+[sub_resource type="BoxMesh" id="bob_m"]
+size = Vector3(0.4, 1.7, 0.25)
+
+[node name="Level" type="Node3D"]
+
+[node name="Floor" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+
+[node name="Shape" type="CollisionShape3D" parent="Floor"]
+shape = SubResource("floor_s")
+
+[node name="Mesh" type="MeshInstance3D" parent="Floor"]
+mesh = SubResource("floor_m")
+
+[node name="Sofa" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.225, -1.5)
+mesh = SubResource("sofa_m")
+
+[node name="Book" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.02, 1)
+mesh = SubResource("book_m")
+
+[node name="Alex" parent="." instance=ExtResource("her")]
+
+[node name="Bob" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -2)
+
+[node name="Body" type="MeshInstance3D" parent="Bob"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+mesh = SubResource("bob_m")
+"""
+
+
 def godot_bin():
     for c in [os.environ.get("GODOT"), "godot", "godot-mono"]:
         if c and shutil.which(c):
@@ -116,9 +165,11 @@ def editor(args):
     t.mkdir(parents=True, exist_ok=True)
     (t / "plugin.cfg").write_text('[plugin]\nname="hs markers editor test"\ndescription=""\nauthor=""\nversion="1"\nscript="plugin.gd"\n', encoding="utf-8")
     shutil.copy(HERE / "markers_editor_test.gd", t / "plugin.gd")
-    (proj / "editor_scene.tscn").unlink(missing_ok=True)
+    (proj / "editor_scene.tscn").write_text(EDITOR_SCENE, encoding="utf-8")       # a room made from nothing: a floor, a sofa (a mesh with no collider), a book, a character, someone with no skeleton
+    for _ in range(2):
+        run([g, "--headless", "--path", str(proj), "--import"], timeout=1200)
     pg = proj / "project.godot"
-    before = pg.read_text(encoding="utf-8")
+    before = pg.read_text(encoding="utf-8").replace('"res://addons/hs_markers_editor_test/plugin.cfg", ', "")   # (a run that was killed leaves it in)
     pg.write_text(before.replace("enabled=PackedStringArray(", 'enabled=PackedStringArray("res://addons/hs_markers_editor_test/plugin.cfg", ', 1), encoding="utf-8")
     (proj / "markers_editor.json").write_text(json.dumps({"shots": str(shots) if shots else ""}), encoding="utf-8")
     try:

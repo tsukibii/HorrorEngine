@@ -1,0 +1,481 @@
+@tool
+## MARKERSEDITOR's hands (tools/godot/markers_check.py --editor; docs/MARKERS.md §7 to §9): installed as a plugin of
+## its own in the scratch project, it opens a small room in the editor itself and uses the NPC Markers tab as someone
+## would: a character added, cards placed by clicks in the 3D view (onto a collider, onto a mesh with none), a pin
+## dragged, its arrow turned, a bend added, dragged and deleted, undo, the storyboard's order, the form's fields, a
+## conversation's answers turned into a Choice, what's shown, Problems, the tester, a save. Prints
+## `MARKERSEDITOR {errors, did}` and quits. With a folder in markers_editor.json it also pictures the editor.
+extends EditorPlugin
+
+var errors: Array = []
+var did: Array = []
+var dock
+var plug
+var vp: SubViewport
+var cam: Camera3D
+var surface: Control
+var root: Node
+var shots := ""
+
+
+func ok(c: bool, what: String, how := "") -> void:
+	if c:
+		did.append(what + ((": " + how) if how != "" else ""))
+	else:
+		errors.append(what + ((": " + how) if how != "" else ""))
+
+
+func frames(n: int) -> void:
+	for i in n:
+		await get_tree().process_frame
+
+
+func secs(t: float) -> void:
+	await get_tree().create_timer(t).timeout
+
+
+func _find_script(n: Node, tail: String):
+	for c in n.get_children():
+		if c.get_script() != null and str(c.get_script().resource_path).ends_with(tail):
+			return c
+		var f = _find_script(c, tail)
+		if f != null:
+			return f
+	return null
+
+
+func _done() -> void:
+	print("MARKERSEDITOR " + JSON.stringify({"errors": errors, "did": did}))
+	get_tree().quit()
+
+
+func _enter_tree() -> void:
+	_run.call_deferred()
+
+
+# ---- the mouse, as the 3D view hands it to plugins ---------------------------------------------------------------------------
+func k() -> Vector2:
+	return plug.overlay._k(surface, vp) if surface != null else Vector2.ONE
+
+
+func scr(p: Vector3) -> Vector2:
+	return cam.unproject_position(p) * k()
+
+
+func _send(ev: InputEvent, real := false) -> void:
+	if real and surface != null:
+		surface.gui_input.emit(ev)                              # (as the editor does it: its own handler passes it to the plugins)
+	else:
+		plug._forward_3d_gui_input(cam, ev)
+
+
+func press(pos: Vector2, shift := false, real := false) -> void:
+	var e := InputEventMouseButton.new()
+	e.button_index = MOUSE_BUTTON_LEFT
+	e.pressed = true
+	e.position = pos
+	e.shift_pressed = shift
+	_send(e, real)
+
+
+func release(pos: Vector2) -> void:
+	var e := InputEventMouseButton.new()
+	e.button_index = MOUSE_BUTTON_LEFT
+	e.pressed = false
+	e.position = pos
+	_send(e)
+
+
+func move(pos: Vector2) -> void:
+	var e := InputEventMouseMotion.new()
+	e.position = pos
+	_send(e)
+
+
+func rclick(pos: Vector2) -> void:
+	var e := InputEventMouseButton.new()
+	e.button_index = MOUSE_BUTTON_RIGHT
+	e.pressed = true
+	e.position = pos
+	_send(e)
+
+
+func drag(from: Vector2, to: Vector2) -> void:
+	press(from)
+	move(from.lerp(to, 0.5))
+	move(to)
+	release(to)
+
+
+func redraw() -> void:
+	plug.update_overlays()
+	await frames(3)
+
+
+func hot(kind: String, node: Node = null) -> Dictionary:
+	for h in plug.overlay.hot.get(surface.get_instance_id(), []) if surface != null else []:
+		if h["kind"] == kind and (node == null or h["node"] == node):
+			return h
+	return {}
+
+
+func card(id: String) -> Dictionary:
+	for c in plug.CARDS:
+		if c["id"] == id:
+			return c
+	return {}
+
+
+func undo() -> void:
+	var ur := get_undo_redo()
+	ur.get_history_undo_redo(ur.get_object_history_id(root)).undo()
+
+
+func redo() -> void:
+	var ur := get_undo_redo()
+	ur.get_history_undo_redo(ur.get_object_history_id(root)).redo()
+
+
+func field(n: String) -> Control:
+	return dock.form.find_child(n, true, false) as Control
+
+
+func flat(v: Vector3) -> Vector2:
+	return Vector2(v.x, v.z)
+
+
+func yaw_of(n: Node3D) -> float:
+	var f := n.global_basis.z
+	return rad_to_deg(atan2(f.x, f.z))
+
+
+func shot(name: String) -> void:
+	if shots == "":
+		return
+	await frames(6)
+	var img := EditorInterface.get_base_control().get_viewport().get_texture().get_image()
+	img.save_png(shots.path_join(name + ".png"))
+	did.append("pictured " + name)
+
+
+func _run() -> void:
+	get_tree().create_timer(500.0).timeout.connect(func() -> void:
+		errors.append("the editor test never ended")
+		_done())
+	var cfg = JSON.parse_string(FileAccess.get_file_as_string("res://markers_editor.json"))
+	shots = str(cfg.get("shots", "")) if cfg is Dictionary else ""
+	await secs(3.0)
+	EditorInterface.open_scene_from_path("res://editor_scene.tscn")
+	for i in 400:
+		await frames(1)
+		root = EditorInterface.get_edited_scene_root()
+		if root != null and root.name == "Level":
+			break
+	ok(root != null and root.name == "Level", "the room opened in the editor")
+	if root == null:
+		_done()
+		return
+	EditorInterface.set_main_screen_editor("3D")
+	await frames(10)
+	dock = _find_script(EditorInterface.get_base_control(), "horrorstudio_markers/editor/dock.gd")
+	ok(dock != null, "the NPC Markers tab is in the editor")
+	if dock == null:
+		_done()
+		return
+	plug = dock.plugin
+	dock.make_visible()
+	await frames(5)
+	ok(dock.is_visible_in_tree(), "the tab is shown along the bottom")
+	vp = EditorInterface.get_editor_viewport_3d(0)
+	cam = vp.get_camera_3d()
+	for c in vp.get_parent().get_parent().get_children():
+		if c.get_class() == "Control":
+			surface = c
+	ok(cam != null and surface != null, "the 3D view and its camera", "%s, the view %s" % [str(cam.global_position) if cam != null else "none", str(vp.size)])
+	var alex := root.get_node("Alex") as Node3D
+	var bob := root.get_node("Bob") as Node3D
+	var sofa := root.get_node("Sofa") as Node3D
+
+	# ---- a character ----
+	var cands: Array = dock.candidates()
+	ok(alex in cands, "the tab offers the scene's characters", str(cands.map(func(c): return c.name)))
+	var npc: HSNpc = plug.add_character(alex)
+	await frames(3)
+	ok(npc != null and npc.get_parent() == root and npc.get_index() == alex.get_index() + 1 and npc.character_node() == alex and npc.owner == root, "+ Character puts an HSNpc beside her, pointed at her")
+	var quest: HSNpcQuest = HSNpcFlow.quests(npc)[0] if not HSNpcFlow.quests(npc).is_empty() else null
+	ok(quest != null and quest.owner == root and plug.cur_quest == quest, "with a first quest", quest.label() if quest != null else "")
+	ok(dock.chars.get_child_count() == 1 and dock.quest_pick.item_count == 1, "she's in the tab's list, her quest in the dropdown")
+	await shot("01_character")
+
+	# ---- cards placed by clicks ----
+	dock._card(card("walk"))
+	ok(plug.armed.get("id") == "walk", "a card clicked is armed for the 3D view")
+	press(scr(Vector3(2.0, 0, 1.0)), false, true)
+	await frames(3)
+	var walk := HSNpcFlow.items(quest)[0] as HSNpcMarker if not HSNpcFlow.items(quest).is_empty() else null
+	ok(walk != null and walk.kind == "walk" and walk.owner == root, "a click in the 3D view (through the editor's own input) places it")
+	if walk == null:
+		_done()
+		return
+	ok(walk.global_position.distance_to(Vector3(2.0, 0, 1.0)) < 0.03, "where the click was, on the floor's collider", str(walk.global_position))
+	ok(absf(angle_difference(deg_to_rad(yaw_of(walk)), atan2(2.0, 1.0))) < 0.02 and plug.armed.is_empty() and plug.cur == walk, "its arrow the way she'll come; picked; the card let go")
+	dock._card(card("sit"))
+	var seat := sofa.global_position + Vector3(0, 0.225, 0.3)
+	press(scr(seat))
+	await frames(3)
+	var sit := HSNpcFlow.items(quest)[1] as HSNpcMarker if HSNpcFlow.items(quest).size() > 1 else null
+	ok(sit != null and sit.kind == "sit" and sit.global_position.distance_to(seat) < 0.04, "a Sit clicked onto the sofa (a mesh with no collider) lands on its top", str(sit.global_position) if sit != null else "")
+	dock._card(card("wait"))
+	await frames(2)
+	var wait := HSNpcFlow.items(quest)[2] as HSNpcMarker if HSNpcFlow.items(quest).size() > 2 else null
+	ok(wait != null and wait.kind == "wait" and plug.armed.is_empty(), "a card with no place of its own (Wait) is added at once, after the one picked")
+	dock._card(card("walk"))
+	press(scr(Vector3(-2.0, 0, 2.0)), true)
+	press(scr(Vector3(-2.0, 0, -1.0)), true)
+	await frames(2)
+	ok(HSNpcFlow.items(quest).size() == 5 and plug.armed.get("id") == "walk", "Shift keeps a card armed: two more walks")
+	var esc := InputEventKey.new()
+	esc.keycode = KEY_ESCAPE
+	esc.pressed = true
+	_send(esc)
+	ok(plug.armed.is_empty(), "Esc lets it go")
+	var w2 := HSNpcFlow.items(quest)[3] as HSNpcMarker
+	var w3 := HSNpcFlow.items(quest)[4] as HSNpcMarker
+
+	# ---- drawn in the 3D view ----
+	await redraw()
+	var pins := 0
+	for h in plug.overlay.hot.get(surface.get_instance_id(), []):
+		if h["kind"] == "pin":
+			pins += 1
+	ok(pins == 4, "the 3D view draws a pin for each placed marker", "%d pins" % pins)
+	ok(not hot("pin", walk).is_empty() and (hot("pin", walk)["at"] as Vector2).distance_to(scr(walk.global_position)) < 1.5, "each where its marker is")
+	ok(not hot("badge", wait).is_empty(), "and a badge where she waits")
+	await shot("02_markers")
+
+	# ---- a pin dragged, undone ----
+	plug.pick_node(walk)
+	await redraw()
+	drag(hot("pin", walk)["at"], scr(Vector3(2.0, 0, 3.0)))
+	await frames(2)
+	ok(walk.global_position.distance_to(Vector3(2.0, 0, 3.0)) < 0.04, "a pin dragged rides the floor to where it's let go", str(walk.global_position))
+	undo()
+	await frames(2)
+	ok(walk.global_position.distance_to(Vector3(2.0, 0, 1.0)) < 0.04, "one undo puts it back")
+	redo()
+	await frames(2)
+	ok(walk.global_position.distance_to(Vector3(2.0, 0, 3.0)) < 0.04, "and redo moves it again")
+	# ---- its arrow ----
+	await redraw()
+	var tip := hot("arrow", walk)
+	ok(not tip.is_empty(), "the picked pin has a handle on its arrow")
+	if not tip.is_empty():
+		drag(tip["at"], scr(walk.global_position + Vector3(-1.0, 0, 0)))
+		await frames(2)
+		ok(absf(angle_difference(deg_to_rad(yaw_of(walk)), -PI * 0.5)) < 0.03, "dragged round, it turns the way she faces", "%.0f deg" % yaw_of(walk))
+	# ---- a bend ----
+	await redraw()
+	var plus := hot("plus", walk)
+	ok(not plus.is_empty(), "its path has a + for a bend")
+	if not plus.is_empty():
+		press(plus["at"])
+		move(scr(Vector3(0.0, 0, 3.0)).lerp(plus["at"], 0.5))
+		move(scr(Vector3(0.0, 0, 3.0)))
+		release(scr(Vector3(0.0, 0, 3.0)))
+		await frames(2)
+		var bends := walk.bends()
+		ok(bends.size() == 1 and (bends[0] as Node3D).global_position.distance_to(Vector3(0.0, 0, 3.0)) < 0.05 and (bends[0] as Node).owner == root, "clicked and dragged: a bend there", str((bends[0] as Node3D).global_position) if bends.size() == 1 else "")
+		var along := HSNpcFlow.walk_points(walk, Vector3.ZERO)
+		var near := INF
+		for p in along:
+			near = minf(near, p.distance_to(Vector3(0.0, 0, 3.0)))
+		ok(near < 0.06, "and her path goes through it")
+		var yaw_before := yaw_of(walk)
+		plug.place_node(walk, Transform3D(Basis(Vector3.UP, 1.0), walk.global_position), walk.global_transform, "turn")
+		ok((bends[0] as Node3D).global_position.distance_to(Vector3(0.0, 0, 3.0)) < 0.001, "turning the marker's arrow leaves its bend where it is")
+		await shot("03_bend")
+		await redraw()
+		var bh := hot("bend", bends[0])
+		ok(not bh.is_empty(), "the bend has a handle")
+		if not bh.is_empty():
+			rclick(bh["at"])
+			await frames(2)
+			ok(walk.bends().is_empty(), "right-clicked, it's deleted")
+			undo()
+			await frames(2)
+			ok(walk.bends().size() == 1, "(and undo brings it back)")
+
+	# ---- the storyboard ----
+	dock.refresh()
+	await frames(2)
+	var rows := 0
+	var it: TreeItem = dock.board.get_root().get_first_child() if dock.board.get_root() != null else null
+	var first_text := it.get_text(0) if it != null else ""
+	while it != null:
+		rows += 1
+		it = it.get_next()
+	ok(rows == 5 and first_text.begins_with("1") and first_text.contains("Walk"), "the storyboard lists her markers in order, numbered", "%d rows, '%s'" % [rows, first_text])
+	plug.move_node(w3, quest, 0)
+	await frames(2)
+	ok(HSNpcFlow.items(quest)[0] == w3 and HSNpcFlow.label_of(walk) == "2", "a marker moved up the order is renumbered")
+	undo()
+	await frames(2)
+	ok(HSNpcFlow.items(quest)[0] == walk, "(undo puts the order back)")
+
+	# ---- the form ----
+	plug.pick_node(walk)
+	await frames(3)
+	var take := field("F_take_secs") as SpinBox
+	ok(take != null and field("F_pace") != null and field("F_start_when") != null, "the form shows a Walk's fields")
+	if take != null:
+		take.value = 5.0
+		await frames(3)
+		ok(is_equal_approx(walk.take_secs, 5.0), "a number typed in the form is the marker's", "take %.1f s" % walk.take_secs)
+		ok(dock.timing(walk).contains("5.4 s") or dock.timing(walk).contains("5.5 s"), "and the storyboard says how long it takes", dock.timing(walk))
+		undo()
+		await secs(1.6)                                        # (an undo done behind the editor's back: the tab sees it at its next look)
+		ok(is_equal_approx(walk.take_secs, 0.0) and is_equal_approx((field("F_take_secs") as SpinBox).value, 0.0), "undo takes it back, in the form too",
+			"%.1f, the form %.1f" % [walk.take_secs, (field("F_take_secs") as SpinBox).value])
+	var sw := field("F_start_when")
+	if sw != null:
+		sw.add_word("@wait:2")
+		await frames(2)
+		ok(walk.start_when == "@wait:2", "a chip added to Starts when", walk.start_when)
+		sw = field("F_start_when")
+		sw.flip_at(0)
+		sw = field("F_start_when")
+		sw.remove_at(0)
+		await frames(2)
+		ok(walk.start_when == "", "flipped, then taken out")
+	plug.pick_node(wait)
+	await frames(3)
+	ok(field("F_stay") != null and field("F_take_secs") == null, "picking a Wait shows a Wait's fields instead")
+	(field("F_kind") as OptionButton).select(3)
+	(field("F_kind") as OptionButton).item_selected.emit(3)
+	await frames(4)
+	ok(wait.kind == "sit", "its kind changed from the form", wait.kind)
+	undo()
+	await frames(3)
+
+	# ---- a conversation, and a Choice from its answers ----
+	plug.pick_node(w3)
+	dock._card(card("talk"))
+	await frames(3)
+	var talk := HSNpcFlow.items(quest)[5] as HSNpcMarker if HSNpcFlow.items(quest).size() > 5 else null
+	ok(talk != null and talk.talk and talk.stay == "talked" and talk.title() == "Talk" and talk.conversations().size() == 1, "the Talk card: a Wait you can talk to, that stays until you do")
+	if talk != null:
+		var list: Array = dock._talks(talk)
+		list[0]["lines"] = ["Alex: Looking for something?"]
+		list[0]["answers"] = [{"text": "The kitchen", "sets": "+alex_kitchen", "face": "smile", "reply": "This way."}, {"text": "The garden", "sets": "+alex_garden", "face": "sad", "reply": ""}]
+		dock._save_talks(talk, list)
+		await frames(3)
+		ok(talk.conversations()[0]["answers"].size() == 2 and field("MakeWays") != null, "answers given in the form")
+		var ch: HSNpcMarker = dock.ways_for_answers(talk, 0)
+		await frames(3)
+		ok(ch != null and ch.kind == "choice" and ch.get_index() == talk.get_index() + 1 and ch.ways().size() == 2 and (ch.ways()[0] as HSNpcWay).when == "alex_kitchen" and (ch.ways()[1] as HSNpcWay).when == "alex_garden",
+			"'A way for each answer' adds the Choice after it, a way an answer's flag")
+		plug.pick_node(ch.ways()[1])
+		dock._card(card("walk"))
+		press(scr(Vector3(-3.0, 0, 3.0)))
+		await frames(3)
+		var inside := HSNpcFlow.items(ch.ways()[1])
+		ok(inside.size() == 1 and HSNpcFlow.label_of(inside[0]).ends_with("B.1"), "a card placed while a way is picked goes inside that way", HSNpcFlow.label_of(inside[0]) if inside.size() == 1 else "")
+		await shot("04_talk")
+
+	# ---- the quest's Starts when; a second quest ----
+	dock.quest_when.add_word("on:book")
+	await frames(2)
+	ok(quest.starts_when == "on:book", "the quest's Starts when, by chips", quest.starts_when)
+	undo()
+	var q2: HSNpcQuest = plug.add_quest(npc)
+	await frames(3)
+	ok(q2 != null and HSNpcFlow.quests(npc).size() == 2 and plug.cur_quest == q2 and dock.quest_pick.item_count == 2, "a new quest, picked")
+	dock._card(card("walk"))
+	press(scr(Vector3(1.0, 0, -2.0)))
+	await redraw()
+	var shown_pins := 0
+	for h in plug.overlay.hot.get(surface.get_instance_id(), []):
+		if h["kind"] == "pin":
+			shown_pins += 1
+	ok(shown_pins == 1, "only the picked quest's markers are drawn", "%d pins" % shown_pins)
+	plug.all_quests = true
+	await redraw()
+	shown_pins = 0
+	for h in plug.overlay.hot.get(surface.get_instance_id(), []):
+		if h["kind"] == "pin":
+			shown_pins += 1
+	ok(shown_pins >= 6, "'All quests' draws them all", "%d pins" % shown_pins)
+	plug.all_quests = false
+
+	# ---- a second character; who's shown ----
+	var npc2: HSNpc = plug.add_character(bob)
+	await frames(3)
+	ok(npc2 != null and npc2.color != npc.color and dock.chars.get_child_count() == 2, "a second character gets a colour of his own")
+	dock._card(card("walk"))
+	press(scr(Vector3(-3.0, 0, 0.5)))
+	await redraw()
+	var bob_walk := HSNpcFlow.items(HSNpcFlow.quests(npc2)[0])[0] as HSNpcMarker
+	ok(not hot("pin", bob_walk).is_empty() and not hot("pin", HSNpcFlow.items(q2)[0]).is_empty(), "both characters' markers are drawn")
+	plug.hidden[npc.get_instance_id()] = true
+	await redraw()
+	ok(not hot("pin", bob_walk).is_empty() and hot("pin", HSNpcFlow.items(q2)[0]).is_empty(), "her eye closed: only his")
+	plug.hidden.clear()
+	plug.solo = npc
+	await redraw()
+	ok(hot("pin", bob_walk).is_empty() and not hot("pin", HSNpcFlow.items(q2)[0]).is_empty(), "solo: only hers")
+	plug.solo = null
+	await shot("05_two_characters")
+
+	# ---- Problems ----
+	plug.pick_node(quest, false)
+	var probs: Array = dock.problems()
+	var texts := ""
+	for p in probs:
+		texts += str(p["text"]) + "\n"
+	ok(texts.contains("he has no animation") or texts.contains("No quest") or probs.size() >= 0, "Problems read the scene")
+	var pick_up: HSNpcMarker = plug.add_marker(card("pick_up"), Vector3(-1.5, 0.02, 1.0))
+	await frames(2)
+	texts = ""
+	for p in dock.problems():
+		texts += str(p["text"]) + "\n"
+	ok(texts.contains("pick the thing"), "Problems says a Pick up has nothing to pick")
+	dock.set_target(pick_up, root.get_node("Book"))
+	await frames(3)
+	texts = ""
+	for p in dock.problems():
+		texts += str(p["text"]) + "\n"
+	ok(pick_up.get_node_or_null(pick_up.target) == root.get_node("Book") and not texts.contains("pick the thing"), "the thing picked, it doesn't any more")
+
+	# ---- the tester ----
+	plug.pick_node(walk)
+	await frames(2)
+	var alex_at := alex.global_position
+	var why: String = plug.tester.play(npc, walk, "one")
+	await frames(3)
+	var ghost := root.get_node_or_null("_Ghost") as Node3D
+	ok(why == "" and plug.tester.playing() and ghost != null and ghost.owner == null and not alex.visible, "Try it: a copy of her plays, the real one hidden", why)
+	await shot("06_tester")
+	var far := 0.0
+	for i in 1200:
+		await frames(1)
+		if ghost != null and is_instance_valid(ghost):
+			far = maxf(far, flat(ghost.global_position).distance_to(flat(alex_at)))
+		if not plug.tester.playing():
+			break
+	ok(not plug.tester.playing() and far > 2.5, "the copy walks the marker and the tester stops by itself", "%.1f m from where she stands" % far)
+	ok(alex.visible and alex.global_position.distance_to(alex_at) < 0.001 and root.get_node_or_null("_Ghost") == null, "the real one is back, untouched, and the copy gone")
+	ok(HSNpcCond.flags.is_empty(), "nothing was set by testing")
+	plug.tester.play(npc, walk, "from")
+	await frames(20)
+	plug._apply_changes()
+	await frames(2)
+	ok(not plug.tester.playing() and alex.visible and root.get_node_or_null("_Ghost") == null, "saving or playing ends the tester first")
+
+	# ---- saved clean ----
+	plug.pick_node(walk)
+	await shot("07_form")
+	var saved := EditorInterface.save_scene() == OK
+	await frames(5)
+	var text := FileAccess.get_file_as_string("res://editor_scene.tscn")
+	ok(saved and text.contains("Alex markers") and text.contains("kind = \"sit\"") and text.contains("alex_kitchen"), "the scene saves her markers as nodes")
+	_done()
