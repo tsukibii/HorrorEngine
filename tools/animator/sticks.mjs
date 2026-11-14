@@ -5,6 +5,7 @@
 //   node tools/animator/sticks.mjs --clips punch,swing --set strength=1
 //   node tools/animator/sticks.mjs --body child_small --kind sit --set furniture=own      (a word for a setting)
 //   node tools/animator/sticks.mjs --body hag --clips lie_down --window 2.1,2.7           (only those seconds of it)
+//   node tools/animator/sticks.mjs --kind life --views side,front,top                     (top: from above, the way she faces up the picture)
 // Behind her, what the clip is made for: the seat or the bed, the door and its handle, the thing she reaches for.
 // Draws the three test bodies' skeletons (bodies.mjs); the pictures are for whoever is writing a clip.
 import { writeFileSync } from "fs";
@@ -29,7 +30,7 @@ const limb = s => ({ arm: chain([`${s}_clavicle`, `${s}_uparm`, `${s}_lowarm`, `
   leg: chain([`${s}_upleg`, `${s}_lowleg`, `${s}_foot`, `${s}_ball`]) });
 const L = limb("l"), R = limb("r"), H = body.height, W = H * 1.25, PAD = 0.12;
 const cell = { w: W * SC, h: 0 };
-let svg = "", y0 = 0; const cols = N, width = cols * cell.w * VIEWS.length + 20;
+let svg = "", y0 = 0; const cols = N, width = (cols * cell.w + 20) * VIEWS.length;
 for (const m of list) {
   const c = makeClip(rig, body, X, plan, m, set), F = c.frames, n = F.length;
   { let top = 0.3; for (const fr of F) for (let j = 0; j < rig.J.length; j++) top = Math.max(top, fr.solved.P[j * 3 + 1]); cell.h = (top * 1.1 + PAD) * SC; }   // (a strip as tall as the clip stands)
@@ -38,9 +39,10 @@ for (const m of list) {
   for (let k = 0; k < cols; k++) {
     const f = WIN ? Math.min(n - 1, Math.round((WIN[0] + (WIN[1] - WIN[0]) * k / Math.max(1, cols - 1)) * m.fps)) : Math.min(n - 1, Math.round(k * (m.loop ? n : n - 1) / (m.loop ? cols : cols - 1))), P = F[f].solved.P, p = j => [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]];
     for (const [view, ox] of VIEWS.map((v, vi) => [v, vi * (cols * cell.w + 20) + k * cell.w])) {
-      const cx = ox + cell.w / 2, fy = y0 + cell.h - PAD * SC * 0.5, at = j => { const q = p(j); return [cx + (view === "side" ? q[2] : q[0]) * SC, fy - q[1] * SC]; };
+      // (top: from above, the way she faces up the picture, her right on the picture's right)
+      const cx = ox + cell.w / 2, fy = view === "top" ? y0 + cell.h * 0.55 : y0 + cell.h - PAD * SC * 0.5, at = j => { const q = p(j); return view === "top" ? [cx - q[0] * SC, fy - q[2] * SC] : [cx + (view === "side" ? q[2] : q[0]) * SC, fy - q[1] * SC]; };
       const line = (js, col, w = 2.2) => js.length > 1 ? `<polyline fill="none" stroke="${col}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round" points="${js.map(j => at(j).map(v => v.toFixed(1)).join(",")).join(" ")}"/>` : "";
-      svg += `<line x1="${ox + 4}" y1="${fy}" x2="${ox + cell.w - 4}" y2="${fy}" stroke="#999" stroke-width="1"/>`;
+      if (view !== "top") svg += `<line x1="${ox + 4}" y1="${fy}" x2="${ox + cell.w - 4}" y2="${fy}" stroke="#999" stroke-width="1"/>`;
       // what the clip is made for, behind her: the seat or the bed she ends up on (from her side: its front edge and
       // its top; from the front: its top), the door's handle, where the thing she reaches for is
       { const mt = m.meta || {}, sb = mt.seat || mt.bed, px = v => (cx + v * SC).toFixed(1), py = v => (fy - v * SC).toFixed(1), tone = "#d9cfbd";
@@ -50,11 +52,11 @@ for (const m of list) {
         if (dot) svg += `<circle cx="${px(view === "side" ? dot[2] : dot[0])}" cy="${py(dot[1])}" r="4" fill="#c58a1f"/>` + (mt.door && view === "side" ? `<line x1="${px(dot[2] + 0.06)}" y1="${py(0)}" x2="${px(dot[2] + 0.06)}" y2="${py(2.0)}" stroke="${tone}" stroke-width="3"/>` : ""); }
       // (the far side first: from her right side her left limbs are behind; from the front neither is)
       svg += line(L.leg, "#5b8def") + line(L.arm, "#5b8def") + line(L.thumb, "#5b8def", 1.2) + line(SPINE, "#222", 2.8) + line(R.leg, "#e0524a") + line(R.arm, "#e0524a") + line(R.thumb, "#e0524a", 1.2);
-      const hd = at(ix("c_head")), ht = at(ix("c_head_null")), r = Math.hypot(ht[0] - hd[0], ht[1] - hd[1]) * 0.55, mx = (hd[0] + ht[0]) / 2, my = (hd[1] + ht[1]) / 2;
+      const hd = at(ix("c_head")), ht = at(ix("c_head_null")), r = view === "top" ? body.headR[0] * SC : Math.hypot(ht[0] - hd[0], ht[1] - hd[1]) * 0.55, mx = (hd[0] + ht[0]) / 2, my = (hd[1] + ht[1]) / 2 - (view === "top" ? (body.headC[2] - rig.J[rig.head].at[2]) * SC : 0);
       svg += `<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="${r.toFixed(1)}" fill="none" stroke="#222" stroke-width="1.6"/>`;
       // the nose: where the head faces
       { const D = F[f].solved.D[ix("c_head")], q = D, v = [0, 0, 1], x = q[0], y = q[1], z = q[2], w = q[3], tx = 2 * (y * v[2] - z * v[1]), ty = 2 * (z * v[0] - x * v[2]), tz = 2 * (x * v[1] - y * v[0]);
-        const d = [v[0] + w * tx + y * tz - z * ty, v[1] + w * ty + z * tx - x * tz, v[2] + w * tz + x * ty - y * tx], dx = (view === "side" ? d[2] : d[0]) * r * 1.5, dy = -d[1] * r * 1.5;
+        const d = [v[0] + w * tx + y * tz - z * ty, v[1] + w * ty + z * tx - x * tz, v[2] + w * tz + x * ty - y * tx], dx = (view === "top" ? -d[0] : view === "side" ? d[2] : d[0]) * r * 1.5, dy = -(view === "top" ? d[2] : d[1]) * r * 1.5;
         svg += `<line x1="${mx.toFixed(1)}" y1="${my.toFixed(1)}" x2="${(mx + dx).toFixed(1)}" y2="${(my + dy).toFixed(1)}" stroke="#222" stroke-width="1.6"/>`; }
       if (view === "side") svg += `<text x="${ox + 6}" y="${y0 + 12}" font-size="10" font-family="monospace" fill="#666">${(f / m.fps).toFixed(2)}</text>`;
     }

@@ -172,6 +172,20 @@ export function measure(rig, pts) {
   // ---- the head -----------------------------------------------------------------------------------------------------
   { let lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9], c = 0; for (let i = 0; i < n; i++) if (seg[i] === SEG.head) { c++; for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], P[i * 3 + a]); hi[a] = Math.max(hi[a], P[i * 3 + a]); } }
     B.headR = c ? [(hi[0] - lo[0]) / 2, (hi[1] - lo[1]) / 2, (hi[2] - lo[2]) / 2] : [0.075, 0.11, 0.095]; B.headC = c ? [(hi[0] + lo[0]) / 2, (hi[1] + lo[1]) / 2, (hi[2] + lo[2]) / 2] : at(rig.head); }
+  // The head's shape as it is, not as its box: how far its skin is from the box's middle each way (headAt). A box
+  // takes a goblin's ears and nose for its skull: a hand sent to "the back of its head" by the box hovers a hand's
+  // breadth off it. `full`: everything, ears and nose too (what a hand mustn't be inside); `skull`: the same with what
+  // stands out narrowly taken off (an opening: the least of each direction's neighbours, then the most of those), which
+  // is what a hand is laid on
+  { const NU = 24, NV = 12, full = new Float32Array(NU * NV), c = B.headC, cell = (u, v) => ((u % NU + NU) % NU) + Math.min(NV - 1, Math.max(0, v)) * NU;
+    for (let i = 0; i < n; i++) if (seg[i] === SEG.head) { const d = [P[i * 3] - c[0], P[i * 3 + 1] - c[1], P[i * 3 + 2] - c[2]], r = Math.hypot(d[0], d[1], d[2]); if (r < 1e-5) continue;
+      const k = cell(Math.floor((Math.atan2(d[0], d[2]) / (2 * Math.PI) + 0.5) * NU), Math.floor((Math.asin(d[1] / r) / Math.PI + 0.5) * NV)); if (r > full[k]) full[k] = r; }
+    const near = (a, u, v, f) => { let o = null; for (let dv = -1; dv <= 1; dv++) for (let du = -1; du <= 1; du++) { const vv = v + dv; if (vv < 0 || vv >= NV) continue; const x = a[cell(u + du, vv)]; if (x > 0) o = o == null ? x : f(o, x); } return o ?? 0; };
+    for (let it = 0; it < 6; it++) { const was = full.slice(); let holes = 0; for (let v = 0; v < NV; v++) for (let u = 0; u < NU; u++) if (!(was[cell(u, v)] > 0)) { holes++; let t = 0, w = 0; for (let dv = -1; dv <= 1; dv++) for (let du = -1; du <= 1; du++) { const vv = v + dv; if (vv < 0 || vv >= NV) continue; const x = was[cell(u + du, vv)]; if (x > 0) { t += x; w++; } } if (w) full[cell(u, v)] = t / w; } if (!holes) break; }
+    const least = new Float32Array(NU * NV), skull = new Float32Array(NU * NV);
+    for (let v = 0; v < NV; v++) for (let u = 0; u < NU; u++) least[cell(u, v)] = near(full, u, v, Math.min);
+    for (let v = 0; v < NV; v++) for (let u = 0; u < NU; u++) skull[cell(u, v)] = Math.min(full[cell(u, v)], near(least, u, v, Math.max));
+    B.headMap = c ? { nu: NU, nv: NV, full: Array.from(full), skull: Array.from(skull) } : null; }
   // ---- the weight -------------------------------------------------------------------------------------------------
   // the body as slabs and tubes (a stadium model): its volume, and a weight at a body's density. Not a scale's
   // reading: a number that says thin, ordinary or heavy the same way for every character
@@ -193,4 +207,15 @@ export function summary(B) {
   return { height: cm(B.height), leg: cm(B.leg), weight: Math.round(B.mass * 10) / 10, bmi: Math.round(B.bmi * 10) / 10, build: Math.round(B.build * 100) / 100,
     bust: cm(B.girth.bust), underbust: cm(B.girth.under), waist: cm(B.girth.waist), hips: cm(B.girth.hips), thigh: cm(2 * Math.PI * B.r.thighTop), shoulders: cm(2 * B.shoulderHalf),
     bustOut: cm(B.bustOut), bellyOut: cm(B.bellyOut), seatOut: cm(B.seatOut), from: B.from };
+}
+
+/** how far the head's skin is from its middle (body.headC) the way `d` (the head's own axes: x her left, y up, z the
+    way she faces), metres: off the head's own shape (measure()'s headMap), between its grid's directions. `full`:
+    with her ears and nose; else her skull alone. Without a map (no head points), the box's own ellipsoid. */
+export function headAt(body, d, full = false) {
+  const l = Math.hypot(d[0], d[1], d[2]) || 1, x = d[0] / l, y = d[1] / l, z = d[2] / l, M = body.headMap;
+  if (!M) { const R = body.headR; return 1 / Math.hypot(x / R[0], y / R[1], z / R[2]); }
+  const a = full ? M.full : M.skull, fu = (Math.atan2(x, z) / (2 * Math.PI) + 0.5) * M.nu - 0.5, fv = Math.min(M.nv - 1, Math.max(0, (Math.asin(Math.max(-1, Math.min(1, y))) / Math.PI + 0.5) * M.nv - 0.5));
+  const u0 = Math.floor(fu), v0 = Math.floor(fv), tu = fu - u0, tv = fv - v0, at = (u, v) => a[((u % M.nu) + M.nu) % M.nu + Math.min(M.nv - 1, Math.max(0, v)) * M.nu];
+  return (at(u0, v0) * (1 - tu) + at(u0 + 1, v0) * tu) * (1 - tv) + (at(u0, v0 + 1) * (1 - tu) + at(u0 + 1, v0 + 1) * tu) * tv;
 }

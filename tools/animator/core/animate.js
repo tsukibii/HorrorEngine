@@ -10,12 +10,13 @@ import { crawl, crawlIdle, scuttle } from "./quad.js";
 import { peeking, mouthing, lookAround, knocking, cowering } from "./acting.js";
 import { scares } from "./scare.js";
 import { fighting } from "./fight.js";
+import { living, carrying } from "./life.js";
 import { poses, tracksOf } from "./clips.js";
 import { unbake, writeClips, record } from "./bake.js";
 import { proxies, clearance, worstArm } from "./clear.js";
 import { softRig, softMotion, softPlan, softUse } from "./soft.js";
 
-export const VERSION = 4;                                     // (4: the furniture by her size, ANIMATOR_V3 §10: a small body gets onto a person's seat and bed and reaches up to a person's handle, the lie-down's arms; 3: animations v3's clips, docs/ANIMATOR_V3.md; 2: the soft bones are jiggle bones, each at its flesh's root; 1: springs at its middle)
+export const VERSION = 5;                                     // (5: life and carrying, ANIMATOR_V3 §11, §12: the flourishes laid over her other clips and the poses a thing is carried in, the door clips' shoulder, arm and grip; 4: the furniture by her size, ANIMATOR_V3 §10: a small body gets onto a person's seat and bed and reaches up to a person's handle, the lie-down's arms; 3: animations v3's clips, docs/ANIMATOR_V3.md; 2: the soft bones are jiggle bones, each at its flesh's root; 1: springs at its middle)
 // (furniture: what her seat, bed, door handle and table are, acts.js furniture(): "fit" a person's wherever her body
 //  can use it, "own" her own size, "person" a person's whatever she is; set.seat, set.bed, set.handle, set.table say one in metres)
 export const DEFAULTS = { style: null, strength: 0.5, weight: 0, soft: 1, bounce: 0.5, furniture: "fit" };
@@ -46,7 +47,7 @@ export function attach(glb, { mhrRig = null } = {}) {
 /** the clips of a studied character, as makers (each { name, loop, n, fps, ctrl(frame), events, meta }). `only`:
     kinds to make (KINDS); the acts with one hand or one side also made mirrored (`_l`: the left hand, to her left;
     the head to her right) */
-export const KINDS = ["idle", "walk", "run", "sit", "sleep", "open", "reach", "sneak", "crawl", "creature", "peek", "scare", "fight", "eat", "acting"];
+export const KINDS = ["idle", "walk", "run", "sit", "sleep", "open", "reach", "sneak", "crawl", "creature", "peek", "scare", "fight", "eat", "acting", "life", "carry"];
 export function makers(rig, body, set, only = null, X = null) {
   const list = [], want = n => !only || only.includes(n);
   if (want("idle")) list.push(idle(rig, body, set, X));
@@ -67,6 +68,9 @@ export function makers(rig, body, set, only = null, X = null) {
   if (want("fight")) { const f = fighting(rig, body, set, X); list.push(...f, ...f.filter(c => c.name !== "hit_react").map(c => mirrored(c, c.name + "_l"))); }
   if (want("eat")) list.push(...both(mouthing(rig, body, set, X)));
   if (want("acting")) list.push(...lookAround(rig, body, set, X), ...knocking(rig, body, set, X), ...cowering(rig, body, set, X));
+  // life and carrying (docs/ANIMATOR_V3.md §11, §12): laid over her other clips by the game's layer, not played instead of them
+  if (want("life")) { const l = living(rig, body, set, X); list.push(...l, ...l.filter(c => c.meta.life.hand === "r" || c.meta.life.side).map(c => mirrored(c, c.name + "_l"))); list.skipped = l.skipped; }   // (skipped: the flourishes her body can't do cleanly: not made for her)
+  if (want("carry")) { const k = carrying(rig, body, set, X); list.push(...k, ...k.map(c => mirrored(c, c.name + "_l"))); }
   return list;
 }
 
@@ -85,10 +89,11 @@ export function makeClip(rig, body, X, plan, maker, set) {
 export function animate(glb, { settings = {}, mhrRig = null, only = null, rigOnly = false } = {}) {
   const last = record(glb)?.settings || {}, ctx = prepare(glb, { mhrRig }), { rig, body, X, plan, undo } = ctx, set = settingsFor(glb, body, { ...last, ...settings });
   const clips = [], stats = {};
-  if (!rigOnly) for (const m of makers(rig, body, set, only, X)) { const c = makeClip(rig, body, X, plan, m, set); clips.push(c.tracks); stats[m.name] = c.stats; }
+  const list = rigOnly ? [] : makers(rig, body, set, only, X);
+  for (const m of list) { const c = makeClip(rig, body, X, plan, m, set); clips.push(c.tracks); stats[m.name] = c.stats; }
   const palm = s => { const A = rig.arm(s); return [0, 1, 2].map(k => +(A.handDir[k] * 0.085 * (A.handLen / 0.17) + A.palm0[k] * 0.022).toFixed(4)); };   // where a held thing sits in a hand, from the wrist's bone
   const rec = { version: VERSION, tool: "HorrorStudio Animator v2", settings: set, body: summary(body), furniture: furniture(body, set), soft: plan.map(b => { const u = softUse(b, set), r4 = v => +v.toFixed(4);    // each soft bone as a jiggle bone, for whoever swings it live (the look plugin's HSSoftJiggle): its rod and the plugin's numbers
-      return { bone: b.name, parent: rig.J[b.parent].name, amount: +b.amount.toFixed(2), axis: b.dir.map(r4), length: r4(b.len), stiffness: r4(u.stiff), damping: r4(u.damp), gravity: r4(u.grav), gain: r4(u.gain), limit: r4(u.limit) }; }), palm: { l: palm("l"), r: palm("r") } };
+      return { bone: b.name, parent: rig.J[b.parent].name, amount: +b.amount.toFixed(2), axis: b.dir.map(r4), length: r4(b.len), stiffness: r4(u.stiff), damping: r4(u.damp), gravity: r4(u.grav), gain: r4(u.gain), limit: r4(u.limit) }; }), palm: { l: palm("l"), r: palm("r") }, ...(list.skipped && list.skipped.length ? { skipped: list.skipped } : {}) };   // (skipped: the flourishes her body can't do cleanly, and why: not made for her)
   writeClips(glb, rig, clips, rec, undo);
-  return { rig, body, clips, plan, report: { body: rec.body, settings: set, furniture: rec.furniture, clips: rec.clips, soft: rec.soft, stats, softVerts: plan.moved || 0 } };
+  return { rig, body, clips, plan, report: { body: rec.body, settings: set, furniture: rec.furniture, clips: rec.clips, soft: rec.soft, stats, softVerts: plan.moved || 0, skipped: rec.skipped || [] } };
 }

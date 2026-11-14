@@ -13,7 +13,8 @@
 // three people, then the same clips on five creatures' bodies (bodies.mjs CREATURE_BODIES: the Studio's creature cards
 // made in node): the elbow's hinge MHR's own on any body, no arm wrung along its length, nothing turning faster than
 // it may, nothing under the floor, no arm asked for more than its length, a wall clear of a hunched face, a hand that
-// gets to what it reaches for.
+// gets to what it reaches for. And life and carrying (§11, §12; section 6e): the flourishes on every body and laid over
+// a walk and a seat by the layer (layer.js), the carry poses.
 import { testBody, bodyGlb, mhrRigBuffer, TEST_BODIES, CREATURE_BODIES, CHILD_BODIES } from "./bodies.mjs";
 import { furniture, PERSONS, FEET_ON } from "./core/acts.js";
 import { parseGlb } from "./core/glb.js";
@@ -24,22 +25,33 @@ import { jiggleTick, ringOf, stiffOf, softUse, TICK } from "./core/soft.js";
 import { isBodyBone } from "./core/clips.js";
 import { skinned, partKind, ELBOW } from "./core/rig.js";
 import { Q, V, DEG } from "./core/m.js";
+import { judge, LIMITS, headOf } from "./core/life.js";
+import { lay, sample, fk, parts } from "./core/layer.js";
+import { armDepth } from "./core/clear.js";
 
 const VERBOSE = process.argv.includes("--verbose"), t0 = Date.now(), errs = [], MHR = mhrRigBuffer();
 const ok = (cond, what, got = "") => { if (!cond) errs.push(`${what}${got !== "" ? `: ${got}` : ""}`); else if (VERBOSE) console.log(`  ok  ${what}${got !== "" ? `: ${got}` : ""}`); };
 const say = t => console.log("  " + t);
+let lapAt = Date.now(); const lap = what => { if (VERBOSE || process.env.LAPS) console.log(`  [${((Date.now() - lapAt) / 1000).toFixed(1)} s] ${what}`); lapAt = Date.now(); };
 const NAMES = ["idle_loop", "walk_loop", "run_loop", "sit_down", "sit_loop", "stand_up", "lie_down", "sleep_loop", "get_up", "lie_down_r", "sleep_r_loop", "get_up_r", "open_push", "open_pull", "open_slide",
   "open_push_l", "open_pull_l", "open_slide_l", "reach_low", "reach_mid", "reach_high", "reach_low_l", "reach_mid_l", "reach_high_l"];
 // animations v3 (docs/ANIMATOR_V3.md §2)
 const V3 = ["sneak_loop", "crouch_loop", "crawl_loop", "crawl_idle_loop", "creep_loop", "creep_idle_loop", "scuttle_loop", "peek_out", "peek_loop", "peek_back", "peek_out_l", "peek_l_loop", "peek_back_l",
   "scare_lunge", "scare_loom", "scare_snap", "scare_claw", "punch", "swing", "hit_react", "punch_l", "swing_l", "eat", "drink", "eat_l", "drink_l", "look_around", "knock", "cower_loop"];
 NAMES.push(...V3);
+// life and carrying (docs/ANIMATOR_V3.md §11, §12): laid over the others, not played instead of them; a flourish a body can't do cleanly isn't made for it
+const LIFE = ["look_hand", "scratch_head", "rub_neck", "scratch_arm", "rub_nose", "wipe_brow", "check_wrist", "brush_off", "tuck_hair", "chin", "scratch_belly", "hand_hip", "flex_hand", "stretch", "rub_hands", "roll_shoulders", "sigh", "glance", "neck_stretch"].map(n => "life_" + n);
+const LIFE_TWO = ["life_stretch", "life_rub_hands", "life_roll_shoulders", "life_sigh", "life_neck_stretch"], LIFE_ALWAYS = ["life_flex_hand", "life_roll_shoulders", "life_sigh", "life_glance", "life_neck_stretch"];
+const CARRY = ["side", "front", "chest", "shoulder", "raised"].flatMap(n => ["carry_" + n, "carry_" + n + "_l"]), LAID = /^(life_|carry_)/, acts = C => Object.keys(C).filter(k => !LAID.test(k));
 const FAST = /^(scare_|punch|swing)/;                         // a blow or a scare is thrown: its arms may turn faster in a frame than anything else does
 const bytes = {}, ctxs = {}, clips = {}, sets = {};
 const clamp1 = x => Math.max(-1, Math.min(1, x));
 const quatAngle = (a, b, i, j) => { const d = Math.abs(a[i] * b[j] + a[i + 1] * b[j + 1] + a[i + 2] * b[j + 2] + a[i + 3] * b[j + 3]); return 2 * Math.acos(Math.min(1, d)); };
 const trackOf = (rig, c, name) => c.tracks.find(t => rig.J[t.joint].name === name);
-const all = (ctx, set, only) => Object.fromEntries(makers(ctx.rig, ctx.body, set, only, ctx.X).map(m => { const c = makeClip(ctx.rig, ctx.body, ctx.X, ctx.plan, m, set); return [m.name, { ...c.tracks, stats: c.stats, frames: c.frames, maker: m }]; }));
+// (a flourish's poses aren't kept, only its controls: eleven bodies' worth of every frame of 33 more clips is more than node's heap)
+const all = (ctx, set, only) => { const ms = makers(ctx.rig, ctx.body, set, only, ctx.X), o = Object.fromEntries(ms.map(m => { const c = makeClip(ctx.rig, ctx.body, ctx.X, ctx.plan, m, set), life = /^life_/.test(m.name);
+    return [m.name, { ...c.tracks, stats: c.stats, ...(life ? { ctrls: c.frames.map(f => f.c) } : { frames: c.frames }), maker: { ...m, frames: null } }]; }));
+  Object.defineProperty(o, "skipped", { value: ms.skipped || [] }); return o; };
 
 // ---- 1. the bodies, measured ----------------------------------------------------------------------------------------------
 for (const n of Object.keys(TEST_BODIES)) {
@@ -58,6 +70,7 @@ ok(W.body.bustOut > 0.02 && M.body.bustOut < 0.015 && C.body.bellyOut > W.body.b
   `bust out ${(W.body.bustOut * 100).toFixed(1)} and ${(M.body.bustOut * 100).toFixed(1)} cm; belly out ${(C.body.bellyOut * 100).toFixed(1)} and ${(W.body.bellyOut * 100).toFixed(1)} cm`);
 ok(W.body.femme > 0.4 && M.body.femme < 0.2, "the shape itself says which is which (for a file with no recipe)", `${W.body.femme.toFixed(2)} and ${M.body.femme.toFixed(2)}`);
 
+lap("before 2. the soft bones");
 // ---- 2. the soft bones and their skin weights ---------------------------------------------------------------------------------
 ok(!M.plan.some(b => b.kind === "bust") && W.plan.filter(b => b.kind === "bust").length === 2, "no bust bones on the man, two on the woman");
 const amt = (ctx, kind) => Math.max(0, ...ctx.plan.filter(b => b.kind === kind).map(b => b.amount));
@@ -72,10 +85,11 @@ for (const [n, ctx] of Object.entries(ctxs)) {
   ok(soft.skin > 400 && soft.cover > 200, `${n}: skin and garment both go with the soft bones`, `${soft.skin} points of skin, ${soft.cover} of the garment`);
 }
 
+lap("before 3. the clips");
 // ---- 3. the clips ---------------------------------------------------------------------------------------------------------
 for (const [n, ctx] of Object.entries(ctxs)) {
   const set = settingsFor(ctx.glb, ctx.body, {}); clips[n] = all(ctx, set); sets[n] = set;
-  ok(NAMES.every(c => clips[n][c]) && Object.keys(clips[n]).length === NAMES.length, `${n}: every clip made`, Object.keys(clips[n]).length);
+  ok(NAMES.every(c => clips[n][c]) && acts(clips[n]).length === NAMES.length, `${n}: every clip made`, Object.keys(clips[n]).length);
   ok(Math.sign(set.style) === (n === "skinny_man" ? -1 : 1), `${n}: the walk's style starts from the body`, set.style);
   let jump = 0, where = "", nan = 0, face = 0, fast = 0, fastWhere = "";
   for (const c of Object.values(clips[n])) for (const t of c.tracks) { const nm = ctx.rig.J[t.joint].name; if (!isBodyBone(nm)) face++;
@@ -98,6 +112,7 @@ for (const [n, ctx] of Object.entries(ctxs)) {
   ok(apart(last(clips[n].lie_down), key(clips[n].sleep_loop, 0)) < 5 && apart(key(clips[n].get_up, 0), key(clips[n].sleep_loop, 0)) < 5, `${n}: lie_down ends as sleep_loop lies, get_up starts there`, `${apart(last(clips[n].lie_down), key(clips[n].sleep_loop, 0)).toFixed(1)} and ${apart(key(clips[n].get_up, 0), key(clips[n].sleep_loop, 0)).toFixed(1)} degrees off`);
 }
 
+lap("before 4. the walk and the run");
 // ---- 4. the walk and the run ------------------------------------------------------------------------------------------------
 const gaitFacts = (ctx, c) => {
   const R = ctx.rig, F = c.frames, n = F.length, L = R.legL, P = (f, j) => [F[f].solved.P[j * 3], F[f].solved.P[j * 3 + 1], F[f].solved.P[j * 3 + 2]];
@@ -125,6 +140,7 @@ for (const [n, ctx] of Object.entries(ctxs)) {
 ok(walkOf.chubby_woman.speed < walkOf.normal_woman.speed - 0.08 && walkOf.chubby_woman.width > walkOf.normal_woman.width + 0.015, "the heavier woman walks slower and a little wider", `${walkOf.chubby_woman.speed.toFixed(2)} and ${walkOf.normal_woman.speed.toFixed(2)} m/s; ${(walkOf.chubby_woman.width * 100).toFixed(1)} and ${(walkOf.normal_woman.width * 100).toFixed(1)} cm`);
 ok(walkOf.chubby_woman.width < 0.16, "but not wide: the thighs squash instead", `${(walkOf.chubby_woman.width * 100).toFixed(1)} cm between the ankles`);
 
+lap("before 5. the sliders");
 // ---- 5. the sliders -------------------------------------------------------------------------------------------------------
 {
   const f = (set, only = ["walk"]) => all(W, { ...settingsFor(W.glb, W.body, {}), ...set }, only), g = c => gaitFacts(W, c.walk_loop);
@@ -142,6 +158,7 @@ ok(walkOf.chubby_woman.width < 0.16, "but not wide: the thighs squash instead", 
   ok(b(b1) > b(s1) * 1.03 && b(b0) < b(s1) * 0.85, "bounce: a bust that settles at once moves less in the walk, one left to ring moves more", `${b(b0)}, ${b(s1)}, ${b(b1)} mm`);
 }
 
+lap("before 5b. the soft bones are jiggle bones");
 // ---- 5b. the soft bones are jiggle bones (JiggleBones' way: DECISIONS 2026-11-13, the hands and the jiggle) -------------------
 { // the plugin's rule itself: its default bone (stiffness 1, damping 0) at 60 ticks a second
   const d = ringOf(1, 0); ok(Math.abs(d.f - 3.669) < 0.01 && Math.abs(d.half - 0.1526) < 0.001, "JiggleBones' default bone (stiffness 1, damping 0) rings at 3.67 Hz and halves in 0.15 s by the rule as written here", `${d.f.toFixed(2)} Hz, ${d.half.toFixed(3)} s`);
@@ -172,6 +189,7 @@ ok(walkOf.chubby_woman.width < 0.16, "but not wide: the thighs squash instead", 
   ok(ring.f > 2.2 && ring.f < 3.6 && ring.half > 0.12 && ring.half < 0.3, "a breast rings a few times and stops, as the plugin's own default does", `${ring.f.toFixed(1)} Hz, half its swing gone in ${ring.half.toFixed(2)} s`);
 }
 
+lap("before 6. nothing through itself");
 // ---- 6. nothing through itself, and what moves ----------------------------------------------------------------------------------
 for (const [n, ctx] of Object.entries(ctxs)) for (const c of ["idle_loop", "walk_loop", "run_loop"]) ok(clips[n][c].stats.armInside <= 1, `${n} ${c}: no arm inside the body`, `${clips[n][c].stats.armInside} mm`);
 ok(clips.chubby_woman.walk_loop.stats.arm_l > clips.skinny_man.walk_loop.stats.arm_l + 4, "the chubby woman carries her arms further out than the skinny man", `${clips.chubby_woman.walk_loop.stats.arm_l} and ${clips.skinny_man.walk_loop.stats.arm_l} degrees`);
@@ -213,6 +231,7 @@ const peekHands = (R, C) => { const e = C.peek_out.meta.peek.edge, hs = Math.max
       bend = Math.max(bend, Math.acos(clamp1(V.dot(V.norm(V.sub(I["wristAt_" + s], I["elbowAt_" + s])), I["handDir_" + s]))) / DEG); } }
   const I = C.peek_loop.frames[0].pose.info; return { deep, bend, hs, onEnd: I.palm_r[0], onBack: I.palm_l[2] }; };
 const peekSays = h => `${(h.deep * 1000).toFixed(0)} mm into it at the most (a fingertip pressed on it), the palms ${h.onEnd.toFixed(2)} and ${h.onBack.toFixed(2)} square to it, a wrist bent ${h.bend.toFixed(0)} degrees at the most`;
+lap("before 6b. animations v3");
 // ---- 6b. animations v3 (docs/ANIMATOR_V3.md): the low gaits, all fours, peeking, the scares, the fights, the small acts ---------
 const v3 = {};
 for (const [n, ctx] of Object.entries(ctxs)) {
@@ -296,6 +315,7 @@ for (const [n, ctx] of Object.entries(ctxs)) {
   say(`v3: ${Object.entries(v3).map(([n, o]) => `${n} sneaks ${o.sneak.toFixed(2)}, creeps ${o.creep.toFixed(2)}, crawls ${o.crawl.toFixed(2)} m/s`).join("; ")}`); }
 
 const others = {};                                            // the creatures' and the children's clips, for §6d
+lap("before 6c. creatures");
 // ---- 6c. creatures (DECISIONS 2026-11-14: "animations for creatures (our monsters)"; docs/ANIMATOR_V3.md §8.4) -----------------
 // The clips are made from the body, and a creature's body is not a person's: a goblin's arms are long for its legs, a
 // ghoul's and a hag's backs hunched, an ogre's hands twice a person's for its height, an imp knee high. What was built
@@ -320,7 +340,7 @@ const others = {};                                            // the creatures' 
     const ctx = prepare(parseGlb(bodyGlb(testBody(n))), { mhrRig: MHR }), R = ctx.rig, b = ctx.body, set = settingsFor(ctx.glb, b, {}), C = all(ctx, set), tips = tipsOf(R), sc = b.height / 1.63, arm = b.upper + b.fore;
     others[n] = { ctx, C, set };
     const at = (c, f, nm) => { const P = c.frames[f].solved.P, j = R.ix.get(nm); return [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]]; };
-    ok(NAMES.every(c => C[c]) && Object.keys(C).length === NAMES.length && ctx.rig.unturned && Math.abs(b.height - testBody(n).def.height) < 0.01, `${n}: a creature's body measured, every clip made`, `${(b.height * 100).toFixed(0)} cm, ${b.mass.toFixed(0)} kg, arms ${(arm * 100).toFixed(0)} cm, legs ${(b.leg * 100).toFixed(0)} cm`);
+    ok(NAMES.every(c => C[c]) && acts(C).length === NAMES.length && ctx.rig.unturned && Math.abs(b.height - testBody(n).def.height) < 0.01, `${n}: a creature's body measured, every clip made`, `${(b.height * 100).toFixed(0)} cm, ${b.mass.toFixed(0)} kg, arms ${(arm * 100).toFixed(0)} cm, legs ${(b.leg * 100).toFixed(0)} cm`);
     // the elbow: MHR's own hinge whatever the rest pose's bend has become, and no arm wrung along its length standing
     const A = R.armR, bend = A.bend0 / DEG, [tu, tf] = twistOf(R, C.idle_loop.frames[0], "r"), [tul, tfl] = twistOf(R, C.idle_loop.frames[0], "l");
     ok(Math.acos(clamp1(V.dot(A.h0, V.norm(V.perp(ELBOW.h, A.du0))))) / DEG < 3 && Math.abs(tu) < 50 && Math.abs(tf) < 50 && Math.abs(tu + tul) < 2 && Math.abs(tf + tfl) < 3, `${n}: the elbow's hinge is MHR's own though its elbow is bent only ${bend.toFixed(0)} degrees at rest; standing, no arm is wrung`, `the upper arm ${tu.toFixed(0)}, the forearm ${tf.toFixed(0)} degrees`);
@@ -370,6 +390,7 @@ const others = {};                                            // the creatures' 
   say("creatures: " + says.join("; "));
 }
 
+lap("before 6d. the furniture by her size");
 // ---- 6d. the furniture by her size (DECISIONS 2026-11-14, short NPCs; docs/ANIMATOR_V3.md §10) ----------------------------------
 // "children npcs (really short npcs), can you figure out a way to adjust the animations proportionally to height":
 // a seat, a bed, a door handle and a table are a person's (45, 45, 100, 86 cm) wherever the body can use them, and the
@@ -426,13 +447,76 @@ const others = {};                                            // the creatures' 
   say("furniture: " + says.join("; "));
 }
 
+lap("before 6e. life and carrying");
+// ---- 6e. life and carrying (DECISIONS 2026-11-14, later; docs/ANIMATOR_V3.md §11, §12) ------------------------------------------
+// "'add life' animations ... looking at an object they are holding, scratching, little life flourish stuff ... as ik
+// blendables meaning if the lower body and chest is in a position e.g. walking or sitting, we can still blend in these
+// animations ... use ik to allow them to hold objects in any of the current animation positions". The flourishes
+// (life.js) as clips, on every body: started and ended in the idle, nothing below the chest moved, the hand on what it
+// touches, no arm in the body or the head, nothing turning too fast. Then the layer (layer.js, the rule Godot's
+// HSGesture runs): each laid over a walk and a seat: the legs and the pelvis the base's to the bit, the hand still on
+// what it touches. And the carry poses.
+{
+  const says = [], each = { ...Object.fromEntries(Object.keys(TEST_BODIES).map(n => [n, { ctx: ctxs[n], C: clips[n], set: sets[n] }])), ...others };
+  for (const [n, { ctx, C }] of Object.entries(each)) {
+    const R = ctx.rig, b = ctx.body, X = ctx.X, person = !!TEST_BODIES[n] || !!CHILD_BODIES[n], made = LIFE.filter(c => C[c]), skipped = C.skipped || [], G = parts(R);
+    // which she has
+    ok(made.length + skipped.length === LIFE.length && skipped.every(k => LIFE.includes(k.name) && k.why && !C[k.name]) && LIFE_ALWAYS.every(c => C[c]) && (person ? skipped.length === 0 : made.length >= 13)
+      && made.every(c => LIFE_TWO.includes(c) ? !C[c + "_l"] : !!C[c + "_l"]) && CARRY.every(c => C[c]),
+      `${n}: ${person ? "every flourish" : "the flourishes its body can do cleanly"}, the left hand's as mirrors, and the five carry poses with theirs`, `${made.length} of ${LIFE.length}${skipped.length ? `; not ${skipped.map(k => `${k.name.replace("life_", "")} (${k.why}, ${k.by} mm)`).join(", ")}` : ""}`);
+    const key = (c, k) => { const o = {}; for (const t of c.tracks) if (t.r) o[R.J[t.joint].name] = t.r.subarray(k * 4, k * 4 + 4); return o; };
+    const apart = (a, b2) => { let w = 0; for (const nm of Object.keys(a)) if (b2[nm] && !/^soft_/.test(nm)) w = Math.max(w, quatAngle(a[nm], b2[nm], 0, 0)); return w / DEG; };
+    const idle0 = key(C.idle_loop, 0), below = new Set(); { const add = j => { below.add(j); for (const k of R.J[j].kids) if (!R.spine.includes(k) && !R.J[k].soft) add(k); }; add(R.pelvis); }
+    let off = 0, offWhere = "", moved = 0, movedWhere = "", bad = 0, badWhere = "", miss = 0, missWhere = "", recs = 0, mirrorOff = 0;
+    for (const name of [...made, ...made.filter(c => C[c + "_l"]).map(c => c + "_l")]) { const c = C[name], L = c.meta.life, left = /_l$/.test(name), sides = L.hand === "both" ? ["l", "r"] : L.hand ? [L.hand] : [];
+      // starts and ends as the idle stands (the left hand's: the idle in a mirror, the weight on the other leg)
+      const s0 = apart(key(c, 0), idle0), e0 = apart(key(c, c.keys - 1), key(c, 0)); if (left) mirrorOff = Math.max(mirrorOff, s0); else if (s0 > off) { off = s0; offWhere = name; } if (e0 > off) { off = e0; offWhere = name + " (its end)"; }
+      // nothing below her chest moves in it
+      for (const t of c.tracks) if (below.has(t.joint)) { if (t.r) for (let k = 1; k < c.keys; k++) { let a = 0; for (let q = 0; q < 4; q++) a = Math.max(a, Math.abs(t.r[k * 4 + q] - t.r[q])); a *= 2 / DEG; if (a > moved) { moved = a; movedWhere = `${name} ${R.J[t.joint].name}`; } }   // (by its numbers: two float32 quaternions that are the same still read 0.04 degrees apart as an angle)
+        if (t.t) for (let k = 1; k < c.keys; k++) { const d = Math.hypot(t.t[k * 3] - t.t[0], t.t[k * 3 + 1] - t.t[1], t.t[k * 3 + 2] - t.t[2]) * 1000; if (d > moved) { moved = d; movedWhere = `${name} ${R.J[t.joint].name} (moved, mm)`; } } }
+      // clean: no arm in her, no hand in her head, nothing turning too fast, no arm folded flat
+      const j = judge(R, b, X, c.ctrls, sides.length ? sides : ["r"]); if (j.bad > bad) { bad = j.bad; badWhere = `${name}: ${j.why}`; }
+      if (L.touch) { if (L.miss > miss) { miss = L.miss; missWhere = name; } const bone = R.ix.get(L.touch.side ? `${L.touch.side}_${L.touch.bone}` : L.touch.bone); if (bone == null || !(L.touch.from < L.touch.to) || L.touch.point.length !== 3 || !L.touch.point.every(Number.isFinite) || L.hand !== (left ? "l" : "r")) recs++; }
+      if (!(L.in > 0 && L.out > 0 && L.in + L.out < c.secs && Array.isArray(L.over) && L.over.length && typeof L.free === "boolean" && L.weight > 0 && ["add", "look", ""].includes(L.head))) recs++; }
+    ok(off < 2 && mirrorOff < 20, `${n}: every flourish starts and ends as the idle stands`, `${off.toFixed(1)} degrees off at the most (${offWhere}); the left hand's ${mirrorOff.toFixed(0)}: the weight on the other leg`);
+    ok(moved < 0.02, `${n}: nothing below her chest moves in a flourish`, `${moved.toFixed(3)} (${movedWhere})`);
+    ok(bad <= LIMITS.pass, `${n}: no flourish puts an arm in her or a hand in her head, turns a bone more than 34 degrees in a frame or folds an arm flat`, `${(bad * 1000).toFixed(1)} mm over at the most${badWhere ? ` (${badWhere})` : ""}`);
+    ok(miss <= LIMITS.miss * 1000 && recs === 0, `${n}: a hand that touches her is on what it touches, and each flourish's record says what the layer needs`, `${miss.toFixed(1)} mm off at the most (${missWhere})`);
+    // the layer: each flourish laid over a walk and a seat
+    let legs = 0, ends = 0, endsWhere = "", held = 0, heldWhere = "", loose = 0, looseWhere = "", carried = 0, laid = 0, bend = 0, bendWhere = "";
+    for (const name of made) { const c = C[name], L = c.meta.life, life = { meta: L, secs: c.secs, at: t => sample(R, c, t), first: sample(R, c, 0) }, takes = new Set(G.add); for (const s of ["l", "r"]) { takes.add(G.clav[s]); if (L.hand === s || L.hand === "both") for (const j of G.arm[s]) takes.add(j); }
+      for (const baseName of ["walk_loop", "sit_loop"]) { if (!L.over.includes(baseName === "walk_loop" ? "walk" : "sit")) continue; const bc = C[baseName];
+        for (const tb of [0.1, 0.37 * bc.secs, 0.71 * bc.secs]) { const base = sample(R, bc, tb), th = L.touch ? (L.touch.from + L.touch.to) / 2 : c.secs / 2;
+          for (const t of [0, th, c.secs]) { const o = lay(R, base, life, t); laid++;
+            for (let j = 0; j < R.J.length; j++) { const same = o.pose[j].r === base[j].r && o.pose[j].t === base[j].t; if (!takes.has(j) && !same) legs++;
+              if (t !== th) { const a = quatAngle(o.pose[j].r, base[j].r, 0, 0) / DEG; if (a > ends) { ends = a; endsWhere = `${name} over ${baseName} ${R.J[j].name}`; } } }
+            if (t === th && L.touch) { const N = fk(R, o.pose), A = R.arm(L.hand), pt = V.add(N.P[A.hand], Q.rot(N.W[A.hand], L.touch.point)), e = V.dist(pt, o.touch.target) * 1000, wo = lay(R, base, life, t, { ik: false }), N2 = fk(R, wo.pose), e2 = V.dist(V.add(N2.P[A.hand], Q.rot(N2.W[A.hand], L.touch.point)), o.touch.target) * 1000;
+              if (e > held) { held = e; heldWhere = `${name} over ${baseName}`; } if (e2 > loose) { loose = e2; looseWhere = `${name} over ${baseName}`; } carried = Math.max(carried, o.touch.moved * 1000);
+              const df = V.norm(V.sub(N.P[A.hand], N.P[A.low])), hd = Q.rot(N.W[A.hand], Q.rot(Q.conj(R.J[A.hand].q0), A.handDir)), bd = Math.acos(clamp1(V.dot(df, hd))) / DEG; if (bd > bend) { bend = bd; bendWhere = `${name} over ${baseName}`; } } } } } }
+    ok(legs === 0, `${n}: laid over a walk and a seat, her pelvis, her legs and her other arm are the base's to the bit`, `${laid} poses, ${legs} joints changed that the layer doesn't take`);
+    ok(ends < 1.5, `${n}: laid, a flourish starts from the pose she's in and gives it back`, `${ends.toFixed(2)} degrees off at the most (${endsWhere})`);
+    ok(held < 4 && bend < 80, `${n}: laid over a walk and a seat, a hand that touches her is still on what it touches`, `${held.toFixed(1)} mm off at the most (${heldWhere}), where the blend alone leaves it ${loose.toFixed(0)} mm off (${looseWhere}); carried ${carried.toFixed(0)} mm at the most, a wrist bent ${bend.toFixed(0)} degrees (${bendWhere})`);
+    // the carry poses: where each holds her hand, clear of her
+    { const at = (c, j) => { const P = c.frames[0].solved.P; return [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]]; }, A = R.armR, arm = b.upper + b.fore, sh = c => at(c, A.up), el = c => at(c, A.low), wr = c => at(c, A.hand), cdeep = c => { const F = c.frames[0]; return Math.max(armDepth(R, X, F.pose, F.solved, "r", 0, 0) - LIMITS.elbow, armDepth(R, X, F.pose, F.solved, "r", 1, 1) - LIMITS.rest); };
+      const sd = C.carry_side, fr = C.carry_front, ch = C.carry_chest, so = C.carry_shoulder, ra = C.carry_raised;
+      ok(wr(sd)[1] < el(sd)[1] && el(sd)[1] < sh(sd)[1] && Math.abs(wr(fr)[1] - el(fr)[1]) < 0.3 * b.fore && wr(fr)[2] > sh(fr)[2] + 0.6 * b.fore && wr(ra)[1] > sh(ra)[1] && wr(ra)[2] > sh(ra)[2] + 0.5 * b.fore && V.dist(wr(so), sh(so)) < 0.5 * arm && wr(so)[1] > el(so)[1] && Math.abs(wr(ch)[0]) < 0.6 * b.shoulderHalf + 0.05
+        && [sd, fr, so, ra].every(c => cdeep(c) <= LIMITS.pass) && CARRY.every(c => C[c].meta.carry && C[c].meta.carry.hand === (/_l$/.test(c) ? "l" : "r") && C[c].meta.carry.plumb >= 0 && C[c].meta.carry.keep >= 0 && C[c].keys === 2),
+        `${n}: the carry poses: at her side her arm hangs, in front her forearm is level and ahead of her, raised her hand is over her shoulder and ahead, over her shoulder her fist is by it, to her chest her hand is on her middle; none in her`,
+        `the front carry's wrist ${((wr(fr)[2] - sh(fr)[2]) * 100).toFixed(0)} cm ahead of her shoulder and ${((wr(fr)[1] - el(fr)[1]) * 100).toFixed(0)} cm over her elbow`); }
+    says.push(`${n} ${made.length}${skipped.length ? ` (not ${skipped.map(k => k.name.replace("life_", "")).join(", ")})` : ""}, held ${held.toFixed(1)} mm (the blend alone ${loose.toFixed(0)})`);
+  }
+  say(`flourishes: ${says.join("; ")}`);
+}
+
+lap("before 7. the bake");
 // ---- 7. the bake --------------------------------------------------------------------------------------------------------------
 {
   const src = parseGlb(bytes.normal_woman), j0 = src.json, skinNode = j0.nodes.findIndex(n => /_skin$/.test(n.name || "")), pr0 = j0.meshes[j0.nodes[skinNode].mesh].primitives[0];
   // a face shape on the skin, as an export for Godot has: the bake must leave it be
   pr0.targets = [{ POSITION: src.addAccessor(new Float32Array(src.read(pr0.attributes.POSITION).length), "VEC3", { minmax: true }) }]; j0.meshes[j0.nodes[skinNode].mesh].weights = [0.25]; j0.meshes[j0.nodes[skinNode].mesh].extras = { targetNames: ["jawDrop"] };
   const withFace = src.write(), g = parseGlb(withFace), w0 = g.read(pr0.attributes.WEIGHTS_0).slice(), nodes0 = g.json.nodes.length, r = animate(g, { mhrRig: MHR }), out = g.write(), back = parseGlb(out), j = back.json;
-  ok(baked(back) && (j.animations || []).length === NAMES.length, "baked: every clip in the file", (j.animations || []).length);
+  const laidN = Object.keys(clips.normal_woman).filter(k => LAID.test(k)).length;
+  ok(baked(back) && (j.animations || []).length === NAMES.length + laidN && laidN === LIFE.length + LIFE.length - LIFE_TWO.length + CARRY.length, "baked: every clip in the file, the flourishes and the carry poses too", `${(j.animations || []).length}, ${laidN} of them laid over the others`);
   const joints = new Set(j.skins[0].joints); let notJoint = 0, morph = 0, face = 0, nan = 0;
   for (const a of j.animations) for (const ch of a.channels) { if (!joints.has(ch.target.node)) notJoint++; if (ch.target.path === "weights") morph++; if (!isBodyBone(j.nodes[ch.target.node].name)) face++;
     const d = back.read(a.samplers[ch.sampler].output); for (let i = 0; i < d.length; i += 97) if (!Number.isFinite(d[i])) nan++; }
@@ -441,7 +525,7 @@ const others = {};                                            // the creatures' 
   ok(j.nodes.every(n => !(n.matrix && joints.has(j.nodes.indexOf(n)))) && j.skins.every(s => s.joints.length === j.skins[0].joints.length), "baked: the bones carry translations (glTF allows no matrix on an animated node), every skin the same bones");
   const rec = record(back), pub = j.nodes[skinNode].extras.hsMotion; ok(rec && rec.clips.walk_loop.speed > 1 && rec.clips.sit_down.seat && rec.clips.open_push.door && rec.clips.reach_low.reach && rec.palm && pub && pub.clips && !pub.undo, "baked: its record (speeds, events, where a seat, a handle and a reach are) in the scene and on the skin's node");
   ok(rec.furniture && rec.furniture.mode === "fit" && rec.furniture.seat === 0.45 && rec.furniture.handle === 1 && pub.furniture && pub.settings.furniture === "fit", "baked: the furniture its clips are made for is in its record", JSON.stringify(rec.furniture));
-  ok(rec.version === 4 && pub.soft.length === 9 && pub.soft.every(b => b.axis.length === 3 && Math.abs(Math.hypot(...b.axis) - 1) < 1e-3 && b.length > 0.04 && b.stiffness > 0.1 && b.damping >= 0 && b.gain > 0 && b.limit > 0) && pub.settings.bounce === 0.5,
+  ok(rec.version === 5 && pub.soft.length === 9 && pub.soft.every(b => b.axis.length === 3 && Math.abs(Math.hypot(...b.axis) - 1) < 1e-3 && b.length > 0.04 && b.stiffness > 0.1 && b.damping >= 0 && b.gain > 0 && b.limit > 0) && pub.settings.bounce === 0.5,
     "baked: each soft bone's rod and JiggleBones' numbers for it in the record, for whoever swings it live", pub.soft.filter(b => /_l$|belly/.test(b.bone)).map(b => `${b.bone.replace("soft_", "")} ${b.stiffness.toFixed(2)}/${b.damping.toFixed(1)}`).join(", "));
   ok(pub.clips.crawl_loop.speed > 0.1 && pub.clips.scuttle_loop.speed > pub.clips.crawl_loop.speed && pub.clips.scare_lunge.scare.peak > 0 && pub.clips.scare_lunge.scare.show > pub.clips.scare_lunge.scare.peak && pub.clips.punch.punch.at.length === 3
     && pub.clips.swing.swing.axis.length === 3 && pub.clips.peek_out.peek.edge.length === 3 && pub.clips.eat.eat.mouth.length === 3 && pub.clips.knock.knock.at.length === 3 && pub.clips.punch_l.punch.hand === "l",
@@ -454,9 +538,13 @@ const others = {};                                            // the creatures' 
   ok(!baked(un) && un.json.nodes.length === nodes0 && !(un.json.animations || []).length && wd === 0 && Math.abs(un.write().length - withFace.length) < 0.01 * withFace.length, "unbaked: no clips, no soft bones, the skin's own weights back to the last bit, the file its old size", `${un.write().length} and ${withFace.length} bytes`);
   const pv = parseGlb(bytes.normal_woman); animate(pv, { mhrRig: MHR, rigOnly: true }); const at = attach(parseGlb(pv.write()), { mhrRig: MHR });
   ok(at.plan.length === W.plan.length && Math.abs(at.body.mass - W.body.mass) < 0.01 && at.plan.every(b => b.j >= 0), "the page's preview (soft bones, no clips) read back: the same body, the same soft bones");
-  say(`baked: ${(out.length / 1e6).toFixed(1)} MB from ${(withFace.length / 1e6).toFixed(1)} MB, ${NAMES.length} clips, ${r.plan.length} soft bones`);
+  ok(pub.clips.life_scratch_head.life.touch.bone === "c_head" && pub.clips.life_scratch_head.life.touch.point.length === 3 && pub.clips.life_scratch_head_l.life.hand === "l" && pub.clips.life_scratch_arm.life.touch.side === "l" && pub.clips.life_scratch_arm_l.life.touch.side === "r"
+    && pub.clips.life_glance_l.life.side === "l" && pub.clips.carry_front.carry.how === "front" && pub.clips.carry_front_l.carry.hand === "l" && pub.clips.open_push.door.shoulder.length === 3 && pub.clips.open_push.door.arm > 0.2 && pub.clips.open_push.door.grip.length === 3 && !pub.skipped,
+    "baked: the flourishes' record (which arm, what the hand touches and when, the other arm's by its side), a carry pose's, a door clip's shoulder, arm and grip");
+  say(`baked: ${(out.length / 1e6).toFixed(1)} MB from ${(withFace.length / 1e6).toFixed(1)} MB, ${NAMES.length + laidN} clips (${laidN} of them flourishes and carry poses), ${r.plan.length} soft bones`);
 }
 
+lap("the bake");
 for (const e of errs) console.log("ERROR: " + e);
 console.log(errs.length ? `ANIMATOR FAILED (${errs.length})` : `ANIMATOR ok (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
 process.exit(errs.length ? 1 : 0);

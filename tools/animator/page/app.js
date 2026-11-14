@@ -8,10 +8,12 @@ import { attach, makers, makeClip, settingsFor, DEFAULTS, VERSION } from "/core/
 import { summary } from "/core/measure.js";
 import { params } from "/core/gait.js";
 import { furniture } from "/core/acts.js";
+import { lay, sample } from "/core/layer.js";
 
 const $ = s => document.querySelector(s), status = (t, c = "") => { $("#status").textContent = t; $("#status").className = "status " + c; };
 const KIND_LABEL = { idle: "Idle", walk: "Walk", run: "Run", sit: "Sit", sleep: "Sleep", open: "Open a door", reach: "Reach",
-  sneak: "Sneak", crawl: "Crawl", creature: "Creature", peek: "Peek", scare: "Scare", fight: "Fight", eat: "Eat & drink", acting: "Acting" };   // (the second row: animations v3, docs/ANIMATOR_V3.md)
+  sneak: "Sneak", crawl: "Crawl", creature: "Creature", peek: "Peek", scare: "Scare", fight: "Fight", eat: "Eat & drink", acting: "Acting",   // (the second row: animations v3, docs/ANIMATOR_V3.md)
+  life: "Life", carry: "Carry" };                                // (laid over the others, not played instead of them: ANIMATOR_V3 §11, §12)
 const CLIP_LABEL = { idle_loop: "standing", walk_loop: "walking", run_loop: "running", sit_down: "sit down", sit_loop: "sitting", stand_up: "stand up", lie_down: "lie down", sleep_loop: "asleep", get_up: "get up",
   lie_down_r: "lie down (head to her right)", sleep_r_loop: "asleep (head to her right)", get_up_r: "get up (head to her right)", open_push: "push", open_pull: "pull", open_slide: "slide",
   open_push_l: "push (left hand)", open_pull_l: "pull (left hand)", open_slide_l: "slide (left hand)", reach_low: "from the floor", reach_mid: "from a table", reach_high: "from a shelf",
@@ -19,9 +21,15 @@ const CLIP_LABEL = { idle_loop: "standing", walk_loop: "walking", run_loop: "run
   sneak_loop: "sneaking", crouch_loop: "crouched", crawl_loop: "crawling", crawl_idle_loop: "on all fours", creep_loop: "creeping", creep_idle_loop: "hunched", scuttle_loop: "scuttling",
   peek_out: "lean out", peek_loop: "peeking", peek_back: "draw back", peek_out_l: "lean out (to her left)", peek_l_loop: "peeking (to her left)", peek_back_l: "draw back (to her left)",
   scare_lunge: "lunge", scare_loom: "loom", scare_snap: "head snap", scare_claw: "claw (from all fours)", punch: "punch", swing: "swing", hit_react: "hit", punch_l: "punch (left hand)", swing_l: "swing (left hand)",
-  eat: "eat", drink: "drink", eat_l: "eat (left hand)", drink_l: "drink (left hand)", look_around: "look round", knock: "knock", cower_loop: "cowering" };
+  eat: "eat", drink: "drink", eat_l: "eat (left hand)", drink_l: "drink (left hand)", look_around: "look round", knock: "knock", cower_loop: "cowering",
+  life_look_hand: "look at her hand", life_scratch_head: "scratch her head", life_rub_neck: "rub her neck", life_scratch_arm: "scratch her arm", life_rub_nose: "rub her nose", life_wipe_brow: "wipe her brow", life_check_wrist: "check her wrist",
+  life_brush_off: "brush her shoulder", life_tuck_hair: "tuck her hair", life_chin: "hand to her chin", life_scratch_belly: "scratch her side", life_hand_hip: "hand on her hip", life_flex_hand: "flex her hand", life_stretch: "stretch",
+  life_rub_hands: "rub her hands", life_roll_shoulders: "roll her shoulders", life_sigh: "sigh", life_glance: "glance aside", life_neck_stretch: "stretch her neck",
+  carry_side: "at her side", carry_front: "in front of her", carry_chest: "to her chest", carry_shoulder: "over her shoulder", carry_raised: "raised" };
+const labelOf = n => CLIP_LABEL[n] || (/_l$/.test(n) && CLIP_LABEL[n.slice(0, -2)] ? `${CLIP_LABEL[n.slice(0, -2)]} (${/glance/.test(n) ? "to her left" : "left hand"})` : n);
+const LAID = ["life", "carry"], OVER = { stand: ["idle", "idle_loop", "standing"], walk: ["walk", "walk_loop", "walking"], sit: ["sit", "sit_loop", "sitting"] };   // what a flourish or a carry pose is shown over
 const WHOLE = ["sit", "sleep", "peek"];                        // kinds whose first three clips are one act: into it, held, out of it
-const S = { chars: [], name: "", ctx: null, set: { ...DEFAULTS }, auto: 0, kind: "walk", clip: "", made: new Map(), list: [], playing: true, t: 0, seq: true, bones: new Map(), rest: new Map(), touched: new Set(), model: null, dots: [], mhr: null };
+const S = { chars: [], name: "", ctx: null, set: { ...DEFAULTS }, auto: 0, kind: "walk", clip: "", made: new Map(), list: [], playing: true, t: 0, seq: true, bones: new Map(), rest: new Map(), touched: new Set(), model: null, dots: [], mhr: null, over: "stand", tb: 0 };
 window.__anim = S;
 
 // ---- the view ---------------------------------------------------------------------------------------------------------
@@ -89,9 +97,12 @@ function readout() {
 }
 // ---- clips --------------------------------------------------------------------------------------------------------------
 function clipsOf(kind) {
-  const keyOf = JSON.stringify([kind, S.set]); if (S.made.has(keyOf)) return S.made.get(keyOf);
-  const { rig, body, X, plan } = S.ctx, out = makers(rig, body, S.set, [kind], X).map(m => { const c = makeClip(rig, body, X, plan, m, S.set); return { ...c.tracks, stats: c.stats, maker: m }; });
-  S.made.clear(); S.made.set(keyOf, out); return out;
+  const sets = JSON.stringify(S.set), keyOf = JSON.stringify([kind, S.set]); if (S.made.has(keyOf)) return S.made.get(keyOf);
+  const { rig, body, X, plan } = S.ctx, ms = makers(rig, body, S.set, [kind], X), out = ms.map(m => { const c = makeClip(rig, body, X, plan, m, S.set); return { ...c.tracks, stats: c.stats, maker: { ...m, frames: null } }; });
+  out.skipped = ms.skipped || [];
+  // (kept: the kind on show and what a flourish is laid over; everything made with other sliders goes)
+  for (const k of [...S.made.keys()]) if (!k.endsWith(sets + "]") || !["idle", "walk", "sit"].includes(JSON.parse(k)[0])) S.made.delete(k);
+  S.made.set(keyOf, out); return out;
 }
 async function show(kind, keep = false) {
   S.kind = kind; const t0 = performance.now(); S.list = clipsOf(kind);
@@ -104,7 +115,8 @@ async function show(kind, keep = false) {
 const FURN = new THREE.Group(); scene.add(FURN); const furnMat = new THREE.MeshStandardMaterial({ color: 0x6f6b64, roughness: 0.92 });
 function furnish() {
   for (const m of [...FURN.children]) { FURN.remove(m); m.geometry.dispose(); }
-  const c = S.list.find(x => x.name === S.clip), mt = c && c.maker && c.maker.meta; if (!mt) return;
+  let c = S.list.find(x => x.name === S.clip); if (LAID.includes(S.kind) && S.over === "sit") c = clipsOf("sit").find(x => x.name === "sit_loop");   // (laid over sitting: the seat she sits on)
+  const mt = c && c.maker && c.maker.meta; if (!mt) return;
   const box = (x, y, z, sx, sy, sz) => { const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), furnMat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; FURN.add(m); };
   if (mt.seat) { const H = mt.seat.height, e = mt.seat.edge; box(0, H / 2, e - 0.24, 0.48, H, 0.48); box(0, H + 0.2, e - 0.46, 0.48, 0.4, 0.04); }
   if (mt.bed) { const H = mt.bed.height, e = mt.bed.edge, hx = mt.bed.head[0], x0 = Math.min(-0.6, hx - 0.4), x1 = Math.max(0.6, hx + 0.4); box((x0 + x1) / 2, H / 2, e - 0.5, x1 - x0, H, 1.0); box(hx > 0 ? x1 + 0.03 : x0 - 0.03, H / 2 + 0.25, e - 0.5, 0.06, H + 0.5, 1.0); }
@@ -114,16 +126,27 @@ function furnish() {
 function chips() {
   const el = $("#clips"); el.innerHTML = "";
   if (WHOLE.includes(S.kind)) { const b = document.createElement("button"); b.textContent = "the whole of it"; b.className = S.seq ? "on" : ""; b.onclick = () => { S.seq = true; S.clip = S.list[0].name; S.t = 0; chips(); }; el.append(b); }
-  for (const c of S.list) { const b = document.createElement("button"); b.textContent = CLIP_LABEL[c.name] || c.name; b.title = c.name; b.className = !S.seq && c.name === S.clip ? "on" : ""; b.onclick = () => { S.seq = false; S.clip = c.name; S.t = 0; S.playing = true; chips(); info(); }; el.append(b); }
+  if (LAID.includes(S.kind)) { const cur = S.list.find(x => x.name === S.clip), can = cur && cur.meta.life ? cur.meta.life.over : ["stand", "walk", "sit"]; if (!can.includes(S.over)) S.over = can[0];
+    const lab = document.createElement("span"); lab.className = "dim"; lab.textContent = "over her"; el.append(lab);
+    for (const k of Object.keys(OVER)) { const b = document.createElement("button"); b.textContent = OVER[k][2]; b.className = "over" + (S.over === k ? " on" : ""); b.disabled = !can.includes(k); b.title = can.includes(k) ? "" : "this one isn't made to be laid over that"; b.onclick = () => { S.over = k; chips(); info(); }; el.append(b); }
+    const br = document.createElement("span"); br.className = "break"; el.append(br); }
+  for (const c of S.list) { const b = document.createElement("button"); b.textContent = labelOf(c.name); b.title = c.name; b.className = !S.seq && c.name === S.clip ? "on" : ""; b.onclick = () => { S.seq = false; S.clip = c.name; S.t = 0; S.playing = true; chips(); info(); }; el.append(b); }
 }
 function info(ms) {
   furnish();
   const c = S.list.find(x => x.name === S.clip); if (!c) return; const st = c.stats || {}, sf = st.soft || {};
   const rows = [`<div><b>${c.name}</b> · ${c.secs.toFixed(2)} s${c.loop ? ", a loop" : ""}${c.speed ? ` · ${c.speed.toFixed(2)} m/s, ${(120 / c.secs).toFixed(0)} steps a minute` : ""}</div>`];
-  if (st.arm_l != null) { const turned = Math.max(st.turn_l || 0, st.turn_r || 0);
+  if (st.arm_l != null && !LAID.includes(S.kind)) { const turned = Math.max(st.turn_l || 0, st.turn_r || 0);
     rows.push(`<div>${turned >= 1 ? `Forearms turned ${turned.toFixed(0)}° to point ahead past the body, arms` : "Arms"} carried ${Math.max(st.arm_l, st.arm_r).toFixed(0)}° further out to clear it${st.armInside > 0 ? ` <span class="dim">(${st.armInside} mm still inside)</span>` : ""}</div>`); }
   if (sf.thighs && sf.thighs.before > 0) rows.push(`<div>Thighs would overlap ${sf.thighs.before} mm: squashed, ${sf.thighs.after} mm left</div>`);
   const mv = Object.entries(sf).filter(([k]) => k !== "thighs").map(([k, v]) => `${k.replace("soft_", "").replace("_", " ")} ${v}`); if (mv.length) rows.push(`<div class="dim">Soft tissue moves (mm): ${mv.join(", ")}</div>`);
+  const L = c.meta && c.meta.life, K = c.meta && c.meta.carry;
+  if (L) { const arm = L.hand === "both" ? "both her arms" : L.hand ? `her ${L.hand === "r" ? "right" : "left"} arm` : "", head = L.head === "look" ? "her head's turn (she looks at it: a head that follows you waits)" : L.head === "add" ? "how far it turns her head and her trunk" : "";
+    rows.push(`<div>Laid over what she's doing: ${[arm, head].filter(Boolean).join(", and ") || "how far it turns her trunk"}. Her legs and her pelvis stay her animation's.</div>`);
+    if (L.touch) rows.push(`<div>Her hand is on her ${L.touch.bone.replace(/^c_/, "").replace("spine3", "chest").replace(/spine\d/, "trunk").replace("root", "hip").replace("uparm", "other arm")} from ${L.touch.from.toFixed(2)} to ${L.touch.to.toFixed(2)} s: kept there by IK whatever that part of her is doing <span class="dim">(${L.miss} mm off as made)</span></div>`);
+    rows.push(`<div class="dim">Over: ${L.over.map(o => OVER[o][2]).join(", ")} · ${L.free ? "wants that hand empty" : L.hand ? "fine with a thing in that hand" : "no hand in it"}</div>`); }
+  if (K) rows.push(`<div>A pose her ${K.hand === "r" ? "right" : "left"} arm is kept in while she carries something, over whatever she's doing${K.keep ? `, with ${Math.round(K.keep * 100)}% of her arm's own swing left` : ""}${K.plumb ? ". In a game it hangs or stays level by gravity however she leans" : ""}.</div>`);
+  if (LAID.includes(S.kind) && S.list.skipped && S.list.skipped.length) rows.push(`<div class="dim">Not made for her body: ${S.list.skipped.map(k => `${labelOf(k.name)} (${k.why})`).join(", ")}</div>`);
   if (c.events && c.events.length) rows.push(`<div class="dim">Events: ${c.events.map(e => `${e.name} at ${e.t.toFixed(2)} s`).join(", ")}</div>`);
   if (ms != null) rows.push(`<div class="dim">made in ${ms.toFixed(0)} ms</div>`);
   $("#clipInfo").innerHTML = rows.join("");
@@ -137,6 +160,19 @@ function pose(c, t) {
   for (const name of S.touched) if (!now.has(name)) { const b = S.bones.get(name), r = S.rest.get(name); b.position.copy(r.p); b.quaternion.copy(r.q); b.scale.copy(r.s); }
   S.touched = now;
 }
+// a whole pose put on her bones (the layer's: a flourish or a carry pose laid over the clip under it)
+function wear(P) {
+  const J = S.ctx.rig.J, now = new Set();
+  for (let j = 0; j < J.length; j++) { const b = S.bones.get(J[j].name); if (!b) continue; now.add(J[j].name); b.quaternion.fromArray(P[j].r); if (P[j].t) b.position.fromArray(P[j].t); else b.position.copy(S.rest.get(J[j].name).p); }
+  S.touched = now;
+}
+function laid(cc, dt) {
+  const rig = S.ctx.rig, base = clipsOf(OVER[S.over][0]).find(x => x.name === OVER[S.over][1]); S.tb = (S.tb + dt) % base.secs; const under = sample(rig, base, S.tb);
+  cc.first ||= sample(rig, cc, 0);
+  if (cc.meta.life) return { pose: lay(rig, under, { meta: cc.meta.life, secs: cc.secs, at: t => sample(rig, cc, t), first: cc.first }, Math.min(S.t, cc.secs)).pose, base };
+  const K = cc.meta.carry;
+  return { pose: lay(rig, under, { meta: { hand: K.hand, head: "", in: 1, out: 1 }, secs: 1, at: () => cc.first, first: cc.first }, 0, { weight: 1 - (S.over === "stand" ? 0 : K.keep) }).pose, base };
+}
 let last = performance.now(), hold = 0;
 function frame(nowT) {
   const dt = Math.min(0.1, (nowT - last) / 1000) * ($("#slow").checked ? 0.25 : 1); last = nowT;
@@ -145,8 +181,8 @@ function frame(nowT) {
     if (S.playing) { S.t += dt;
       if (S.t >= c.secs) { if (S.seq) { const i = S.list.indexOf(c), loop = c.loop; if (loop && (hold += 1) < 1) S.t -= c.secs; else { hold = 0; S.clip = S.list[(i + 1) % 3].name; S.t = 0; chips(); info(); } }
         else if (c.loop) S.t -= c.secs; else if (S.t > c.secs + 0.9) S.t = 0; } }
-    const cc = S.list.find(x => x.name === S.clip); pose(cc, Math.min(S.t, cc.secs)); $("#scrub").value = Math.min(1, S.t / cc.secs); $("#time").textContent = `${Math.min(S.t, cc.secs).toFixed(2)} / ${cc.secs.toFixed(2)} s`;
-    grid.position.z = cc.speed ? -((performance.now() / 1000 * cc.speed * ($("#slow").checked ? 0.25 : 1)) % 0.5) : 0;
+    const cc = S.list.find(x => x.name === S.clip); let under = null; if (LAID.includes(S.kind)) { const o = laid(cc, S.playing ? dt : 0); wear(o.pose); under = o.base; } else pose(cc, Math.min(S.t, cc.secs)); $("#scrub").value = Math.min(1, S.t / cc.secs); $("#time").textContent = `${Math.min(S.t, cc.secs).toFixed(2)} / ${cc.secs.toFixed(2)} s`;
+    const going = under ? under.speed : cc.speed; grid.position.z = going ? -((performance.now() / 1000 * going * ($("#slow").checked ? 0.25 : 1)) % 0.5) : 0;
     const show = $("#softDots").checked; S.model.updateMatrixWorld(true); S.ctx.plan.forEach((b, i) => { const o = S.bones.get(b.name); S.dots[i].visible = show && !!o; if (o && show) o.getWorldPosition(S.dots[i].position); });
   }
   renderer.render(scene, camera); requestAnimationFrame(frame);

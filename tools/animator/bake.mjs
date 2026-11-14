@@ -30,12 +30,13 @@ try {
   const out = opt("--out", file), bytes = glb.write(); writeFileSync(out, bytes);
   const rep = { ...r.report, made: new Date().toISOString(), file: out.split(/[\\/]/).pop() };
   if (opt("--report")) writeFileSync(opt("--report"), JSON.stringify(rep, null, 1));
-  if (!preview && !opt("--out")) writeFileSync(file.replace(/\.glb$/i, "") + ".motion.json", JSON.stringify({ settings: rep.settings, body: rep.body, furniture: rep.furniture, clips: rep.clips, soft: rep.soft, made: rep.made }, null, 1));
+  if (!preview && !opt("--out")) writeFileSync(file.replace(/\.glb$/i, "") + ".motion.json", JSON.stringify({ settings: rep.settings, body: rep.body, furniture: rep.furniture, clips: rep.clips, soft: rep.soft, ...(rep.skipped && rep.skipped.length ? { skipped: rep.skipped } : {}), made: rep.made }, null, 1));
   console.log(`  body: ${rep.body.height} cm, ${rep.body.weight} kg (build ${rep.body.build}), bust ${rep.body.bust} waist ${rep.body.waist} hips ${rep.body.hips} cm; measured from its ${rep.body.from === "recipe" ? "own unclothed body" : "meshes"}`);
   console.log(`  settings: ${JSON.stringify(rep.settings)}`);
   if (rep.furniture) console.log(`  furniture (${rep.furniture.mode}): a seat ${Math.round(rep.furniture.seat * 100)}, a bed ${Math.round(rep.furniture.bed * 100)}, a handle ${Math.round(rep.furniture.handle * 100)}, a table ${Math.round(rep.furniture.table * 100)} cm${rep.clips.sit_down && rep.clips.sit_down.seat && rep.clips.sit_down.seat.high ? ": the seat is high for her, she gets up onto it" : ""}`);
   console.log(`  soft bones: ${rep.soft.map(b => `${b.bone.replace("soft_", "")} ${b.amount}`).join(", ") || "none"} (${rep.softVerts} points of skin and clothes go with them)`);
   for (const [n, c] of Object.entries(rep.clips)) console.log(`  clip ${n.padEnd(14)} ${c.secs.toFixed(2)} s${c.loop ? " loop" : ""}${c.speed ? `, ${c.speed} m/s` : ""}`);
   console.log(`  ${out} (${(bytes.length / 1e6).toFixed(1)} MB, ${((Date.now() - t0) / 1000).toFixed(1)} s)`);
+  if (rep.skipped && rep.skipped.length) console.log(`  not made for this body (it can't do them cleanly): ${rep.skipped.map(x => `${x.name} (${x.why})`).join(", ")}`);
   console.log("BAKE ok");
 } catch (e) { console.log("BAKE FAILED: " + (process.env.DEBUG ? e.stack : e.message)); process.exit(1); }
