@@ -2,6 +2,32 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-14, evening: main merged in; a tutorial of sequences made with the markers and the new animations (the user, while life and carrying were being finished)
+
+- **"once your done can you merge the latest main into this branch ,then make a new tutorial on using the marker
+  system with these new animations, stuff like walking to a table, picking up something, then walking to a sofa,
+  sitting on it, and looking at the object. Little life like sequences etc . Maybe add some where we get something ,
+  give it to the npc, they eat it, basically maker a tutorial in iour existing html guides for creating various
+  types of sequences , things you can think of, for normal npcs, stuff for like imagine im a shopkeerer and theyre
+  someone that walked to the till ask for osmething, following by elaving, then other stuff like chaining
+  interesting horror sequences + jumpscares and guies on utilizing our iks."**
+
+What follows from it:
+
+- **Main is merged into `even-more-animations-v3`** (flags and things, tsukibii/HorrorEngine#31, came with it): the
+  branch now has the Logic node and the Flags and Things tabs, and the tutorial uses them where they're the quick way.
+- **The tutorial is a new guide, `guides/sequences/`**, beside the others: recipes, one a sequence, each the markers
+  in order with what to set. It is not tutorial v2: that one is brought up to date in one bulk branch later (the
+  user, the same day, on the flags branch), and this branch leaves its section in `docs/TUTORIAL_TODO.md`.
+- **Every sequence in it is built for real and played by a check**, and its pictures are Godot's own, as every guide's
+  are.
+- **What the sequences need and the markers didn't have is built into the Markers plugin, not scripted round**
+  ("nobody scripts an NPC"): a marker that asks for one small movement (so "sits down and looks at it" is asked for,
+  not hoped for), a thing handed over between you and her both ways (and being paid), and a peek round a corner.
+- "our iks" is read as the four the Look plugin has: her head following (HSHeadTrack), her hand closing on a prop by
+  its grip and carried onto handles, mouths and people (HSHandIK, HSGrip), a hand kept on what it touches and a thing
+  carried in any pose (HSGesture). The guide has a part on getting the most from each.
+
 ## 2026-11-14, later: rules for modelling, small movements that show she's alive, holding things in any pose (the user)
 
 After the short NPCs' report:

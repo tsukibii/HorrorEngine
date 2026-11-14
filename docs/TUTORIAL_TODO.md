@@ -49,3 +49,34 @@ then each branch leaves a section here saying what it changes for the tutorial. 
       button's flag, F7's board listing the tutorial's flags.
 - [ ] new pictures for the changed sections (`--pictures`); the two tabs' own pictures can be taken from the
       tutorial's scene with `logic_editor_test.gd`'s `shot()` way rather than the test room's.
+
+## From `even-more-animations-v3`: animations v3, short NPCs, life and carrying (docs/ANIMATOR_V3.md, docs/ANIMATION_RULES.md, guides/animator, guides/sequences)
+
+**Must (or the tutorial is wrong or stale):**
+- [ ] Her characters are **baked again** by the Animator (its `VERSION` is 5: 96 clips; the tutorial's were baked at
+      2 or not at all). Say so where a character is first dropped in, and in §31 (*the hunt*).
+- [ ] §34 *Every system in it*: add rows for a head that follows you (HSHeadTrack), a grip on a prop (HSGrip), small
+      movements and carrying (HSGesture), the low gaits, the peek and the jump scares as her own clips; take
+      "moves" out of what a game by hand can't do yet (her own creep, crawl, peek and lunge are baked now), and
+      "faces" if the markers' Face row is used.
+- [ ] §35 *Where to go next*: point at `guides/animator/index.html` and `guides/sequences/index.html`.
+- [ ] TUTORIAL2 run again after the starter's `motion.gd`, `act.gd` and `player.gd` changes (`struck`, the life
+      layer's calls). It wasn't run on this branch: it needs the desk's server.
+
+**Should (what the new animations are for):**
+- [ ] §31 *the hunt*: her `moves.gd` is given Kimodo clips with prompts. With a baked character it can be left
+      empty: `stalk` is her creep, `crawl`, `peek` and `lunge` her own. Say which the tutorial uses and why.
+- [ ] §20 her at 308's door, §22's closer: `head_follow` on her (she watches you past the corner) and `uncanny.gd`'s
+      head tilt still on top.
+- [ ] The first, harmless her in the corridor: *Alive* on her Motion node (or her HSNpc's *Small movements*), switched
+      to none where the night turns: the contrast is the scare.
+- [ ] One thing she carries (the room's key on its fob, a candle from the bath): `hold()` or a Grab's Keep in hand,
+      and its HSGrip's Carry.
+- [ ] The hotel floor against the modelling rules (docs/ANIMATION_RULES.md): run ANIMRULES' ranges on the set's own
+      seats, beds and doors where she uses them; 304's desk chair 0.35 m from the desk; the standing room where she
+      waits alive.
+
+**Could:**
+- [ ] One of her parts as a sequence from `guides/sequences` (the hand-over at 304's door, the peek at the corridor's
+      corner) in place of a scripted node, tied to a door or a pickup by the Things tab.
+
