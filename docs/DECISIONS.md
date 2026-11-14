@@ -2,6 +2,94 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-14, the markers' conversations: the prior style, not a new panel (the user, on the first picture of it in play)
+
+The picture: Alex in the room and, at the foot of the screen, a dark rounded panel with "Alex", "Looking for
+something?" and two boxed rows, "1 The book on the shelf" and "2 Never mind", with "W / S choose  E answer" under them.
+
+- **"Why did we switch to a new panel style for choices. Keep it the prior style."**
+- The prior style is the user's own of 2026-10-30, evening (below: "The choice back to one line"), which the UI
+  plugin's HUD has drawn since: the question as the line at the foot of the view, the answers on one line under it
+  with a dash between, the one pointed at white and the other dimmed, **no panel** (and 2026-11-08: "glass: no panel
+  to see"), **no numbers** ("we don't want 1 or 2 to select"), a click or A / D (or the arrows) and Enter, two answers
+  at the most. The Markers plugin had drawn a box of its own instead, and listed "use the HUD's" under Later. Wrong
+  way round: what's already decided is used first.
+- **So**: a marker's conversation is drawn by the scene's `HSHud` when it has one (its `line`, its `choose`, its
+  reticle's ring and prompt), and when it has none the plugin draws that same footer itself, number for number. Lines
+  come one after another, each for as long as it takes to read, as lines do in the games (E or a click hurries them;
+  E never picks an answer). The prompt over someone you can talk to is the ring with the verb and the name under it,
+  not a box. Problems warns past two answers.
+- **A rule from it**: nothing new is drawn on the game's screen while the UI plugin already draws that thing.
+
+## 2026-11-13, the marker system: a character's whole part in the game placed as markers (the user, with a mock-up)
+
+The mock-up: a Godot editor with a bottom panel "NPC Path & Animation Sequencer" (an NPC list, a quest dropdown with
+New and Delete, the selected marker's type, "Boolean Flags Trigger" checkboxes, start and end positions, a 360° "Face
+Direction" dial, Add and Remove Marker) and, in the room, pins "1 Walk → 1-End", "2 Interact: grabbing object from
+shelf", "3 Walk", "4 Sit: sitting in sofa" joined by arrows; "NPC: Path" beside "NPC: Alex" in the scene tree.
+
+- **"I justed merged this into main. I want you to enhance horrorengine plugin, create a new tab for
+  creating/scripting animations throughout the game + when we can interact with the character."**
+- **"I create a very rough (2d illustrated viewport but transalate it to 3d when your making it) idea of what I want,
+  I want to be able to place markers in the scene for each npc I add, the markers correspond with the quests, however
+  if I dont end the quest marker with a disappear the positioning of the npc should continue for the next quest."**
+- **"I basically want to be able to place different types of markers for npcs like walk, and have a start and end
+  point (should be able to add curved pathing), or idle, or interact (like them grabbing something), these
+  animations/events for markers are triggered based of order, if a boolean flag is true e.g. maybe the next marker
+  only triggers after we interact with the idle event, then we interact and they reach for something from the shelf.
+  Should be able to chain them so they grab something, walk to the sofa, and sit. I want to be be able to toggle
+  visibility to view only one npcs markers or multiple, should be an easy way to distinguish, the marker should also
+  show the orientation of the character."**
+- **"treat my requirement as a rough unrefined requirement ... considering what a user who is not that good at code
+  would need to be easily able to make all the npc stuff in a game with drag and drop markers, different types of
+  markers, chaining and anything else we may have missed. consider things like marker walk speed, we already can
+  import characters with animations but we might want to modify the speed of the looped animation ... how quickly
+  does it take for them to get from point a to b, consider easing into the next animation ... Then come up with a
+  design, then a plan, then start working through the plan checkbox by checkbox, the goal is that even a young child
+  would know how to use it and be able to make the whole npc stuff of the game."**
+- **"Consider marker to make a character 'disappear' and not be rendered (shouldnt use gpu/cpu while this is toggled
+  on basically equivalent to deleted but they still exist and can be toggled back on). Feel free to make the markers
+  look better, the ui I designed is just a very rough draft, you should make the ui as easy to see and use as
+  possible."**
+- **"Consider also how we can trigger custom animations for certain markers e.g. if I do want to use a kimodo dance
+  for an event marker how do I add the dance for that npc, so maybe the npc starts by idle, I talk to it, I trigger a
+  flag on, that flag is on so the npc moves to their room, then the npc triggers dance, consider how we can use the
+  walk marker for stairs too so they dont clip through."**
+- **"Also consider branching, what if I want an idle but based on player choice in dialogue it will branch to them
+  walking to a different location, then we should have separate event markers based off which flag got turned on
+  based on player choice, consider how we deal with this so theres no bugs or issues, thats why its important you plan
+  the system first, the ui shouldnt be fully opaque but not too transparent either, consider a tester so we can ...
+  preview each markers npc interaction in the viewport to see how it looks."**
+- **"Consider also how to design markers later to work with our jump scare system for monster npcs etc, consider
+  marker stuff for toggle the eye shaders and skin shaders for monsters too ... the future markers that sequence after
+  should inherit the npcs current state, consider how we can add custom facial expressions for each markers point and
+  for interactions I want to be able to determine by flags which expression they preview. So although the character
+  interact system is diff, if a marker has "player interactable on", then we can say which dialogue to play through at
+  this point, and link the choices to flags which change the expressions of the character."**
+- **"Consider flags for is shot too, if we want to sequence a shotgun scene later for monsters if we beat the monster
+  early we shouldnt be able to go to the next sequential markers if we dont want to (maybe the monster is immortal and
+  that part just determines the ending). Consider everything we need to basically make this plugin be able to make the
+  game as easily as possible. Make a new branch for this work called marker-system."**
+- **What it settles** (docs/MARKERS.md is the design and the plan with its checkboxes): a new plugin for games built
+  by hand, **HorrorStudio Markers**, its tab **NPC Markers** along the bottom. Beside each character an `HSNpc` node
+  holds her quests and, in each, her markers as nodes. A marker is *Starts when* → what she does → *then*; a Walk
+  marker is where she walks **to** (it starts from wherever she is: nothing can jump); her state (place, facing, sat,
+  hidden, face, look, what she holds) is carried from marker to marker and quest to quest. "Wait until" is a marker's
+  *Starts when*; "only if" is a **Choice** with ways: the two are kept apart, which is where branching bugs come from.
+  You talk to her at any marker with *You can talk to her* on: its conversation's answers switch flags and faces, and
+  a Choice after it takes the way of the answer. Quests are in order and she never goes back up the list. Disappear
+  hides her and switches her processing off. Being shot sets `shot:<id>` and `down:<id>`; what going down means (her
+  quest stops, she's gone for good, she can't be killed) is hers to say. A tester plays any marker on a copy of her in
+  the 3D view. **Which plugin**: "horrorengine plugin" is read as the family of plugins a by-hand project gets; a new
+  one beside them, as the weapons and the devices each were, not a part of the Director (whose games are a different
+  runtime).
+- **From the mock-up itself** (2026-11-14: the picture could only be looked at after the design had been written from
+  the user's words): its markers are map pins with the kind's drawing in them and "1, Walk" beside them; its panel has
+  a "Face Direction" dial, the start and end positions as numbers and the flags as tick boxes. All four were built as
+  drawn. Its pins are coloured by kind; ours by character, since the user's words ask for "an easy way to distinguish"
+  whose markers are whose, and the kind is the drawing in the pin. Its "NPC: Alex (Guard)" is why the tab's labels
+  name the character or nobody, never "her".
+
 ## 2026-11-13, the hands and the jiggle: the Animator's first feedback (the user, with a screenshot)
 
 - **"Very good, some feedback. Enhance the hand positioning in walk and run animations (and any others), as you can

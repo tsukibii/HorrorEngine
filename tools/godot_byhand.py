@@ -3,17 +3,19 @@
 Godot instead of through Director I can"; guides/godot_by_hand): what guides/godot_by_hand's setup does, in one go.
 
     python tools/godot_byhand.py new ~/Games/MyGame [--name "My Game"]
-        a new project: project.godot (the HorrorStudio Look, UI, Weapons and Devices plugins on, the balanced look's
-        settings), addons/horrorstudio_look, addons/horrorstudio_ui (the HUD and the quest marker),
+        a new project: project.godot (the HorrorStudio Look, UI, Weapons, Devices and Markers plugins on, the balanced
+        look's settings), addons/horrorstudio_look, addons/horrorstudio_ui (the HUD and the quest marker),
         addons/horrorstudio_weapons (HSDoubleBarrel: a double-barrelled shotgun in first person, its shells, what a shot
         leaves, pickups), addons/horrorstudio_devices (HSLaptop: a laptop whose green terminal sells things for cash),
+        addons/horrorstudio_markers (the NPC Markers tab: a character's whole part in the game placed as markers),
         HumanShaders/ (the skin's and the eyes' textures), starter/ (the by-hand guides' scripts: the player and its
         flashlight, doors and locks, the story on screen, the music and room tones, scares, pickups, notes, a
         character who doesn't like the light), sfx/ (the studio's sound shelf, CC0), music/ (the four moods),
         exports/interiors, exports/streets, exports/characters (where the studio's exports go)
     python tools/godot_byhand.py install ~/Games/MyGame
-        the same add-ons into a project you have (again after a pull of the studio: they're copies); starter/, sfx/ and
-        music/ only if they aren't there (they're yours to change)
+        the same add-ons into a project you have (again after a pull of the studio: they're copies; one the project
+        didn't have yet is switched on in its project.godot); starter/, sfx/ and music/ only if they aren't there
+        (they're yours to change)
     python tools/godot_byhand.py exports ~/Games/MyGame [--link]
         the studio's Exports/ (interiors, streets, characters) copied into the project's exports/; --link makes them
         links instead, so an export from the studio's editors is in the project at once (Godot imports it on focus)
@@ -42,6 +44,8 @@ LOOK = ROOT / "GodotPlugins" / "HorrorStudioLook" / "addons" / "horrorstudio_loo
 UI = ROOT / "GodotPlugins" / "HorrorStudioUI" / "addons" / "horrorstudio_ui"
 WEAPONS = ROOT / "GodotPlugins" / "HorrorStudioWeapons" / "addons" / "horrorstudio_weapons"
 DEVICES = ROOT / "GodotPlugins" / "HorrorStudioDevices" / "addons" / "horrorstudio_devices"
+MARKERS = ROOT / "GodotPlugins" / "HorrorStudioMarkers" / "addons" / "horrorstudio_markers"
+PLUGINS = ["horrorstudio_look", "horrorstudio_ui", "horrorstudio_weapons", "horrorstudio_devices", "horrorstudio_markers"]   # what a by-hand project has switched on
 HUMAN = ROOT / "GodotPlugins" / "HumanShaders"
 STARTER = ROOT / "guides" / "first_game" / "starter"
 SFX = ROOT / "Content" / "Studio" / "SFX"                       # the sound shelf (docs/SFX.md, CC0)
@@ -55,7 +59,7 @@ def project_godot(name):
     """project.godot: the name, the look plugin on, the balanced look's settings (what enabling it in the editor writes)"""
     lines = ["; Engine configuration file. Made by tools/godot_byhand.py (guides/godot_by_hand); yours to change.", "",
              "config_version=5", "", "[application]", f'config/name="{name}"', "",
-             "[editor_plugins]", 'enabled=PackedStringArray("res://addons/horrorstudio_look/plugin.cfg", "res://addons/horrorstudio_ui/plugin.cfg", "res://addons/horrorstudio_weapons/plugin.cfg", "res://addons/horrorstudio_devices/plugin.cfg")', ""]
+             "[editor_plugins]", "enabled=PackedStringArray(%s)" % ", ".join(f'"res://addons/{n}/plugin.cfg"' for n in PLUGINS), ""]
     by = {}
     for k, v in GD.PROJECT_LOOK.items():
         sec, key = k.split("/", 1)
@@ -63,6 +67,28 @@ def project_godot(name):
     for sec, kv in by.items():
         lines += [f"[{sec}]"] + kv + [""]
     return "\n".join(lines)
+
+
+def enable(proj):
+    """the studio's plugins a project.godot doesn't have switched on yet, switched on (one added since the project
+    was made); -> the names added"""
+    pg = proj / "project.godot"
+    if not pg.is_file():
+        return []
+    text = pg.read_text(encoding="utf-8")
+    added = [n for n in PLUGINS if f"res://addons/{n}/plugin.cfg" not in text and (proj / "addons" / n / "plugin.cfg").is_file()]
+    if not added:
+        return []
+    more = ", ".join(f'"res://addons/{n}/plugin.cfg"' for n in added)
+    if "enabled=PackedStringArray(" in text:
+        head, rest = text.split("enabled=PackedStringArray(", 1)
+        text = head + "enabled=PackedStringArray(" + (more + ", " if rest.lstrip()[:1] != ")" else more) + rest
+    elif "[editor_plugins]" in text:
+        text = text.replace("[editor_plugins]", f"[editor_plugins]\n\nenabled=PackedStringArray({more})", 1)
+    else:
+        text = text.rstrip("\n") + f"\n\n[editor_plugins]\n\nenabled=PackedStringArray({more})\n"
+    pg.write_text(text, encoding="utf-8")
+    return added
 
 
 def install(proj, starter=True):
@@ -76,9 +102,12 @@ def install(proj, starter=True):
     shutil.copytree(WEAPONS, proj / "addons" / "horrorstudio_weapons", ignore=shutil.ignore_patterns("*.import", "demo"))
     shutil.rmtree(proj / "addons" / "horrorstudio_devices", ignore_errors=True)
     shutil.copytree(DEVICES, proj / "addons" / "horrorstudio_devices", ignore=shutil.ignore_patterns("*.import", "demo"))
+    shutil.rmtree(proj / "addons" / "horrorstudio_markers", ignore_errors=True)
+    shutil.copytree(MARKERS, proj / "addons" / "horrorstudio_markers", ignore=shutil.ignore_patterns("*.import", "demo"))
     shutil.rmtree(proj / "HumanShaders", ignore_errors=True)
     shutil.copytree(HUMAN, proj / "HumanShaders", ignore=shutil.ignore_patterns("*.import"))
-    did = ["addons/horrorstudio_look", "addons/horrorstudio_ui", "addons/horrorstudio_weapons", "addons/horrorstudio_devices", "HumanShaders"]
+    did = ["addons/horrorstudio_look", "addons/horrorstudio_ui", "addons/horrorstudio_weapons", "addons/horrorstudio_devices", "addons/horrorstudio_markers", "HumanShaders"]
+    did += [f"{n} switched on" for n in enable(proj)]
     if starter or not (proj / "starter").exists():
         shutil.copytree(STARTER, proj / "starter", dirs_exist_ok=True)
         did.append("starter")

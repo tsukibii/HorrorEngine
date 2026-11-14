@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NPC markers: a character's whole part in the game</title>
+<!-- The HorrorStudio Markers plugin (GodotPlugins/HorrorStudioMarkers; docs/MARKERS.md; DECISIONS 2026-11-13, the marker
+     system). Nothing loads from outside: the pictures in img/ are the editor's own, made by the plugin's check
+     (python tools/godot/markers_check.py --editor --shots DIR, then python tools/godot/markers_check.py guide). -->
+<style>
+:root{--bg:#121214;--panel:#1b1b1f;--panel2:#232329;--line:#33333b;--text:#e6e3dc;--dim:#9a978f;--accent:#4fc3f7;--warn:#e0a030;--cue:#9fd39a}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{display:grid;grid-template-columns:250px minmax(0,1fr);max-width:1240px;margin:0 auto}
+nav.toc{position:sticky;top:0;height:100vh;overflow:auto;padding:28px 18px 28px 22px;border-right:1px solid var(--line);font-size:13.5px}
+nav.toc .brand{font-weight:700;letter-spacing:.06em;color:var(--accent);font-size:12px;text-transform:uppercase;margin-bottom:14px}
+nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:s}
+nav.toc li{counter-increment:s}
+nav.toc li a{display:flex;gap:8px;padding:4px 8px;border-radius:6px;color:var(--text)}
+nav.toc li a::before{content:counter(s);color:var(--dim);min-width:18px;text-align:right;font-variant-numeric:tabular-nums}
+nav.toc li a:hover,nav.toc li a.on{background:var(--panel2);text-decoration:none}
+nav.toc li a.on{color:var(--accent)}
+nav.toc .back{display:block;margin-top:18px;color:var(--dim);font-size:12.5px}
+main{padding:34px 44px 90px;min-width:0}
+header.hero{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:10px}
+header.hero h1{font-size:34px;line-height:1.15;margin:0 0 10px;letter-spacing:-.01em}
+header.hero p{color:var(--dim);font-size:16.5px;margin:0;max-width:740px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--dim);background:var(--panel)}
+section{padding-top:30px;max-width:920px}
+h2{font-size:24px;margin:16px 0 6px;display:flex;align-items:baseline;gap:12px}
+h2 .n{color:var(--accent);font-size:15px;font-variant-numeric:tabular-nums;font-weight:600}
+h3{font-size:16.5px;margin:22px 0 4px}
+p{margin:8px 0}
+ul,ol.steps{padding-left:22px;margin:8px 0}
+li{margin:3px 0}
+kbd{font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:2px 6px;color:var(--text);white-space:nowrap}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow:auto;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ui{font-weight:600;color:#f2e6cc}
+.node{font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfe3f2}
+figure{margin:16px 0 20px;max-width:100%}
+figure img{display:block;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.45);background:var(--panel)}
+figcaption{color:var(--dim);font-size:13px;margin-top:7px}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;margin:14px 0}
+.pair figure{margin:0}
+.tip{border-left:3px solid var(--accent);background:linear-gradient(90deg,rgba(79,195,247,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.tip b{color:var(--accent)}
+.note{border-left:3px solid var(--cue);background:linear-gradient(90deg,rgba(159,211,154,.08),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet{border-left:3px solid var(--warn);background:linear-gradient(90deg,rgba(224,160,48,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet b{color:var(--warn)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:12px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h4{margin:0 0 4px;font-size:14px}
+.card p{margin:0;color:var(--dim);font-size:13.5px}
+table.keys{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+table.keys td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.keys td:first-child{white-space:nowrap;width:1%}
+.tree{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;overflow:auto}
+.tree i{color:var(--dim);font-style:normal}
+footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:var(--dim);font-size:13px}
+@media (max-width:900px){.wrap{display:block}nav.toc{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 16px}nav.toc ol{columns:2;column-gap:14px}main{padding:22px 16px 60px}header.hero h1{font-size:27px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc">
+  <div class="brand">NPC markers</div>
+  <ol>
+    <li><a href="#what">What it is</a></li>
+    <li><a href="#start">Before you start</a></li>
+    <li><a href="#character">Add a character</a></li>
+    <li><a href="#place">Place markers</a></li>
+    <li><a href="#view">In the 3D view</a></li>
+    <li><a href="#form">A marker's form</a></li>
+    <li><a href="#kinds">The cards</a></li>
+    <li><a href="#talk">Talking, and answers</a></li>
+    <li><a href="#choice">A Choice: which way</a></li>
+    <li><a href="#quests">Quests</a></li>
+    <li><a href="#speed">Speed, time, easing</a></li>
+    <li><a href="#stairs">Stairs</a></li>
+    <li><a href="#dance">A dance of your own</a></li>
+    <li><a href="#monsters">Faces, looks, scares, being shot</a></li>
+    <li><a href="#try">Try it</a></li>
+    <li><a href="#game">In the game</a></li>
+    <li><a href="#rules">The rules, and what's not there</a></li>
+  </ol>
+  <a class="back" href="../animator/index.html">← Animator v2: her own animations</a>
+  <a class="back" href="../index.html">← All guides</a>
+</nav>
+<main>
+<header class="hero">
+  <h1>NPC markers</h1>
+  <p>A character's whole part in your game, placed in the scene: where they walk, where they wait, what they grab,
+  when you can talk to them and what your answer changes, when they vanish. You click cards and click the floor.
+  Nobody writes a script.</p>
+  <div class="chips"><span class="chip">Godot 4.7</span><span class="chip">games built by hand</span><span class="chip">the NPC Markers tab</span><span class="chip">no code</span></div>
+</header>
+
+<section id="what">
+<h2><span class="n">1</span>What it is</h2>
+<p>Beside each character sits a node that holds their <b>quests</b>, and in each quest their <b>markers</b>, in the
+order they're done. A marker is one thing: <span class="ui">Walk</span> here, <span class="ui">Sit</span> there,
+<span class="ui">Talk</span>, <span class="ui">Grab</span> that. In the 3D view each is a pin in the character's
+colour with its number; the line between pins is the path they walk; the arrow is the way they face.</p>
+<figure><img src="img/03_route.jpg" alt="A room in Godot's editor with Alex's markers: numbered pins joined by a path, the NPC Markers tab along the bottom"><figcaption>Alex's quest "The missing book": comes to meet you (1), talks (2), takes the way of your answer (3): to the shelf for the book (3A) or a shrug (3B), then walks to the sofa (4) and sits (5).</figcaption></figure>
+<p>Every marker is three things, and that's the whole idea:</p>
+<div class="cols">
+  <div class="card"><h4>Starts when</h4><p>Nothing: at once, after the marker before. Or: a flag is on, a quest is open, after 3 seconds, you're near, you're not looking.</p></div>
+  <div class="card"><h4>What happens</h4><p>Its card: walk, wait, talk, sit, sleep, grab, an animation, an event, a choice, disappear.</p></div>
+  <div class="card"><h4>Then</h4><p>Flags switched, a task ticked, a line, a sound, something fired (a scare).</p></div>
+</div>
+<p>What the character is carries on from marker to marker and from quest to quest: where they stand, sitting or
+asleep, hidden, their face, their look, what's in their hand. A quest that doesn't end in
+<span class="ui">Disappear</span> leaves them where they are for the next.</p>
+</section>
+
+<section id="start">
+<h2><span class="n">2</span>Before you start</h2>
+<ul>
+  <li><b>A project made by hand.</b> A new one has the plugin switched on:
+  <pre>python tools/godot_byhand.py new ~/Games/MyGame</pre>
+  One you already have gets it (and has it switched on) with:
+  <pre>python tools/godot_byhand.py install ~/Games/MyGame</pre></li>
+  <li><b>A character.</b> Best: a Character Studio export <a href="../animator/index.html">baked by the Animator</a>
+  (it walks at its own pace, sits, sleeps, reaches, opens doors). Any model with animations called idle, walk and run
+  also walks. A model with none still goes where it's sent: it slides.</li>
+  <li><b>A floor with a collider</b> where they walk (an interior or a street exported from the studio has them).
+  Stairs want their steps' colliders.</li>
+</ul>
+<div class="note">It speaks the starter kit's <span class="node">Story</span> node's words (its to-do list, its flags,
+what you carry), so a flag a pickup sets can start a marker and a flag a marker sets is heard by everything else.
+With no Story in the scene it keeps the flags itself.</div>
+</section>
+
+<section id="character">
+<h2><span class="n">3</span>Add a character</h2>
+<ol class="steps">
+  <li>Open <span class="ui">NPC Markers</span> along the bottom of the editor.</li>
+  <li>Select the character's model in the scene.</li>
+  <li>Press <span class="ui">+ Character</span>.</li>
+</ol>
+<figure><img src="img/01_character.jpg" alt="The NPC Markers tab with Alex in its Characters list"><figcaption>Alex is in the list, with a colour. In the Scene dock a node "Alex markers" sits beside Alex, with a first quest in it.</figcaption></figure>
+<p>The four parts of the tab, left to right: <b>Characters</b> (who has markers), <b>Add a marker</b> (the cards),
+the <b>quest</b> and its <b>storyboard</b> (the markers in order), and the <b>form</b> of whatever is picked.</p>
+</section>
+
+<section id="place">
+<h2><span class="n">4</span>Place markers</h2>
+<ol class="steps">
+  <li>Click a card: <span class="ui">Walk</span>.</li>
+  <li>Click the floor in the 3D view. A pin: that's where they walk <b>to</b>. They start from wherever they are,
+  so nothing ever jumps.</li>
+  <li>Click the next card, click again. Each new marker goes after the one that's picked.</li>
+</ol>
+<figure><img src="img/02_place.jpg" alt="The Walk card pressed; a hint at the foot of the 3D view says click to place"><figcaption>A card pressed is armed: the foot of the 3D view says what a click will do. <kbd>Shift</kbd> keeps it armed for several; <kbd>Esc</kbd> lets it go.</figcaption></figure>
+<p>Cards with no place of their own (<span class="ui">Wait</span>, <span class="ui">Talk</span>,
+<span class="ui">Event</span>, <span class="ui">Choice</span>...) are added at once: they happen where the character
+is by then. A pin lands on what you click: the floor, a seat's top, a shelf, whether it has a collider or not.</p>
+</section>
+
+<section id="view">
+<h2><span class="n">5</span>In the 3D view</h2>
+<figure><img src="img/04_walk.jpg" alt="A Walk marker picked: its path with a bend and a plus handle, its arrow with a handle; the form shows its fields"><figcaption>The Walk picked: its path curves through a bend; the + adds another; the arrow's tip turns the facing.</figcaption></figure>
+<table class="keys">
+  <tr><td>A pin</td><td>A marker with a place. Its drawing says what it is, the number at its corner its turn. Its point is the place.</td></tr>
+  <tr><td>A round badge</td><td>Something that happens where they stand (a wait, a talk, an event, a choice and its ways), stacked over that place.</td></tr>
+  <tr><td>The line</td><td>The path they walk, with little arrows the way they go. Dashed inside a Choice's ways.</td></tr>
+  <tr><td>The white arrow</td><td>The way they face there.</td></tr>
+  <tr><td>Drag a pin</td><td>It rides the floor (or the seat, the shelf) under the mouse.</td></tr>
+  <tr><td>Drag the arrow's tip</td><td>Turns the facing.</td></tr>
+  <tr><td>Click a + on a path</td><td>A bend: the path curves through it. Drag it. Right-click it to delete it.</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Everything here is undone as anything else in Godot.</td></tr>
+</table>
+<h3>Whose markers you see</h3>
+<div class="pair">
+<figure><img src="img/08_two.jpg" alt="Two characters' markers in two colours"><figcaption>Each character has a colour. The eye beside a name shows or hides that character's markers.</figcaption></figure>
+<figure><img src="img/09_solo.jpg" alt="Only one character's markers drawn"><figcaption>The ring beside the eye: only theirs. <span class="ui">All quests</span> draws every quest's markers, not just the one picked.</figcaption></figure>
+</div>
+</section>
+
+<section id="form">
+<h2><span class="n">6</span>A marker's form</h2>
+<p>Pick a marker (its pin, or its row in the storyboard). The form on the right is that marker in plain words.</p>
+<table class="keys">
+  <tr><td>Kind, Note</td><td>What it is (it can be changed), and a few words shown on its pin.</td></tr>
+  <tr><td>Starts when</td><td>Chips. Press <span class="ui">+</span>: the scene's flags with a tick each, a quest that's open or done, after a wait, you're near, in or out of your sight, has been shot. Click a chip to change it, turn it into its "not", or take it out. No chips: at once.</td></tr>
+  <tr><td>Where</td><td>The pin as numbers, and the facing as a dial (what the mouse does in the 3D view).</td></tr>
+  <tr><td>Its own settings</td><td>A walk's pace, a wait's length, a grab's thing...</td></tr>
+  <tr><td>Animation</td><td>How fast its clip plays, and how many seconds it's eased into.</td></tr>
+  <tr><td>Face and look</td><td>An expression from here on; faces by flag; a skin and eyes (monsters).</td></tr>
+  <tr><td>Talk</td><td>You can talk to them here: what's said, your answers.</td></tr>
+  <tr><td>Then</td><td>A line, a sound, things fired, flags, a task ticked or added.</td></tr>
+</table>
+<div class="tip"><b>Waiting for something</b> is always <span class="ui">Starts when</span> on the marker that should wait.
+Meanwhile the character holds what they're in: standing they idle, sitting they stay sat, asleep they sleep.</div>
+</section>
+
+<section id="kinds">
+<h2><span class="n">7</span>The cards</h2>
+<table class="keys">
+  <tr><td>Start here</td><td>Put at the pin, facing its arrow, and shown. At once, only when you're not looking, or fading in.</td></tr>
+  <tr><td>Walk, Run</td><td>To the pin, through its bends, then turns to the arrow. Or <span class="ui">Comes to you</span> and stops short.</td></tr>
+  <tr><td>Wait</td><td>Stays put, idling (or in a loop you pick), for some seconds or until the next marker can start. <span class="ui">Keeps turning to face you</span>.</td></tr>
+  <tr><td>Talk</td><td>A Wait you can talk to, that stays until you do.</td></tr>
+  <tr><td>Sit</td><td>Click the seat's front edge; the arrow is the way the knees point. Stays sat until a later marker moves them (they stand up first by themselves).</td></tr>
+  <tr><td>Sleep</td><td>Click the bed's edge; the arrow points away from the bed. Sits, lies down, sleeps.</td></tr>
+  <tr><td>Grab</td><td>Click where the hand should go. Three reaches: the floor, a table (about 0.86 m), a shelf (about 1.65 m); the nearest to the pin's height is used.</td></tr>
+  <tr><td>Pick up, Put down</td><td>Pick the thing in the 3D view: it goes into the hand, and stays there until a Put down leaves it at its pin.</td></tr>
+  <tr><td>Open door</td><td>Click the handle, pick the door. The arrow points into the door.</td></tr>
+  <tr><td>Animation</td><td>Any animation of the model's, or a file (a Kimodo dance). Once, several times, or looping.</td></tr>
+  <tr><td>Event, Scare, Look</td><td>Nothing with the body: what's under <span class="ui">Then</span>, at once. A Scare is heard by the Fear node; a Look changes skin and eyes.</td></tr>
+  <tr><td>Choice</td><td>Takes the first of its ways whose flags are on.</td></tr>
+  <tr><td>Repeat</td><td>The markers inside it again: N times, until a flag, or on and on.</td></tr>
+  <tr><td>Disappear</td><td>Hidden and switched off: not drawn, not animated, not processed. Back with a Start here, or by itself when a later marker needs the body.</td></tr>
+</table>
+</section>
+
+<section id="talk">
+<h2><span class="n">8</span>Talking, and answers</h2>
+<ol class="steps">
+  <li>Click the <span class="ui">Talk</span> card (or turn on <span class="ui">You can talk to ... here</span> on any marker where they stay put).</li>
+  <li>Type what's said, a line a row. <code>Alex: Looking for something?</code> names who says it; just words are the character's; <code>You: ...</code> is yours. <code>[smile]</code> in front wears that face while it's said.</li>
+  <li>Press <span class="ui">+ Answer</span> for each thing you can answer: two at the most, and short. Each answer gets a flag of its own (you can rename it), a face, a reply.</li>
+</ol>
+<figure><img src="img/05_talk.jpg" alt="The Talk section of the form: a line, two answers with their flags and faces"><figcaption>Two answers. "The book on the shelf" turns on <code>alex_shelf</code> and Alex smiles; "Never mind" turns on <code>alex_never</code>.</figcaption></figure>
+<ul>
+  <li>Answers are given once each time the character comes to that marker. Talked to again they say the <span class="ui">Asked again</span> line, or nothing.</li>
+  <li><span class="ui">Another conversation, for when flags are on</span>: the first conversation whose flags are on is the one had. So a flag picks what's said, and with it the face.</li>
+  <li>While you talk you stand still and the character starts nothing: nobody walks off mid-sentence.</li>
+  <li>It's drawn as every line and choice in the studio's games is: no panel. The name small, the line under it, and the
+  answers on one line under the last thing said with a dash between, the one pointed at white and the other dimmed.
+  With the HUD in your scene (an <code>HSHud</code> node, the UI plugin's) it <em>is</em> the HUD's own line, choice and
+  ring; with none the Markers plugin draws the same thing.</li>
+</ul>
+</section>
+
+<section id="choice">
+<h2><span class="n">9</span>A Choice: which way</h2>
+<p>Press <span class="ui">A way for each answer</span> under the answers. A <span class="ui">Choice</span> appears after
+the Talk with a way for each answer's flag. Pick a way in the storyboard, then place cards: they go inside it.</p>
+<figure><img src="img/06_choice.jpg" alt="A Choice picked: its two ways in the storyboard and the form"><figcaption>Way 3A runs when <code>alex_shelf</code> is on, 3B when <code>alex_never</code> is. After either, the markers after the Choice (4, 5).</figcaption></figure>
+<div class="tip"><b>"Wait until" and "only if" are two things.</b> A marker's <span class="ui">Starts when</span> waits.
+A Choice doesn't wait for one flag: it takes the first way that's on. A way with no flags is "otherwise": keep it
+last. With an otherwise the Choice decides at once; without, it waits until a way opens (your answer).</div>
+</section>
+
+<section id="quests">
+<h2><span class="n">10</span>Quests</h2>
+<ul>
+  <li>The <span class="ui">+</span> beside the quest's name makes a new quest. Its <span class="ui">starts</span> chips say what starts it: usually a task of the Story's being open (<code>on:book</code>), or a flag.</li>
+  <li>A quest with no chips starts when the quest before is finished (the first: when the game starts).</li>
+  <li>A quest with chips starts the moment they're so, even in the middle of an earlier quest, which is cut short. The character never goes back up the list.</li>
+  <li>They carry on from where they are. If a later quest cuts in while they're somewhere it doesn't expect, they're put where it expects when you can't see it, and walk from where they are when you can.</li>
+</ul>
+</section>
+
+<section id="speed">
+<h2><span class="n">11</span>Speed, time, easing</h2>
+<ul>
+  <li><b>Pace</b>: the character's own walk or run (a baked character's clips say how fast they travel, so the feet keep step).</li>
+  <li><b>Speed ×</b>: 0.5 a slow walk, 1.5 a hurry.</li>
+  <li><b>Or take N s</b>: they get there in that time, whatever the distance. The storyboard shows each walk's length and time.</li>
+  <li><b>Animation speed</b> on any clip or loop (a faster idle, a slower dance).</li>
+  <li><b>Eased in</b>: the seconds a clip is blended into from what came before. A walk speeds up over its first steps and slows into its last.</li>
+</ul>
+</section>
+
+<section id="stairs">
+<h2><span class="n">12</span>Stairs</h2>
+<p>A Walk follows the floor under its path. For a flight: a bend at the foot, a bend at the top, and
+<span class="ui">One smooth curve</span> off (straight from bend to bend). They rise before each riser and come off
+each step late, so the feet are never inside a step. On two storeys they follow the floor the path lies on.</p>
+</section>
+
+<section id="dance">
+<h2><span class="n">13</span>A dance of your own</h2>
+<ol class="steps">
+  <li>Drop the animation in <code>res://animations/</code>: a Kimodo <code>.npz</code>, or a Godot animation.</li>
+  <li>Place an <span class="ui">Animation</span> card, pick it under <span class="ui">Or a file</span>, tick <span class="ui">It loops</span> for a dance that goes on.</li>
+</ol>
+<p>A Kimodo motion is fitted to the character's own skeleton the first time it plays. The story from the request, as
+markers: <span class="ui">Wait</span> (you can talk; the answer turns on <code>go_dance</code>) →
+<span class="ui">Walk</span> to their room (Starts when: <code>go_dance</code>) → <span class="ui">Animation</span>.</p>
+</section>
+
+<section id="monsters">
+<h2><span class="n">14</span>Faces, looks, scares, being shot</h2>
+<ul>
+  <li><b>Face</b>: an expression worn from that marker on (smile, sad, angry, afraid, scream...), or
+  <span class="ui">A face by flags</span>: "if <code>gave_gift</code>: smile; otherwise: sad", looked at while they're at that marker.</li>
+  <li><b>Look</b> (with the Look plugin): a skin (chrome, ember, the cloak...) and eyes (glow, black, void...) from that marker on, or the model's own again.</li>
+  <li><b>A scare</b>: <span class="ui">Start here</span> with <span class="ui">when you're not looking</span>, a <span class="ui">Run</span> that <span class="ui">comes to you</span>, a <span class="ui">Scare</span> that fires a scare area or a cue with a scream for a face, then <span class="ui">Disappear</span>.</li>
+  <li><b>Shot</b> (with the Weapons plugin's hit reaction under the character): the flags <code>shot:alex</code> and <code>down:alex</code> set themselves. Pick the character (their name in the list) and say what going down means: <span class="ui">the quest stops</span> (its other markers never run; a later quest that asks for <code>down:alex</code> can bring them back), <span class="ui">gone for good</span>, or <span class="ui">can't be killed</span> (up again and on: only the flags remember, for an ending).</li>
+</ul>
+</section>
+
+<section id="try">
+<h2><span class="n">15</span>Try it</h2>
+<p><span class="ui">Try it</span> plays the picked marker in the 3D view; <span class="ui">From here</span> it and what
+follows; <span class="ui">Play</span> beside the quest all of it. A copy of the character plays; the real one isn't
+touched and nothing is saved.</p>
+<figure><img src="img/07_tester.jpg" alt="A copy of Alex walking along the path in the editor"><figcaption>Every Starts when is passed after a moment and said at the foot of the view; nothing is fired and no flag is set. The way a Choice takes is the way picked in the storyboard.</figcaption></figure>
+</section>
+
+<section id="game">
+<h2><span class="n">16</span>In the game</h2>
+<div class="pair">
+<figure><img src="img/play_talk.jpg" alt="The game: Alex's name and line at the foot of the view, the two answers on one line under it with a dash between, no panel"><figcaption>Aim at someone you can talk to (a ring, <em>Talk</em> and their name) and press <kbd>E</kbd>. The lines come one after another, each for as long as it takes to read; <kbd>E</kbd> or a click hurries them. The answers: <kbd>A</kbd> / <kbd>D</kbd> or the arrows move, <kbd>Enter</kbd> picks, or click one.</figcaption></figure>
+<figure><img src="img/play_f7.jpg" alt="The game with a label over Alex: the quest, the marker, what it waits for"><figcaption><kbd>F7</kbd>: over each character, their quest, their marker and what it's waiting for.</figcaption></figure>
+</div>
+<p>The flags a character sets by themselves (the name in small letters): <code>talked:alex</code> after a talk,
+<code>shot:alex</code> at the first hit, <code>down:alex</code> when shot down.</p>
+</section>
+
+<section id="rules">
+<h2><span class="n">17</span>The rules, and what's not there</h2>
+<ul>
+  <li>Markers run top to bottom. A marker starts when the one before is done and its Starts when is so.</li>
+  <li>Quests run in order; one with chips cuts in; never back up the list; a quest runs once.</li>
+  <li>What the character is carries on. Disappear hides; a later marker that needs the body brings it back.</li>
+  <li><span class="ui">Problems</span> (bottom left) lists what can't work as it is: a flag nothing turns on, a way after "otherwise", a Repeat that never ends before other markers. Each takes you to its marker.</li>
+</ul>
+<div class="notyet"><b>Not there yet</b>: doors opened on the way of a walk (use an Open door marker before it); a
+marker that keeps following you; the head and eyes turning to you; feet planted on each step of a stair; a navigation
+mesh (the path you draw is the path walked). Games built with the Director or exported from the desk don't use
+markers.</div>
+</section>
+
+<footer>NPC markers (<code>GodotPlugins/HorrorStudioMarkers</code>, <code>docs/MARKERS.md</code>). The pictures are the
+editor's own, made by the plugin's check: <code>python tools/godot/markers_check.py --editor --shots DIR</code>, then
+<code>python tools/godot/markers_check.py guide DIR</code>.</footer>
+</main>
+</div>
+<script>
+// the contents follow the reading: the section on screen is lit
+const links = [...document.querySelectorAll("nav.toc ol a")], secs = links.map(a => document.querySelector(a.getAttribute("href")));
+const lit = () => { let at = 0; secs.forEach((s, i) => { if (s && s.getBoundingClientRect().top < 140) at = i; }); links.forEach((a, i) => a.classList.toggle("on", i === at)); };
+addEventListener("scroll", lit, { passive: true }); lit();
+</script>
+</body>
+</html>

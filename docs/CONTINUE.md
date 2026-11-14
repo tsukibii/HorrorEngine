@@ -35,12 +35,59 @@ main): the user's own eye render matched in Godot (the eye's shader reworked, ca
 from sliders), eye looks as cards in the Studio and the lashes on the lid's skin; the three brought together on
 `make-up-enhanced` on 2026-11-13 (tsukibii/HorrorEngine#27, into main, merged); then on `more-body-presets` (from
 main): a fourth body card, v2 pear, and the Hips & thighs slider, then two head cards after two pictures (merged,
-PR #28); and on `animation-v2` (from main): **the Animator v2**, a character's own animations made from its body
-(§0 below). Read this after CLAUDE.md's start
+PR #28); on `animation-v2` (from main): the Animator v2, a character's own animations made from its body (merged,
+PR #29); and 2026-11-13 and 14 on `marker-system` (from main): **NPC markers**, a character's whole part in a game
+placed as markers (§0 below). Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Where `animation-v2` stopped (2026-11-13, after the user's first feedback)
+## 0. Where `marker-system` stopped (2026-11-14)
+
+**Built** (docs/MARKERS.md, its plan's boxes all ticked): the **HorrorStudio Markers** plugin
+(`GodotPlugins/HorrorStudioMarkers`), in every project `godot_byhand.py new` makes and switched on in an older one by
+`godot_byhand.py install`. Beside a character an `HSNpc`, under it quests, under each its markers; a marker is
+*Starts when* → what happens (Start here, Walk / Run, Wait / Talk, Sit, Sleep, Grab / Pick up / Put down / Open door,
+Animation, Event / Scare / Look, Choice, Repeat, Disappear) → *then*. The game side: order, quests that cut in, state
+carried on, curved walks at the character's own pace or in a time, stairs, clips of their own and Kimodo files,
+talking with answers to flags, faces by flag, looks, Disappear (not drawn, not animated, not processed), being shot
+(three policies), checkpoints, F7. The editor side: the **NPC Markers** tab along the bottom (characters with a
+colour, an eye and solo; the palette; the storyboard; the marker's form in plain words; Problems), the markers in the
+3D view as map pins placed and dragged by mouse, the tester (a marker, from here, a quest, on a copy). The guide:
+`guides/markers/index.html`. Checks: MARKERS (4 minutes), MARKERSEDITOR (1 minute).
+
+**The user's first feedback, done** (DECISIONS 2026-11-14): the conversations were drawn in a new boxed panel with
+numbered answers; they're now the prior style (the HUD's own line, one-line answers with a dash and ring prompt when
+the scene has an `HSHud`; the same drawn by the plugin when it has none; lines timed, A / D and Enter or a click).
+
+**The user has seen only pictures of it**: expect the next feedback to be about what a hand finds that a check
+doesn't: the pins' size and look on their own maps, the tab's height (300 px at the least; the storyboard shows about
+five rows before it's dragged taller), how a walk reads on their characters, stairs on an interior's export (they
+want step colliders), and anything else on the game's screen that isn't in the studio's style (F7's chip is a debug
+label, drawn plainly; say so if asked). The
+editor was only ever driven by `markers_editor_test.gd` (headless, and under xvfb on lavapipe at 1920 x 1080 for the
+pictures); nobody has used it with a mouse.
+
+**What the picture changed** (DECISIONS 2026-11-13, the marker system, last bullet): the design was written from the
+user's words before the mock-up could be looked at; then the pins became map pins with the kind's drawing, and the
+form got the facing dial, the place as numbers and flags as ticks. The pins are coloured by character, not by kind as
+the mock-up's are: say so if the user asks.
+
+**Not built** (MARKERS §11), in the order I'd take them:
+1. tutorial v2 and `guides/first_game` don't use markers (her parts there are the starter's scripted nodes); one part
+   of tutorial v2 done again with markers would show the two side by side, and find what's missing;
+2. doors opened on the way of a walk (now: an Open door marker before it);
+3. a Follow marker (after you along your trail, as the starter's chase does), and the hunt's nodes as cards (a
+   marker's Event can already `fire` a cue, a scare area, a hunt's `start`);
+4. the head and eyes turning to you while they wait (the body can face you);
+5. a line's own time (now by its length: `read_secs`), and a marker's "Then: a line" through the HUD's line too (it
+   goes through the Story's `say`, which draws its own label);
+6. feet planted on each step of a stair (they glide over the risers; ANIMATOR_V2 §12's foot IK is the same work);
+7. a navigation mesh (the path drawn is the path walked), Director and desk games.
+
+**The pictures** of the guide are made in two steps, both under xvfb (4 minutes on a CPU):
+`python tools/godot/markers_check.py --editor --reuse --shots DIR`, then `python tools/godot/markers_check.py guide DIR`.
+
+## Before that (2026-11-13, `animation-v2`, merged in PR #29): the Animator v2, after the user's first feedback
 
 **Built** (docs/ANIMATOR_V2.md): the Animator v2. A Studio export opened in a page (the dashboard's Animator v2 tile,
 port 8788), measured, five sliders, 24 clips made from its body and baked into its own .glb (idle, walk, run, sit,
