@@ -30,6 +30,9 @@ extends Node
 @export_group("")
 @export var eyes := true
 @export var hair := true
+@export var cloth := true                      ## her garments that wear one of the studio's fabric sets on the cloth shader (HSCloth: the weave at its real size, the fuzz)
+@export_range(0.0, 1.0) var cloth_detail: float = 1.0      ## the weave's relief
+@export_range(0.0, 2.0) var cloth_fuzz: float = 1.0        ## the fuzz, times each fabric's own
 @export var jiggle := true                     ## an export's animal ears (any chain of bones named jiggle_<name>_0 ... _tip) flop as she moves (HSJiggle)
 @export_range(0.0, 2.0) var jiggle_amount: float = 1.0   ## how lively: 0 still, 2 very floppy
 @export_file("*.glb") var glb_path: String = ""  ## the export's glb (its skin and eye records); empty: the character's own file
@@ -143,6 +146,8 @@ func wear() -> void:
 		materials.append_array(HSEye.wear(t, path).values())
 	if hair:
 		materials.append_array(HSHair.wear(t, {}, path if path.ends_with(".glb") else ""))
+	if cloth and path.ends_with(".glb"):           # the garments that say their fabric (a Studio export's studioCloth records)
+		materials.append_array(HSCloth.wear(t, {"detail": cloth_detail, "sheen": cloth_fuzz}, path))
 	if eyes and (eye_look != null or not eye_paint.is_empty()):   # her eyes painted again (eyes v3): the eye look, then the single numbers
 		var words: Dictionary = eye_look.paint.duplicate() if eye_look != null else {}
 		words.merge(eye_paint, true)

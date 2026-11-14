@@ -32,6 +32,7 @@
   "sheen_rough": 0.4,
   "sheen_dye": 0.85,
   "wrap": 0.2,
+  "halo": 0.15,
   "spec": 0.55,
   "aniso": 0.3,
   "crease": "sheer",

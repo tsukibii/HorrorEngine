@@ -23,7 +23,9 @@ knit's cover). Into the project's own sets in git: pbr/fabric/<Set>_1K-JPG/.
     python tools/fabricpbr.py [sets...] [--size 1024]    made into pbr/fabric/<Set>_<size>-JPG/
     python tools/fabricpbr.py list
     python tools/fabricpbr.py sheet [sets...]            each set lit and tinted, one sheet: Saved/Story/_look/fabricpbr/sheet.jpg
-    python tools/fabricpbr.py godot                      the sets packed for the look plugin's cloth shader (textures/cloth/)
+    python tools/fabricpbr.py godot [sets...]            the sets packed for the look plugin's cloth shader (textures/cloth/)
+    python tools/fabricpbr.py demo [--outfits-only]      the Studio's pictures of them into docs/fabric_sheets: every set on a
+                                                         ball of cloth, and the "fabrics:" outfits worn (node, Playwright)
     python tools/fabricpbr.py check                      FABRICPBR: every set tiles, its colour pale and neutral, its
                                                          maps in range, its fabric block whole, the same twice
 
@@ -414,7 +416,7 @@ def shade(P, H, base, deep, yv=None, vary=0.03, fibre=None, fuzz=None, fuzz_k=0.
 # 1 + cavity where the map is darkest), `sheen` the fuzz lobe's strength, `sheen_rough` its roughness, `sheen_dye` how
 # much of the dye the fuzz carries (0 white hairs, 1 the dyed fibre's own: the square root of the colour, lighter and
 # less saturated, as a hair lit through is), `wrap` how far the cloth's diffuse light wraps past the terminator (the
-# light through and between its fibres), `spec` the fibres'
+# light through and between its fibres), `halo` a light behind the cloth caught in its hairs along its outline, `spec` the fibres'
 # own reflectance (0.5: F0 0.04), `aniso` a filament yarn's highlight drawn out along the yarn, `cover` a sheer knit's
 # yarn share at 20 denier, `crease` the surface the tailor's creases behave as, `macro` a slow unevenness over many
 # repeats.
@@ -425,68 +427,75 @@ SETS = {
         loop=dict(r=0.215, hl=1.72, b=0.25, dz=1.05, plies=3, twist=2.4, jitter=0.07, swell=0.09),
         strand=(9.0, 1.6, 0.05), hair=dict(count=5200, mm=(0.8, 3.2), um=30, curl=0.45, lift=0.10), fibre=0.035,
         rough=(0.9, 1.0, 1.0), sheen=(0.55, 1.0), reach=3.2, normal=0.8,
-        fabric=dict(cavity=0.75, sheen=0.85, sheen_rough=0.62, sheen_dye=0.88, wrap=0.4, spec=0.35, crease="knit", macro=0.035)),
+        fabric=dict(cavity=0.75, sheen=0.85, sheen_rough=0.62, sheen_dye=0.88, wrap=0.4, halo=0.55, spec=0.35, crease="knit", macro=0.035)),
     "WoolRib001": dict(
         label="knitted wool, ribbed: a 2 x 2 rib in a finer two-ply yarn (cuffs, hems, a fitted jumper)",
         family="knit", tile=48.0, nw=24, nc=32, seed=17, base="#e9e2d2", deep=0.55,
         loop=dict(r=0.23, hl=1.7, b=0.25, dz=1.0, plies=2, twist=2.0, jitter=0.05, swell=0.08, rib=(2, 2)),
         strand=(8.0, 1.4, 0.05), hair=dict(count=7000, mm=(0.5, 2.2), um=26, curl=0.45, lift=0.10), fibre=0.03,
         rough=(0.9, 1.0, 1.0), sheen=(0.5, 1.0), reach=2.4, normal=0.8,
-        fabric=dict(cavity=0.75, sheen=0.75, sheen_rough=0.6, sheen_dye=0.88, wrap=0.4, spec=0.35, crease="rib", macro=0.03)),
+        fabric=dict(cavity=0.75, sheen=0.75, sheen_rough=0.6, sheen_dye=0.88, wrap=0.4, halo=0.5, spec=0.35, crease="rib", macro=0.03)),
     "WoolFlannel001": dict(
         label="wool: a 2/2 twill flannel, 26 ends and 22 picks a cm in a woollen yarn, milled and brushed so its nap half hides the weave",
         family="weave", tile=32.0, nw=84, nf=72, draft="twill22", seed=23, base="#e7e0d1", deep=0.66,
         yarn=dict(aw=0.5, af=0.5, tw=0.4, tf=0.4, cw=0.34, cf=0.34, k=2.0, wander=0.06, slub=0.11, twist=(1.5, 0.9, 0.10)),
         hair=dict(count=30000, mm=(0.5, 2.0), um=24, curl=0.5, lift=0.28), fibre=0.04, soften=0.9,
         rough=(0.9, 1.0, 1.0), sheen=(0.6, 1.0), reach=1.2, normal=0.75,
-        fabric=dict(cavity=0.6, sheen=0.8, sheen_rough=0.6, sheen_dye=0.88, wrap=0.35, spec=0.3, crease="wool", macro=0.035)),
+        fabric=dict(cavity=0.6, sheen=0.8, sheen_rough=0.6, sheen_dye=0.88, wrap=0.35, halo=0.45, spec=0.3, crease="wool", macro=0.035)),
     "CottonPoplin001": dict(
         label="cotton: a shirt's poplin, plain weave, 52 ends and 28 picks a cm of combed 40s yarn (a fine rib across it)",
         family="weave", tile=24.0, nw=124, nf=68, draft="plain", seed=31, base="#eceae4", deep=0.74,
         yarn=dict(aw=0.48, af=0.34, tw=0.3, tf=0.34, cw=0.34, cf=0.1, k=2.4, wander=0.035, slub=0.07, twist=(1.0, 0.8, 0.07)),
         hair=dict(count=5200, mm=(0.2, 0.6), um=14, curl=0.4, lift=0.05), fibre=0.03,
         rough=(0.8, 0.93, 0.95), sheen=(0.22, 0.8), reach=0.5, normal=0.85,
-        fabric=dict(cavity=0.5, sheen=0.3, sheen_rough=0.5, sheen_dye=0.85, wrap=0.25, spec=0.45, crease="cotton", macro=0.03)),
+        fabric=dict(cavity=0.5, sheen=0.3, sheen_rough=0.5, sheen_dye=0.85, wrap=0.25, halo=0.12, spec=0.45, crease="cotton", macro=0.03)),
+    "Denim001": dict(
+        label="denim: a 3/1 twill of ring-spun yarn, 26 ends and 18 picks a cm, its warp dyed and its weft left white, the dye worn off the twill's ridges, slubs along its yarns",
+        family="weave", tile=32.0, nw=84, nf=56, draft="twill31", seed=37, base="#ebe9e1", deep=0.7,
+        yarn=dict(aw=0.5, af=0.42, tw=0.42, tf=0.36, cw=0.4, cf=0.2, k=2.2, wander=0.05, slub=0.13, twist=(1.4, 0.9, 0.1), slubs=0.22),
+        hair=dict(count=6000, mm=(0.3, 0.9), um=16, curl=0.4, lift=0.06), fibre=0.035, undyed=0.07, fade=0.3, vary=0.05,
+        rough=(0.82, 0.95, 0.96), sheen=(0.25, 0.8), reach=0.9, normal=0.85,
+        fabric=dict(cavity=0.5, sheen=0.34, sheen_rough=0.55, sheen_dye=0.85, wrap=0.25, halo=0.1, spec=0.45, crease="denim", macro=0.03)),
     "CottonJersey001": dict(
         label="spun cotton: a T-shirt's single jersey, 28 gauge, 16 wales and 21 courses a cm of ring-spun 30s yarn, its hairs standing off it",
         family="knit", tile=24.0, nw=38, nc=51, seed=41, base="#edebe5", deep=0.66,
         loop=dict(r=0.15, hl=1.66, b=0.24, dz=1.15, plies=1, twist=3.0, jitter=0.06, swell=0.11),
         strand=(5.0, 1.1, 0.10), hair=dict(count=9000, mm=(0.25, 0.9), um=15, curl=0.4, lift=0.07), fibre=0.03,
         rough=(0.84, 0.96, 0.98), sheen=(0.32, 0.9), reach=0.7, normal=0.85,
-        fabric=dict(cavity=0.6, sheen=0.42, sheen_rough=0.55, sheen_dye=0.86, wrap=0.3, spec=0.42, crease="jersey", macro=0.03)),
+        fabric=dict(cavity=0.6, sheen=0.42, sheen_rough=0.55, sheen_dye=0.86, wrap=0.3, halo=0.2, spec=0.42, crease="jersey", macro=0.03)),
     "CottonFluffy001": dict(
         label="fluffy cotton: a thick sock's brushed terry, a 1 x 1 rib under a pile of loops and loose fibre",
         family="pile", tile=38.4, nw=24, nc=30, seed=53, base="#eeebe4", deep=0.6,
         loop=dict(r=0.25, hl=1.7, b=0.25, dz=1.0, plies=2, twist=1.6, jitter=0.1, swell=0.14, rib=(1, 1)),
         strand=(6.0, 1.3, 0.05), hair=dict(count=42000, mm=(0.6, 2.4), um=22, curl=0.75, lift=0.42), fibre=0.04, soften=1.6, clump=0.16,
         rough=(0.95, 1.0, 1.0), sheen=(0.75, 1.0), reach=2.4, normal=0.8,
-        fabric=dict(cavity=0.6, sheen=1.0, sheen_rough=0.7, sheen_dye=0.88, wrap=0.45, spec=0.25, crease="knit", macro=0.04)),
+        fabric=dict(cavity=0.6, sheen=1.0, sheen_rough=0.7, sheen_dye=0.88, wrap=0.45, halo=0.7, spec=0.25, crease="knit", macro=0.04)),
     "Spandex001": dict(
         label="spandex: a nylon and elastane jersey for leggings and swimwear, 16 wales and 23 courses a cm of filament yarn, smooth, with a soft sheen down its wales",
         family="knit", tile=24.0, nw=40, nc=56, seed=61, base="#eeeeec", deep=0.8,
         loop=dict(r=0.21, hl=1.6, b=0.24, dz=0.55, plies=1, twist=1.0, jitter=0.018, swell=0.03),
         strand=(14.0, 2.6, 0.03), hair=None, fibre=0.012,
         rough=(0.44, 0.62, 0.6), sheen=(0.12, 0.2), reach=0.5, normal=0.7,
-        fabric=dict(cavity=0.35, sheen=0.18, sheen_rough=0.35, sheen_dye=0.9, wrap=0.12, spec=0.55, aniso=0.45, crease="spandex", macro=0.02)),
+        fabric=dict(cavity=0.35, sheen=0.18, sheen_rough=0.35, sheen_dye=0.9, wrap=0.12, halo=0.0, spec=0.55, aniso=0.45, crease="spandex", macro=0.02)),
     "HosierySheer001": dict(
         label="sheer hosiery: a 20 denier nylon tight as it sits on the leg, its loops opened to 0.8 by 0.5 mm, the skin through them",
         family="sheer", tile=16.0, nw=20, nc=32, seed=71, base="#eeeeee", deep=0.9,
         loop=dict(r=0.036, hl=1.78, b=0.27, dz=1.0, plies=1, twist=1.0, jitter=0.05, swell=0.1),
         strand=(6.0, 1.0, 0.0), hair=None, fibre=0.0,
         rough=(0.5, 0.6, 0.6), sheen=(0.5, 0.6), reach=0.3, normal=0.6,
-        fabric=dict(cavity=0.2, sheen=0.5, sheen_rough=0.4, sheen_dye=0.85, wrap=0.2, spec=0.55, aniso=0.3, crease="sheer", macro=0.0, denier=20)),
+        fabric=dict(cavity=0.2, sheen=0.5, sheen_rough=0.4, sheen_dye=0.85, wrap=0.2, halo=0.15, spec=0.55, aniso=0.3, crease="sheer", macro=0.0, denier=20)),
     "Leather001": dict(
         label="leather: a jacket's full-grain cowhide, semi-aniline, its grain in plates of 2 to 3 mm with finer creases inside them, follicle pores, a soft polish",
         family="hide", tile=80.0, seed=83, base="#e4e1da", deep=0.8,
         grain=((27, 0.2, 0.075, 1.0), (66, 0.24, 0.04, 1.2), (150, 0.3, 0.014, 1.0)), pores=(250, 0.3, 0.17, 0.02), tooth=0.003, wave=0.05, stretch=1.25,
         rough=(0.4, 0.66, 0.5), sheen=(0.05, 0.12), reach=1.2, normal=1.0,
-        fabric=dict(cavity=0.45, sheen=0.08, sheen_rough=0.5, sheen_dye=0.9, wrap=0.04, spec=0.5, crease="leather", macro=0.045)),
+        fabric=dict(cavity=0.45, sheen=0.08, sheen_rough=0.5, sheen_dye=0.9, wrap=0.04, halo=0.0, spec=0.5, crease="leather", macro=0.045)),
     "LeatherMatte001": dict(
         label="matte leather: a shoe's calf, a tight fine grain under a matte finish, pores close up, hardly a highlight",
         family="hide", tile=60.0, seed=97, base="#e4e1da", deep=0.86,
         grain=((44, 0.22, 0.012, 1.0), (115, 0.26, 0.011, 1.0), (240, 0.3, 0.005, 1.0)), pores=(200, 0.42, 0.2, 0.011), tooth=0.004, wave=0.02, stretch=1.15,
         rough=(0.68, 0.8, 0.74), sheen=(0.2, 0.3), reach=0.6, normal=1.0,
-        fabric=dict(cavity=0.35, sheen=0.22, sheen_rough=0.65, sheen_dye=0.9, wrap=0.08, spec=0.45, crease="leather", macro=0.035, shoe=True)),
+        fabric=dict(cavity=0.35, sheen=0.22, sheen_rough=0.65, sheen_dye=0.9, wrap=0.08, halo=0.04, spec=0.45, crease="leather", macro=0.035, shoe=True)),
 }
 
 
@@ -518,7 +527,7 @@ def build_weave(P, n, ss):
     alb = shade(P, H, srgb(P["base"]), P["deep"], W["YV"], P.get("vary", 0.035), g * P["fibre"] * 0.6, fz, 0.3, r)
     tint = None
     if P.get("undyed") is not None:                                    # a yarn-dyed cloth: the weft left white (denim), fading on the crowns
-        tint = np.where(W["TOP"], 1.0, P["undyed"]) - P.get("fade", 0) * smooth((W["P"] - 0.55) / 0.45) * W["TOP"] * (0.6 + 0.4 * fnoise(n, r + 9, 2, 9))
+        tint = np.where(W["TOP"], 1.0, P["undyed"]) - P.get("fade", 0) * smooth((W["P"] - 0.55) / 0.45) * W["TOP"] * (0.8 + 0.2 * np.clip(fnoise(n, r + 9, 6, 22), -1, 1))
         tint = np.clip(tint - 0.25 * np.clip(fz, 0, 1), 0, 1)
     return finish(P, H, px, alb, rough, sheen, tint=tint, ss=ss)
 
@@ -621,6 +630,8 @@ def fabric_block(name, m):
     b.update(P["fabric"])
     if "opacity" in m:
         b["cover"] = round(float(m["opacity"].mean()), 3)
+    if "tint" in m:
+        b["dye_mean"] = round(float(m["tint"].mean()), 3)
     return b
 
 
@@ -655,6 +666,13 @@ def dye(rel, tint, cavity):
     yarns (where the map is darker) the light meets the dye more than once: the colour to a higher power there."""
     lum = rel.mean(-1, keepdims=True)
     return np.asarray(tint, F)[None, None, :] ** (1 + cavity * np.clip(1 - lum, 0, 1)) * rel
+
+
+def dye_take(undyed, tint, mask):
+    """Where a dye takes only in part (`mask` 0..1: a denim's weft, a ridge worn pale): its depth goes by its amount
+    as a power, not a blend (the shaders': undyed * (tint / undyed) ^ mask)."""
+    u = np.asarray(undyed, F)
+    return u * (np.maximum(np.asarray(tint, F), 1e-4) / u) ** (mask / max(float(np.mean(mask)), 0.05))
 
 
 def lit(m, tint="#ffffff", light=(-0.55, 0.6, 0.58), reps=1):
@@ -703,6 +721,203 @@ def cmd_sheet(names, size=512):
     return 0
 
 
+NEED = ("cavity", "sheen", "sheen_rough", "sheen_dye", "wrap", "halo", "spec", "crease", "macro")
+ROUGH = {"weave": (0.7, 1.0), "knit": (0.4, 1.0), "pile": (0.9, 1.0), "sheer": (0.4, 0.75), "hide": (0.35, 0.85)}
+
+
+def check():
+    """FABRICPBR: every set made small: it tiles (the step across its edges no larger than the largest steps inside
+    it, in its height and its colour), its colour the undyed cloth's (pale, nearly neutral, never above bleached cotton), its normals
+    whole and not leaning, its roughness its family's, its repeat a whole number of its yarns or stitches, its fabric
+    block whole, a sheer knit with its cover; one set made twice the same; and the sets in pbr/fabric and the look
+    plugin's packs the ones this code makes (their fabric blocks alike)."""
+    bad = []
+    say = lambda ok, what: (print(("  ok  " if ok else "  BAD ") + what), None if ok else bad.append(what))
+    t0 = time.time()
+    for nme, P in SETS.items():
+        m = make(nme, 192, 2)
+        notes = []
+        for key in ("height", "albedo"):
+            a = m[key] if key == "height" else m[key].mean(-1)
+            # the step across the repeat's edge against the steps inside it: the edge lies between two yarns, so
+            # against the largest steps inside (between yarns there too), not the mean
+            stx = np.abs(a - np.roll(a, -1, 1)).mean(0)
+            sty = np.abs(a - np.roll(a, -1, 0)).mean(1)
+            sx = float(stx[-1]) / max(float(np.percentile(stx[:-1], 97)), 1e-9)
+            sy = float(sty[-1]) / max(float(np.percentile(sty[:-1], 97)), 1e-9)
+            if sx > 1.25 or sy > 1.25:
+                notes.append(f"its {key}'s edges don't meet (across {sx:.2f}, up {sy:.2f} times the largest steps inside)")
+        c = to_srgb(m["albedo"].reshape(-1, 3).mean(0)) * 255
+        if not (195 < c.mean() < 240) or c.max() - c.min() > 34 or to_srgb(m["albedo"]).max() * 255 > 250:
+            notes.append(f"its colour {np.round(c).tolist()} isn't an undyed cloth's (pale, nearly neutral, under 240)")
+        n = m["normal"]
+        if not np.isfinite(n).all() or abs(float(np.linalg.norm(n, axis=-1).mean()) - 1) > 1e-3 or float(np.abs(n[..., :2].reshape(-1, 2).mean(0)).max()) > 0.04:
+            notes.append("its normals aren't whole, or lean")
+        for key in ("rough", "ao", "height", "sheen"):
+            if not np.isfinite(m[key]).all() or m[key].min() < 0 or m[key].max() > 1:
+                notes.append(f"its {key} out of range")
+        lo, hi = ROUGH[P["family"]]
+        r = float(m["rough"].mean())
+        if not (lo <= r <= hi):
+            notes.append(f"its roughness {r:.2f} isn't a {P['family']}'s ({lo} to {hi})")
+        if P["family"] == "weave" and (P["nw"] % REPEAT[P["draft"]] or P["nf"] % REPEAT[P["draft"]]):
+            notes.append(f"{P['nw']} by {P['nf']} yarns isn't a whole number of its {P['draft']} draft's repeats")
+        rib = P.get("loop", {}).get("rib")
+        if rib and P["nw"] % sum(rib):
+            notes.append(f"{P['nw']} wales isn't a whole number of its {rib[0]} x {rib[1]} ribs")
+        fb = fabric_block(nme, m)
+        miss = [k for k in NEED if k not in fb]
+        if miss:
+            notes.append("its fabric block lacks " + ", ".join(miss))
+        if P["family"] == "sheer" and not ("opacity" in m and 0.08 < fb.get("cover", 0) < 0.6):
+            notes.append(f"a sheer knit without a cover between 0.08 and 0.6 ({fb.get('cover')})")
+        say(not notes, f"{nme}: {P['tile'] / 10:g} cm, mean sRGB {np.round(c).astype(int).tolist()}, roughness {r:.2f}, relief {m['relief'] * 1000:.2f} mm" + ("; " + "; ".join(notes) if notes else ""))
+    first = next(iter(SETS))
+    a, b = make(first, 96, 2), make(first, 96, 2)
+    say(all(np.array_equal(a[k], b[k]) for k in ("albedo", "normal", "rough", "height", "sheen")), f"{first} made twice: the same maps")
+    have = sets_on_disk()
+    table = json.loads((PACK / "cloth.json").read_text(encoding="utf-8")) if (PACK / "cloth.json").is_file() else {}
+    for nme, P in SETS.items():
+        if nme not in have:
+            say(False, f"{nme}: not in pbr/fabric (python tools/fabricpbr.py {nme})")
+            continue
+        d, mt = have[nme]
+        files = all((d / f).is_file() for f in mt["maps"].values())
+        same = all(mt["fabric"].get(k) == v for k, v in P["fabric"].items()) and abs(mt["tile_m"] - P["tile"] / 1000) < 1e-9
+        t = table.get(nme)
+        packed = bool(t) and all((PACK / f).is_file() and (PACK / (f + ".import")).is_file() for f in t["files"].values()) and t["fabric"] == mt["fabric"] and t["tile_m"] == mt["tile_m"]
+        say(files and same and packed, f"{nme}: in pbr/fabric with its {len(mt['maps'])} maps" + ("" if files else " (a map missing)") + ("" if same else ", but not as this code makes it now (python tools/fabricpbr.py)")
+            + (", packed for Godot" if packed else ", its pack for Godot missing or stale (python tools/fabricpbr.py godot)"))
+    for nme in sorted(set(table) - set(SETS)):
+        say(False, f"{nme}: packed for Godot, but no such set")
+    print(f"FABRICPBR {'FAIL' if bad else 'ok'} ({len(SETS)} sets, {time.time() - t0:.0f} s)")
+    return 1 if bad else 0
+
+
+IMPORT = """[remap]
+
+importer="texture"
+type="CompressedTexture2D"
+
+[params]
+
+compress/mode=0
+compress/high_quality=false
+compress/lossy_quality=0.7
+compress/hdr_compression=1
+compress/normal_map=2
+compress/channel_pack=0
+mipmaps/generate=true
+mipmaps/limit=-1
+roughness/mode=0
+roughness/src_normal=""
+process/channel_remap/red=0
+process/channel_remap/green=1
+process/channel_remap/blue=2
+process/channel_remap/alpha=3
+process/fix_alpha_border=false
+process/premult_alpha=false
+process/normal_map_invert_y=false
+process/hdr_as_srgb=false
+process/hdr_clamp_exposure=false
+process/size_limit=0
+detect_3d/compress_to=0
+"""
+
+
+def sets_on_disk():
+    """{name: (folder, meta)} for the sets made in pbr/fabric."""
+    out = {}
+    for d in sorted(PBR.iterdir()) if PBR.is_dir() else []:
+        f = d / "meta.json"
+        if f.is_file():
+            m = json.loads(f.read_text(encoding="utf-8"))
+            if isinstance(m.get("fabric"), dict):
+                out[d.name.rsplit("_", 1)[0]] = (d, m)
+    return out
+
+
+def cmd_godot(names):
+    """The sets packed for the look plugin's cloth shader (HSCloth, GODOT_LOOK §5x), from the maps in pbr/fabric:
+    <Set>_a.jpg (the normal's x and y, the hairiness), <Set>_b.jpg (the undyed cloth over its mean, halved; the
+    roughness; the occlusion), <Set>_o.png (a sheer knit's cover, or where a dye takes), each with its .import (mips,
+    no compression: as the skin's tiles), and cloth.json: each set's repeat and its fabric block."""
+    from PIL import Image
+    have = sets_on_disk()
+    names = names or list(have)
+    PACK.mkdir(parents=True, exist_ok=True)
+    table = {}
+    tf = PACK / "cloth.json"
+    if tf.is_file():
+        table = json.loads(tf.read_text(encoding="utf-8"))
+    for nme in names:
+        if nme not in have:
+            sys.exit(f"{nme}: not made (python tools/fabricpbr.py {nme})")
+        d, m = have[nme]
+        rd = lambda k: np.asarray(Image.open(d / m["maps"][k]), F) / 255
+        col = rd("albedo")
+        lin = np.where(col <= 0.04045, col / 12.92, ((col + 0.055) / 1.055) ** 2.4)
+        rel = (lin / lin.reshape(-1, 3).mean(0)).mean(-1)
+        nrm = rd("normal")
+        a = np.stack([nrm[..., 0], nrm[..., 1], rd("sheen")], -1)
+        b = np.stack([np.clip(rel * 0.5, 0, 1), rd("rough"), rd("ao")], -1)
+        files = {"a": f"{nme}_a.jpg", "b": f"{nme}_b.jpg"}
+        for key, arr in (("a", a), ("b", b)):
+            Image.fromarray((np.clip(arr, 0, 1) * 255 + 0.5).astype(np.uint8), "RGB").save(PACK / files[key], quality=87 if key == "a" else 84, subsampling=0)   # (the plugin goes into every project: 16 MB of packs, not 21)
+        mask = "opacity" if "opacity" in m["maps"] else "tint" if "tint" in m["maps"] else None
+        if mask:
+            files["o"] = f"{nme}_o.png"
+            Image.open(d / m["maps"][mask]).convert("L").save(PACK / files["o"], optimize=True)
+        for f in files.values():
+            (PACK / (f + ".import")).write_text(IMPORT, encoding="utf-8")
+        table[nme] = {"tile_m": m["tile_m"], "label": m.get("label", ""), "mask": mask, "files": files, "fabric": m["fabric"]}
+        print(f"  {nme}: {', '.join(files.values())}")
+    tf.write_text(json.dumps(dict(sorted(table.items())), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"FABRICPBR packed {len(names)} for Godot: {PACK.relative_to(ROOT)}")
+    return 0
+
+
+SHEETS = ROOT / "docs" / "fabric_sheets"
+
+
+def cmd_demo(argv):
+    """The sheets in docs/fabric_sheets (node and Playwright; the Studio's own renderer, no server): `swatches.jpg`,
+    every set on a ball of cloth close up and in four dyes (tailor/swatch.mjs), and `outfits.jpg`, the "fabrics:"
+    outfits hung by gravity on the feminine body from the front, three quarters, close, and at the legs and feet
+    (tailor/sheet.mjs)."""
+    import subprocess
+    import tempfile
+    from PIL import Image, ImageDraw
+    SHEETS.mkdir(parents=True, exist_ok=True)
+    node = lambda *a: subprocess.run(["node", *a], cwd=ROOT, capture_output=True, text=True)
+    if "--outfits-only" not in argv:
+        r = node("tools/character/tailor/swatch.mjs", "--sets", ",".join(SETS), "--size", "300", "--out", str(SHEETS / "swatches.jpg"))
+        print((r.stdout + r.stderr).strip().splitlines()[-1])
+    outfits = [k for k in json.loads((ROOT / "Content" / "Studio" / "Clothes" / "outfits.json").read_text(encoding="utf-8"))["outfits"] if k.startswith("fabrics:")]
+    S, cap = 340, 24
+    H = S * 3 // 2
+    sheet = Image.new("RGB", (S * 6, len(outfits) * (H + cap)), (27, 29, 34))
+    dr = ImageDraw.Draw(sheet)
+    with tempfile.TemporaryDirectory() as tmp:
+        for k, name in enumerate(outfits):
+            cells = []
+            for mode, take in ((None, (0, 1)), ("--close", (0, 1, 5)), ("--feet", (1,))):
+                f = str(Path(tmp) / f"o{k}{mode or ''}.png")
+                r = node("tools/character/tailor/sheet.mjs", "--outfit", name, "--drape", "--size", str(S), "--out", f, *([mode] if mode else []))
+                if not Path(f).exists():
+                    print((r.stdout + r.stderr)[-600:])
+                    return 1
+                im = Image.open(f).convert("RGB")
+                cells += [im.crop((i * S, 0, (i + 1) * S, H)) for i in take]
+            for i, c in enumerate(cells):
+                sheet.paste(c, (i * S, k * (H + cap)))
+            dr.text((8, k * (H + cap) + H + 5), name, fill=(226, 224, 216))
+            print(f"  {name}")
+    sheet.save(SHEETS / "outfits.jpg", quality=88)
+    print(f"the sheets: {SHEETS.relative_to(ROOT)}/swatches.jpg, outfits.jpg")
+    return 0
+
+
 def main(argv):
     args = list(argv)
     size = 1024
@@ -716,6 +931,12 @@ def main(argv):
         return 0
     if args and args[0] == "sheet":
         return cmd_sheet(args[1:], min(size, 512))
+    if args and args[0] == "godot":
+        return cmd_godot(args[1:])
+    if args and args[0] == "check":
+        return check()
+    if args and args[0] == "demo":
+        return cmd_demo(args[1:])
     names = args or list(SETS)
     for nme in names:
         if nme not in SETS:

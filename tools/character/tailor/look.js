@@ -60,7 +60,9 @@ function printTexture(pr, onload) {
 // The lights on a fabric set (TAILOR §1k): three's own physical lights with two lines changed. The cloth's diffuse wraps
 // round the terminator (the light that gets through and between its fibres: no black speckle where a yarn's side turns
 // from a low light; `uFabWrap`), and the fuzz lobe is taken off the cloth's own surface, creases and all, not off each
-// yarn's (the hairs stand off the cloth: `uFabFuzzFlat` of the way from the weave's normal to the garment's).
+// yarn's (the hairs stand off the cloth: `uFabFuzzFlat` of the way from the weave's normal to the garment's); and a halo:
+// that lobe (Charlie's) is dark for a light straight behind the cloth, which is when a knit's hairs light up along its
+// outline (`uFabHalo`: the light scattered on through them).
 const FAB_LIGHTS = (() => {
   const c = THREE.ShaderChunk.lights_physical_pars_fragment,
     dif = "reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );",
@@ -69,7 +71,8 @@ const FAB_LIGHTS = (() => {
   if (at < 0 || c.indexOf(dif, at) < 0 || c.indexOf(shn, at) < 0) return null;   // (another three: its own lights, unchanged)
   return c.slice(0, at) + c.slice(at)
     .replace(shn, `vec3 fzN = normalize( mix( geometryNormal, fabGeoN, uFabFuzzFlat ) );
-		sheenSpecularDirect += saturate( dot( fzN, directLight.direction ) ) * directLight.color * BRDF_Sheen( directLight.direction, geometryViewDir, fzN, material.sheenColor, material.sheenRoughness );`)
+		sheenSpecularDirect += saturate( dot( fzN, directLight.direction ) ) * directLight.color * BRDF_Sheen( directLight.direction, geometryViewDir, fzN, material.sheenColor, material.sheenRoughness );
+		sheenSpecularDirect += directLight.color * material.sheenColor * ( uFabHalo * RECIPROCAL_PI * pow( 1.0 - saturate( dot( fzN, geometryViewDir ) ), 3.0 ) * pow2( saturate( - dot( geometryViewDir, directLight.direction ) ) ) );`)
     .replace(dif, `reflectedLight.directDiffuse += directLight.color * saturate( ( dot( geometryNormal, directLight.direction ) + uFabWrap ) / ( 1.0 + uFabWrap ) ) * BRDF_Lambert( material.diffuseColor );`);
 })();
 
@@ -157,8 +160,9 @@ export function material(q, look = {}) {
     uFab: { value: fb ? 1 : 0 }, uFabMean: { value: new THREE.Vector3(...(fb?.mean || [0.8, 0.8, 0.8])) }, uFabCavity: { value: fb?.cavity ?? 0.5 },
     uFabSheen: { value: (fb?.sheen ?? 0) * (look.fuzz ?? 1) }, uFabSheenDye: { value: fb?.sheen_dye ?? 0.5 }, uFabMacro: { value: fb?.macro ?? 0 },
     uFabFuzz: { value: fb && PM.sheen ? mapTexture(at(PM.sheen), tile, false) : null }, uFabFuzzOn: { value: fb && PM.sheen ? 1 : 0 },
-    uFabDye: { value: fb && PM.tint ? mapTexture(at(PM.tint), tile, false) : null }, uFabDyeOn: { value: fb && PM.tint ? 1 : 0 },
-    uFabSheer: { value: sheer ? 1 : 0 }, uFabCover: { value: fb?.cover ?? 0.25 }, uFabWrap: { value: fb?.wrap ?? 0.3 }, uFabFuzzFlat: { value: 0.8 },
+    uFabDye: { value: fb && PM.tint ? mapTexture(at(PM.tint), tile, false) : null }, uFabDyeOn: { value: fb && PM.tint ? 1 : 0 }, uFabDyeMean: { value: fb?.dye_mean ?? 1 },
+    uFabFlat: { value: 0 },                                        // (1 while a file's colours are baked: the dye alone, the weave left to what draws the file)
+    uFabSheer: { value: sheer ? 1 : 0 }, uFabCover: { value: fb?.cover ?? 0.25 }, uFabWrap: { value: fb?.wrap ?? 0.3 }, uFabFuzzFlat: { value: 0.8 }, uFabHalo: { value: (fb?.halo ?? 0) * (look.fuzz ?? 1) },
     uOwn: { value: painted ? ownTexture(painted.url) : null }, uOwnOn: { value: painted ? 1 : 0 },
     uPattern: { value: pat ? texture(() => patternTile(pat.kind, pat.colors || []), "p|" + pat.kind + "|" + (pat.colors || []).join(), true) : null },
     uPatternOn: { value: pat ? 1 : 0 }, uPatternScale: { value: 1 / ((pat?.size) || 0.04) },
@@ -170,6 +174,8 @@ export function material(q, look = {}) {
   };
   if (!q.CRZ) U.uCrAmt.value = 0;                                  // (an old part without the creases' data: none)
   m.userData.uniforms = U;
+  if (fb) m.userData.fabric = { set: String(pbr.ref || "").split("/").pop().replace(/_\d+K(-JPG|-PNG)?$/, ""), ref: pbr.ref, tile_m: tile, tint: !!pbr.tint, sheer,   // what a file says of it (Export for Godot: the look plugin's HSCloth)
+    ...Object.fromEntries(["kind", "cavity", "sheen", "sheen_rough", "sheen_dye", "wrap", "halo", "spec", "macro", "cover", "aniso", "mean", "dye_mean"].filter(k => fb[k] !== undefined).map(k => [k, fb[k]])), fuzz: look.fuzz ?? 1, denier: look.denier ?? 0.55 };
   m.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, U);
     sh.vertexShader = sh.vertexShader
@@ -181,7 +187,7 @@ varying vec2 vUvm; varying vec2 vUvo; varying float vPart;
 uniform sampler2D uOwn; uniform float uOwnOn;
 uniform vec3 uColor; uniform sampler2D uFabric; uniform float uFabricScale, uGloss, uOver, uDenier;
 uniform sampler2D uPbr, uPbrAlpha; uniform float uPbrOn, uPbrScale, uPbrTint, uPbrAlphaOn;
-uniform sampler2D uFabFuzz, uFabDye; uniform vec3 uFabMean; uniform float uFab, uFabCavity, uFabSheen, uFabSheenDye, uFabMacro, uFabFuzzOn, uFabDyeOn, uFabSheer, uFabCover;
+uniform sampler2D uFabFuzz, uFabDye; uniform vec3 uFabMean; uniform float uFab, uFabCavity, uFabSheen, uFabSheenDye, uFabMacro, uFabFuzzOn, uFabDyeOn, uFabDyeMean, uFabSheer, uFabCover, uFabFlat;
 vec3 fabDye = vec3(1.0);                                                   // the dye a fabric set wears here (the garment's colour, its pattern): its fuzz carries part of it
 uniform sampler2D uPattern; uniform float uPatternOn, uPatternScale;
 ${Array.from({ length: NPRINT }, (_, k) => `uniform sampler2D uPrint${k}; uniform float uPrintOn${k}, uPrintRot${k}, uPrintPart${k}; uniform vec4 uPrintRect${k};`).join("\n")}
@@ -195,11 +201,12 @@ vec2 crG = vec2(0.0); float crH = 0.0;                                     // th
   if (uPbrOn > 0.5 && uFab > 0.5) {                                          // a fabric set (TAILOR §1k): the undyed cloth over its mean, the dye laid over it
     vec3 rel = texture2D(uPbr, vUvm * uPbrScale).rgb / uFabMean;
     if (uFabMacro > 0.0) {                                                   // a slow unevenness over many repeats (the same map read seven times larger, turned): no grid of tiles from afar
-      vec2 mu = mat2(0.8, 0.6, -0.6, 0.8) * vUvm * (uPbrScale * 0.137) + 0.37;
-      rel *= 1.0 + uFabMacro * clamp((texture2D(uPbr, mu).g / uFabMean.g - 1.0) * 8.0, -1.0, 1.0);
+      vec2 mu = mat2(0.8, 0.6, -0.6, 0.8) * vUvm * (uPbrScale * 0.137) + 0.37;   // (from its sixth mip: its slow mottle only, never its yarns seven times their size)
+      rel *= 1.0 + uFabMacro * clamp((textureLod(uPbr, mu, 5.0).g / uFabMean.g - 1.0) * 8.0, -1.0, 1.0);
     }
+    if (uFabFlat > 0.5) rel = vec3(1.0);
     fabDye = uPbrTint > 0.5 ? cloth : uFabMean;                              // (not tinted: the undyed cloth's own cream)
-    if (uFabDyeOn > 0.5) fabDye = mix(uFabMean, fabDye, texture2D(uFabDye, vUvm * uPbrScale).r);   // where the dye takes: a denim's weft stays white
+    if (uFabDyeOn > 0.5) fabDye = uFabMean * pow(max(fabDye, vec3(1e-4)) / uFabMean, vec3(texture2D(uFabDye, vUvm * uPbrScale).r / uFabDyeMean));   // where the dye takes, and how much of it (a dye's depth goes by its amount as a power, not a blend; over the mask's mean, so the colour picked is still the cloth's colour from afar): a denim's weft stays white, its ridges fade
     float cav = clamp(1.0 - dot(rel, vec3(0.3333)), 0.0, 1.0);               // down between the yarns the light meets the dye more than once: deeper, more saturated
     cloth = pow(max(fabDye, vec3(1e-4)), vec3(1.0 + uFabCavity * cav)) * rel; grain = vec4(0.5, 0.5, 0.5, 1.0);
   } else if (uPbrOn > 0.5) {                                                 // a PBR set: its colour, tinted by the garment's if asked
@@ -246,7 +253,7 @@ ${Array.from({ length: NPRINT }, (_, k) => `  if (uPrintOn${k} > 0.5 && abs(vPar
   if (uOver > 1.5) { float f = 1.0 - abs(dot(normal, normalize(vViewPosition))); diffuseColor.a = mix(diffuseColor.a, 1.0, pow(f, 1.4)); }   // tights darken where they turn away
   if (uFabSheer > 0.5) diffuseColor.a = 1.0 - pow(1.0 - min(diffuseColor.a, 0.999), 1.0 / max(abs(dot(normal, normalize(vViewPosition))), 0.18));   // a thin sheet seen at a slant: more yarn in the way`)
       .replace("#include <normal_fragment_maps>", fb ? "#include <normal_fragment_maps>\n  fabGeoN = nonPerturbedNormal;" : "#include <normal_fragment_maps>")
-      .replace("#include <lights_physical_pars_fragment>", fb ? "uniform float uFabWrap, uFabFuzzFlat;\nvec3 fabGeoN = vec3(0.0, 0.0, 1.0);\n" + (FAB_LIGHTS || "#include <lights_physical_pars_fragment>") : "#include <lights_physical_pars_fragment>")
+      .replace("#include <lights_physical_pars_fragment>", fb ? "uniform float uFabWrap, uFabFuzzFlat, uFabHalo;\nvec3 fabGeoN = vec3(0.0, 0.0, 1.0);\n" + (FAB_LIGHTS || "#include <lights_physical_pars_fragment>") : "#include <lights_physical_pars_fragment>")
       .replace("#include <lights_physical_fragment>", `#include <lights_physical_fragment>
 #ifdef USE_SHEEN
   if (uFab > 0.5) {                                                          // the fuzz lobe: strongest where the cloth is hairy, its hairs carrying part of the dye (sqrt: lighter, less saturated)
@@ -265,7 +272,7 @@ ${Array.from({ length: NPRINT }, (_, k) => `  if (uPrintOn${k} > 0.5 && abs(vPar
   }
 #endif` : "#include <aomap_fragment>")
       .replace("#include <lights_fragment_end>", `#ifdef USE_SHEEN
-  sheenSpecularIndirect += irradiance * RECIPROCAL_PI * material.sheenColor * IBLSheenBRDF(geometryNormal, geometryViewDir, material.sheenRoughness);   // the fuzz in the sky's light too (three gives it only an environment map's)
+  sheenSpecularIndirect += irradiance * material.sheenColor * IBLSheenBRDF(fabGeoN, geometryViewDir, material.sheenRoughness);   // the fuzz in the sky's light too (three gives it only an environment map's)
 #endif
 #include <lights_fragment_end>`);
   };

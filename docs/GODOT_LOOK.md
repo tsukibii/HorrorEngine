@@ -1685,6 +1685,67 @@ plugins style": JiggleBones (the asset library's 1595; BauxiteDev, Cory Petkovse
   degrees live where her run's clip carries 19.3; 16 just after she stops, 1 three seconds on; a clip that only
   hops her, 14 degrees live and nothing without.
 
+## 5x. Cloth: the studio's fabric sets worn in Godot (`cloth.gdshaderinc`, `cloth.gd` `HSCloth`; DECISIONS 2026-11-14)
+
+The user: "create new beautiful clothing fabric pbrs that work well with being tinted ... then demo some of the clothing
+in the new pbrs system". The sets and the Studio's side: docs/TAILOR.md §1k; why: docs/research/fabric_pbr.md.
+
+**What was wrong before.** A Studio export's garment reached Godot as a plain material: its colours baked flat, its
+creases as its normal map, and the fabric set's own maps on the second UV, which Godot's importer reads on the first.
+And Godot's material has no fuzz: no release up to 4.7 has a sheen lobe, and its glTF importer reads no sheen. So a
+knit was a flat colour with a plastic's highlight.
+
+**`HSCloth.wear(node, settings, glb_path)`** (and the `HSCharacterLook` node's **Cloth** switch, on by default; the
+runtime's cast bodies too): every garment whose material in the file says its fabric (`studioCloth` in its extras: the
+set's name, its repeat in metres, its numbers, the garment's own fuzz and denier) is given the cloth shader. The file
+brings **the dye** (the garment's colour, pattern and prints, baked flat on its own layout: the Studio leaves the weave
+out of the bake) and **its creases**; the fabric's own surface comes from the plugin's packs, `textures/cloth/`
+(`python tools/fabricpbr.py godot`: `<Set>_a.jpg` the weave's normal and its hairiness, `<Set>_b.jpg` the undyed cloth
+over its mean, its roughness and occlusion, `<Set>_o.png` a sheer knit's cover or where a dye takes; `cloth.json` each
+set's repeat and numbers), drawn **at its real size on the second UV**, which is the cloth's metres. A garment whose
+set the plugin hasn't got stays as the file has it.
+
+**The shader** does what the Studio's does (`tools/character/tailor/look.js`), term for term:
+
+- **the dye**: the map over its mean times the dye; to the power `1 + cavity` down between the yarns; a dye that takes
+  only in part (`dye_mask`: a denim's weft) as a power of its amount, not a blend;
+- **the weave's relief** as a detail normal whose frame is found on the screen from the fabric's own coordinates (no
+  tangents wanted, and a garment's layout may lie any way round), over the garment's creases (the mesh's tangents);
+- **its roughness and occlusion**, the occlusion with the light that bounces between pale yarns given back;
+- **the fuzz**, in `light()`: Charlie's distribution with Neubelt's visibility, off the cloth's own surface (its
+  creases, not each yarn's side), its colour the dye's square root; **the halo**, a light behind the cloth caught in its
+  hairs along its outline (Charlie's lobe is dark there by its nature); a diffuse that wraps past the terminator; GGX
+  for the fibres' own shine;
+- **the sky's light on the fuzz**: `light()` never runs for ambient light and `fragment()` can't read it, so the fuzz's
+  share is folded into `ALBEDO` (what the ambient light is multiplied by: the cloth scaled down by what the lobe takes,
+  plus the lobe's colour times its directional albedo), and `light()` takes it out again for its own diffuse (`v_ratio`:
+  the cloth's own colour over that ALBEDO, a varying from `fragment()`);
+- **a slow unevenness** over many repeats (the same pack read seven times larger, turned): no grid of tiles from afar;
+- **a sheer knit** (`#define SHEER`: blended, no depth written, no shadow thrown): its cover brought to the garment's
+  denier, denser seen at a slant.
+
+The shader is put together a cloth at a time (`HSCloth.shader(sheer, both_sides)`: a render mode line and the include),
+so a library garment's two-sided sheet and a pair of tights each get theirs.
+
+**By hand**: `HSCloth.dress(mesh_instance, surface, "WoolKnit001", Color("#8a2432"))` on any mesh whose second UV is in
+metres (`{"uv_scale": k}` for another scale; `{"keep_texture": true}` to keep its own picture as the dye);
+`HSCloth.sets()` the names. Settings: `detail` (the weave's relief, 0..1), `sheen` (times the fabric's own), `denier`.
+
+**GDCLOTH** (`python tools/godot/cloth_check.py [--person NAME]`, `demo/cloth.gd`, under xvfb): every set on a ball of
+cloth, its weave magnified and at a garment's distance in four dyes (the sheet,
+`Saved/Story/_look/godot_cloth/cloth_sheet.png`), then one ball lit so each term is measured: the dye keeps its
+lightness in order and its hue (red 6 times as red as green, green 2.8 times as green as red, cream neutral); the
+weave's relief gives 7.9 times the fine contrast; a light from the side: the wool's lit side 1.15 times as bright with
+the fuzz; a light behind: its outline 2.9 times as bright with the halo; neither on leather; under the sky alone the
+wool's edge lifts (edge over middle 1.13 against 0.98); a black sheer knit over skin lets 0.84 of the skin's light
+through its middle at denier 0.3, 0.50 at 0.7, 0.68 toward its edge. With `--person` a Studio export that wears fabric
+sets (`node tools/character/fabricpeople.mjs` makes `fabric_demo`): its garments as the file has them beside the cloth
+shader's, its records counted.
+
+**Not done**: anisotropy (a satin, a filament knit's highlight along its wales); light through thin cloth (Godot's
+backlight); a sheer knit inside the skin's own shader (no blending to sort); the cloth wet (the story's `skin` word
+has no cloth side); a Director or desk game's stand-in bodies that aren't Studio exports.
+
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 
 A street baked in Blender (`tools/street.py bake`, docs/STREET_TEXTURING.md) comes as plain glTF:
