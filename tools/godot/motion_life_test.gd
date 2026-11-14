@@ -597,6 +597,19 @@ func stage_carry() -> void:
 	if look_tilt[0] > 12.0:
 		bad("looking at the cup in her hand it leans %.0f degrees at the most (kept upright, it shouldn't pour out)" % look_tilt[0])
 	say("a look at the cup she carries: it leans %.1f degrees at the most" % look_tilt[0])
+	# a small movement with her other hand turns her trunk under the arm that carries: the cup is still kept upright
+	var other_tilt := [0.0]
+	var meter2 := func() -> void: other_tilt[0] = maxf(other_tilt[0], tilt_of(cup))
+	var done2: Array = []
+	for nm in ["sigh", "glance", "neck_roll", "roll_shoulders"]:
+		physics_frame.connect(meter2)
+		var r2: Dictionary = await run_one(nm, {"left": true, "force": true})
+		physics_frame.disconnect(meter2)
+		if bool(r2["played"]):
+			done2.append(nm)
+	if done2.is_empty() or other_tilt[0] > 6.0:
+		bad("a small movement that isn't the cup's hand's (%s): the cup leans %.1f degrees at the most" % [done2, other_tilt[0]])
+	say("small movements of her trunk and other hand with the cup carried (%s): it leans %.1f degrees at the most" % [", ".join(done2), other_tilt[0]])
 	await frames(40)
 	if tilt_of(cup) > 8.0:
 		bad("after looking at it the cup leans %.1f degrees" % tilt_of(cup))

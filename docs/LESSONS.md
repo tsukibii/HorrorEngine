@@ -54,6 +54,10 @@ the fix.
   picture is looked at before the push, not after.
 - **A rule that counts seconds must survive one long frame.** "Untold for 0.12 s" is also what a hitch looks like:
   one frame of 0.3 s would have dropped a punch's IK mid-swing. It's seconds *and* frames on end now.
+- **A check that passes most runs has a random part in it: find it, don't run it again.** After the merge the mug
+  was "13 degrees off upright" once in four runs. Her small movements are picked at random; one with her *other*
+  hand turns her trunk under the arm that carries, and the cup was only put upright again after a movement of the
+  hand that holds it. It's put upright after any of them now.
 - **`begins_with` accepts the wrong hand.** `life_look_hand_l` begins with `life_look_hand`. A check that names the
   thing it wants, names all of it.
 - **Read where a time comes from before waiting differently for it.** The conversation's picture had no line, twice

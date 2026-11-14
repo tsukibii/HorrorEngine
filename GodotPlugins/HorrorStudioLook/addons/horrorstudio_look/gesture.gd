@@ -395,10 +395,9 @@ func _process_modification_with_delta(delta: float) -> void:
 	last = {}
 	_carry(sk, delta)
 	_flourish(sk, delta)
-	if now != "":                                              # a flourish with the hand that carries something upright (a look at the cup): still the way up it stands
-		for side in (_life.get("sides", []) as Array):
-			if carries.has(side):
-				_upright(sk, String(side), smoothstep(0.0, 1.0, float(carries[side]["w"])), 150.0)
+	if now != "":                                              # a flourish while she carries something upright: still the way up it stands. With that hand (a look at the cup) the arm is the flourish's; with her other hand her trunk still turns under the arm that carries (a stretch, a glance tipped the cup 13 degrees)
+		for side in carries.keys():
+			_upright(sk, String(side), smoothstep(0.0, 1.0, float(carries[side]["w"])), 150.0)
 	if alive and now == "":
 		_wait -= delta
 		if _wait <= 0.0:
