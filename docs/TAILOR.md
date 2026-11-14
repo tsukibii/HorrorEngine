@@ -430,7 +430,7 @@ which draws the weave again at its real size on the second UV: the garment in th
 plugin), `check` (FABRICPBR, in check_all: every set tiles, its colour pale and neutral, its normals whole, its
 roughness its family's, its repeat a whole number of its yarns, its fabric block whole, the same twice, and the sets
 and packs on disk the ones this code makes); `node tools/character/tailor/swatch.mjs` (every set on a ball of cloth,
-close up and at a garment's distance in four dyes: `docs/fabric_sheets/`); `tailor/sheet.mjs` and `thumbs.mjs` read
+close up and at a garment's distance in four dyes: `docs/fabric_sheets/swatches.jpg`; `outfits.jpg` the six outfits worn; `godot_sets.jpg`, `godot_outfits.jpg` and `godot_character.jpg` the same in Godot); `tailor/sheet.mjs` and `thumbs.mjs` read
 the project's own sets; `node tools/character/tailor/outfitglb.mjs --outfit NAME --out FILE.glb` (an outfit as cut and hung, written
 straight to a .glb with the fabric records the export writes: no page, seconds); `node tools/character/fabricpeople.mjs`
 (a character dressed in a fabrics outfit and exported: the Studio's server running, MediaPipe set up for it);
@@ -610,7 +610,9 @@ close one per outfit, and fixed outfit by outfit. What read wrong, and the rule 
   masculine base): any rise over a centimetre reached the chin. Now `cover` is a share of the neck's own front, which
   the frame measures on each body (`neckPitY`: where the body's front along its middle is furthest back; `chinY`:
   where it stands a finger proud of the neck's own line): 6.3 cm on the feminine base, 4.8 on the masculine. The
-  turtleneck, the sweater dress's sweater and the lace blouse's stand collar all use 0.66. TAILOR measures it.
+  turtleneck, the sweater dress's sweater and the lace blouse's stand collar all use 0.66 (the blouse's 1 cm dip at
+  the front taken out: on a 4.8 cm neck it was a fifth of the collar). TAILOR measures it: 0.67 to 0.69 of the neck's
+  front on all nine bodies, at least 8 mm short of the chin.
 - **A turtleneck's collar is soft**: a modest height, the neckline hugging the neck (`open` 0.002, little ease), a
   thinner cloth and a narrow rib neckband; risen 7.5 cm with a thick band it was a brace up to the jaw.
 - **A turned cuff must not hold the wrist** (`hold: 0` on a coat's cuff): held, the sleeve's fullness bloused above

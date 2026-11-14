@@ -3263,6 +3263,10 @@ pale one shows.
   landmarks that the server gets from MediaPipe's worker, which wasn't set up (and then lacked libEGL). Probe the
   thing being waited on after the first timeout, not the third: print the page's errors and its state as it loads.
   The tool now asks the server for the landmarks first and says what's missing.
+- **A name is not an identity.** Godot's cloth shader found each garment's fabric by its material's name in the
+  file's JSON; a pair of jeans has a waistband and a belt both named `jeans_band`, and the belt was dressed as denim.
+  A count that didn't add up (20 surfaces dressed, 19 records) found it. Godot 4.7 keeps a glTF material's extras on
+  the material itself: read the record there, and guess by name only where there is none.
 - **Two CPU-bound jobs at once time each other out here.** The Studio's page takes minutes to start when it draws on
   the CPU; with the outfit sheets rendering beside it, it passed its ten minute wait. One browser job at a time in a
   cloud session.

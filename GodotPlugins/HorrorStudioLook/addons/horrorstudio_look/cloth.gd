@@ -4,7 +4,9 @@ extends RefCounted
 ## Cloth: a garment wearing one of the studio's clothing fabric sets (tools/fabricpbr.py; GODOT_LOOK §5x). The
 ## Character Studio's Export for Godot bakes a garment's dye (its colour, pattern and prints) and its creases and says,
 ## in its material's extras (`studioCloth`), which fabric it wears: the set's name, its repeat in metres and its numbers.
-## Godot's importer keeps no material extras, so the file's JSON is read (HSEye.gltf_json); `wear(node, settings, glb)`
+## Godot 4.7 keeps a glTF material's extras on the material it imports (its `extras` metadata), so the record is read
+## off each garment's own material; where it isn't kept, the file's JSON is read by material name (HSEye.gltf_json,
+## which can't tell two parts of one name apart: a waistband and a belt). `wear(node, settings, glb)`
 ## gives every such garment under a node the cloth shader (cloth.gdshaderinc), with the set's tiles from
 ## `textures/cloth/` drawn at their real size on the garment's second UV (the cloth's metres): the weave's relief, its
 ## roughness and occlusion, the dye deeper down between the yarns, and the fuzz lobe Godot's own material hasn't got.
@@ -60,6 +62,14 @@ static func records(glb_path: String) -> Dictionary:
 		if ex is Dictionary and ex.get("studioCloth") is Dictionary:
 			out[str(mat.get("name", ""))] = ex["studioCloth"]
 	return out
+
+
+## the record a material carries itself (the importer's `extras` metadata), or null
+static func record_of(m: Material):
+	if m == null or not m.has_meta("extras"):
+		return null
+	var ex = m.get_meta("extras")
+	return ex["studioCloth"] if ex is Dictionary and ex.get("studioCloth") is Dictionary else null
 
 
 static func _tex(file: String) -> Texture2D:
@@ -135,10 +145,16 @@ static func dress(mi: MeshInstance3D, surface: int, set_name: String, tone: Colo
 ## creases kept, the fabric's own surface drawn over them; returns the materials made
 static func wear(node: Node, settings: Dictionary = {}, glb_path: String = "") -> Array:
 	var out: Array = []
-	var recs := records(glb_path)
-	if recs.is_empty():
+	var meshes := node.find_children("*", "MeshInstance3D", true, false)
+	var own := false                                   # do the materials carry their records themselves? (then a name is never guessed from)
+	for mi in meshes:
+		if mi.mesh != null:
+			for s in mi.mesh.get_surface_count():
+				own = own or record_of(mi.get_active_material(s)) != null
+	var recs := {} if own else records(glb_path)
+	if not own and recs.is_empty():
 		return out
-	for mi in node.find_children("*", "MeshInstance3D", true, false):
+	for mi in meshes:
 		if mi.mesh == null:
 			continue
 		var all_sheer := true
@@ -153,9 +169,11 @@ static func wear(node: Node, settings: Dictionary = {}, glb_path: String = "") -
 			if not (old is BaseMaterial3D):
 				all_sheer = false
 				continue
-			var rec = recs.get(old.resource_name)
-			if rec == null:
-				rec = recs.get(String(mi.name))
+			var rec = record_of(old)
+			if rec == null and not own:
+				rec = recs.get(old.resource_name)
+				if rec == null:
+					rec = recs.get(String(mi.name))
 			if not (rec is Dictionary):
 				all_sheer = false
 				continue

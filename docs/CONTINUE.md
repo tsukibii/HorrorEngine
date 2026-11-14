@@ -67,8 +67,15 @@ turtleneck's collar ran up to the chin; it should cover about two thirds of the 
   the frame's `neckPitY`, `chinY`) in place of a rise in metres, on the turtleneck, the sweater dress's sweater and
   the lace blouse's stand collar; their cards made again.
 - **Pictures**: `docs/fabric_sheets/swatches.jpg` (every set on a ball of cloth, close up and in four dyes) and
-  `outfits.jpg` (the six outfits worn), both the Studio's own renderer (`python tools/fabricpbr.py demo`).
-- **Checks**: FABRICPBR (in check_all), GDCLOTH (`python tools/godot/cloth_check.py`), TAILOR with the collars' share.
+  `outfits.jpg` (the six outfits worn), both the Studio's own renderer (`python tools/fabricpbr.py demo`);
+  `godot_sets.jpg`, `godot_outfits.jpg` (each outfit as the file has it, then on the cloth shader) and
+  `godot_character.jpg` (`fabric_demo`, made, dressed and exported in the Studio's page, in Godot), from GDCLOTH.
+- **Checks**: FABRICPBR (in check_all), GDCLOTH (`python tools/godot/cloth_check.py --person fabric_demo --outfits`:
+  ok), TAILOR with the collars' share (ok: 0.67 to 0.69 on nine bodies; 23 minutes). GDPLAY and DIRECTOR ok.
+  **GDTESTROOM stops at station 6 in a cloud session with or without this branch** ("her skin ... on 0 materials":
+  the station wants a baked body, `tools/godot/bake.mjs`, which isn't on the machine): it wasn't a measure of this
+  work. Not run: the Studio's page checks (STUDIO, WARDROBE, LIBRARYPAGE...); `look.js` changed, so a local run of
+  those is the first thing to ask the user for (docs/RUN_LOCALLY.md).
 
 **The user has seen none of it yet.** Expect feedback on what a picture can't settle: how each fabric reads on their
 own characters under their own lights in Godot (the fuzz's strength was set by eye on balls of cloth: `sheen` and

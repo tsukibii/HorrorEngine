@@ -1697,7 +1697,11 @@ knit was a flat colour with a plastic's highlight.
 
 **`HSCloth.wear(node, settings, glb_path)`** (and the `HSCharacterLook` node's **Cloth** switch, on by default; the
 runtime's cast bodies too): every garment whose material in the file says its fabric (`studioCloth` in its extras: the
-set's name, its repeat in metres, its numbers, the garment's own fuzz and denier) is given the cloth shader. The file
+set's name, its repeat in metres, its numbers, the garment's own fuzz and denier) is given the cloth shader. The
+record is read **off each garment's own material**: Godot 4.7 keeps a glTF material's extras as the imported material's
+`extras` metadata (`HSCloth.record_of`), so `HSCloth.wear(character)` needs no file path; only where a material carries
+none is the file's JSON read by material name, which can't tell two parts of one name apart (matched by name, a pair
+of jeans' belt was dressed as denim: it shares its name with the waistband). The file
 brings **the dye** (the garment's colour, pattern and prints, baked flat on its own layout: the Studio leaves the weave
 out of the bake) and **its creases**; the fabric's own surface comes from the plugin's packs, `textures/cloth/`
 (`python tools/fabricpbr.py godot`: `<Set>_a.jpg` the weave's normal and its hairiness, `<Set>_b.jpg` the undyed cloth
@@ -1743,7 +1747,9 @@ tailor (`tools/character/tailor/outfitglb.mjs`: cut, hung, each part's material 
 does; no Studio page) and dressed by `HSCloth.wear`: every part that says its fabric is on the cloth shader, and
 `outfits_sheet.jpg` shows each as the file has it (a flat colour) and then on the shader (`docs/fabric_sheets/`).
 With `--person` a Studio export that wears fabric sets (`node tools/character/fabricpeople.mjs` makes `fabric_demo`):
-its garments as the file has them beside the cloth shader's, its records counted.
+its garments as the file has them beside the cloth shader's, its records counted (10 garments say their fabric, 10
+surfaces on the cloth shader), its chest's picture changed. The pictures: `docs/fabric_sheets/godot_sets.jpg`,
+`godot_outfits.jpg`, `godot_character.jpg`.
 
 **Not done**: anisotropy (a satin, a filament knit's highlight along its wales); light through thin cloth (Godot's
 backlight); a sheer knit inside the skin's own shader (no blending to sort); the cloth wet (the story's `skin` word

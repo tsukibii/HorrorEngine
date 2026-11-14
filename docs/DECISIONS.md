@@ -9,7 +9,7 @@ The user's answers, newest first. They override the plan, the research and the d
 - **So**: a turtleneck's collar is cut by a share of the neck itself (`neck.cover`, 0.66), from the pit of the neck to
   under the chin as the tailor measures them on each body, not by a height in metres. The turtleneck, the sweater
   dress's sweater and the lace blouse's stand collar (the same cut) all use it. TAILOR holds every one to it on nine
-  bodies, at least 8 mm short of the chin. (docs/TAILOR.md §2b's list.)
+  bodies (0.67 to 0.69 of the neck's front), at least 8 mm short of the chin. (docs/TAILOR.md §2b's list.)
 - **Not touched**: library garments (MakeHuman's) keep the collars their authors gave them; none of the picked ones is
   a turtleneck.
 
@@ -35,8 +35,10 @@ The user's answers, newest first. They override the plan, the research and the d
   maps beyond the usual five and a `fabric` block a set, the Studio's shader for them, the export saying which fabric a
   garment wears, and **a cloth shader in Godot** (`HSCloth`), since the games ship from there and Godot has no fuzz
   lobe of its own. A garment looks in the game as it did in the Studio.
-- **The demo**: `docs/fabric_sheets/` (every set on a ball of cloth, close up and in four dyes; six outfits with every
-  garment in a set), the outfits' **Fabric sets** tab in the Studio, and the same in Godot (GDCLOTH's sheet).
+- **The demo**: `docs/fabric_sheets/` (`swatches.jpg`: every set on a ball of cloth, close up and in four dyes;
+  `outfits.jpg`: six outfits with every garment in a set; `godot_sets.jpg`, `godot_outfits.jpg`, `godot_character.jpg`:
+  the same in Godot, each outfit as the file has it beside the cloth shader, and a character exported from the Studio),
+  the outfits' **Fabric sets** tab in the Studio.
 - **Rules from it**: a fabric set is made by code from the cloth's real construction (no photographs, no image
   generator), at its real size; a dye is never a plain multiply (deeper between the yarns; a power where it takes in
   part); the Blender-made fabrics (2026-11-01) stay as they are beside these.
