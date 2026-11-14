@@ -575,59 +575,26 @@ static func _has_clip(clips: PackedStringArray, n: String) -> bool:
 	return false
 
 
-## the flags something in a scene turns on: {flag: true}. Read from every marker's set_flags and answers, and from
-## the properties the starter kit's nodes set flags by (fact, flag, flags, task_flags, flags_start)
+## every flag something in a scene switches (the scene read by HSLogicScan: markers, conversations, a thing's Logic, a
+## flag switch's lines, an area's fact, the Story's start flags and task flags): {name: true}
 static func flags_set(root: Node) -> Dictionary:
 	var out := {}
-	if root == null:
-		return out
-	var todo: Array = [root]
-	while not todo.is_empty():
-		var n: Node = todo.pop_back()
-		todo.append_array(n.get_children())
-		if n is HSNpcMarker:
-			var m := n as HSNpcMarker
-			for f in HSNpcCond.switched(m.set_flags):
-				out[f["name"]] = true
-			for c in m.conversations():
-				for f in HSNpcCond.switched(c["sets"]):
-					out[f["name"]] = true
-				for a in c["answers"]:
-					for f in HSNpcCond.switched(a["sets"]):
-						out[f["name"]] = true
-			continue
-		if n.get_script() == null:
-			continue
-		for key in ["fact", "flag", "flags", "sets"]:
-			var v = n.get(key)
-			if v is String and v != "":
-				for f in HSNpcCond.switched(v):
-					out[f["name"]] = true
-		for key in ["task_flags", "flags_start"]:
-			var v2 = n.get(key)
-			if v2 is PackedStringArray:
-				for line in v2:
-					var s := String(line)
-					var at := s.find(":")
-					for f in HSNpcCond.switched(s.substr(at + 1) if key == "task_flags" and at >= 0 else s):
-						out[f["name"]] = true
+	var found := HSLogicScan.scan(root)
+	for name in (found["flag"] as Dictionary):
+		for u in (found["flag"][name] as Array):
+			if String(u["role"]) in HSLogicScan.SETS:
+				out[name] = true
+				break
 	return out
 
 
 ## the ids of the tasks a scene knows: the Story's own list and what anything adds ("id: text" lines)
 static func tasks_known(root: Node) -> PackedStringArray:
 	var out := PackedStringArray()
-	if root == null:
-		return out
-	var todo: Array = [root]
-	while not todo.is_empty():
-		var n: Node = todo.pop_back()
-		todo.append_array(n.get_children())
-		for key in ["tasks", "add_tasks"]:
-			var v = n.get(key) if (n.get_script() != null) else null
-			if v is PackedStringArray:
-				for line in v:
-					var id := String(line).get_slice(":", 0).strip_edges()
-					if id != "" and not (id in out):
-						out.append(id)
+	var found := HSLogicScan.scan(root)
+	for name in (found["task"] as Dictionary):
+		for u in (found["task"][name] as Array):
+			if String(u["role"]) == "adds":
+				out.append(String(name))
+				break
 	return out

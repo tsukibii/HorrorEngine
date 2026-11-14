@@ -1,7 +1,8 @@
 The starter scripts of the by-hand guides (guides/first_game, guides/tutorial_v2): copied into a Godot project as
 res://starter/ by tools/godot_byhand.py. Yours to change.
 
-  player.tscn, player.gd   the player: WASD, Shift runs, the mouse looks, E uses (or puts a note away), F the
+  player.tscn, player.gd   the player: WASD, Shift runs, the mouse looks, E uses (or puts a note away; a thing with a
+                           Logic node, the Markers plugin's, is asked first and told after: "works only when"), F the
                            flashlight, Esc frees the mouse; it steps up a tread or a kerb; stops when the Story ends;
                            its footsteps a stride walked, the floor's own (footsteps.gd, the Sound node); its eye never
                            draws render layer 19 (what's only in mirrors); a seat sits it down, lays it down or

@@ -37,17 +37,21 @@ from sliders), eye looks as cards in the Studio and the lashes on the lid's skin
 main): a fourth body card, v2 pear, and the Hips & thighs slider, then two head cards after two pictures (merged,
 PR #28); on `animation-v2` (from main): the Animator v2, a character's own animations made from its body (merged,
 PR #29); 2026-11-13 and 14 on `marker-system` (from main): **NPC markers**, a character's whole part in a game
-placed as markers (the pull request tsukibii/HorrorEngine#30 into main, open when this was written); and 2026-11-14 on
-`even-more-animations-v3` (from `marker-system`): **animations v3**, creatures' clips, a head that follows you, a
-grip on props, fights, then, after the user's first feedback, **short NPCs on a person's furniture** (§0 below). Read this after CLAUDE.md's start
+placed as markers (merged, PR #30); 2026-11-14 on `claude/trusting-cray-2v2ntr` (from main): **flags and things**,
+the markers tied to everything else (merged, PR #31; "Before that", below); and 2026-11-14 on
+`even-more-animations-v3` (from `marker-system`, with main merged into it that evening): **animations v3**,
+creatures' clips, a head that follows you, a grip on props, fights; then, after the user's first feedback, **short
+NPCs on a person's furniture**; then **rules for modelling, small movements laid over whatever she's doing, and a
+thing carried in any pose** (§0 below). Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
 ## 0. Where `even-more-animations-v3` stopped (2026-11-14)
 
-**The branch** is made from `marker-system`, so it carries the markers; `marker-system`'s own pull request
-(tsukibii/HorrorEngine#30, into main) was open and unmerged when this was written. This branch has **no pull request**:
-the user asked for the branch, not for one. If #30 merges first, this one goes into main as its own pull request.
+**The branch** was made from `marker-system` (merged since: tsukibii/HorrorEngine#30), and **main was merged into
+it on 2026-11-14** at the user's word, once flags and things (tsukibii/HorrorEngine#31) was in: so it carries the
+markers, the Logic node and the Flags and Things tabs. This branch has **no pull request**: the user asked for the
+branch, not for one.
 
 **Built** (docs/ANIMATOR_V3.md, every box of its plan ticked; DECISIONS 2026-11-14, animations v3):
 - **The Animator**: 29 more clips, 53 in all, `VERSION` 3 (a character baked before wants baking again): sneak and
@@ -191,7 +195,52 @@ The two creatures are Studio exports on this machine only (`Exports/characters/c
 not tracked): `node tools/character/creatures.mjs make --only ghoul,goblin --export` with the Studio's server
 running, then `node tools/animator/bake.mjs Exports/characters/<name>/<name>.glb`.
 
-## Before that (2026-11-14, `marker-system`, tsukibii/HorrorEngine#30): NPC markers
+## Before that (2026-11-14, `claude/trusting-cray-2v2ntr`, merged in PR #31): flags and things
+
+**Asked** (DECISIONS 2026-11-14, flags and things): review the plugin; tie the marker system to interactables easily;
+maybe a tab for global flags, filtered by quest, maybe non-global ones; a marker's flag easy to use elsewhere ("can
+only interact with door if this flag is also on"); what's missing, built; "an insanely fast workflow".
+
+**Built** (docs/FLAGS.md, its plan's boxes all ticked), in the Markers plugin:
+- **Logic** (`HSLogic`): a node under anything: *Works only when* → *When* (used, a signal, by itself) → *Then*. The
+  starter's player asks it before using a thing. A plain mesh with one is usable with E.
+- **The scan** (`HSLogicScan`): every flag, task and thing carried with who turns it on and who needs it, off one
+  table of field names; whose a flag is (worked out; a flag stays one name everywhere); a rename everywhere; Problems,
+  with **things that wait for each other**.
+- **The Flags tab** and **the Things tab** beside NPC Markers; **ties by one click** both ways; the same chips **in
+  the Inspector**; **F7's flag board** in the game.
+- `python tools/godot_byhand.py install <project> --starter` for a project whose player is from before.
+- The guide `guides/flags/index.html` (six pictures of the real thing). Checks: LOGIC (1 minute), LOGICEDITOR
+  (2 minutes: the tabs driven in the editor, then the scene they saved played as a game).
+
+**The user has seen none of it yet.** The tabs were only ever driven by the check (headless, and under xvfb for the
+pictures). Expect feedback on what a hand finds: the lists' column widths on a real scene (an interior's export has
+hundreds of nodes: the Things list shows only nodes that can be used or that ask or switch something, but a big
+level may still want a search box there), the marks over a flag's users in a crowded room, how the three tabs share
+the bottom panel's height (300 px at the least), the cards' names.
+
+**Decided on the way, say so if asked**: flags are never fenced in (the request's point was to use a marker's flag on
+a door), so "non-global" is who a flag belongs to, worked out and filterable, and a pin that makes outside use a
+Problem; the tabs went into the Markers plugin, not a new one (the user calls the family "the horror plugin" and its
+tabs "tabs"); the Things cards cover the starter kit's everyday things and not all of it (FLAGS §9).
+
+**Not built** (FLAGS §9), in the order I'd take them:
+1. tutorial v2 (or a small new guide game) built with Things, Flags and markers: the real test of "insanely fast",
+   and what finds the next gaps;
+2. flags switched from F7's board while the game runs, and the Flags tab live during play from the editor;
+3. cards for the rest of the kit (a seat on furniture, a cue, a hunt and its spots, the laptop, a parcel);
+4. a prompt over a thing that can't be used yet (the HUD's ring with its line), instead of only its line when tried;
+5. a conversation's answers' flags as chips in the NPC Markers tab;
+6. flags kept between scenes.
+
+**The tutorial is not updated on this branch, on purpose** (the user, 2026-11-14: other parallel branches need it
+too; one bulk branch later). What this branch changes for it is listed in `docs/TUTORIAL_TODO.md`; a later branch
+adds its own section there. TUTORIAL2 wasn't run here (it needs the desk's server): run it in that branch first.
+
+**The pictures** of the guide: `python tools/godot/logic_check.py --editor --reuse --shots DIR`, then
+`python tools/godot/logic_check.py guide DIR` (both under xvfb; 3 minutes on a CPU).
+
+## Before that (2026-11-13 and 14, `marker-system`, merged in PR #30): NPC markers
 
 **Built** (docs/MARKERS.md, its plan's boxes all ticked): the **HorrorStudio Markers** plugin
 (`GodotPlugins/HorrorStudioMarkers`), in every project `godot_byhand.py new` makes and switched on in an older one by
