@@ -15,6 +15,12 @@
         a scare thrown and hidden, a thing held by its grip with her fingers round it, drinking and eating with the
         thing's mouth at hers, a punch and a swing carried onto who they're thrown at, a knock, the acts, moves.gd.
         Ends "GDMOTION3 ok".
+    python tools/godot/motion_check.py small [--reuse] [--quick] [--only=imp,goblin]
+        short bodies on a person's furniture (docs/ANIMATOR_V3.md §10; motion_small_test.gd) in the same project: a
+        small child (1.10 m), a goblin and an imp baked beside the normal woman, each onto a 45 cm chair and off it
+        (sat with its legs hanging, no leg in the chair), onto a 60 cm seat (lifted the rest of the way), into a 45 cm
+        bed and out (nothing of it in the bed), and at a door whose handle is a metre up (its hand on the handle,
+        carried there by the hand's IK). Ends "GDSMALL ok".
     python tools/godot/motion_check.py shots --glb FILE.glb --clip walk_loop [--n 12] [--view side] [--sheet FILE.jpg]
                                              [--size 480x640] [--wear] [--tag NAME]
         a baked character's clip pictured at n moments on the real mesh in a scratch project, as one sheet
@@ -26,6 +32,10 @@
         a creature exported from the Studio and baked), a sheet a group: low (sneak, creep, crawl, scuttle), peek (round
         a wall, from in front and from behind), scares, fight, mouth (eat, drink), acts (look round, knock, cower, a
         reach to the floor)
+    python tools/godot/motion_check.py furniture [--who NAME | --glb FILE.glb] [--plain] [--out docs/animator_sheets] [--only seat,bed,door]
+        a baked character on the furniture its clips are made for (docs/ANIMATOR_V3.md §10), drawn as boxes from its
+        own record: onto a chair, sat and off it; into a bed, asleep and out; a door pushed and pulled. --plain: a
+        test body (tools/animator/bodies.mjs), which wears no look
     python tools/godot/motion_check.py shots3 [--who NAME | --glb FILE.glb] [--out DIR] [--only head,drink,swing]
         animations v3 in the game (motion3_shots.gd, in the check's own by-hand project: run the check first): her head
         following someone to her left and right and let go of behind her, a bottle taken from a table by its grip and
@@ -156,7 +166,9 @@ def check(args):
     sys.path.insert(0, str(ROOT / "tools"))
     import godot_byhand as BH
     v3 = "v3" in args                                        # animations v3's half (motion3_test.gd): the same project, another script
-    NAME, TEST = ("GDMOTION3", "motion3_test.gd") if v3 else ("GDMOTION", "motion_test.gd")
+    small = "small" in args                                  # short bodies on a person's furniture (motion_small_test.gd): the same project, three more bodies
+    NAME, TEST = ("GDSMALL", "motion_small_test.gd") if small else ("GDMOTION3", "motion3_test.gd") if v3 else ("GDMOTION", "motion_test.gd")
+    bodies = ["child_small", "goblin", "imp", "normal_woman"] if small else ["normal_woman"]
     g = godot_bin()
     if not g:
         sys.exit(f"{NAME} FAILED: no godot (tools/godot_setup.sh on a cloud session)")
@@ -173,18 +185,19 @@ def check(args):
         (proj / "motion.json").write_text("{}", encoding="utf-8")
     (proj / "characters").mkdir(exist_ok=True)
     scratch = ROOT / "Saved" / "Animator" / "check"
-    r = subprocess.run(["node", str(ROOT / "tools" / "animator" / "bodies.mjs"), "--out", str(scratch), "normal_woman"], capture_output=True, text=True, timeout=600)
-    if "BODIES ok" not in r.stdout:
-        sys.exit(f"{NAME} FAILED: the test body: " + (r.stdout + r.stderr)[-1500:])
-    r = subprocess.run(["node", str(ROOT / "tools" / "animator" / "bake.mjs"), str(scratch / "normal_woman.glb"), "--out", str(proj / "characters" / "normal_woman.glb")], capture_output=True, text=True, timeout=600)
-    if "BAKE ok" not in r.stdout:
-        sys.exit(f"{NAME} FAILED: the bake: " + (r.stdout + r.stderr)[-1500:])
-    for _ in range(3):
-        if "--reuse" in args and "--quick" in args and list((proj / ".godot" / "imported").glob("normal_woman.glb-*.scn")):
-            break                                              # (--quick: the scripts changed, the body didn't: no import)
-        subprocess.run([g, "--headless", "--path", str(proj), "--import"], capture_output=True, text=True, timeout=2400)
-        if list((proj / ".godot" / "imported").glob("normal_woman.glb-*.scn")):
-            break
+    imported = lambda: all(list((proj / ".godot" / "imported").glob(f"{b}.glb-*.scn")) for b in bodies)
+    if not ("--reuse" in args and "--quick" in args and imported()):   # (--quick: the scripts changed, the bodies didn't: no bake, no import)
+        r = subprocess.run(["node", str(ROOT / "tools" / "animator" / "bodies.mjs"), "--out", str(scratch)] + bodies, capture_output=True, text=True, timeout=900)
+        if "BODIES ok" not in r.stdout:
+            sys.exit(f"{NAME} FAILED: the test body: " + (r.stdout + r.stderr)[-1500:])
+        for b in bodies:
+            r = subprocess.run(["node", str(ROOT / "tools" / "animator" / "bake.mjs"), str(scratch / f"{b}.glb"), "--out", str(proj / "characters" / f"{b}.glb")], capture_output=True, text=True, timeout=600)
+            if "BAKE ok" not in r.stdout:
+                sys.exit(f"{NAME} FAILED: the bake of {b}: " + (r.stdout + r.stderr)[-1500:])
+        for _ in range(3):
+            subprocess.run([g, "--headless", "--path", str(proj), "--import"], capture_output=True, text=True, timeout=2400)
+            if imported():
+                break
     lines = ['[gd_scene load_steps=3 format=3]', "", '[ext_resource type="Script" path="res://starter/story.gd" id="story"]', "",
              '[sub_resource type="BoxShape3D" id="floor"]', "size = Vector3(60, 0.2, 60)", "", '[node name="Main" type="Node3D"]', "",
              '[node name="Floor" type="StaticBody3D" parent="."]', "transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)", "",
@@ -304,6 +317,58 @@ def v3_sheets(args):
         sheet([KEEP / (glb.stem + "_v3") / f for f in rep["shots"]], out, cols=n, labels=labels, height=330)
         print(f"  {out}")
     print("SHEETS3 ok")
+
+
+def furniture_sheets(args):
+    """a baked character on the furniture its clips are made for (docs/ANIMATOR_V3.md §10), a sheet a group:
+    seat (onto a chair, sat, off it), bed (into bed, out of it), door (pushed, pulled)"""
+    opt = lambda k, d=None: args[args.index(k) + 1] if k in args else d
+    who = opt("--who", "anim_normal_woman")
+    glb = Path(opt("--glb") or ROOT / "Exports" / "characters" / who / f"{who}.glb")
+    out_dir = Path(opt("--out", ROOT / "docs" / "animator_sheets"))
+    only = [x for x in (opt("--only") or "").split(",") if x]
+    rec_file = glb.with_name(glb.stem + ".motion.json")
+    if not glb.is_file() or not rec_file.is_file():
+        sys.exit(f"{glb} isn't there, or isn't baked (node tools/animator/bake.mjs {glb})")
+    rec = json.loads(rec_file.read_text(encoding="utf-8"))
+    C = rec["clips"]
+    if "furniture" not in rec and "high" not in C["sit_down"]["seat"] and float(rec["body"]["height"]) < 140:
+        sys.exit(f"{glb.name} was baked before the furniture went by the body: node tools/animator/bake.mjs {glb}")
+    k = float(rec["body"]["height"]) / 163.0
+    seat, bed, door = C["sit_down"]["seat"], C["lie_down"]["bed"], C["open_push"]["door"]
+    H, e = float(seat["height"]), float(seat["edge"])
+    chair = [[0, H / 2, e - 0.24, 0.48, H, 0.48], [0, H + 0.2, e - 0.46, 0.48, 0.4, 0.04]]              # a seat and its back
+    Hb, eb, head = float(bed["height"]), float(bed["edge"]), bed["head"]
+    x0, x1 = -0.75 * max(k, 0.6), float(head[0]) + 0.4
+    beds = [[(x0 + x1) / 2, Hb / 2, eb - 0.5, x1 - x0, Hb, 1.0], [x1 + 0.03, Hb / 2 + 0.25, eb - 0.5, 0.06, Hb + 0.5, 1.0]]   # a bed and its headboard
+    hd = door["handle"]
+    frame = lambda d: [[hd[0] - 0.22, 1.0, d["handle"][2] + 0.03, 0.08, 2.0, 0.1], [d["handle"][0], d["handle"][1], d["handle"][2] + 0.005, 0.13, 0.025, 0.03]]   # the frame's post beside it, and where the handle is before it moves
+    v = lambda at, dist, **more: {"at": at, "dist": dist, **more}
+    tall = float(rec["body"]["height"]) / 100.0
+    mid = max(0.75, 0.52 * tall)
+    groups = {
+        "seat": [("sit_down", "q", v([0, mid, -0.1], 3.6, boxes=chair)), ("sit_loop", "side", v([0, mid, -0.1], 3.4, boxes=chair)), ("stand_up", "q", v([0, mid, -0.1], 3.6, boxes=chair))],
+        "bed": [("lie_down", "q", v([0.25, mid * 0.9, -0.3], 4.6, boxes=beds)), ("sleep_loop", "q", v([0.3, Hb + 0.15, -0.5], 3.4, boxes=beds, pitch=28)), ("get_up", "q", v([0.25, mid * 0.9, -0.3], 4.6, boxes=beds))],
+        "door": [("open_push", "side", v([0, max(0.8, 0.55 * tall), 0.25], 3.4, boxes=frame(C["open_push"]["door"]))), ("open_pull", "q", v([0, max(0.8, 0.55 * tall), 0.25], 3.4, boxes=frame(C["open_pull"]["door"])))],
+    }
+    n, date = 8, opt("--date", "2026-11-14")
+    wear = "--plain" not in args
+    for name, rows in groups.items():
+        if only and name not in only:
+            continue
+        plan, labels = [], []
+        for clip, view, extra in rows:
+            for i in range(n):
+                f = i / n if clip.endswith("_loop") else i / (n - 1) * 0.999
+                plan.append({"clip": clip, "f": f, "view": view, "name": f"{clip}_{view}_{i:02d}", **extra})
+                labels.append(f"{clip} ({view})" if i == 0 else "")
+        rep, err = shoot(glb, plan, KEEP / (glb.stem + "_furniture"), glb.stem + "_" + name, "400x440", 5, wear)
+        if rep is None:
+            sys.exit(err)
+        out = out_dir / f"{date}_furniture_{glb.stem}_{name}.jpg"
+        sheet([KEEP / (glb.stem + "_furniture") / f for f in rep["shots"]], out, cols=n, labels=labels, height=330)
+        print(f"  {out}")
+    print("FURNITURESHEETS ok")
 
 
 def v3_shots(args):
@@ -452,6 +517,8 @@ def main():
         return doc_sheets(sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else ROOT / "docs" / "animator_sheets")
     if sys.argv[1:] and sys.argv[1] == "sheets3":
         return v3_sheets(sys.argv[2:])
+    if sys.argv[1:] and sys.argv[1] == "furniture":
+        return furniture_sheets(sys.argv[2:])
     if not sys.argv[1:] or sys.argv[1] != "shots":
         return check(sys.argv[1:])
     ap = argparse.ArgumentParser()

@@ -503,7 +503,7 @@ func sit(seat: Node3D) -> void:
 	var f := _front(seat)
 	var stand := seat.global_position - f * float(m.get("edge", -0.05))
 	var steps: Array = [_go(stand, false, null, atan2(f.x, f.z))]
-	steps.append({"k": "clip", "clip": "sit_down", "lift": _lift_for(seat, stand, float(m.get("height", 0.45)))})
+	steps.append({"k": "clip", "clip": "sit_down", "lift": _lift_for(seat, stand, float(m.get("height", 0.45)), bool(m.get("high", false)))})
 	steps.append({"k": "state", "seated": true, "loop": "sit_loop"})
 	steps.append({"k": "done", "what": "sit"})
 	_begin(steps)
@@ -532,7 +532,7 @@ func sleep(bed: Node3D, pillow: Node3D = null) -> void:
 		at += left * (d - float(head[0]))                 # along the edge, so her head comes down on the pillow
 	var stand := at - f * float(m.get("edge", -0.05))
 	var steps: Array = [_go(stand, false, null, atan2(f.x, f.z))]
-	steps.append({"k": "clip", "clip": "lie_down" + side, "lift": _lift_for(bed, stand, float(m.get("height", 0.45)))})
+	steps.append({"k": "clip", "clip": "lie_down" + side, "lift": _lift_for(bed, stand, float(m.get("height", 0.45)), bool(m.get("high", false)))})
 	steps.append({"k": "state", "asleep": true, "side": side, "loop": "sleep%s_loop" % side})
 	steps.append({"k": "done", "what": "sleep"})
 	_begin(steps)
@@ -554,7 +554,21 @@ func open(handle: Node3D, door: Node = null, how := "push", left := false) -> vo
 	var hp: Array = m.get("handle", [-0.14, 1.0, 0.45])
 	var stand := handle.global_position - _turned(Vector3(hp[0], 0, hp[2]), atan2(f.x, f.z))
 	var steps: Array = [_go(stand, false, null, atan2(f.x, f.z))]
-	steps.append({"k": "clip", "clip": clip, "on": {"open": func(): _use(door)}})
+	var step := {"k": "clip", "clip": clip, "on": {"open": func(): _use(door)}}
+	# her hand onto the handle itself, from the moment she takes it until she lets go. Her clip was made for a handle
+	# of some height (a person's metre, or as high as a small body's hand goes: an imp's is 86 cm) and yours is where
+	# you put it: the hand's IK carries her hand the rest of the way, as far as her arm goes
+	var grab := -1.0
+	var let_go := -1.0
+	for e in clip_info(clip).get("events", []):
+		if String(e["name"]) == "grab":
+			grab = float(e["t"])
+		elif String(e["name"]) == "release":
+			let_go = float(e["t"])
+	if grab >= 0.0:
+		step["bring"] = {"what": "handle", "side": "l" if left else "r", "target": func(): return handle.global_position if is_instance_valid(handle) else Vector3.ZERO,
+			"peak": grab, "rise": 0.4, "hold": maxf(0.05, let_go - grab), "fall": 0.3, "freeze": true, "most": 0.35}
+	steps.append(step)
 	steps.append({"k": "idle"})
 	steps.append({"k": "done", "what": "open"})
 	_begin(steps)
@@ -624,8 +638,12 @@ func _go(to: Vector3, run: bool, face, yaw = null, gait := "") -> Dictionary:
 	return s
 
 
-func _lift_for(seat: Node3D, stand: Vector3, made_for: float) -> float:
-	return clampf((seat.global_position.y - _floor_at(stand)) - made_for, -0.12, 0.12)
+## how far she's raised or lowered onto a seat or a bed that isn't the height her clip was made for. A clip that sits
+## her with her feet on the floor is good for 12 cm either way. One made for a seat that's high for her (a child, a
+## goblin: `high` in the clip's record, the Animator's furniture) sits her with her legs hanging, so she can be lifted
+## further, 30 cm: a body too small even for a person's chair is put on it all the same
+func _lift_for(seat: Node3D, stand: Vector3, made_for: float, high := false) -> float:
+	return clampf((seat.global_position.y - _floor_at(stand)) - made_for, -0.12, 0.3 if high else 0.12)
 
 
 func _reach_steps(at: Vector3, level: String, left: bool, thing: Node3D, keep: bool) -> Array:
@@ -730,6 +748,9 @@ func _bring_start(b: Dictionary) -> void:
 				o["aim"] = true
 			else:
 				o["point"] = ik.knuckles(side)
+			o["target"] = b["target"]
+		"handle":                                             # the middle of her closed hand onto a door's handle
+			o["point"] = (ik.grip_frame(side, 0.03, "handle") as Transform3D).origin
 			o["target"] = b["target"]
 		"grip":                                               # her hand onto where a thing is taken
 			var thing := b["thing"] as Node3D

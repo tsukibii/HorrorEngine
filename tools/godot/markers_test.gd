@@ -760,8 +760,18 @@ func stage_sit() -> void:
 	thing.global_position = o + Vector3(1.2, 0.9, 3.6)
 	var pick := mk(q, "grab", o + Vector3(1.2, 0.9, 3.6), 0.0, {"action": "pick_up", "keep_in_hand": true})
 	var put_m := mk(q, "grab", o + Vector3(-1.0, 0.9, 3.6), 0.0, {"action": "put_down"})
+	# a door: its handle 1.04 m up, a little higher than her clip is made for (the hand's IK carries her hand onto it)
+	var door := Node3D.new()
+	var dsrc := GDScript.new()
+	dsrc.source_code = "extends Node3D\nvar used := 0\nfunc use(_b: Node = null) -> void:\n\tused += 1\n"
+	dsrc.reload()
+	door.set_script(dsrc)
+	door.name = "Door"
+	main.add_child(door)
+	var open_m := mk(q, "grab", o + Vector3(2.5, 1.04, 5.5), 0.0, {"action": "open", "door_opens": "push"})
 	go(npc)
 	pick.target = pick.get_path_to(thing)
+	open_m.target = open_m.get_path_to(door)
 	put(o + Vector3(9, 0.1, 9))
 	await frames(4)
 	var run: HSNpcRunner = npc.runner
@@ -786,9 +796,17 @@ func stage_sit() -> void:
 	ok(grab_d[0] < 0.2, "G: a Grab puts her hand at its pin", "%.2f m from it at the nearest" % grab_d[0])
 	await until(func(): return run.cur == put_m, 12.0)
 	ok(thing.get_parent() is BoneAttachment3D and thing.visible and run.body.held == thing, "G: Pick up: the thing is in her hand", str(thing.get_parent()))
-	await until(func(): return run.finished, 12.0)
+	await until(func(): return run.cur == open_m, 12.0)
 	ok(thing.get_parent() == main and thing.global_position.distance_to(put_m.global_position) < 0.03 and run.body.held == null, "G: Put down: it's left at the pin",
 		"%.3f m from it" % thing.global_position.distance_to(put_m.global_position))
+	var on_handle := [INF]
+	await watch(func(): return run.finished, 16.0, func():
+		var ik: Node = run.body.ik()
+		if run.cur == open_m and is_instance_valid(ik) and ik.last.has("r") and float(ik.last["r"]["weight"]) > 0.98:
+			on_handle[0] = minf(on_handle[0], float(ik.last["r"]["error"])))
+	ok(door.used == 1 and on_handle[0] < 0.02, "G: a Grab that opens a door: her hand is on its handle where the pin is (4 cm over what her clip is made for), the door's own use() once",
+		"%.1f cm from it as she holds it, used %d" % [on_handle[0] * 100.0, door.used])
+	door.queue_free()
 	npc.queue_free()
 	her.queue_free()
 	thing.queue_free()

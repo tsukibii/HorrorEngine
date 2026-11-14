@@ -437,12 +437,19 @@ func stand(clip := "", rate := 1.0, blend := 0.25) -> void:
 	_begin([{"k": "blend", "s": blend}])
 
 
+## how far up she can be put onto a seat or a bed higher than her clip was made for: 12 cm when the clip sits her
+## with her feet on the floor; 30 cm when it was made for a seat that's high for her (a child's, a goblin's: `high` in
+## the clip's record, the Animator's furniture), since her legs hang from it anyway
+static func most_lift(m: Dictionary) -> float:
+	return 0.3 if bool(m.get("high", false)) else 0.12
+
+
 ## sit: `seat` the seat's front edge at the height she sits at, `front` the way she faces sat
 func sit(seat: Vector3, front: Vector3, blend := 0.25) -> void:
 	var m: Dictionary = clip_info("sit_down").get("seat", {})
 	var yaw := atan2(front.x, front.z)
 	var stand_at := seat - front * float(m.get("edge", HSNpcFlow.SEAT_EDGE))
-	var up := clampf((seat.y - ground()) - float(m.get("height", 0.45)), -0.12, 0.12)
+	var up := clampf((seat.y - ground()) - float(m.get("height", 0.45)), -0.12, most_lift(m))
 	_begin(_go(stand_at, yaw) + [{"k": "clip", "clip": "sit_down", "lift": up, "blend": blend, "to": {"posture": "sitting"}}])
 
 
@@ -452,7 +459,7 @@ func lie(bed: Vector3, front: Vector3, right := false, blend := 0.25) -> void:
 	var m: Dictionary = clip_info("lie_down" + sd).get("bed", {})
 	var yaw := atan2(front.x, front.z)
 	var stand_at := bed - front * float(m.get("edge", HSNpcFlow.SEAT_EDGE))
-	var up := clampf((bed.y - ground()) - float(m.get("height", 0.45)), -0.12, 0.12)
+	var up := clampf((bed.y - ground()) - float(m.get("height", 0.45)), -0.12, most_lift(m))
 	_begin(_go(stand_at, yaw) + [{"k": "clip", "clip": "lie_down" + sd, "lift": up, "blend": blend, "to": {"posture": "lying", "side": sd}}])
 
 
@@ -648,6 +655,9 @@ func _bring_start(b: Dictionary) -> void:
 			else:
 				o["point"] = hik.knuckles(side)
 			o["target"] = b["target"]
+		"handle":                                             # the middle of her closed hand onto a door's handle
+			o["point"] = (hik.grip_frame(side, 0.03, "handle") as Transform3D).origin
+			o["target"] = b["target"]
 		"grip":
 			var thing := b["thing"] as Node3D
 			var gcls := look_script("grip.gd")
@@ -666,7 +676,19 @@ func _bring_start(b: Dictionary) -> void:
 ## handle is in it; the door's own use() as her hand moves it
 func open(at: Vector3, yaw: float, clip: String, flat: Vector3, door: Node, rate := 1.0, blend := 0.25) -> void:
 	var stand_at := at - HSNpcFlow.turned(Vector3(flat.x, 0, flat.z), yaw)
-	_begin(_go(stand_at, yaw) + [{"k": "clip", "clip": clip, "on": {"open": func(): _use(door)}, "rate": rate, "blend": blend}])
+	var step := {"k": "clip", "clip": clip, "on": {"open": func(): _use(door)}, "rate": rate, "blend": blend}
+	# her hand onto the handle itself from when she takes it until she lets go: her clip was made for a handle of some
+	# height (a person's metre, or as high as a small body's hand goes) and the pin is where it was put
+	var grab := -1.0
+	var let_go := -1.0
+	for e in clip_info(clip).get("events", []):
+		if String(e["name"]) == "grab":
+			grab = float(e["t"])
+		elif String(e["name"]) == "release":
+			let_go = float(e["t"])
+	if grab >= 0.0:
+		step["bring"] = {"what": "handle", "side": "l" if clip.ends_with("_l") else "r", "target": at, "peak": grab, "rise": 0.4, "hold": maxf(0.05, let_go - grab), "fall": 0.3, "freeze": true, "most": 0.35}
+	_begin(_go(stand_at, yaw) + [step])
 
 
 ## any clip by name (one of hers, or one made hers by clip_from), `times` times
@@ -1101,7 +1123,7 @@ func _use(door: Node) -> void:
 func sit_now(seat: Vector3, front: Vector3) -> void:
 	var m: Dictionary = clip_info("sit_down").get("seat", {})
 	var stand_at := seat - front * float(m.get("edge", HSNpcFlow.SEAT_EDGE))
-	_place_under(stand_at, seat.y, float(m.get("height", 0.45)), atan2(front.x, front.z))
+	_place_under(stand_at, seat.y, float(m.get("height", 0.45)), atan2(front.x, front.z), most_lift(m))
 	posture = "sitting"
 	_hold(0.0)
 
@@ -1110,7 +1132,7 @@ func lie_now(bed: Vector3, front: Vector3, right := false) -> void:
 	var sd := "_r" if right else ""
 	var m: Dictionary = clip_info("lie_down" + sd).get("bed", {})
 	var stand_at := bed - front * float(m.get("edge", HSNpcFlow.SEAT_EDGE))
-	_place_under(stand_at, bed.y, float(m.get("height", 0.45)), atan2(front.x, front.z))
+	_place_under(stand_at, bed.y, float(m.get("height", 0.45)), atan2(front.x, front.z), most_lift(m))
 	posture = "lying"
 	side = sd
 	_hold(0.0)
@@ -1118,7 +1140,7 @@ func lie_now(bed: Vector3, front: Vector3, right := false) -> void:
 
 # stood in front of a seat at `top`: on the floor under it (looked for from under the seat's top, so the seat itself
 # isn't taken for the floor), raised or lowered to meet it
-func _place_under(at: Vector3, top: float, made_for: float, yaw: float) -> void:
+func _place_under(at: Vector3, top: float, made_for: float, yaw: float, most := 0.12) -> void:
 	_clear()
 	posture = "standing"
 	side = ""
@@ -1128,7 +1150,7 @@ func _place_under(at: Vector3, top: float, made_for: float, yaw: float) -> void:
 		fl = top - made_for
 	her.global_position = Vector3(at.x, fl, at.z)
 	her.global_rotation = Vector3(0, yaw, 0)
-	_set_lift(clampf((top - fl) - made_for, -0.12, 0.12))
+	_set_lift(clampf((top - fl) - made_for, -0.12, most))
 
 
 ## what she is, to keep at a checkpoint
