@@ -42,7 +42,7 @@ try {
     const launched = execFileSync(process.env.PYTHON || "python3", ["tools/launch.py", "--list"], { cwd: ROOT, encoding: "utf8" }).trim().split("\n").length;
     const tiles = await page.locator(".tile").count();
     if (n !== tools || tools !== launched) throw new Error(`${n} rows, ${tools} tools, the launcher lists ${launched}`);
-    if (tiles < 3) throw new Error(`${tiles} tiles`);
+    if (tiles < 9) throw new Error(`${tiles} tiles (dashboard.py START_HERE names nine pages: a lengthened label lost the Animator's)`);
     console.log(`       ${n} tools in ${await page.locator(".sec").count()} sections, ${tiles} to start from`);
   });
   await step("a story view runs as a job on the header's game; its output streams in and it ends ok", async () => {

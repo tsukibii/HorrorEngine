@@ -68,6 +68,7 @@ def games():
 # level what a game is built into (`room.py build --set`); called `set:<name>` wherever a game's name goes
 SETS = ROOT / "Content" / "Studio" / "Sets"
 SET_NAME = re.compile(r"^[a-z][a-z0-9_]{0,40}$")
+GAME_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,40}$")   # a game's folder: what the desk's New takes (story.py new made any name, a space or a / too)
 
 
 def sets():
