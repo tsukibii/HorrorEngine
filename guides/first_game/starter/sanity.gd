@@ -87,10 +87,13 @@ var _last := 1.0
 var _bar: Control
 var _fill: ColorRect
 var _black: ColorRect
+var _at_kept := -1.0                                  # what it was at the Story's last checkpoint (a save holds that)
+var _loaded := -1.0                                   # a save's, put back at the Story's revived (load_game)
 
 
 func _ready() -> void:
 	add_to_group("hs_sanity")
+	add_to_group("hs_saves")
 	_last = sanity
 	_build()
 	_hook.call_deferred()
@@ -111,6 +114,8 @@ func _hook() -> void:
 			st.died.connect(_on_died)
 		if st.has_signal("revived") and not st.revived.is_connected(_on_revived):
 			st.revived.connect(_on_revived)
+		if st.has_signal("kept") and not st.kept.is_connected(_on_kept):
+			st.kept.connect(_on_kept)
 		if st.has_method("set_eatable"):                  # its foods: eatable out of the pocket (the Story's eat meter)
 			for item in foods:
 				if not st.is_eatable(str(item)):
@@ -127,7 +132,24 @@ func _on_died(_how := "") -> void:
 
 func _on_revived() -> void:
 	_broke = false
+	if _loaded >= 0.0:                                # a save loaded: as it was then
+		set_to(_loaded)
+		_loaded = -1.0
+		return
 	set_to(maxf(sanity, revive_to))
+
+
+func _on_kept() -> void:
+	_at_kept = sanity
+
+
+## the Story's save_game and load_game: the meter at the checkpoint the save holds
+func save_state() -> Dictionary:
+	return {"sanity": _at_kept if _at_kept >= 0.0 else sanity}
+
+
+func load_state(d: Dictionary) -> void:
+	_loaded = clampf(float(d.get("sanity", sanity)), 0.0, 1.0)
 
 
 ## 1 calm to 1 + `sync` at nothing: how much faster a hunt or the director goes (hunt.gd, dread.gd)

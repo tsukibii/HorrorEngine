@@ -36,6 +36,10 @@ func put_state(s: Dictionary) -> void:
 	elif not visible and _body != null:
 		_body.queue_free()
 		_body = null
+	if not visible and item != "":                    # taken: a loaded save's pocket has it by name, but not what it looks like
+		var st := get_tree().get_first_node_in_group("hs_story")
+		if st != null and st.has_method("has") and st.has(item) and "models" in st and not is_instance_valid(st.models.get(item)):
+			st.models[item] = _copy()
 
 
 func use(by: Node = null) -> void:

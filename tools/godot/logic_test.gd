@@ -437,6 +437,103 @@ func stage_checkpoint() -> void:
 	ok(bool(story.call("has", "key_d")) and walked, "D: and taken again, the area fired again: a checkpoint puts the world back too")
 
 
+# ---- S. a save on disk (the Story's save_game and load_game): the checkpoint, where you stand, the world, the Logic, her markers ------
+func stage_save() -> void:
+	var o := origin()
+	for sl in [0, 1, 2, 3]:
+		story.call("delete_save", sl)
+	var door := thing("DoorS", o, "res://starter/door.gd")
+	var lg := logic(door, {"set_flags": "+opened_s"})
+	var key := thing("KeyS", o + Vector3(2, 0, 0), "res://starter/pickup.gd", Vector3(0.25, 0.1, 0.25), false)
+	key.set("item", "key_s")
+	key.set("label", "The S key")
+	var p1 := o + Vector3(-4, 0, -3)
+	var p2 := o + Vector3(-4, 0, 2)
+	var her := standin(o + Vector3(-2, 0, -3), "HerS")
+	var npc := npc_for(her, "Sal")
+	var q := quest(npc, "One")
+	mk(q, "appear", o + Vector3(-2, 0, -3))
+	mk(q, "walk", p1, {"start_when": "opened_s"})
+	var on := mk(q, "walk", p2, {"start_when": "go_on_s"})
+	npc.start()
+	await secs(0.6)
+	var run: HSNpcRunner = npc.runner
+	put(o + Vector3(0, 0.1, 1.5))
+	await use_at(door)
+	put(o + Vector3(2, 0.1, 1.0))
+	await frames(3)
+	await use_at(key, 0.05)
+	story.call("set_eatable", "apple_s", 0.3, 1.5)
+	story.call("give", "apple_s", "An apple")
+	var there := await until(func() -> bool: return run.cur == on and her.global_position.distance_to(p1) < 0.3, 10.0)
+	ok(there and lg.times == 1 and bool(story.call("has", "key_s")), "S: the door used, the key taken, she's walked to her first place and waits",
+		"%s, times %d" % [run.status(), lg.times])
+	var stood := player.global_position
+	ok(bool(story.call("save_game", 1)) and bool(story.call("has_save", 1)), "S: saved into slot 1")
+	var text := FileAccess.get_file_as_string(str(story.call("save_path", 1)))
+	ok(text.contains("key_s") and text.contains("opened_s") and text.contains("Sal markers") and text.contains("DoorS/Logic"),
+		"S: the save is text: the pocket, the flags, her markers and the door's Logic in it", "%d characters" % text.length())
+	story.call("switch_flags", "+go_on_s, +late_s")
+	story.call("take", "key_s")
+	var moved := await until(func() -> bool: return her.global_position.distance_to(p2) < 0.3, 10.0)
+	put(o + Vector3(5, 0.1, 5))
+	await frames(2)
+	ok(moved and not bool(story.call("has", "key_s")), "S: later: she's walked on, the key's gone from the pocket, you're elsewhere")
+	ok(bool(story.call("load_game", 1)), "S: loaded")
+	await frames(6)
+	ok(her.global_position.distance_to(p1) < 0.3 and run.cur == on and run.phase == "gate", "S: she's back at her first place, waiting again", "%s at %s" % [run.status(), her.global_position - o])
+	ok(bool(story.call("is_set", "opened_s")) and not bool(story.call("is_set", "go_on_s")) and not bool(story.call("is_set", "late_s")),
+		"S: the flags as they were when it was saved")
+	ok(bool(story.call("has", "key_s")) and not key.visible and player.global_position.distance_to(stood) < 0.05 and lg.times == 1,
+		"S: the key in the pocket and not on the floor, you where you saved, the door's Logic fired once",
+		"key %s, shown %s, %.2f m, times %d" % [story.call("has", "key_s"), key.visible, player.global_position.distance_to(stood), lg.times])
+	# a game started again: nothing of this in memory, and the save loaded
+	(story.get("models") as Dictionary).clear()
+	(story.get("items") as Dictionary).clear()
+	(story.get("eatable") as Dictionary).clear()
+	story.set("_kept", {})
+	lg.set("_kept", 0)
+	lg.times = 0
+	run._kept = {}
+	story.call("switch_flags", "-opened_s, +go_on_s")
+	key.call("put_state", {"there": true})
+	var moved2 := await until(func() -> bool: return her.global_position.distance_to(p2) < 0.3, 10.0)
+	ok(moved2 and bool(story.call("load_game", 1)), "S: as if the game had just started: loaded again")
+	await frames(6)
+	var model = (story.get("models") as Dictionary).get("key_s")
+	ok(bool(story.call("has", "key_s")) and is_instance_valid(model) and not key.visible, "S: the key in the pocket with what it looks like (a model isn't saved: the pickup gives it again)")
+	ok(bool(story.call("has", "apple_s")) and bool(story.call("is_eatable", "apple_s")), "S: the apple still in the pocket and still something to eat")
+	ok(lg.times == 1 and int(lg.get("_kept")) == 1 and her.global_position.distance_to(p1) < 0.3 and run.cur == on,
+		"S: the Logic and her markers as they were saved", "times %d, %s at %s" % [lg.times, run.status(), her.global_position - o])
+	# an autosave at each checkpoint; F5 and F9 when the Story's save keys are on; what isn't a save
+	story.set("autosave", true)
+	story.call("checkpoint")
+	story.set("autosave", false)
+	ok(bool(story.call("has_save", 0)), "S: autosave: a checkpoint writes slot 0")
+	story.call("delete_save", 0)
+	story.set("save_keys", true)
+	var f5 := InputEventKey.new()
+	f5.physical_keycode = KEY_F5
+	f5.pressed = true
+	Input.parse_input_event(f5)
+	await frames(3)
+	ok(bool(story.call("has_save", 0)) and line() == "Saved.", "S: F5 saves", line())
+	var f9 := InputEventKey.new()
+	f9.physical_keycode = KEY_F9
+	f9.pressed = true
+	Input.parse_input_event(f9)
+	await frames(3)
+	ok(line() == "Loaded.", "S: F9 loads", line())
+	story.set("save_keys", false)
+	var w := FileAccess.open(str(story.call("save_path", 2)), FileAccess.WRITE)
+	w.store_string(var_to_str([1, 2, 3]))
+	w.close()
+	ok(not bool(story.call("load_game", 2)) and not bool(story.call("load_game", 3)), "S: a file that isn't a save and no file at all load nothing")
+	for sl in [0, 1, 2]:
+		story.call("delete_save", sl)
+	npc.queue_free()
+
+
 # ---- P. E's prompt over everything you can use (the starter's player on the scene's HSHud): what it says and when -----------------
 func stage_prompt() -> void:
 	var o := origin()
@@ -681,7 +778,7 @@ func _initialize() -> void:
 	player = main.get_node("Player") as CharacterBody3D
 	eye = player.get_node("Eye") as Camera3D
 	story = main.get_node("Story")
-	for st in [["gate", stage_gate], ["then", stage_then], ["tie", stage_tie], ["checkpoint", stage_checkpoint], ["prompt", stage_prompt], ["scan", stage_scan], ["board", stage_board], ["alone", stage_alone]]:
+	for st in [["gate", stage_gate], ["then", stage_then], ["tie", stage_tie], ["checkpoint", stage_checkpoint], ["save", stage_save], ["prompt", stage_prompt], ["scan", stage_scan], ["board", stage_board], ["alone", stage_alone]]:
 		if wants(st[0]):
 			await (st[1] as Callable).call()
 	print("LOGIC result " + JSON.stringify({"errors": errors}))

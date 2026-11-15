@@ -71,6 +71,7 @@ func _ready() -> void:
 		return
 	add_to_group("hs_npc")
 	add_to_group("hs_scare")
+	add_to_group("hs_saves")                                  # (the Story's save_game writes where her markers were at its checkpoint)
 	HSFlagBoard.of(get_tree())                                # (F7: the one place it's heard, and the flags beside the chips)
 	start.call_deferred()
 
@@ -83,6 +84,28 @@ func start() -> void:
 		return
 	runner = HSNpcRunner.new()
 	runner.begin(self, her, false)
+	if not _loaded.is_empty():                                 # a save loaded before her markers had started
+		runner._kept = _loaded
+		_loaded = {}
+
+
+var _loaded := {}
+
+
+## the Story's save_game and load_game: her markers as they were at the checkpoint the save holds (load_game puts them
+## back as dying does, at `revived`)
+func save_state() -> Dictionary:
+	return {"kept": runner._kept if runner != null else {}}
+
+
+func load_state(d: Dictionary) -> void:
+	var k = d.get("kept", {})
+	if not k is Dictionary:
+		return
+	if runner != null:
+		runner._kept = (k as Dictionary).duplicate(true)
+	else:
+		_loaded = (k as Dictionary).duplicate(true)
 
 
 # taken out of the scene (freed with its level, or moved): her runner lets go of the Story and the talk; put back, it

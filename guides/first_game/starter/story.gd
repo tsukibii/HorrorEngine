@@ -20,6 +20,15 @@
 ## fills over its seconds, then one of it is gone from the pocket and the Sanity node is mended by its `restores`.
 ## Let go early and nothing's eaten. Not while a gun is up (the click is the gun's: Q lowers it), a card is, or the
 ## laptop has the mouse.
+## Saving (the enhancements review, docs/TOOLS_REVIEW.md): save_game(slot) writes a checkpoint kept where you stand to
+## user://hs_save_<slot>.save, as text; load_game(slot) puts it back as dying puts a checkpoint back, with no card. A
+## save holds the Story's own (the tasks, flags, the pocket and what of it is eatable, the cash, the objective, the
+## doors, where you stood), the world's (the group hs_keeps: what's been picked up, read, fired, shown) and what keeps
+## its own checkpoint (the group hs_saves, save_state() and load_state(state): the Markers plugin's Logic nodes and
+## characters, the Sanity meter, the flashlight's batteries). `autosave` writes slot 0 at every checkpoint,
+## `continue_saved` loads it at the start, `save_keys` puts saving and loading on F5 and F9 for testing. A save is for
+## the scene it was made in (its nodes are found by their paths); a gun that came by pickup or parcel, the laptop's
+## orders, a parcel and a hunt's stage aren't in it yet.
 extends CanvasLayer
 
 signal task_added(id: String)
@@ -30,7 +39,9 @@ signal unflagged(fact: String)                        ## a flag switched off
 signal ended(title: String)
 signal kept                                           ## a checkpoint was kept (checkpoint())
 signal died(how: String)                              ## die()
-signal revived                                        ## back at the checkpoint after dying
+signal revived                                        ## back at the checkpoint after dying (and after a save is loaded)
+signal saved(slot: int)                               ## save_game() wrote a save on disk
+signal loaded(slot: int)                              ## load_game() put one back
 signal pocket_changed                                 ## something came into the pocket or went out of it
 signal cash_changed(cash: float)
 signal ate(item: String)                              ## a thing in the pocket was eaten
@@ -46,6 +57,11 @@ signal ate(item: String)                              ## a thing in the pocket w
 @export var pocket_row := true                        ## the pocket shown as an HSHud's inventory row (when the scene has one)
 @export var eat_secs := 2.0                           ## how long the left button is held to eat something that doesn't say
 @export var eat_sound := ""                           ## off the shelf, as something's eaten (a thing's own goes first)
+@export_group("Saving")
+@export var autosave := false                         ## each checkpoint written to disk too (save slot 0): the game goes on from it once it's closed
+@export var continue_saved := false                   ## at the start, save slot 0 loaded when there is one (with autosave: the game picks up at its last checkpoint)
+@export var save_keys := false                        ## F5 saves where you stand (a checkpoint, then slot 0), F9 loads it: for testing
+@export_group("")
 
 var items := {}                                       # what's carried: its name -> how many
 var names := {}                                       # what each is called on screen
@@ -92,6 +108,14 @@ func _ready() -> void:
 		var i := t.find(":")
 		if i > 0:
 			add_task(t.substr(0, i).strip_edges(), t.substr(i + 1).strip_edges())
+	if continue_saved and has_save(0):
+		_continue.call_deferred()
+
+
+func _continue() -> void:                             # (a few frames on: the characters' markers start deferred, and are what a save puts back too)
+	for i in 3:
+		await get_tree().process_frame
+	load_game(0)
 
 
 # ---- what the other scripts call ---------------------------------------------------------------------------------
@@ -445,7 +469,7 @@ func _doors() -> Array:
 func checkpoint() -> void:
 	var pl := get_tree().get_first_node_in_group("hs_player") as Node3D
 	_kept = {"flags": flags.duplicate(), "tasks": _tasks.duplicate(true), "items": items.duplicate(), "names": names.duplicate(),
-		"cash": cash, "objective": _obj.text, "doors": {}}
+		"cash": cash, "objective": _obj.text, "doors": {}, "eatable": eatable.duplicate(true)}
 	if pl != null:
 		_kept["at"] = pl.global_transform
 		_kept["pitch"] = float(pl.get("pitch")) if pl.get("pitch") != null else 0.0
@@ -459,6 +483,80 @@ func checkpoint() -> void:
 		if n.has_method("keep_state"):
 			_kept["world"][n.get_path()] = n.call("keep_state")
 	kept.emit()
+	if autosave:
+		save_game(0, false)
+
+
+## A save on disk (user://hs_save_<slot>.save): the last checkpoint, kept where you stand now first (`now`), and what
+## keeps its own checkpoint (the group hs_saves, save_state() and load_state(state): the Logic nodes, the characters'
+## markers). It's text (Godot's var_to_str): open it to see what it holds. -> whether it was written
+func save_game(slot := 0, now := true) -> bool:
+	if now or _kept.is_empty():
+		var auto := autosave
+		autosave = false                              # (checkpoint() here writes this save, not slot 0 too)
+		checkpoint()
+		autosave = auto
+	var extras := {}
+	for n in get_tree().get_nodes_in_group("hs_saves"):
+		if n.has_method("save_state"):
+			extras[str(n.get_path())] = n.call("save_state")
+	var scene := get_tree().current_scene
+	var data := {"version": 1, "scene": scene.scene_file_path if scene != null else "", "at": Time.get_datetime_string_from_system(),
+		"kept": _kept, "extras": extras, "deaths": deaths}
+	var f := FileAccess.open(save_path(slot), FileAccess.WRITE)
+	if f == null:
+		push_warning("story.gd: the save %s couldn't be written (%s)" % [save_path(slot), error_string(FileAccess.get_open_error())])
+		return false
+	f.store_string(var_to_str(data))
+	f.close()
+	saved.emit(slot)
+	return true
+
+
+func save_path(slot := 0) -> String:
+	return "user://hs_save_%d.save" % slot
+
+
+func has_save(slot := 0) -> bool:
+	return FileAccess.file_exists(save_path(slot))
+
+
+func delete_save(slot := 0) -> void:
+	if has_save(slot):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path(slot)))
+
+
+## A save put back as dying puts a checkpoint back (the same scene: its nodes are found by their paths), with no card.
+## What the pocket's things look like isn't saved (they're models): a loaded pocket shows their names. -> whether it was
+func load_game(slot := 0) -> bool:
+	if not has_save(slot):
+		return false
+	var data = str_to_var(FileAccess.get_file_as_string(save_path(slot)))
+	if not data is Dictionary or not (data as Dictionary).get("kept") is Dictionary:
+		push_warning("story.gd: %s isn't a save this Story can read" % save_path(slot))
+		return false
+	_kept = (data["kept"] as Dictionary).duplicate(true)
+	deaths = int(data.get("deaths", deaths))
+	var extras: Dictionary = data.get("extras", {})
+	for path in extras:
+		var n := get_node_or_null(NodePath(path))
+		if n != null and n.has_method("load_state"):
+			n.call("load_state", extras[path])
+	dead = false
+	over = false
+	_put_back()
+	revived.emit()                                    # (what keeps its own checkpoint puts it back now: the Logic nodes, the markers)
+	loaded.emit(slot)
+	return true
+
+
+func _unhandled_key_input(e: InputEvent) -> void:
+	if not save_keys or not (e is InputEventKey) or not e.pressed or e.echo:
+		return
+	if e.physical_keycode == KEY_F5 and not over:
+		say("Saved." if save_game(0) else "It couldn't be saved.")
+	elif e.physical_keycode == KEY_F9:
+		say("Loaded." if load_game(0) else "Nothing saved yet.")
 
 
 func has_checkpoint() -> bool:
@@ -486,11 +584,28 @@ func die(how := "", title := "You died", text := "") -> void:
 func revive() -> void:
 	if not dead:
 		return
+	_put_back()
+	dead = false
+	over = false
+	_card.visible = false
+	var tw := create_tween()
+	tw.tween_property(_end, "modulate:a", 0.0, 0.6)
+	tw.tween_callback(func() -> void:
+		if not over:
+			_end.visible = false)
+	revived.emit()
+
+
+# the last checkpoint put back: the Story's own (flags, tasks, the pocket, the cash, the objective, the doors), the
+# world's (hs_keeps) and where you stood (revive, load_game)
+func _put_back() -> void:
 	if not _kept.is_empty():
 		flags = (_kept["flags"] as Dictionary).duplicate()
 		_tasks = (_kept["tasks"] as Array).duplicate(true)
 		items = (_kept["items"] as Dictionary).duplicate()
 		names = (_kept["names"] as Dictionary).duplicate()
+		if _kept.get("eatable") is Dictionary:
+			eatable = (_kept["eatable"] as Dictionary).duplicate(true)
 		cash = float(_kept["cash"])
 		objective(str(_kept["objective"]))
 		for path in _kept["doors"]:
@@ -518,15 +633,6 @@ func revive() -> void:
 		_draw_list()
 		_draw_pocket()
 		cash_changed.emit(cash)
-	dead = false
-	over = false
-	_card.visible = false
-	var tw := create_tween()
-	tw.tween_property(_end, "modulate:a", 0.0, 0.6)
-	tw.tween_callback(func() -> void:
-		if not over:
-			_end.visible = false)
-	revived.emit()
 
 
 ## what an area's, a door's or a cue's `needs` says: "" always, "task:<id>" that task done, "on:<id>" that task on the

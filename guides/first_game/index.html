@@ -255,6 +255,12 @@ top of the 3D view to see through it.</p>
   <li><b>Her part in the game</b>: where she walks, what she says, what she does, by quests, as markers in the 3D view (no
   code). <a href="../markers/index.html">NPC markers</a>; little scenes made of them, <a href="../sequences/index.html">sequences</a>.</li>
   <li><b>Doors that need a flag, things tied to markers</b>: <a href="../flags/index.html">flags and things</a>.</li>
+  <li><b>Saving</b>: on the <b>Story</b> node, Saving's <b>Autosave</b> writes every checkpoint to disk (an Area3D with
+  <code>res://starter/checkpoint.gd</code> keeps one when you walk in), and <b>Continue Saved</b> starts the game from the
+  last one. <b>Save Keys</b> puts saving where you stand on <kbd>F5</kbd> and loading it on <kbd>F9</kbd> while you test.
+  From a script of your own: <code>save_game(slot)</code>, <code>load_game(slot)</code>, <code>has_save(slot)</code>. What
+  a save holds: the tasks, the facts, the pocket, the cash, the doors, where you stood, what's been picked up, read or set
+  off, the characters' markers, the Logic nodes, the Sanity meter and the flashlight's batteries.</li>
   <li><b>Quests, conversations and endings from the desk's story</b>: that's what the Director is for. <a href="../director/index.html">Its guide</a>.</li>
 </ul>
 </section>

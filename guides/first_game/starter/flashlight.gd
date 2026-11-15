@@ -40,9 +40,25 @@ var _color := Color.WHITE
 
 func _ready() -> void:
 	add_to_group("hs_no_zone")                   # the Look plugin's light zones leave it alone: it goes everywhere
+	add_to_group("hs_saves")                     # (the Story's save_game: its charge, its spares, on or off)
 	_full = light_energy
 	_range = spot_range
 	_color = light_color
+
+
+## the Story's save_game and load_game: as it is when the save's written (dying never put a battery back, so neither
+## does a checkpoint)
+func save_state() -> Dictionary:
+	return {"charge": charge, "spares": spares, "on": visible}
+
+
+func load_state(d: Dictionary) -> void:
+	charge = clampf(float(d.get("charge", charge)), 0.0, 1.0)
+	spares = int(d.get("spares", spares))
+	is_dead = battery > 0.0 and charge <= DEAD_AT
+	visible = bool(d.get("on", visible)) and not is_dead
+	_low_t = null if charge >= low_at else _T
+	light_energy = _full
 
 
 ## F: on or off (dead, or the batteries going in: a click)

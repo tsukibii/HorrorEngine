@@ -390,5 +390,31 @@ func _initialize() -> void:
 	if z_fired != 1 or broke_n[0] != 2 or not dead or story.get("dead") or not near(v(), 0.5, 0.001):
 		bad("at nothing (fired %d, broke %d, dead %s, back at %.2f)" % [z_fired, broke_n[0], dead, v()])
 
+	# 9. a save on disk (the Story's save_game and load_game): the meter as it was at the save's checkpoint (not raised to
+	# revive_to as coming back from the dead is), and the flashlight's charge and spare batteries as they were
+	san.set("zero_dies", false)
+	story.call("delete_save", 4)
+	san.set_to(0.3)
+	torch.set("battery", 120.0)
+	torch.set("charge", 0.62)
+	torch.set("spares", 2)
+	torch.visible = true
+	var wrote: bool = story.save_game(4)
+	san.set_to(0.9)
+	torch.set("charge", 0.2)
+	torch.set("spares", 0)
+	torch.visible = false
+	var read: bool = story.load_game(4)
+	await frames(3)
+	var at_load := v()
+	var ch := float(torch.get("charge"))
+	var spare_n := int(torch.get("spares"))
+	say("saved", "saved at 0.30 with the flashlight at 0.62 and 2 spares, then 0.90, 0.20 and none: loaded %s, the meter %.2f, the flashlight %.2f with %d spares, on %s" % [
+		read, at_load, ch, spare_n, torch.visible])
+	if not wrote or not read or not near(at_load, 0.3, 0.02) or absf(ch - 0.62) > 0.02 or spare_n != 2 or not torch.visible:
+		bad("a save (wrote %s, loaded %s, %.2f, %.2f, %d, on %s)" % [wrote, read, at_load, ch, spare_n, torch.visible])
+	torch.set("battery", 0.0)
+	story.call("delete_save", 4)
+
 	print("SANITY result " + JSON.stringify({"errors": errors}))
 	quit()

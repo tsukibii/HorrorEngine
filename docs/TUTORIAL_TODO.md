@@ -113,6 +113,11 @@ then each branch leaves a section here saying what it changes for the tutorial. 
       explained; the slippers (`shown.gd`) come back to where they were at the checkpoint too. A parcel unboxed since
       doesn't (it's freed, and the pocket loses what came out of it): with a lethal hunt, keep a checkpoint after the
       parcels (docs/TOOLS_REVIEW.md §4.5).
+- [ ] §31 or §34: the night can be **saved** now (the Story's Saving group: *Autosave* at each checkpoint, *Continue
+      Saved* at the start, F5 and F9 with *Save Keys*; `save_game`, `load_game`). Say so where dying and checkpoints are
+      explained, and take saving out of what a game by hand can't do yet if it's listed. Not in a save yet: the double
+      once it came in a parcel, the laptop's orders, a parcel, the hunt's stage: a save made before the gun comes is the
+      honest one to show.
 - [ ] §9 *The project*: `godot_byhand.py install` now leaves a plugin you switched off off, and says when the
       project's `starter/` differs from the studio's (then `install --starter`).
 - [ ] TUTORIAL2 run again after the starter's `player.gd` (the prompt, a blow as a scare), `story.gd` (the world kept
