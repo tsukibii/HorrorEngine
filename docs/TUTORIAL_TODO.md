@@ -15,8 +15,9 @@ then each branch leaves a section here saying what it changes for the tutorial. 
       the tutorial doesn't name either).
 - [ ] §9 *The project*: a project made before this needs `python tools/godot_byhand.py install <folder> --starter`
       once (the player asks a thing's Logic); say so beside the install line.
-- [ ] TUTORIAL2 run again after the starter's `player.gd` change (`use()` asks Logic first). It wasn't run on this
-      branch: it needs the desk's server. SEATS, MARKERS and LOGIC, which use the same player, pass.
+- [x] TUTORIAL2 run again after the starter's `player.gd` change (`use()` asks Logic first). It wasn't run on this
+      branch: it needs the desk's server. SEATS, MARKERS and LOGIC, which use the same player, pass. (Run on
+      `enhancements`, 2026-11-15, with this merged: TUTORIAL2 ok.)
 
 **Should (the tutorial done the fast way, which is the point of the tabs):**
 - [ ] §10 *The scene*: the player, the Story, the HUD and Sound added by the Things tab's **Set up the scene**
@@ -60,8 +61,9 @@ then each branch leaves a section here saying what it changes for the tutorial. 
       "moves" out of what a game by hand can't do yet (her own creep, crawl, peek and lunge are baked now), and
       "faces" if the markers' Face row is used.
 - [ ] §35 *Where to go next*: point at `guides/animator/index.html` and `guides/sequences/index.html`.
-- [ ] TUTORIAL2 run again after the starter's `motion.gd`, `act.gd` and `player.gd` changes (`struck`, the life
-      layer's calls). It wasn't run on this branch: it needs the desk's server.
+- [x] TUTORIAL2 run again after the starter's `motion.gd`, `act.gd` and `player.gd` changes (`struck`, the life
+      layer's calls). It wasn't run on this branch: it needs the desk's server. (Run on `enhancements`, 2026-11-15,
+      with this merged: TUTORIAL2 ok.)
 
 **Should (what the new animations are for):**
 - [ ] §31 *the hunt*: her `moves.gd` is given Kimodo clips with prompts. With a baked character it can be left
@@ -93,8 +95,10 @@ then each branch leaves a section here saying what it changes for the tutorial. 
 - [ ] Her export made again: the tutorial's character was exported before the fabric sets and the collar rule, so her
       file carries no fabric records and her collar is as it was. Dress her in sets (the PBR set picker, or a
       **Fabric sets** outfit) and export again, or say she wears the older fabrics.
-- [ ] TUTORIAL2 run again: the look plugin grew (`cloth.gd`, the packs in `textures/cloth/`, 16 MB) and the
-      character look node calls `HSCloth.wear`. It wasn't run on this branch (it needs the desk's server).
+- [x] TUTORIAL2 run again: the look plugin grew (`cloth.gd`, the packs in `textures/cloth/`, 16 MB) and the
+      character look node calls `HSCloth.wear`. It wasn't run on this branch (it needs the desk's server). (Run on
+      `enhancements`, 2026-11-15, with this merged: TUTORIAL2 ok, with her as a stand-in capsule: no Studio export
+      on that machine.)
 
 **Should:**
 - [ ] §30 *Her looks* or the character's section: one picture of her knit or her tights close up, and the two
