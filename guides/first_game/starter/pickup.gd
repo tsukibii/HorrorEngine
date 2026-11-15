@@ -10,7 +10,7 @@ signal picked(item: String)
 
 const Reach := preload("res://starter/reach.gd")
 
-@export var item := "key"
+@export var item := "key"   ## what goes into the pocket (a name your doors and tasks can ask for)
 @export var label := ""                         ## what the line says it is ("Room 304's key")
 @export var tick := ""                          ## a task it ticks off
 @export var add_tasks: PackedStringArray = []   ## tasks it adds, each "id: what it says"

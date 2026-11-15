@@ -11,10 +11,10 @@ signal finished
 @export var family := "step_wood"                 ## its steps (yours are the floor's: on carpet these are someone else's)
 @export var lag := 0.3                            ## seconds after each of yours
 @export var behind_m := 3.0                       ## how far behind you
-@export var db := -12.0
+@export var db := -12.0   ## the steps' loudness in dB
 @export var steps := 14                           ## how many before it gives up by itself
 @export var chance_per_min := 0.0                 ## by itself: the chance a minute while you're afraid (0: only start())
-@export_range(0.0, 1.0) var min_fear := 0.3
+@export_range(0.0, 1.0) var min_fear := 0.3   ## by itself only while the Fear node is over this
 @export var rest := 600.0                         ## seconds before it can come again by itself
 
 var running := false

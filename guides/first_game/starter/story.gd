@@ -49,7 +49,7 @@ signal ate(item: String)                              ## a thing in the pocket w
 @export var objective_text := ""                      ## the objective when the game starts
 @export var tasks: PackedStringArray = []             ## the to-do list when it starts, each "id: what it says"
 @export var ending_title := "The end"                 ## what end() shows
-@export_multiline var ending_text := ""
+@export_multiline var ending_text := ""   ## the ending card's words under its title
 @export var accent := Color(0.88, 0.64, 0.37)         ## the list's ticks and the cards' titles
 @export var cash := 0.0                               ## the player's money: what the laptop's shop takes
 @export var flags_start: PackedStringArray = []       ## flags that are on when the game starts (a flag is just a name: type a new one anywhere)

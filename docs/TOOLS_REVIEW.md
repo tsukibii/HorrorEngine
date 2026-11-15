@@ -66,6 +66,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E44 | eabd2517 | Tooltips for five more starter scripts: the dread moment, the searcher, gaslight, the scare area and the door (40 fields) |
 | E45 | 633bc0cf | Tooltips for nine more starter scripts: the director, presence, the chase, feet under the door, the event area, the flashlight, the glimpse, the hunt spot, the sound (48 fields) |
 | E46 | 4a3f60c9 | Tooltips for the Markers' and the Devices' last bare fields (17): a marker's kind and stay, the laptop's words and view, the parcel's sounds |
+| E47 | (next commit) | The starter kit's last tooltips (41): every exported field in it says what it does |
 
 ## 1. How it was done
 
@@ -293,8 +294,8 @@ Ranked within each part. Effort: S an hour or less, M a few hours, L a day or mo
 - The look plugin's own nodes keep nothing at a checkpoint or in a save (a kettle's life, a liquid's level, a lamp a
   scare switched off): each joining `hs_keeps` is S, as HSShootable and HSBlowUp now do (E39).
 - Every exported field of the Look plugin has an Inspector tooltip now (E40, E41: a trailing `##` on the field's line;
-  `godot --doctool DIR --gdscript-docs res://addons/horrorstudio_look` lists what each says). Still without one: 40 of
-  the starter kit's 571 (E42, E44 and E45 did its eighteen busiest scripts), 52 of the
+  `godot --doctool DIR --gdscript-docs res://addons/horrorstudio_look` lists what each says). The starter kit's all have one (E42,
+  E44, E45, E47). Still without one: 52 of the
   Weapons plugin's 295 (20 in HSMuzzleFlash); the Markers' and the Devices' all have one (E46).
 - Docs: guides/tutorial_v2 is behind the starter (E's prompt, the world at a checkpoint, saves): its bulk update is
   its own branch, by the user's word, listed in docs/TUTORIAL_TODO.md. GODOT_LOOK §6 says `realism` is the default

@@ -11,15 +11,15 @@ signal chilled                                    ## you walked in: it's cold
 signal warmed                                     ## you walked out
 
 @export var interior: Node3D                      ## the interior (with interior.gd) whose `room` this area fills
-@export var room := ""
-@export var needs := ""
+@export var room := ""   ## the interior's room it fills (its name in the export): the area sized to the room
+@export var needs := ""   ## the Story's words that must hold for the cold to come
 @export var panes: Array[Node] = []              ## window panes that frost over (HSWindowPane nodes, or glass meshes)
 @export_range(0.0, 1.0) var frost := 0.8          ## how far up they frost (1: three quarters of the way)
 @export var frost_seconds := 8.0                  ## the frost creeping up
 @export var thaw_seconds := 30.0                  ## and going once you're out (0: it stays)
 @export var breath := true                        ## your breath shows in here
 @export var breath_after := 1.0                   ## seconds in before it does
-@export_range(0.0, 1.0) var breath_strength := 0.6
+@export_range(0.0, 1.0) var breath_strength := 0.6   ## how white your breath shows (only where a light reaches it)
 @export var breath_every := 3.5                   ## seconds between breaths
 
 var inside := false

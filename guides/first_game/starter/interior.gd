@@ -18,7 +18,7 @@ const DOOR := preload("res://starter/door.gd")
 	set(v):
 		marker = v
 		place()
-@export var lights_on := true:
+@export var lights_on := true:   ## its lamps on when the game starts
 	set(v):
 		lights_on = v
 		_lights()

@@ -6,8 +6,8 @@ extends Area3D
 
 signal kept
 
-@export var needs := ""
-@export var once := true
+@export var needs := ""   ## the Story's words that must hold for it to count
+@export var once := true   ## it counts once (off: each time you walk in)
 @export var say := ""                                 ## a line as it's kept (most games: none)
 
 var count := 0

@@ -43,7 +43,7 @@ const NPZ := ["res://kimodo/npz.gd", "res://addons/horrorstudio_director/kimodo/
 @export var more := {}                                ## moves of your own: {"wave": "res://animations/wave.npz"}
 @export_group("How")
 @export var in_place := PackedStringArray(["walk", "run", "stalk", "crawl"])   ## made without their travel (the script moves her)
-@export var loops := PackedStringArray(["idle", "walk", "run", "stalk", "crawl", "watch", "search"])
+@export var loops := PackedStringArray(["idle", "walk", "run", "stalk", "crawl", "watch", "search"])   ## the moves whose clips loop
 @export var blend := 0.25                             ## seconds from one move into the next
 @export var fps := 30.0                               ## a Kimodo motion's frames a second
 @export var match_speed := true                       ## a walk played by how fast she's going

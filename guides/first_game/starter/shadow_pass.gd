@@ -11,7 +11,7 @@ signal passed
 
 @export var figure: Node3D                        ## who; empty: its first Node3D child
 @export var lamp: Light3D                         ## the light behind you that throws her shadow
-@export var armed := false
+@export var armed := false   ## ready from the start (else arm(), from a signal)
 @export var behind_m := 0.7                       ## how far behind you she passes
 @export var cross_m := 1.4                        ## how far she walks across behind you
 @export var secs := 1.8                           ## how long it takes

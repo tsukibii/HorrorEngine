@@ -43,7 +43,7 @@ const CHAIR_SEAT := 0.45                          ## a chair's seat from the flo
 signal sat(by: Node)                              ## sat down or lay down
 signal left(by: Node)                             ## up again
 
-@export_enum("sitting", "lying", "hiding") var pose := "sitting"
+@export_enum("sitting", "lying", "hiding") var pose := "sitting"   ## sitting, lying down, or hiding (a place a searcher looks in)
 @export_range(-30.0, 85.0) var look_up_deg := 0.0    ## the eye tilted up as you settle (lying on a pillow: 50; flat on your back: 70)
 @export var say := ""                                ## a line as you settle
 @export_group("View")

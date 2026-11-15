@@ -18,7 +18,7 @@ signal lit(light: Light3D)
 signal unlit(light: Light3D)
 
 @export var enabled := true                         ## the boolean: the light on her flickers
-@export_enum("flicker", "dim", "die") var mode := "flicker"
+@export_enum("flicker", "dim", "die") var mode := "flicker"   ## what a light on her does: flickers, dims, or dies (failing, then out)
 @export var lamps := true                           ## the room's lamps
 @export var flashlight := true                      ## and your flashlight
 @export_range(0.2, 3.0) var max_dips := 2.5         ## flicker: dips a second at most

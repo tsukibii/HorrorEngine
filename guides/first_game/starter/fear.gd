@@ -15,10 +15,10 @@
 ## Put it in the main scene: a Node called Fear with this script.
 extends Node
 
-@export var heartbeat := true
-@export var breathing := true
+@export var heartbeat := true   ## a heartbeat that quickens with fear (some players will want it off)
+@export var breathing := true   ## breathing that quickens with fear
 @export var dull := true                          ## the world's sound dulled as fear rises
-@export var vignette := true
+@export var vignette := true   ## the edges of the view darken with fear
 @export var tremor := true                        ## the beam shaking in your hand
 @export_range(0.0, 1.0) var calm := 0.0           ## where it settles when nothing's near
 @export var fall := 0.025                         ## a second, back toward calm

@@ -11,13 +11,13 @@ signal steamed
 signal cleared
 
 @export var mirror: Node                          ## the HSMirrorSurface on the glass
-@export var text := "308"
-@export var steam_seconds := 6.0
+@export var text := "308"   ## the words a finger left on the glass
+@export var steam_seconds := 6.0   ## seconds the glass takes to fog over
 @export var hold := 20.0                          ## seconds fogged over, the words there
-@export var clear_seconds := 10.0
-@export var once := true
+@export var clear_seconds := 10.0   ## seconds it takes to clear again
+@export var once := true   ## it happens once
 @export var sound := ""                           ## off the shelf, at the mirror, as it starts
-@export var sound_db := -6.0
+@export var sound_db := -6.0   ## the sound's loudness in dB
 
 var level := 0.0                                  ## the steam now, 0..1 (a check's)
 var phase := "idle"                               ## idle, steaming, holding, clearing

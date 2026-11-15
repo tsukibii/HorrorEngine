@@ -24,11 +24,11 @@ signal finished
 	"life", "alive", "still", "hold", "drop") var act := "walk_to"
 @export var target: NodePath                           ## where, or what
 @export var also: NodePath                             ## open: the door; sleep: the pillow
-@export_enum("push", "pull", "slide") var door_opens := "push"
+@export_enum("push", "pull", "slide") var door_opens := "push"   ## a door: pushed, pulled or slid open
 @export var clip := ""                                 ## play: the animation's name; life: the flourish's ("scratch_head", "look_hand"...; empty: one that suits what she's doing)
 @export_enum("as its grip says", "side", "front", "chest", "shoulder", "raised") var carry := "as its grip says"   ## hold: how it's carried
 @export var loop := false                              ## play: looped until she's asked for something else
-@export var left_hand := false
+@export var left_hand := false   ## with her left hand
 @export var keep_in_hand := false                      ## pick_up: it stays in her hand
 @export_enum("lunge", "loom", "snap", "claw") var scare_kind := "lunge"   ## scare: which
 @export var then_hide := false                         ## scare: she's hidden when it's been shown

@@ -9,7 +9,7 @@ signal lit
 signal flashed
 signal flashed_twice
 
-@export_enum("backs off", "freezes", "vanishes", "comes", "nothing") var does := "backs off"
+@export_enum("backs off", "freezes", "vanishes", "comes", "nothing") var does := "backs off"   ## what she does when the light holds her: backs off, freezes, vanishes, comes toward it, or nothing
 @export var after := 0.4                        ## seconds in the light before she does it
 @export_range(0.0, 1.0) var bright := 0.3       ## how bright it must be on her
 @export var distance := 2.5                     ## backs off: metres

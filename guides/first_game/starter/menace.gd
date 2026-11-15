@@ -10,12 +10,12 @@ extends Node
 signal withdrew
 signal returned
 
-@export var near_m := 8.0
+@export var near_m := 8.0   ## how near her counts, in metres
 @export var near_rate := 0.05                     ## a second, within near_m
 @export var seen_rate := 0.15                     ## a second more, while you can see her
 @export var fall := 0.05                          ## a second, while neither
-@export var away_min := 60.0
-@export var away_max := 120.0
+@export var away_min := 60.0   ## seconds she stays away once the gauge is full, at the least
+@export var away_max := 120.0   ## and at the most
 @export var retreat: Node3D                       ## where she withdraws to (empty: gone)
 @export var head_m := 1.5                         ## her head over her feet (m): where she sees from and where her sounds come from; a child's about 1.2, an imp's 0.8, an ogre's 2.3
 

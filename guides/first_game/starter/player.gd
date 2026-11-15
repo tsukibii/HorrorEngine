@@ -27,10 +27,10 @@ signal hit(by: Node, kind: String)      ## someone's punch or swing landed on yo
 signal scared                           ## a blow landed: a scare, heard as any is (the player is in the group hs_scare)
 
 @export var walk_speed := 1.6          ## metres a second
-@export var run_speed := 3.2
+@export var run_speed := 3.2   ## metres a second with Shift
 @export var mouse_turn := 0.0025       ## radians a pixel
 @export var reach := 2.0               ## how far E reaches
-@export var gravity := 9.8
+@export var gravity := 9.8   ## how fast you fall, metres a second squared
 @export var step_height := 0.5         ## the highest step it walks up
 @export var breath_secs := 8.0         ## how long you can hold your breath (Space)
 @export var gasp_sound := "breath_02"  ## off the shelf: the gasp when you can't any longer
