@@ -70,7 +70,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E48 | ef8de846 | The Weapons plugin's last tooltips (52, 20 of them the muzzle flash's look): every by-hand plugin and the starter kit have one on every field |
 | E49 | 4b72848f | Once-only scares kept in a save: a glimpse, the closer figure, feet under a door, the steam's writing, a shadow, the mirror figure, a dread moment, a checkpoint |
 | E50 | 34a49a6b | A way into the next level: the Story's `go_to(scene, at)` and `starter/travel.gd` carry the pocket, the to-do list, the facts and the cash into another scene |
-| E51 | (next commit) | The Story's words on the HSHud by default (your answer to E34: "I prefer HSHud look"); a HUD put in while the game runs taken at once |
+| E51 | 40e403ec | The Story's words on the HSHud by default (your answer to E34: "I prefer HSHud look"); a HUD put in while the game runs taken at once |
 
 ## 1. How it was done
 
