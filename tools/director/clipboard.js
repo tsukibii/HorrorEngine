@@ -56,7 +56,8 @@ export function pasteClips(ver, items, { scene = null, fromScene = null } = {}) 
     delete c.dur; delete c.trim;
     renameSegments(c, fromScene, old, scene, c.id);
   }
-  for (const c of out) for (const o of (c.reply && c.reply.options) || []) if (o.go && ids[o.go.clip]) o.go.clip = ids[o.go.clip];   // a skip among the pasted lines keeps pointing at its line
+  for (const c of out) for (const o of (c.reply && c.reply.options) || []) if (o.go && o.go.clip) { if (ids[o.go.clip]) o.go.clip = ids[o.go.clip]; else delete o.go.clip; }   // a skip among the pasted lines keeps pointing at its line; one to a line not copied goes (it landed on whatever line had that id here)
+  for (const c of out) for (const o of (c.reply && c.reply.options) || []) if (o.go && !Object.keys(o.go).length) delete o.go;
   return out;
 }
 function renameSegments(c, fromScene, fromClip, toScene, toClip) {
