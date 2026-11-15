@@ -58,8 +58,8 @@ signal ate(item: String)                              ## a thing in the pocket w
 @export var eat_secs := 2.0                           ## how long the left button is held to eat something that doesn't say
 @export var eat_sound := ""                           ## off the shelf, as something's eaten (a thing's own goes first)
 ## the objective, the to-do list and the lines on the scene's HSHud (the UI plugin's corners and footer: one look with
-## its prompt, its conversations and its pocket) in place of the Story's own; a note's card, the death card and the
-## ending stay the Story's. Off: as it always was
+## its prompt, its conversations and its pocket) in place of the Story's own, and a note's card as the HUD's card (E
+## puts it away, as ever); the death card and the ending stay the Story's. Off: as it always was
 @export var use_hud := false
 @export_group("Saving")
 @export var autosave := false                         ## each checkpoint written to disk too (save slot 0): the game goes on from it once it's closed
@@ -222,15 +222,34 @@ func card(title: String, text: String) -> void:
 	_card_title.text = title
 	_card_title.visible = title != ""
 	_card_text.text = text
-	_card.visible = true
+	var h := _words_hud()
+	if h != null and h.has_method("panel"):
+		h.panel({"title": title, "text": text, "hint": "E to put it away"})   # (not waited for: E puts it away, close_card)
+		_card_on_hud = true
+		_card.visible = false
+	else:
+		_card.visible = true
+
+
+var _card_on_hud := false                             # use_hud: the card up is the HUD's
 
 
 func card_up() -> bool:
+	if _card_on_hud:
+		var h := _words_hud()
+		if h != null and h.get("panel_el") != null:
+			return true
+		_card_on_hud = false
 	return _card.visible
 
 
 func close_card() -> void:
 	_card.visible = false
+	if _card_on_hud:
+		var h := _words_hud()
+		if h != null and h.has_method("_finish_panel"):
+			h.call("_finish_panel", true)
+		_card_on_hud = false
 
 
 ## into the pocket: `label` what it's called (its name when not given), `model` what it looks like in its slot (a copy of

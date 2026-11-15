@@ -667,6 +667,13 @@ func stage_hud() -> void:
 	await frames(3)
 	var row: Label = (hud.get("rows") as Dictionary).get("cellar_h")
 	ok(row != null and str(row.get_meta("state", "")) == "done", "H: ticked: the HUD's row done")
+	story.call("card", "A letter", "Don't go down there.")
+	await frames(3)
+	var card_on_hud: bool = hud.get("panel_el") != null and bool(story.call("card_up")) and not (story.get("_card") as Control).visible
+	story.call("close_card")
+	await frames(3)
+	ok(card_on_hud and hud.get("panel_el") == null and not bool(story.call("card_up")), "H: a note's card as the HUD's card, up while it's shown, put away by close_card (E)",
+		"on the HUD %s, after %s" % [card_on_hud, hud.get("panel_el") != null])
 	story.set("use_hud", false)
 	hud.call("objective", null)
 	hud.call("todo", [], false)

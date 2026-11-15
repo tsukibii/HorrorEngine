@@ -124,6 +124,10 @@ func _initialize() -> void:
 	await key(KEY_ESCAPE)
 	# E34: the Story's words on the HSHud (use_hud): the same spot and line, the Story's own first, then the HUD's
 	stand(Vector3(4.0, eye, -7.0), Vector3(12.0, eye - 0.2, -7.0))
+	var note_text := "Sorry, the card reader on 304 is broken again. The master key is on the shelf in the linen closet, across the corridor. Leave it there after. Please don't knock on 308.\n\n- the night desk"
+	story.call("card", "Under 304's door", note_text)
+	await snap("e34_card_own", 20)
+	story.call("close_card")
 	story.call("say", "Someone knocked at 308.", 30.0)
 	await snap("e34_story_own", 30)
 	story.set("use_hud", true)
@@ -131,6 +135,9 @@ func _initialize() -> void:
 	story.call("_draw_list")
 	story.call("say", "Someone knocked at 308.", 30.0)
 	await snap("e34_story_hud", 30)
+	story.call("card", "Under 304's door", note_text)
+	await snap("e34_card_hud", 20)
+	story.call("close_card")
 	for sl in [0, 1, 2, 3]:
 		story.call("delete_save", sl)
 	print("ENHANCESHOTS done")
