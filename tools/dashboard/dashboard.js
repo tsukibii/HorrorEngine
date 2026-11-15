@@ -20,6 +20,7 @@ const api = async (path, body) => {
 const WHISPERS = ["the lights are off. pick a door.", "something is breathing in the build folder.", "every take is ten seconds or less. she isn't.",
   "don't look behind the locker slats.", "the desk remembers what you left on it.", "she was in the hallway a second ago."];
 let TOOLS = [], SECTIONS = [], STATUS = { pages: [], jobs: [], recent: [] }, VALUES = {}, OUT = null, FOLD = {}, LAST = "";
+let GAMES = { base: "", shown: "~/HorrorGames", games: [] }, NG = { job: null }, ALL_GAMES = false;
 try { FOLD = JSON.parse(localStorage.getItem("dash.fold") || "{}"); VALUES = JSON.parse(localStorage.getItem("dash.values") || "{}"); } catch (e) { }
 
 function toast(text, bad = false) {
@@ -78,6 +79,94 @@ function drawTools() {
   }
 }
 
+// ---- the New game card: the project maker (tools/horror_game.py) by a name and a click (the user, 2026-11-15) -------
+const folderOf = name => name.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "Horror_Game";   // horror_game.py's folder_name
+const makerTool = kind => TOOLS.find(t => t.maker === kind);
+const leaf = p => p.split(/[\\/]/).pop();
+const sameFolder = (a, b) => a.toLowerCase() === b.toLowerCase();       // (one folder on Windows and macOS: say so everywhere)
+async function loadGames() { try { GAMES = await api("games"); } catch (e) { } drawGames(); drawNote(); }
+function drawNote() {
+  const name = $("#ngName").value.trim(), note = $("#ngNote"), btn = $("#ngCreate");
+  note.className = "ng-note"; note.replaceChildren(); btn.disabled = false; btn.textContent = "Create";
+  const j = NG.job && STATUS.jobs.find(x => x.id === NG.job);
+  if (j && j.status === "running") {                                   // making it: what and where, the output beside
+    note.classList.add("busy"); btn.disabled = true; btn.textContent = "Making…";
+    note.append(`Making ${NG.name} in ${GAMES.shown}/${folderOf(NG.name)}: a minute or two (the plugins, the sounds, Godot's import). Its output is on the right.`);
+    return;
+  }
+  if (j && NG.name === name) {                                          // made (or not): until the name's changed
+    const g = GAMES.games.find(x => sameFolder(leaf(x.folder), folderOf(NG.name)));
+    if (j.status === "ok" && g) {
+      note.classList.add("ok");
+      note.append(`✓ ${NG.name} is ready in ${GAMES.shown}/${leaf(g.folder)}.`, el("button", { class: "go", on: { click: () => openGame(g) } }, "Open in Godot"));
+      btn.disabled = true;
+      return;
+    }
+    if (j.status !== "ok") { note.classList.add("bad"); note.append(`✗ ${NG.name} wasn't made: ${(j.result || j.status).replace(/^HORRORGAME FAILED:\s*/, "")}`); return; }
+  }
+  if (!name) { note.append(`A Godot 4.7 project in ${GAMES.shown}, ready to play: every plugin on, a “… presents” card, a main menu and a room.`); return; }
+  const there = GAMES.games.find(x => sameFolder(leaf(x.folder), folderOf(name)));
+  if (there) {
+    note.classList.add("bad"); btn.disabled = true;
+    note.append(`There's a game in ${GAMES.shown}/${leaf(there.folder)} already (${there.name}): open it below, or pick another name.`);
+    return;
+  }
+  note.append(`Makes ${GAMES.shown}/${folderOf(name)}`);
+}
+function drawGames() {
+  const box = $("#ngGames"); box.replaceChildren();
+  if (!GAMES.games.length) return;
+  const shown = ALL_GAMES ? GAMES.games : GAMES.games.slice(0, 6);
+  box.append(el("div", { class: "ng-sub" }, "Your games", el("span", { class: "where" }, GAMES.shown),
+    GAMES.games.length > 6 ? el("button", { class: "ghost", on: { click: () => { ALL_GAMES = !ALL_GAMES; drawGames(); } } }, ALL_GAMES ? "fewer" : `all ${GAMES.games.length}`) : null));
+  for (const g of shown) box.append(el("div", { class: "ng-game" },
+    el("div", { class: "t" }, el("div", { class: "label" }, g.name), el("div", { class: "cmd", title: g.folder }, g.folder)),
+    el("span", { class: "when", title: "its project.godot last changed" }, ago(g.when) + " ago"),
+    el("button", { class: "go", on: { click: () => openGame(g) } }, "Open in Godot"),
+    el("button", { title: "the studio's plugins and starter scripts into it again (a starter script of yours that differs is kept in starter_before/)", on: { click: () => updateGame(g) } }, "Update")));
+}
+async function runMaker(kind, values) {
+  const t = makerTool(kind);
+  if (!t) throw new Error("the launcher has no row for horror_game.py " + kind);
+  const v = {};
+  for (const f of t.fields) if (values[f.kind] !== undefined && values[f.kind] !== "") v[f.key] = values[f.kind];
+  return api("run", { i: t.i, values: v });
+}
+async function createGame() {
+  const name = $("#ngName").value.trim(), studio = $("#ngStudio").value.trim();
+  if (!name) { toast("type your game's name first", true); $("#ngName").focus(); return; }
+  try {
+    const r = await runMaker("new", { ask: name, opt: studio });
+    NG = { job: r.job, name };
+    toast(`making ${name}…`);
+    await refresh();
+    const j = STATUS.jobs.find(x => x.id === r.job); if (j) showJob(j);
+  } catch (e) { toast(e.message, true); }
+  drawNote();
+}
+async function openGame(g) {
+  try { await runMaker("open", { ask: g.folder }); toast(`opening ${g.name} in Godot…`); } catch (e) { toast(e.message, true); }
+  refresh();
+}
+async function updateGame(g) {
+  if (!confirm(`Bring the studio's plugins and starter scripts into ${g.name} again?\n\nA starter script of yours that differs is kept in starter_before/ first.`)) return;
+  try {
+    const r = await runMaker("update", { ask: g.folder });
+    toast(`updating ${g.name}…`);
+    await refresh();
+    const j = STATUS.jobs.find(x => x.id === r.job); if (j) showJob(j);
+  } catch (e) { toast(e.message, true); }
+}
+function initNewGame() {
+  const studio = $("#ngStudio");
+  try { studio.value = localStorage.getItem("dash.studio") || ""; } catch (e) { }
+  studio.addEventListener("input", () => { try { localStorage.setItem("dash.studio", studio.value); } catch (e) { } });
+  $("#ngName").addEventListener("input", drawNote);
+  for (const i of [$("#ngName"), studio]) i.addEventListener("keydown", e => { if (e.key === "Enter" && !$("#ngCreate").disabled) createGame(); });
+  $("#ngCreate").addEventListener("click", createGame);
+  loadGames();
+}
+
 // ---- running and recent ----------------------------------------------------------------------------------------
 function drawActivity() {
   const box = $("#activity"); box.replaceChildren();
@@ -106,9 +195,9 @@ function showPage(p) { OUT = { page: p.key, from: 0, title: p.labels.map(short).
 function startOut() {
   $("#out").replaceChildren(); $("#outTitle").textContent = OUT.title;
   const j = OUT.job && STATUS.jobs.find(x => x.id === OUT.job);
-  $("#outTools").replaceChildren(
+  $("#outTools").replaceChildren(...[                                   // (a null here was written out as "null")
     el("button", { class: "ghost", title: "copy the command, to run it in a terminal yourself", on: { click: () => { navigator.clipboard.writeText(OUT.shown).then(() => toast("copied: " + OUT.shown)); } } }, "copy command"),
-    j && j.status !== "running" ? el("button", { class: "ghost", on: { click: () => { const t = TOOLS.find(x => x.i === j.i); if (t) run(t); } } }, "run again") : null);
+    j && j.status !== "running" ? el("button", { class: "ghost", on: { click: () => { const t = TOOLS.find(x => x.i === j.i); if (t) run(t); } } }, "run again") : null].filter(Boolean));
   pollOut(); drawActivity();
 }
 async function pollOut() {
@@ -156,6 +245,10 @@ async function refresh() {
   drawActivity();
   if (sig !== LAST && !(document.activeElement && document.activeElement.closest && document.activeElement.closest("#list input"))) { LAST = sig; drawTools(); }   // only when something changed (and not while typing)
   if (OUT && OUT.job) { const j = STATUS.jobs.find(x => x.id === OUT.job); if (j && OUT.status !== j.status) { OUT.status = j.status; startOutTools(j); } }
+  if (NG.job) {                                                         // the game being made: its card follows it
+    const j = STATUS.jobs.find(x => x.id === NG.job);
+    if (j && NG.status !== j.status) { NG.status = j.status; if (j.status === "running") drawNote(); else loadGames(); }
+  }
 }
 function startOutTools(j) {
   const t = $("#outTools");
@@ -174,9 +267,10 @@ async function init() {
     const x = await api("stop_all", {}); toast(`stopped ${x.pages} page server(s) and ${x.jobs} job(s)`); refresh();
   });
   document.addEventListener("keydown", e => { if (e.key === "/" && !e.target.closest("input,select,textarea")) { e.preventDefault(); $("#filter").focus(); } });
+  initNewGame();
   await refresh();
   setInterval(refresh, 1500);
   setInterval(pollOut, 1000);
 }
 init();
-window.__dash = { get status() { return STATUS; }, get tools() { return TOOLS; }, run, refresh };
+window.__dash = { get status() { return STATUS; }, get tools() { return TOOLS; }, get games() { return GAMES; }, run, refresh, loadGames };

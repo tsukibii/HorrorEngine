@@ -58,7 +58,7 @@ every tool and enhancements on this branch until 11am, for the user to review at
 focus on the director tool, most games will be made directly using the horrorengine godotplugin"*: from then the work
 went to the by-hand path, and the desk, the Director and the desk's export were left as they were.
 
-**Every improvement has an ID** (E01 to E52, a commit each, a letter for a part of one): TOOLS_REVIEW §0's table, and
+**Every improvement has an ID** (E01 to E53, a commit each, a letter for a part of one): TOOLS_REVIEW §0's table, and
 a page on claude.ai with a screenshot of each and boxes to pick what to undo (the user asked for it to choose what to
 take out). When the user names IDs to undo: a whole ID is `git revert <commit>`; a lettered one is taken out by hand.
 
@@ -120,7 +120,9 @@ user's card is the way, and its `report.md` the thing to paste back.
 default (E51). Then, from a screenshot of the HUD's key chips over the game: the keys only in the pause menu, at its
 foot in place of the tiles on its left, and every part of the HUD at an edge inside the tape's 4:3 picture, never in
 the black bars, at any preset and window size (E52: the HUD's `keys_in_menu` and `frame_rect`, the tape's `picture()`;
-GDUI's by-hand half holds both, at five window sizes in every preset).
+GDUI's by-hand half holds both, at five window sizes in every preset). And the dashboard's **New game** card (E53):
+a name and Create run the project maker as a job; the games made are listed under it with Open in Godot and Update
+(`horror_game.py open` and `list`; DASH makes one for real into a scratch folder).
 
 **What could come next** (TOOLS_REVIEW §4.1): what a save still leaves out (the director, a searcher or a
 chase); one helper for the check harness; a Director project as it ships (keep text, one line); the Studio's undo. Tutorial v2's own update stays its own bulk branch (docs/TUTORIAL_TODO.md has

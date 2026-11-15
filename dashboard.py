@@ -12,6 +12,9 @@ builder, the kit maker...). They're kept in Saved/launch.json, the launcher's ow
 other started, and they keep running when the dashboard closes. Everything else (the checks, the story views, the
 setup steps) runs as a job: its output streams into the page, ok or failed when it ends, Stop ends it early; the
 jobs' logs are kept in Saved/dashboard/. Words a tool needs (a game, an id, a folder) are asked for on its row.
+**The New game card** at the top: a name (and your studio's, for the card's "... presents"), Create runs the project
+maker (tools/horror_game.py new) as a job; the games it made (~/HorrorGames, or $HORROR_GAMES) listed under it with
+Open in Godot (its editor) and Update (the studio's plugins and starter scripts into it again).
 Plain Python, no installs; listens on 127.0.0.1 only.
 """
 import importlib.util
@@ -41,6 +44,18 @@ TYPES = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".j
 spec = importlib.util.spec_from_file_location("launch", ROOT / "tools" / "launch.py")
 launch = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(launch)
+_maker = None
+
+
+def maker():
+    """tools/horror_game.py, loaded when the New game card first asks (it brings godot_byhand with it)"""
+    global _maker
+    if _maker is None:
+        sys.path.insert(0, str(ROOT / "tools"))
+        spec2 = importlib.util.spec_from_file_location("horror_game", ROOT / "tools" / "horror_game.py")
+        _maker = importlib.util.module_from_spec(spec2)
+        spec2.loader.exec_module(_maker)
+    return _maker
 TOOLS = launch.TOOLS
 WIN = launch.WIN
 PY = launch.PY
@@ -270,7 +285,8 @@ def tools_list():
     out = []
     for i, (sec, label, cmd, opts) in enumerate(TOOLS):
         out.append({"i": i, "section": sec, "label": label, "cmd": cmd, "url": opts.get("url"), "fields": fields_of(cmd),
-                    "server": cmd.split()[0] if opts.get("url") else None, "start": bool(opts.get("url")) and any(label.startswith(t) for t in START_HERE)})
+                    "server": cmd.split()[0] if opts.get("url") else None, "start": bool(opts.get("url")) and any(label.startswith(t) for t in START_HERE),
+                    "maker": cmd.split()[1] if cmd.startswith("tools/horror_game.py ") else None})   # (the New game card's: new, open, update)
     return out
 
 
@@ -346,6 +362,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, {"pages": pages(state), "jobs": jobs, "game": state.get("game"), "games": launch.games(),
                                    "recent": [{"n": n, "label": r["label"], "shown": r["shown"], "url": r.get("url")}
                                               for n, r in enumerate(state.get("recent", []))]})
+        if what == "games":                            # the New game card: the games the maker made, newest first
+            m = maker()
+            base = m.games_dir()
+            home = Path.home()
+            shown_base = "~/" + str(base.relative_to(home)) if home in base.parents else str(base)
+            return self.send(200, {"base": str(base), "shown": shown_base, "games": m.made(base)})
         if what == "log":                              # a job's or a page server's output, from a byte offset on
             if q.get("job"):
                 j = JOBS.get(q["job"])

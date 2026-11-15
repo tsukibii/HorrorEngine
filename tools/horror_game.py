@@ -3,10 +3,14 @@
 horror godot package maker wrapper which I can name and creates a base project with everything set up for godot 4.7").
 
     python tools/horror_game.py new "My Game" [--to DIR] [--artist "Your Studio"]   a project to open and play (F5) at once
+    python tools/horror_game.py open FOLDER                  Godot's editor on it (a game's folder, or its name in DIR)
     python tools/horror_game.py update FOLDER                the studio's plugins and starter scripts into it again
+    python tools/horror_game.py list                         the games in DIR, newest first
     python tools/horror_game.py check                        HORRORGAME: one made in Saved/Godot/_horror_game and played
 
-`new` makes DIR/My_Game (DIR: ~/HorrorGames unless --to says): godot_byhand.py's project (the Look, UI, Weapons, Devices
+The dashboard's New game card (python dashboard.py) does `new`, `open` and `update` with a click.
+
+`new` makes DIR/My_Game (DIR: ~/HorrorGames, or $HORROR_GAMES, unless --to says): godot_byhand.py's project (the Look, UI, Weapons, Devices
 and Markers plugins switched on with the balanced look's settings, HumanShaders, the starter kit as res://starter/, the
 sound shelf, the four music moods, the Kimodo reader, exports/ folders), named as you named it, and three scenes Godot
 builds and saves (tools/godot/base_build.gd): intro.tscn, the project's start (black, "[Artist] presents", or
@@ -19,7 +23,8 @@ with yours that differed kept in starter_before/).
 
 Why a project maker and not one plugin: what a game needs lives in five plugins (copied into addons/) and the starter
 kit (copied into starter/: scenes reference res://starter/ by path); this makes a project with all of them, and
-`update` keeps it current. Needs Godot 4.7 on the PATH ($GODOT for another)."""
+`update` keeps it current. Needs Godot 4.7 on the PATH ($GODOT for another; `open` takes $GODOT_EDITOR first, a Godot of
+your own for editing)."""
 import os
 import re
 import shutil
@@ -93,6 +98,34 @@ def godot():
 
 def folder_name(name):
     return re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_") or "Horror_Game"
+
+
+def games_dir():
+    """where `new` makes a game when --to doesn't say: $HORROR_GAMES, else ~/HorrorGames"""
+    return Path(os.environ.get("HORROR_GAMES") or (Path.home() / "HorrorGames")).expanduser()
+
+
+def made(base=None):
+    """the games in `base` (a folder each with a project.godot), newest first: [{name, folder, when}]; the name is the
+    project's own (application/config/name), else its folder's"""
+    base = Path(base) if base else games_dir()
+    out = []
+    for p in sorted(base.glob("*/project.godot")) if base.is_dir() else []:
+        m = re.search(r'^config/name="(.*)"', p.read_text(encoding="utf-8", errors="replace"), re.M)
+        out.append({"name": m.group(1) if m else p.parent.name, "folder": str(p.parent), "when": p.stat().st_mtime})
+    return sorted(out, key=lambda g: -g["when"])
+
+
+def open_editor(proj):
+    """Godot's editor on the project, on its own (it outlives this): -> None, or what went wrong"""
+    if not (proj / "project.godot").exists():
+        return f"no Godot project in {proj}"
+    g = next((shutil.which(c) for c in [os.environ.get("GODOT_EDITOR"), os.environ.get("GODOT"), "godot", "godot-mono"] if c and shutil.which(c)), None)
+    if not g:
+        return "no godot on the PATH (Godot 4.7: install it, or set GODOT to its path)"
+    kw = {"creationflags": 0x00000008 | 0x00000200} if os.name == "nt" else {"start_new_session": True}   # (DETACHED_PROCESS, NEW_PROCESS_GROUP)
+    subprocess.Popen([g, "--editor", "--path", str(proj)], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **kw)
+    return None
 
 
 # the project's start: the studio's card (intro.tscn), Godot's own boot screen black under it (no image: its logo
@@ -189,7 +222,7 @@ def probe_files(proj):
 
 
 def main(argv):
-    if not argv or argv[0] not in ("new", "update", "check"):
+    if not argv or argv[0] not in ("new", "open", "update", "list", "check"):
         print(__doc__)
         return 2
     if argv[0] == "new":
@@ -207,7 +240,7 @@ def main(argv):
             print('which name? python tools/horror_game.py new "My Game" [--to DIR] [--artist "Your Studio"]')
             return 2
         name = " ".join(words).strip()
-        base = Path(opts["--to"]).expanduser() if "--to" in opts else Path.home() / "HorrorGames"
+        base = Path(opts["--to"]).expanduser() if "--to" in opts else games_dir()
         proj = (base / folder_name(name)).resolve()
         print(f"making {name} in {proj} (a minute or two: the plugins, the sounds, the import)")
         why = make(name, proj, artist=artist)
@@ -215,6 +248,26 @@ def main(argv):
             print("HORRORGAME FAILED: " + why)
             return 1
         print(f"{name} is ready: open {proj / 'project.godot'} in Godot 4.7 and press F5 (its README.md says what's in it)")
+        return 0
+    if argv[0] == "open":
+        if len(argv) < 2:
+            print("which game? python tools/horror_game.py open FOLDER")
+            return 2
+        arg = " ".join(argv[1:]).strip()
+        proj = Path(arg).expanduser()
+        if not (proj / "project.godot").exists() and (games_dir() / folder_name(arg) / "project.godot").exists():
+            proj = games_dir() / folder_name(arg)                 # (a game's name: its folder in DIR)
+        why = open_editor(proj.resolve())
+        if why:
+            print("HORRORGAME FAILED: " + why)
+            return 1
+        print(f"Godot's editor opening on {proj.resolve()}")
+        return 0
+    if argv[0] == "list":
+        games = made()
+        for g in games:
+            print(f"{g['name']}  {g['folder']}")
+        print(f"{len(games)} game(s) in {games_dir()}")
         return 0
     if argv[0] == "update":
         if len(argv) < 2:

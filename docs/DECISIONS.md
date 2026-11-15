@@ -2,6 +2,15 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-15, after the review: the dashboard's New game card (the user)
+
+- **"can you make sure the dashboard has a new game tab maybe s I dont have to manually run horror_game.py , just a
+  thing that accepts a string name and says "create" button"**: the dashboard (`python dashboard.py`) has a **New
+  game** card at its top (E53): the game's name, Create, and the project maker (`tools/horror_game.py new`) runs as a
+  job with its output beside it. Also on the card, both optional: your studio's name for the "... presents" card
+  (remembered; without it the card says "[Artist] presents"), and the games already made (`~/HorrorGames`) listed
+  with **Open in Godot** (`horror_game.py open`: Godot's editor on it) and **Update**.
+
 ## 2026-11-15, after the review: the keys in the pause menu, the HUD inside the tape's picture (the user)
 
 - **"Ive deciided rater than the controls on the left when I press escape, id like to move the screenshot ones to the

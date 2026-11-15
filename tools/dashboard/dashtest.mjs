@@ -1,7 +1,9 @@
 // DASH: the dashboard (dashboard.py) in a headless browser. It starts its own dashboard on a spare port, then: every
 // tool of the launcher is a row; a story view runs as a job on the game picked in the header and shows its output; a
 // tool that needs a word says so until it's filled in; a page (the score room) starts, opens when it answers, is in
-// the launcher's own record, and stops; a long check is stopped early; the filter narrows the rows.
+// the launcher's own record, and stops; a long check is stopped early; the filter narrows the rows; the New game card
+// makes a game (the project maker, for real, into a scratch folder: HORROR_GAMES), lists it, says a name is taken, and
+// opens it in Godot's editor (a stand-in for the editor here, GODOT_EDITOR: no window opens).
 //   node tools/dashboard/dashtest.mjs           (DASH_PORT for another port than 8798)
 import { createRequire } from "module";
 import { spawn, execFileSync } from "child_process";
@@ -17,7 +19,11 @@ const free = port => new Promise(r => { const s = net.createConnection(port, "12
 const running = () => { try { return Object.keys(JSON.parse(fs.readFileSync(path.join(ROOT, "Saved/launch.json"), "utf8")).running || {}); } catch (e) { return []; } };
 
 if (!(await free(PORT))) { console.log(`port ${PORT} is taken: DASH_PORT=<another> node tools/dashboard/dashtest.mjs`); process.exit(1); }
-const srv = spawn(process.env.PYTHON || "python3", ["dashboard.py", "--no-open"], { cwd: ROOT, env: Object.assign({}, process.env, { DASH_PORT: String(PORT) }), stdio: ["ignore", "pipe", "pipe"] });
+const GAMES = path.join(ROOT, "Saved", "dashtest_games"), EDITOR = path.join(ROOT, "Saved", "dashtest_editor.sh"), OPENED = path.join(ROOT, "Saved", "dashtest_editor.txt");
+fs.rmSync(GAMES, { recursive: true, force: true }); fs.rmSync(OPENED, { force: true });
+fs.writeFileSync(EDITOR, `#!/bin/sh\necho "$@" > "${OPENED}"\n`, { mode: 0o755 });       // Godot's editor, stood in for: it says what it was asked
+const godotHere = (() => { try { execFileSync("sh", ["-c", "command -v ${GODOT:-godot}"], { stdio: "ignore" }); return true; } catch (e) { return false; } })();
+const srv = spawn(process.env.PYTHON || "python3", ["dashboard.py", "--no-open"], { cwd: ROOT, env: Object.assign({}, process.env, { DASH_PORT: String(PORT), HORROR_GAMES: GAMES, GODOT_EDITOR: EDITOR }), stdio: ["ignore", "pipe", "pipe"] });
 let srvOut = ""; srv.stdout.on("data", d => srvOut += d); srv.stderr.on("data", d => srvOut += d);
 for (let i = 0; i < 40 && await free(PORT); i++) await sleep(150);
 
@@ -86,6 +92,37 @@ try {
     const left = execFileSync("ps", ["-eo", "pid,args"], { encoding: "utf8" }).split("\n").filter(l => /check_all\.py --game Pilot/.test(l) && !/ps -eo/.test(l));
     if (left.length) throw new Error("still running: " + left.join(" | "));
   });
+  await step("the New game card: a name and Create make a game (the maker as a job, the studio on its card), listed with Open in Godot; a taken name said; Open opens its editor", async () => {
+    const label = await page.evaluate(() => window.__dash.tools.find(t => t.maker === "new").label);
+    await page.fill("#ngName", "Dash Test");
+    await page.waitForFunction(() => /Makes .*Dash_Test/.test(document.querySelector("#ngNote").textContent), null, { timeout: 3000 });
+    await page.fill("#ngStudio", "Dash Studio");
+    await page.click("#ngCreate");
+    await page.waitForFunction(() => /Making Dash Test/.test(document.querySelector("#ngNote").textContent) && document.querySelector("#ngCreate").disabled, null, { timeout: 8000 });
+    const j = await waitJob(label, j => j.status !== "running", 600);
+    if (!/new "?Dash Test"? --artist "?Dash Studio"?/.test(j.shown)) throw new Error("ran: " + j.shown);
+    if (!godotHere) {                                                    // (no Godot here: the card says why it wasn't made)
+      await page.waitForFunction(() => /wasn't made: no godot/.test(document.querySelector("#ngNote").textContent), null, { timeout: 5000 });
+      console.log("       no Godot on the PATH: the card said so; the rest of this step skipped");
+      return;
+    }
+    if (j.status !== "ok") throw new Error(JSON.stringify(j));
+    const folder = path.join(GAMES, "Dash_Test");
+    if (!/Dash Studio presents/.test(fs.readFileSync(path.join(folder, "intro.tscn"), "utf8"))) throw new Error("the card in its intro.tscn doesn't say Dash Studio presents");
+    await page.waitForFunction(() => /ready in .*Dash_Test/.test(document.querySelector("#ngNote").textContent), null, { timeout: 8000 });
+    const row = page.locator(".ng-game", { has: page.locator(".label", { hasText: "Dash Test" }) });
+    if (await row.count() !== 1) throw new Error("not in Your games: " + JSON.stringify(await page.evaluate(() => window.__dash.games)));
+    await page.fill("#ngName", "dash test!");                           // (Dash_Test but for its case: one folder on Windows and macOS)
+    await page.waitForFunction(() => /already/.test(document.querySelector("#ngNote").textContent) && document.querySelector("#ngCreate").disabled, null, { timeout: 3000 });
+    await row.locator("button", { hasText: "Open in Godot" }).click();
+    const openLabel = await page.evaluate(() => window.__dash.tools.find(t => t.maker === "open").label);
+    const o = await waitJob(openLabel, j => j.status !== "running", 30);
+    for (let i = 0; i < 40 && !fs.existsSync(OPENED); i++) await sleep(100);
+    const asked = fs.existsSync(OPENED) ? fs.readFileSync(OPENED, "utf8").trim() : "";
+    if (o.status !== "ok" || asked !== `--editor --path ${folder}`) throw new Error(`the open job ${o.status}; the editor was asked: ${asked || "nothing"}`);
+    await page.fill("#ngName", "");
+    console.log(`       made ${folder} (its card: Dash Studio presents), listed, the name taken said, its editor asked for: ${asked}`);
+  });
   await step("the filter narrows the rows to the words typed", async () => {
     await page.fill("#filter", "kimodo");
     const n = await page.locator(".row").count(), want = await page.evaluate(() => window.__dash.tools.filter(t => /kimodo/i.test(t.section + " " + t.label + " " + t.cmd)).length);
@@ -97,6 +134,7 @@ try {
   await browser.close();
   srv.kill("SIGINT");
   await sleep(500);
+  fs.rmSync(GAMES, { recursive: true, force: true }); fs.rmSync(EDITOR, { force: true }); fs.rmSync(OPENED, { force: true });
 }
 console.log(fails.length ? `DASH FAILED (${fails.length})` : "DASH ok");
 process.exit(fails.length ? 1 : 0);
