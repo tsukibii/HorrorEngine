@@ -62,7 +62,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E40 | 2ec46af4 | Inspector tooltips for 101 of the Look plugin's node fields (light zones, flicker lights, the character look, the grade, wet surfaces, rain, the storm, CRT screens, blood, panes, puddles, leaks, breath) |
 | E41 | a00ff660 | The rest of the Look plugin's tooltips (63): every exported field in it now says what it does |
 | E42 | bc07052f | Tooltips for the card and the main menu (E35's), and the starter's hunt, cue and sanity (35 fields) |
-| E43 | (next commit) | `horror_game.py new "Name" --artist "Your Studio"`: the card says your studio's name from the start |
+| E43 | 833f60fb | `horror_game.py new "Name" --artist "Your Studio"`: the card says your studio's name from the start |
 
 ## 1. How it was done
 
