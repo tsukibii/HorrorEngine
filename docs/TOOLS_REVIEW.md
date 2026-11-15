@@ -60,7 +60,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E38 | ac7374dc | A game by hand as it ships: Godot's export emptied every list in its scenes; faces, a character's looks and Kimodo motions found in the pack; ready export presets |
 | E39 | f09bf784 | What the shotgun breaks kept at a checkpoint and in a save: a lamp shot out lit again when you die, a mug blown up whole; both still broken after a load |
 | E40 | 2ec46af4 | Inspector tooltips for 101 of the Look plugin's node fields (light zones, flicker lights, the character look, the grade, wet surfaces, rain, the storm, CRT screens, blood, panes, puddles, leaks, breath) |
-| E41 | (next commit) | The rest of the Look plugin's tooltips (63): every exported field in it now says what it does |
+| E41 | a00ff660 | The rest of the Look plugin's tooltips (63): every exported field in it now says what it does |
 
 ## 1. How it was done
 
