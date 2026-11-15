@@ -8,7 +8,7 @@ hosier, fluffy cotton (for socks), matte leather (for shoes)".
 
 What was built from this note: `tools/fabricpbr.py` (the sets, `pbr/fabric/`), the Studio's garment shader for them
 (`tools/character/tailor/look.js`) and Godot's (`HSCloth`, the look plugin's `cloth.gdshaderinc`). docs/TAILOR.md §1k
-and docs/GODOT_LOOK.md §5x say how they work; this note says why.
+and docs/GODOT_LOOK.md §5aa say how they work; this note says why.
 
 **How it was gathered.** Two research passes, about 170 searches and page reads between them. The shading half read its
 primary sources directly where they are on GitHub (Filament, the glTF extensions, three.js, Godot 4.6, 4.7 and master,

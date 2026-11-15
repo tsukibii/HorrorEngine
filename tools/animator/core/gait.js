@@ -20,21 +20,21 @@ export function params(body, set = {}) {
 
 // a smooth curve through keys [[u, y], ...] with the slopes at its two ends given (the slopes inside from the keys
 // beside each): a foot's path joined to the ground's own speed where it leaves and lands
-function path(keys, m0, m1) {
+export function path(keys, m0, m1) {
   const n = keys.length, m = keys.map((k, i) => i === 0 ? m0 : i === n - 1 ? m1 : (keys[i + 1][1] - keys[i - 1][1]) / (keys[i + 1][0] - keys[i - 1][0]));
   return u => { u = clamp(u, keys[0][0], keys[n - 1][0]); let i = 0; while (i < n - 2 && u > keys[i + 1][0]) i++;
     const h = keys[i + 1][0] - keys[i][0], t = (u - keys[i][0]) / h, t2 = t * t, t3 = t2 * t;
     return (2 * t3 - 3 * t2 + 1) * keys[i][1] + (t3 - 2 * t2 + t) * h * m[i] + (-2 * t3 + 3 * t2) * keys[i + 1][1] + (t3 - t2) * h * m[i + 1]; };
 }
 // a loop's samples smoothed round the loop (a Gaussian, `sig` in samples)
-function smoothLoop(a, sig) { const n = a.length, r = Math.ceil(sig * 3), o = new Float64Array(n); for (let i = 0; i < n; i++) { let s = 0, w = 0; for (let k = -r; k <= r; k++) { const g = Math.exp(-k * k / (2 * sig * sig)); s += g * a[((i + k) % n + n) % n]; w += g; } o[i] = s / w; } return o; }
+export function smoothLoop(a, sig) { const n = a.length, r = Math.ceil(sig * 3), o = new Float64Array(n); for (let i = 0; i < n; i++) { let s = 0, w = 0; for (let k = -r; k <= r; k++) { const g = Math.exp(-k * k / (2 * sig * sig)); s += g * a[((i + k) % n + n) % n]; w += g; } o[i] = s / w; } return o; }
 // a loop's samples followed by a weight on a spring (natural frequency f Hz, damping z): what a heavy body does with
 // the height its legs ask for: later, deeper, and round at the bottom
-function follow(a, dt, f, z) { const n = a.length, w = 2 * Math.PI * f, o = new Float64Array(n); let x = a[0], v = 0; const sub = 8, h = dt / sub;
+export function follow(a, dt, f, z) { const n = a.length, w = 2 * Math.PI * f, o = new Float64Array(n); let x = a[0], v = 0; const sub = 8, h = dt / sub;
   for (let lap = 0; lap < 4; lap++) for (let i = 0; i < n; i++) { const a0 = a[i], a1 = a[(i + 1) % n]; for (let k = 0; k < sub; k++) { const tg = a0 + (a1 - a0) * (k / sub); v += (w * w * (tg - x) - 2 * z * w * v) * h; x += v * h; } if (lap === 3) o[(i + 1) % n] = x; }
   return o; }
 
-const legLen = (l1, l2, knee) => Math.sqrt(l1 * l1 + l2 * l2 + 2 * l1 * l2 * Math.cos(knee));   // hip to ankle with the knee bent `knee`
+export const legLen = (l1, l2, knee) => Math.sqrt(l1 * l1 + l2 * l2 + 2 * l1 * l2 * Math.cos(knee));   // hip to ankle with the knee bent `knee`
 
 /** a gait: { name, loop: true, n (frames), fps, secs, speed (m/s), stride, ctrl(frame) -> controls (pose.js build), events, plan } */
 export function gait(rig, body, set, kind = "walk") {

@@ -423,7 +423,7 @@ and a leather skirt; a wine sweater dress.
 
 **In a file** (Export for Godot): the dye alone is baked on the garment's layout (the weave left out: `uFabFlat`), and
 the material says which fabric it wears (`studioCloth` in its extras: the set, its repeat, its numbers, the garment's
-fuzz and denier, whether its normal map is its creases). Godot's side is the look plugin's `HSCloth` (GODOT_LOOK §5x),
+fuzz and denier, whether its normal map is its creases). Godot's side is the look plugin's `HSCloth` (GODOT_LOOK §5aa),
 which draws the weave again at its real size on the second UV: the garment in the game as it was in the Studio.
 
 **Tools**: `python tools/fabricpbr.py [sets]` (made; `--size 2048` larger), `list`, `godot` (the packs for the look

@@ -9,12 +9,69 @@
         asked to walk, sleeping with her head on the pillow and waking, a door opened with her hand on its handle, a
         thing picked up from the floor and from a table, acts fired by the Story's words and chained, a clip of your
         own, and moves.gd using her own clips. Ends "GDMOTION ok".
+    python tools/godot/motion_check.py v3 [--reuse] [--quick]
+        animations v3 (docs/ANIMATOR_V3.md) in the same project (motion3_test.gd): her head following the player
+        within its range and letting go past it, the low gaits and what she rests in after, a peek past a wall's edge,
+        a scare thrown and hidden, a thing held by its grip with her fingers round it, drinking and eating with the
+        thing's mouth at hers, a punch and a swing carried onto who they're thrown at, a knock, the acts, moves.gd.
+        Ends "GDMOTION3 ok".
+    python tools/godot/motion_check.py small [--reuse] [--quick] [--only=imp,goblin]
+        short bodies on a person's furniture (docs/ANIMATOR_V3.md §10; motion_small_test.gd) in the same project: a
+        small child (1.10 m), a goblin and an imp baked beside the normal woman, each onto a 45 cm chair and off it
+        (sat with its legs hanging, no leg in the chair), onto a 60 cm seat (lifted the rest of the way), into a 45 cm
+        bed and out (nothing of it in the bed), and at a door whose handle is a metre up (its hand on the handle,
+        carried there by the hand's IK). Ends "GDSMALL ok".
+    python tools/godot/motion_check.py ranges [--reuse] [--quick] [--only=normal_woman]
+        what heights her hand really gets to (docs/ANIMATION_RULES.md's numbers; motion_range_test.gd): a door's handle
+        at every 5 cm from 0.6 to 1.5 m and a thing to pick up at every 10 cm from the floor to 2.1 m, on the normal
+        woman, the small child and the imp: how far her hand ends from it. Writes Content/Studio/Animation/ranges.json.
+        Ends "GDRANGE ok".
+    python tools/godot/motion_check.py life [--reuse] [--quick] [--only=stand,walk,carry]
+        life and carrying (docs/ANIMATOR_V3.md §11, §12; motion_life_test.gd) in the same project, on the normal woman
+        and a goblin, through the starter's motion.gd and the look plugin's HSGesture: every flourish she has played
+        standing, walking and sat (her pelvis and legs her clip's, her other arm her clip's, the point of her hand on
+        the bone it touches), a hand on a head that's turned to follow the player, a look that takes her head and gives
+        it back, `alive` (how many, which, none during an act), a cup carried in front of her standing, walking and sat
+        and drunk from, a bottle at her side walking, sneaking and sat, the other three poses, act.gd's life act.
+        Ends "GDLIFE ok".
     python tools/godot/motion_check.py shots --glb FILE.glb --clip walk_loop [--n 12] [--view side] [--sheet FILE.jpg]
                                              [--size 480x640] [--wear] [--tag NAME]
         a baked character's clip pictured at n moments on the real mesh in a scratch project, as one sheet
     python tools/godot/motion_check.py sheets [--out docs/animator_sheets]
         the three test characters (tools/animator/people.mjs, baked) pictured wearing the look: their walks from the
         side and the front, their runs, their hands close up (standing, walking, running), and the normal woman's acts
+    python tools/godot/motion_check.py sheets3 [--who NAME | --glb FILE.glb] [--out docs/animator_sheets] [--only low,peek]
+        animations v3 (docs/ANIMATOR_V3.md) pictured on a baked character (the normal woman's unless another is named:
+        a creature exported from the Studio and baked), a sheet a group: low (sneak, creep, crawl, scuttle), peek (round
+        a wall, from in front and from behind), scares, fight, mouth (eat, drink), acts (look round, knock, cower, a
+        reach to the floor)
+    python tools/godot/motion_check.py furniture [--who NAME | --glb FILE.glb] [--plain] [--out docs/animator_sheets] [--only seat,bed,door]
+        a baked character on the furniture its clips are made for (docs/ANIMATOR_V3.md §10), drawn as boxes from its
+        own record: onto a chair, sat and off it; into a bed, asleep and out; a door pushed and pulled. --plain: a
+        test body (tools/animator/bodies.mjs), which wears no look
+    python tools/godot/motion_check.py sheetslife [--who NAME | --glb FILE.glb] [--out docs/animator_sheets] [--only head,body,both,carry]
+        the life flourishes and the carry poses (docs/ANIMATOR_V3.md §11, §12) pictured on a baked character as they're
+        baked, standing, a sheet a group: head (a scratch, her neck, her nose, her brow, her hair, her chin), body (her
+        other arm and shoulder, her side, her hip, her wrist, her hand looked at and flexed), both (a stretch, her
+        hands rubbed, her shoulders, a sigh, a glance, her neck), carry (the five poses from the front and the side)
+    python tools/godot/motion_check.py shotslife [--who NAME | --glb FILE.glb] [--out DIR] [--only stand,walk,sit,follow,cup,bottle]
+        life and carrying in the game (motion_life_shots.gd, in the check's own by-hand project: run the check first):
+        the same scratch standing, walking and sat, her brow and her neck as she walks, her chin and a stretch on a
+        chair, her hand on her head while it follows someone, a mug carried standing, walking and sat and looked at as
+        she walks, a bottle at her side walking and sneaking; fourteen pictures as JPEGs
+    python tools/godot/motion_check.py guidelife [--date 2026-11-14]
+        the Animator guide's pictures of life and carrying (guides/animator/img/life_*.jpg) put together from what the
+        two above made for the normal woman
+    python tools/godot/motion_check.py shots3 [--who NAME | --glb FILE.glb] [--out DIR] [--only head,drink,swing]
+        animations v3 in the game (motion3_shots.gd, in the check's own by-hand project: run the check first): her head
+        following someone to her left and right and let go of behind her, a bottle taken from a table by its grip and
+        drunk from, a bat taken and swung onto someone, a punch landing; eight pictures as JPEGs
+    python tools/godot/motion_check.py gizmo [--out DIR]
+        the grip's gizmo pictured in Godot's editor itself (grip_editor_shots.gd, a plugin of its own in the check's
+        project, under xvfb): a water bottle's grip selected, the whole editor and the 3D view close; a bat's
+    python tools/godot/motion_check.py guide3 [--date 2026-11-14]
+        the Animator guide's pictures of animations v3 (guides/animator/img/v3_*.jpg, grip_*.jpg) put together from
+        what the three above made: sheets3 for the normal woman, creature_ghoul and creature_goblin, shots3, gizmo
 
 Godot is $GODOT, else godot; under xvfb when there's no display to draw on (the pictures).
 """
@@ -134,52 +191,65 @@ def check(args):
     """GDMOTION"""
     sys.path.insert(0, str(ROOT / "tools"))
     import godot_byhand as BH
+    v3 = "v3" in args                                        # animations v3's half (motion3_test.gd): the same project, another script
+    small = "small" in args                                  # short bodies on a person's furniture (motion_small_test.gd): the same project, three more bodies
+    ranges = "ranges" in args                                # what heights her hand gets to (motion_range_test.gd): the modelling rules' numbers
+    life = "life" in args                                    # life and carrying (motion_life_test.gd): flourishes laid over what she's doing, a thing carried in any pose
+    NAME, TEST = ("GDLIFE", "motion_life_test.gd") if life else ("GDRANGE", "motion_range_test.gd") if ranges else ("GDSMALL", "motion_small_test.gd") if small else ("GDMOTION3", "motion3_test.gd") if v3 else ("GDMOTION", "motion_test.gd")
+    bodies = ["child_small", "goblin", "imp", "normal_woman"] if small or ranges else ["normal_woman", "goblin"] if life else ["normal_woman"]
     g = godot_bin()
     if not g:
-        sys.exit("GDMOTION FAILED: no godot (tools/godot_setup.sh on a cloud session)")
+        sys.exit(f"{NAME} FAILED: no godot (tools/godot_setup.sh on a cloud session)")
     proj = Path(args[args.index("--keep") + 1]).resolve() if "--keep" in args else ROOT / "Saved" / "Godot" / "_motion_check"
     if "--reuse" in args and (proj / "motion.json").is_file():
         BH.install(proj, starter=True)
         print(f"  reusing {proj}")
     else:
         if proj.exists() and any(proj.iterdir()) and not (proj / "motion.json").exists():
-            sys.exit(f"GDMOTION FAILED: {proj} has things in it this didn't make: give --keep a new folder")
+            sys.exit(f"{NAME} FAILED: {proj} has things in it this didn't make: give --keep a new folder")
         shutil.rmtree(proj, ignore_errors=True)
         if BH.main(["new", str(proj), "--name", "Motion"]):
-            sys.exit("GDMOTION FAILED: godot_byhand.py new")
+            sys.exit(f"{NAME} FAILED: godot_byhand.py new")
         (proj / "motion.json").write_text("{}", encoding="utf-8")
     (proj / "characters").mkdir(exist_ok=True)
     scratch = ROOT / "Saved" / "Animator" / "check"
-    r = subprocess.run(["node", str(ROOT / "tools" / "animator" / "bodies.mjs"), "--out", str(scratch), "normal_woman"], capture_output=True, text=True, timeout=600)
-    if "BODIES ok" not in r.stdout:
-        sys.exit("GDMOTION FAILED: the test body: " + (r.stdout + r.stderr)[-1500:])
-    r = subprocess.run(["node", str(ROOT / "tools" / "animator" / "bake.mjs"), str(scratch / "normal_woman.glb"), "--out", str(proj / "characters" / "normal_woman.glb")], capture_output=True, text=True, timeout=600)
-    if "BAKE ok" not in r.stdout:
-        sys.exit("GDMOTION FAILED: the bake: " + (r.stdout + r.stderr)[-1500:])
-    for _ in range(3):
-        subprocess.run([g, "--headless", "--path", str(proj), "--import"], capture_output=True, text=True, timeout=2400)
-        if list((proj / ".godot" / "imported").glob("normal_woman.glb-*.scn")):
-            break
+    imported = lambda: all(list((proj / ".godot" / "imported").glob(f"{b}.glb-*.scn")) for b in bodies)
+    if not ("--reuse" in args and "--quick" in args and imported()):   # (--quick: the scripts changed, the bodies didn't: no bake, no import)
+        r = subprocess.run(["node", str(ROOT / "tools" / "animator" / "bodies.mjs"), "--out", str(scratch)] + bodies, capture_output=True, text=True, timeout=900)
+        if "BODIES ok" not in r.stdout:
+            sys.exit(f"{NAME} FAILED: the test body: " + (r.stdout + r.stderr)[-1500:])
+        for b in bodies:
+            r = subprocess.run(["node", str(ROOT / "tools" / "animator" / "bake.mjs"), str(scratch / f"{b}.glb"), "--out", str(proj / "characters" / f"{b}.glb")], capture_output=True, text=True, timeout=600)
+            if "BAKE ok" not in r.stdout:
+                sys.exit(f"{NAME} FAILED: the bake of {b}: " + (r.stdout + r.stderr)[-1500:])
+        for _ in range(3):
+            subprocess.run([g, "--headless", "--path", str(proj), "--import"], capture_output=True, text=True, timeout=2400)
+            if imported():
+                break
     lines = ['[gd_scene load_steps=3 format=3]', "", '[ext_resource type="Script" path="res://starter/story.gd" id="story"]', "",
              '[sub_resource type="BoxShape3D" id="floor"]', "size = Vector3(60, 0.2, 60)", "", '[node name="Main" type="Node3D"]', "",
              '[node name="Floor" type="StaticBody3D" parent="."]', "transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)", "",
              '[node name="Shape" type="CollisionShape3D" parent="Floor"]', 'shape = SubResource("floor")', "",
              '[node name="Story" type="CanvasLayer" parent="."]', 'script = ExtResource("story")', 'tasks = PackedStringArray("key: Someone takes the key.")', ""]
     (proj / "main.tscn").write_text("\n".join(lines), encoding="utf-8")
-    shutil.copy(Path(__file__).with_name("motion_test.gd"), proj / "motion_test.gd")
-    r = subprocess.run([g, "--headless", "--path", str(proj), "--fixed-fps", "60", "-s", "motion_test.gd"], capture_output=True, text=True, timeout=1200)
+    shutil.copy(Path(__file__).with_name(TEST), proj / TEST)
+    more = ["--"] + [x for x in args if x.startswith("--only=")] if any(x.startswith("--only=") for x in args) else []
+    r = subprocess.run([g, "--headless", "--path", str(proj), "--fixed-fps", "60", "-s", TEST] + more, capture_output=True, text=True, timeout=2400)
     got = [ln for ln in r.stdout.splitlines() if ln.startswith("MOTION ")]
     for ln in got:
         if not ln.startswith("MOTION result "):
             print("  " + ln[7:])
     res = next((json.loads(ln.split(" ", 2)[2]) for ln in got if ln.startswith("MOTION result ")), None)
     if res is None:
-        sys.exit("GDMOTION FAILED: Godot said nothing: " + (r.stdout + r.stderr)[-3000:])
+        sys.exit(f"{NAME} FAILED: Godot said nothing: " + (r.stdout + r.stderr)[-3000:])
     errs = list(res.get("errors", []))
-    errs += [f"a script error: {ln.strip()}" for ln in (r.stdout + r.stderr).splitlines() if "SCRIPT ERROR" in ln or "Parse Error" in ln][:8]
+    if ranges:                                               # kept for the rules: Content/Studio/Animation/ranges.json
+        (ROOT / "Content" / "Studio" / "Animation" / "ranges.json").write_text(json.dumps({"_note": "What heights her hand gets to in Godot, cm off: python tools/godot/motion_check.py ranges --reuse (docs/ANIMATION_RULES.md quotes it)", "bodies": res.get("notes", {})}, indent=1), encoding="utf-8")
+    out = (r.stdout + r.stderr).splitlines()
+    errs += [f"a script error: {ln.strip()} {out[i + 1].strip() if i + 1 < len(out) else ''}" for i, ln in enumerate(out) if "SCRIPT ERROR" in ln or "Parse Error" in ln][:8]
     for e in errs:
         print("ERROR: " + e)
-    print("GDMOTION ok" if not errs else f"GDMOTION FAILED ({len(errs)})")
+    print(f"{NAME} ok" if not errs else f"{NAME} FAILED ({len(errs)})")
     sys.exit(1 if errs else 0)
 
 
@@ -234,9 +304,398 @@ def doc_sheets(out_dir):
     print("SHEETS ok")
 
 
+def v3_sheets(args):
+    """animations v3 on a baked character, a sheet a group (docs/animator_sheets/<date>_v3_<group>.jpg)"""
+    opt = lambda k, d=None: args[args.index(k) + 1] if k in args else d
+    who = opt("--who", "anim_normal_woman")
+    glb = Path(opt("--glb") or ROOT / "Exports" / "characters" / who / f"{who}.glb")
+    out_dir = Path(opt("--out", ROOT / "docs" / "animator_sheets"))
+    only = [x for x in (opt("--only") or "").split(",") if x]
+    rec_file = glb.with_name(glb.stem + ".motion.json")
+    if not glb.is_file() or not rec_file.is_file():
+        sys.exit(f"{glb} isn't there, or isn't baked (node tools/animator/bake.mjs {glb})")
+    rec = json.loads(rec_file.read_text(encoding="utf-8"))
+    if "peek_out" not in rec["clips"]:
+        sys.exit(f"{glb.name} was baked before animations v3: node tools/animator/bake.mjs {glb}")
+    k = float(rec["body"]["height"]) / 163.0                    # the camera's distances are a 1.63 m woman's: by the body's own height
+    edge = rec["clips"]["peek_out"]["peek"]["edge"]
+    wall = [[edge[0] + 0.75 * k, 1.1 * k, edge[2] + 0.06, 1.5 * k, 2.2 * k, 0.12]]   # the wall she peeks round: its end at the record's edge, off to her left
+    v = lambda at, dist, **more: {"at": [a * k for a in at], "dist": dist * k, **more}
+    groups = {
+        "low": [("sneak_loop", "side", {}), ("creep_loop", "side", {}), ("crawl_loop", "side", v([0, 0.45, 0.2], 3.4)), ("scuttle_loop", "side", v([0, 0.45, 0.2], 3.4))],
+        "peek": [("peek_out", "front", v([-0.25, 1.05, 0], 3.3, boxes=wall)), ("peek_out", "side", v([-0.1, 1.0, 0.1], 3.6, boxes=wall, yaw=-150, pitch=14)), ("peek_loop", "front", v([-0.3, 1.25, 0.2], 1.7, boxes=wall))],
+        "scares": [("scare_lunge", "q", v([0, 0.82, 0.2], 4.6)), ("scare_loom", "q", {}), ("scare_snap", "front", {}), ("scare_claw", "q", v([0, 0.5, 0.2], 3.6))],
+        "fight": [("punch", "side", v([0, 0.82, 0.2], 4.4)), ("swing", "side", v([0, 0.82, 0.2], 4.4)), ("swing", "front", {}), ("hit_react", "side", v([0, 0.82, -0.1], 4.4))],
+        "mouth": [("eat", "q", v([0, 1.25, 0], 2.3)), ("drink", "q", v([0, 1.25, 0], 2.3))],
+        "acts": [("look_around", "front", {}), ("knock", "side", {}), ("cower_loop", "q", {}), ("reach_low", "side", v([0, 0.7, 0.1], 4.0))],
+    }
+    n, date = 8, opt("--date", "2026-11-14")
+    tag = "v3" if who == "anim_normal_woman" and not opt("--glb") else f"v3_{glb.stem}"
+    for name, rows in groups.items():
+        if only and name not in only:
+            continue
+        plan, labels = [], []
+        for clip, view, extra in rows:
+            for i in range(n):
+                f = i / n if clip.endswith("_loop") else i / (n - 1) * 0.999
+                plan.append({"clip": clip, "f": f, "view": view, "name": f"{clip}_{view}_{i:02d}", **extra})
+                labels.append(f"{clip} ({'from behind' if extra.get('yaw') else view})" if i == 0 else "")
+        rep, err = shoot(glb, plan, KEEP / (glb.stem + "_v3"), glb.stem + "_" + name, "400x440", 5, True)
+        if rep is None:
+            sys.exit(err)
+        out = out_dir / f"{date}_{tag}_{name}.jpg"
+        sheet([KEEP / (glb.stem + "_v3") / f for f in rep["shots"]], out, cols=n, labels=labels, height=330)
+        print(f"  {out}")
+    print("SHEETS3 ok")
+
+
+def life_sheets(args):
+    """the life flourishes and the carry poses on a baked character (docs/ANIMATOR_V3.md §11, §12), a sheet a group:
+    the clips as they're baked, standing; over a walk or a seat they're pictured in the game (shotslife)"""
+    opt = lambda k, d=None: args[args.index(k) + 1] if k in args else d
+    who = opt("--who", "anim_normal_woman")
+    glb = Path(opt("--glb") or ROOT / "Exports" / "characters" / who / f"{who}.glb")
+    out_dir = Path(opt("--out", ROOT / "docs" / "animator_sheets"))
+    only = [x for x in (opt("--only") or "").split(",") if x]
+    rec_file = glb.with_name(glb.stem + ".motion.json")
+    if not glb.is_file() or not rec_file.is_file():
+        sys.exit(f"{glb} isn't there, or isn't baked (node tools/animator/bake.mjs {glb})")
+    rec = json.loads(rec_file.read_text(encoding="utf-8"))
+    C = rec["clips"]
+    if not any(c.startswith("life_") for c in C):
+        sys.exit(f"{glb.name} was baked before the life flourishes: node tools/animator/bake.mjs {glb}")
+    k = float(rec["body"]["height"]) / 163.0                    # the camera's distances are a 1.63 m woman's: by the body's own height
+    v = lambda at, dist, **more: {"at": [a * k for a in at], "dist": dist * k, **more}
+    up, whole = v([0, 1.28, 0.05], 2.35), v([0, 0.95, 0.05], 3.5)
+    groups = {
+        "head": [("life_scratch_head", "q", up), ("life_rub_neck", "front", up), ("life_rub_nose", "front", up), ("life_wipe_brow", "front", up), ("life_tuck_hair", "q", up), ("life_chin", "q", up)],
+        "body": [("life_scratch_arm", "front", up), ("life_brush_off", "front", up), ("life_scratch_belly", "q", up), ("life_hand_hip", "front", whole), ("life_check_wrist", "q", up), ("life_look_hand", "q", up), ("life_flex_hand", "q", up)],
+        "both": [("life_stretch", "front", v([0, 1.08, 0.05], 4.4)), ("life_rub_hands", "q", up), ("life_roll_shoulders", "front", up), ("life_sigh", "side", up), ("life_glance", "front", up), ("life_neck_stretch", "front", up)],
+    }
+    n, date = 8, opt("--date", "2026-11-14")
+    tag = "life" if who == "anim_normal_woman" and not opt("--glb") else f"life_{glb.stem}"
+    keep = KEEP / (glb.stem + "_life")
+    for name, rows in groups.items():
+        if only and name not in only:
+            continue
+        rows = [r for r in rows if r[0] in C]                   # (a flourish her body can't do cleanly isn't in her file)
+        plan, labels = [], []
+        for clip, view, extra in rows:
+            for i in range(n):
+                plan.append({"clip": clip, "f": (i + 0.5) / n * 0.999, "view": view, "name": f"{clip}_{view}_{i:02d}", **extra})
+                labels.append(f"{clip[5:].replace('_', ' ')} ({view})" if i == 0 else "")
+        rep, err = shoot(glb, plan, keep, glb.stem + "_" + name, "400x440", 5, True)
+        if rep is None:
+            sys.exit(err)
+        out = out_dir / f"{date}_{tag}_{name}.jpg"
+        sheet([keep / f for f in rep["shots"]], out, cols=n, labels=labels, height=330)
+        print(f"  {out}")
+    if not only or "carry" in only:                             # the carry poses: one pose each, from the front and the side
+        hows = [h for h in ["side", "front", "chest", "shoulder", "raised"] if f"carry_{h}" in C]
+        plan = [{"clip": f"carry_{h}", "f": 0.0, "view": view, "name": f"carry_{h}_{view}", **whole} for view in ["front", "side"] for h in hows]
+        labels = [f"carry {h} ({view})" for view in ["front", "side"] for h in hows]
+        rep, err = shoot(glb, plan, keep, glb.stem + "_carry", "400x440", 5, True)
+        if rep is None:
+            sys.exit(err)
+        out = out_dir / f"{date}_{tag}_carry.jpg"
+        sheet([keep / f for f in rep["shots"]], out, cols=len(hows), labels=labels, height=330)
+        print(f"  {out}")
+    skipped = rec.get("skipped") or []
+    if skipped:
+        print("  not made for this body: " + ", ".join(f"{x['name']} ({x['why']})" for x in skipped))
+    print("SHEETSLIFE ok")
+
+
+def furniture_sheets(args):
+    """a baked character on the furniture its clips are made for (docs/ANIMATOR_V3.md §10), a sheet a group:
+    seat (onto a chair, sat, off it), bed (into bed, out of it), door (pushed, pulled)"""
+    opt = lambda k, d=None: args[args.index(k) + 1] if k in args else d
+    who = opt("--who", "anim_normal_woman")
+    glb = Path(opt("--glb") or ROOT / "Exports" / "characters" / who / f"{who}.glb")
+    out_dir = Path(opt("--out", ROOT / "docs" / "animator_sheets"))
+    only = [x for x in (opt("--only") or "").split(",") if x]
+    rec_file = glb.with_name(glb.stem + ".motion.json")
+    if not glb.is_file() or not rec_file.is_file():
+        sys.exit(f"{glb} isn't there, or isn't baked (node tools/animator/bake.mjs {glb})")
+    rec = json.loads(rec_file.read_text(encoding="utf-8"))
+    C = rec["clips"]
+    if "furniture" not in rec and "high" not in C["sit_down"]["seat"] and float(rec["body"]["height"]) < 140:
+        sys.exit(f"{glb.name} was baked before the furniture went by the body: node tools/animator/bake.mjs {glb}")
+    k = float(rec["body"]["height"]) / 163.0
+    seat, bed, door = C["sit_down"]["seat"], C["lie_down"]["bed"], C["open_push"]["door"]
+    H, e = float(seat["height"]), float(seat["edge"])
+    chair = [[0, H / 2, e - 0.24, 0.48, H, 0.48], [0, H + 0.2, e - 0.46, 0.48, 0.4, 0.04]]              # a seat and its back
+    Hb, eb, head = float(bed["height"]), float(bed["edge"]), bed["head"]
+    x0, x1 = -0.75 * max(k, 0.6), float(head[0]) + 0.4
+    beds = [[(x0 + x1) / 2, Hb / 2, eb - 0.5, x1 - x0, Hb, 1.0], [x1 + 0.03, Hb / 2 + 0.25, eb - 0.5, 0.06, Hb + 0.5, 1.0]]   # a bed and its headboard
+    hd = door["handle"]
+    frame = lambda d: [[hd[0] + 0.45, 1.0, d["handle"][2] + 0.03, 0.08, 2.0, 0.1], [d["handle"][0] + 0.2, d["handle"][1], d["handle"][2] + 0.005, 0.5, 0.025, 0.03]]   # the frame's post beyond it (the camera is on her right), and a bar at the handle's height where the handle is before it moves
+    v = lambda at, dist, **more: {"at": at, "dist": dist, **more}
+    tall = float(rec["body"]["height"]) / 100.0
+    mid = max(0.75, 0.52 * tall)
+    groups = {
+        "seat": [("sit_down", "q", v([0, mid, -0.1], 3.6, boxes=chair)), ("sit_loop", "side", v([0, mid, -0.1], 3.4, boxes=chair)), ("stand_up", "q", v([0, mid, -0.1], 3.6, boxes=chair))],
+        "bed": [("lie_down", "q", v([0.25, mid * 0.9, -0.3], 4.6, boxes=beds)), ("sleep_loop", "q", v([0.3, Hb + 0.15, -0.5], 3.4, boxes=beds, pitch=28)), ("get_up", "q", v([0.25, mid * 0.9, -0.3], 4.6, boxes=beds))],
+        "door": [("open_push", "side", v([0, max(0.8, 0.55 * tall), 0.25], 3.4, boxes=frame(C["open_push"]["door"]))), ("open_pull", "side", v([0, max(0.8, 0.55 * tall), 0.25], 3.4, boxes=frame(C["open_pull"]["door"])))],
+    }
+    n, date = 8, opt("--date", "2026-11-14")
+    wear = "--plain" not in args
+    for name, rows in groups.items():
+        if only and name not in only:
+            continue
+        plan, labels = [], []
+        for clip, view, extra in rows:
+            for i in range(n):
+                f = i / n if clip.endswith("_loop") else i / (n - 1) * 0.999
+                plan.append({"clip": clip, "f": f, "view": view, "name": f"{clip}_{view}_{i:02d}", **extra})
+                labels.append(f"{clip} ({view})" if i == 0 else "")
+        rep, err = shoot(glb, plan, KEEP / (glb.stem + "_furniture"), glb.stem + "_" + name, "400x440", 5, wear)
+        if rep is None:
+            sys.exit(err)
+        out = out_dir / f"{date}_furniture_{glb.stem}_{name}.jpg"
+        sheet([KEEP / (glb.stem + "_furniture") / f for f in rep["shots"]], out, cols=n, labels=labels, height=330)
+        print(f"  {out}")
+    print("FURNITURESHEETS ok")
+
+
+def v3_shots(args):
+    """animations v3 pictured in the game: the head, a grip, a swing, a punch (motion3_shots.gd)"""
+    from PIL import Image
+    opt = lambda k, d=None: args[args.index(k) + 1] if k in args else d
+    who = opt("--who", "anim_normal_woman")
+    glb = Path(opt("--glb") or ROOT / "Exports" / "characters" / who / f"{who}.glb").resolve()
+    out = Path(opt("--out", KEEP / (glb.stem + "_game"))).resolve()
+    proj = ROOT / "Saved" / "Godot" / "_motion_check"
+    g = godot_bin()
+    if not g or not (proj / "project.godot").is_file() or not glb.is_file():
+        sys.exit("shots3: run the check first (python tools/godot/motion_check.py v3), and bake the character")
+    shutil.copy(Path(__file__).with_name("motion3_shots.gd"), proj / "motion3_shots.gd")
+    shutil.copytree(PLUGIN, proj / "addons" / "horrorstudio_look", dirs_exist_ok=True)       # (the plugin and the starter as they are now)
+    for f in ["motion.gd", "act.gd", "moves.gd"]:
+        shutil.copy(ROOT / "guides" / "first_game" / "starter" / f, proj / "starter" / f)
+    raw = out / "raw"
+    raw.mkdir(parents=True, exist_ok=True)
+    cmd = [g, "--path", str(proj), "--rendering-driver", "vulkan", "--resolution", "900x900", "--fixed-fps", "60", "-s", "res://motion3_shots.gd", "--", f"--glb={glb}", f"--out={raw}"] + ([f"--only={opt('--only')}"] if opt("--only") else [])
+    if shutil.which("xvfb-run") and not os.environ.get("DISPLAY"):
+        cmd = ["xvfb-run", "-a", "-s", "-screen 0 900x900x24"] + cmd
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=1500, env=env())
+    text = "\n".join(l for l in (r.stdout + r.stderr).splitlines() if l and "ALSA" not in l and "snd_" not in l)
+    line = next((l for l in text.splitlines() if l.startswith("MOTION3SHOTS {")), None)
+    bad = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "Parse Error" in l or "MOTION3SHOTS FAIL" in l]
+    if bad or not line:
+        print(text[-3000:])
+        sys.exit("MOTION3SHOTS FAILED")
+    rep = json.loads(line[len("MOTION3SHOTS "):])
+    for f in rep["shots"]:
+        Image.open(raw / f).convert("RGB").save(out / (Path(f).stem + ".jpg"), quality=88)
+    for n in rep["notes"]:
+        print("  " + n)
+    print(f"  {len(rep['shots'])} pictures in {out}")
+    print("MOTION3SHOTS ok")
+
+
+def life_shots(args):
+    """life and carrying pictured in the game (motion_life_shots.gd): a flourish laid over standing, walking and
+    sitting, her hand on her head while it follows someone, a mug and a bottle carried"""
+    from PIL import Image
+    opt = lambda k, d=None: args[args.index(k) + 1] if k in args else d
+    who = opt("--who", "anim_normal_woman")
+    glb = Path(opt("--glb") or ROOT / "Exports" / "characters" / who / f"{who}.glb").resolve()
+    out = Path(opt("--out", KEEP / (glb.stem + "_life_game"))).resolve()
+    proj = ROOT / "Saved" / "Godot" / "_motion_check"
+    g = godot_bin()
+    if not g or not (proj / "project.godot").is_file() or not glb.is_file():
+        sys.exit("shotslife: run the check first (python tools/godot/motion_check.py life), and bake the character")
+    shutil.copy(Path(__file__).with_name("motion_life_shots.gd"), proj / "motion_life_shots.gd")
+    shutil.copytree(PLUGIN, proj / "addons" / "horrorstudio_look", dirs_exist_ok=True)       # (the plugin and the starter as they are now)
+    for f in ["motion.gd", "act.gd", "moves.gd"]:
+        shutil.copy(ROOT / "guides" / "first_game" / "starter" / f, proj / "starter" / f)
+    raw = out / "raw"
+    raw.mkdir(parents=True, exist_ok=True)
+    size = opt("--size", "900x900")
+    cmd = [g, "--path", str(proj), "--rendering-driver", "vulkan", "--resolution", size, "--fixed-fps", "60", "-s", "res://motion_life_shots.gd", "--", f"--glb={glb}", f"--out={raw}"] + ([f"--only={opt('--only')}"] if opt("--only") else [])
+    if shutil.which("xvfb-run") and not os.environ.get("DISPLAY"):
+        cmd = ["xvfb-run", "-a", "-s", f"-screen 0 {size}x24"] + cmd
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=2400, env=env())
+    text = "\n".join(l for l in (r.stdout + r.stderr).splitlines() if l and "ALSA" not in l and "snd_" not in l)
+    line = next((l for l in text.splitlines() if l.startswith("MOTIONLIFESHOTS {")), None)
+    bad = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "Parse Error" in l or "MOTIONLIFESHOTS FAIL" in l]
+    if bad or not line:
+        print(text[-3000:])
+        sys.exit("MOTIONLIFESHOTS FAILED")
+    rep = json.loads(line[len("MOTIONLIFESHOTS "):])
+    for f in rep["shots"]:
+        Image.open(raw / f).convert("RGB").save(out / (Path(f).stem + ".jpg"), quality=88)
+    for n in rep["notes"]:
+        print("  " + n)
+    print(f"  {len(rep['shots'])} pictures in {out}")
+    print("MOTIONLIFESHOTS ok")
+
+
+def gizmo_shots(args):
+    """the grip's gizmo pictured in the editor (grip_editor_shots.gd, installed as a plugin of its own)"""
+    from PIL import Image
+    opt = lambda k, d=None: args[args.index(k) + 1] if k in args else d
+    out = Path(opt("--out", KEEP / "grip_gizmo")).resolve()
+    proj = ROOT / "Saved" / "Godot" / "_motion_check"
+    g = godot_bin()
+    if not g or not (proj / "project.godot").is_file():
+        sys.exit("gizmo: run the check first (python tools/godot/motion_check.py v3)")
+    shutil.copytree(PLUGIN, proj / "addons" / "horrorstudio_look", dirs_exist_ok=True)
+    t = proj / "addons" / "hs_grip_shots"
+    t.mkdir(parents=True, exist_ok=True)
+    (t / "plugin.cfg").write_text('[plugin]\nname="hs grip shots"\ndescription=""\nauthor=""\nversion="1"\nscript="plugin.gd"\n', encoding="utf-8")
+    shutil.copy(Path(__file__).with_name("grip_editor_shots.gd"), t / "plugin.gd")
+    raw = out / "raw"
+    raw.mkdir(parents=True, exist_ok=True)
+    (proj / "grip_shots.json").write_text(json.dumps({"out": str(raw)}), encoding="utf-8")
+    subprocess.run([g, "--headless", "--path", str(proj), "--import"], capture_output=True, text=True, timeout=900, env=env())
+    pg = proj / "project.godot"
+    before = pg.read_text(encoding="utf-8").replace('"res://addons/hs_grip_shots/plugin.cfg", ', "")     # (a run that was killed leaves it in)
+    pg.write_text(before.replace("enabled=PackedStringArray(", 'enabled=PackedStringArray("res://addons/hs_grip_shots/plugin.cfg", ', 1), encoding="utf-8")
+    try:
+        shutil.rmtree(proj / ".godot" / "editor", ignore_errors=True)                                  # (a fresh layout)
+        e = env()
+        if os.path.exists("/usr/share/vulkan/icd.d/lvp_icd.json") and not e.get("DISPLAY"):
+            e.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
+        cmd = [g, "--editor", "--path", str(proj), "--rendering-driver", "vulkan", "--resolution", "1920x1080"]
+        if shutil.which("xvfb-run"):
+            cmd = ["xvfb-run", "-a", "-s", "-screen 0 1920x1080x24"] + cmd
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=600, env=e)
+    finally:
+        pg.write_text(before, encoding="utf-8")
+        shutil.rmtree(t, ignore_errors=True)
+        for f in ["grip_demo.tscn", "grip_shots.json"]:
+            (proj / f).unlink(missing_ok=True)
+    text = r.stdout + r.stderr
+    line = next((l for l in text.splitlines() if l.startswith("GRIPSHOTS {")), None)
+    if not line:
+        print(text[-3000:])
+        sys.exit("GRIPSHOTS FAILED: the editor said nothing")
+    rep = json.loads(line[len("GRIPSHOTS "):])
+    for f in raw.glob("*.png"):
+        Image.open(f).convert("RGB").save(out / (f.stem + ".jpg"), quality=88)
+    for d in rep["shots"]:
+        print("  " + d)
+    for e2 in rep["errors"]:
+        print("ERROR: " + e2)
+    print(f"  pictures in {out}")
+    print("GRIPSHOTS ok" if not rep["errors"] else "GRIPSHOTS FAILED")
+
+
+def guide3(args):
+    """the Animator guide's v3 pictures, from the sheets (sheets3), the game's pictures (shots3) and the editor's (gizmo)"""
+    from PIL import Image
+    opt = lambda k, d=None: args[args.index(k) + 1] if k in args else d
+    date, sheets, img = opt("--date", "2026-11-14"), ROOT / "docs" / "animator_sheets", ROOT / "guides" / "animator" / "img"
+    game, giz = KEEP / "anim_normal_woman_game", KEEP / "grip_gizmo"
+    sh = lambda name, who="": Image.open(sheets / f"{date}_v3_{who + '_' if who else ''}{name}.jpg").convert("RGB")
+    row = lambda im, r, h=330: im.crop((0, r * h, im.width, (r + 1) * h))          # (a sheet's row: one clip, eight moments)
+    def stack(rows, out):
+        w = max(r.width for r in rows)
+        c = Image.new("RGB", (w, sum(r.height for r in rows)), (30, 30, 32))
+        y = 0
+        for r in rows:
+            c.paste(r, (0, y))
+            y += r.height
+        c.save(img / out, quality=86)
+        print(f"  {img / out}  {c.size[0]}x{c.size[1]}")
+    def beside(files, out, h=600):
+        ims = [Image.open(f).convert("RGB") for f in files]
+        ims = [im.resize((round(im.width * h / im.height), h), Image.LANCZOS) for im in ims]
+        c = Image.new("RGB", (sum(im.width for im in ims), h), (30, 30, 32))
+        x = 0
+        for im in ims:
+            c.paste(im, (x, 0))
+            x += im.width
+        c.save(img / out, quality=86)
+        print(f"  {img / out}  {c.size[0]}x{c.size[1]}")
+    need = [sheets / f"{date}_v3_{n}.jpg" for n in ["low", "peek", "scares", "fight", "mouth", "creature_ghoul_low", "creature_ghoul_peek", "creature_ghoul_scares", "creature_goblin_low", "creature_goblin_scares"]]
+    need += [game / f"{n}.jpg" for n in ["head_left", "head_right", "head_behind", "drink_take", "drink_sip", "swing_up", "swing_hit", "punch_hit"]] + [giz / f"{n}.jpg" for n in ["grip_editor", "grip_bottle", "grip_bat"]]
+    missing = [str(f) for f in need if not f.is_file()]
+    if missing:
+        sys.exit("guide3: these aren't made yet (sheets3 for the normal woman, creature_ghoul and creature_goblin; shots3; gizmo):\n  " + "\n  ".join(missing))
+    gh, gb = "creature_ghoul", "creature_goblin"
+    stack([sh("low")], "v3_low.jpg")
+    stack([row(sh("low", gh), 1), row(sh("low", gb), 1), row(sh("low", gh), 3), row(sh("low", gb), 3), row(sh("scares", gh), 0), row(sh("scares", gb), 0)], "v3_creatures.jpg")
+    stack([row(sh("peek"), 0), row(sh("peek"), 1), row(sh("peek", gh), 0), row(sh("peek", gh), 2)], "v3_peek.jpg")
+    stack([sh("scares", gh)], "v3_scares.jpg")
+    stack([sh("mouth")], "v3_mouth.jpg")
+    stack([sh("fight")], "v3_fight.jpg")
+    beside([game / f"{n}.jpg" for n in ["head_left", "head_right", "head_behind"]], "v3_head.jpg")
+    beside([game / f"{n}.jpg" for n in ["drink_take", "drink_sip"]], "v3_drink.jpg")
+    beside([game / f"{n}.jpg" for n in ["swing_up", "swing_hit", "punch_hit"]], "v3_blows.jpg")
+    for n in ["grip_editor", "grip_bottle", "grip_bat"]:
+        Image.open(giz / f"{n}.jpg").convert("RGB").save(img / f"{n}.jpg", quality=86)
+        print(f"  {img / (n + '.jpg')}")
+    print("GUIDE3 ok")
+
+
+def guide_life(args):
+    """the Animator guide's pictures of life and carrying, from the sheets (sheetslife) and the game's pictures (shotslife)"""
+    from PIL import Image
+    opt = lambda k, d=None: args[args.index(k) + 1] if k in args else d
+    date, sheets, img = opt("--date", "2026-11-14"), ROOT / "docs" / "animator_sheets", ROOT / "guides" / "animator" / "img"
+    game = KEEP / "anim_normal_woman_life_game"
+    sh = lambda name, who="": Image.open(sheets / f"{date}_life_{who + '_' if who else ''}{name}.jpg").convert("RGB")
+    row = lambda im, r, h=330: im.crop((0, r * h, im.width, (r + 1) * h))          # (a sheet's row: one flourish, eight moments)
+    def stack(rows, out):
+        w = max(r.width for r in rows)
+        c = Image.new("RGB", (w, sum(r.height for r in rows)), (30, 30, 32))
+        y = 0
+        for r in rows:
+            c.paste(r, (0, y))
+            y += r.height
+        c.save(img / out, quality=84)
+        print(f"  {img / out}  {c.size[0]}x{c.size[1]}")
+    def beside(names, out, h=560):
+        ims = [Image.open(game / f"{n}.jpg").convert("RGB") for n in names]
+        ims = [im.resize((round(im.width * h / im.height), h), Image.LANCZOS) for im in ims]
+        c = Image.new("RGB", (sum(im.width for im in ims), h), (30, 30, 32))
+        x = 0
+        for im in ims:
+            c.paste(im, (x, 0))
+            x += im.width
+        c.save(img / out, quality=86)
+        print(f"  {img / out}  {c.size[0]}x{c.size[1]}")
+    gb = "creature_goblin"
+    need = [sheets / f"{date}_life_{n}.jpg" for n in ["head", "body", "both", "carry", gb + "_head", gb + "_body"]]
+    need += [game / f"{n}.jpg" for n in ["stand_scratch", "walk_scratch", "sit_scratch", "walk_brow", "walk_neck", "sit_chin", "sit_stretch", "follow_scratch", "cup_stand", "cup_walk", "cup_walk_look", "cup_sit", "bottle_walk", "bottle_sneak"]]
+    missing = [str(f) for f in need if not f.is_file()]
+    if missing:
+        sys.exit("guidelife: these aren't made yet (sheetslife for the normal woman and creature_goblin; shotslife):\n  " + "\n  ".join(missing))
+    stack([sh("head")], "life_head.jpg")
+    stack([sh("body")], "life_body.jpg")
+    stack([row(sh("both"), 0), row(sh("both"), 1), row(sh("both"), 4), row(sh("both"), 5)], "life_both.jpg")   # (a stretch, her hands, a glance, her neck: her shoulders rolled and a sigh are too small to see in a still)
+    stack([row(sh("head", gb), 0), row(sh("head", gb), 2), row(sh("body", gb), 1), row(sh("body", gb), 4)], "life_goblin.jpg")
+    stack([sh("carry")], "carry_poses.jpg")
+    beside(["stand_scratch", "walk_scratch", "sit_scratch"], "life_over.jpg")
+    beside(["walk_brow", "walk_neck", "sit_chin", "sit_stretch"], "life_more.jpg", 480)
+    beside(["follow_scratch"], "life_follow.jpg", 640)
+    beside(["cup_stand", "cup_walk", "cup_walk_look", "cup_sit"], "carry_cup.jpg", 480)
+    beside(["bottle_walk", "bottle_sneak"], "carry_bottle.jpg")
+    print("GUIDELIFE ok")
+
+
 def main():
+    if sys.argv[1:] and sys.argv[1] == "guide3":
+        return guide3(sys.argv[2:])
+    if sys.argv[1:] and sys.argv[1] == "guidelife":
+        return guide_life(sys.argv[2:])
+    if sys.argv[1:] and sys.argv[1] == "gizmo":
+        return gizmo_shots(sys.argv[2:])
+    if sys.argv[1:] and sys.argv[1] == "shots3":
+        return v3_shots(sys.argv[2:])
     if sys.argv[1:] and sys.argv[1] == "sheets":
         return doc_sheets(sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else ROOT / "docs" / "animator_sheets")
+    if sys.argv[1:] and sys.argv[1] == "sheets3":
+        return v3_sheets(sys.argv[2:])
+    if sys.argv[1:] and sys.argv[1] == "furniture":
+        return furniture_sheets(sys.argv[2:])
+    if sys.argv[1:] and sys.argv[1] == "sheetslife":
+        return life_sheets(sys.argv[2:])
+    if sys.argv[1:] and sys.argv[1] == "shotslife":
+        return life_shots(sys.argv[2:])
     if not sys.argv[1:] or sys.argv[1] != "shots":
         return check(sys.argv[1:])
     ap = argparse.ArgumentParser()

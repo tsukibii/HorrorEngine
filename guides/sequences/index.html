@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sequences: little scenes made of markers</title>
+<!-- Eight sequences built with the NPC Markers tab and the Animator's clips (DECISIONS 2026-11-14, evening: the
+     tutorial of sequences). Every one is built for real and played by a check: python tools/godot/sequences.py
+     (SEQUENCES). The storyboard tables between the "seq" marks are written from that tool's data
+     (python tools/godot/sequences.py tables), the pictures are Godot's own (--pictures: the game; --editor: the tab).
+     Nothing loads from outside. -->
+<style>
+:root{--bg:#121214;--panel:#1b1b1f;--panel2:#232329;--line:#33333b;--text:#e6e3dc;--dim:#9a978f;--accent:#f48fb1;--warn:#e0a030;--cue:#9fd39a}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{display:grid;grid-template-columns:262px minmax(0,1fr);max-width:1260px;margin:0 auto}
+nav.toc{position:sticky;top:0;height:100vh;overflow:auto;padding:28px 18px 28px 22px;border-right:1px solid var(--line);font-size:13.5px}
+nav.toc .brand{font-weight:700;letter-spacing:.06em;color:var(--accent);font-size:12px;text-transform:uppercase;margin-bottom:14px}
+nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:s}
+nav.toc li{counter-increment:s}
+nav.toc li.part{counter-increment:none;color:var(--dim);font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;margin:12px 0 3px 8px}
+nav.toc li a{display:flex;gap:8px;padding:4px 8px;border-radius:6px;color:var(--text)}
+nav.toc li a::before{content:counter(s);color:var(--dim);min-width:18px;text-align:right;font-variant-numeric:tabular-nums}
+nav.toc li a:hover,nav.toc li a.on{background:var(--panel2);text-decoration:none}
+nav.toc li a.on{color:var(--accent)}
+nav.toc .back{display:block;margin-top:10px;color:var(--dim);font-size:12.5px}
+nav.toc .back:first-of-type{margin-top:18px}
+main{padding:34px 44px 90px;min-width:0}
+header.hero{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:10px}
+header.hero h1{font-size:34px;line-height:1.15;margin:0 0 10px;letter-spacing:-.01em}
+header.hero p{color:var(--dim);font-size:16.5px;margin:0;max-width:760px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--dim);background:var(--panel)}
+section{padding-top:30px;max-width:940px}
+h2{font-size:24px;margin:16px 0 6px;display:flex;align-items:baseline;gap:12px}
+h2 .n{color:var(--accent);font-size:15px;font-variant-numeric:tabular-nums;font-weight:600}
+h3{font-size:16.5px;margin:22px 0 4px}
+.part{margin:44px 0 0;padding:10px 0 0;border-top:1px solid var(--line);color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;max-width:940px}
+p{margin:8px 0}
+ul,ol.steps{padding-left:22px;margin:8px 0}
+li{margin:3px 0}
+kbd{font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:2px 6px;color:var(--text);white-space:nowrap}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow:auto;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ui{font-weight:600;color:#f2e6cc}
+figure{margin:16px 0 20px;max-width:100%}
+figure img{display:block;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.45);background:var(--panel)}
+figcaption{color:var(--dim);font-size:13px;margin-top:7px}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px;align-items:start;margin:14px 0}
+.pair figure{margin:0}
+.tip{border-left:3px solid var(--accent);background:linear-gradient(90deg,rgba(244,143,177,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.tip b{color:var(--accent)}
+.note{border-left:3px solid var(--cue);background:linear-gradient(90deg,rgba(159,211,154,.08),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet{border-left:3px solid var(--warn);background:linear-gradient(90deg,rgba(224,160,48,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.notyet b{color:var(--warn)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:12px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h4{margin:0 0 4px;font-size:14px}
+.card p{margin:0;color:var(--dim);font-size:13.5px}
+table.keys,table.board{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+table.keys td,table.keys th{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+table.keys td:first-child{white-space:nowrap;width:1%}
+table.board{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13.5px}
+table.board th{padding:7px 10px;text-align:left;color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;border-bottom:1px solid var(--line);background:var(--panel2)}
+table.board td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+table.board tr:last-child td{border-bottom:0}
+table.board td:first-child{color:var(--accent);font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap;width:1%}
+table.board td:nth-child(2){font-weight:600;color:#f2e6cc;white-space:nowrap}
+table.board tr.way td{background:rgba(244,143,177,.06);color:var(--dim)}
+table.board tr.way td:nth-child(2){color:var(--accent);font-weight:600}
+p.quest{margin:14px 0 4px;color:var(--dim);font-size:13.5px}
+p.quest b{color:var(--text)}
+footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:var(--dim);font-size:13px}
+@media (max-width:900px){.wrap{display:block}nav.toc{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 16px}nav.toc ol{columns:2;column-gap:14px}main{padding:22px 16px 60px}header.hero h1{font-size:27px}table.board{font-size:12.5px}table.keys td:first-child{white-space:normal;width:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc">
+  <div class="brand">Sequences</div>
+  <ol>
+    <li><a href="#what">What this is</a></li>
+    <li><a href="#read">How to read a recipe</a></li>
+    <li><a href="#place">The place, and its things</a></li>
+    <li class="part">Ordinary people</li>
+    <li><a href="#evening">A mug, the sofa, a look at it</a></li>
+    <li><a href="#tidy">Tidying up, then asking you</a></li>
+    <li class="part">Things change hands</li>
+    <li><a href="#apple">You give her the apple</a></li>
+    <li><a href="#key">She hands you a key</a></li>
+    <li class="part">You keep a shop</li>
+    <li><a href="#customer">A customer at the till</a></li>
+    <li class="part">Horror</li>
+    <li><a href="#last">The last customer</a></li>
+    <li><a href="#corner">Round the corner, then behind you</a></li>
+    <li><a href="#cellar">Out of the dark</a></li>
+    <li class="part">Making it good</li>
+    <li><a href="#ik">Getting the most from the IKs</a></li>
+    <li><a href="#more">More to make from the same cards</a></li>
+    <li><a href="#wrong">When something looks wrong</a></li>
+    <li><a href="#rules">The rules, and what's not there</a></li>
+  </ol>
+  <a class="back" href="../markers/index.html">← NPC markers: the tab itself</a>
+  <a class="back" href="../flags/index.html">← Flags and things</a>
+  <a class="back" href="../animator/index.html">← Animator v2: her own animations</a>
+  <a class="back" href="../index.html">← All guides</a>
+</nav>
+<main>
+<header class="hero">
+  <h1>Sequences</h1>
+  <p>Eight little scenes made of markers, each a recipe you can copy card by card: someone who takes a mug to the
+  sofa and looks at it, someone you hand an apple to, a customer at your till, something that leans round a corner
+  and is behind you a moment later. Every one of them is built and played by a check, so the cards below are the
+  cards that work.</p>
+  <div class="chips"><span class="chip">Godot 4.7</span><span class="chip">games built by hand</span><span class="chip">the NPC Markers, Things and Flags tabs</span><span class="chip">no code</span></div>
+</header>
+
+<section id="what">
+<h2><span class="n">1</span>What this is</h2>
+<p>The <a href="../markers/index.html">NPC markers guide</a> shows the tab; the
+<a href="../animator/index.html">Animator's guide</a> shows the animations. This one puts them together: what to
+click, in what order, to get a scene that reads as a person doing something. Nothing here is scripted. Each recipe
+is one character, one quest, and a short list of cards.</p>
+<figure><img src="img/board_evening.jpg" alt="Godot's editor: a living room from above with numbered pins from a door to a table to a sofa, and the NPC Markers tab along the bottom with eight markers listed"><figcaption>The first recipe in the editor: eight markers from the door to the table to the sofa. The storyboard along the bottom is the recipe; the pins are where each card was clicked.</figcaption></figure>
+<h3>What you need</h3>
+<ul>
+  <li>A project made by <code>python tools/godot_byhand.py new &lt;folder&gt;</code> (it has the Markers, Look and UI plugins and the starter kit). An older project: <code>python tools/godot_byhand.py install &lt;folder&gt; --starter</code>.</li>
+  <li>A character exported from the Character Studio and <b>baked in the Animator since its small movements</b> (96 clips on a person). One baked earlier walks and sits, but has no small movements, no peek and nothing for a hand to do: the tab's <span class="ui">Problems</span> says which clip is missing at which marker. Open her in the Animator and press Bake again.</li>
+  <li>A room. Any interior will do if it keeps the <a href="#place">few sizes</a> the animations are made for.</li>
+</ul>
+<h3>The finished scene, to walk through</h3>
+<p>All eight recipes live in one scene: a flat, a shop in front of it and a corridor beside it. This builds it as a
+project of its own (the characters are the Animator's three test characters when their exports are on the machine,
+else plain grey test bodies):</p>
+<pre>python tools/godot/sequences.py --keep ~/games/sequences</pre>
+<p>With characters of your own in the three parts (their names in the Character Studio, exported for Godot):</p>
+<pre>python tools/godot/sequences.py --keep ~/games/sequences --cast woman=NAME,man=NAME,creature=NAME</pre>
+<p>Open that folder in Godot and press <kbd>F5</kbd>. You start in the flat. Mio takes her mug to the sofa; Aya tidies
+up and wants to talk; step behind the shop's counter and a customer comes in; walk into the corridor and something
+looks back at you. <kbd>F7</kbd> shows what every character is doing and waiting for, and the flags.</p>
+</section>
+
+<section id="read">
+<h2><span class="n">2</span>How to read a recipe</h2>
+<p>Each recipe has a table. One row is one marker, in the order they run:</p>
+<table class="keys">
+  <tr><td><b>#</b></td><td>The marker's number, as on its pin and in the storyboard. <b>4A.1</b> is the first marker inside the first way of the Choice 4.</td></tr>
+  <tr><td><b>Card</b></td><td>The card to click in the tab's palette.</td></tr>
+  <tr><td><b>Click in the 3D view</b></td><td>Where to click after the card. A dash: the card has no pin, it's added at once.</td></tr>
+  <tr><td><b>In its form</b></td><td>What to change on the right of the tab once the marker is picked. Everything not listed stays as the card made it.</td></tr>
+</table>
+<p>Above each table: whose it is, the quest's name, and the quest's <span class="ui">Starts when</span> (set with the
+quest picked). To build one: select the character's model, press <span class="ui">+ Character</span>, name the quest,
+then go down the rows.</p>
+<div class="tip"><b>Try it as you go.</b> Pick a marker and press <span class="ui">From here</span>: a copy of the
+character plays the quest from that marker in the 3D view. It walks, sits and reaches; it doesn't take things, talk
+or do small movements (those need the game). <kbd>F5</kbd> for the real thing, <kbd>F7</kbd> in the game to see what
+she's waiting for.</div>
+<p>Three things are worth knowing before the first recipe, because every one of them uses them:</p>
+<div class="cols">
+  <div class="card"><h4>A marker waits for its Starts when</h4><p>Until it's so, she stays as the marker before left her. That's how someone waits for you to bring something: the next marker starts when <i>you carry it</i>.</p></div>
+  <div class="card"><h4>A Wait leaves her as she is</h4><p>Sat stays sat, looking out past a wall stays looking. Only a marker that moves her (a Walk, a Grab) gets her up first.</p></div>
+  <div class="card"><h4>Small movements are a layer</h4><p>A look at her hand, a scratch, a sigh are laid over whatever she's doing: her legs go on walking, her seat stays sat. One by a card when you want it; now and then by themselves with <span class="ui">Alive</span>.</p></div>
+</div>
+</section>
+
+<section id="place">
+<h2><span class="n">3</span>The place, and its things</h2>
+<p>A character doesn't see the room. She goes where her markers say and her hand goes where her clip was made to
+reach, so the furniture has to be where the clips expect it. These are the sizes this scene keeps (all of them, with
+what happens outside them, are in <code>docs/ANIMATION_RULES.md</code>):</p>
+<table class="keys">
+  <tr><td>A thing she takes</td><td>on something <b>0.8 to 1.0 m</b> high (the table here is 0.82), on the floor, or on a shelf at <b>1.3 to 1.6 m</b>; within <b>0.30 m of the edge</b>, with floor in front of it. A dining table at 0.75 m is between her reaches: her hand stops above it.</td></tr>
+  <tr><td>A seat</td><td><b>0.40 to 0.50 m</b> high, <b>0.55 m</b> behind its front edge before any back, <b>0.35 m</b> of floor in front. The coffee table stands a metre off the sofa.</td></tr>
+  <tr><td>Where she waits with small movements on</td><td>half a metre free to each side and in front of her: an elbow needs it.</td></tr>
+  <tr><td>A counter she stands at with something in her hand</td><td><b>0.45 m</b> between her and it, or the can is in the counter.</td></tr>
+  <tr><td>A wall she peeks round</td><td>a plain upright end, floor to above her head, with a metre of floor behind it.</td></tr>
+</table>
+<h3>The things, made with the Things tab</h3>
+<p>Select a model, click a card in the <span class="ui">Things</span> tab (the <a href="../flags/index.html">flags guide</a> has them all):</p>
+<table class="keys">
+  <tr><td>The mug, the book, the key</td><td>plain models. She takes them herself: they need nothing. The mug and the key have an <span class="ui">HSGrip</span> under them (<a href="#ik">below</a>).</td></tr>
+  <tr><td>The apple, the cans of soda</td><td><span class="ui">Pickup</span> (Item: <code>apple</code>, <code>soda</code>): you take them with <kbd>E</kbd>.</td></tr>
+  <tr><td>The cellar door</td><td><span class="ui">Logic</span>: Works only when <i>you carry cellar_key</i>; says "Locked. It wants a key."; then Flags <code>+ cellar_open</code>.</td></tr>
+  <tr><td>Behind the counter, the corridor's start, its corner</td><td>three <span class="ui">Area</span>s, each with a Fact: <code>behind_counter</code>, <code>in_corridor</code>, <code>at_corner</code>. Walking in turns the flag on, and a quest starts on it.</td></tr>
+  <tr><td>The shop's lights, the corridor's</td><td>two <span class="ui">Scare</span>s with Walk In off, Lights Do: flicker, Lights Of: the room's lamps. A marker <i>fires</i> them.</td></tr>
+</table>
+<p><span class="ui">Set up the scene</span>, in the same tab, adds the player, the Story, the HUD and Sound if the scene hasn't got them.</p>
+</section>
+
+<div class="part">Ordinary people</div>
+
+<section id="evening">
+<h2><span class="n">4</span>A mug, the sofa, a look at it</h2>
+<p>Someone comes in, takes her mug off the table, carries it to the sofa, sits, and looks at it for a moment. It's
+the smallest scene that reads as a person, and it's four ideas: a thing <b>kept in the hand</b> is carried, a walk
+can <b>curve</b>, a seat is <b>where its pin is</b>, and a small movement can be <b>asked for by name</b>.</p>
+<!-- seq:evening -->
+<p class="quest"><b>Mio</b>, quest <b>An evening in</b> &middot; Starts when: at once (the game starts)</p>
+<table class="board">
+<tr><th>#</th><th>Card</th><th>Click in the 3D view</th><th>In its form</th></tr>
+<tr><td>1</td><td>Start here</td><td>the floor by the door</td><td>&mdash;</td></tr>
+<tr><td>2</td><td>Walk</td><td>the floor in front of the table; turn its arrow to the table</td><td>&mdash;</td></tr>
+<tr><td>3</td><td>Pick up</td><td>the mug</td><td>It stays in the hand: on</td></tr>
+<tr><td>4</td><td>Walk</td><td>the floor in front of the sofa; click the + on its path and drag the bend clear of the coffee table</td><td>Turns to the arrow at the end: off</td></tr>
+<tr><td>5</td><td>Sit</td><td>the sofa's front edge; the arrow the way her knees point</td><td>Stays: for some seconds, 1.5</td></tr>
+<tr><td>6</td><td>Look at it</td><td>&mdash;</td><td>(nothing to set: it looks at what's in her hand)</td></tr>
+<tr><td>7</td><td>Wait</td><td>&mdash;</td><td>Seconds: 4 (she stays sat)</td></tr>
+<tr><td>8</td><td>Small movement</td><td>&mdash;</td><td>Does: Sighs</td></tr>
+</table>
+<!-- /seq -->
+<div class="pair">
+<figure><img src="img/evening_1_pick.jpg" alt="A woman at a table reaching with her right hand for a white mug"><figcaption>3: her hand goes to the mug itself. The pin is on the mug; the table is 0.82 m high.</figcaption></figure>
+<figure><img src="img/evening_2_carry.jpg" alt="The same woman walking with the mug held in front of her"><figcaption>4: kept in her hand, it's carried: in front of her and upright, because its grip says it's drunk from.</figcaption></figure>
+</div>
+<figure><img src="img/evening_3_look.jpg" alt="The woman sat on a green sofa, looking down at the mug in her raised hand"><figcaption>6: <span class="ui">Look at it</span>, sat. Nothing below her chest moves; the next marker waits until her hand is back (3.1 s).</figcaption></figure>
+<h3>Why it works</h3>
+<ul>
+  <li><b>Walk, then Pick up.</b> A Pick up walks her the last step to where her hand reaches, in a straight line. Put a Walk before it so she arrives by the way you want, facing the table.</li>
+  <li><b>It stays in the hand</b> is what makes the rest: from there on the mug is carried through every walk, seat and wait. Off, it's put away (hidden) as her hand comes back.</li>
+  <li><b>The bend.</b> Click the <b>+</b> in the middle of a path and drag: the walk goes through it as one curve. One bend is enough to pass a coffee table.</li>
+  <li><b>Sit's pin</b> is on the seat's <i>front edge</i> at sitting height, the arrow the way her knees point. Not the middle of the cushion.</li>
+  <li><b>Then a Wait.</b> She's sat, so she waits sat. Tick <span class="ui">Alive</span> on the character (click her name in the tab) and she goes on with small movements by herself: a look at the mug comes up more often than anything else, because she's holding it.</li>
+</ul>
+<h3>Change it</h3>
+<ul>
+  <li>Swap the mug for a book or a phone: the same cards. A thing with no grip is held by a guess from its size.</li>
+  <li>After the Wait: <span class="ui">Put down</span> on the side table, <span class="ui">Sleep</span> on the sofa's edge.</li>
+  <li>Give the quest a <span class="ui">Starts when</span> (a task ticked, a flag): the evening begins when the day's work is done.</li>
+</ul>
+</section>
+
+<section id="tidy">
+<h2><span class="n">5</span>Tidying up, then asking you</h2>
+<p>Someone picks a book up off the floor, carries it to the shelf, puts it up, dusts her hands, goes back to her
+spot and wants a word. Three heights for one hand, and the way into every recipe that needs you: a <b>Talk</b> that
+puts a task on your list.</p>
+<!-- seq:tidy -->
+<p class="quest"><b>Aya</b>, quest <b>Tidying up</b> &middot; Starts when: at once (the game starts)</p>
+<table class="board">
+<tr><th>#</th><th>Card</th><th>Click in the 3D view</th><th>In its form</th></tr>
+<tr><td>1</td><td>Start here</td><td>the floor where she starts</td><td>&mdash;</td></tr>
+<tr><td>2</td><td>Walk</td><td>the floor a step west of the book; arrow to the book</td><td>&mdash;</td></tr>
+<tr><td>3</td><td>Pick up</td><td>the book on the floor</td><td>It stays in the hand: on</td></tr>
+<tr><td>4</td><td>Walk</td><td>the floor in front of the bookshelf; arrow to the shelf</td><td>&mdash;</td></tr>
+<tr><td>5</td><td>Put down</td><td>the shelf at eye height, near its front edge</td><td>&mdash;</td></tr>
+<tr><td>6</td><td>Small movement</td><td>&mdash;</td><td>Does: Rubs her hands</td></tr>
+<tr><td>7</td><td>Walk</td><td>the floor where she waits; arrow into the room</td><td>&mdash;</td></tr>
+<tr><td>8</td><td>Talk</td><td>&mdash;</td><td>Lines: "There. Tidy." / "I haven't eaten all day. Is that apple still on the table?" · Head: follows you · Then, Adds tasks: apple: Bring Aya the apple from the table.</td></tr>
+</table>
+<!-- /seq -->
+<div class="pair">
+<figure><img src="img/tidy_1_floor.jpg" alt="A woman bent down to the floor with her hand on a blue book"><figcaption>3: off the floor. A Grab has three reaches (the floor, a table, a shelf) and uses the one nearest its pin's height.</figcaption></figure>
+<figure><img src="img/tidy_2_shelf.jpg" alt="The woman reaching up to put the book on a high shelf"><figcaption>5: onto the shelf at 1.4 m: the pin is where the book ends up.</figcaption></figure>
+</div>
+<figure><img src="img/tidy_3_talk.jpg" alt="The player's view of the woman, with her line at the foot of the screen: I haven't eaten all day. Is that apple still on the table?"><figcaption>8: <kbd>E</kbd> on her. Her lines are the HUD's own; when the conversation ends the marker is done, and its Then puts the task on your list.</figcaption></figure>
+<h3>Why it works</h3>
+<ul>
+  <li><b>Put down's pin is the place of the thing</b>, not of her feet. Put it near the front edge of the shelf (within 0.30 m): further in and her hand stops short. It's put down the way up it stood before she took it, so a book lies flat again.</li>
+  <li><b>A small movement after an act</b> reads as a thought: she rubs her hands because she's finished. Pick it by name (<span class="ui">Does</span>) rather than leaving it to chance.</li>
+  <li><b>Talk stays until you talk.</b> Nothing after it runs until you've heard her out, so a Talk is a gate as well as a line. <span class="ui">Head: follows you</span> on it and she watches you cross the room while she waits.</li>
+  <li><b>Then: Adds tasks</b> is how a marker hands you a job. The next recipe waits for you to do it.</li>
+</ul>
+</section>
+
+<div class="part">Things change hands</div>
+
+<section id="apple">
+<h2><span class="n">6</span>You give her the apple and she eats it</h2>
+<p>She asked for the apple. You take it off the table (<kbd>E</kbd>: it's a Pickup) and walk up to her; she turns to
+you, holds out her hand, the apple leaves your pocket and is in it, and she eats it. This is a new quest of hers
+that starts the moment <i>you carry apple</i> and <i>you're within 2.2 m</i>.</p>
+<!-- seq:apple -->
+<p class="quest"><b>Aya</b>, quest <b>The apple</b> &middot; Starts when: you carry apple, you're within 2.2 m</p>
+<table class="board">
+<tr><th>#</th><th>Card</th><th>Click in the 3D view</th><th>In its form</th></tr>
+<tr><td>1</td><td>Take from you</td><td>&mdash;</td><td>The thing: apple (picked from the list) · It stays in the hand: on · Then, Says: "Oh, you found it!"</td></tr>
+<tr><td>2</td><td>Eat</td><td>the floor beside her (the pin isn't used)</td><td>The thing: left empty: she eats what's in her hand</td></tr>
+<tr><td>3</td><td>Wait</td><td>&mdash;</td><td>Seconds: 2.5 · Face: Smile · Then, Says: "Thank you. I needed that." · Ticks: apple · Flags: + aya_fed (switched when the wait is over)</td></tr>
+</table>
+<!-- /seq -->
+<div class="pair">
+<figure><img src="img/apple_1_take.jpg" alt="The player's view: the woman facing the camera with her right hand held out, an apple in it"><figcaption>1: <span class="ui">Take from you</span>. She turns to you wherever you are and holds her hand out, stood upright; her palm is carried toward you by her hand's IK.</figcaption></figure>
+<figure><img src="img/apple_2_eat.jpg" alt="The woman with the apple at her mouth"><figcaption>2: <span class="ui">Eat</span> with no thing picked eats what's in her hand, where she stands. Then it's gone.</figcaption></figure>
+</div>
+<figure><img src="img/board_apple.jpg" alt="The NPC Markers tab with the quest The apple: Take from you, Eat, Wait; the form of Take from you shows The thing: apple"><figcaption>The quest's Starts when is two chips; <span class="ui">Take from you</span>'s form names the thing, picked from the scene's own items.</figcaption></figure>
+<h3>Why it works</h3>
+<ul>
+  <li><b>The quest waits, not the marker.</b> A quest with a Starts when cuts in the moment it's so, wherever she is in the quest before. So she can be tidying, waiting or talking: come near with the apple and this starts.</li>
+  <li><b>Take from you has no pin.</b> It happens where she stands. What ends up in her hand is the model your pocket had for the thing (the Pickup's own mesh).</li>
+  <li><b>It stays in the hand: on</b> is what lets the Eat find it. Off, she takes it and puts it away: someone accepting a letter.</li>
+  <li><b>Flags at the end of a Wait.</b> The last marker says her thanks, waits 2.5 s, and only then switches <code>aya_fed</code>: the next quest starts on that flag, and her line has had time to be read.</li>
+</ul>
+<h3>Change it</h3>
+<ul>
+  <li><span class="ui">Drink</span> instead of Eat for a bottle: it stays in her hand afterwards. Follow it with <span class="ui">Put down</span>.</li>
+  <li>She takes it and <i>looks</i> at it: Take from you → <span class="ui">Look at it</span> → a line. A photograph, a ring.</li>
+  <li>Make her ask first with a Choice: a Talk whose answers are "Here." and "Not yet." and a way for each.</li>
+</ul>
+<div class="notyet"><b>She stands to eat.</b> Eat and Drink are standing clips: sat on the sofa, she gets up first. A look at what she holds, and every other small movement, doesn't.</div>
+</section>
+
+<section id="key">
+<h2><span class="n">7</span>She fetches a key and hands it to you</h2>
+<p>Fed, she says "Wait. You'll want this for the cellar", goes to the hook by the door, takes the key down, comes to
+you and holds it out. It's in your pocket as <i>Cellar key</i>, and the cellar door, which wanted it, opens.</p>
+<!-- seq:key -->
+<p class="quest"><b>Aya</b>, quest <b>The cellar key</b> &middot; Starts when: the flag aya_fed</p>
+<table class="board">
+<tr><th>#</th><th>Card</th><th>Click in the 3D view</th><th>In its form</th></tr>
+<tr><td>1</td><td>Wait</td><td>&mdash;</td><td>Seconds: 1.5 · Then, Says: "Wait. You'll want this for the cellar."</td></tr>
+<tr><td>2</td><td>Walk</td><td>the floor in front of the key's hook; arrow to the wall</td><td>&mdash;</td></tr>
+<tr><td>3</td><td>Pick up</td><td>the key on its hook</td><td>It stays in the hand: on</td></tr>
+<tr><td>4</td><td>Walk</td><td>&mdash;</td><td>Comes to you instead of to the pin: on · Stops: 1.0 m from you</td></tr>
+<tr><td>5</td><td>Hand to you</td><td>&mdash;</td><td>Gives: left empty (what's in her hand) · Called: Cellar key · Then, Says: "Don't lose it." · Adds tasks: cellar: Open the cellar door at the end of the corridor.</td></tr>
+<tr><td>6</td><td>Walk</td><td>the floor where she waits</td><td>&mdash;</td></tr>
+<tr><td>7</td><td>Talk</td><td>&mdash;</td><td>Stays: until the next marker can start · Lines: "The cellar's at the end of the corridor. I don't go down there."</td></tr>
+</table>
+<!-- /seq -->
+<div class="pair">
+<figure><img src="img/key_1_hook.jpg" alt="The woman reaching to a small brass key on a board on the wall"><figcaption>3: the key off its hook, a metre up: inside the reach of a table.</figcaption></figure>
+<figure><img src="img/key_2_hand.jpg" alt="The player's view: the woman a step away, holding the key out toward the camera"><figcaption>5: <span class="ui">Hand to you</span>. She came to you (a Walk that <i>comes to you</i>), so she's a step away and facing you.</figcaption></figure>
+</div>
+<h3>Why it works</h3>
+<ul>
+  <li><b>A Walk that comes to you</b> has no pin either: she walks to wherever you are and stops short (1.0 m here, a comfortable arm's length for handing something over).</li>
+  <li><b>Hand to you gives what she holds.</b> Leave <span class="ui">Gives</span> empty and the item is named after the thing itself (the node <code>CellarKey</code> is <code>cellar_key</code> in your pocket); <span class="ui">Called</span> is what you read. With nothing in her hand it gives an item by name alone, and <span class="ui">And money</span> pays you.</li>
+  <li><b>The door never heard of her.</b> Its Logic only asks <i>you carry cellar_key</i>. Markers and things meet in your pocket and in flags, nowhere else, so either can be changed without the other.</li>
+</ul>
+</section>
+
+<div class="part">You keep a shop</div>
+
+<section id="customer">
+<h2><span class="n">8</span>A customer at the till</h2>
+<p>You step behind the counter. A man comes in off the street, walks to the till watching you, and asks for a can of
+soda. "Coming up": he waits while you take one off the shelf behind you; back at the counter he pays, takes it, and
+leaves looking at the can. "We're out": he sighs and leaves. Either way he's gone through the door and switched
+off.</p>
+<!-- seq:customer -->
+<p class="quest"><b>Ken</b>, quest <b>A can of soda</b> &middot; Starts when: the flag behind_counter</p>
+<table class="board">
+<tr><th>#</th><th>Card</th><th>Click in the 3D view</th><th>In its form</th></tr>
+<tr><td>1</td><td>Start here</td><td>the street outside the shop's door</td><td>Comes: when you're not looking</td></tr>
+<tr><td>2</td><td>Walk</td><td>the floor in front of the till; arrow to the counter; two bends to bring him in through the door</td><td>Head: follows you</td></tr>
+<tr><td>3</td><td>Talk</td><td>&mdash;</td><td>Lines: "Evening." / "A can of soda, please." · Answers: "Coming up" (flags: + soda_yes; he says "Thanks.") and "We're out" (flags: + soda_no; face: Sad; he says "Oh. Never mind, then.")</td></tr>
+<tr><td>4</td><td>Choice</td><td>&mdash;</td><td>its two ways, below</td></tr>
+<tr class="way"><td>4A</td><td style="padding-left:26px">way: served</td><td>&mdash;</td><td>Flags: soda_yes</td></tr>
+<tr><td>4A.1</td><td style="padding-left:26px">Hand to you</td><td>&mdash;</td><td>Starts when: you carry soda, you're within 2.5 m · And money: 1.50</td></tr>
+<tr><td>4A.2</td><td style="padding-left:26px">Take from you</td><td>&mdash;</td><td>The thing: soda · It stays in the hand: on · Then, Says: "Keep the change."</td></tr>
+<tr><td>4A.3</td><td style="padding-left:26px">Look at it</td><td>&mdash;</td><td>Over what comes next: on (he looks at the can as he leaves)</td></tr>
+<tr class="way"><td>4B</td><td style="padding-left:26px">way: refused</td><td>&mdash;</td><td>Flags: soda_no</td></tr>
+<tr><td>4B.1</td><td style="padding-left:26px">Small movement</td><td>&mdash;</td><td>Does: Sighs · Face: Sad</td></tr>
+<tr><td>5</td><td>Walk</td><td>the street outside the door; the same two bends, the other way round</td><td>Head: is her animation's again</td></tr>
+<tr><td>6</td><td>Disappear</td><td>&mdash;</td><td>Then, Flags: + ken_gone</td></tr>
+</table>
+<!-- /seq -->
+<figure><img src="img/customer_1_ask.jpg" alt="The player's view from behind a shop counter: a man at the till, his question and two answers at the foot of the screen"><figcaption>3: his question with your two answers. Each answer switches a flag; the Choice after it takes the way whose flag is on.</figcaption></figure>
+<div class="pair">
+<figure><img src="img/customer_2_pay.jpg" alt="The man holding his hand out over the counter"><figcaption>4A.1: he pays: <span class="ui">Hand to you</span> with nothing in his hand and <span class="ui">And money</span> 1.50. It waited until you carried a can.</figcaption></figure>
+<figure><img src="img/customer_3_take.jpg" alt="The man with a green can in his outstretched hand"><figcaption>4A.2: <span class="ui">Take from you</span>: the can leaves your pocket.</figcaption></figure>
+</div>
+<figure><img src="img/customer_4_leave.jpg" alt="The man walking away, looking down at the can in his hand"><figcaption>4A.3 and 5: <span class="ui">Look at it</span> with <i>Over what comes next</i>: the Walk starts at once and the look is laid over it.</figcaption></figure>
+<figure><img src="img/board_customer.jpg" alt="The shop from above in the editor with the customer's path from the street door to the till, and his storyboard with a Choice and its two ways"><figcaption>His path in through the door is one Walk with two bends. The Choice's ways are indented under it.</figcaption></figure>
+<h3>Why it works</h3>
+<ul>
+  <li><b>He isn't there until you are.</b> His character has <span class="ui">Starts hidden</span> on, and the quest starts on the flag of the Area behind the counter. Start here <i>when you're not looking</i> puts him outside the door while your back is turned.</li>
+  <li><b>Pay first, then take.</b> Hand to you gives whatever is in his hand: if he took the can first, he'd hand it straight back. So the money comes while his hand is empty.</li>
+  <li><b>The wait is the gate.</b> 4A.1 starts when <i>you carry soda</i> and <i>you're within 2.5 m</i>. Until then he stands at the till; with <span class="ui">Alive</span> on he checks his wrist and looks about, and his head follows you to the shelf and back.</li>
+  <li><b>Over what comes next.</b> A small movement normally holds the next marker until the hand is back. Ticked, it doesn't: he's already walking when he looks at the can.</li>
+  <li><b>Disappear</b> at the end switches him off completely. Its Then sets <code>ken_gone</code>, which is what the next customer waits for.</li>
+</ul>
+<h3>Change it</h3>
+<ul>
+  <li><b>A queue.</b> A second character, hidden, whose quest starts when <code>ken_gone</code>: the same cards, another thing asked for. Three of them and you have a shift.</li>
+  <li><b>Something you haven't got.</b> Only the refused way: his face, a line, a longer look at you before he goes.</li>
+  <li><b>He brings something back.</b> Start him with a thing in his hand (a Pick up outside, kept), then Hand to you at the till: a parcel, a wallet someone dropped.</li>
+</ul>
+</section>
+
+<div class="part">Horror</div>
+
+<section id="last">
+<h2><span class="n">9</span>The last customer: nearer each time you look away</h2>
+<p>After the man has gone, a woman comes in slowly and stops at the till. She says nothing. Her head follows you.
+You turn to the shelf and back: she's at the end of the counter. Again: she's behind the counter with you. The
+third time you look away, she's on you, and the lights go.</p>
+<!-- seq:last -->
+<p class="quest"><b>Rin</b>, quest <b>The last customer</b> &middot; Starts when: the flag ken_gone</p>
+<table class="board">
+<tr><th>#</th><th>Card</th><th>Click in the 3D view</th><th>In its form</th></tr>
+<tr><td>1</td><td>Start here</td><td>the street outside the shop's door</td><td>Starts when: after 3 s · Comes: when you're not looking</td></tr>
+<tr><td>2</td><td>Walk</td><td>the floor in front of the till; the same two bends</td><td>Speed: 0.55 × · Head: follows you, within 220 degrees · Small movements: none</td></tr>
+<tr><td>3</td><td>Talk</td><td>&mdash;</td><td>Stays: until the next marker can start · Lines: "..."</td></tr>
+<tr><td>4</td><td>Start here</td><td>the open end of the counter; arrow along the counter, at you</td><td>Starts when: after 2.5 s · Comes: when you're not looking</td></tr>
+<tr><td>5</td><td>Wait</td><td>&mdash;</td><td>Stays: until the next marker can start</td></tr>
+<tr><td>6</td><td>Start here</td><td>the floor behind the counter, your side of it</td><td>Starts when: after 2 s · Comes: when you're not looking</td></tr>
+<tr><td>7</td><td>Wait</td><td>&mdash;</td><td>Stays: until the next marker can start</td></tr>
+<tr><td>8</td><td>Jump scare</td><td>the floor a little over a metre from where you'll stand</td><td>Starts when: after 1.5 s · Comes: when you're not looking · Then, Sound: sting_big · Fires: ShopScare (the lights flicker)</td></tr>
+<tr><td>9</td><td>Event</td><td>&mdash;</td><td>Then, Flags: + rin_gone</td></tr>
+</table>
+<!-- /seq -->
+<div class="pair">
+<figure><img src="img/last_1_till.jpg" alt="The player's view from behind the counter: a woman standing at the till, looking at the camera"><figcaption>3: at the till. While you watch, nothing happens.</figcaption></figure>
+<figure><img src="img/last_2_end.jpg" alt="The woman standing at the end of the counter, nearer"><figcaption>4: you looked at the shelf for 2.5 s.</figcaption></figure>
+</div>
+<div class="pair">
+<figure><img src="img/last_3_behind.jpg" alt="The woman behind the counter, close"><figcaption>6: and again.</figcaption></figure>
+<figure><img src="img/last_4_scare.jpg" alt="The woman lunging at the camera with both hands out"><figcaption>8: the <span class="ui">Jump scare</span>: there at once, already lunging, gone a second later.</figcaption></figure>
+</div>
+<h3>Why it works</h3>
+<ul>
+  <li><b>She never moves.</b> There's no walk between the three places: each is a <span class="ui">Start here</span> with <i>Comes: when you're not looking</i>. It waits until neither she nor the new place is in your view, then she's simply there. The check counts three changes of place and none where you could see her go.</li>
+  <li><b>After 2.5 s</b> on each one is the dread: look away for a moment and nothing has changed; look away to do your job and it has.</li>
+  <li><b>Small movements: none</b> on her walk in. Someone alive scratches her neck. She doesn't.</li>
+  <li><b>Her head follows through 220 degrees</b>, further than a neck goes comfortably. It carries on from marker to marker, so at every place she's already looking at you.</li>
+  <li><b>The Jump scare's pin</b> is a little over a metre from where you'll be standing. Its Then plays a sting and fires the Scare that flickers the shop's lights.</li>
+</ul>
+<div class="tip"><b>Restraint.</b> Three places is about the most this takes. The scare lands because the second and third looks told you what the fourth would be.</div>
+</section>
+
+<section id="corner">
+<h2><span class="n">10</span>Round the corner, then behind you</h2>
+<p>You walk into the corridor. At the far corner something leans out past the wall's end and watches you. A moment
+after you've seen it, it draws back. You walk to the corner and look down the side corridor: nothing. It's standing
+in the corridor behind you, and stays there for as long as you don't turn round.</p>
+<!-- seq:corner -->
+<p class="quest"><b>It</b>, quest <b>Round the corner</b> &middot; Starts when: the flag in_corridor</p>
+<table class="board">
+<tr><th>#</th><th>Card</th><th>Click in the 3D view</th><th>In its form</th></tr>
+<tr><td>1</td><td>Start here</td><td>the floor round the corner, out of sight</td><td>&mdash;</td></tr>
+<tr><td>2</td><td>Peek</td><td>the foot of the wall's end, on its hidden side; turn the arrow to look back up the corridor</td><td>Stays: until the next marker can start · Head: follows you</td></tr>
+<tr><td>3</td><td>Walk</td><td>the floor back down the side corridor</td><td>Starts when: you see it, after 1.5 s · Pace: creep</td></tr>
+<tr><td>4</td><td>Disappear</td><td>&mdash;</td><td>&mdash;</td></tr>
+<tr><td>5</td><td>Start here</td><td>the corridor floor behind where you'll stand at the corner; arrow at the corner</td><td>Starts when: the flag at_corner (the area at the corner) · Comes: when you're not looking · Then, Sound: breath_close</td></tr>
+<tr><td>6</td><td>Wait</td><td>&mdash;</td><td>Stays: until the next marker can start · Head: follows you</td></tr>
+<tr><td>7</td><td>Jump scare</td><td>the same spot</td><td>Starts when: you see it · Then, Sound: sting_big · Fires: CorridorScare (the lights flicker)</td></tr>
+<tr><td>8</td><td>Event</td><td>&mdash;</td><td>Then, Flags: + corridor_done</td></tr>
+</table>
+<!-- /seq -->
+<div class="pair">
+<figure><img src="img/corner_1_peek.jpg" alt="A long dim corridor; at its far corner a pale head and a hand show past the edge of the wall"><figcaption>2: the <span class="ui">Peek</span>, from where you stand (zoomed). Its head follows you.</figcaption></figure>
+<figure><img src="img/corner_2_behind.jpg" alt="From over the player's place at the corner: the creature standing in the corridor behind"><figcaption>5 and 6: you're at the corner looking the other way. It's there.</figcaption></figure>
+</div>
+<figure><img src="img/corner_3_scare.jpg" alt="The creature lunging at the camera in the corridor, the lights dim"><figcaption>7: you turned round. <i>Starts when: you see it</i>.</figcaption></figure>
+<figure><img src="img/board_corner.jpg" alt="The corridor from above in the editor: a pin at the wall's corner with its arrow pointing back up the corridor, pins down the side corridor and one behind the corner; the form of the Peek marker"><figcaption>The Peek's pin is at the foot of the wall's end on its hidden side; its arrow is the way of the look.</figcaption></figure>
+<h3>Why it works</h3>
+<ul>
+  <li><b>Where a Peek's pin goes.</b> On the floor at the wall's end, on the side she hides on, the arrow pointing through the wall's line at whoever she watches. She stands behind the wall with its end to her right (tick <span class="ui">Out to the left</span> for the other way), where her own clip was made to stand her, and leans out. It's made to be seen from the front.</li>
+  <li><b>You see it</b> counts her head where it really is, leant out past the edge, not where her feet are. With <i>after 1.5 s</i> beside it she's sure to have been looking for a moment before she goes.</li>
+  <li><b>Pace: creep</b> for the way back: low and hunched, a creature's walk. Then Disappear: she costs nothing while she's gone.</li>
+  <li><b>Behind you</b> is a Start here <i>when you're not looking</i>, on the flag of the Area at the corner. You're looking down the side corridor; the place behind you isn't in view; she's put there.</li>
+  <li><b>The scare is yours to start.</b> The Jump scare's Starts when is <i>you see it</i>. However long you take to turn, it happens as you do.</li>
+</ul>
+</section>
+
+<section id="cellar">
+<h2><span class="n">11</span>Out of the dark: a crawl, a creep, a blow</h2>
+<p>The key turns in the cellar door. Behind you, something scrapes. It comes down the corridor on all fours, gets
+up hunched, comes for you, and hits you.</p>
+<!-- seq:cellar -->
+<p class="quest"><b>It</b>, quest <b>Out of the dark</b> &middot; Starts when: the flag cellar_open</p>
+<table class="board">
+<tr><th>#</th><th>Card</th><th>Click in the 3D view</th><th>In its form</th></tr>
+<tr><td>1</td><td>Start here</td><td>the floor at the top of the side corridor, behind you</td><td>Comes: when you're not looking · Then, Sound: scrape_stone</td></tr>
+<tr><td>2</td><td>Crawl</td><td>the floor half way down to you</td><td>&mdash;</td></tr>
+<tr><td>3</td><td>Walk</td><td>&mdash;</td><td>Comes to you instead of to the pin: on · Stops: 0.9 m from you · Pace: creep</td></tr>
+<tr><td>4</td><td>Attack</td><td>&mdash;</td><td>Does: throws a punch · At: you</td></tr>
+<tr><td>5</td><td>Disappear</td><td>&mdash;</td><td>Then, Flags: + it_done</td></tr>
+</table>
+<!-- /seq -->
+<div class="pair">
+<figure><img src="img/cellar_1_crawl.jpg" alt="The creature on hands and knees in the corridor"><figcaption>2: <span class="ui">Crawl</span> is a Walk at a low pace: the same pin and path, on hands and knees.</figcaption></figure>
+<figure><img src="img/cellar_2_creep.jpg" alt="The creature upright but hunched, walking toward the camera"><figcaption>3: a Walk that comes to you, Pace: creep.</figcaption></figure>
+</div>
+<figure><img src="img/cellar_3_blow.jpg" alt="The player's view as the creature's fist comes at the camera"><figcaption>4: <span class="ui">Attack</span>. Its fist is carried onto you; your view is knocked aside.</figcaption></figure>
+<h3>Why it works</h3>
+<ul>
+  <li><b>The quest starts on the door's flag</b>: the door's Logic turns <code>cellar_open</code> on when it's used. The thing you were sent to do is what sets it on you.</li>
+  <li><b>Low paces stay low.</b> After a Crawl she rests on all fours until a marker with another pace gets her up. Crawl → creep → the blow is a creature unfolding.</li>
+  <li><b>Attack walks her to where the blow reaches</b>, turns her with you until it's thrown, and carries her fist the last way onto you. Already close enough, she throws it from where she stands. A blow that lands knocks the starter's player's view and is heard as a scare; her <code>struck</code> signal is there for a script that wants more (the Story's <code>die()</code>).</li>
+  <li><b>A sound first.</b> The Start here's Then plays a scrape. You hear it before you see it, and what you do next is yours.</li>
+</ul>
+<div class="note"><b>For a chase rather than a blow</b>: replace the Attack with an <span class="ui">Event</span> whose <i>Let go</i> is on, and put the starter's <code>chase.gd</code> under her: from there the chase moves her, until her next marker takes her back.</div>
+</section>
+
+<div class="part">Making it good</div>
+
+<section id="ik">
+<h2><span class="n">12</span>Getting the most from the IKs</h2>
+<p>Every clip is made for one body and one place: a table 0.86 m high, a handle a metre up, a mouth where hers is.
+The room is never exactly that. Three small pieces of the Look plugin close the gap after her clip has played, each
+frame. You don't add them: the markers do. What you can do is give them good things to work with.</p>
+<h3>Her head: HSHeadTrack</h3>
+<p>On any marker, <span class="ui">Head: follows you</span> (or someone picked). Her chest, neck, head and eyes
+share the turn, on top of whatever clip she's in, within an arc. It's carried from marker to marker until one says
+<i>is her animation's again</i>.</p>
+<ul>
+  <li><b>160 degrees</b> (80 each side) is a person. <b>220</b> is wrong in a way people feel before they see it: use it for things that aren't people. <b>90</b> is someone who only glances.</li>
+  <li>Turn it on <i>one marker before</i> you want it noticed: on the Walk in, not at the till. A head that was already following reads as attention; one that snaps on reads as a switch.</li>
+  <li>Turn it <b>off for leaving</b>. Someone who walks out looking over their shoulder at you all the way is a different scene.</li>
+  <li>Pick someone else (<span class="ui">Pick</span>, then click them): two characters with each other's heads is a conversation with no lines.</li>
+</ul>
+<h3>Her hands: HSHandIK and the grip</h3>
+<p>A reach clip puts her hand <i>about</i> there; the IK carries a point of her hand the rest of the way, as far as
+her arm goes, and closes her fingers to the thing's thickness. It does this for a thing she takes, a door's handle,
+what she eats or drinks (to her mouth), a blow (onto whoever it's for), and a hand-over (her palm out toward
+you).</p>
+<figure><img src="../animator/img/grip_editor.jpg" alt="A bottle in Godot's editor with a hand drawn round it and four small handles: the grip's gizmo"><figcaption>An <span class="ui">HSGrip</span> under a prop (Add Child Node): a ring where the hand closes, a handle for its thickness, a point for the rim or the bite. The <a href="../animator/index.html">Animator's guide</a>, section 13, has all of it.</figcaption></figure>
+<ul>
+  <li><b>Give anything she eats, drinks from or carries a grip.</b> Without one it's held by a guess from its size, which is fine for a book and wrong for a mug: the grip is what says <i>the rim is here</i> and <i>keep me upright</i>.</li>
+  <li><b>Carry and Upright</b> on the grip say how it's carried once she keeps it: the mug here is <i>In front of her</i>, upright; a bottle hangs at her side. The character's <span class="ui">Carries things</span> overrides it for everything she holds.</li>
+  <li><b>Put the pin on the thing</b>, and the thing where a hand gets to it: 0.8 to 1.0 m up, the floor, or 1.3 to 1.6 m; within 0.30 m of the edge. The IK moves her hand up to 0.30 m. Past that it stops short rather than stretch her arm, and you see a hand close on air. A Put down is the same the other way: what she holds is carried onto its pin.</li>
+  <li><b>A door's handle</b> between 0.95 and 1.05 m, 0.45 m of level floor in front of it. Her hand is put on the handle itself and she stands nearer for a low or a high one.</li>
+  <li><b>A hand-over needs room</b>: you a step away (0.9 to 1.3 m). <i>Comes to you</i> with <span class="ui">Stops</span> 1.0 does it. At two metres her hand comes out and the thing changes hands across the gap.</li>
+</ul>
+<h3>Small movements and carrying: HSGesture</h3>
+<p>This is the layer: one of her small movements laid over her clip (her arm, a little of her chest and head, nothing
+below), with the hand that touches her kept on the place it touches however she's turned; and the arm that carries a
+thing kept in its carry pose through every other clip.</p>
+<div class="pair">
+<figure><img src="../animator/img/life_over.jpg" alt="A woman scratching her head while standing, while walking and while sitting"><figcaption>The same scratch over standing, walking and sitting.</figcaption></figure>
+<figure><img src="../animator/img/carry_cup.jpg" alt="A woman carrying a cup in front of her while walking and while sitting"><figcaption>A cup carried in front of her, upright, walking and sat.</figcaption></figure>
+</div>
+<ul>
+  <li><b>By name when it means something</b> (the <span class="ui">Small movement</span> and <span class="ui">Look at it</span> cards), <b>by chance when it's texture</b> (<span class="ui">Alive</span> on the character, or <i>Small movements: now and then</i> on a marker from which she should come alive).</li>
+  <li><b>Set none where stillness is the point</b>: someone stalking, someone dead-eyed at the till. <i>Small movements: none</i> on that marker holds until a later one says otherwise.</li>
+  <li><b>They're over standing, walking and sitting only.</b> Not over a run, a sneak or a crawl, and never during an act (a reach, a blow, sitting down). A hand on her hip isn't made for walking; one not made for what she's doing is passed over.</li>
+  <li><b>A hand that's full isn't used.</b> Carrying a mug in her right hand, she scratches with her left. The one exception is the look at what she holds.</li>
+  <li><b>Not every body has every one.</b> A movement a body can't do cleanly (an ogre can't reach its own nose) wasn't baked for it. Problems says so; pick another or <i>One that suits</i>.</li>
+  <li><b>Give her elbow room</b> where she waits: half a metre to each side and in front.</li>
+</ul>
+<div class="tip"><b>The IK is a correction, not a performance.</b> Every act has to read right with it off: if a hand is 40 cm from the thing, move the pin or the thing, don't hope. The check for these recipes measures each: the apple 0 to 12 cm from her mouth as she bites, the key in your pocket, the mug never more than a degree off upright as she walks.</div>
+</section>
+
+<section id="more">
+<h2><span class="n">13</span>More to make from the same cards</h2>
+<p>None of these is built here; each is only cards you've now used, in order.</p>
+<table class="keys">
+  <tr><th>The scene</th><th>The cards</th></tr>
+  <tr><td>Waiting for someone</td><td>Repeat (until a flag) { Walk to the window → Small movement: looks at her wrist → Wait 3 s → Walk back → Small movement: sighs }. The flag is the Area at the door.</td></tr>
+  <tr><td>She shows you something and takes it back</td><td>Pick up (kept) → Walk, comes to you → Hand to you → Wait until a flag (you've read it: a Note's Logic) → Take from you → Put down.</td></tr>
+  <tr><td>Two people at a table</td><td>Two characters, each: Sit → Head follows the other (Pick) → Small movements: now and then. Add a Talk on one of them.</td></tr>
+  <tr><td>Asleep until you make a noise</td><td>Sleep (stays until the next can start) → Walk to the door, Starts when: a flag (a door's Logic sets it when it's opened) → Small movement: glances aside.</td></tr>
+  <tr><td>A shopper</td><td>Walk to a shelf → Grab (reach, the shelf's height) → Small movement: a knuckle under her chin → Walk to the next shelf → Pick up (kept) → Walk to the till → the customer recipe.</td></tr>
+  <tr><td>She was sat there a moment ago</td><td>The first recipe, then on a flag: Put down → Disappear (when you're not looking). You find the mug on the table, still.</td></tr>
+  <tr><td>It was at the window</td><td>Start here outside a window → Wait, head follows you → Disappear, Starts when: you see it, after 1 s.</td></tr>
+  <tr><td>The one who looks like her</td><td>The last customer, on the character you've been talking to all game: the same cards, one Event before them that changes her eyes (the Look card).</td></tr>
+</table>
+</section>
+
+<section id="wrong">
+<h2><span class="n">14</span>When something looks wrong</h2>
+<table class="keys">
+  <tr><th>You see</th><th>Why, and what to do</th></tr>
+  <tr><td>Her hand closes beside the thing</td><td>It's out of her reach's range: between 0.3 and 0.8 m up, or over 1.6 m, or more than 0.30 m in from the edge. Move the thing, or the surface.</td></tr>
+  <tr><td>She walks through the coffee table</td><td>The path is yours: add a bend. Nothing steers her round furniture.</td></tr>
+  <tr><td>She takes a long straight walk to a seat or a thing</td><td>Sit and Grab walk the last step in a straight line from wherever she is. Put a Walk before them (Problems says so past 2 m).</td></tr>
+  <tr><td>She gets up from the sofa to eat</td><td>Eat and Drink are standing clips. For a seated moment use <span class="ui">Look at it</span>.</td></tr>
+  <tr><td>A small movement never comes</td><td>She was baked before them (bake again), the Look plugin isn't in the project, it isn't made for what she's doing, or her hand is full. Problems names the first two; a card whose movement can't be done where she is passes after 1.5 s.</td></tr>
+  <tr><td>A quest never starts</td><td><kbd>F7</kbd> in the game: the flag it waits for is off. In the Flags tab, a flag nothing turns on is marked. A quest's Starts when can't be <i>after N s</i>: put that on its first marker.</td></tr>
+  <tr><td>"When you're not looking" never happens</td><td>The place is in your view, or she is. Move the pin somewhere a player really turns away from.</td></tr>
+  <tr><td>She hands the thing straight back</td><td>Hand to you gives what's in her hand. Pay first, take second; or have her put it down between.</td></tr>
+  <tr><td>Take from you does nothing</td><td>You don't carry a thing of that name. The name is the Pickup's <span class="ui">Item</span>; pick it from the list rather than typing it.</td></tr>
+  <tr><td>What she took from you is invisible in her hand</td><td>The project's starter scripts are from before this: a Pickup that was itself the model put an empty model in your pocket. <code>python tools/godot_byhand.py install &lt;folder&gt; --starter</code>.</td></tr>
+  <tr><td>The peek shows her body, or nothing</td><td>The pin is on the wrong side of the wall, or the arrow points along it. Pin: the foot of the end, on the side she hides. Arrow: at whoever she watches. Try <span class="ui">Out to the left</span>.</td></tr>
+  <tr><td>The mug swings as she walks</td><td>It has no grip, or its grip's Carry is <i>At her side</i>. Give it an HSGrip: Drunk from, In front of her, Upright.</td></tr>
+  <tr><td>Two lines flash past</td><td>A flag switched at once started the next quest, whose first marker speaks too. Switch the flag at the end of a Wait.</td></tr>
+</table>
+</section>
+
+<section id="rules">
+<h2><span class="n">15</span>The rules, and what's not there</h2>
+<ul>
+  <li>Markers run top to bottom; one starts when the one before is done and its Starts when is so. Until then she stays as she is.</li>
+  <li>Quests run in order; one with a Starts when cuts in the moment it's so; never back up the list; a quest runs once.</li>
+  <li>What she is carries on: where she stands, sat or low, hidden, her face, her head, what's in her hand.</li>
+  <li>Characters and things meet in flags, tasks and your pocket: the Flags tab shows both ends of every flag.</li>
+  <li>Model to <code>docs/ANIMATION_RULES.md</code>: she doesn't collide with furniture and doesn't see the room.</li>
+</ul>
+<div class="notyet"><b>Not there</b>: eating and drinking sat down; a thing handed between two characters (it's between her and you); carrying with two hands; small movements over a run, a sneak or a crawl; a marker that follows you about; doors opened on the way of a walk (an Open door marker before it does it); what she picked up put back by a checkpoint. Games built with the Director or exported from the desk don't use markers.</div>
+</section>
+
+<footer>Sequences (<code>tools/godot/sequences.py</code>, <code>docs/MARKERS.md</code>). Built and played by
+<code>python tools/godot/sequences.py</code> (SEQUENCES); the tables are written from its data by <code>tables</code>,
+the pictures by <code>--pictures</code> and <code>--editor</code>.</footer>
+</main>
+</div>
+<script>
+// the contents follow the reading: the section on screen is lit
+const links = [...document.querySelectorAll("nav.toc ol a")], secs = links.map(a => document.querySelector(a.getAttribute("href")));
+const lit = () => { let at = 0; secs.forEach((s, i) => { if (s && s.getBoundingClientRect().top < 140) at = i; }); links.forEach((a, i) => a.classList.toggle("on", i === at)); };
+addEventListener("scroll", lit, { passive: true }); lit();
+</script>
+</body>
+</html>

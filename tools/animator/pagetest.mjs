@@ -1,5 +1,5 @@
 // ANIMATORPAGE: the Animator v2's page (docs/ANIMATOR_V2.md §9) on its own server and a scratch folder of characters
-// (the three test bodies bodies.mjs builds, laid out as Exports/characters is), driven in a headless browser: the
+// (the three test bodies and a small child bodies.mjs builds, laid out as Exports/characters is), driven in a headless browser: the
 // characters listed; one opened, measured and shown, its soft bones in the page's skeleton; the walk made in the page
 // and playing (its bones moving, the feet never under the floor); each slider changing what it should (a feminine
 // walk narrower than a masculine one, a heavier one slower, softness scaling the soft bones' motion, bounce how long
@@ -20,7 +20,7 @@ const REAL = process.argv.includes("--real") ? process.argv[process.argv.indexOf
 let server = null; const t0 = Date.now();
 const fail = m => { console.error("ANIMATORPAGE FAIL: " + m); if (server) server.kill(); process.exit(1); };
 fs.rmSync(SCRATCH, { recursive: true, force: true });
-for (const n of ["skinny_man", "normal_woman", "chubby_woman"]) { fs.mkdirSync(path.join(PLACE, n), { recursive: true }); fs.writeFileSync(path.join(PLACE, n, n + ".glb"), bodyGlb(testBody(n))); }
+for (const n of ["skinny_man", "normal_woman", "chubby_woman", "child_small"]) { fs.mkdirSync(path.join(PLACE, n), { recursive: true }); fs.writeFileSync(path.join(PLACE, n, n + ".glb"), bodyGlb(testBody(n))); }
 const places = [PLACE, ...(REAL ? [path.join(ROOT, "Exports", "characters")] : [])].join(path.delimiter);
 
 (async () => {
@@ -39,10 +39,10 @@ const places = [PLACE, ...(REAL ? [path.join(ROOT, "Exports", "characters")] : [
   const stepWidth = () => B(() => { const A = window.__anim, c = A.list.find(x => x.name === "walk_loop"), m = c.maker; let w = 0; for (let f = 0; f < m.n; f++) { const k = m.ctrl(f); w = Math.max(w, k.legs.l.ankle[0] - k.legs.r.ankle[0]); } return w; });
 
   await page.goto(URL_ + "?c=normal_woman");
-  await step("the page: the three characters listed, the one asked for opened, measured and shown", async () => {
+  await step("the page: the characters listed, the one asked for opened, measured and shown", async () => {
     await loaded("normal_woman");
     const r = await B(() => { const A = window.__anim; return { n: A.chars.length, kg: A.ctx.body.mass, from: A.ctx.body.from, soft: A.ctx.plan.length, softBones: A.ctx.plan.filter(b => A.bones.has(b.name)).length, bones: A.bones.size, set: A.set, read: document.querySelector("#body").textContent }; });
-    if (r.n < 3) throw new Error(`${r.n} characters listed`);
+    if (r.n < 4) throw new Error(`${r.n} characters listed`);
     if (r.from !== "recipe" || r.kg < 48 || r.kg > 64) throw new Error(`measured ${r.kg.toFixed(1)} kg from its ${r.from}`);
     if (r.soft < 7 || r.softBones !== r.soft) throw new Error(`${r.soft} soft bones planned, ${r.softBones} in the page's skeleton`);
     if (!(r.set.style > 0.3)) throw new Error(`a feminine body's walk starts at style ${r.set.style}`);
@@ -69,19 +69,65 @@ const places = [PLACE, ...(REAL ? [path.join(ROOT, "Exports", "characters")] : [
     await page.click("#reset"); await page.waitForTimeout(250);
     return `step ${fem.toFixed(2)} m feminine, ${masc.toFixed(2)} m masculine; ${w0.speed.toFixed(2)} m/s, heavier ${w1.speed.toFixed(2)}, stronger ${w2.speed.toFixed(2)}; the bust ${s0.soft.soft_bust_l} to ${s1.soft.soft_bust_l} mm by softness, ${b0.soft.soft_bust_l} to ${b1.soft.soft_bust_l} by bounce`;
   });
-  await step("every kind of clip made in the page: idle, run, sit, sleep, open, reach", async () => {
+  await step("every kind of clip made in the page: idle to reach, animations v3's (sneak, crawl, creature, peek, scare, fight, eat, acting), and life and carry", async () => {
     const seen = [];
-    for (let i = 1; i <= 7; i++) { await page.click(`#kinds button:nth-child(${i})`); await page.waitForTimeout(350); const r = await B(() => ({ kind: window.__anim.kind, clips: window.__anim.list.map(c => c.name), nan: window.__anim.list.some(c => c.tracks.some(t => t.r && t.r.some(v => !Number.isFinite(v)))) }));
+    const kinds = await B(() => document.querySelectorAll("#kinds button").length); if (kinds !== 17) throw new Error(`${kinds} kinds of clip offered, not 17`);
+    for (let i = 1; i <= kinds; i++) { await page.click(`#kinds button:nth-child(${i})`); await page.waitForTimeout(350); const r = await B(() => ({ kind: window.__anim.kind, clips: window.__anim.list.map(c => c.name), nan: window.__anim.list.some(c => c.tracks.some(t => t.r && t.r.some(v => !Number.isFinite(v)))) }));
       if (r.nan) throw new Error(`${r.kind}: a track that isn't a number`); if (!r.clips.length) throw new Error(`${r.kind}: no clips`); seen.push(`${r.kind} ${r.clips.length}`);
       if (r.kind === "sit") { await page.waitForTimeout(1800); await shot("animator_sit"); } }
     return seen.join(", ");
   });
+  // life and carrying (docs/ANIMATOR_V3.md §11, §12): a flourish isn't played instead of what she's doing but laid over it
+  await step("Life: a flourish laid over walking and sitting: her legs the walk's, her hand on her head; one made for standing only can't be laid over a walk; a carry pose over a walk", async () => {
+    await page.selectOption("#who", "normal_woman"); await loaded("normal_woman");
+    await page.click("#kinds button:nth-child(16)"); await page.waitForFunction(() => window.__anim.kind === "life" && window.__anim.list.some(c => c.name === "life_scratch_head"));
+    const made = await B(() => ({ n: window.__anim.list.length, skipped: window.__anim.list.skipped.length })); if (made.n !== 33 || made.skipped !== 0) throw new Error(`${made.n} flourishes made for her, ${made.skipped} left out: 33 and none expected`);
+    const pick = async (name, over) => { await B(([n, o]) => { const b = [...document.querySelectorAll("#clips button")].find(x => x.title === n); b.click(); if (o) [...document.querySelectorAll("#clips button.over")].find(x => x.textContent === o).click(); }, [name, over]); await page.waitForTimeout(200); };
+    // held where the hand is on her head, the walk going on under it
+    const at = async t => { await B(tt => { const A = window.__anim; A.playing = true; A.t = tt; }, t); await page.waitForTimeout(120); await B(tt => { const A = window.__anim; A.playing = false; A.t = tt; }, t); await page.waitForTimeout(150);
+      return B(() => { const A = window.__anim, w = n => { const v = A.bones.get(n).getWorldPosition(A.bones.get(n).position.clone()); return [v.x, v.y, v.z]; }, q = n => A.bones.get(n).quaternion.toArray(); return { tip: w("r_middle_null"), head: w("c_head"), root: w("root"), lthigh: q("l_upleg"), lhand: w("l_wrist"), tb: A.tb, over: A.over, info: document.querySelector("#clipInfo").textContent }; }); };
+    await pick("life_scratch_head", "walking"); const L = await B(() => window.__anim.list.find(c => c.name === "life_scratch_head").meta.life), th = (L.touch.from + L.touch.to) / 2;
+    const a = await at(th), dist = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]); if (a.over !== "walk") throw new Error(`laid over ${a.over}, not the walk`);
+    if (!(dist(a.tip, a.head) < 0.24)) throw new Error(`over a walk her fingertips are ${(dist(a.tip, a.head) * 100).toFixed(0)} cm from her head's joint: not on her head`);
+    if (!/Laid over what she's doing/.test(a.info) || !/Her hand is on her head/.test(a.info)) throw new Error(`the clip's word about itself: ${a.info}`);
+    await B(() => { window.__anim.playing = true; }); await page.waitForTimeout(500); const b = await at(th);          // (a moment on: the walk has moved her legs, the hand is still there)
+    const turned = Math.acos(Math.min(1, Math.abs(a.lthigh.reduce((sum, v, i) => sum + v * b.lthigh[i], 0)))) * 2 * 180 / Math.PI;
+    if (!(turned > 2) || !(dist(b.tip, b.head) < 0.24)) throw new Error(`a moment later her thigh has turned ${turned.toFixed(1)} degrees and her fingertips are ${(dist(b.tip, b.head) * 100).toFixed(0)} cm from her head`);
+    await shot("animator_life");
+    await pick("life_scratch_head", "sitting"); const c = await at(th); if (!(c.root[1] < a.root[1] - 0.25) || !(dist(c.tip, c.head) < 0.24)) throw new Error(`over sitting her pelvis is ${(c.root[1] * 100).toFixed(0)} cm up (walking ${(a.root[1] * 100).toFixed(0)}), her fingertips ${(dist(c.tip, c.head) * 100).toFixed(0)} cm from her head`);
+    await shot("animator_life_sit");
+    await pick("life_hand_hip", null); const dis = await B(() => [...document.querySelectorAll("#clips button.over")].map(x => [x.textContent, x.disabled, x.classList.contains("on")]));
+    if (!dis.find(x => x[0] === "walking")[1] || !dis.find(x => x[0] === "standing")[2]) throw new Error(`a hand on her hip is made for standing only: ${JSON.stringify(dis)}`);
+    await page.click("#kinds button:nth-child(17)"); await page.waitForFunction(() => window.__anim.kind === "carry" && window.__anim.list.length === 10);
+    await pick("carry_front", "walking"); await B(() => { window.__anim.playing = true; }); await page.waitForTimeout(400);
+    const k = await B(() => { const A = window.__anim, w = n => { const v = A.bones.get(n).getWorldPosition(A.bones.get(n).position.clone()); return [v.x, v.y, v.z]; }; return { wrist: w("r_wrist"), elbow: w("r_lowarm"), shoulder: w("r_uparm"), info: document.querySelector("#clipInfo").textContent }; });
+    if (!(k.wrist[2] > k.shoulder[2] + 0.12) || Math.abs(k.wrist[1] - k.elbow[1]) > 0.08 || !/carries something/.test(k.info)) throw new Error(`carried in front over a walk: her wrist ${((k.wrist[2] - k.shoulder[2]) * 100).toFixed(0)} cm ahead of her shoulder, ${((k.wrist[1] - k.elbow[1]) * 100).toFixed(0)} cm over her elbow; ${k.info}`);
+    await shot("animator_carry");
+    return `over a walk her fingertips ${(dist(a.tip, a.head) * 100).toFixed(0)} cm from her head's joint while her thigh turns ${turned.toFixed(0)} degrees; over sitting ${(dist(c.tip, c.head) * 100).toFixed(0)} cm, her pelvis ${((a.root[1] - c.root[1]) * 100).toFixed(0)} cm lower; a hand on her hip offered over standing only; carried in front, her wrist ${((k.wrist[2] - k.shoulder[2]) * 100).toFixed(0)} cm ahead of her shoulder as she walks`;
+  });
+  await step("her furniture: a small child's clips are made for a person's seat, which is high for her, and for a child's chair when asked", async () => {
+    await page.selectOption("#who", "child_small"); await loaded("child_small"); await page.click("#kinds button:nth-child(4)"); await page.waitForFunction(() => window.__anim.kind === "sit" && window.__anim.list.some(c => c.name === "sit_loop"));
+    const read = () => B(() => { const A = window.__anim, c = A.list.find(x => x.name === "sit_loop"), m = c.maker, k = m.ctrl(0); return { pick: document.querySelector("#furniture").value, text: document.querySelector("#furn").textContent, seat: m.meta.seat, ankle: k.legs.l.ankle[1], floor: A.ctx.body.ankleH }; });
+    const fit = await read(); if (fit.pick !== "fit" || !/seat 45/.test(fit.text) || !/handle 100/.test(fit.text) || !/high for her/.test(fit.text)) throw new Error(`the furniture row says: ${fit.text}`);
+    if (!fit.seat.high || fit.seat.height !== 0.45 || !(fit.ankle > fit.floor + 0.08)) throw new Error(`sat on a person's seat: ${JSON.stringify(fit.seat)}, her ankle ${fit.ankle.toFixed(3)} m up`);
+    await page.waitForTimeout(2600); await shot("animator_child");
+    await page.selectOption("#furniture", "own"); await page.waitForFunction(() => /seat 29/.test(document.querySelector("#furn").textContent)); await page.waitForTimeout(400);
+    const own = await read(); if (own.seat.high || !(own.seat.height < 0.32) || Math.abs(own.ankle - own.floor) > 0.004 || /high for her/.test(own.text)) throw new Error(`with furniture of her own size: ${JSON.stringify(own.seat)}, her ankle ${own.ankle.toFixed(3)} m up; ${own.text}`);
+    await page.selectOption("#furniture", "fit"); await page.waitForFunction(() => /seat 45/.test(document.querySelector("#furn").textContent));
+    return `a ${Math.round(fit.seat.height * 100)} cm seat with her ankles ${(fit.ankle * 100).toFixed(0)} cm up; her own size a ${Math.round(own.seat.height * 100)} cm seat, her feet on the floor`;
+  });
   await step("Bake: every clip written into the character's own file, its record with it, the list says baked", async () => {
+    await page.selectOption("#who", "normal_woman"); await loaded("normal_woman");
     await page.click("#kinds button:nth-child(2)"); await slide("style", 0.2);
     await page.click("#bake"); await page.waitForFunction(() => /baked,|failed/.test(document.querySelector("#status").textContent), null, { timeout: 240000 });
     const said = await B(() => document.querySelector("#status").textContent); if (!/baked,/.test(said)) throw new Error(said + "\n" + await B(() => document.querySelector("#log").textContent));
     const g = parseGlb(fs.readFileSync(path.join(PLACE, "normal_woman", "normal_woman.glb"))), rec = g.json.scenes[0].extras.hsMotion, names = (g.json.animations || []).map(a => a.name);
-    for (const n of ["idle_loop", "walk_loop", "run_loop", "sit_down", "sit_loop", "stand_up", "lie_down", "sleep_loop", "get_up", "open_push", "open_pull", "open_slide", "reach_low", "reach_mid", "reach_high"]) if (!names.includes(n)) throw new Error(`no ${n} in the baked file`);
+    for (const n of ["idle_loop", "walk_loop", "run_loop", "sit_down", "sit_loop", "stand_up", "lie_down", "sleep_loop", "get_up", "open_push", "open_pull", "open_slide", "reach_low", "reach_mid", "reach_high",
+      "sneak_loop", "crawl_loop", "creep_loop", "scuttle_loop", "peek_out", "peek_l_loop", "scare_lunge", "scare_claw", "punch", "swing_l", "hit_react", "eat", "drink_l", "look_around", "knock", "cower_loop"]) if (!names.includes(n)) throw new Error(`no ${n} in the baked file`);
+    if (names.length !== 96 || rec.version !== 5) throw new Error(`${names.length} clips, version ${rec.version}: 96 and 5 expected`);
+    if (!rec.clips.life_scratch_head || rec.clips.life_scratch_head.life.touch.bone !== "c_head" || rec.clips.life_look_hand_l.life.hand !== "l" || rec.clips.carry_front.carry.how !== "front") throw new Error("the record lacks a flourish's or a carry pose's word about itself");
+    if (!rec.furniture || rec.furniture.seat !== 0.45 || rec.furniture.handle !== 1 || rec.settings.furniture !== "fit") throw new Error(`the record's furniture: ${JSON.stringify(rec.furniture)}`);
+    if (!(rec.clips.scare_lunge.scare.peak > 0) || !(rec.clips.punch.punch.at.length === 3) || !(rec.clips.crawl_loop.speed > 0.1)) throw new Error("the record lacks a scare's peak, a punch's place or the crawl's speed");
     if (!rec || rec.settings.style !== 0.2) throw new Error(`the record's settings: ${JSON.stringify(rec && rec.settings)}`);
     if (!fs.existsSync(path.join(PLACE, "normal_woman", "normal_woman.motion.json"))) throw new Error("no motion.json beside it");
     const listed = await B(() => window.__anim.chars.find(c => c.name === "normal_woman")); if (!listed.baked || listed.clips.length !== names.length) throw new Error("the list doesn't say it's baked");

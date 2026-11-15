@@ -15,6 +15,10 @@ their last lines. A worked example of everything below: `Content/Studio/Sets/mai
 four storeys, a locked gate on the stairs), its street `Content/Studio/Streets/maison_lane/street.json` (a lane bending
 round the block, a curved concrete wall) and `Content/Studio/Sets/maison_1f/shots.json`.
 
+**Before placing anything a character will use**, read `docs/ANIMATION_RULES.md` (its §0 is the short list): a
+character's animations are made for furniture of certain sizes with certain floor left free, and she doesn't see
+the room. `reference.md` §7 has the numbers.
+
 ## 1. The interior: a layout file
 
 1. **Plan in metres first** (in your head or a scratch note, not a file): x east, y north, every room a rectangle on

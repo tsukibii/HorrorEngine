@@ -12,6 +12,8 @@
 ## doing (standing, walking, running, sitting, lying, hiding), which a cue (cue.gd) asks. Space holds your breath (the
 ## Fear node's breathing stops) for up to `breath_secs`; past it you gasp, loud. Your steps (louder running), a gasp
 ## and the doors you use are noises a searcher (searcher.gd) hears (noise.gd).
+## struck(by, kind): a punch or a swing that lands on you (motion.gd, a marker's Attack) knocks your view aside for a
+## moment and counts as a scare; `hit` says so, for your game to do more with.
 extends CharacterBody3D
 
 const Footsteps := preload("res://starter/footsteps.gd")
@@ -21,6 +23,7 @@ signal stepped(at: Vector3, run: bool)  ## each footstep (behind_you.gd answers 
 signal sat(seat: Node)                  ## sat down or lay down (seat.gd)
 signal stood                            ## up again
 signal gasped                           ## you held your breath too long
+signal hit(by: Node, kind: String)      ## someone's punch or swing landed on you (motion.gd's blows, a marker's Attack)
 
 @export var walk_speed := 1.6          ## metres a second
 @export var run_speed := 3.2
@@ -39,6 +42,8 @@ var pose := "standing"                  ## standing, sitting, lying or hiding (a
 var holding := false                    ## holding your breath now (Space)
 var breath_left := 8.0
 var _gasp_wait := 0.0
+var _knock := 0.0                       # a blow's jolt on the view: 1 fading to 0
+var _knock_side := 1.0
 var seat: Node3D = null                 ## the seat you're on
 var _was := Vector3.INF
 var _stood := Transform3D()             # where you stood before you sat
@@ -113,9 +118,26 @@ func ended() -> bool:
 	return st != null and bool(st.get("over"))
 
 
+## a blow landed on you (motion.gd's punch and swing, a marker's Attack): your view is knocked aside for a third of a
+## second, whatever hears a scare hears it (the Fear node, the night's director), and `hit` says who and with what,
+## for your own game to do more with (a count of blows, the Story's die())
+func struck(by: Node, kind: String) -> void:
+	_knock = 1.0
+	var from := (by as Node3D).global_position - global_position if by is Node3D else -global_basis.z
+	_knock_side = 1.0 if global_basis.x.dot(from) < 0.0 else -1.0       # (hit from your left, your head goes right)
+	get_tree().call_group("hs_scare", "scared", by)
+	hit.emit(by, kind)
+
+
 ## your breath: held while Space is down (the Fear node's breathing stops), up to breath_secs; then a gasp, loud, and
 ## a few seconds before you can again
 func _process(dt: float) -> void:
+	if _knock > 0.0:                                 # a blow's jolt: the view rolled aside and tipped back, settling
+		_knock = maxf(0.0, _knock - dt / 0.35)
+		var kk := _knock * _knock
+		eye.rotation.z = 0.11 * kk * _knock_side
+		if _ease_t < 0.0:
+			eye.rotation.x = pitch + 0.07 * kk
 	if _ease_t >= 0.0:                               # the eye on its way onto a seat, or up from it
 		_ease_t += dt / maxf(0.01, settle_secs)
 		var k := smoothstep(0.0, 1.0, clampf(_ease_t, 0.0, 1.0))

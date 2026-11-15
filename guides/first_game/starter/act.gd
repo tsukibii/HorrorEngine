@@ -3,7 +3,11 @@
 ## thing, by itself when the Story's words come to hold, or when something fires it; and when she's done it can tick
 ## a task, set a flag, say a line and fire the next one: a row of these is a little routine.
 ##   who       the character (her Motion node is found under her); empty: this node's parent
-##   act       walk_to, run_to, sit, stand_up, sleep, wake_up, open, reach, pick_up, play, face, idle
+##   act       walk_to, run_to, sit, stand_up, sleep, wake_up, open, reach, pick_up, play, face, idle; since animations
+##             v3 the low gaits, peek, scare, punch, swing, eat, drink...; and life (one small movement now: `clip`
+##             its name, "scratch_head", or empty for one that suits what she's doing), alive / still (small movements
+##             by themselves, on and off), hold (the target put in her hand and carried from then on, `carry` how),
+##             drop
 ##   target    where, or what: a Marker3D to walk to, a seat's or a bed's marker, a door's handle marker, a thing
 ##   also      open: the door itself (its use() as her hand moves it); sleep: where her head goes (a pillow)
 ##   needs     the Story's words ("task:key", "on:find_key", "item:soda", a flag): does it when they come to hold
@@ -15,14 +19,20 @@ signal started
 signal finished
 
 @export var who: NodePath                              ## the character; empty: this node's parent
-@export_enum("walk_to", "run_to", "sit", "stand_up", "sleep", "wake_up", "open", "reach", "pick_up", "play", "face", "idle") var act := "walk_to"
+@export_enum("walk_to", "run_to", "sit", "stand_up", "sleep", "wake_up", "open", "reach", "pick_up", "play", "face", "idle",
+	"sneak_to", "crawl_to", "creep_to", "scuttle_to", "rise", "peek", "scare", "punch", "swing", "eat", "drink", "look_around", "knock", "cower", "head_follow", "head_free",
+	"life", "alive", "still", "hold", "drop") var act := "walk_to"
 @export var target: NodePath                           ## where, or what
 @export var also: NodePath                             ## open: the door; sleep: the pillow
 @export_enum("push", "pull", "slide") var door_opens := "push"
-@export var clip := ""                                 ## play: the animation's name
+@export var clip := ""                                 ## play: the animation's name; life: the flourish's ("scratch_head", "look_hand"...; empty: one that suits what she's doing)
+@export_enum("as its grip says", "side", "front", "chest", "shoulder", "raised") var carry := "as its grip says"   ## hold: how it's carried
 @export var loop := false                              ## play: looped until she's asked for something else
 @export var left_hand := false
 @export var keep_in_hand := false                      ## pick_up: it stays in her hand
+@export_enum("lunge", "loom", "snap", "claw") var scare_kind := "lunge"   ## scare: which
+@export var then_hide := false                         ## scare: she's hidden when it's been shown
+@export var secs := 2.5                                ## peek: how long she holds it
 @export_group("When")
 @export var needs := ""                                ## the Story's words: by itself when they come to hold
 @export var again := false                             ## every time they come to hold (else once)
@@ -107,6 +117,48 @@ func fire(_a = null, _b = null) -> void:
 			what = "face"
 		"idle":
 			m.idle()
+		"sneak_to", "crawl_to", "creep_to", "scuttle_to":
+			m.go_low(t, act.trim_suffix("_to"))
+			what = act.trim_suffix("_to")
+		"rise":
+			m.rise()
+			what = "rise"
+		"peek":
+			m.peek(t, secs, left_hand)
+			what = "peek"
+		"scare":
+			m.scare(scare_kind, t, then_hide)
+			what = "scare"
+		"punch", "swing":
+			m.call(act, t, left_hand)
+			what = act
+		"eat", "drink":
+			m.call(act, t, left_hand)
+			what = act
+		"look_around":
+			m.look_around()
+			what = "look"
+		"knock":
+			m.knock(t, left_hand)
+			what = "knock"
+		"cower":
+			m.cower(true)
+			what = "low"
+		"head_follow":
+			m.head_follow(true, t)
+		"head_free":
+			m.head_follow(false)
+		"life":                                               # (laid over what she's doing: nothing to wait for)
+			m.life(clip, left_hand)
+		"alive":
+			m.alive_now(true)
+		"still":
+			m.alive_now(false)
+		"hold":
+			if t != null:
+				m.hold(t, left_hand, "" if carry == "as its grip says" else carry)
+		"drop":
+			m.drop()
 	if what != "":                                        # till she's done it; asked for something else meanwhile, this act is over and nothing follows
 		var got := [false]
 		var heard := func(w: String) -> void:

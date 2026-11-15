@@ -38,13 +38,221 @@ main): a fourth body card, v2 pear, and the Hips & thighs slider, then two head 
 PR #28); on `animation-v2` (from main): the Animator v2, a character's own animations made from its body (merged,
 PR #29); 2026-11-13 and 14 on `marker-system` (from main): **NPC markers**, a character's whole part in a game
 placed as markers (merged, PR #30); 2026-11-14 on `claude/trusting-cray-2v2ntr` (from main): **flags and things**,
-the markers tied to everything else (merged, PR #31); and 2026-11-14 on `advanced-pbrs` (from main, main merged in):
+the markers tied to everything else (merged, PR #31; "Before that", below); and 2026-11-14 on
+`even-more-animations-v3` (from `marker-system`, with main merged into it that evening): **animations v3**,
+creatures' clips, a head that follows you, a grip on props, fights; then, after the user's first feedback, **short
+NPCs on a person's furniture**; then **rules for modelling, small movements laid over whatever she's doing, and a
+thing carried in any pose**, then **a guide of sequences made of markers** (§0 below; pull request to main opened
+2026-11-14 with main merged in again); beside it, 2026-11-14 on `advanced-pbrs` (from main, merged, PR #32):
 **clothing fabric sets made from code**, the Studio's and Godot's cloth shaders, and two thirds of the neck as the
-most any top or coat reaches (§0 below). Read this after CLAUDE.md's start
+most any top or coat reaches ("Beside it: where `advanced-pbrs` stopped", below). Read this after CLAUDE.md's start
 list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Where `advanced-pbrs` stopped (2026-11-14)
+## 0. Where `even-more-animations-v3` stopped (2026-11-14)
+
+**The branch** was made from `marker-system` (merged since: tsukibii/HorrorEngine#30), and **main was merged into
+it on 2026-11-14** at the user's word, once flags and things (tsukibii/HorrorEngine#31) was in: so it carries the
+markers, the Logic node and the Flags and Things tabs. The user asked for **a pull request to main** on 2026-11-14, once the guide
+of sequences was in, with main (advanced PBRs, tsukibii/HorrorEngine#32) merged in first.
+
+**Built** (docs/ANIMATOR_V3.md, every box of its plan ticked; DECISIONS 2026-11-14, animations v3):
+- **The Animator**: 29 more clips, 53 in all, `VERSION` 3 (a character baked before wants baking again): sneak and
+  crouch, a creature's creep, a crawl on hands and knees, a scuttle on hands and feet, a peek round a wall's end
+  (out, held, back), four jump scares (lunge, loom, snap, claw), a punch, a swing and being hit, eating and drinking,
+  looking round, a knock, cowering; the left hand's as mirrors.
+- **On creatures**: ANIMATOR makes every clip on five of the Studio's creature cards too (goblin, ghoul, ogre, imp,
+  hag) and holds them to the same rules. That found the elbow's hinge (now MHR's own, a constant: `rig.js` `ELBOW`)
+  and a dozen sizes that were a person's times the body's height.
+- **In Godot** (the Look plugin): `HSHeadTrack` (her head follows you within an arc, 160 degrees unless set),
+  `HSGrip` with its gizmo (a node under a prop: where a hand closes on it, how thick, where its mouth and its tip
+  are), `HSHandIK` (her fingers closed to that size; a point on her hand carried onto a target as a clip plays).
+  The starter's `motion.gd` has `sneak_to`, `crawl_to`, `creep_to`, `scuttle_to`, `peek`, `scare`, `punch`, `swing`,
+  `eat`, `drink`, `look_around`, `knock`, `cower`, `head_follow`; `act.gd` its acts; the starter's player hears a
+  blow (`struck`, `hit`).
+- **In the NPC Markers tab**: a Walk's low paces (the Sneak and Crawl cards), Eat and Drink, an Attack card, a Jump
+  scare card, and a Head row on every marker.
+- **Pictures and guides**: the clips on the normal woman, a ghoul and a goblin (`docs/animator_sheets/2026-11-14_v3_*`),
+  the Animator's guide sections 10 to 14, the Markers' guide section 15.
+- **Checks**: ANIMATOR (73 s, in check_all), ANIMATORPAGE (80 s), GDMOTION then GDMOTION3, GDSMALL and GDLIFE
+  (`python tools/godot/motion_check.py`, then `python tools/godot/motion_check.py v3 --reuse`,
+  `python tools/godot/motion_check.py small --reuse` and `python tools/godot/motion_check.py life --reuse`), MARKERS
+  (2 minutes; **once without `--reuse` after the Animator's `VERSION` goes up**: the project keeps its old bake),
+  MARKERSEDITOR (1 minute). All passed on the last commit.
+
+**The user's first feedback on it, and what was built for it** (DECISIONS 2026-11-14, short NPCs; ANIMATOR_V3 §10):
+*"What about children npcs (really short npcs), can you figure out a way to adjust the animations proportionally to
+height. For peak the back doesnt need to look good since it will ever only face the front."*
+- **A short body uses a person's furniture.** The Animator's sit, bed, door and table clips are made for what
+  `acts.js` `furniture()` says: by default a person's 45 cm seat and bed, metre-high handle and 86 cm table wherever
+  her body can use them. A seat over 1.18 of her own she gets onto as a child does (her bottom to its front, on her
+  toes or with a hop, her hands on it, a slide back) and sits with her legs hanging; a handle over her shoulder she
+  reaches up to. Two other settings on the page (her own size, a person's whatever she is) and a size outright.
+- **The bed clips were fixed for everyone on the way** (an elbow snap, a foot through the bed's corner, hands and a
+  sleeping arm in the mattress): the bake's version is 4, and those are the only adult clips that changed.
+- **In Godot** nothing changes for the user: the starter's `motion.gd` and the Markers lift her only past what her
+  clip reaches (30 cm when her legs hang anyway), and `open()` now puts her hand on the handle itself by the hand's
+  IK (an adult's too).
+- **Held by** ANIMATOR on three children and the five creatures (`bodies.mjs` `CHILD_BODIES`), ANIMATORPAGE on a
+  child, GDSMALL in Godot, MARKERS' door.
+- **The peek's back** is left as it is: the user said it's only ever seen from in front.
+
+**The user's next message, in three parts, all built** (DECISIONS 2026-11-14, later). First: *"Can you add interior,
+furniture and street rules for yourself so if I use claude to model in the future it can stick to rules that dont
+break the animations."*
+- **docs/ANIMATION_RULES.md**: what an interior, a piece of furniture and a street have to be for her clips to work,
+  with a short list first (§0) and every number measured. CLAUDE.md's Rules say to read it before sizing or placing
+  anything a character uses or walks past; the `/build-map` skill and the four builders' docs point at it.
+- **Where the numbers come from**: `node tools/animator/space.mjs --write` (the room every clip takes up, her skin
+  at every frame, eleven bodies: `Content/Studio/Animation/space.json`) and `python tools/godot/motion_check.py
+  ranges --reuse` (GDRANGE: a handle's and a pick-up's height swept in Godot, `ranges.json`);
+  `python tools/anim_rules.py tables` writes the document's tables from them.
+- **Held by** ANIMRULES (`python tools/anim_rules.py check`, in check_all with `--quick`): the tables current, the
+  files to the clips, and every seat, bed and door the kit and the prop generator make inside the ranges of
+  `Content/Studio/Animation/rules.json`, or listed there with why not.
+- **A door's handle at any height she can reach**: where she stands is worked out from the clip's own shoulder, arm
+  and grip (`handle_ahead`), so a person holds a handle from 0.90 to 1.25 m and a small child from 0.65 to 1.15 m.
+  A character baked before this stands where the clip says, as before: bake her again for it.
+
+Second and third: *"Can we add some 'add life' animations ... looking at an object they are holding, scratching,
+little life flourish stuff, is there a way we could add these animations as ik blendables meaning if the lower body
+and chest is in a position e.g. walking or sitting, we can still blend in these animations. Is there a way we can
+use ik to allow them to hold objects in any of the current animation positions. Dont need to do facial expressiosn
+for these"* (ANIMATOR_V3 §11, §12; GODOT_LOOK §5z):
+- **The Animator makes 19 small movements from her body** (`core/life.js`: a scratch of her head, her neck, her nose,
+  her brow, her hair, her chin, her other arm and shoulder, her side, a hand on her hip, her wrist and her hand
+  looked at, her hand flexed, a stretch, her hands rubbed, her shoulders, a sigh, a glance, her neck; the left
+  hand's as mirrors) **and five carry poses** (side, front, chest, shoulder, raised). `VERSION` 5: 96 clips on a
+  person, **a character baked before wants baking again**. Each flourish is tried a few ways and the first her body
+  can do cleanly is made; one it can't do isn't (an ogre has 14, a hag 16, a goblin 18).
+- **The layer** is one rule in two places: `tools/animator/core/layer.js` (the page shows every flourish over
+  standing, walking and sitting; ANIMATOR holds it) and the Look plugin's `gesture.gd` `HSGesture` (the first
+  modifier under her skeleton). The flourish's arm, how far it turns her trunk and head added to what they're
+  doing, nothing below her chest; a hand that touches her kept on the bone it touches by `HSHandIK`. **Change the
+  two together.**
+- **Carrying** is the same layer's `carry(side, how)`: the holding arm kept in a carry pose over any clip, hung by
+  gravity however her chest leans, an upright thing kept upright; an `HSGrip`'s Carry and Upright say how.
+- **Who uses it**: the starter's `motion.gd` (`alive`, `life()`, `hold()`, `carry()`; a thing kept by
+  `pick_up(thing, true)` is carried) and `act.gd`; the Markers (an HSNpc's *Small movements now and then* and
+  *Carries things*, a marker's *Small movements*). Off unless switched on.
+- **Held by** ANIMATOR's section 6e (73 s now), ANIMATORPAGE (80 s), **GDLIFE** (`python tools/godot/motion_check.py
+  life --reuse`, 1 minute), MARKERS's stage `life`, MARKERSEDITOR. The modelling rules got the room they take
+  (`space.mjs`'s `life`, `stretch`, `carry_*` groups; ANIMATION_RULES §6 and its new table).
+- **Pictures**: `docs/animator_sheets/2026-11-14_life_*.jpg` (the flourishes and carry poses on the dressed woman
+  and a goblin; `life_game.jpg` the layer and the carry in a game); the Animator's guide sections 16 and 17, the
+  Markers' guide section 16.
+
+**The user's newest message, sent while that was being finished, both parts done** (DECISIONS 2026-11-14,
+evening): *"merge the latest main into this branch, then make a new tutorial on using the marker system with these
+new animations ... walking to a table, picking up something, then walking to a sofa, sitting on it, and looking at
+the object ... we get something, give it to the npc, they eat it ... a shopkeeper ... chaining interesting horror
+sequences + jumpscares and guides on utilizing our iks."*
+- **Main is merged in** (flags and things): the branch has the Logic node and the Flags and Things tabs.
+- **The guide is `guides/sequences/index.html`**: eight recipes to copy card by card (a mug taken to the sofa and
+  looked at; tidying up, then a Talk that gives you a task; you hand her an apple and she eats it; she fetches a key
+  and hands it to you; a customer at your till; the last customer, nearer each time you look away; a peek round a
+  corner, then behind you; a crawl, a creep and a blow), then a part on getting the most from the IKs, more scenes
+  from the same cards, and a table of what goes wrong.
+- **It's built for real.** `tools/godot/sequences.py` holds the place, the things and every marker as data;
+  `sequences_build.gd` builds `main.tscn` from it as the tabs would save it; `sequences_test.gd` plays every recipe
+  as a player would (**SEQUENCES**, a minute: `python tools/godot/sequences.py --reuse`); the guide's storyboard
+  tables are written from the same data (`python tools/godot/sequences.py tables`); its pictures are Godot's
+  (`--pictures --reuse` the game's, `--editor --reuse` the tab's). The project stays in `Saved/Godot/_sequences`:
+  open it in Godot to walk through all eight (`--keep DIR` for one somewhere else).
+- **The Markers plugin got what the recipes needed** (docs/MARKERS.md §4, §10 H): the cards **Small movement** and
+  **Look at it** (kind `gesture`: one of her small movements now; *Over what comes next* lays it over the next
+  marker), **Peek** (kind `peek`), **Take from you** and **Hand to you** (Grab actions with no pin: the Story's
+  pocket and cash); a Wait leaves her sat, asleep or looking out.
+- **Playing whole scenes found five things the unit stages hadn't**, all fixed (docs/LESSONS.md, the sequences):
+  *you see her* counts her head where it really is; a "when you're not looking" marker's sound and things fired
+  come when it happens; a blow thrown from inside its reach is thrown from where she stands (she turned her back on
+  you: fixed in the markers' body and the starter's `motion.gd`, held by GDMOTION3); a look at a cup she carries
+  keeps it upright (`gesture.gd`, held by GDLIFE); a quest asked to start *after N s* is a Problem.
+- **Then the guide's pictures found six more that every number had passed**, all fixed: a Pickup that is itself a
+  mesh put an empty model in the pocket (the starter's `pickup.gd`, `food.gd`); a thing put down keeps the way up it
+  stood; a hand-over is an upright reach, not a bow; the picture script goes back to the player's eye between
+  pictures (a head with nobody to follow follows the camera in use); **a look at what a hand holds is that hand's
+  or nobody's** (the layer's `play` takes `this_hand`; the customer looked at his empty palm); and **a hand IK's
+  bring ends with its clip** (`hand_ik.gd` `LET_GO`: a clip shorter than its envelope left his fist pulled 40 cm
+  behind him for the rest of the scene). SEQUENCES holds the last two in recipes 4 and 5 (49 measures now),
+  MARKERS in its stage `hands`, GDMOTION3 in its stage `grip`.
+- **The pictures**: 24 of the game (`python tools/godot/sequences.py --pictures --reuse [--only tidy,customer]`,
+  about a minute a picture here) and 4 of the tab (`--editor --reuse --only evening,apple,customer,corner`: the
+  guide shows those four; a picture in `img/` that the page doesn't show fails SEQGUIDE). The markers guide's own
+  pictures were taken again too (its palette has the five new cards).
+- **Your own characters in it**: `python tools/godot/sequences.py --cast woman=NAME,man=NAME,creature=NAME --keep DIR`
+  (exports in `Exports/characters`, baked by the Animator there).
+- **Checks on the last commit**: SEQUENCES, MARKERS, MARKERSEDITOR, GDMOTION, GDMOTION3, GDSMALL, GDLIFE, ANIMATOR,
+  CHECKS (SEQGUIDE is in it now), GDPLAY. LOGIC and LOGICEDITOR on the commit before: nothing of theirs has changed
+  since. **GDTESTROOM**: every station but 13 (played to 12, then `--from n_bath` to the end); 13 wants five made
+  props (`props/suitcase_hardshell`, `clothes_folded_tee`, `journal_diary`, `closet_sliding`, `closet_wardrobe`)
+  and this container has no Blender to make them, as before; nothing GDTESTROOM runs differs from main.
+
+**What the user hasn't seen**: any of it moving. The recipes' pictures are stills made under xvfb; the timings (how
+long she looks at the mug, the 2.5 s the last customer waits for your back, the 1.5 s of the peek) are guesses to be
+changed in the data (`sequences.py`, then `tables`) or in the tab.
+
+**The user has still seen none of it in motion**: their feedback so far came from the report and its pictures. What
+eyes will find: how a clip reads on their own characters, the gizmo under a real mouse (it was only ever dragged by
+a test and pictured under xvfb), a blow in play, a child of their own getting onto one of their chairs (the pictures
+are a plain test body's and the goblin's: no dressed Studio child was made), **and whether the small movements read
+as alive or as fidgeting**: how often (6 to 14 s) and which ones are a guess nobody has watched for a minute.
+
+**What I'd say is weakest, if asked**:
+- **Getting onto a high seat is one way for everybody**: bottom to the front, slide back. Nobody climbs with a knee,
+  turns to face it, or uses a step; the hands go to the seat by the wrist, the fingers aren't laid on it. On a seat
+  over her hips' height (a bar stool to a small child) she is simply lifted.
+- **The swing lands low and one-handed**: on someone standing, about their waist. One swing, no overhead, no
+  two-handed bat.
+- **The scares are poses thrown fast**, not acted: a lunge is 0.98 s. They want sound, a face (the markers' Face
+  row) and a look to land; nobody has seen one in play.
+- **An imp can't reach a person's door handle**: 86 cm is as high as its hand goes; at a metre it stops 7 cm short
+  and the door opens all the same.
+- **The small movements were judged from eight stills a clip.** Looking at them on the dressed woman found six
+  things no number had (an elbow out like a wing on the way to her head, a wrist check held out like a limp claw, a
+  shoulder brushed off that read as a hand on her heart...: ANIMATOR_V3 §11.4), and there will be more in motion:
+  the timing of each (how long her hand stays, how fast it comes back) is by ear, not by eye.
+- **A flourish is made standing.** Over a seat or a walk it's the same arm, laid on: nothing plans it round her
+  thighs, a chair's arms or a wall beside her.
+- **A carried thing doesn't know its own size**: a bottle at her side lies across her fist and nothing keeps a long
+  one off her leg; nobody carries with two hands.
+- Every picture was drawn on a CPU (lavapipe): the look is the game's, the frame rate isn't.
+
+**Not built** (ANIMATOR_V3 §9, MARKERS §11), in the order I'd take them:
+1. **eating and drinking sat down** (Eat and Drink are standing clips: she gets up from the sofa; as flourishes
+   made over a seat they'd be the layer's, with the bite by the hand's IK: the guide says she stands), and a thing
+   handed **between two characters** (it's between her and you);
+2. a dressed Studio child made, baked and pictured on the furniture (`tools/animator/people.mjs` is the pattern; the
+   Studio's Age slider; about ten minutes a character on a CPU with its clothes);
+3. climbing: onto something over her hips, down from it; a step;
+4. a two-handed swing, an overhead one, a kick, a grab that holds you; beckoning, pointing, waving;
+5. which clips to bake (all 96 go in: 13.1 MB on the test body where 53 made 10.3 and 24 made 6.5);
+6. the head, the grip, the small movements and carrying for the Director's and the desk's cast (they're the starter
+   kit's and the markers');
+7. **reaching for a thing at any height**: two neighbouring reach clips mixed by the thing's height, her feet kept
+   (planned in ANIMATOR_V3 §12.2, not built: she still takes a thing from the floor, a table or a shelf, and the
+   modelling rules say so);
+8. small movements over a run, a sneak and a crawl; carrying with two hands; a carried thing kept off her leg.
+
+**The pictures again**, each under xvfb on a CPU: `python tools/godot/motion_check.py furniture --who creature_goblin`
+and `--glb Saved/Animator/pics/child_small.glb --plain` (after `node tools/animator/bodies.mjs --out Saved/Animator/pics
+child_small` and `node tools/animator/bake.mjs Saved/Animator/pics/child_small.glb`; three sheets each, a minute
+a sheet), the page's own by `node tools/animator/pagetest.mjs --out docs/animator_sheets --real anim_chubby_woman`;
+`python tools/godot/motion_check.py sheets3` (6 minutes; then `--who creature_ghoul`, `--who creature_goblin`), `python tools/godot/motion_check.py shots3` (after a GDMOTION run:
+it uses that project), `python tools/godot/motion_check.py gizmo`, then `python tools/godot/motion_check.py guide3`.
+Life and carrying: `node tools/animator/bake.mjs Exports/characters/anim_normal_woman/anim_normal_woman.glb`, then
+`python tools/godot/motion_check.py sheetslife` (4 sheets, 4 minutes; `--who creature_goblin`), `python
+tools/godot/motion_check.py shotslife` (14 pictures in 2 minutes, after a GDMOTION or GDLIFE run: it uses that
+project), then `python tools/godot/motion_check.py guidelife`; the Markers' editor pictures by `python
+tools/godot/markers_check.py --editor --reuse --shots Saved/Markers/shots` then `python tools/godot/markers_check.py
+guide Saved/Markers/shots`.
+The two creatures are Studio exports on this machine only (`Exports/characters/creature_ghoul`, `creature_goblin`,
+not tracked): `node tools/character/creatures.mjs make --only ghoul,goblin --export` with the Studio's server
+running, then `node tools/animator/bake.mjs Exports/characters/<name>/<name>.glb`.
+
+## Before that (2026-11-14, `claude/trusting-cray-2v2ntr`, merged in PR #31): flags and things
+
+## Beside it (merged in PR #32): where `advanced-pbrs` stopped (2026-11-14)
 
 **Asked** (DECISIONS 2026-11-14, advanced PBRs): research the latest ways of making hyper-realistic clothing fabric
 PBRs, make new ones that tint well (white or cream bases), demo clothing in them: knitted wool, wool, cotton, spun
@@ -88,7 +296,7 @@ row), and whether a halter's strings should come under the neck's two-thirds lin
 left: strings tied behind the neck). Settled the same day: "spin cotton" is the T-shirt's jersey; anything on a top
 or coat above two thirds of the neck comes down, the lace blouse's collar with them.
 
-**Not built**, in the order I'd take them (TAILOR §1k and GODOT_LOOK §5x end with the same list):
+**Not built**, in the order I'd take them (TAILOR §1k and GODOT_LOOK §5aa end with the same list):
 
 1. **More sets**: velvet, satin, suede, corduroy, lace, a sweatshirt's fleece. The generator has the parts.
 2. **Anisotropy** for a satin and a filament knit (a thread-direction map; three.js and Godot both have the term).
@@ -162,7 +370,7 @@ talking with answers to flags, faces by flag, looks, Disappear (not drawn, not a
 (three policies), checkpoints, F7. The editor side: the **NPC Markers** tab along the bottom (characters with a
 colour, an eye and solo; the palette; the storyboard; the marker's form in plain words; Problems), the markers in the
 3D view as map pins placed and dragged by mouse, the tester (a marker, from here, a quest, on a copy). The guide:
-`guides/markers/index.html`. Checks: MARKERS (4 minutes), MARKERSEDITOR (1 minute).
+`guides/markers/index.html`. Checks: MARKERS (1 minute), MARKERSEDITOR (1 minute).
 
 **The user's first feedback, done** (DECISIONS 2026-11-14): the conversations were drawn in a new boxed panel with
 numbered answers; they're now the prior style (the HUD's own line, one-line answers with a dash and ring prompt when
@@ -187,7 +395,7 @@ the mock-up's are: say so if the user asks.
 2. doors opened on the way of a walk (now: an Open door marker before it);
 3. a Follow marker (after you along your trail, as the starter's chase does), and the hunt's nodes as cards (a
    marker's Event can already `fire` a cue, a scare area, a hunt's `start`);
-4. the head and eyes turning to you while they wait (the body can face you);
+4. ~~the head and eyes turning to you while they wait~~ (built on `even-more-animations-v3`: the Head row);
 5. a line's own time (now by its length: `read_secs`), and a marker's "Then: a line" through the HUD's line too (it
    goes through the Story's `say`, which draws its own label);
 6. feet planted on each step of a stair (they glide over the risers; ANIMATOR_V2 §12's foot IK is the same work);

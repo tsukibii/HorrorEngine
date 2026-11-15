@@ -3,6 +3,73 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The sequences: what playing real scenes found that the unit stages hadn't (2026-11-14, `even-more-animations-v3`)
+
+- **A check made of whole scenes finds what a check made of cases can't.** MARKERS has 229 passing lines and every
+  one of these went through it: a creature that crept up to you and then turned its back to punch; a sting that
+  played a second and a half before its scare; a peek nobody could "see"; a mug poured out when she looked at it.
+  Each needed two features meeting (a creep that stops short and an attack that wants its own distance; a Starts
+  when and a "when you're not looking"). **When a system is made of small parts, check it by building the things
+  it's for.**
+- **An approach that can turn out to be a retreat needs its own rule.** "Walk to where the blow reaches" was written
+  for someone further away. From nearer, the same step walked her *away*, and a walk turns her to face where she's
+  going: her back to you as she swung. From inside the reach she now throws it from where she stands.
+- **"When it starts" and "when it happens" are two moments the day one of them can wait.** A marker's Then ran as
+  its Starts when opened. For a scare that then waits for you to look away, that's the sting and the lights with
+  nothing to show for them. Ask, of anything that fires on a start: can the thing itself still be waiting?
+- **"Can you see her" is about her, not about where she stands.** The rays went to points above her feet. Peeking,
+  her head is 30 cm to the side of them and her feet are behind a wall, which is the whole point of a peek.
+- **A correction applied before the thing it corrects is no correction.** The carried cup was turned upright in the
+  carry's step, and then the look's arm was laid over it. The order of two layers is part of each one's meaning:
+  the upright is done again after any flourish that has that hand.
+- **A word that's only true in one place should be refused in the others.** `@wait` counts at a marker that's
+  ready. On a quest it was accepted and never so. Problems says so now; before, it read as "the quest hasn't
+  started yet", for a quarter of an hour.
+- **A helper that takes an index: look at which end it counts from.** The HUD's `choice_pick(k)` is the k-th answer
+  from 1. Given 0 it walked left forever, inside a `while`, and the check hung with nothing printed. **A hang is a
+  loop that can't end: find the `while`s under the last line printed.** And run a new check with its output
+  streaming, not collected at the end: the run looked slow for twenty minutes when it was stuck in its first
+  conversation. The whole check takes one minute.
+- **Then the pictures found three more that every number had passed.** The apple "in her hand" (the check read its
+  name) was an empty node: `find_children` doesn't return the node itself, so a Pickup that *is* the mesh copied
+  nothing into the pocket. The book "0.0 cm from its pin" lay on the shelf at the angle her fist had held it. Her
+  hand "held out" 23 cm was at her belly, bowed as for a table. **A measure says the thing is where it should be;
+  only a picture says it looks like the thing.** Look at every picture before it goes in a guide.
+- **A camera that isn't the player's is still "you" to anything that follows you.** A head that follows nobody in
+  particular follows the camera in use. Pictures from beside her turned every head toward the tripod, and the next
+  picture from the player's eye showed the back of hers. The picture script goes back to the player's eye between
+  pictures.
+- **Anything driven by someone else's clock has to notice when that clock stops.** A hand's IK is an envelope over
+  its clip's time, taken away when the clip's time passes the envelope's end. The hand-over's envelope fell 0.36 s
+  after its clip was over: nobody told it the time again, so it stayed, at four fifths of its weight, pulling his
+  hand toward where he'd held it out. The customer walked out of the shop with that hand 40 cm behind him; and
+  because the hand "was being brought somewhere", the layer played his look at the can with his other, empty hand.
+  Every number had passed ("a look at his hand, over a walk"). The picture from his other side showed an open
+  palm and a fist at his hip. A bring nobody tells the time lets go by itself now, and a look at what a hand holds
+  is that hand's or nobody's.
+- **Fixing one thing frees another to happen sooner: take every picture again after a fix.** With her hand no
+  longer "busy" for the whole walk, her own small movements could use it, and "sat, she looks at the mug" was
+  pictured with her still on her feet, looking at it on the way: the picture's moment asked for the look, not
+  for the look *sat*. It went out in a commit; the contact sheet made for the report showed it. A sheet of every
+  picture is looked at before the push, not after.
+- **A rule that counts seconds must survive one long frame.** "Untold for 0.12 s" is also what a hitch looks like:
+  one frame of 0.3 s would have dropped a punch's IK mid-swing. It's seconds *and* frames on end now.
+- **A check that passes most runs has a random part in it: find it, don't run it again.** After the merge the mug
+  was "13 degrees off upright" once in four runs. Her small movements are picked at random; one with her *other*
+  hand turns her trunk under the arm that carries, and the cup was only put upright again after a movement of the
+  hand that holds it. It's put upright after any of them now.
+- **`begins_with` accepts the wrong hand.** `life_look_hand_l` begins with `life_look_hand`. A check that names the
+  thing it wants, names all of it.
+- **Read where a time comes from before waiting differently for it.** The conversation's picture had no line, twice
+  "fixed" in the picture script by waiting another way. The HUD times a line by the wall clock; the talk box by the
+  game's. On a machine that takes a tenth of a second a frame, a line's five seconds were over 40 frames in.
+- **GDScript again**: `@export_enum` can't hold an empty option (use a word, `any`); a lambda can change what a
+  captured dictionary holds, never which dictionary a local names; a constant put "after the line that starts
+  with `const X`" lands inside X when X is three lines long.
+- **A scripted insert that replaces the end of a function replaces its last line too.** The `match` in
+  `_run_done` ended with a fall-through `return` after it; my replacement of the last case took the `return`
+  with it and every other kind returned nothing. Look at what follows the text you match, not only at the text.
+
 ## The hands and the jiggle: what the user's eye found, and what took a second try (2026-11-13, `animation-v2`)
 
 - **An angle counted from a moving part goes where the part goes.** The hand's turn was counted from the elbow's own
@@ -3231,6 +3298,176 @@ pale one shows.
 - **Look at the panel at the size it opens at.** The tab was laid out with the palette over the storyboard; at the
   bottom panel's own height the storyboard got a row and a half. The palette became a column of its own and the
   tab's least height went up. A picture of the editor as it opens says this; the layout's code doesn't.
+
+## Animations v3 (2026-11-14, `even-more-animations-v3`: creatures' clips, a head that follows, a grip, fights)
+
+- **A thing made from a body is tested on the bodies it's for.** The request was "animations for creatures (our
+  monsters)". Twenty-nine clips were written, measured and passed on three people, and committed, before one was
+  made on a creature's body. Made on five of the Studio's own creature cards, every stage had something wrong: arms
+  wrung 140 degrees along their length standing still, twist bones flipping in a peek, a wall inside a hunched face,
+  an ogre's fingers 21 cm through the floor. The test bodies took an hour to add (`bodies.mjs` reads the creature
+  cards: the same functions the page uses) and should have been the first thing built. Whoever a thing is for goes
+  into its check before its first clip.
+- **A direction read off a pose is only as good as the pose is bent.** The elbow's hinge was the axis the rest pose's
+  elbow is bent about: 35 degrees on MHR, so it held on every person ever tried. A hunch straightens the elbow, and
+  the cross product of two nearly parallel directions points anywhere (a hag's: backward). Nothing failed loudly,
+  because everything downstream was consistent with the wrong axis: the hand got where it was sent, the palm faced
+  the right way, and the skin between was wrung like a towel. An axis that anatomy fixes is a constant carried by the
+  bone, held to the model's own bodies by a check, not a measurement taken again from each rest pose.
+- **"The numbers are fine" on a consistent mistake.** What showed the hinge was not a failed rule but a number
+  nobody had asked for: the twist of the upper arm against the collarbone at rest (139 degrees where a person's is
+  31). When something is carried through several frames of reference, print it in the one anatomy cares about.
+- **A size that's "times her scale" is only right for what scales with her.** A wall 20 cm ahead of her feet, a
+  wrist 2.8 cm off the floor, a fist 10 cm under a mouth, hands 8 cm either side of a head: each was a person's
+  number times the body's height. A creature's parts don't keep a person's proportions (hands 2.3 times where the
+  height says 1.6, a head and ears 1.2 where it says 0.6, a face a foot ahead of the feet). Where a hand goes is by
+  the hand, the arm, the head and the body's own front, each read off the body.
+- **An arm folded flat points anywhere.** A hand's place is given by what it's going to; how near that passes the
+  shoulder depends on the arm, and a longer arm folds flat on the way to the same place (the elbow 179 degrees: the
+  IK's plane is then decided by rounding). Keep a wrist clear of its own shoulder on the way (`clearOf`), and choose
+  the free part of a target (how high on a wall's end) by the arm.
+- **A palm asked to face along its forearm says nothing, then everything.** The low reach asked the palm to face the
+  floor while the forearm pointed at the floor. The turn stayed the hanging arm's until the elbow bent, then went 60
+  degrees in a frame. It only showed when the reach was made deep enough to get there. Ask a palm for a direction
+  its forearm can give all the way down the path.
+- **A limit kept for looks hid that the thing never worked.** The low reach was capped at a squat that left two of
+  three people's hands 5 and 8 cm short of the floor target; the check measured "15 cm from it" and passed it since
+  v2. Then a hand IK was built on top to "make it look like she actually picked it up", which can't lengthen an arm.
+  Before building a correction on a clip, measure whether the clip leaves the correction anything it can do.
+- **What a skeleton does with a modifier's work** (Godot 4.7): rolls it back after the frame. Outside the modifier a
+  bone reads as its animation left it, and nothing accumulates; a BoneAttachment3D follows the modified pose. A
+  check reads modified bones through attachments, made at least a frame before they're read (the first run's
+  "fingertips 5 cm off the bottle" was an attachment made the frame it was read).
+- **An angle that is a difference of two `atan2`s needs unwrapping.** A finger's bend round a handle is the tangent's
+  direction minus the bone before's; past half a turn that reads as a bend the other way and was clamped to none
+  (fingers standing 3 to 5 cm off every handle).
+- **Rerun a check after the last edit, not before it.** `VERSION` went to 3 after ANIMATOR's last run, and the commit
+  went out with the check failing on `version === 2`.
+- **An editor test that doesn't parse hangs the editor.** The test is a plugin that quits Godot when it's done; with
+  a parse error it never loads, and the editor sat idle for ten minutes. `--check-only` on the test first, a
+  `timeout` on the run, and every variable read off an untyped node typed (`var who: Node = dock.find_child(...)`).
+- **A GDScript lambda takes a local by value.** A test's `snap = run.snapshot()` inside a watcher's lambda set a copy.
+  What a lambda sets goes in a holder (an array or a dictionary).
+- **A number can pass on a wrong picture.** "The bat's end 4.5 cm from who it's swung at": true, with her hand
+  dragged down to her hip and the bat pointing up at them. The check measured where the end got to and not how. The
+  first picture of it in the game showed it at once. For anything that corrects a pose, also hold how much it had to
+  correct (how far the hand was moved, how far the thing was turned): a correction that does most of the work is a
+  clip that's wrong.
+- **A hand can't hold a hammer along its own forearm.** What a fist holds stands out of its thumb side, square to
+  the forearm; only the wrist's sideways bend (about 35 degrees) swings it toward where the forearm points. Asking
+  for a hand's turn outright asks the forearm to twist for whatever the wrist can't give, and it flips. Build a held
+  thing's direction from the forearm's and the wrist's, not from where you'd like it to point.
+- **A card's defaults are the kind's, unless the card says.** The Jump scare card made a marker that faced its arrow
+  and not you: `face_player` defaults to off, which is right for a Wait. A card carries the fields it starts with.
+- **"Her hand on the wall" was checked at the wrist.** The peek's rule was the wrist within 14 cm of the wall's end;
+  it passed with one hand's fingers lying on behind the wall and the other hand's 11 cm into it (21 on a ghoul, 29
+  on an ogre). On a person the wall in the picture was 12 cm thick and hid them; the ghoul's came out of its front.
+  A hand put on something is checked at every joint of the hand, against the thing, at every frame, and looked at on
+  the body with the longest fingers. And a hand carried somewhere by its wrist points the way its forearm does: to
+  lie on a surface it's turned outright (`handQ`, eased in by `handK`), with the arm brought to it so the wrist
+  isn't asked for more than a wrist bends.
+- **Two eases in a row are a burst.** The left hand's way was `sm2(0.2, 1, u)` of a lean that was itself `sm2` of
+  time: most of it happened in a quarter of the clip, a forearm's half turn in seven frames. A thing that goes with
+  another goes by the other's own parameter, straight.
+- **A wall "clear of her front" has to be clear of her hands too.** The wall was put by her face and her belly; an
+  ogre's hands hang ahead of its belly and are 41 cm long, so any turn of a hanging hand was in the wall.
+- **A plugin's `_enter_tree` is not "the editor has started".** Pictures of the editor taken a few frames after it,
+  and even after the first scan had finished, had "Updating Scene Groups" and "Loading editor" boxes across them.
+  Wait until nothing is scanning and no `ProgressDialog` has been showing for some seconds; frame things with the
+  view's own Focus Selection, not a guessed orbit.
+
+## The Animator's furniture (2026-11-14, `even-more-animations-v3`: short NPCs on a person's chairs, beds and doors)
+
+- **The second design was the first one's opposite, and the first was nearly built.** "Adjust the animations
+  proportionally to height" was first read as: make the clip for a seat her size, and let the game lift her onto the
+  real one. The clip then showed her on a low seat in the Animator and floating up in the game. What a level has is a
+  person's chair; the clip has to get her onto *that*, and a child does it by getting her bottom onto the front and
+  sliding back. Ask what stands in the game before sizing anything to the body.
+- **An arm asked for more than its length is not harmless.** A hand's target left behind by a moving body was asked
+  for 1.8 of the arm; the arm lay straight toward it, and in the one frame the target came back within reach the
+  elbow folded 32 degrees (50 on an imp). At full stretch any bend costs no reach. It passed the adults' rule by two
+  degrees and was taken for the clip's character. Keep a target short of the arm's length and let it off gently
+  (`within`), and read "asked 1.8" as a fault whatever the turn rate says.
+- **Where a limb is let go to is where the body will be, not where it is.** The hanging foot was blended toward
+  "under her knee" while her knee still stuck out in front: the foot shot 20 cm forward and came back with her.
+  And over the first of the slide only, a short thigh's blend took three frames. A blend goes over the whole of the
+  move it belongs to, toward the end of that move.
+- **Two frame builders that hand over to each other must agree at the handover.** Sitting on the bed's edge was one
+  function and lying down another; legs, knees and arms each started again from a standing body's numbers. The jumps
+  (25 degrees in an arm, an ogre's knees 27 cm) were there on adults all along, under the bigger snap. Build the
+  second from the first's last frame.
+- **A hand left where it was while the body turns over it flips the arm.** Keeping the hands on the bed until she had
+  stood up turned an upper arm 175 degrees in a frame; taking them off as her trunk came forward, 57. Hands leave
+  before the body leans over them, the way they arrived after it had sat.
+- **A rule about the furniture, not only about the body.** "No foot under the floor" never asked whether a foot was
+  in the bed. Written as a box (its top, its front edge), the rule found every body's ankle 2 to 5 cm through the
+  mattress's corner, hanging hands in it and a sleeping arm 5 cm under its top: on the adults too, since v2.
+- **A test's own geometry.** GDSMALL first had her walk to the chair from behind it, through where it would stand,
+  and reported a shin 46 cm "into" it. Nothing stood there. Start her where a level would let her come from, and
+  bound the box by its real size.
+
+## Rules for whoever models (2026-11-14, later, `even-more-animations-v3`: docs/ANIMATION_RULES.md)
+
+- **Measure the rule, then write it.** The first draft of the rules had "a handle between 0.9 and 1.1 m" from what
+  the clips are made for. Swept in Godot every 5 cm it was 0.90 to 1.25 m for a person and 0.65 to 1.15 m for a
+  small child, and a thing to pick up was reached only on three bands of height with 24 cm misses between them:
+  nobody had put a thing on a coffee table. A rule's numbers come out of a sweep kept in a file (`ranges.json`,
+  `space.json`), and the document's tables are written from the files (`anim_rules.py tables`).
+- **What the hand's IK carries is the middle of the closed hand, not the wrist.** Standing her nearer a high handle
+  by the distance her *wrist* was short made a handle at 1.10 m worse (3.4 cm off, from 0.6): the middle of her
+  hand is 9 cm under her wrist with the arm raised. The clip now records the shoulder, the arm and where a handle
+  sits in the hand at the grab, and the stand is worked out from those.
+- **Skin the body to measure room.** Joints say a walking person is 44 cm wide; her skin says 61. Furniture
+  clearances came from `space.mjs` skinning a third of the body's points at every frame, not from the skeleton.
+- **A rule nobody checks is a wish.** ANIMRULES holds every seat, bed and door the kit and the prop generator make
+  to the ranges, and lists the ones that are out on purpose with why (`rules.json`): the bar stool and the futon
+  were found that way, not remembered.
+
+## Small movements laid over a clip, and a thing carried (2026-11-14, later, `even-more-animations-v3`: ANIMATOR_V3 §11, §12)
+
+- **A copy made by `structuredClone` slowed every later pose for the rest of the process.** A flourish's frames are
+  made ahead and handed out as copies. Copied with `structuredClone`, one clip's worth of them through `pose.js`
+  `build()` left the engine's inline caches for that function polluted: the next body's walk took 9 s to make
+  instead of 2.5, and ANIMATOR went from 44 s to 280 and then out of memory. A copy written by hand (the same
+  object shape as the makers' own controls) cost nothing. When a hot function gets slower *after* an unrelated step,
+  look at what kind of object that step fed it.
+- **The hand's turn where it lands is said outright, never left to the forearm.** With the palm rule (a palm that
+  faces a way, the fingers wherever the forearm points) a hand on her other arm put her elbow 86 mm into her chest
+  and a hand on her neck wrung her wrist 75 degrees in a frame. A hand laid on her is given the way its fingers
+  point and the way its palm faces; her elbow then goes behind her hand, and only what's left over a wrist's bend
+  (48 degrees) is taken off the hand.
+- **A pole that points along the way the hand travels flips the arm.** Swinging the elbow frame by frame to keep it
+  clear turned it 170 degrees between two frames and changed the pose the clip started from. The elbow's side is
+  fixed once, where the hand is held (square to the line from shoulder to wrist), and the *way* is moved out of her
+  instead. And where the elbow goes late: blended at the hand's pace it was out at her shoulder's height while her
+  hand was still at her chest.
+- **A limit on reach belongs to the way, not to its ends.** Capping how far the wrist may be from the shoulder bent
+  the hanging arm it started from (29 degrees off the idle): the cap is faded in after the start and out before the
+  hold.
+- **A head's box isn't her skull.** A goblin's ears and an ogre's nose made the bounding ellipsoid 4 cm bigger than
+  the head a hand lands on: hands were "in her head" a centimetre off her skin, and scratches floated. The skull is
+  a grid of radii round its middle with what sticks out opened away (`measure.js` `headAt`).
+- **One clip doesn't fit eleven bodies; a few ways, and none, does.** A hand to the nose can't pass an ogre's chest
+  whatever the elbow does. Each flourish is tried a few ways, the first clean one is made, and one with no clean way
+  isn't made for that body: the record says which, and nothing downstream assumes she has them all.
+- **An angle between two float32 turns has a floor.** "Nothing below her chest moves" failed at 0.039 degrees on
+  joints that were bit for bit the base's: `2 acos(|dot|)` of two equal unit quaternions stored as floats. Compare
+  the numbers, or allow a tenth of a degree.
+- **The numbers passed and the pictures didn't, again.** Every flourish was inside every limit when the first sheet
+  on the dressed character showed a wing, a limp claw, a hand on her heart and spread fingers. A limit says a clip
+  isn't broken; only a picture says what it reads as. Make the sheet before writing the check's last lines.
+- **A check that reuses a project reuses its bake.** MARKERS with `--reuse` said "0 flourishes" for twenty minutes'
+  worth of new code: the project's character had been baked by the version before. After the Animator's `VERSION`
+  goes up, the first run of any check that keeps a project is without `--reuse`.
+- **A freed node compares equal to null.** The editor test kept a checkbox, ticked it (which builds the form again
+  and frees the box), and then asked `box != null`: false, with everything it had done having worked. Ask before the
+  thing that frees it.
+- **A measure against a pose that moves isn't a measure.** "Her foot stays where her idle has it" compared her foot
+  with where it was a moment before the flourish: the idle sways 5 to 7 mm in that time by itself. Compare with the
+  base sampled at the same instant (GDLIFE does), or don't.
+- **Drawing nothing between pictures made the game's pictures six times faster.** Fourteen pictures of a dressed
+  character took 12 minutes on a software renderer because every frame of walking to the next picture was drawn.
+  `RenderingServer.render_loop_enabled = false` between them: 2 minutes, the same pictures.
 
 ## Fabric that reads as cloth (2026-11-14, `advanced-pbrs`: the clothing fabric sets, the cloth shaders)
 

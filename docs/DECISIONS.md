@@ -2,6 +2,198 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-14, night: a pull request for `even-more-animations-v3`, with main merged in (the user, on the guide's report)
+
+- **"can you createa pr for this , merge in main too"**: main (advanced PBRs, tsukibii/HorrorEngine#32) merged into
+  the branch, then a pull request from `even-more-animations-v3` to main.
+- Both branches had added a `§5x` to docs/GODOT_LOOK.md: this branch keeps 5x (the head), 5y (the hand) and 5z
+  (small movements); main's cloth section is **§5aa** now, and every pointer to it says so.
+
+## 2026-11-14, evening: main merged in; a tutorial of sequences made with the markers and the new animations (the user, while life and carrying were being finished)
+
+- **"once your done can you merge the latest main into this branch ,then make a new tutorial on using the marker
+  system with these new animations, stuff like walking to a table, picking up something, then walking to a sofa,
+  sitting on it, and looking at the object. Little life like sequences etc . Maybe add some where we get something ,
+  give it to the npc, they eat it, basically maker a tutorial in iour existing html guides for creating various
+  types of sequences , things you can think of, for normal npcs, stuff for like imagine im a shopkeerer and theyre
+  someone that walked to the till ask for osmething, following by elaving, then other stuff like chaining
+  interesting horror sequences + jumpscares and guies on utilizing our iks."**
+
+What follows from it:
+
+- **Main is merged into `even-more-animations-v3`** (flags and things, tsukibii/HorrorEngine#31, came with it): the
+  branch now has the Logic node and the Flags and Things tabs, and the tutorial uses them where they're the quick way.
+- **The tutorial is a new guide, `guides/sequences/`**, beside the others: recipes, one a sequence, each the markers
+  in order with what to set. It is not tutorial v2: that one is brought up to date in one bulk branch later (the
+  user, the same day, on the flags branch), and this branch leaves its section in `docs/TUTORIAL_TODO.md`.
+- **Every sequence in it is built for real and played by a check**, and its pictures are Godot's own, as every guide's
+  are.
+- **What the sequences need and the markers didn't have is built into the Markers plugin, not scripted round**
+  ("nobody scripts an NPC"): a marker that asks for one small movement (so "sits down and looks at it" is asked for,
+  not hoped for), a thing handed over between you and her both ways (and being paid), and a peek round a corner.
+- "our iks" is read as the four the Look plugin has: her head following (HSHeadTrack), her hand closing on a prop by
+  its grip and carried onto handles, mouths and people (HSHandIK, HSGrip), a hand kept on what it touches and a thing
+  carried in any pose (HSGesture). The guide has a part on getting the most from each.
+
+**As built** (`guides/sequences/index.html`, `tools/godot/sequences.py`, docs/MARKERS.md §4 and §10 H):
+
+- **Eight recipes**, each a character's quest, all in one scene (a flat, a shop in front of it, a corridor beside
+  it): a mug taken to the sofa and looked at (the user's own example); a book tidied onto a shelf, then a Talk that
+  puts a task on your list; you hand her an apple and she eats it; she fetches a key and hands it to you, and a door's
+  Logic wants it; a customer at your till who asks, waits while you fetch his can, pays, takes it and leaves looking
+  at it; the last customer, nearer each time you look away, then on you; something that peeks round a corner and is
+  behind you when you get there; a crawl, a creep and a blow at the cellar door. Then a part on the IKs, more
+  scenes from the same cards, and a table of what goes wrong and why.
+- **One source**: the place, the things and every marker are data in `tools/godot/sequences.py`. The scene is built
+  from it (`sequences_build.gd`), the check plays it (`sequences_test.gd`, SEQUENCES), and the guide's storyboard
+  tables are written from it (`tables`), so the three can't drift.
+- **New in the Markers plugin for it**: the cards **Small movement** and **Look at it** (one small movement now;
+  waited for, or laid over what comes next), **Take from you** and **Hand to you** (a thing between her hand and
+  your pocket, and money), **Peek**; **a Wait leaves her as she is** (sat stays sat).
+- **What building them found, and fixed in the plugins**: *you see her* now counts her head where it really is (a
+  peek was never "seen": her feet are behind the wall); a marker that comes *when you're not looking* says its
+  line, plays its sound and fires its things when it happens, not when its Starts when opened (the sting came
+  before the scare); a blow thrown from inside its own reach turned her back on you to step away (she throws it
+  from where she stands now: the markers' body and the starter's motion.gd); a look at a cup she carries tipped it
+  over (it's kept upright through the look now); a quest asked to start *after N s* never started (Problems says
+  so).
+- **What the pictures found after every number had passed, and fixed**: a Pickup that *is* its mesh put an empty
+  model in your pocket, so the apple "in her hand" was nothing (the starter's pickup.gd and food.gd); the book lay
+  on the shelf at the angle her fist had held it (put down the way up it stood); her hand "held out" was at her
+  belly, bowed as for a table (a hand-over is an upright reach now); every head turned to the picture's camera
+  (the picture script's); the customer looked at his empty palm while the can hung in his other fist (a look at
+  what a hand holds is that hand's or nobody's); and that fist trailed 40 cm behind him as he left, pulled by a
+  hand IK whose clip had ended before it let go (the Look plugin's HSHandIK: a bring nobody tells the time any
+  more lets go by itself; held by GDMOTION3, MARKERS and SEQUENCES). 28 pictures in the guide: 24 of the game, 4
+  of the tab on a recipe.
+- **Not built, and said in the guide**: eating and drinking sat down (she stands up to eat); a thing handed between
+  two characters; a marker that follows you about.
+
+## 2026-11-14, later: rules for modelling, small movements that show she's alive, holding things in any pose (the user)
+
+After the short NPCs' report:
+
+- **"Can you add interior, furniture and street rules for yourself so if I use claude to model in the future it can
+  stick to rules that dont break the animations."**
+- **"Can we add some 'add life' animations, meaning animations that make it seem characters are alive, stuff like
+  looking at an object they are holding, scratching, little life flourish stuff, is there a way we could add these
+  animations as ik blendables meaning if the lower body and chest is in a position e.g. walking or sitting, we can
+  still blend in these animations."**
+- **"Is there a way we can use ik to allow them to hold objects in any of the current animation positions."**
+- **"Dont need to do facial expressiosn for these isnce thats a diff system."**
+
+What follows from it:
+
+- **The rules are a document Claude reads before it models** (`docs/ANIMATION_RULES.md`, pointed at from CLAUDE.md
+  and the `/build-map` skill), with its numbers measured from the clips and in Godot, not guessed, and a check that
+  holds the studio's own furniture to them (docs/ANIMATION_RULES.md says which).
+- **A flourish is an upper-body clip the Animator makes from her body**, blended in Godot over whatever her legs and
+  trunk are doing by a layer that runs after her animation (the Look plugin's `HSGesture`), her hand carried onto
+  where it's going (her head, her other arm, what she holds) by the hand's IK, since her head and chest aren't where
+  the clip was made when she walks or sits. Her legs and pelvis are never touched by it.
+- **Holding is a pose kept over any clip** (the same layer's `carry`): while she holds a thing her arm takes the way
+  that thing is carried (at her side, in front, to her chest, over her shoulder, raised), hung by gravity however
+  her chest leans; a cup stays upright. How a thing is carried is said on its grip.
+- **No face**: these are the body's. Expressions stay the face system's, over any of them.
+- The plan and what was built: docs/ANIMATOR_V3.md §11 (life), §12 (carry); the branch `even-more-animations-v3`.
+
+Decided while building it (Claude's; the user can turn any of them over):
+
+- **Off unless switched on.** A character's *Alive* is unticked by default (the starter's Motion node, an HSNpc):
+  she who hunts you shouldn't scratch her head. A marker can switch it from there on.
+- **Only over standing, walking and sitting**, which is what was asked for; a run, a sneak, a crawl and any act she
+  was asked for play as they are.
+- **A flourish a body can't do cleanly isn't made for it.** An ogre has 14 of the 19, a hag 16, a goblin 18: where a
+  forearm would have to pass through a chest or a hand through a head, there is none, and the game picks among the
+  ones she has. Nothing is made in their place.
+- **A thing with nothing said**: drunk from, it's carried in front of her and kept upright; anything else at her side.
+- **Not built, and said so** (ANIMATOR_V3 §11.5, §12.4): reaching for a thing at any height (it's still the floor, a
+  table or a shelf, as the modelling rules say), carrying with two hands, a long thing kept off her leg, small
+  movements in a Director's or a desk game's cast.
+- **The modelling rules got two more** from measuring these: 0.50 m free to each side and in front of where she
+  stands, waits or sits with small movements on, nothing lower than 2.3 m over her; 0.45 m between her and what she
+  faces with a thing carried in front of her.
+
+## 2026-11-14, short NPCs: a person's furniture used by any body; the peek is seen from in front (the user, on animations v3's first report)
+
+- **"For the animations you said there are issues with the sitting/sleeping for imps and goblins etc. What about
+  children npcs (really short npcs), can you figure out a way to adjust the animations proportionally to height."**
+- **"For peak the back doesnt need to look good since it will ever only face the front"**
+
+What follows from it (docs/ANIMATOR_V3.md §10):
+
+- **What didn't fit a short body was never the animation, it was the furniture.** Every clip is already made from the
+  body it's for; sitting, sleeping, doors and the reach to a table were made for a person's furniture as if the body
+  were a person's: a seat and a bed 45 cm high, a handle a metre up, a table at 86 cm. On the 1.63 m test woman those
+  are the back of her knee, three quarters of the way up to her shoulder, and her leg's own length. A child's or an
+  imp's legs can't sit on a seat over their knees with their feet on the floor.
+- **The game's furniture stays a person's, and the clip gets her onto it** (`acts.js` `furniture()`, "fits her", the
+  default). A seat or a bed over 1.18 of her own she gets onto as a child does: her bottom to its front (up on her
+  toes, a hop when it's over her hips, her hands on it), then she slides back, and sits with her thighs on it and her
+  legs hanging, swinging a little. A handle over her shoulder she reaches up to, on her toes when it's well over. So
+  a child, a goblin and an imp use the chairs, beds and doors a level already has, and nothing in a game changes.
+  An adult's sitting and door clips are what they were, to the bit.
+- **What her body can't use is made as near a person's as she can manage** (a seat no higher than her hips, a handle
+  no higher than her hand goes with her elbow still bent: an imp's is 86 cm), and the game makes up the rest: she is
+  lifted onto a seat that's higher still, and her hand is carried to the real handle by her hand's IK as far as her
+  arm goes.
+- **Two other settings**, per character, on the Animator's page: **her own size** (a child's chair, a goblin's door:
+  what a person's are to a person, by her knee, her shoulder and her leg) and **a person's** whatever she is. A size
+  can be said outright too (`seat`, `bed`, `handle`, `table`, metres).
+- **A body bigger than a person keeps a person's furniture and comes down to it** (an ogre stoops to a handle).
+- **Held from now on**: the Animator's check makes three children (eight years at 1.27 m, the same at 1.10 m, twelve
+  at 1.49 m) beside the five creatures, and holds every clip on all of them, the furniture's with rules of their own.
+  Holding them found things wrong on adults too, which were fixed in the same go: the lie-down's elbows snapped 32
+  degrees in a frame, a foot went through the bed's corner on its way up, the hands of someone sat on a bed's edge
+  hung in the mattress, and the arm of someone asleep lay 5 cm in it. Their bed clips are the only adult clips that
+  changed; a character baked before wants baking again for them (version 4).
+- **The peek is only ever seen from in front.** Its other hand (flat on the wall, up beside her shoulder) is not
+  something to work on; it stays where it's out of the wall and out of sight.
+
+## 2026-11-14, animations v3: creatures' clips, a head that follows you, a grip on props, fights (the user)
+
+After the pull request for the markers (`marker-system`, tsukibii/HorrorEngine#30):
+
+- **"Then make a new branch called even more animations-v3."** Read as the branch `even-more-animations-v3` (the
+  spaces as hyphens, as `more-body-presets` and `more-shotgun-shells` were named), made from `marker-system` so the
+  new work can use the markers.
+- **"In our animation tool add animations for creatures (our monsters) maybe some crawls, sneaks, peaking as well as a
+  generic lunge jump scare ones (ones that briefly appear) ."**
+- **"Can you also figure out how to do / toggle semi ik animations where the npc head tracks the user for a given
+  adjustable range (let's say 160 degrees with front facing bing 0 so the 160 degrees is 80 degrees left and 80
+  degrees right) ."**
+- **"See if you can figure out a gizmo we can add to props and ajist to handle size so for pickup object animations we
+  can make it look like the npc actually picked it up e.g to eat or drink."**
+- **"Can you also add some generic ik inspired fight animation , one cor punch which tracks the player or npc it's
+  trying to punch, or swing object e.g a baseball bat or any object it's carrying )."**
+- **"Add any more genetic animations you think that would be required, e.g a sneak ."**
+
+What follows from it (the design and the plan: docs/ANIMATOR_V3.md):
+
+- **The clips are made, as every Animator clip is** (from the body and the five sliders, nothing recorded), in the
+  Animator's page under new kinds beside Idle, Walk, Run, Sit, Sleep, Door and Reach: **Sneak** (a careful crouched
+  walk and its crouch), **Crawl** (hands and knees, and stopped on all fours), **Creature** (a hunched creep, its
+  stance, a fast scuttle on hands and feet), **Peek** (out round a corner, held, back; both sides), **Scare** (the
+  ones that briefly appear: a lunge, a loom, a head snap, a claw up from the crawl: each starts already coiled, so the
+  first frame she's shown in is not a person standing), **Fight** (a punch, a swing of whatever she holds, being
+  hit), **Eat and drink**, and **Acting** (looking round, a knock, cowering). Baked with the others into her .glb.
+- **"Semi IK" is a layer over a baked clip, never a clip of its own**: the clip is played as made and a
+  SkeletonModifier3D corrects a few bones after it. Two of them, in the Look plugin beside `HSSoftJiggle` (which went
+  there the same way: DECISIONS 2026-11-13, the hands and the jiggle), so a by-hand game, the markers and an export
+  all have them: **`HSHeadTrack`** (her head, neck, a share of her chest and her eyes turned to the player or
+  anything else, within `range_degrees`: 160 by default, 80 to each side of straight ahead, 0 the way she faces;
+  past it she lets go, or holds at the limit; a switch) and **`HSHandIK`** (a point that rides her hand brought onto
+  a point in the world as much as a weight says: her palm onto a thing's grip as she takes it, the thing's mouth onto
+  her mouth as she eats or drinks, her fist onto who she punches, the end of a bat onto who she swings at; and her
+  fingers closed round a handle of a given thickness).
+- **The gizmo is a node, `HSGrip`**, put under a prop where a hand takes it: the handle's thickness and length
+  dragged by handles in the 3D view with a hand drawn round it, where the mouth goes when it's eaten or drunk from,
+  where it hits when it's swung. A prop with none is still held, by a grip guessed from its size.
+- **A punch or a swing "tracks" in two ways**: she turns to who she's hitting until the blow is thrown, and the arm's
+  IK carries the fist (or the thing's end) the rest of the way to them, at whatever height they are.
+- **In the markers**: paces for a Walk (sneak, crawl, creep, scuttle), eating and drinking on a Grab, an Attack
+  card, *Her head follows you* on any marker with its range, and a jump scare from one card.
+
 ## 2026-11-14, last, two thirds of the neck is the most for any top or coat; spun cotton jersey confirmed (the user, on the summary)
 
 - **"Spin cotton jersey is fine, yes, anthin g that goes above the 2/3rd neck and is a top/coat etc should come down to

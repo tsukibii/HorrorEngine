@@ -2,7 +2,7 @@
 // body, and each garment part with the fabric's metres as its second UV and, on its material, the record the Studio's
 // Export for Godot writes for a garment that wears a clothing fabric set (`studioCloth`: the set, its repeat, its
 // numbers, the garment's denier; tools/fabricpbr.py, docs/TAILOR.md §1k). The look plugin's HSCloth dresses it from
-// those records (GODOT_LOOK §5x): what tools/godot/cloth_check.py --outfits pictures. No rig, no baked dye (a
+// those records (GODOT_LOOK §5aa): what tools/godot/cloth_check.py --outfits pictures. No rig, no baked dye (a
 // garment's colour is its material's), no creases: the cloth shader on real garments, in seconds.
 //
 //   node tools/character/tailor/outfitglb.mjs --outfit "fabrics: red rib jumper and leather skirt" --out FILE.glb

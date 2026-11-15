@@ -13,10 +13,10 @@ const CondEdit := preload("res://addons/horrorstudio_markers/editor/cond_edit.gd
 const Dial := preload("res://addons/horrorstudio_markers/editor/dial.gd")
 const SwitchEdit := preload("res://addons/horrorstudio_markers/editor/switch_edit.gd")
 const KIND_TITLES := [["appear", "Start here"], ["walk", "Walk (or run)"], ["wait", "Wait (or talk)"], ["sit", "Sit"], ["sleep", "Sleep"], ["grab", "Grab, pick up, open"],
-	["animation", "Animation"], ["event", "Event"], ["disappear", "Disappear"], ["choice", "Choice"], ["repeat", "Repeat"]]
+	["animation", "Animation"], ["event", "Event"], ["disappear", "Disappear"], ["choice", "Choice"], ["repeat", "Repeat"], ["attack", "Attack (a punch, a swing)"], ["scare", "Jump scare"], ["gesture", "Small movement"], ["peek", "Peek"]]
 const STAYS := [["next", "until the next marker can start"], ["secs", "for some seconds"], ["talked", "until you talk"]]
 const HOWS := [["now", "at once"], ["unseen", "when you're not looking"], ["fade", "fading (the look plugin)"]]
-const REBUILD := ["kind", "stay", "action", "loop", "talk", "to_player", "pace", "clip_file", "look", "talks", "face_rules", "fire", "target", "take_secs"]   # fields that change which rows the form has
+const REBUILD := ["kind", "stay", "action", "loop", "talk", "to_player", "pace", "clip_file", "look", "talks", "face_rules", "fire", "target", "take_secs", "head", "attack_at", "head_at", "scare_kind", "alive"]   # fields that change which rows the form has
 const CLIP_FOLDERS := ["res://animations"]
 
 var plugin: EditorPlugin
@@ -928,6 +928,38 @@ func _pick(n: Object, prop: String, items: Array) -> OptionButton:
 	return ob
 
 
+# a thing carried by its name, typed or picked from the ones the scene has (pickups, shop items, what's handed over)
+func _item(n: Object, prop: String, hint := "") -> Control:
+	var row := HBoxContainer.new()
+	row.name = "F_" + prop
+	var le := LineEdit.new()
+	le.name = "Line"
+	le.text = str(n.get(prop))
+	le.placeholder_text = hint
+	le.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	le.text_submitted.connect(func(t: String) -> void: _put(n, prop, t))
+	le.focus_exited.connect(func() -> void: _put(n, prop, le.text))
+	row.add_child(le)
+	var mb := MenuButton.new()
+	mb.name = "Menu"
+	mb.flat = false
+	mb.icon = Glyphs.icon("down", Color("#C8D2DC"), 12)
+	mb.tooltip_text = "Pick one the scene already has."
+	var pm := mb.get_popup()
+	mb.about_to_popup.connect(func() -> void:
+		pm.clear()
+		pm.add_item("(none)")
+		pm.set_item_metadata(0, "")
+		for nm in plugin.wiring.names("item"):
+			pm.add_item(String(nm))
+			pm.set_item_metadata(pm.item_count - 1, String(nm)))
+	pm.index_pressed.connect(func(i: int) -> void:
+		le.text = str(pm.get_item_metadata(i))
+		_put(n, prop, le.text))
+	row.add_child(mb)
+	return row
+
+
 func _cond(n: Object, prop: String, none: String, about_her := true, waits := true) -> Control:
 	var ce := CondEdit.new()
 	ce.name = "F_" + prop
@@ -1040,6 +1072,32 @@ func _form_npc(npc: HSNpc) -> void:
 	_row(w, "Run speed", _num(npc, "run_speed", 0.0, 12.0, 0.05, " m/s"), "0: the speed the run was made at.")
 	w.add_child(_check(npc, "waits_for_player", "Waits a moment when you're in the way"))
 	w.add_child(_check(npc, "solid", "Solid: you can't walk through"))
+	var lf := _sec("Life")
+	var al := _check(npc, "alive", "Small movements now and then", "While standing, walking or sitting: a scratch, a look at what's in the hand, a hand through the hair, a stretch, laid over whatever is playing. A marker can switch it from there on (its Head section). The character's .glb has to be baked by the Animator with its life clips, and the project needs the Look plugin.")
+	lf.add_child(al)
+	if npc.alive:
+		var ev := HBoxContainer.new()
+		for k in 2:
+			var sp := SpinBox.new()
+			sp.min_value = 1.0
+			sp.max_value = 120.0
+			sp.step = 0.5
+			sp.suffix = " s"
+			sp.value = npc.life_every[k]
+			sp.value_changed.connect(func(v: float) -> void:
+				if _busy:
+					return
+				var e: Vector2 = npc.life_every
+				e[k] = v
+				_put(npc, "life_every", Vector2(minf(e.x, e.y), maxf(e.x, e.y))))
+			ev.add_child(sp)
+			if k == 0:
+				var to := Label.new()
+				to.text = " to "
+				ev.add_child(to)
+		_row(lf, "Every", ev, "Seconds from one to the next: somewhere between the two, a new number each time.")
+	_row(lf, "Carries things", _pick(npc, "carries", [["as its grip says", "as the thing's grip says"], ["side", "at the side"], ["front", "in front"], ["chest", "to the chest"], ["shoulder", "over the shoulder"], ["raised", "raised (a lantern)"]]),
+		"How a thing kept in the hand (a Grab's Pick up with Keep in hand) is carried while walking, sitting or waiting. A thing's own HSGrip says for that thing: drunk from, it's carried in front and kept upright.")
 	var sh := _sec("If shot down")
 	_row(sh, "Then", _pick(npc, "when_shot_down", [[0, "the quest stops (a later quest brings them back)"], [1, "gone for good"], [2, "can't be killed: up again and on"]]),
 		"What the weapons plugin's HSHitReact going down means for these markers. Flags either way: shot:%s, down:%s." % [npc.id(), npc.id()])
@@ -1114,7 +1172,8 @@ func _form_marker(m: HSNpcMarker) -> void:
 			b.add_child(_check(m, "to_player", "Comes to you instead of to the pin"))
 			if m.to_player:
 				_row(b, "Stops", _num(m, "stop_short", 0.3, 5.0, 0.05, " m from you"))
-			_row(b, "Pace", _pick(m, "pace", [["walk", "walk"], ["run", "run"]]))
+			_row(b, "Pace", _pick(m, "pace", [["walk", "walk"], ["run", "run"], ["sneak", "sneak (low, careful)"], ["crawl", "crawl (hands and knees)"], ["creep", "creep (a creature's stalk)"], ["scuttle", "scuttle (hands and feet, quick)"]]),
+				"The last four are low: there, the character stays low (crouched, on all fours, hunched) until a marker walks or runs.")
 			_row(b, "Speed", _num(m, "pace_scale", 0.2, 4.0, 0.05, " ×"), "Times the walk's own speed: 0.5 a slow walk. The feet keep step.")
 			if not m.to_player:
 				_row(b, "Or take", _num(m, "take_secs", 0.0, 120.0, 0.5, " s"), "Over 0: gets there in this many seconds, whatever the distance.")
@@ -1126,8 +1185,20 @@ func _form_marker(m: HSNpcMarker) -> void:
 				_note(b, "Click the + on the path in the 3D view for a bend; drag it. Right-click a bend to delete it.")
 		"grab":
 			var g := _sec("The hand")
-			_row(g, "Does", _pick(m, "action", [["reach", "reach for the pin"], ["pick_up", "pick a thing up"], ["put_down", "put down what's held"], ["open", "open a door"]]))
-			if m.action in ["pick_up", "open"]:
+			_row(g, "Does", _pick(m, "action", [["reach", "reach for the pin"], ["pick_up", "pick a thing up"], ["put_down", "put down what's held"], ["open", "open a door"], ["eat", "eat a thing"], ["drink", "drink from a thing"],
+				["take_from", "take a thing from you"], ["give_to", "hand a thing to you"]]))
+			if m.action == "take_from":
+				_row(g, "The thing", _item(m, "take_item", "its name in your pocket"), "What you carry, by its name: a Pickup's Item, a thing the shop gave you. It leaves your pocket and is in the hand.")
+				g.add_child(_check(m, "keep_in_hand", "It stays in the hand", "Off: it's put away (hidden). On: it's carried from here on: an Eat or a Drink after this uses it."))
+				g.add_child(_check(m, "left_hand", "With the left hand"))
+				_note(g, "No pin: it happens where the character stands, turned to you, a hand held out. To wait until you have the thing, give Starts when 'you carry ' and its name; to be asked first, put a Talk before it. Nothing happens to your pocket if you don't carry it.")
+			elif m.action == "give_to":
+				_row(g, "Gives", _item(m, "give_item", "what's in the hand"), "Its name in your pocket. Empty: the name of the thing in the hand (a Pick up before this that keeps it).")
+				_row(g, "Called", _text(m, "give_label", "the name you read"), "What your pocket calls it. Empty: its name.")
+				_row(g, "And money", _num(m, "give_cash", 0.0, 100000.0, 0.5, " $"), "Paid into your cash: a customer paying, change given.")
+				g.add_child(_check(m, "left_hand", "With the left hand", "With a thing in a hand, that hand is used."))
+				_note(g, "No pin: it happens where the character stands, turned to you, a hand held out. What's in the hand goes into your pocket with its own look; with nothing in the hand, an item by its name alone (and any money).")
+			if m.action in ["pick_up", "open", "eat", "drink"]:
 				var tr := HBoxContainer.new()
 				var tl := Label.new()
 				var tn := m.get_node_or_null(m.target) if not m.target.is_empty() else null
@@ -1138,21 +1209,37 @@ func _form_marker(m: HSNpcMarker) -> void:
 				var pk := _button("Pick", "target", "Then click it in the 3D view.")
 				pk.name = "PickTarget"
 				pk.pressed.connect(func() -> void:
-					plugin.pick_in_view("the thing" if m.action == "pick_up" else "the door", func(node: Node, _where: Vector3) -> void: set_target(m, node)))
+					plugin.pick_in_view("the door" if m.action == "open" else "the thing", func(node: Node, _where: Vector3) -> void: set_target(m, node)))
 				tr.add_child(pk)
-				_row(g, "The thing" if m.action == "pick_up" else "The door", tr)
+				_row(g, "The door" if m.action == "open" else "The thing", tr)
+			if m.action in ["eat", "drink"]:
+				_note(g, "With no thing picked, what's already in the hand. A thing sits in the hand by its grip: an HSGrip node under the prop (Add Child Node) says where a hand takes it, how thick it is there and where the mouth goes; with none it's guessed from the prop's size." + (" Eaten, it's gone." if m.action == "eat" else ""))
 			if m.action == "open":
 				_row(g, "It opens", _pick(m, "door_opens", [["push", "pushed"], ["pull", "pulled"], ["slide", "slid"]]))
 			if m.action == "pick_up":
 				g.add_child(_check(m, "keep_in_hand", "It stays in the hand", "Off: it's put away (hidden)."))
-			g.add_child(_check(m, "left_hand", "With the left hand"))
-			_note(g, "The pin is where the hand goes; the arrow is the facing. There are three reaches (the floor, a table, a shelf): the one nearest the pin's height is used.")
+			if not (m.action in HSNpcMarker.HANDOVER):
+				g.add_child(_check(m, "left_hand", "With the left hand"))
+				_note(g, "The pin is where the hand goes; the arrow is the facing. There are three reaches (the floor, a table, a shelf): the one nearest the pin's height is used.")
 		"sleep":
 			var sl := _sec("The bed")
 			sl.add_child(_check(m, "head_right", "Head to the right", "Seen sitting on the edge. Off: to the left."))
 			_note(sl, "The pin on the bed's edge at the mattress's height, the arrow pointing away from the bed.")
 		"sit":
 			_note(_sec("The seat"), "The pin on the seat's front edge at sitting height, the arrow the way the knees point.")
+		"peek":
+			var pk2 := _sec("The peek")
+			pk2.add_child(_check(m, "left_hand", "Out to the left", "Seen from behind the character. Off: out to the right (the wall's end is on the right)."))
+			_note(pk2, "The pin at the foot of the wall's end, the arrow the way of the look (past the wall, at what's watched). The character stands hidden behind the wall, leans out, and stays looking; the next marker that moves them draws them back first. Seen from the front only: the wall hides the rest.")
+		"gesture":
+			var gs := _sec("The small movement")
+			var gi := []
+			for k in HSNpcMarker.GESTURES:
+				gi.append([k, HSNpcMarker.GESTURES[k]])
+			_row(gs, "Does", _pick(m, "gesture", gi), "One of the character's own small movements, laid over whatever they're doing: nothing below the chest changes. A body that can't do one cleanly wasn't given it (Problems says so).")
+			gs.add_child(_check(m, "left_hand", "With the left hand", "A look at what's held uses the hand that holds it."))
+			gs.add_child(_check(m, "gesture_along", "Over what comes next", "Off: the next marker waits until the hand is back. On: the next marker starts at once and this is laid over it as soon as it can be: a look at a watch as the walk sets off."))
+			_note(gs, "Over standing, walking and sitting. The next marker starts when the hand is back. For small movements now and then by themselves, see the character's Alive (click their name) and the Small movements row below.")
 		"animation":
 			var an := _sec("The animation")
 			_row(an, "A clip", _pick(m, "clip", _clip_items(npc, "(none)")), "One of the model's own animations.")
@@ -1160,6 +1247,36 @@ func _form_marker(m: HSNpcMarker) -> void:
 			an.add_child(_check(m, "loop", "It loops (and stays in it)"))
 			if not m.loop:
 				_row(an, "Times", _num(m, "times", 1, 99, 1))
+		"attack":
+			var at := _sec("The attack")
+			_row(at, "Does", _pick(m, "attack", [["punch", "throws a punch"], ["swing", "swings what's in the hand"]]), "A swing with an empty hand is a swing of the fist.")
+			var ar := HBoxContainer.new()
+			var al := Label.new()
+			var an2 := m.get_node_or_null(m.attack_at) if not m.attack_at.is_empty() else null
+			al.text = String(an2.name) if an2 != null else "you"
+			al.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			al.clip_text = true
+			ar.add_child(al)
+			var ap := _button("Pick", "target", "Then click who in the 3D view.")
+			ap.name = "PickWho"
+			ap.pressed.connect(func() -> void:
+				plugin.pick_in_view("who", func(node: Node, _where: Vector3) -> void: set_who(m, "attack_at", node)))
+			ar.add_child(ap)
+			if an2 != null:
+				var ay := _button("You", "", "Back to you.")
+				ay.pressed.connect(func() -> void: _put(m, "attack_at", NodePath("")))
+				ar.add_child(ay)
+			_row(at, "At", ar)
+			_row(at, "Times", _num(m, "attack_times", 1, 20, 1))
+			at.add_child(_check(m, "left_hand", "With the left hand"))
+			_note(at, "Walks up to where the blow reaches, turns with them until it's thrown, and the fist (or the end of what's held) is carried the rest of the way onto them. Someone with a Motion node, or anything with take_hit() or struck(), is told.")
+		"scare":
+			var sc := _sec("The scare")
+			_row(sc, "Is", _pick(m, "scare_kind", [["lunge", "a lunge: a step, both hands at your face"], ["loom", "a loom: bent double, then upright over you"], ["snap", "a head snap"], ["claw", "a claw up from all fours"]]))
+			_row(sc, "Comes", _pick(m, "how", [["now", "at once"], ["unseen", "when you're not looking"]]))
+			sc.add_child(_check(m, "face_player", "Turned to you as it starts", "Off: facing the arrow."))
+			sc.add_child(_check(m, "scare_stays", "Stays after", "Off: gone when it's been shown (about a second), as a scare that briefly appears is."))
+			_note(sc, "The pin is where the character appears: put it a little over a metre from where you'll be. It starts already coiled, so nothing eases into it. The Fear node and the night's director hear it.")
 		"appear", "disappear":
 			var h := _sec("How")
 			_row(h, "Comes" if m.kind == "appear" else "Goes", _pick(m, "how", HOWS))
@@ -1207,7 +1324,7 @@ func _form_marker(m: HSNpcMarker) -> void:
 			_row(sb, "Seconds", _num(m, "stay_secs", 0.0, 600.0, 0.5, " s"))
 		if m.kind == "wait":
 			sb.add_child(_check(m, "face_player", "Keeps turning to face you"))
-	if m.kind in HSNpcMarker.BODY and m.kind != "appear":
+	if m.kind in HSNpcMarker.BODY and not (m.kind in ["appear", "gesture"]):
 		var a := _sec("Animation")
 		if m.kind == "wait":
 			_row(a, "Waits in", _pick(m, "clip", _clip_items(npc, "the idle")))
@@ -1296,6 +1413,28 @@ func _form_where(m: HSNpcMarker, npc: HSNpc) -> void:
 
 
 func _form_face(m: HSNpcMarker) -> void:
+	var hd := _sec("Head")
+	_row(hd, "The head", _pick(m, "head", [["keep", "as it was"], ["follow", "follows you"], ["free", "is the animation's again"]]), "From here on, until another marker says. It turns the head, the neck, a little of the chest and the eyes over whatever is playing.")
+	if m.head == "follow":
+		_row(hd, "Within", _num(m, "head_range", 0.0, 360.0, 5.0, " degrees"), "The whole arc: half to each side of straight ahead. 160 is 80 to the left and 80 to the right. Past it the head lets go.")
+		var hr := HBoxContainer.new()
+		var hl := Label.new()
+		var hn := m.get_node_or_null(m.head_at) if not m.head_at.is_empty() else null
+		hl.text = String(hn.name) if hn != null else "you"
+		hl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		hl.clip_text = true
+		hr.add_child(hl)
+		var hp := _button("Pick", "target", "Then click who or what in the 3D view.")
+		hp.name = "PickHead"
+		hp.pressed.connect(func() -> void:
+			plugin.pick_in_view("who or what", func(node: Node, _where: Vector3) -> void: set_who(m, "head_at", node)))
+		hr.add_child(hp)
+		if hn != null:
+			var hy := _button("You", "", "Back to you.")
+			hy.pressed.connect(func() -> void: _put(m, "head_at", NodePath("")))
+			hr.add_child(hy)
+		_row(hd, "Looks at", hr)
+	_row(hd, "Small movements", _pick(m, "life", [["keep", "as they were"], ["lively", "now and then"], ["still", "none"]]), "From here on, until another marker says: a scratch, a look at what's in the hand, a stretch, laid over standing, walking and sitting. As they were: the character's own Alive.")
 	var f := _sec("Face and look")
 	_row(f, "Face", _pick(m, "face", _face_items("as it was")), "Worn from here on, until another marker's.")
 	if m.face != "":
@@ -1648,8 +1787,23 @@ func set_target(m: HSNpcMarker, node: Node) -> void:
 				break
 			p = p.get_parent()
 	_put(m, "target", m.get_path_to(t))
-	if m.action == "pick_up" and t is Node3D:                  # (its pin goes to the thing)
+	if m.action in ["pick_up", "eat", "drink"] and t is Node3D:   # (its pin goes to the thing)
 		plugin.place_node(m, Transform3D(m.global_transform.basis, (t as Node3D).global_position), m.global_transform, "the pin onto the thing")
+	refresh_form.call_deferred()
+
+
+## who a marker is about (an Attack's `attack_at`, a head's `head_at`): the node clicked, or the character it's part of
+func set_who(m: HSNpcMarker, field: String, node: Node) -> void:
+	if node == null:
+		return
+	var t := node
+	var p := node
+	while p != null and p != plugin.scene_root():                  # (a click lands on a mesh: the character or the player it belongs to is who's meant)
+		if p.is_in_group("hs_player") or p is CharacterBody3D or p.get_node_or_null("Motion") != null or (p.get_parent() != null and p.get_parent().get_children().any(func(c): return c is HSNpc and (c as HSNpc).character_node() == p)):
+			t = p
+			break
+		p = p.get_parent()
+	_put(m, field, m.get_path_to(t))
 	refresh_form.call_deferred()
 
 

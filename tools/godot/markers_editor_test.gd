@@ -540,6 +540,133 @@ func _run() -> void:
 		texts += str(p["text"]) + "\n"
 	ok(pick_up.get_node_or_null(pick_up.target) == root.get_node("Book") and not texts.contains("pick the thing"), "the thing picked, it doesn't any more")
 
+	# ---- animations v3's cards: a low pace, eating, an attack, a jump scare, the head ----
+	for id in ["sneak", "crawl", "eat", "drink", "attack", "jumpscare"]:
+		ok(not card(id).is_empty(), "the palette has a %s card" % id)
+	var sneak: HSNpcMarker = plug.add_marker(card("sneak"), Vector3(1.2, 0.02, -1.4))
+	var eat: HSNpcMarker = plug.add_marker(card("eat"), Vector3(-1.5, 0.02, 1.0))
+	var attack: HSNpcMarker = plug.add_marker(card("attack"), Vector3.ZERO)
+	var js: HSNpcMarker = plug.add_marker(card("jumpscare"), Vector3(0.6, 0.02, 1.6))
+	await frames(2)
+	ok(sneak.kind == "walk" and sneak.pace == "sneak" and sneak.title() == "Sneak" and eat.kind == "grab" and eat.action == "eat" and attack.kind == "attack" and js.kind == "scare" and js.face_player,
+		"the cards make a Sneak, an Eat, an Attack and a Jump scare", "%s, %s, %s, %s" % [sneak.title(), eat.title(), attack.title(), js.title()])
+	ok(js.is_placed() and not attack.is_placed() and js.global_position.distance_to(Vector3(0.6, 0.02, 1.6)) < 0.01, "a Jump scare has a pin (where they appear), an Attack none")
+	dock.set_target(eat, root.get_node("Book"))
+	await frames(3)
+	ok(eat.get_node_or_null(eat.target) == root.get_node("Book") and eat.global_position.distance_to((root.get_node("Book") as Node3D).global_position) < 0.01, "an Eat's thing picked: its pin goes onto it")
+	plug.pick_node(attack)
+	await frames(2)
+	dock.refresh()
+	await frames(3)
+	dock.set_who(attack, "attack_at", root.get_node("Book"))
+	await frames(6)
+	var who: Node = dock.find_child("PickWho", true, false)        # (looked for once the form has been built again for it)
+	ok(who != null and attack.get_node_or_null(attack.attack_at) == root.get_node("Book"), "an Attack's form: who it's at, picked", "%s (its picker in the form: %s)" % [attack.attack_at, who != null])
+	plug.set_prop(attack, "attack_at", NodePath(""))
+	plug.set_prop(attack, "head", "follow")
+	await frames(4)
+	var hp: Node = dock.find_child("PickHead", true, false)
+	plug.set_prop(attack, "head_range", 120.0)
+	await frames(2)
+	ok(hp != null and attack.head == "follow" and is_equal_approx(attack.head_range, 120.0), "any marker's form: the head follows you, within a range", "%s, %.0f degrees" % [attack.head, attack.head_range])
+	# small movements: a marker's row, and the character's own switch
+	var lf := field("F_life") as OptionButton
+	if lf != null:
+		lf.select(1)
+		lf.item_selected.emit(1)
+	await frames(3)
+	ok(lf != null and attack.life == "lively", "any marker's form: small movements now and then from there on", attack.life)
+	plug.pick_node(npc)
+	await frames(2)
+	dock.refresh()
+	await frames(3)
+	var alive_box := field("F_alive") as CheckBox
+	var had_alive := alive_box != null                         # (asked now: ticking it builds the form again, and the box is gone)
+	var had_every := field("F_carries") != null
+	if alive_box != null:
+		alive_box.button_pressed = true
+	await frames(4)
+	var on_now: bool = npc.alive
+	var every_row := false
+	for sp in dock.form.find_children("*", "SpinBox", true, false):
+		every_row = every_row or (sp as SpinBox).suffix == " s" and is_equal_approx((sp as SpinBox).value, npc.life_every.x)
+	undo()
+	await frames(4)
+	ok(had_alive and had_every and on_now and every_row and not npc.alive, "the character's form: Alive ticked (how often shows with it, how a kept thing is carried), undone", "ticked %s, the Every row %s, after undo %s" % [on_now, every_row, npc.alive])
+	for mk3 in [js, attack, eat, sneak]:                      # (taken out again: what follows counts the rows it had)
+		plug.delete_node(mk3)
+	await frames(3)
+
+	# ---- the sequences' cards: one small movement, a look at what's held, a peek, a thing changing hands ----
+	plug.pick_node(quest, false)
+	for id in ["gesture", "look_at", "peek", "take_from", "give_to"]:
+		ok(not card(id).is_empty(), "the palette has a %s card" % id)
+	var gm: HSNpcMarker = plug.add_marker(card("gesture"), Vector3.ZERO)
+	var la: HSNpcMarker = plug.add_marker(card("look_at"), Vector3.ZERO)
+	var pk: HSNpcMarker = plug.add_marker(card("peek"), Vector3(1.0, 0.02, 1.0))
+	var tk: HSNpcMarker = plug.add_marker(card("take_from"), Vector3.ZERO)
+	var gv: HSNpcMarker = plug.add_marker(card("give_to"), Vector3.ZERO)
+	await frames(3)
+	ok(gm.kind == "gesture" and gm.gesture == "any" and gm.title() == "Small movement" and la.gesture == "look_hand" and la.title() == "Looks at her hand" and pk.kind == "peek" and pk.stay == "secs"
+		and tk.action == "take_from" and tk.title() == "Take from you" and gv.action == "give_to" and gv.title() == "Hand to you",
+		"the cards make a Small movement, a Look at it, a Peek, a Take from you and a Hand to you", "%s, %s, %s, %s, %s" % [gm.title(), la.title(), pk.title(), tk.title(), gv.title()])
+	plug.pick_node(pk)
+	await frames(3)
+	ok(pk.is_placed() and not gm.is_placed() and not tk.is_placed() and not gv.is_placed() and not hot("pin", pk).is_empty() and hot("pin", tk).is_empty() and pk.global_position.distance_to(Vector3(1.0, 0.02, 1.0)) < 0.01,
+		"a Peek has a pin (the foot of the wall's end); a small movement and a thing changing hands have none")
+	plug.pick_node(gm)
+	await frames(2)
+	dock.refresh()
+	await frames(3)
+	var gf := field("F_gesture") as OptionButton
+	var along_box := field("F_gesture_along") != null
+	var no_clip_rows := field("F_anim_speed") == null and field("F_blend") == null
+	var listed := gf.item_count if gf != null else 0
+	if gf != null:
+		for i in gf.item_count:
+			if str(gf.get_item_metadata(i)) == "scratch_head":
+				gf.select(i)
+				gf.item_selected.emit(i)
+	await frames(4)
+	var picked := gm.gesture
+	var its_title := gm.title()
+	undo()
+	await frames(3)
+	ok(listed == HSNpcMarker.GESTURES.size() and picked == "scratch_head" and its_title == "Scratches her head" and gm.gesture == "any" and along_box and no_clip_rows,
+		"a Small movement's form: which one (all of them listed), 'over what comes next', no clip rows; undone", "%d listed; picked %s (%s); after undo %s" % [listed, picked, its_title, gm.gesture])
+	plug.pick_node(tk)
+	await frames(2)
+	dock.refresh()
+	await frames(3)
+	texts = ""
+	for p in dock.problems():
+		texts += str(p["text"]) + "\n"
+	var asked_first := texts.contains("say which thing she takes")
+	var ti := field("F_take_item")
+	var line := ti.get_node_or_null("Line") as LineEdit if ti != null else null
+	var menu := ti.get_node_or_null("Menu") as MenuButton if ti != null else null
+	if line != null:
+		line.text = "apple"
+		line.text_submitted.emit("apple")
+	await frames(4)
+	texts = ""
+	for p in dock.problems():
+		texts += str(p["text"]) + "\n"
+	ok(asked_first and line != null and menu != null and tk.take_item == "apple" and not texts.contains("say which thing she takes") and field("F_keep_in_hand") != null,
+		"a Take from you's form: the thing by its name (typed, or picked from the scene's), kept in the hand or not; Problems asks until it's named", tk.take_item)
+	plug.pick_node(gv)
+	await frames(2)
+	dock.refresh()
+	await frames(3)
+	var cash := field("F_give_cash") as SpinBox
+	if cash != null:
+		cash.value = 2.5
+	await frames(3)
+	ok(field("F_give_item") != null and field("F_give_label") != null and cash != null and is_equal_approx(gv.give_cash, 2.5), "a Hand to you's form: what's given, what it's called, and money", "$%.2f" % gv.give_cash)
+	for mk4 in [gv, tk, pk, la, gm]:
+		plug.delete_node(mk4)
+	await frames(3)
+
 	# ---- the tester ----
 	plug.pick_node(walk)
 	await frames(2)
@@ -707,3 +834,30 @@ func _guide(alex: Node3D, bob: Node3D, sofa: Node3D) -> void:
 	await redraw()
 	await shot("09_solo")
 	plug.solo = null
+	# animations v3: an Attack with her head following you, its form open at what's new (the palette's new cards beside it)
+	plug.pick_node(npc)
+	await frames(3)
+	var atk := await put("attack")
+	if atk != null:
+		atk.head = "follow"
+		atk.attack_times = 2
+		plug.pick_node(atk)
+		await frames(6)
+		var sec2 := dock.form.find_child("Sec_The_attack", true, false) as Control
+		if sec2 == null:
+			sec2 = dock.form.find_child("Sec_The attack", true, false) as Control
+		if sec2 != null:
+			(dock.form.get_parent() as ScrollContainer).scroll_vertical = int(sec2.position.y) - 26
+		await redraw()
+		await shot("10_attack")
+	# life: the character's own form at its Life section (Alive ticked: how often shows with it; how a kept thing is carried)
+	plug.set_prop(npc, "alive", true)
+	plug.pick_node(npc)
+	await frames(6)
+	dock.refresh()
+	await frames(4)
+	var sec3 := dock.form.find_child("Sec_Life", true, false) as Control
+	if sec3 != null:
+		(dock.form.get_parent() as ScrollContainer).scroll_vertical = int(sec3.position.y) - 26
+	await redraw()
+	await shot("11_life")

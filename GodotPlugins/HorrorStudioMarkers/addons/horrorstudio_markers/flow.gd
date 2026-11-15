@@ -9,6 +9,7 @@ const STEP := 0.1                          # metres between a sampled path's poi
 const SEAT_EDGE := -0.05                   # the Animator's own numbers when a character's record has none
 const REACH_AT := [-0.12, 0.85, 0.45]
 const HANDLE_AT := [-0.14, 1.0, 0.45]
+const PEEK_EDGE := [-0.25, 0.0, 0.2]      # a wall's end from where she stands to peek out to her right (the left's is its mirror)
 const MOST := 6                            # how many places she can be at once are followed (ways of a Choice)
 
 
@@ -99,11 +100,21 @@ static func _clip_info(record: Dictionary, clip: String) -> Dictionary:
 
 ## where her hand goes for a Grab: the thing itself when it picks one up, else the pin
 static func hand_at(m: HSNpcMarker) -> Vector3:
-	if m.kind == "grab" and m.action == "pick_up" and not m.target.is_empty() and m.is_inside_tree():
+	if m.kind == "grab" and m.action in ["pick_up", "eat", "drink"] and not m.target.is_empty() and m.is_inside_tree():
 		var t := m.get_node_or_null(m.target)
 		if t is Node3D:
 			return (t as Node3D).global_position
 	return m.place()
+
+
+## where she stands to peek past a wall's end at `corner` (the foot of its edge), looking out along `front`: behind
+## the wall with the edge to her right (left: to her left), where her own clip was made to stand her (the starter's
+## motion.gd peek, the same rule)
+static func peek_stand(corner: Vector3, front: Vector3, left := false, record: Dictionary = {}) -> Vector3:
+	var e: Array = _clip_info(record, "peek_out" + ("_l" if left else "")).get("peek", {}).get("edge", [])
+	if e.size() != 3:
+		e = [-float(PEEK_EDGE[0]) if left else float(PEEK_EDGE[0]), 0.0, PEEK_EDGE[2]]
+	return corner - turned(Vector3(float(e[0]), 0, float(e[2])), atan2(front.x, front.z))
 
 
 ## which of her three reaches suits a height over the floor: "low" (the floor), "mid" (a table), "high" (a shelf):
@@ -131,7 +142,27 @@ static func reach_of(m: HSNpcMarker, record: Dictionary, high: float = NAN) -> D
 	var x := float(at[0])
 	if m.left_hand and info.is_empty():
 		x = -x                                             # (no record: the left hand's reach is the right's mirrored)
-	return {"clip": clip, "at": [x, float(at[1]), float(at[2])]}
+	var z := float(at[2])
+	if m.action == "open" and not is_nan(high):            # (a handle's own height: she stands nearer to a lower or a higher one than her clip was made for)
+		z = handle_ahead(info.get("door", {}), high)
+	return {"clip": clip, "at": [x, float(at[1]), z]}
+
+
+## how far in front of her a handle `high` m over the floor has to be for her hand to get to it (the starter's
+## motion.gd handle_ahead, the same rule: where the clip stands her, or nearer when her arm doesn't reach it from
+## there; `d`: the clip's `door` record: its shoulder, arm and grip)
+static func handle_ahead(d: Dictionary, high: float) -> float:
+	var hp: Array = d.get("handle", HANDLE_AT)
+	var sh: Array = d.get("shoulder", [])
+	var g: Array = d.get("grip", [])
+	var arm := float(d.get("arm", 0.0))
+	if sh.size() != 3 or g.size() != 3 or arm <= 0.0:
+		return float(hp[2])                               # (baked before this: where the clip stands her)
+	var up := high - float(g[1]) - float(sh[1])           # her wrist over her shoulder, with the middle of her hand on the handle
+	var far := 0.96 * arm
+	var flat := sqrt(maxf(0.0, far * far - up * up))
+	var toes := 0.55 * float(hp[2])                       # no nearer than this: her feet are in front of her
+	return clampf(float(sh[2]) + flat + float(g[2]), toes, float(hp[2]))
 
 
 ## where she stands to sit, lie down or put a hand out at a marker: {pos, yaw} (pos.y the pin's: the floor is the
@@ -151,6 +182,8 @@ static func stand_for(m: HSNpcMarker, record: Dictionary = {}, ground: float = N
 			var at := hand_at(m)
 			var rp: Array = reach_of(m, record, at.y - ground)["at"]
 			return {"pos": at - turned(Vector3(float(rp[0]), 0, float(rp[2])), yaw), "yaw": yaw}
+		"peek":
+			return {"pos": peek_stand(m.place(), f, m.left_hand, record), "yaw": yaw}
 	return {"pos": m.place(), "yaw": yaw}
 
 
@@ -168,8 +201,12 @@ static func end_of(m: HSNpcMarker, from: Dictionary, record: Dictionary = {}) ->
 				var d: Vector3 = pts[pts.size() - 1] - pts[pts.size() - 2] if pts.size() >= 2 else Vector3.ZERO
 				yaw = atan2(d.x, d.z) if Vector2(d.x, d.z).length() > 0.01 else float(from["yaw"])
 			return {"pos": m.place(), "yaw": yaw}
-		"sit", "sleep", "grab":
+		"sit", "sleep", "grab", "peek":
+			if m.kind == "grab" and m.action in HSNpcMarker.HANDOVER:      # (a thing changes hands where she stands)
+				return from
 			return stand_for(m, record, (from["pos"] as Vector3).y)
+		"scare":
+			return {"pos": m.place(), "yaw": m.yaw()}
 	return from
 
 
@@ -328,11 +365,17 @@ static func length(points: PackedVector3Array) -> float:
 	return l
 
 
+const LOW_SPEED := {"sneak": 0.42, "crawl": 0.38, "creep": 0.53, "scuttle": 1.2}   # a low pace's speed when her record doesn't say (HSNpcBody.LOW)
+
 ## how fast she goes on a Walk marker, metres a second: `walk` and `run` her own speeds, `dist` the path's length
-static func speed_of(m: HSNpcMarker, walk: float, run: float, dist: float) -> float:
+## (`low`: her own speed at a low pace (sneak, crawl, creep, scuttle) when it's known; else what such a pace usually is)
+static func speed_of(m: HSNpcMarker, walk: float, run: float, dist: float, low := 0.0) -> float:
 	if m.take_secs > 0.0:
 		return clampf(dist / m.take_secs, 0.1, 9.0)
-	return clampf((run if m.pace == "run" else walk) * m.pace_scale, 0.1, 9.0)
+	var base := run if m.pace == "run" else walk
+	if m.pace in LOW_SPEED:
+		base = low if low > 0.05 else float(LOW_SPEED[m.pace])
+	return clampf(base * m.pace_scale, 0.1, 9.0)
 
 
 ## about how long a marker takes, seconds (-1: it depends: on you, on flags). `from`: where she starts; `walk`, `run`:
@@ -344,14 +387,20 @@ static func seconds_of(m: HSNpcMarker, from: Vector3, walk := 1.3, run := 3.0, c
 				return -1.0
 			var d := length(walk_points(m, from))
 			return d / speed_of(m, walk, run, d) + 0.45          # (easing in and out, the turn at the end)
-		"wait", "sit", "sleep":
+		"wait", "sit", "sleep", "peek":
 			return m.stay_secs if m.stay == "secs" else -1.0
+		"gesture":
+			return clip_secs if clip_secs > 0.0 else 3.0
+		"grab":
+			return 2.0 / maxf(m.anim_speed, 0.05) if m.action in HSNpcMarker.HANDOVER else -1.0
 		"animation":
 			if m.loop:
 				return m.stay_secs if m.stay == "secs" else -1.0
 			return clip_secs * m.times / maxf(m.anim_speed, 0.05) if clip_secs > 0.0 else -1.0
 		"appear", "disappear", "event":
 			return 0.0 if m.how == "now" or m.kind == "event" else -1.0
+		"scare":
+			return (1.0 if not m.scare_stays else 2.0) if m.how == "now" else -1.0
 	return -1.0
 
 
@@ -370,17 +419,47 @@ static func problems(npc: Node, clips: PackedStringArray = [], setters = null, k
 	var qs := quests(npc)
 	if qs.is_empty():
 		out.append({"node": npc, "text": "No quest yet: add one, then drop markers in the 3D view.", "level": "tip"})
+	if not clips.is_empty() and (bool(npc.get("alive")) or _any_lively(npc)):   # small movements asked for on a character baked before them
+		var has := false
+		for c in clips:
+			has = has or String(c).begins_with("life_")
+		if not has:
+			out.append({"node": npc, "text": "Small movements are on, but the character has none of her own. Bake her again in the Animator: it makes them.", "level": "warn"})
 	var mine := {}
 	if npc.has_method("id"):
 		for k in ["talked:", "shot:", "down:"]:
 			mine[k + npc.id()] = true
 	for q in qs:
 		_cond_problems(q, (q as HSNpcQuest).starts_when, "starts when", setters, mine, known_tasks, npc, out)
+		if (q as HSNpcQuest).starts_when.contains("@wait"):      # ("after N s" counts at a marker that's ready: a quest has no such moment)
+			out.append({"node": q, "text": "'%s' starts 'after some seconds': a quest can't wait like that, so it never starts. Take the wait out of the quest's Starts when and put it on its first marker's." % (q as HSNpcQuest).label(), "level": "error"})
 		var rows := board(q)
 		if items(q).is_empty():
 			out.append({"node": q, "text": "'%s' has no markers." % (q as HSNpcQuest).label(), "level": "tip"})
 		_container_problems(q, npc, clips, setters, mine, known_tasks, out, false)
+	_hand_problems(npc, out)
 	return out
+
+
+# what's in her hand as the markers go (in order, every way gone through): an Eat or a Drink with nothing named wants
+# something there by then
+static func _hand_problems(npc: Node, out: Array) -> void:
+	var holding := false
+	for q in quests(npc):
+		for row in board(q):
+			var m := row["node"] as HSNpcMarker
+			if m == null or m.kind != "grab":
+				continue
+			var named := not m.target.is_empty() and m.is_inside_tree() and m.get_node_or_null(m.target) != null
+			match m.action:
+				"pick_up":
+					holding = named and m.keep_in_hand
+				"put_down":
+					holding = false
+				"eat", "drink":
+					if not named and not holding:
+						out.append({"node": m, "text": "%s %s: nothing's named and her hand is empty by then, so she only goes through the motions. Pick the thing, or put a Pick up before it." % [row["label"], m.title()], "level": "tip"})
+					holding = m.action == "drink" and (named or holding)
 
 
 static func _cond_problems(node: Node, text: String, what: String, setters, mine: Dictionary, known_tasks, npc: Node, out: Array) -> void:
@@ -409,6 +488,43 @@ static func _container_problems(container: Node, npc: Node, clips: PackedStringA
 		var m := list[i] as HSNpcMarker
 		var lab := "%s %s" % [label_of(m), m.title()]
 		_cond_problems(m, m.start_when, "Starts when", setters, mine, known_tasks, npc, out)
+		if m.kind == "attack" and not m.attack_at.is_empty() and m.get_node_or_null(m.attack_at) == null:
+			out.append({"node": m, "text": "%s: pick who she attacks (or leave it empty: you)." % lab, "level": "error"})
+		if not clips.is_empty():                               # animations v3's clips: a character baked before them (or never baked) has none
+			var lacks := ""
+			var then := ""
+			if m.kind == "walk" and m.pace in LOW_SPEED and not _has_clip(clips, m.pace):
+				lacks = m.pace
+				then = "she'll walk"
+			elif m.kind == "grab" and m.action in ["eat", "drink"] and not _has_clip(clips, m.action + ("_l" if m.left_hand else "")):
+				lacks = m.action
+				then = "she'll only take it"
+			elif m.kind == "attack" and not _has_clip(clips, m.attack + ("_l" if m.left_hand else "")):
+				lacks = m.attack
+				then = "she'll go up to them and nothing more"
+			elif m.kind == "scare" and not _has_clip(clips, "scare_" + m.scare_kind):
+				lacks = "scare_" + m.scare_kind
+				then = "she'll be there for a blink and no more"
+			elif m.kind == "peek" and not _has_clip(clips, "peek_out" + ("_l" if m.left_hand else "")):
+				lacks = "peek_out"
+				then = "she'll only stand behind the wall"
+			if lacks != "":
+				out.append({"node": m, "text": "%s: she has no '%s' of her own (%s). Bake her again in the Animator: it makes one." % [lab, lacks, then], "level": "warn"})
+		if m.head != "keep" and not m.head_at.is_empty() and m.get_node_or_null(m.head_at) == null:
+			out.append({"node": m, "text": "%s: pick who her head follows (or leave it empty: you)." % lab, "level": "error"})
+		if m.head == "follow" and not ResourceLoader.exists(HSNpcBody.LOOK + "head_track.gd"):
+			out.append({"node": m, "text": "%s: her head can't follow anyone without the HorrorStudio Look plugin in the project (addons/horrorstudio_look)." % lab, "level": "warn"})
+		if m.kind == "gesture":                                # one small movement: the look plugin lays it over her; her bake has to have it
+			if not ResourceLoader.exists(HSNpcBody.LOOK + "gesture.gd"):
+				out.append({"node": m, "text": "%s: small movements need the HorrorStudio Look plugin in the project (addons/horrorstudio_look)." % lab, "level": "warn"})
+			elif not clips.is_empty() and not _any_life(clips):
+				out.append({"node": m, "text": "%s: she has no small movements of her own. Bake her again in the Animator: it makes them." % lab, "level": "warn"})
+			elif m.gesture_name() != "" and not clips.is_empty() and not (_has_clip(clips, "life_" + m.gesture) or _has_clip(clips, "life_" + m.gesture + "_l")):
+				out.append({"node": m, "text": "%s: that one wasn't made for her body (%s). Pick another, or 'One that suits'." % [lab, String(HSNpcMarker.GESTURES.get(m.gesture, m.gesture)).to_lower()], "level": "warn"})
+		if m.kind == "grab" and m.action == "take_from" and m.take_item.strip_edges() == "":
+			out.append({"node": m, "text": "%s: say which thing she takes (its name in your pocket: a Pickup's Item)." % lab, "level": "error"})
+		if m.kind == "grab" and m.action == "give_to" and m.give_item.strip_edges() == "" and m.give_cash <= 0.0 and not _keeps_before(m):
+			out.append({"node": m, "text": "%s: she has nothing to hand you. Give it an item's name or some money, or have her pick something up and keep it in her hand first." % lab, "level": "warn"})
 		match m.kind:
 			"walk":
 				if not m.to_player:
@@ -419,8 +535,10 @@ static func _container_problems(container: Node, npc: Node, clips: PackedStringA
 						elif m.take_secs > 0.0 and d / m.take_secs > 6.0:
 							out.append({"node": m, "text": "%s: %.1f m in %.1f s is faster than anyone runs; the feet will slide." % [lab, d, m.take_secs], "level": "warn"})
 						break
-			"sit", "sleep", "grab":
+			"sit", "sleep", "grab", "peek":
 				for from in starts_of(m):
+					if m.kind == "grab" and m.action in HSNpcMarker.HANDOVER:
+						break
 					var st := stand_for(m, record, (from["pos"] as Vector3).y)
 					var gap := Vector2(st["pos"].x - from["pos"].x, st["pos"].z - from["pos"].z).length()
 					if gap > 2.0:
@@ -459,7 +577,7 @@ static func _container_problems(container: Node, npc: Node, clips: PackedStringA
 				hidden = true
 			"appear":
 				hidden = false
-		if hidden and m.kind in ["walk", "sit", "sleep", "grab"] :
+		if hidden and m.kind in ["walk", "sit", "sleep", "grab", "attack", "peek", "gesture"] :
 			out.append({"node": m, "text": "%s comes after a Disappear: the character comes back where they vanished. Put a Start here before it to come back somewhere else." % lab, "level": "tip"})
 			hidden = false
 		if m.stay == "talked" and m.stays() and not (m.talk and not m.conversations().is_empty()):
@@ -477,6 +595,42 @@ static func _container_problems(container: Node, npc: Node, clips: PackedStringA
 			elif not (t.has_method("fire") or t.has_method("start")):
 				out.append({"node": m, "text": "%s fires '%s', which has no fire() to call." % [lab, t.name], "level": "warn"})
 	return hidden
+
+
+# has she any small movement of her own
+static func _any_life(clips: PackedStringArray) -> bool:
+	for c in clips:
+		if c.begins_with("life_") or c.contains("/life_"):
+			return true
+	return false
+
+
+# is there, before a marker in its own list, a Grab that leaves a thing in her hand (a Pick up or a Take from you
+# that keeps it, with no Put down or Hand to you after it)
+static func _keeps_before(m: HSNpcMarker) -> bool:
+	var q := quest_of(m)
+	if q == null:
+		return false
+	var has := false
+	for row in board(q):
+		var o := row["node"] as Node
+		if o == m:
+			return has
+		if o is HSNpcMarker and (o as HSNpcMarker).kind == "grab":
+			var g := o as HSNpcMarker
+			if g.action in ["pick_up", "take_from"]:
+				has = g.keep_in_hand
+			elif g.action in ["put_down", "give_to", "eat"]:
+				has = false
+	return has
+
+
+# a marker anywhere under a node that switches her small movements on
+static func _any_lively(n: Node) -> bool:
+	for c in n.get_children():
+		if (c is HSNpcMarker and (c as HSNpcMarker).life == "lively") or _any_lively(c):
+			return true
+	return false
 
 
 static func _has_clip(clips: PackedStringArray, n: String) -> bool:

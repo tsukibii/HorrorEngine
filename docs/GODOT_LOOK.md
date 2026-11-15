@@ -1685,7 +1685,164 @@ plugins style": JiggleBones (the asset library's 1595; BauxiteDev, Cory Petkovse
   degrees live where her run's clip carries 19.3; 16 just after she stops, 1 three seconds on; a clip that only
   hops her, 14 degrees live and nothing without.
 
-## 5x. Cloth: the studio's fabric sets worn in Godot (`cloth.gdshaderinc`, `cloth.gd` `HSCloth`; DECISIONS 2026-11-14)
+## 5x. A head that follows you (`head_track.gd`, `HSHeadTrack`; DECISIONS 2026-11-14, animations v3)
+
+The user: "semi ik animations where the npc head tracks the user for a given adjustable range (let's say 160 degrees
+with front facing being 0 so the 160 degrees is 80 degrees left and 80 degrees right)". docs/ANIMATOR_V3.md §3.
+
+A SkeletonModifier3D under her skeleton. Her animation plays as it was made; after it, each frame, a share of her
+upper spine, her neck, her head and her eyes are turned toward a target: the player's eye (the camera in view) unless
+`target` names a node (a node with a camera under it is looked at there, one with a skeleton at its head, one with
+`aim_point()` where that says) or `look_at_point` gives a place.
+
+| | |
+|---|---|
+| `range_degrees` | 160: the whole arc, half to each side of straight ahead; **0 is the way she faces** (her own forward, not where a clip has turned her chest) |
+| `up_degrees`, `down_degrees` | 40 and 45 |
+| `beyond` | the target past the range: *Lets go* (her head is her animation's again) or *Holds at the limit*; 6 degrees of slack once she's following, so she doesn't flick at the edge |
+| `follow`, `amount` | the switch (eased over 0.3 s, never snapped) and how much of the way |
+| `turn_speed`, `ease_secs`, `snappy` | never faster than 260 degrees a second, softened over 0.16 s; `snappy`: where she looks is taken up in sudden steps (a creature) |
+| `body_share` | 0.22 of a turn is the upper spine's (`c_spine2`, `c_spine3`), the rest the neck's (0.38 of it) and the head's |
+| `eyes` | her eye bones lead by up to 20 degrees across and 13 up and down, and come back to straight as her head arrives |
+| `max_distance` | 12 m |
+
+How: where her animation alone has her face pointing is read off the head bone (its own space: the model's `forward`,
++Z for a Studio export, carried by the bone); the target's bearing from her head is clamped to the range; the tracked
+angles go toward it by an exponential ease capped at the speed; the difference from the animation's is shared out down
+the chain, parents first, about her own up for the yaw and about the level axis across where she then faces for the
+pitch (`set_bone_global_pose`). Godot rolls a modifier's work back after each frame, so with `follow` off she is
+exactly her clip again and nothing accumulates; a BoneAttachment3D on her head is where the turned head shows.
+`HSHeadTrack.attach(character)` puts one under her skeleton (before an `HSHandIK`: a hand brought to her mouth wants
+her head where it ends up); the starter kit's `motion.gd` `head_follow()` and a marker's *Her head follows you* call it.
+
+Measured (GDMOTION3, the normal woman): you 40 degrees to her left, her head is turned 40.4; at 75, 75.8; at -60,
+-61.0; past 80 it lets go (her animation's 1.9) or holds at 80.0; her chest takes 8.1 degrees of a 40 degree turn;
+never faster than 242 degrees a second; up 40, down 45; her eyes 16 degrees ahead of her head a tenth of a second
+after you move.
+
+Godot 4.7 has a `LookAtModifier3D` of its own (one bone a node, a limit that is also the whole arc). This is one
+node for the whole chain, measured from her facing, with both behaviours past the range.
+
+## 5y. A hand brought the rest of the way, and closed round what it holds (`hand_ik.gd` `HSHandIK`, `grip.gd` `HSGrip`, `grip_gizmo.gd`; the same day)
+
+The user: "a gizmo we can add to props and adjust to handle size so for pickup object animations we can make it look
+like the npc actually picked it up e.g to eat or drink", "punch which tracks the player or npc it's trying to punch,
+or swing object e.g a baseball bat or any object it's carrying". docs/ANIMATOR_V3.md §4, §5.
+
+**`HSGrip`**, a `@tool` Node3D put under a prop where a hand takes it. Its place is the middle of what the hand closes
+round; **+Y runs along the handle toward the thumb, +Z points at the palm**. `shape` (Handle, Ball, Pinch), `size`
+(how thick it is there), `length`, `hand` (either, right, left), `use` (just held, eaten, drunk from), `mouth` (where
+the mouth goes), `tip` (where it hits when it's swung). In the 3D view its gizmo (`grip_gizmo.gd`, registered by
+plugin.gd) draws the handle at its size, a hand round it with its fingers wrapped as they will be, the mouth and the
+tip, and four handles to drag, each undoable. `HSGrip.grip_of(thing)` is what a game asks: the node's numbers in the
+thing's own space, or `guess`: its longest side the handle, a round thing in the whole hand.
+
+**`HSHandIK`**, a SkeletonModifier3D for both hands, working from her skeleton's rest pose alone (MHR's bones, a
+Mixamo skeleton's as far as they go): no record, so a character baked before it has it too.
+
+- `grip_frame(side, size, shape)`: where a grip sits in her hand, in the wrist bone's own space: the palm's middle
+  just behind the knuckles, a radius and 2 mm out of the palm, +Y along the knuckles toward the first finger, +Z into
+  the palm. A held thing is put so its grip is there.
+- `grip(side, size, shape)`: her fingers closed round a handle that thick. Each finger is wrapped in the plane it
+  curls in: from its knuckle, each bone is laid along the tangent to a circle (the handle's radius and half a finger)
+  that passes it on the far side, joint by joint, within what a joint bends (92, 112, 80 degrees). The thumb is laid
+  as the Animator lays a fist's (pose.js): all of it round a thin handle, open round a can.
+- `bring(side, {point, target, peak, rise, hold, fall, aim, anchor, freeze, peaks, most})`: a point that rides the
+  hand (in the wrist's space) is brought onto a target in the world as much as an envelope over the clip's time says
+  (`at(side, t)`). The arm's two bones are solved again for where the wrist must be, the elbow kept on the side the
+  clip had it; `aim` first turns the hand about `anchor` so the point leads at the target (what she holds pointed at
+  her mouth, or at who she swings at); `freeze`: from the peak on, how far the point had to be moved then is kept (a
+  blow thrown doesn't home; a fist rapping on a door keeps rapping, on the door); `peaks`: a second bite.
+  The turn of `aim` comes in late (by the square of the envelope's weight): in step with the rise it pointed a bat at
+  its target before the arm had swung it there. `last[side]` says what the correction did at the peak: `error` (how
+  far the point ended from the target), `moved` (how far the hand was carried) and `turned` (how far what it holds
+  was turned). GDMOTION3 holds a swing to a hand carried no more than 25 cm and a bat turned no more than 45
+  degrees: a correction that does most of the work is a clip that's wrong (the first swing passed at "4.5 cm from
+  who it's swung at" with the hand dragged down to her hip).
+  **A bring ends with its clip.** Its envelope is counted in the clip's own time, so a clip that ends before the
+  envelope has fallen (a hand held out from a door clip's `release` to past its end), or one that's cut short, would
+  leave the hand pulled toward the target for good: a customer walked out of a shop with the hand he'd held out
+  dragged 40 cm behind him. A timed bring that nobody has told the time for 0.12 s (`LET_GO`: a clip's driver ticks
+  with the physics, so a frame or two can pass between two tellings) and for more than six frames on end
+  (`LET_GO_FRAMES`: one long frame, a hitch, isn't a clip that has stopped) lets go by itself over a quarter of a
+  second (`LET_GO_SECS`), from whatever weight it had, and is gone. GDMOTION3 holds it.
+- `mouth()`: between her lips, from the teeth's bone.
+
+Measured (GDMOTION3): a bottle 6.5 cm thick and a bat 3.5 cm picked up: her hand closes 0.0 cm from the grip, the
+thing held 0.0 mm from her hand's own grip frame, fingertips 9 to 16 mm off the bottle and 12 to 16 off the bat (a
+fingertip's bone ends 7.5 mm inside its pad), no joint inside either; drinking, the bottle's rim 0.0 cm from her lips,
+tipped 52 degrees; eating, an apple's bitten side 0.0 cm from them at both bites; a punch at someone 1.05 and 1.55 m
+up lands 2.3 and 2.6 cm from them, 2.9 cm when they step 30 cm aside as it's thrown; the end of a swung bat 2.0 cm
+from who it's swung at; knuckles 0.3, 0.1 and 1.1 cm from a spot knocked on.
+
+## 5z. Small movements laid over what she's doing, and a thing carried in any pose (`gesture.gd` `HSGesture`; DECISIONS 2026-11-14, later)
+
+The user: "'add life' animations ... looking at an object they are holding, scratching, little life flourish stuff
+... as ik blendables meaning if the lower body and chest is in a position e.g. walking or sitting, we can still
+blend in these animations. Is there a way we can use ik to allow them to hold objects in any of the current
+animation positions." docs/ANIMATOR_V3.md §11, §12.
+
+**`HSGesture`**, a SkeletonModifier3D, the first under her skeleton (`attach` puts it before her head's follower,
+her hands' IK and her soft tissue: they work on the pose it leaves). Her clip plays as it was made; after it, each
+frame, the layer adds two things, and with neither on she is exactly her clip.
+
+**A flourish**: one of her `life_` clips (the Animator makes 19 from her body and bakes them, the left hand's as
+mirrors: `tools/animator/core/life.js`), laid over the pose she's in. The rule is `tools/animator/core/layer.js`'s
+`lay()`, the same sums in GDScript:
+
+- **its arm**, from the collarbone down to the fingertips: each bone's own turn slerped from the pose's to the
+  clip's by a weight that rises over the clip's first `in` seconds and falls over its last `out`;
+- **her spine, her neck, her head and her other collarbone**: only how far the clip has turned each from where the
+  clip started (`first⁻¹ × now`), put on top of what the pose has them doing;
+- **her pelvis, her legs, her soft tissue, her other arm**: never touched;
+- **a touch**: where the clip's hand is on her (her head, her neck, her other arm, her side, her hip: the clip's
+  `touch` says which bone, from when to when, and which point of the hand), the layer works out where that point is
+  in the clip's own bone, carries it to the bone as it is in the pose she's really in, and hands it to `HSHandIK`
+  (`bring`, by a weight of its own). The blend alone leaves the hand 2 to 9 cm off a head that a walk bobs or a
+  follower has turned; with it the point is where the clip has it;
+- **a look**: a flourish that looks at her hand (`head: "look"`) holds her head's follower off while it lasts
+  (`HSHeadTrack.hold_off`), and gives her head back after.
+
+`alive` on, she does one every `every` seconds (6 to 14, a new number each time) that suits what she's doing (the
+clip's `over`: stand, walk, sit), with a hand that's free, never the one before again, and none while an act has
+her (`doing` is "busy"). `play("scratch_head")` does one now ({"left": true}: her other hand's; when that hand
+holds something or is being carried somewhere by its IK, the other's by itself, unless `"this_hand": true` says
+that hand or none: a look at what it holds); `stop()` lets it go. `only` narrows them. `started`, `finished`.
+
+**A carry**: `carry(side, how, {thing, upright})` keeps the arm that holds a thing in one of her five `carry_`
+poses, each one pose made from her body so the arm clears her own bust, belly and hips: `side` (hanging, a fist),
+`front` (her forearm level, the thing in front of her), `chest` (held to her), `shoulder` (over it: a bat),
+`raised` (a lantern). Over any clip: the arm is slerped to the pose (at her side a share of her walk's swing is
+kept, `keep` 0.35), then two corrections by the pose's record: **plumb** (however her chest leans, the upper arm
+hangs as the pose has it against the world: a sneak pitches her chest 22 degrees and the arm doesn't go with it)
+and **upright** (the hand turned so the thing's own +Y is the world's up, 65 degrees at the most: a cup, a candle,
+a lantern). Sat, `side` is shown as `front` (a hand hanging at a thigh has nowhere to put a bottle). An act that
+needs the hand takes it (`carry_pause`: eating, drinking, a blow, a door, a reach) and it's carried again after;
+`carry_off(side)` lets go. A flourish plays from the carry pose and back to it, and the ones that want an empty
+hand are never picked for the hand that holds.
+
+**`HSGrip`** says how its prop is carried: `carry` (as it's used, side, front, chest, shoulder, raised) and
+`upright`; with nothing said, a thing that's drunk from is carried in front of her and upright, anything else at
+her side (`HSGrip.carry_of`).
+
+Who uses it: the starter's `motion.gd` (`alive`, `life_every`, `life_only`, `life(what)`, `hold(thing)`,
+`carry(how)`; a thing kept by `pick_up(thing, true)` is carried from then on), `act.gd` (the acts `life`, `alive`,
+`still`, `hold`, `drop`), the Markers (an HSNpc's Alive and Carries, a marker's Small movements: docs/MARKERS.md).
+The Animator's page shows every flourish over standing, walking and sitting by the same rule in JavaScript.
+
+Measured (GDLIFE, `python tools/godot/motion_check.py life`, on the normal woman): 20 flourishes played standing,
+her pelvis and legs her idle's to 0.00 mm, a hand that touches her within 0.2 mm of where it touches; over her
+walk at 1.34 m/s her legs and her other arm the walk's to 0.00 mm, her hand 0.0 mm from her head (its IK carried
+it 11 mm); sat, 6 of them, 0.0 mm; with her head turned 56 degrees to follow you, her hand ends 0.0 mm from it
+(carried 70 mm: the blend alone leaves it in the air), and a look at her hand takes her head off you and puts it
+back; `alive`, 13 in 40 s standing (12 different ones), none while she opens a door; a cup carried in front of her
+leans 0.0 degrees standing and walking, the hand that holds it travelling 0.7 cm against her chest where her other
+hand swings 28.1; sat, its foot 28 cm over her thigh; a sip from it 0.0 cm from her lips with the carry let go; a
+bottle at her side keeps 37% of the walk's swing; sneaking, the arm is hung back 21 of the 22 degrees her chest
+leans. On a goblin: 32 flourish clips of its own (18 and their mirrors: its body can't do the stretch cleanly, so
+the Animator made none), its hand 0.0 mm from its head.
+
+## 5aa. Cloth: the studio's fabric sets worn in Godot (`cloth.gdshaderinc`, `cloth.gd` `HSCloth`; DECISIONS 2026-11-14)
 
 The user: "create new beautiful clothing fabric pbrs that work well with being tinted ... then demo some of the clothing
 in the new pbrs system". The sets and the Studio's side: docs/TAILOR.md §1k; why: docs/research/fabric_pbr.md.

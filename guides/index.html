@@ -97,11 +97,14 @@ nothing needs a server unless it says so.</p>
   <a class="guide" href="animator/index.html">
     <img src="animator/img/three_walks.jpg" width="2584" height="1260" alt="Three characters walking in Godot, each its own walk">
     <div class="body"><span class="tag" style="color:var(--look)">Characters</span>
-    <h2>Animator v2</h2>
+    <h2>Animator</h2>
     <p>A character's own animations, made from her body. Export her from the Character Studio, open her in the
     Animator, move five sliders (walk style, strength, weight, softness, bounce), bake: her walk, run, sitting, sleeping,
     opening a door and reaching are in her own file. In Godot a Motion node walks her to a marker, sits her, has her
-    pick something up; an Act does it by a quest's words.</p></div>
+    pick something up; an Act does it by a quest's words. <b>Since animations v3</b>, on creatures too: sneaking, crawling
+    and scuttling, a peek round a wall, four jump scares, a head that follows you within an arc, a grip gizmo so a hand
+    closes on a prop to eat or drink, a punch and a swing that track who they're thrown at. <b>Children and other
+    short characters</b> use the chairs, beds and doors a level already has: up onto a seat, legs hanging, a hand up to the handle.</p></div>
   </a>
   <a class="guide" href="markers/index.html">
     <img src="markers/img/03_route.jpg" width="1920" height="1080" alt="A room in Godot's editor with a character's markers as numbered pins joined by a path, and the NPC Markers tab along the bottom">
@@ -110,7 +113,8 @@ nothing needs a server unless it says so.</p>
     <p>A character's whole part in the game, placed in the scene. Click a card (Walk, Talk, Sit, Grab...), click the
     floor: a numbered pin in the character's colour. Markers run in order; one can wait for a flag; a conversation's
     answers switch flags and a Choice takes the way of the answer. Curved paths, stairs, a dance of your own, faces
-    and looks for monsters, Disappear, being shot. Try it plays any marker in the 3D view. No code.</p></div>
+    and looks for monsters, Disappear, being shot; sneaking and crawling, eating and drinking, an Attack, a Jump scare,
+    a head that follows you. Try it plays any marker in the 3D view. No code.</p></div>
   </a>
   <a class="guide" href="flags/index.html">
     <img src="flags/img/04_flags.jpg" width="1920" height="1080" alt="Godot's editor with the Flags tab along the bottom: every flag with who turns it on and who needs it, and chips over a door and a marker in the 3D view">
@@ -120,6 +124,16 @@ nothing needs a server unless it says so.</p>
     makes it work only while a flag is on. Tie a marker to a door by clicking the door. The Flags tab lists every flag
     with who turns it on and who needs it, renames one everywhere, and says what can never happen. F7 in the game
     shows the flags live. No code.</p></div>
+  </a>
+  <a class="guide" href="sequences/index.html">
+    <img src="sequences/img/evening_3_look.jpg" width="1280" height="720" alt="A woman sat on a sofa looking at the mug in her hand">
+    <div class="body"><span class="tag" style="color:var(--look)">Recipes</span>
+    <h2>Sequences: little scenes made of markers</h2>
+    <p>Eight scenes to copy card by card. Someone takes a mug to the sofa and looks at it; tidies a book onto a shelf;
+    you hand her an apple and she eats it; she fetches a key and hands it to you; a customer comes to your till, pays
+    and leaves looking at his can; the last customer is nearer each time you look away; something leans round a corner
+    and is behind you; it crawls out of the dark and hits you. Then how to get the most from the head, hand and
+    small-movement IKs, and what to do when a hand misses. Every recipe is built and played by a check.</p></div>
   </a>
   <a class="guide" href="prop_customizer/index.html">
     <img src="prop_customizer/img/swap.jpg" width="1600" height="1000" alt="The prop generator's picture editor: a logo on a box of shells">

@@ -1,7 +1,7 @@
 @tool
 class_name HSCloth
 extends RefCounted
-## Cloth: a garment wearing one of the studio's clothing fabric sets (tools/fabricpbr.py; GODOT_LOOK §5x). The
+## Cloth: a garment wearing one of the studio's clothing fabric sets (tools/fabricpbr.py; GODOT_LOOK §5aa). The
 ## Character Studio's Export for Godot bakes a garment's dye (its colour, pattern and prints) and its creases and says,
 ## in its material's extras (`studioCloth`), which fabric it wears: the set's name, its repeat in metres and its numbers.
 ## Godot 4.7 keeps a glTF material's extras on the material it imports (its `extras` metadata), so the record is read

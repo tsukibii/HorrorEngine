@@ -9,7 +9,7 @@ import { V, Q, clamp, sm } from "./m.js";
 import { build } from "./pose.js";
 import { SIDES, SGN } from "./rig.js";
 
-const POW = 2.3;                                              // a trunk's slab is a little squarer than an ellipse
+export const POW = 2.3;                                       // a trunk's slab is a little squarer than an ellipse
 
 /** the body's solid shapes, from its measures (`pad`: what's kept clear round them; `cover`: the measures of the body
     with its clothes on, when there are any: a jacket's thickness is kept clear too, up to 3 cm) */
@@ -20,7 +20,7 @@ export function proxies(rig, body, { pad = 0.008, cover = null } = {}) {
   const thigh = {}; for (const s of SIDES) thigh[s] = body.limbs["thigh_" + s].bins.map(b => ({ f: b.f, r: Math.max(b.r, (b.lat + b.front) / 2) }));
   return { slabs, split, pad, thigh, rFore: body.r.fore || 0.035, rUpper: body.r.upper || 0.045, hand: body.hand, y0: slabs[0].y, y1: slabs[slabs.length - 1].y };
 }
-const slabAt = (X, y) => { const s = X.slabs, n = s.length; if (y <= s[0].y) return s[0]; if (y >= s[n - 1].y) return s[n - 1]; let i = Math.min(n - 2, Math.max(0, Math.floor((y - s[0].y) / (s[1].y - s[0].y)))); while (i > 0 && s[i].y > y) i--; while (i < n - 2 && s[i + 1].y < y) i++;
+export const slabAt = (X, y) => { const s = X.slabs, n = s.length; if (y <= s[0].y) return s[0]; if (y >= s[n - 1].y) return s[n - 1]; let i = Math.min(n - 2, Math.max(0, Math.floor((y - s[0].y) / (s[1].y - s[0].y)))); while (i > 0 && s[i].y > y) i--; while (i < n - 2 && s[i + 1].y < y) i++;
   const t = (y - s[i].y) / (s[i + 1].y - s[i].y), a = s[i], b = s[i + 1]; return { a: a.a + (b.a - a.a) * t, b: a.b + (b.b - a.b) * t, a0: a.a0 + (b.a0 - a.a0) * t, b0: a.b0 + (b.b0 - a.b0) * t, cx: a.cx + (b.cx - a.cx) * t, cz: a.cz + (b.cz - a.cz) * t }; };
 const interp = (bins, f) => { if (f <= bins[0].f) return bins[0].r; for (let i = 0; i < bins.length - 1; i++) if (f <= bins[i + 1].f) return bins[i].r + (bins[i + 1].r - bins[i].r) * (f - bins[i].f) / (bins[i + 1].f - bins[i].f); return bins[bins.length - 1].r; };
 
@@ -49,6 +49,8 @@ export function armDepth(rig, X, pose, solved, s, from = 0, to = 4) { let d = -1
 /** a clip's arms kept clear of the body: returns tweak(c, frame), which turns each bent arm's forearm out and carries
     each arm out as far as the clip needs (`report`: the most any frame needed of each, in degrees) */
 export function clearance(rig, X, clip, report = {}) {
+  // (a clip that says it needs none, `clear: false`: a flourish stands on the idle's own first pose, whose arms the idle's own clearance has carried out already, life.js)
+  if (clip.clear === false) { for (const s of SIDES) { report["arm_" + s] = 0; report["turn_" + s] = 0; } return () => {}; }
   const n = clip.n, need = { l: new Float64Array(n), r: new Float64Array(n) }, turn = { l: new Float64Array(n), r: new Float64Array(n) }, STEP = 1.5 * Math.PI / 180, FLOOR = -12 * Math.PI / 180;
   const fk = (c, s) => c.arms[s] && !c.arms[s].hand && !c.arms[s].free;
   const deepest = (c, s, from = 0, to = 4) => { const pose = build(rig, c); return armDepth(rig, X, pose, pose.solve(), s, from, to); };

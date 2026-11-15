@@ -8,31 +8,45 @@
 ##
 ## Where it is matters for the kinds with a place: `appear` (she's put there), `walk` (where she walks TO, through its
 ## HSNpcBend children; she starts from wherever she is), `sit` (the seat's front edge, at the height she sits at),
-## `sleep` (the bed's edge), `grab` (where her hand goes). Its +Z (the blue arrow) is the way she faces there.
+## `sleep` (the bed's edge), `grab` (where her hand goes), `scare` (where she appears), `peek` (the end of the wall
+## she looks out past). Its +Z (the blue arrow) is the way she faces there.
 ## The other kinds happen where she is.
 ##
 ## The Inspector shows only the fields its kind uses; the NPC Markers tab is the easy way to fill them in.
 class_name HSNpcMarker
 extends Node3D
 
-const KINDS := ["appear", "walk", "wait", "sit", "sleep", "grab", "animation", "event", "disappear", "choice", "repeat"]
+const KINDS := ["appear", "walk", "wait", "sit", "sleep", "grab", "animation", "event", "disappear", "choice", "repeat", "attack", "scare", "gesture", "peek"]
 const TITLES := {"appear": "Start here", "walk": "Walk", "wait": "Wait", "sit": "Sit", "sleep": "Sleep", "grab": "Grab", "animation": "Animation",
-	"event": "Event", "disappear": "Disappear", "choice": "Choice", "repeat": "Repeat"}
-const PLACED := ["appear", "walk", "sit", "sleep", "grab"]                 # kinds whose pin is a place
-const STAYS := ["wait", "sit", "sleep", "animation"]                       # kinds she stays in
-const BODY := ["appear", "walk", "wait", "sit", "sleep", "grab", "animation"]   # kinds that need her body (a hidden character comes back for them)
-const ACTIONS := {"reach": "Reach for it", "pick_up": "Pick it up", "put_down": "Put it down", "open": "Open a door"}
+	"event": "Event", "disappear": "Disappear", "choice": "Choice", "repeat": "Repeat", "attack": "Attack", "scare": "Jump scare", "gesture": "Small movement", "peek": "Peek"}
+const PLACED := ["appear", "walk", "sit", "sleep", "grab", "scare", "peek"]   # kinds whose pin is a place
+const STAYS := ["wait", "sit", "sleep", "animation", "peek"]               # kinds she stays in
+const BODY := ["appear", "walk", "wait", "sit", "sleep", "grab", "animation", "attack", "scare", "gesture", "peek"]   # kinds that need her body (a hidden character comes back for them)
+const ACTIONS := {"reach": "Reach for it", "pick_up": "Pick it up", "put_down": "Put it down", "open": "Open a door", "eat": "Eat it", "drink": "Drink from it",
+	"take_from": "Take it from you", "give_to": "Hand it to you"}
+const HANDOVER := ["take_from", "give_to"]                                 # a Grab between her and you: it happens where she stands, turned to you (its pin isn't a place)
+## the small movements a marker can ask for (docs/ANIMATOR_V3.md §11: the Animator's life_ clips; "": one that suits what she's doing)
+const GESTURES := {"any": "One that suits", "look_hand": "Looks at her hand (or what's in it)", "check_wrist": "Looks at her wrist", "scratch_head": "Scratches her head",
+	"rub_neck": "Rubs her neck", "tuck_hair": "Tucks her hair back", "chin": "A knuckle under her chin", "rub_nose": "Rubs her nose", "wipe_brow": "Wipes her brow",
+	"scratch_arm": "Scratches her arm", "brush_off": "Brushes off her shoulder", "scratch_belly": "Scratches her side", "hand_hip": "A hand on her hip",
+	"flex_hand": "Flexes her hand", "rub_hands": "Rubs her hands", "stretch": "Stretches", "roll_shoulders": "Rolls her shoulders", "sigh": "Sighs",
+	"glance": "Glances aside", "neck_stretch": "Stretches her neck"}
+const PACES := {"walk": "Walk", "run": "Run", "sneak": "Sneak", "crawl": "Crawl", "creep": "Creep", "scuttle": "Scuttle"}   # (the last four: animations v3, docs/ANIMATOR_V3.md)
 
 # which kinds use a field (a field not listed here is every kind's)
 const USED_BY := {
 	"pace": ["walk"], "pace_scale": ["walk"], "take_secs": ["walk"], "smooth": ["walk"], "follow_floor": ["walk"], "face_arrow": ["walk"],
 	"to_player": ["walk"], "stop_short": ["walk"],
-	"stay": STAYS, "stay_secs": STAYS, "face_player": ["wait"],
-	"action": ["grab"], "target": ["grab"], "door_opens": ["grab"], "left_hand": ["grab"], "keep_in_hand": ["grab"],
+	"stay": STAYS, "stay_secs": STAYS, "face_player": ["wait", "scare"],
+	"action": ["grab"], "target": ["grab"], "door_opens": ["grab"], "left_hand": ["grab", "attack", "gesture", "peek"], "keep_in_hand": ["grab"],
+	"take_item": ["grab"], "give_item": ["grab"], "give_label": ["grab"], "give_cash": ["grab"], "gesture": ["gesture"], "gesture_along": ["gesture"],
+	"attack": ["attack"], "attack_at": ["attack"], "attack_times": ["attack"],
+	"scare_kind": ["scare"], "scare_stays": ["scare"],
+	"head": BODY + ["event"], "head_range": BODY + ["event"], "head_at": BODY + ["event"], "life": BODY + ["event"],
 	"head_right": ["sleep"],
 	"clip": ["wait", "animation"], "clip_file": ["animation"], "loop": ["animation"], "times": ["animation"],
-	"anim_speed": ["wait", "sit", "sleep", "grab", "animation"], "blend": BODY,
-	"how": ["appear", "disappear"],
+	"anim_speed": ["wait", "sit", "sleep", "grab", "animation", "attack"], "blend": BODY,
+	"how": ["appear", "disappear", "scare"],
 	"repeat_times": ["repeat"], "repeat_until": ["repeat"],
 	"face": BODY + ["event"], "face_amount": BODY + ["event"], "face_rules": BODY + ["event"],
 	"look": BODY + ["event"], "look_skin": BODY + ["event"], "look_eyes": BODY + ["event"], "look_eye_color": BODY + ["event"], "look_secs": BODY + ["event"],
@@ -42,7 +56,7 @@ const USED_BY := {
 	"fire": BODY + ["event", "disappear"], "scare": ["event"], "let_go": ["event"],
 }
 
-@export_enum("appear", "walk", "wait", "sit", "sleep", "grab", "animation", "event", "disappear", "choice", "repeat") var kind := "walk":
+@export_enum("appear", "walk", "wait", "sit", "sleep", "grab", "animation", "event", "disappear", "choice", "repeat", "attack", "scare", "gesture", "peek") var kind := "walk":
 	set(v):
 		kind = v
 		notify_property_list_changed()
@@ -51,7 +65,7 @@ const USED_BY := {
 @export var start_when := ""                             ## the condition's words (cond.gd); empty: at once, when the marker before is done
 
 @export_group("Walk")
-@export_enum("walk", "run") var pace := "walk"           ## her own walk, or her own run
+@export_enum("walk", "run", "sneak", "crawl", "creep", "scuttle") var pace := "walk"   ## her own walk or run; or low: a careful sneak, a crawl on hands and knees, a creature's creep, a scuttle on hands and feet (she stays low after)
 @export_range(0.2, 4.0, 0.05) var pace_scale := 1.0      ## times that speed (0.5: a slow walk; her feet keep step)
 @export_range(0.0, 120.0, 0.1) var take_secs := 0.0      ## over 0: she gets there in this many seconds, whatever the distance
 @export var smooth := true                               ## one smooth curve through her bends (off: straight from bend to bend)
@@ -66,11 +80,34 @@ const USED_BY := {
 @export var face_player := false                         ## she keeps turning to face you while she waits
 
 @export_group("Grab")
-@export_enum("reach", "pick_up", "put_down", "open") var action := "reach"
-@export var target: NodePath                             ## the thing she picks up, or the door she opens (its use() or fire() is called)
+@export_enum("reach", "pick_up", "put_down", "open", "eat", "drink", "take_from", "give_to") var action := "reach"   ## the last two are between her and you: she takes a thing you carry, or hands you what she holds
+@export var target: NodePath                             ## the thing she picks up, eats or drinks from (none: what she holds), or the door she opens (its use() or fire() is called)
 @export_enum("push", "pull", "slide") var door_opens := "push"
-@export var left_hand := false
-@export var keep_in_hand := true                         ## picked up, it stays in her hand (off: it's put away, hidden)
+@export var left_hand := false                           ## with her left hand (a Peek: out to her left; a small movement: her left hand's)
+@export var keep_in_hand := true                         ## picked up or taken from you, it stays in her hand and is carried (off: it's put away, hidden)
+@export var take_item := ""                              ## Take from you: the thing you carry, by its name in your pocket ("apple"); it goes into her hand
+@export var give_item := ""                              ## Hand to you: its name in your pocket (empty: the name of the thing she holds)
+@export var give_label := ""                             ## Hand to you: what your pocket calls it ("Room 304's key")
+@export_range(0.0, 100000.0, 0.01) var give_cash := 0.0  ## Hand to you: money she gives you with it, or alone (she pays)
+
+@export_group("Small movement")
+@export_enum("any", "look_hand", "check_wrist", "scratch_head", "rub_neck", "tuck_hair", "chin", "rub_nose", "wipe_brow", "scratch_arm", "brush_off", "scratch_belly", "hand_hip", "flex_hand", "rub_hands", "stretch", "roll_shoulders", "sigh", "glance", "neck_stretch") var gesture := "any"   ## which, laid over what she's doing (standing, walking, sitting); "any": one that suits
+@export var gesture_along := false     ## not waited for: laid over whatever the next markers have her do (a walk, a seat), as soon as she can
+
+@export_group("Attack")
+@export_enum("punch", "swing") var attack := "punch"     ## a punch, or a swing of what she holds (her fist when she holds nothing)
+@export var attack_at: NodePath                          ## who: empty, you
+@export_range(1, 20) var attack_times := 1               ## how many blows
+
+@export_group("Jump scare")
+@export_enum("lunge", "loom", "snap", "claw") var scare_kind := "lunge"   ## thrown at you; risen over you; her head snapping up; clawed up from all fours
+@export var scare_stays := false                         ## she stays after (off: she's gone when it's been shown)
+
+@export_group("Head")
+@export_enum("keep", "follow", "free") var head := "keep"   ## from here on: her head follows you ("follow"), is her animation's again ("free"), or as it was ("keep")
+@export_range(0.0, 360.0, 1.0, "degrees") var head_range := 160.0   ## the whole arc she follows in, half to each side of straight ahead
+@export var head_at: NodePath                            ## who she looks at: empty, you
+@export_enum("keep", "lively", "still") var life := "keep"   ## from here on: small movements now and then ("lively": a scratch, a look at what she holds, a stretch), none ("still"), or as it was ("keep": her HSNpc's Alive until a marker says)
 
 @export_group("Sleep")
 @export var head_right := false                          ## her head goes to her right as she sits on the edge (off: to her left)
@@ -136,17 +173,27 @@ func _get_configuration_warnings() -> PackedStringArray:
 
 
 func title() -> String:
-	if kind == "walk" and pace == "run":
-		return "Run"
+	if kind == "walk" and pace != "walk":
+		return PACES.get(pace, "Walk")
+	if kind == "attack":
+		return "Punch" if attack == "punch" else "Swing"
 	if kind == "wait" and talk and stay == "talked":
 		return "Talk"
 	if kind == "grab":
-		return {"reach": "Grab", "pick_up": "Pick up", "put_down": "Put down", "open": "Open door"}.get(action, "Grab")
+		return {"reach": "Grab", "pick_up": "Pick up", "put_down": "Put down", "open": "Open door", "eat": "Eat", "drink": "Drink",
+			"take_from": "Take from you", "give_to": "Hand to you"}.get(action, "Grab")
+	if kind == "gesture" and gesture_name() != "":
+		return String(GESTURES.get(gesture, "Small movement")).split(" (")[0]
 	return TITLES.get(kind, kind)
 
 
+## the small movement it asks for ("": one that suits what she's doing)
+func gesture_name() -> String:
+	return "" if gesture in ["", "any"] else gesture
+
+
 func is_placed() -> bool:
-	return kind in PLACED and not (kind == "walk" and to_player)
+	return kind in PLACED and not (kind == "walk" and to_player) and not (kind == "grab" and action in HANDOVER)
 
 
 func stays() -> bool:

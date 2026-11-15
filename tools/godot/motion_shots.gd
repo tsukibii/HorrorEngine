@@ -3,7 +3,8 @@
 ##   -- --glb=FILE --out=DIR --tag=NAME --plan=JSON [--size=WxH] [--frames=N] [--wear] [--light=reel|room]
 ## plan: [{"clip": "walk_loop", "t": 0.25, "view": "side"|"front"|"q"|"back"|"top", "name": "walk_3", "at": [x,y,z], "dist": 3.2}, ...]
 ## (t in seconds; "f": a share of the clip's length instead; "bone": a bone to look at instead of `at`, where it is at
-## that moment, for a close-up of a hand: "l_wrist", with "dist" some 0.6; "yaw", "pitch", "fov" the camera's own).
+## that moment, for a close-up of a hand: "l_wrist", with "dist" some 0.6; "yaw", "pitch", "fov" the camera's own;
+## "boxes": [[x, y, z, sx, sy, sz], ...] plain boxes in that picture, by their middles and sizes: a wall for a peek).
 ## Prints MOTIONSHOTS {json}: the clips the file has, their lengths and loop modes, each picture's file.
 extends SceneTree
 
@@ -118,6 +119,21 @@ func _initialize() -> void:
 
 
 func pose(s: Dictionary) -> void:
+	for old in world.get_children():                                   # the boxes of the picture before
+		if old.name.begins_with("_Box"):
+			old.free()
+	for b in s.get("boxes", []):
+		var box := MeshInstance3D.new()
+		box.name = "_Box"
+		var bm := BoxMesh.new()
+		bm.size = Vector3(b[3], b[4], b[5])
+		box.mesh = bm
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.52, 0.5, 0.47)
+		mat.roughness = 0.95
+		box.material_override = mat
+		world.add_child(box, true)
+		box.position = Vector3(b[0], b[1], b[2])
 	if ap != null and s.has("clip") and ap.has_animation(s["clip"]):
 		var an := ap.get_animation(s["clip"])
 		var t: float = float(s.get("t", float(s.get("f", 0.0)) * an.length))

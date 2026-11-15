@@ -1,4 +1,4 @@
-// Cloth (HSCloth, cloth.gd; GODOT_LOOK §5x): a garment wearing one of the studio's clothing fabric sets
+// Cloth (HSCloth, cloth.gd; GODOT_LOOK §5aa): a garment wearing one of the studio's clothing fabric sets
 // (tools/fabricpbr.py, the packs in textures/cloth/). The file brings the dye (the garment's colour, its pattern and
 // prints, baked flat on its own layout) and its creases; the fabric's own surface is drawn here at its real size on
 // the second UV, which is the cloth's metres: the weave's or the knit's relief, roughness and occlusion, how the dye

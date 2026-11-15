@@ -104,19 +104,30 @@ start from it.
 | Card | Kind | What she does | Its own settings |
 |---|---|---|---|
 | Start here | `appear` | is put at the pin, facing its arrow, shown | how: at once, when you're not looking, fading in |
-| Walk, Run | `walk` | goes from where she is to the pin, through its bends, then turns to the arrow | pace (walk, run, her own speed × N, or "take N seconds"), smooth or sharp corners, follow the floor, end facing the arrow or the way she came; or *to you* (stops short) |
-| Wait, Talk | `wait` | stays where she is, idling (or a loop of yours) | stays: N seconds, until you talk to her, until the next can start; faces you |
-| Sit | `sit` | walks the last step to the pin (on the seat's front edge, the arrow the way her knees point), sits, stays sat | stays (as Wait) |
-| Sleep | `sleep` | sits on the bed's edge at the pin, lies down, sleeps | which side her head goes; stays |
-| Grab, Pick up, Put down, Open door | `grab` | a hand to the pin, the arrow the way she faces: reaches for it; or takes the thing named into her hand; or puts what she holds at the pin; or opens the door named. Her hand has three reaches (the floor, a table at about 0.86 m, a shelf at about 1.65 m on an adult: the Animator's three clips): the one nearest the pin's height is played | which hand, the thing, the door and how it opens |
+| Walk, Run, **Sneak, Crawl** (and Creep, Scuttle in the form) | `walk` | goes from where she is to the pin, through its bends, then turns to the arrow. At a low pace she goes low and **stays low** where it leaves her (crouched after a sneak, on all fours after a crawl or a scuttle, hunched after a creep) until a plain Walk or Run stands her up | pace (walk, run, sneak, crawl, creep, scuttle; her own speed × N, or "take N seconds"), smooth or sharp corners, follow the floor, end facing the arrow or the way she came; or *to you* (stops short) |
+| Wait, Talk | `wait` | stays where she is, **as the marker before left her**: standing and idling (or a loop of yours), still sat after a Sit, still asleep, still looking out after a Peek, low after a low Walk | stays: N seconds, until you talk to her, until the next can start; faces you |
+| Sit | `sit` | walks the last step to the pin (on the seat's front edge, the arrow the way her knees point), sits, stays sat. A short character (a child, a goblin) gets up onto a person's chair and sits with its legs hanging: its own clip (ANIMATOR_V3 §10); a seat higher than her clip is made for she's lifted onto, 12 cm, or 30 when her legs hang | stays (as Wait) |
+| Sleep | `sleep` | sits on the bed's edge at the pin, lies down, sleeps (a short character onto the edge as onto a chair) | which side her head goes; stays |
+| Grab, Pick up, Put down, Open door, **Eat, Drink** | `grab` | a hand to the pin, the arrow the way she faces: reaches for it; or takes the thing named into her hand; or puts what she holds at the pin; or opens the door named (her hand is put on the pin itself by the hand's IK, as far as her arm goes: a handle a little off the height her clip is made for is still held). Her hand has three reaches (the floor, a table at about 0.86 m, a shelf at about 1.65 m on an adult: the Animator's three clips): the one nearest the pin's height is played. **Eat, Drink**: the thing named is taken first (or it's what she already holds), then brought to her mouth: eaten, it's gone; drunk from, it stays in her hand | which hand, the thing, the door and how it opens |
+| ***Take from you, Hand to you*** | `grab` | no pin: where she stands she turns to you and holds a hand out. *Take from you*: a thing you carry (by its name in your pocket) leaves your pocket and is in her hand, with the look your pocket had for it. *Hand to you*: what she holds (or an item by its name alone, and any money) goes into your pocket | the thing's name; kept in her hand or put away; what it's called in your pocket; money; which hand |
+| ***Small movement, Look at it*** | `gesture` | one of her small movements, now, laid over whatever she's doing (standing, walking, sitting): she looks at what's in her hand, checks her wrist, scratches her head, stretches... The next marker waits until her hand is back, or doesn't (*over what comes next*) | which one (or one that suits); which hand; over what comes next |
+| ***Peek*** | `peek` | stands hidden behind a wall's end at the pin (the foot of the edge), leans out past it along the arrow, and stays looking; whatever moves her next draws her back first | out to her right or her left; stays |
 | Animation | `animation` | plays a clip: one of her own by name, or a file (a Kimodo `.npz` in `res://animations/`, a Godot animation) | once, N times, looping (stays as Wait); speed |
 | Event | `event` | nothing with her body: what's under *then*, at once | a scare; let go of her |
 | Disappear | `disappear` | is hidden and switched off: not drawn, not animated, not processed, her colliders out of the physics; she still exists | how: at once, when you're not looking, fading out |
 | Choice | `choice` | takes the first of its ways whose flags are so | its ways, in order; "otherwise" last |
 | Repeat | `repeat` | does the markers inside it again | N times, until flags, or until the quest moves on |
+| **Attack** (Punch, Swing) | `attack` | goes to where the blow reaches whoever it's for (you, or anyone picked), turns with them until it's thrown, and throws it: a punch, or a swing of what she holds (her fist when she holds nothing) | punch or swing, who, how many blows, which hand |
+| **Jump scare** | `scare` | is put at the pin already in the scare (turned to you unless told not to), and is gone again when it's been shown | lunge, loom, snap or claw; how: at once or when you're not looking; *she stays after* |
 
 Every kind has: a note (shown on its pin), *Starts when*, the animation's **speed** and the **blend** into it
-(seconds), a face, a look, *then*.
+(seconds), a face, a look, **her head** (below), *then*.
+
+The rows in bold are **animations v3** (DECISIONS 2026-11-14; docs/ANIMATOR_V3.md): they want a character baked by
+the Animator since then (its record's version 3). On one baked before, or on any other model, Problems says which
+clip she lacks and she plays what she has (a walk for a sneak; the clip passed over for the rest). The rows in bold
+italics are **the sequences' markers** (DECISIONS 2026-11-14, evening: the tutorial of sequences, `guides/sequences`),
+below.
 
 **A hidden character costs nothing.** Disappear sets `visible` off and `process_mode` to disabled on the character
 (Godot then takes her colliders out of the physics too) and the runner looks at her next marker's flags five times a
@@ -144,9 +155,114 @@ before each riser, down it she comes off each step late, and she's never inside 
 3.3 cm of height a frame, never more than 4 cm under a step). One bend at the foot and one at the top of a flight
 (*sharp corners*) is enough. Where there's no collider she keeps the path's own height.
 
+**Low ways of going.** Sneak (a careful walk on bent knees, 0.42 m/s on the test woman), Crawl (hands and knees,
+0.38), Creep (a creature's hunched prowl, 0.53) and Scuttle (hands and feet, fast: 1.2) are a Walk's pace: the same
+pin, bends, stairs and "take N seconds", each at its own clip's speed so nothing slides. Where it ends she rests in
+that pace's own loop, and a Wait, a Talk or the next low Walk keeps her there. A plain Walk or Run, a Sit, a Sleep, a
+Grab or an Attack stands her up first.
+
+**Her head.** On any marker, *Head*: **follows you** (or someone picked), **is her animation's again**, or nothing
+said (as the marker before left it). Following, her head and neck turn to whoever it is on top of whatever clip she's
+playing, within an arc: 160 degrees unless set, half to each side of straight ahead (the user's "80 degrees left and
+80 degrees right"); past it she lets go and looks ahead again. It's carried from marker to marker and quest to quest
+like her face and her look, and kept by a checkpoint. It's the Look plugin's `HSHeadTrack` under her skeleton
+(GODOT_LOOK §5x): a little of the turn goes into her chest, her eyes lead when her model has eye bones. Without the
+Look plugin in the project the row does nothing and Problems says so.
+
+**Small movements, and what she keeps in her hand** (DECISIONS 2026-11-14, later: "'add life' animations ...
+looking at an object they are holding, scratching, little life flourish stuff"; docs/ANIMATOR_V3.md §11, §12).
+On the character (her HSNpc, the tab's form with her picked) *Life*: **Small movements now and then**, with how
+often (6 to 14 s unless set). While she stands, walks or sits at her markers she scratches her head, rubs her neck,
+looks at what's in her hand, stretches: the Animator's `life_` clips, laid over whatever she's playing by the Look
+plugin's `HSGesture` (GODOT_LOOK §5z), so her legs go on walking and her seat stays sat. Never while a marker's own
+act has her (a Grab, an Attack, a jump scare, sitting down, a custom animation), never while she's hidden or shot
+down. On any marker, in its *Head* section, **Small movements: as they were, now and then, none**: from there on,
+carried from marker to marker and quest to quest and kept by a checkpoint, as her head's following is (someone
+stalking you is switched to none at the marker where the stalking starts). Off unless ticked. She needs to have
+been baked by the Animator since its life clips (Problems says when she wasn't), and the project the Look plugin.
+
+**A thing she keeps** (a Grab's Pick up with *Keep in hand*) **is carried** from there on, whatever she does: at
+her side, in front of her, to her chest, over her shoulder, or raised, with her walk and her seat going on under
+it. *Carries things*, on the character, says how; left at *as the thing's grip says*, a prop's own `HSGrip` does
+(its Carry and Upright: a cup that's drunk from is carried in front of her and kept upright; anything else at her
+side). The next Grab, Eat, Drink or Attack takes her hand for as long as it needs and gives it back; Put down ends
+it.
+
+**One small movement, as a marker** (DECISIONS 2026-11-14, evening: "walking to a sofa, sitting on it, and looking
+at the object"). Where *Small movements now and then* is chance, a **Small movement** marker is the one you want at
+the moment you want it: *Looks at her hand (or what's in it)*, *Checks her wrist*, *Scratches her head*, *Stretches*
+and the rest of her `life_` clips by name, or *One that suits*. It's the same layer (`HSGesture`): nothing below her
+chest changes, so sat on the sofa she stays sat and walking she goes on walking; a look at what she holds uses the
+hand that holds it and waits for that hand (just after it took the thing, a third of a second), and any other
+movement whose hand is full or busy uses her other hand's. The marker is done when her hand is
+back (the look at her hand takes 3.1 s on the test woman). With *Over what comes next* it isn't waited for: the next
+marker starts at once and the movement is laid over it the moment it can be (she gets up, sets off, and checks her
+wrist as she walks); it's given up after 8 s of never being possible. One made for a body that can't do it cleanly
+wasn't baked (Problems says which), and it's passed over after 1.5 s when it can't be played where she is (a hand on
+her hip isn't made for walking).
+
+**A Wait leaves her as she is.** Sat, asleep, looking out past a wall or low, a Wait (or a Talk) with no loop of its
+own keeps her so: Sit → Look at it → Wait 5 s → Look at it is someone sat with a cup. Only a marker that moves her
+(a Walk, a Grab, an Attack) stands her up first. A Wait with a loop of its own still stands her up for it.
+
+**A thing changes hands** (the same day: "we get something, give it to the npc, they eat it"; "they're someone that
+walked to the till, ask for something"). Two Grabs with no pin, done where she stands, turned to you, stood upright, her
+hand held out at the height of her lower chest (the arm of her door push: a hand to a handle and on out in front
+of her; her palm is carried toward you by her hand's IK, a forearm's length and never into you; a character with no
+such clip reaches as for a table). **Take from you**: the thing named leaves your pocket (the Story's `take`) and is in her hand as
+a copy of the model your pocket had for it (a Pickup's own mesh; a small block when the pocket never had a look for
+it), held by its grip as anything she picks up. *It stays in the hand*: carried from there on, so an Eat or a Drink
+with no thing picked uses it; off, it's put away. If you don't carry it nothing changes hands: give the marker
+*Starts when: you carry …* to have her wait for it, and a Talk before it to be asked. **Hand to you**: what she holds
+goes into your pocket by its name (the item typed, else the thing's own name) with its own look, called what the
+marker says; with nothing in her hand, an item by its name alone; *And money* is paid into your cash (a customer
+paying). The thing itself is hidden, as a Pickup's is. The scan reads both (the Flags and Things tabs know a Take
+from you needs the thing and a Hand to you gives it), and both are in the items' pickers. A checkpoint from before
+she was handed something takes it out of her hand again (it's back in your pocket); what she picked up from the
+scene itself isn't put back.
+
+**Peek.** The pin is the foot of the wall's end and the arrow the way of the look. She stands behind the wall where
+her own clip was made to stand her (25 cm to the side of the edge and 20 cm back, on the test woman), leans out
+(her head 5 cm past the edge, a hand on the wall), and stays looking: for some seconds, until the next can start, or
+through a Wait or a Talk after it. The next marker that moves her draws her back first (`peek_back`). *Out to the
+left* mirrors it. With her head following you she watches you as you move. Seen from the front only: the wall
+hides the rest (DECISIONS 2026-11-14, short NPCs).
+
+**What "you see her" is, and when a marker that waits for you to look away says its piece** (found building the
+sequences). *You see her* (`@seen`, *when you're not looking*) looks at where she stands (her head, her middle, her
+feet there) **and at her head where it really is**: leant out past a wall's end in a Peek, low on all fours. A
+marker that comes *when you're not looking* (a Start here, a Disappear, a Jump scare) holds its Then's line, sound
+and things fired **until it happens**, not when its Starts when opened: a scare's sting and its flickering lights
+come with the scare. A quest's own Starts when can't be *after N s* (that counts at a marker that's ready); Problems
+says so.
+
+**Eat and drink.** The thing is held where its **grip** says (the Look plugin's `HSGrip` under the prop: a ring to
+put where a hand closes round it, sized by a handle to the prop's thickness, with a point for the side that's bitten
+or the rim that's drunk from; a prop with none is gripped by a guess from its size). Her fingers close to the grip's
+size; the bite or the rim is carried the last centimetres to her lips by her hand's IK (`HSHandIK`, GODOT_LOOK §5y),
+measured at 0.0 cm on the test woman. Eat: two bites, then the thing is put away (hidden, not deleted). Drink: a sip,
+tipped, and it stays in her hand for the next marker (Put down leaves it at a pin).
+
+**Attack.** She walks to where the blow reaches (nearer for someone above or below her shoulder), keeps turning with
+them until just before it lands, and her fist or the end of what she holds is carried onto where they are at that
+moment: someone who stepped aside 20 cm is still hit, someone who got away isn't. Already nearer than her blow
+reaches (she crept right up to you), she throws it from where she stands: a step away would turn her back on you.
+A blow that gets there (within 12 cm) says so: the HSNpc's `struck(target, kind)` signal, and the target's `take_hit(by)` or `struck(by, kind)` when
+it has one (the starter's player and Motion both do). On you it's aimed a little under your eye and stops 20 cm short
+of it. *How many blows* repeats it, catching up with them between blows; she gives up a blow after 8 s of not getting
+there. Swing swings whatever she holds by its grip (a bat picked up a marker earlier); with nothing in her hand it's a
+swung fist.
+
+**Jump scare.** One marker for the whole thing: she's put at its pin, turned to you, already in the scare's first
+frame (no blend), the scare is heard at once (`scared` on the HSNpc, the group `hs_scare`: the Fear node and the
+night's director hear it), and when the clip's own *over* moment comes (the lunge has been shown for 0.98 s) she's
+hidden and switched off as Disappear does. *She stays after* plays it to its end and leaves her there (after the claw,
+on all fours). *When you're not looking* waits for that before she's put there. Lunge: thrown at you from a crouch.
+Loom: risen over you with her arms up. Snap: her head snapping up to you. Claw: clawed up from all fours.
+
 **A custom animation (a Kimodo dance).** Drop the `.npz` in `res://animations/`. On an Animation marker pick it under
 *From a file*: it's fitted onto her own skeleton the first time it's needed (the Director's Kimodo reader and
-retarget, which every by-hand project already carries in `res://kimodo/`) and kept. Her own clips (the Animator's 24,
+retarget, which every by-hand project already carries in `res://kimodo/`) and kept. Her own clips (the Animator's 53,
 or whatever her model has) are in the same list by name.
 
 ## 5. Starts when, and flags
@@ -160,7 +276,7 @@ a face's rule, a conversation's): words apart by commas, all of them must be so;
 | `task:id` | that task is ticked |
 | `on:id` | that task is on the to-do list and not ticked: *the quest is open* |
 | `item:name` | you carry it |
-| `@wait:3` | she's been ready for this marker for 3 seconds |
+| `@wait:3` | she's been ready for this marker for 3 seconds (a marker's word: a quest's *Starts when* can't use it, and Problems says so) |
 | `@near:2`, `@far:6` | you're within 2 m of her; further than 6 m |
 | `@seen`, `@unseen` | you can see her (in view, nothing in the way); you can't |
 | `@shot`, `@down` | she's been hit; she's been shot down |
@@ -265,7 +381,8 @@ A **copy** of the character is made for it (never saved; the real one is hidden 
 touched), put in the state the markers before leave her in, and run by the same runner as the game with every
 *Starts when* passed after a moment (its words shown), conversations shown as captions and their first answer taken,
 the Choice's ways taken as picked in the storyboard. Nothing is fired, no flag is set, no sound played. Stop, or
-saving the scene, ends it.
+saving the scene, ends it. (The copy makes no small movements, which come when they like, and takes nothing of the
+scene's into its hand, so it carries nothing.)
 
 ## 10. The plan
 
@@ -318,11 +435,50 @@ saving the scene, ends it.
 - [x] the guide `guides/markers/` with pictures of the real thing; the plugin's README and CLAUDE.md; CLAUDE.md,
       CONTINUE, GodotPlugins/README
 
+**F. Animations v3** (DECISIONS 2026-11-14; docs/ANIMATOR_V3.md)
+- [x] a Walk's low paces: sneak, crawl, creep, scuttle, each at its own clip's speed, resting low after
+- [x] Eat and Drink on a Grab: the thing by its grip, to her mouth by her hand's IK
+- [x] the **Attack** kind: punch or swing at you or anyone, carried onto them, `struck`
+- [x] the **Jump scare** kind: there, shown, gone
+- [x] *Head* on every marker: follows you within an arc, carried on, kept by a checkpoint
+- [x] the cards (Sneak, Crawl, Eat, Drink, Attack, Jump scare), their form rows, their drawings; Problems for a
+      character with no such clip or an attack at nobody
+- [x] MARKERS (the stage `v3`) and MARKERSEDITOR (the new cards)
+
+**G. Life and carrying** (DECISIONS 2026-11-14, later; docs/ANIMATOR_V3.md §11, §12)
+- [x] an HSNpc's **Life**: *Small movements now and then* (and how often), *Carries things*; in the tab's character
+      form
+- [x] *Small movements* on every marker (as they were, now and then, none), carried on, kept by a checkpoint
+- [x] `HSNpcBody`: the Look plugin's `HSGesture` under her (`gesture()`, `alive()`, `flourish()`), told each frame
+      what she's doing; a thing kept in her hand carried from there on, her hand given to a later act and taken back
+- [x] none while she's hidden, shot down, or an act has her; never in the tester's copy
+- [x] Problems for a character baked before the life clips, or with no skeleton
+- [x] MARKERS (the stage `life`) and MARKERSEDITOR (the two form rows)
+
+**H. The sequences' markers** (DECISIONS 2026-11-14, evening; the guide `guides/sequences`)
+- [x] the **Small movement** kind (`gesture`, `gesture_along`): one flourish by name or one that suits, laid over
+      standing, walking or sitting; waited for, or over what comes next; a look at what she holds with the hand that
+      holds it
+- [x] a Wait leaves her sat, asleep or looking out
+- [x] **Take from you** and **Hand to you** on a Grab (`take_item`, `give_item`, `give_label`, `give_cash`): the
+      Story's pocket and cash, the thing in her hand by its grip, her palm held out to you; read by the scan
+- [x] the **Peek** kind: placed by the wall's end, held, drawn back before she moves
+- [x] the cards (Small movement, Look at it, Peek, Take from you, Hand to you), their form rows and drawings;
+      Problems: a thing not named, nothing to hand over, a movement her body hasn't got, no peek clip
+- [x] MARKERS (the stage `hands`) and MARKERSEDITOR (the cards and their forms)
+- [x] the guide `guides/sequences`: eight recipes built for real by `tools/godot/sequences.py` and played by
+      SEQUENCES; what building them found, fixed: *you see her* counts her head where it is; a marker that waits for
+      you to look away says its piece when it happens; a blow thrown from inside its reach no longer turns her back
+      on you; a look at a cup she carries keeps it upright; a quest asked to wait some seconds is a Problem
+
 ## 11. Later (not in this round)
+
+- eating and drinking sat down (now: an Eat or a Drink stands her up first; a look at what she holds doesn't)
+- a thing handed over between two characters (now: between her and you)
+- what she holds put back by a checkpoint (now: only a thing you handed her is taken out again)
 
 - doors opened on the way of a walk (now: an Open door marker before it)
 - a Follow marker (she keeps after you along your trail, as the starter's chase does)
-- her head and eyes turning to you while she waits (now: her body can face you)
 - feet planted on each step of a stair (now: she glides over the risers)
 - a navigation mesh (now: the path you draw is the path she takes)
 - Director and desk games (now: games built by hand)

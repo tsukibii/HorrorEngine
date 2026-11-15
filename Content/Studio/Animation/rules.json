@@ -1,0 +1,41 @@
+{
+ "_note": "The numbers docs/ANIMATION_RULES.md holds the studio's own furniture to (python tools/anim_rules.py check: ANIMRULES). Each is where a clip stops working, measured: Content/Studio/Animation/space.json (node tools/animator/space.mjs) and ranges.json (python tools/godot/motion_check.py ranges). Metres.",
+ "seat": {
+  "made_for": 0.45,
+  "min": 0.33,
+  "max": 0.57,
+  "why": "a sit clip with her feet on the floor is raised or lowered 12 cm at the most"
+ },
+ "bed": {
+  "made_for": 0.45,
+  "min": 0.33,
+  "max": 0.57,
+  "why": "the bed clips sit her on its edge first: the same 12 cm"
+ },
+ "handle": {
+  "made_for": 1.0,
+  "min": 0.9,
+  "max": 1.25,
+  "why": "an adult's hand is on the handle within 1 cm between these (GDRANGE)"
+ },
+ "door": {
+  "width": 0.75,
+  "height": 1.95,
+  "why": "a person walking is 61 cm wide with her arms and 1.81 m tall"
+ },
+ "not_seats": {
+  "zabuton": "a floor cushion, 6 cm: a character sat on it is baked with --seat 0.08 (she sits on the floor, knees up)",
+  "floor_cushion": "a floor cushion, 9 cm: as the zabuton",
+  "zaisu": "the prop generator's legless floor chair, 7 cm: as the zabuton"
+ },
+ "floor_beds": {
+  "futon": "a futon on the floor, 10 cm: a character who sleeps on one is baked with --bed 0.15"
+ },
+ "high_seats": {
+  "stool": "the prop generator's bar stool, 65 cm: over an adult's 57; a short character is lifted onto it (its legs hang anyway)"
+ },
+ "doors_out": {
+  "gate_bars": "a barred gate with no lever: nobody opens it by its handle",
+  "door_louvre": "a closet's louvred door, 60 cm wide: opened, never walked through"
+ }
+}

@@ -1,4 +1,4 @@
-## The cloth shader (HSCloth, cloth.gdshaderinc; docs/GODOT_LOOK.md §5x; tools/godot/cloth_check.py runs it: GDCLOTH):
+## The cloth shader (HSCloth, cloth.gdshaderinc; docs/GODOT_LOOK.md §5aa; tools/godot/cloth_check.py runs it: GDCLOTH):
 ## every clothing fabric set the plugin has on a ball of cloth with folds in it, its weave magnified and at a garment's
 ## distance in four dyes, as the Character Studio's own sheet has them (tools/character/tailor/swatch.mjs); then one
 ## ball in a small room of its own, lit so each thing the shader does can be measured (the dye, the weave's relief,

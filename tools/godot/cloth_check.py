@@ -1,4 +1,4 @@
-"""GDCLOTH: the look plugin's cloth shader (HSCloth: the studio's clothing fabric sets worn in Godot, GODOT_LOOK §5x)
+"""GDCLOTH: the look plugin's cloth shader (HSCloth: the studio's clothing fabric sets worn in Godot, GODOT_LOOK §5aa)
 in a Godot project of its own under xvfb. Every set the plugin has on a ball of cloth (its weave magnified, and at a
 garment's distance in four dyes: the sheet), then one ball lit so each thing the shader does can be measured:
 

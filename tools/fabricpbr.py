@@ -838,7 +838,7 @@ def sets_on_disk():
 
 
 def cmd_godot(names):
-    """The sets packed for the look plugin's cloth shader (HSCloth, GODOT_LOOK §5x), from the maps in pbr/fabric:
+    """The sets packed for the look plugin's cloth shader (HSCloth, GODOT_LOOK §5aa), from the maps in pbr/fabric:
     <Set>_a.jpg (the normal's x and y, the hairiness), <Set>_b.jpg (the undyed cloth over its mean, halved; the
     roughness; the occlusion), <Set>_o.png (a sheer knit's cover, or where a dye takes), each with its .import (mips,
     no compression: as the skin's tiles), and cloth.json: each set's repeat and its fabric block."""

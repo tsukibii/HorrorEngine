@@ -376,9 +376,10 @@ func _initialize() -> void:
 	var rate: float = (her.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer).speed_scale
 	if absf(rate - 0.65 / float(rep["walk"])) > 0.03:
 		bad("moves.gd: her own walk at 0.65 m/s plays at %.2f of its pace (her walk travels %.2f m/s)" % [rate, rep["walk"]])
-	if mv.resolve("stalk") != "walk" or mv.resolve("lunge") != "run":
-		bad("moves.gd: stalk falls back to %s, lunge to %s" % [mv.resolve("stalk"), mv.resolve("lunge")])
-	say("moves.gd with nothing set: her own idle, walk and run; a walk at 0.65 m/s played at %.2f of its pace; stalk falls back to her walk" % rate)
+	# (since animations v3 she has a creep, a crawl, a peek and a lunge of her own: the hunt's moves use those; what she still has no clip for falls back)
+	if mv.resolve("stalk") != "stalk" or mv.resolve("lunge") != "lunge" or mv.resolve("crawl") != "crawl" or mv.resolve("kill") != "lunge" or not String((mv.clips["stalk"] as Dictionary)["name"]).begins_with("creep"):
+		bad("moves.gd: stalk is %s (%s), lunge %s, crawl %s, kill falls back to %s" % [mv.resolve("stalk"), (mv.clips.get("stalk", {}) as Dictionary).get("name", ""), mv.resolve("lunge"), mv.resolve("crawl"), mv.resolve("kill")])
+	say("moves.gd with nothing set: her own idle, walk and run, and her creep for 'stalk', her crawl, her peek, her lunge; 'kill' falls back to her lunge; a walk at 0.65 m/s played at %.2f of its pace" % rate)
 
 	# ---- I. her soft tissue swung live (the look plugin's HSJiggle, put on by Motion): JiggleBones' way ---------------------
 	mv.queue_free()

@@ -5,6 +5,9 @@
 import { V, Q, M4 } from "./m.js";
 
 export const SIDES = ["l", "r"], SGN = { l: 1, r: -1 };
+// MHR's own elbow, the right arm's: which way the upper arm points at rest and the axis the forearm is bent about there
+// (the mean of its feminine and masculine bases, 1.8 degrees from either; ANIMATOR holds it to them)
+export const ELBOW = { du: [-0.670, -0.741, 0.053], h: [-0.678, 0.581, -0.450] };
 const FINGERS = ["thumb", "index", "middle", "ring", "pinky"];
 
 /** the rig of a parsed .glb (glb.js). Throws, in words a person can act on, when the file isn't a Studio export. */
@@ -27,10 +30,16 @@ export function readRig(glb) {
     const n = b => need(`${s}_${b}`), sg = SGN[s];
     const A = { clav: n("clavicle"), up: n("uparm"), low: n("lowarm"), wtw: n("wrist_twist"), hand: n("wrist") };
     A.du0 = dir(A.up, A.low); A.df0 = dir(A.low, A.hand); A.upper = len(A.up, A.low); A.fore = len(A.low, A.hand);
-    // the elbow's hinge: the axis the forearm is already bent about at rest (MHR's rest has the elbow bent some 35
-    // degrees); a nearly straight arm falls back on the side-to-side axis, square to the arm
+    // The elbow's hinge is MHR's own, carried by the upper arm. On MHR's bodies the elbow is bent some 35 degrees at
+    // rest and the hinge is the axis it's bent about (ELBOW: read off its two bases). It used to be read off each
+    // body's own rest pose, and that only holds while the bend is there: a creature's hunch and longer arms leave the
+    // elbow nearly straight (a goblin's 15 degrees, a ghoul's 10) or a little bent the other way (a hag's), and then
+    // the axis is whatever the last millimetres make it. The hag's came out pointing backward and the ghoul's
+    // sideways: every clip wrung their arms 100 to 140 degrees along their length to make up for it, and a peek or a
+    // swing flipped the twist bones over between two frames (animations v3, docs/ANIMATOR_V3.md §8.4)
     const c = V.cross(A.du0, A.df0); A.bend0 = Math.atan2(V.len(c), V.dot(A.du0, A.df0));
-    A.h0 = A.bend0 > 8 * Math.PI / 180 ? V.norm(c) : V.norm(V.perp([-1, 0, 0], A.du0));
+    const eu = [-sg * ELBOW.du[0], ELBOW.du[1], ELBOW.du[2]], eh = [ELBOW.h[0], -sg * ELBOW.h[1], -sg * ELBOW.h[2]];   // (the left arm's are the right's in a mirror: a hinge is an axis, so it mirrors with the other sign)
+    A.h0 = V.norm(V.perp(Q.rot(Q.fromTo(V.norm(eu), A.du0), eh), A.du0));
     A.upTw = twists(A.up, A.low); A.lowTw = twists(A.low, A.hand);
     // the hand: its fingers, the palm's own normal (out of the palm) and how far the hand is turned about the
     // forearm at rest (0: the palm faces the body's middle with the arm hanging; rising as it turns to face backward)
@@ -39,8 +48,9 @@ export function readRig(glb) {
     A.handDir = mid != null ? dir(A.hand, mid) : A.df0; A.handLen = tip != null ? len(A.hand, tip) : 0.17;
     let pn = idx != null && pky != null ? V.norm(V.cross(V.sub(at(idx), at(A.hand)), V.sub(at(pky), at(A.hand)))) : V.cross(A.df0, A.h0);
     if (sg > 0) pn = V.mul(pn, -1);                           // (index x pinky points out of the back of the left hand, out of the palm of the right)
-    A.palm0 = pn; const b0 = V.cross(A.df0, A.h0);            // (b0: backward, when the arm hangs)
-    A.pron0 = Math.atan2(V.dot(pn, b0), sg * V.dot(pn, A.h0));
+    const hf = V.norm(V.perp(A.h0, A.df0));                   // (the hinge as the forearm carries it: square to the forearm, as Q.frame takes it)
+    A.palm0 = pn; const b0 = V.cross(A.df0, hf);              // (b0: backward, when the arm hangs)
+    A.pron0 = Math.atan2(V.dot(pn, b0), sg * V.dot(pn, hf));
     R[s === "l" ? "armL" : "armR"] = A;
     const L = { up: n("upleg"), low: n("lowleg"), foot: n("foot"), ball: n("ball") };
     L.dt0 = dir(L.up, L.low); L.ds0 = dir(L.low, L.foot); L.thigh = len(L.up, L.low); L.shank = len(L.low, L.foot);

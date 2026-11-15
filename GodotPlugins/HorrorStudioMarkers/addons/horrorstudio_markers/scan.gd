@@ -24,7 +24,7 @@ extends RefCounted
 ##   flag        one flag's name, turned on                                 flags   names, one a line, on at the start
 ##   task        one task's id, ticked                                      tasks   "id: what it says" lines, put on the list
 ##   task_flags  the Story's: "id: +a, -b" as a task is ticked, "added id: +a" as it's listed
-##   item        one thing's name, put in the pocket
+##   item        one thing's name, put in the pocket                       takes   one thing's name, taken out of it (it has to be carried)
 ##   rules       a marker's face rules: "cond => face"                      talks   a marker's conversations
 const FIELDS := {
 	"needs": "cond", "when": "cond", "start_when": "cond", "starts_when": "cond", "repeat_until": "cond",
@@ -33,7 +33,7 @@ const FIELDS := {
 	"set_flags": "switch", "flags": "switches", "fact": "flag", "flag": "flag", "slept_fact": "flag",
 	"flags_start": "flags", "task_flags": "task_flags",
 	"tick": "task", "reveal_task": "task", "low_task": "task", "add_tasks": "tasks", "tasks": "tasks",
-	"item": "item", "face_rules": "rules", "talks": "talks",
+	"item": "item", "give_item": "item", "take_item": "takes", "face_rules": "rules", "talks": "talks",
 }
 ## fields whose names are too plain to trust on a script that isn't the studio's (a `flags` of your own may be numbers)
 const PLAIN := ["when", "flags", "flag", "fact", "tick", "item", "tasks"]
@@ -45,9 +45,9 @@ const SAYS := {
 	"set_flags": "Then", "flags": "Switches", "fact": "Sets", "flag": "Sets", "slept_fact": "Sets",
 	"flags_start": "On at the start", "task_flags": "When a task is ticked",
 	"tick": "Ticks", "reveal_task": "Shows the task", "low_task": "Adds the task", "add_tasks": "Adds the task", "tasks": "On the list at the start",
-	"item": "Gives", "face_rules": "Face rule", "talks": "Conversation",
+	"item": "Gives", "give_item": "Hands you", "take_item": "Takes from you", "face_rules": "Face rule", "talks": "Conversation",
 }
-const TYPES := {"cond": TYPE_STRING, "lock": TYPE_STRING, "switch": TYPE_STRING, "flag": TYPE_STRING, "task": TYPE_STRING, "item": TYPE_STRING,
+const TYPES := {"cond": TYPE_STRING, "lock": TYPE_STRING, "switch": TYPE_STRING, "flag": TYPE_STRING, "task": TYPE_STRING, "item": TYPE_STRING, "takes": TYPE_STRING,
 	"conds": TYPE_PACKED_STRING_ARRAY, "switches": TYPE_PACKED_STRING_ARRAY, "flags": TYPE_PACKED_STRING_ARRAY, "tasks": TYPE_PACKED_STRING_ARRAY,
 	"task_flags": TYPE_PACKED_STRING_ARRAY, "rules": TYPE_PACKED_STRING_ARRAY, "talks": TYPE_ARRAY}
 const SETS := ["on", "off", "flip", "start", "ticks", "adds", "gives"]          # roles that change something
@@ -179,6 +179,9 @@ static func names_in(value, enc: String) -> Array:
 		"item":
 			if String(value).strip_edges() != "":
 				out.append({"kind": "item", "name": String(value).strip_edges(), "role": "gives"})
+		"takes":                                             # (a marker's Take from you: it wants the thing in your pocket)
+			if String(value).strip_edges() != "":
+				out.append({"kind": "item", "name": String(value).strip_edges(), "role": "needs"})
 		"rules":
 			for line in lines(value):
 				var cut := String(line).find("=>")
@@ -427,7 +430,7 @@ static func renamed(value, enc: String, kind: String, old: String, new: String):
 			return _lines(value, func(l: String) -> String: return _switch_renamed(l, old, new)) if kind == "flag" else value
 		"task":
 			return new if kind == "task" and String(value).strip_edges() == old else value
-		"item":
+		"item", "takes":
 			return new if kind == "item" and String(value).strip_edges() == old else value
 		"tasks":
 			if kind != "task":

@@ -22,17 +22,77 @@ design and its rules: `docs/MARKERS.md`.
 
 - *Starts when*: nothing (at once, after the marker before), or chips: a flag is on, a quest is open, after 3 s,
   you're near, you can't see her, she's been shot.
-- What she does, by its card: **Start here**, **Walk** / **Run** (to the pin, through bends you add on the path, at
-  her pace or in a time, over stairs), **Wait** / **Talk**, **Sit**, **Sleep**, **Grab** / **Pick up** / **Put down** /
-  **Open door**, **Animation** (one of hers, or a file: a Kimodo `.npz` dropped in `res://animations/`), **Event** /
-  **Scare** / **Look**, **Choice** (ways by flags), **Repeat**, **Disappear** (hidden and switched off: no drawing, no
-  animation, no processing, until a later marker needs her).
+- What she does, by its card: **Start here**, **Walk** / **Run** / **Sneak** / **Crawl** (to the pin, through bends
+  you add on the path, at her pace or in a time, over stairs; a creature's **Creep** and **Scuttle** are paces in the
+  form; after a low pace she stays low), **Wait** / **Talk**, **Sit**, **Sleep**, **Grab** / **Pick up** / **Put down** /
+  **Open door** / **Eat** / **Drink**, **Attack** (a punch, or a swing of what she holds, at you or anyone you pick),
+  **Jump scare** (there, shown, gone: a lunge, a loom, a snap of her head, a claw up from all fours), **Animation** (one
+  of hers, or a file: a Kimodo `.npz` dropped in `res://animations/`), **Event** / **Scare** / **Look**, **Choice**
+  (ways by flags), **Repeat**, **Disappear** (hidden and switched off: no drawing, no animation, no processing, until
+  a later marker needs her).
 - *Then*: flags switched, a task ticked or added, a line, a sound, things fired (a scare area, a cue).
-- On any marker: her **face** (and faces by flag), her **look** (skin and eyes, with the Look plugin), and **You can
-  talk to ... here**: her lines, your answers, each answer's flags, face and reply.
+- On any marker: her **face** (and faces by flag), her **look** (skin and eyes, with the Look plugin), her **head**
+  (it follows you, or someone you pick, within an arc: 160 degrees unless you set it, 80 to each side; carried on
+  until a marker gives it back to her animation), her **small movements** (now and then, or none, from there on),
+  and **You can talk to ... here**: her lines, your answers, each answer's flags, face and reply.
+- On the character: **Small movements now and then** (how often), and how she **carries things**.
 
-Her state is carried from marker to marker and quest to quest: where she stands, sat or asleep, hidden, her face, her
-look, what she holds. A quest that doesn't end in Disappear leaves her where she is for the next.
+Her state is carried from marker to marker and quest to quest: where she stands, sat or asleep, low or upright,
+hidden, her face, her look, who her head follows, what she holds. A quest that doesn't end in Disappear leaves her
+where she is for the next.
+
+## The cards from animations v3
+
+Sneak, Crawl, Eat, Drink, Attack, Jump scare and the head want two things (docs/ANIMATOR_V3.md):
+
+- **A character baked by the Animator since animations v3** (53 clips; open her in the Animator and press Bake again).
+  On an older bake or another model, Problems names the clip she lacks at its marker.
+- **The Look plugin** in the project (every `godot_byhand.py` project has it) for her head and her hands: the head
+  follows by its `HSHeadTrack`; a thing is held, eaten, drunk from and swung by its `HSGrip` (add one under a prop:
+  a ring where a hand closes round it, a handle for its thickness, a point for the side that's bitten or the rim, a
+  point for the far end of a bat) and her hand is carried the last centimetres by `HSHandIK`. A prop without a grip is
+  held by a guess from its size.
+
+An Attack that lands says so: the HSNpc's `struck(target, kind)`, and the target's own `take_hit(by)` or
+`struck(by, kind)` when it has one (the starter kit's player has: a fright).
+
+## Life: small movements, and a thing kept in her hand
+
+Pick the character in the tab and tick **Small movements now and then** (docs/ANIMATOR_V3.md §11): while she
+stands, walks or sits at her markers she scratches her head, rubs her neck, looks at what's in her hand, stretches,
+every 6 to 14 seconds unless you set it. They're laid over whatever she's playing (her legs go on walking, her seat
+stays sat), never while a marker's own act has her, never while she's hidden or shot down. Any marker can switch
+them from there on (its Head section: *as they were, now and then, none*): someone who turns on you is set to
+*none* at the marker where it starts.
+
+**A thing she keeps** (a Grab's Pick up with *Keep in hand*) **is carried** from there on, walking, sitting or
+waiting: *Carries things*, on the character, says how (at the side, in front, to the chest, over the shoulder,
+raised), or leave it to the thing's own `HSGrip` (its Carry and Upright: a cup that's drunk from is carried in
+front of her, upright). The next Grab, Eat, Drink or Attack takes her hand and gives it back; Put down ends it.
+
+Both want a character **baked by the Animator since its life clips** (96 clips on a person; Problems says when she
+wasn't) and the Look plugin (its `HSGesture`). The tester's copy doesn't do them.
+
+## The sequences' cards: one small movement, a thing changing hands, a peek
+
+For the little scenes the guide `guides/sequences` is made of (docs/MARKERS.md §4):
+
+- **Small movement** and **Look at it**: one of her small movements *now*, where the Life switch above is chance:
+  she looks at what's in her hand, checks her wrist, scratches her head, stretches. Laid over whatever she's doing,
+  so sat on the sofa she stays sat. The next marker waits until her hand is back; tick *Over what comes next* and it
+  doesn't (she sets off and checks her wrist as she walks).
+- **A Wait leaves her as she is**: sat, asleep, looking out past a wall. Sit → Look at it → Wait → Look at it is
+  someone sat with a cup; only a marker that moves her stands her up.
+- **Take from you** and **Hand to you**: no pin. Where she stands she turns to you and holds a hand out. *Take from
+  you* takes a thing you carry, by its name in your pocket (a Pickup's Item), into her hand with the look your
+  pocket had for it; kept there, an Eat or a Drink after it uses it. *Hand to you* puts what she holds into your
+  pocket (or an item by its name alone, and money: a customer paying). To have her wait until you have the thing,
+  give the marker *Starts when: you carry …*; to be asked first, put a Talk before it.
+- **Peek**: click the foot of a wall's end; the arrow is the way of the look. She stands hidden behind the wall,
+  leans out past its edge and stays looking; the next marker that moves her draws her back first.
+
+They want the same two things as the cards above: a character baked by the Animator since its life clips, and the
+Look plugin.
 
 ## In the 3D view
 
@@ -88,6 +148,7 @@ A project from before this needs the newer player once: `python tools/godot_byha
 ```gdscript
 $"Alex markers".jump_to($"Alex markers/Night two/Walk")     # straight to a marker
 $"Alex markers".marker_done.connect(func(m): print(m.name))
+$"Alex markers".struck.connect(func(who, kind): print("she hit ", who.name, " with a ", kind))
 HSNpcCond.set_flag(get_tree(), "met_alex")                   # a flag, with or without a Story
 if HSLogic.may_use(thing, self):                             # ask a thing's Logic yourself (the starter's player does)
     thing.use(self)
