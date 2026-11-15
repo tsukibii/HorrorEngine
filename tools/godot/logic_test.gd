@@ -643,6 +643,40 @@ func stage_menu() -> void:
 	await frames(2)
 
 
+# ---- H. the Story's words on the scene's HSHud (use_hud): the objective, the to-do list and the lines in the UI plugin's
+# corners and footer; off, the Story's own as ever --------------------------------------------------------------------------------
+func stage_hud() -> void:
+	var own_obj := story.get("_obj") as Label
+	var own_list := story.get("_list") as RichTextLabel
+	var own_line := story.get("_line") as Label
+	story.set("use_hud", true)
+	var hud := HSHud.new()
+	main.add_child(hud)
+	await secs(1.4)                                           # (a HUD put in once the game's running is found within a second)
+	story.call("objective", "Find the cellar key")
+	story.call("add_task", "cellar_h", "Find the cellar key")
+	story.call("say", "Something moved downstairs.", 3.0)
+	await frames(3)
+	var on_hud: bool = str((hud.get("obj") as Label).text) == "Find the cellar key" and (hud.get("rows") as Dictionary).has("cellar_h") \
+		and str(hud.get("line_text")) == "Something moved downstairs."
+	var own_hidden: bool = not own_obj.visible and not own_list.visible and not own_line.visible
+	ok(on_hud and own_hidden and own_line.text == "Something moved downstairs.",
+		"H: use_hud: the objective, the task and the line on the HSHud, the Story's own hidden (its words still there)",
+		"hud %s, own hidden %s" % [on_hud, own_hidden])
+	story.call("tick", "cellar_h")
+	await frames(3)
+	var row: Label = (hud.get("rows") as Dictionary).get("cellar_h")
+	ok(row != null and str(row.get_meta("state", "")) == "done", "H: ticked: the HUD's row done")
+	story.set("use_hud", false)
+	hud.call("objective", null)
+	hud.call("todo", [], false)
+	hud.queue_free()
+	await frames(2)
+	story.call("objective", "")
+	story.call("say", "And back.", 1.0)
+	ok(own_line.visible and own_line.text == "And back.", "H: off again: the Story's own line")
+
+
 # ---- P. E's prompt over everything you can use (the starter's player on the scene's HSHud): what it says and when -----------------
 func stage_prompt() -> void:
 	var o := origin()
@@ -887,7 +921,7 @@ func _initialize() -> void:
 	player = main.get_node("Player") as CharacterBody3D
 	eye = player.get_node("Eye") as Camera3D
 	story = main.get_node("Story")
-	for st in [["gate", stage_gate], ["then", stage_then], ["tie", stage_tie], ["checkpoint", stage_checkpoint], ["save", stage_save], ["menu", stage_menu], ["prompt", stage_prompt], ["scan", stage_scan], ["board", stage_board], ["alone", stage_alone]]:
+	for st in [["gate", stage_gate], ["then", stage_then], ["tie", stage_tie], ["checkpoint", stage_checkpoint], ["save", stage_save], ["menu", stage_menu], ["hud", stage_hud], ["prompt", stage_prompt], ["scan", stage_scan], ["board", stage_board], ["alone", stage_alone]]:
 		if wants(st[0]):
 			await (st[1] as Callable).call()
 	print("LOGIC result " + JSON.stringify({"errors": errors}))

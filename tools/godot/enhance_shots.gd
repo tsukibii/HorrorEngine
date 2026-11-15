@@ -2,7 +2,7 @@
 ## of all your improvements with id references"), in tutorial v2's own project (tools/godot/tutorial_v2.py made it):
 ## the hotel floor at night through the player's own eye, the Story and the HSHud as the game shows them. E's prompt
 ## (E19) at 304's door and at the note; F5's save (E24); the pause menu (E29): its list, Save game, Load game; its
-## Settings by hand (E33).
+## Settings by hand (E33); the Story's words on the HUD (E34).
 ##   godot --path PROJECT --rendering-driver vulkan --resolution 1280x720 -s enhance_shots.gd -- --out=DIR
 ## Prints `ENHANCESHOTS <name>` lines and quits.
 extends SceneTree
@@ -122,6 +122,15 @@ func _initialize() -> void:
 	await key(KEY_ESCAPE)
 	await key(KEY_ESCAPE)
 	await key(KEY_ESCAPE)
+	# E34: the Story's words on the HSHud (use_hud): the same spot and line, the Story's own first, then the HUD's
+	stand(Vector3(4.0, eye, -7.0), Vector3(12.0, eye - 0.2, -7.0))
+	story.call("say", "Someone knocked at 308.", 30.0)
+	await snap("e34_story_own", 30)
+	story.set("use_hud", true)
+	story.call("objective", str(story.call("objective_now")))
+	story.call("_draw_list")
+	story.call("say", "Someone knocked at 308.", 30.0)
+	await snap("e34_story_hud", 30)
 	for sl in [0, 1, 2, 3]:
 		story.call("delete_save", sl)
 	print("ENHANCESHOTS done")

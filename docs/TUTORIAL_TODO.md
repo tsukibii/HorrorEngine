@@ -116,6 +116,8 @@ then each branch leaves a section here saying what it changes for the tutorial. 
       since lies where it was again, a once-only area or cue fires again: the group `hs_keeps`). Say so where dying is
       explained; the slippers (`shown.gd`) come back to where they were at the checkpoint too, and so do the laptop's
       shop and the parcels (an order on its way comes again, a parcel opened since is there again shut).
+- [ ] If the user turns the Story's **`use_hud`** on by default (built off, E34): the tutorial's objective, list and
+      lines are on the HSHud's corners and footer, and every picture with them wants retaking.
 - [ ] §34 *Every system in it*: a game by hand has **the pause menu** now (a Node called Pause with
       `starter/pause.gd` beside the HUD: Esc holds the game; Save game and Load game are the Story's saves): add it to
       the tutorial's scene and take "the pause menu" out of what a game by hand can't do yet.

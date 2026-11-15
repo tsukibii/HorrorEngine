@@ -57,6 +57,10 @@ signal ate(item: String)                              ## a thing in the pocket w
 @export var pocket_row := true                        ## the pocket shown as an HSHud's inventory row (when the scene has one)
 @export var eat_secs := 2.0                           ## how long the left button is held to eat something that doesn't say
 @export var eat_sound := ""                           ## off the shelf, as something's eaten (a thing's own goes first)
+## the objective, the to-do list and the lines on the scene's HSHud (the UI plugin's corners and footer: one look with
+## its prompt, its conversations and its pocket) in place of the Story's own; a note's card, the death card and the
+## ending stay the Story's. Off: as it always was
+@export var use_hud := false
 @export_group("Saving")
 @export var autosave := false                         ## each checkpoint written to disk too (save slot 0): the game goes on from it once it's closed
 @export var continue_saved := false                   ## at the start, save slot 0 loaded when there is one (with autosave: the game picks up at its last checkpoint)
@@ -121,7 +125,26 @@ func _continue() -> void:                             # (a few frames on: the ch
 # ---- what the other scripts call ---------------------------------------------------------------------------------
 func objective(text: String) -> void:
 	_obj.text = text
-	_obj.visible = text != ""
+	var h := _words_hud()
+	if h != null:
+		h.objective(text if text != "" else null)
+		_obj.visible = false
+	else:
+		_obj.visible = text != ""
+
+
+var _on_hud := false                                  # use_hud: the HUD has the words
+var _hud_look := 0.0                                  # use_hud and no HUD yet: when to look for one again
+
+
+# the HSHud that takes the Story's words (use_hud), or null: the Story draws them itself
+func _words_hud() -> Node:
+	if not use_hud:
+		return null
+	var h: Node = _find_hud() if (_hud != null and is_instance_valid(_hud)) or _hud_look <= 0.0 else null
+	if h == null:
+		_hud_look = 1.0                                # (not a scan of the tree every frame)
+	return h if h != null and h.has_method("todo") and h.has_method("line") else null
 
 
 func add_task(id: String, text: String) -> void:
@@ -186,8 +209,13 @@ func done(id: String) -> bool:
 
 func say(text: String, secs := 3.0) -> void:
 	_line.text = text
-	_line.visible = true
 	_line_left = secs
+	var h := _words_hud()
+	if h != null:
+		h.line(text, null, secs, false)
+		_line.visible = false                          # (its words still in _line for what reads them)
+	else:
+		_line.visible = true
 
 
 func card(title: String, text: String) -> void:
@@ -689,6 +717,12 @@ func _process(dt: float) -> void:
 		_line_left -= dt
 		if _line_left <= 0.0:
 			_line.visible = false
+	if use_hud and not _on_hud:                          # the HUD came after the Story: the words over to it
+		_hud_look -= dt
+		if _words_hud() != null:
+			_on_hud = true
+			objective(_obj.text)
+			_draw_list()
 
 
 func _draw_list() -> void:
@@ -697,7 +731,12 @@ func _draw_list() -> void:
 	for t in _tasks:
 		s += ("[color=#%s]■[/color] [color=#8a8780][s]%s[/s][/color]\n" % [a, t["text"]]) if t["done"] else ("[color=#%s]□[/color] %s\n" % [a, t["text"]])
 	_list.text = s
-	_list.visible = not _tasks.is_empty()
+	var h := _words_hud()
+	if h != null:
+		h.todo(_tasks.map(func(t): return {"id": t["id"], "text": t["text"], "state": "done" if t["done"] else "open"}), true)
+		_list.visible = false
+	else:
+		_list.visible = not _tasks.is_empty()
 
 
 func _label(size: int, col := Color(0.92, 0.9, 0.85)) -> Label:
