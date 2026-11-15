@@ -240,7 +240,7 @@ game must match. Directing craft: docs/DIRECTING.md.
 
 Before every push: CHECKS ok, and GDPLAY and GDTESTROOM ok when the change can touch the Godot side (DIRECTOR too when
 it touches the runtime add-on or the Director plugin, FROMDESK when it touches the desk's conversion; MARKERS and
-MARKERSEDITOR when it touches the Markers plugin, or the starter kit's Story or player it talks to; SEQUENCES too when
+MARKERSEDITOR when it touches the Markers plugin, or the starter kit's Story or player it talks to; HORRORGAME when it touches `tools/horror_game.py`, `tools/godot/base_build.gd`, the UI plugin's `splash.gd`, `title_menu.gd` or `menu.gd`, or the starter's Story, player or `pause.gd`; SEQUENCES too when
 it touches the plugin's runtime (`runner.gd`, `body.gd`, `flow.gd`, `marker.gd`) or `tools/godot/sequences.py`'s data,
 and `python tools/godot/sequences.py tables` after the data changes; LOGIC and
 LOGICEDITOR too when it touches the plugin's flags and things, its `plugin.gd` or `editor/`, or the starter's player;

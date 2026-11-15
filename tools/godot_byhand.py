@@ -289,6 +289,7 @@ def main(argv):
         did = install(proj)
         print(f"a new Godot project in {proj}: project.godot, {', '.join(did)}, exports/{{interiors,streets,characters}}")
         print("open it in Godot 4.7 (Import, its project.godot); guides/godot_by_hand and guides/first_game say what's next")
+        print('  (a whole game to start from, with a card, a main menu and a room to play: python tools/horror_game.py new "Name")')
     elif argv[0] == "install":
         if not (proj / "project.godot").exists():
             print(f"no project.godot in {proj}: python tools/godot_byhand.py new {proj}")
