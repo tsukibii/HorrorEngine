@@ -8,7 +8,8 @@
 ## A game built by hand (the starter's pause.gd) also gives ctx `save` (a slot's number: the save made, true when it
 ## was), `load` and `can_load`: then Save game saves for real and a Load game page lists what can be loaded; and
 ## `controls` (as CONTROLS: its own keys, the HSHud's chips) in place of the runtime's; and `rows`, the ids of the
-## settings that do something there (the rest, and a page left with none, aren't shown).
+## settings that do something there (the rest, and a page left with none, aren't shown); and `settings_only` (the main
+## menu's Settings, HSTitleMenu): it opens on the settings and back from them shuts it.
 extends Control
 
 const ThemeC := preload("res://addons/horrorstudio_ui/theme.gd")
@@ -580,6 +581,9 @@ func back(esc: bool = false) -> void:
 		legend_for()
 		return
 	if at.begins_with("set:"):
+		if ctx.get("settings_only", false):           # (the main menu's Settings: back out of them is out)
+			close("escaped")
+			return
 		open_page("root")
 		focus("nav", nav_at("settings"))
 		return
@@ -633,7 +637,7 @@ func open(ctx_: Dictionary) -> Variant:
 	up = true
 	visible = true
 	hud.paused(true)
-	open_page("root")
+	open_page("set:" + pages()[0]["id"] if ctx.get("settings_only", false) else "root")
 	var r = await closed
 	return r
 

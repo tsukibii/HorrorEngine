@@ -112,14 +112,25 @@ func _ready() -> void:
 		var i := t.find(":")
 		if i > 0:
 			add_task(t.substr(0, i).strip_edges(), t.substr(i + 1).strip_edges())
-	if continue_saved and has_save(0):
-		_continue.call_deferred()
+	var asked := -1                                   # the main menu's Continue or Load game (the UI plugin's HSTitleMenu): that save
+	if get_tree().has_meta("hs_load_slot"):
+		asked = int(get_tree().get_meta("hs_load_slot"))
+		get_tree().remove_meta("hs_load_slot")
+	elif continue_saved:
+		asked = 0
+	if asked >= 0 and has_save(asked):
+		_starting = true
+		_continue.call_deferred(asked)
 
 
-func _continue() -> void:                             # (a few frames on: the characters' markers start deferred, and are what a save puts back too)
+var _starting := false                                # a save to load as the game starts: no autosave over it before it's loaded
+
+
+func _continue(slot := 0) -> void:                    # (a few frames on: the characters' markers start deferred, and are what a save puts back too)
 	for i in 3:
 		await get_tree().process_frame
-	load_game(0)
+	load_game(slot)
+	_starting = false
 
 
 # ---- what the other scripts call ---------------------------------------------------------------------------------
@@ -530,7 +541,7 @@ func checkpoint() -> void:
 		if n.has_method("keep_state"):
 			_kept["world"][n.get_path()] = n.call("keep_state")
 	kept.emit()
-	if autosave:
+	if autosave and not _starting:                    # (a checkpoint where you start fires before the save asked for is loaded)
 		save_game(0, false)
 
 
