@@ -40,13 +40,13 @@ const SHOT_MASK := 1 | (1 << 10)                 ## what a pellet meets: the wor
 @export_group("Shells")
 @export var capacity := 2                         ## the shells it holds
 @export var loaded := 2                           ## in it now
-@export var chambered := true
+@export var chambered := true   ## a shell in the chamber when it starts
 @export var spare := 4                            ## shells in the pocket of the kind loaded next (few: every one counts); the other kinds' in `pocket`
 @export var kinds: Array[HSShellType] = []        ## the kinds of shell it takes, the normal one first (none: the plugin's buckshot and explosive)
 @export_group("Shot")
 @export var pellets := 9                          ## 00 buckshot
 @export var spread_deg := 0.9                     ## the cone's half angle (a real choke's: improved cylinder about 0.9°, modified 0.7°)
-@export var reach_m := 45.0
+@export var reach_m := 45.0   ## how far a pellet flies, in metres
 @export var push := 0.9                           ## the impulse a pellet gives a thing that moves
 @export var noise := 3.0                          ## how loud a shot is to listeners (noise.gd: a step 0.35, a run 1)
 @export var ring_secs := 2.5                      ## the ears ringing after a shot (the Fear node's ring; 0 none)
@@ -55,16 +55,16 @@ const SHOT_MASK := 1 | (1 << 10)                 ## what a pellet meets: the wor
 @export var flash_energy := 5.0                   ## the muzzle flash's light (for a frame or two; 1.5 for fewer flashes), times the shell's look's light_scale
 @export_group("Models")
 @export var model: PackedScene                    ## the gun (a prop generator's weapon: its parts and sockets)
-@export var shell_model: PackedScene
-@export var spent_model: PackedScene
+@export var shell_model: PackedScene   ## a live shell's model, for the reload and the pocket (none: the plugin's)
+@export var spent_model: PackedScene   ## a fired hull's model, flicked out and lying on the floor (none: the plugin's)
 @export_group("Hold")
 @export var hold := Vector3(0.14, -0.165, -0.34)  ## where the chamber sits from the eye (metres: x right, y up, -z ahead)
 @export var aim_at_m := 1.1                       ## the barrel's line meets the middle of the view this far ahead
 @export var beam_at_m := 12.0                     ## the carried flashlight's beam meets the middle of the view this far ahead
 @export var cant_deg := 7.0                       ## the gun leaned in
 @export var fov := 0.0                            ## the gun's own lens (0: the camera's)
-@export var sway := 1.0
-@export var bob := 1.0
+@export var sway := 1.0   ## how much it sways as you look round (0: none)
+@export var bob := 1.0   ## how much it bobs as you walk (0: none)
 @export var fit_tape := true                      ## drawn in to sit in the tape's 4:3 picture when one's on (HSTape)
 @export_group("Aim")
 @export var aim := true                           ## the right button raises it to the eye, the barrel straight ahead
@@ -73,11 +73,11 @@ const SHOT_MASK := 1 | (1 << 10)                 ## what a pellet meets: the wor
 @export var aim_fov := 58.0                       ## the camera's lens while aimed (0: as it is)
 @export var aim_spread := 1.0                     ## the cone while aimed (1: the same; a choke doesn't change when you aim)
 @export_group("Sounds")
-@export var fire_sound: AudioStream
-@export var insert_sound: AudioStream
-@export var dry_sound: AudioStream
-@export var drop_sound: AudioStream
-@export var handle_sound: AudioStream
+@export var fire_sound: AudioStream   ## the shot (none: the plugin's own; a shell's kind can bring its own)
+@export var insert_sound: AudioStream   ## a shell going in (none: the plugin's own)
+@export var dry_sound: AudioStream   ## the click with nothing in the chamber (none: the plugin's own)
+@export var drop_sound: AudioStream   ## a hull landing on the floor (none: the plugin's own)
+@export var handle_sound: AudioStream   ## raising and lowering it (none: the plugin's own)
 
 var busy := false                                 ## firing, reloading or raising (a check's)
 var reloading := false

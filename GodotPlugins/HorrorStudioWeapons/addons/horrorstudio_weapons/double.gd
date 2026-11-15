@@ -23,9 +23,9 @@ signal closed                                     ## snapped shut
 @export var open_deg := 38.0                      ## how far the barrels drop on the hinge
 @export var lever_deg := 30.0                     ## the top lever over to the right
 @export var pop_secs := 0.16                      ## a shell from behind the breech into its chamber
-@export var open_sound: AudioStream
-@export var close_sound: AudioStream
-@export var flick_sound: AudioStream
+@export var open_sound: AudioStream   ## breaking it open (none: the plugin's own)
+@export var close_sound: AudioStream   ## snapping it shut (none: the plugin's own)
+@export var flick_sound: AudioStream   ## the ejectors flicking the hulls out (none: the plugin's own)
 
 var live := [true, true]                          ## a live shell in the right and the left chamber
 var spent := [false, false]                       ## a fired hull still in it

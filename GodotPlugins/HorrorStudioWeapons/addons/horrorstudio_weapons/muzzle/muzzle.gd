@@ -25,7 +25,7 @@ const MAX_SPHERES := 128
 		flash = v
 		_dirty = true
 @export var view_model := false                         ## a gun's in first person: the flash drawn in front of the world as the gun is (z clip)
-@export_range(0.01, 1.0) var z_clip := 0.35
+@export_range(0.01, 1.0) var z_clip := 0.35   ## a view model's depth squeeze: the flash drawn in front of the world as the gun is
 @export var fov := 0.0                                  ## the gun's own lens when it draws itself with one (0: the camera's)
 @export var light_energy := 5.0                         ## the flash's light at a look's light_scale of 1 (a gun's flash_energy)
 @export var shadows := true                             ## the flash's light casts shadows
@@ -35,7 +35,7 @@ const MAX_SPHERES := 128
 	set(v):
 		preview = v
 		_dirty = true
-@export_range(0.0, 1.0) var preview_age := 0.0:
+@export_range(0.0, 1.0) var preview_age := 0.0:   ## how far into its life the preview is frozen (0 the flash's first frame, 1 its last)
 	set(v):
 		preview_age = v
 		_dirty = true
