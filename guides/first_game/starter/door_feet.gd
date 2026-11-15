@@ -54,6 +54,7 @@ void fragment() {
 
 
 func _ready() -> void:
+	add_to_group("hs_keeps")                      # (the starter Story's checkpoint and saves: keep_state, put_state)
 	if door != null:
 		_fit()
 	_mat = ShaderMaterial.new()
@@ -160,3 +161,19 @@ func _process(dt: float) -> void:
 				state = "gone"
 				armed = false
 				left.emit()
+
+## what the starter Story keeps at a checkpoint and in a save (the group hs_keeps): a save loaded after it's happened
+## doesn't play it again, and one armed by a signal before the save is still armed
+func keep_state() -> Dictionary:
+	return {"armed": armed, "state": state if state in ["away", "gone"] else "away"}
+
+
+## put back as it was kept (feet walking now are gone; they come again if it's still armed)
+func put_state(d: Dictionary) -> void:
+	state = str(d.get("state", "away"))
+	if not state in ["away", "gone"]:
+		state = "away"
+	armed = bool(d.get("armed", armed))
+	_t = 0.0
+	if _mat != null and _floor != null:
+		_set_feet(-1.0)

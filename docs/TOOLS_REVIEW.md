@@ -68,6 +68,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E46 | 4a3f60c9 | Tooltips for the Markers' and the Devices' last bare fields (17): a marker's kind and stay, the laptop's words and view, the parcel's sounds |
 | E47 | 4f5cda94 | The starter kit's last tooltips (41): every exported field in it says what it does |
 | E48 | ef8de846 | The Weapons plugin's last tooltips (52, 20 of them the muzzle flash's look): every by-hand plugin and the starter kit have one on every field |
+| E49 | (next commit) | Once-only scares kept in a save: a glimpse, the closer figure, feet under a door, the steam's writing, a shadow, the mirror figure, a dread moment, a checkpoint |
 
 ## 1. How it was done
 
@@ -127,6 +128,8 @@ Weak in three ways, the same in most tools:
 | A game by hand, exported | **Godot 4.7's export, converting a scene's text to binary, left out every `PackedStringArray`** (measured in the pack it exports: the Story's tasks and flags, the HUD's keys, a note's `add_tasks`, and so every Logic's and marker's lists): the game as it ships had no to-do list and no key chips. A Studio character's eye, hair and skin records were read from her `.glb`'s own file, which isn't in an export (only what Godot imported is); the Markers' face clips read as text are binary there; HumanShaders' micro detail was listed by file name (`x.png.import` only, there); a Kimodo `.npz` was opened by a path made from res:// (nothing on disk in a pack) and isn't exported unless a preset names it | By-hand projects keep text resources as text in an export (`godot_byhand.py`: new ones, and `install`/`update` on old ones); the records are read off the imported materials' `extras` first (`HSEye.material_records`); faces and micro detail listed and loaded through the resource loader, with the face clip's script put in every by-hand project; `.npz` by its res:// path; `new` writes `export_presets.cfg` (Linux, Windows) naming `*.npz`, and `install` adds it to a project's presets | HORRORGAME: the made game exported as a pack (no templates needed) and played in it, start to Load game, and `base_probe.gd` in it |
 
 | Weapons plugin | A lamp shot out (HSShootable's `lights_out`) or a thing blown up (HSBlowUp) stayed so when you died at a checkpoint from before (a lamp a puzzle needs, dark for good), and a save made after didn't hold them: loaded, they were whole again | Both are in the starter Story's world (`hs_keeps`): whole again when you die, broken at once and quietly (no sparks, no pieces) when a save that has them broken is loaded | WEAPONS' new `weapons_keep_test.gd` (the old scripts fail it) |
+
+| Starter kit | A glimpse, the closer figure, feet under a door, writing in the steam, a shadow crossing, the figure in the mirror, a dread moment and a checkpoint kept nothing: a save loaded after one had happened played it again, one armed by a signal before the save was never armed again (the signal had come and gone), and dying put none of them back | Each is in the Story's world (`hs_keeps`): whether it's armed and whether (or how often) it's happened; put back, anything showing goes at once | HORRORGAME's `keeps_test.gd` |
 
 ### 3.2 Things that failed quietly
 
@@ -240,8 +243,8 @@ Ranked within each part. Effort: S an hour or less, M a few hours, L a day or mo
    objective, the list and the lines in the HUD's corners and footer, is a switch. Turned on by default, tutorial v2's
    pictures want retaking; its pictures side by side are on the screenshots page. A note's card on the HUD's `panel`
    too would be the rest of it.
-2. **What a save still leaves out (S each).** The night's director, a searcher or a chase start afresh (they're
-   moments; each could join `hs_saves` as the hunt has).
+2. **What a save still leaves out (S each).** The night's director's intensity, a searcher or a chase start afresh
+   (moments; each could join `hs_saves` as the hunt has). The once-only scares are kept since E49.
 3. **One helper for the Godot check harness (M).** `godot_bin()` is copied 18 times, the xvfb command built by hand in
    about 27 files, and only 9 scripts fail when Vulkan falls back to OpenGL (the others would measure on GL3). The kept
    check projects are about 6 GB with nothing pruning them.

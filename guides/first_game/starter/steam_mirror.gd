@@ -61,3 +61,24 @@ func _process(dt: float) -> void:
 				cleared.emit()
 	if level != was and mirror != null:
 		mirror.set("steam", level)
+
+## what the starter Story keeps at a checkpoint and in a save (the group hs_keeps): a save loaded after it's happened
+## doesn't play it again, and one armed by a signal before the save is still armed
+func keep_state() -> Dictionary:
+	return {"count": count}
+
+
+## put back as it was kept (steam rising now clears at once, its words with it)
+func put_state(d: Dictionary) -> void:
+	if phase != "idle" or level > 0.0:
+		phase = "idle"
+		level = 0.0
+		_t = 0.0
+		if mirror != null:
+			mirror.set("writing", "")
+			mirror.set("steam", 0.0)
+	count = int(d.get("count", count))
+
+
+func _ready() -> void:
+	add_to_group("hs_keeps")                      # (the starter Story's checkpoint and saves: keep_state, put_state)

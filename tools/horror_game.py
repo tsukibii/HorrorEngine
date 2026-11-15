@@ -239,12 +239,13 @@ def main(argv):
         print("ERROR: " + why)
         print("HORRORGAME FAILED")
         return 1
-    for f in ("base_test.gd", "base_probe.gd"):
+    for f in ("base_test.gd", "base_probe.gd", "keeps_test.gd"):
         shutil.copy(HERE / "godot" / f, proj / f)
     probe_files(proj)
     subprocess.run([g, "--headless", "--path", str(proj), "--import"], capture_output=True, text=True, timeout=1200)
     errs = played([g, "--headless", "--path", str(proj), "--fixed-fps", "60", "-s", "base_test.gd"])
     errs += played([g, "--headless", "--path", str(proj), "-s", "base_probe.gd"])
+    errs += played([g, "--headless", "--path", str(proj), "--fixed-fps", "60", "-s", "keeps_test.gd"])   # (the once-only scares in a save)
     # the game as it ships: the pack Godot exports with the project's own preset (no export templates needed for a
     # pack), played the same way and looked inside
     build = ROOT / "Saved" / "Godot" / "_horror_game_build"

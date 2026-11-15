@@ -34,6 +34,7 @@ var _prev := -1.0
 
 
 func _ready() -> void:
+	add_to_group("hs_keeps")                      # (the starter Story's checkpoint and saves: keep_state, put_state)
 	if figure == null:
 		for c in get_children():
 			if c is Node3D:
@@ -108,3 +109,18 @@ func _clear() -> bool:
 		q.exclude = [pl.get_rid()]
 	var hit := get_world_3d().direct_space_state.intersect_ray(q)
 	return hit.is_empty() or (hit.collider is Node and is_ancestor_of(hit.collider))
+
+## what the starter Story keeps at a checkpoint and in a save (the group hs_keeps): a save loaded after it's happened
+## doesn't play it again, and one armed by a signal before the save is still armed
+func keep_state() -> Dictionary:
+	return {"armed": armed, "count": count}
+
+
+## put back as it was kept (a glimpse showing now is gone, quietly)
+func put_state(d: Dictionary) -> void:
+	if shown and figure != null:
+		figure.visible = false
+	shown = false
+	_t = 0.0
+	armed = bool(d.get("armed", armed))
+	count = int(d.get("count", count))

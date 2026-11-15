@@ -29,6 +29,7 @@ var last_at := -1e9                               ## the director's clock when i
 
 
 func _ready() -> void:
+	add_to_group("hs_keeps")                      # (the starter Story's checkpoint and saves: keep_state, put_state)
 	add_to_group("hs_dread_moment")
 
 
@@ -70,3 +71,12 @@ func _clear(cam: Camera3D) -> bool:
 		q.exclude = [pl.get_rid()]
 	var hit := get_world_3d().direct_space_state.intersect_ray(q)
 	return hit.is_empty() or (hit["position"] as Vector3).distance_to(global_position) < 0.3
+
+## what the starter Story keeps at a checkpoint and in a save (the group hs_keeps): a save loaded after it's happened
+## doesn't play it again, and one armed by a signal before the save is still armed
+func keep_state() -> Dictionary:
+	return {"count": count}
+
+
+func put_state(d: Dictionary) -> void:
+	count = int(d.get("count", count))

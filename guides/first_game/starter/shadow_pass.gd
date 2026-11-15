@@ -27,6 +27,7 @@ var _to := Vector3.ZERO
 
 
 func _ready() -> void:
+	add_to_group("hs_keeps")                      # (the starter Story's checkpoint and saves: keep_state, put_state)
 	if figure == null:
 		for c in get_children():
 			if c is Node3D:
@@ -105,3 +106,17 @@ func pose(you: Vector3, k := 0.5) -> void:
 	_lay(you)
 	_at(k)
 
+## what the starter Story keeps at a checkpoint and in a save (the group hs_keeps): a save loaded after it's happened
+## doesn't play it again, and one armed by a signal before the save is still armed
+func keep_state() -> Dictionary:
+	return {"armed": armed, "done": done}
+
+
+## put back as it was kept (a shadow crossing now is gone)
+func put_state(d: Dictionary) -> void:
+	if running and figure != null:
+		figure.visible = false
+	running = false
+	_t = 0.0
+	done = bool(d.get("done", done))
+	armed = bool(d.get("armed", armed)) and not done
