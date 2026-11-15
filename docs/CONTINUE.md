@@ -58,7 +58,7 @@ every tool and enhancements on this branch until 11am, for the user to review at
 focus on the director tool, most games will be made directly using the horrorengine godotplugin"*: from then the work
 went to the by-hand path, and the desk, the Director and the desk's export were left as they were.
 
-**Every improvement has an ID** (E01 to E48, a commit each, a letter for a part of one): TOOLS_REVIEW §0's table, and
+**Every improvement has an ID** (E01 to E49, a commit each, a letter for a part of one): TOOLS_REVIEW §0's table, and
 a page on claude.ai with a screenshot of each and boxes to pick what to undo (the user asked for it to choose what to
 take out). When the user names IDs to undo: a whole ID is `git revert <commit>`; a lettered one is taken out by hand.
 
@@ -91,6 +91,8 @@ desk's export was tried the same way and is fine (its story is data); a Director
   acts, shown things; the laptop's shop, its orders on their way and its parcels; a parcel placed by hand).
 - **What the shotgun breaks** is part of that world (E39): a lamp shot out lit again when you die, a mug blown up
   whole; broken in a save, broken at once when it's loaded.
+- **Once-only scares kept** (E49): a glimpse, feet under a door, the steam's writing and the rest never replay after a
+  load, and one armed before a save stays armed.
 - **Saves open their scene** (E37): Continue and Load game open the scene a save was made in.
 - **Inspector tooltips** (E40 to E42, E44 to E48): every exported field of the five by-hand plugins and the starter
   kit says what it does on hover.

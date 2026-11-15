@@ -68,7 +68,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E46 | 4a3f60c9 | Tooltips for the Markers' and the Devices' last bare fields (17): a marker's kind and stay, the laptop's words and view, the parcel's sounds |
 | E47 | 4f5cda94 | The starter kit's last tooltips (41): every exported field in it says what it does |
 | E48 | ef8de846 | The Weapons plugin's last tooltips (52, 20 of them the muzzle flash's look): every by-hand plugin and the starter kit have one on every field |
-| E49 | (next commit) | Once-only scares kept in a save: a glimpse, the closer figure, feet under a door, the steam's writing, a shadow, the mirror figure, a dread moment, a checkpoint |
+| E49 | 4b72848f | Once-only scares kept in a save: a glimpse, the closer figure, feet under a door, the steam's writing, a shadow, the mirror figure, a dread moment, a checkpoint |
 
 ## 1. How it was done
 
