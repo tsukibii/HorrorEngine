@@ -18,6 +18,15 @@ The user's answers, newest first. They override the plan, the research and the d
   can ref what i want removed"**: every commit an ID (E01 on, oldest first; a letter for one part of a commit), the
   table in docs/TOOLS_REVIEW.md §0, and a page on claude.ai with a screenshot of each (in the game or the page where
   there's something to see, else its check's output or its commit) and boxes to pick what to undo.
+- **"can you make sure that each enhancement is applied via the horror plugin ro fithats not the right way make a horror
+  godot package maker wrapper which I can name and creates a base project with evrythign setu p for godot 4.7"**: a
+  game's pieces live in five plugins (addons/) and the starter kit (res://starter/: scenes reference it by path, so it
+  stays a folder of its own, not a plugin), so the answer is the maker: `python tools/horror_game.py new "Name"` makes a
+  Godot 4.7 project with all of them and a game ready to play; `update` brings the studio's newer plugins and starter.
+- **"Since your building everything herre now might be worth adding a main menu screen too and an overridable launcehr
+  (override the godot opener logo with our own for now just a black screen with [Artist Presents] " then main menu"**:
+  the UI plugin's HSSplash (black, "[Artist] presents", any key skips it) and HSTitleMenu (Continue, New game, Load
+  game, Settings, Quit); the maker's project starts on the card with Godot's own boot screen black and no logo.
 
 ## 2026-11-14, night: a pull request for `even-more-animations-v3`, with main merged in (the user, on the guide's report)
 

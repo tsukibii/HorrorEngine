@@ -53,6 +53,9 @@ picture: in the game or the page where there's something to see, else its check'
 | E31 | bb93e08b | PARSE in check_all: every runtime script of the by-hand plugins and the starter loaded by Godot, every preset instanced |
 | E32 | 9854591e | a hunt in a save: running at its stage, or over and not started again by its needs |
 | E33 | a6d7a0b0 | the pause menu by hand shows only the settings that work there; Brightness on the scene's environment |
+| E34 | 8e462467, 3ea77121 | the Story's `use_hud` (off by default): its objective, list and lines on the HSHud |
+| E35 | f02e6f73 | the UI plugin's card (HSSplash, "[Artist] presents") and main menu (HSTitleMenu); the Story loads the save the menu picked |
+| E36 | 7ca2cf07 | `tools/horror_game.py`: a new horror game in one command, named, ready to play (the card, the menu, a room) |
 
 ## 1. How it was done
 
@@ -199,6 +202,14 @@ Weak in three ways, the same in most tools:
   WEAPONS's save step (it found the double's chambers following `loaded`: a load recounts it).
 - **A hunt in a save**: running at its stage and clock, quietly; or over, and not started again by what started it
   (its needs still hold: on a fresh game's load it started and ended at once, its line said twice). HUNT's save steps.
+- **The Story's words on the HSHud**, a switch (`use_hud`, off): the objective, the to-do list and the lines in the UI
+  plugin's corners and footer, the one look of its prompt, conversations and pocket; the Story's own hidden, their
+  words kept for what reads them. LOGIC's hud stage.
+- **A new horror game in one command** (the user's ask): `python tools/horror_game.py new "My Game"` makes a Godot 4.7
+  project with every plugin, the starter, the sounds and three scenes: a black card ("[Artist] presents", Godot's own
+  logo not shown), the main menu (Continue, New game, Load game, Settings, Quit: the UI plugin's HSTitleMenu) and a room
+  to play with the player, the Story and its saves, the HUD and the pause menu; `update` keeps it current. HORRORGAME
+  plays one from the card to a load.
 - **PARSE, a Godot parse gate in check_all**: every runtime script of the by-hand plugins and the starter loaded by
   Godot 4.7 and every preset and prefab instanced (174 scripts, 89 scenes), about 40 s with its project kept; a parse
   error put into a starter script for the test was named and failed it.
@@ -209,10 +220,10 @@ Ranked within each part. Effort: S an hour or less, M a few hours, L a day or mo
 
 ### 4.1 Worth doing next (my order, for games built by hand)
 
-1. **The Story speaks through the HSHud (M).** A by-hand game has two HUDs: the Story draws its own objective, list,
-   lines and cards in a plain font; the HSHud draws conversations, E's prompt and the inventory in its serif. With an
-   HSHud in the scene the Story should hand it its words (an export `use_hud`, on). Tutorial v2's pictures then want
-   retaking.
+1. **The HSHud's words by default (your call, S).** The Story's `use_hud` is built (E34) and off: one look by hand, the
+   objective, the list and the lines in the HUD's corners and footer, is a switch. Turned on by default, tutorial v2's
+   pictures want retaking; its pictures side by side are on the screenshots page. A note's card on the HUD's `panel`
+   too would be the rest of it.
 2. **What a save still leaves out (S each).** The night's director, a searcher or a chase start afresh (they're
    moments; each could join `hs_saves` as the hunt has). A game of several scenes wants the save's scene loaded first.
 3. **One helper for the Godot check harness (M).** `godot_bin()` is copied 18 times, the xvfb command built by hand in

@@ -66,6 +66,11 @@ take out). When the user names IDs to undo: a whole ID is `git revert <commit>`;
 again before it was fixed), what the tools are like, **§3 what this branch did** (each a commit with the check that
 holds it), **§4 what was found and not done**, ranked, with its size, by-hand first (§4.1 is the menu).
 
+**A new horror game in one command** (the user asked for it late in the session): `python tools/horror_game.py new
+"My Game"` makes `~/HorrorGames/My_Game`, a Godot 4.7 project with every plugin and the starter, starting on a black
+card ("[Artist] presents": the UI plugin's HSSplash; Godot's own logo not shown), then the main menu (HSTitleMenu:
+Continue, New game, Load game, Settings, Quit), then a room to play. `update FOLDER` keeps it current. HORRORGAME holds it.
+
 **The headline, for games built by hand** (each in §3):
 - **Saves**: the starter Story's `save_game(slot)` / `load_game(slot)` (a checkpoint where you stand, as text in
   `user://hs_save_<slot>.save`), `autosave`, `continue_saved`, F5 and F9 (`save_keys`); what keeps its own state joins
