@@ -22,7 +22,8 @@
         headless browser (tools/director_manager/guide_shots.mjs) and the Face page's by its check (tools/facecap/pagetest.mjs
         --out); pictures no longer made are removed. Ends "GUIDE ok".
     python tools/godot_director.py from-desk <Game> [folder] [--force] [--play]
-        a desk game as a Director project (Saved/Godot/<Game>_director unless a folder's given): a new project with the
+        a desk game as a Director project (Saved/Godot/<Game>_director unless a folder's given; --force moves one that's
+        there aside as <Game>_director.old-<time>; with --play and no folder, Saved/Godot/_check/<Game>_director): a new project with the
         desk's levels as the Director's own nodes (rooms, doors, things with their models, people, spots, areas, paths,
         lights) and its story as the Director file (each task a quest, its beats moments, its endings; the cutscenes
         and the desk's choices as they were), its meshes, textures, bake and characters with it (docs/GODOT_DIRECTOR.md
@@ -40,6 +41,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -303,18 +305,26 @@ def new(out, title="My HorrorStudio game", sample=False, link=False):
     return out
 
 
-def from_desk(game, folder=None, force=False):
+def from_desk(game, folder=None, force=False, check=False):
     """A desk game as a Director project (the user, 2026-11-01: the desk's export "follows this format/new system too";
     docs/GODOT_DIRECTOR.md §6d): a new project as `new` makes one, the desk's levels built into it as the Director's own
     nodes (storykit/director_desk.py world, desk/desk_build.gd) and its story as the Director file (director_file), its
     meshes, textures, bake and characters with it. The project is the game from then on: the dock, the Manager, F5."""
     from storykit import storylib as SL, kit as KIT, director_desk as DD  # noqa: PLC0415
     story, _ = SL.load(game)
-    out = Path(folder or ROOT / "Saved" / "Godot" / f"{game}_director").resolve()
+    # (a check, --play with no folder, builds in the checks' own scratch folder: Saved/Godot/<game>_director is the
+    #  project the launcher's row makes for the user to work in, and FROMDESK ran before every push)
+    home = ROOT / "Saved" / "Godot" / ("_check" if check else "")
+    out = Path(folder or home / f"{game}_director").resolve()
     if out.exists() and any(out.iterdir()):
         if not force:
             sys.exit(f"{out} isn't empty (from-desk makes a new project; --force replaces it)")
-        shutil.rmtree(out)
+        if check and not folder:
+            shutil.rmtree(out)
+        else:                                                            # someone's project: kept aside, never deleted
+            aside = out.with_name(out.name + ".old-" + time.strftime("%Y%m%d-%H%M%S"))
+            out.rename(aside)
+            print(f"the project that was there is kept as {aside} (delete it once you're sure)")
     specs = ROOT / "Saved" / "kit" / f"{game}.json"                   # the kit's meshes the game needs, as the export builds them
     try:
         if KIT.write_specs(story, specs) and shutil.which("node"):
@@ -832,7 +842,7 @@ def main(argv):
         if not rest or rest[0].startswith("--"):
             sys.exit("from-desk <Game> [folder] [--force] [--play]")
         folder = rest[1] if len(rest) > 1 and not rest[1].startswith("--") else None
-        out = from_desk(rest[0], folder, "--force" in rest)
+        out = from_desk(rest[0], folder, "--force" in rest, check="--play" in rest)
         walls = walls_check(out)                                        # its rooms' walls meeting cleanly (WALLS)
         return from_desk_play(rest[0], out, walls) if "--play" in rest else 0
     if cmd == "guide":

@@ -391,7 +391,9 @@ baked, and as a game wears her.
 ## 6d. A desk game as a Director project (the user, 2026-11-01: "when we export from director to godot it now follows this format/new system too")
 
 `python tools/godot_director.py from-desk <Game> [folder] [--force] [--play]` makes a game written on the desk into a
-Director project (`Saved/Godot/<Game>_director` unless a folder's given), the new system all through: the scene is the
+Director project (`Saved/Godot/<Game>_director` unless a folder's given; `--force` keeps the one that was there as
+`<Game>_director.old-<time>`, and the check, `--play` with no folder, builds in `Saved/Godot/_check/` so it never
+touches yours), the new system all through: the scene is the
 world as the Director's own nodes, the story the Director file, editable in the dock and the Manager like any Director
 game. The desk's own Godot export (§GODOT_EXPORT, the Godot button) stays as it was, for its checks and the levels
 the user has lit by hand. `Content/Python/storykit/director_desk.py` writes the world (`director/desk_world.json`, in
