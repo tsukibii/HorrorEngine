@@ -27,6 +27,7 @@ STUDIO = [["pbr.py", "check"], ["sfx.py", "check"], ["face_capture.py", "check"]
           ["character/lashfit_check.mjs"],                                                                              # the lashes kept on top of the lid's skin, on a made-up lid (LASHFIT)
           ["animator/check.mjs"],
           ["godot/sequences.py", "guide"],                                                                              # the guide of sequences: its tables the data's, its pictures and links there (SEQGUIDE),
+          ["godot/parse_check.py"],                                                                                     # every runtime script of the by-hand plugins and the starter loaded by Godot, every preset instanced (PARSE),
           ["anim_rules.py", "check", "--quick"]]                                                                        # the modelling rules' tables current, the kit's and the prop generator's seats, beds and doors inside them (ANIMRULES)                                                                                       # the Animator v2: the clips made on three test bodies, measured, baked and unbaked (ANIMATOR)
 game, _ = L.pick_game(sys.argv[1:])
 bad = 0
