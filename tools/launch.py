@@ -319,7 +319,7 @@ TOOLS = [
     ("Library", "Score room: fetch the added instruments", "tools/score/fetch_samples.py", {}),
 
 
-    ("Setup", "Find Unreal, Visual Studio, git", "setup/setup.py env", {}),
+    ("Setup", "What this machine has (Node, Playwright, Godot 4.7, Blender, MediaPipe, Kimodo, a card) and how to set up what's missing", "setup/setup.py doctor", {}),
     ("Setup", "Install or update Kimodo", "setup/setup.py kimodo", {}),
     ("Setup", "Kimodo demo additions: check", "setup/setup.py kimodo-patch check", {}),
     ("Setup", "Kimodo demo additions: apply", "setup/setup.py kimodo-patch apply", {}),
