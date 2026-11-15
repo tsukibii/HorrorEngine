@@ -51,6 +51,8 @@ picture: in the game or the page where there's something to see, else its check'
 | E29 | 9137c7c9, ee40b520 | by hand: a: the pause menu (`starter/pause.gd`, Load game, Set up the scene); b: its controls the game's own keys |
 | E30 | 1188d3eb | the gun in a save |
 | E31 | bb93e08b | PARSE in check_all: every runtime script of the by-hand plugins and the starter loaded by Godot, every preset instanced |
+| E32 | 9854591e | a hunt in a save: running at its stage, or over and not started again by its needs |
+| E33 | a6d7a0b0 | the pause menu by hand shows only the settings that work there; Brightness on the scene's environment |
 
 ## 1. How it was done
 
@@ -190,10 +192,13 @@ Weak in three ways, the same in most tools:
   holds the game (the tree paused) and opens the UI plugin's own menu (the runtime's: the controls, Resume, Save game,
   Settings, Quit), now with a **Load game** row; Save game and Load game are the Story's saves (slots 1 to 3, the
   Autosave); Quit to title starts the scene again (or `title_scene`). Not while the laptop has you, dead, or after the
-  ending. The desk's export passes the menu no save or load, so it's as it was. LOGIC's menu stage.
+  ending. The desk's export passes the menu no save or load, so it's as it was. LOGIC's menu stage. Its controls are the
+  game's own keys, and its Settings show only the rows that work by hand, Brightness on the scene's WorldEnvironment.
 - **The gun in a save**: the weapons plugin's gun is in the save too (whether it's yours and up, its shells in each
   barrel and in the pocket by kind); a save loaded into a game where it isn't carried yet draws it up as it was.
   WEAPONS's save step (it found the double's chambers following `loaded`: a load recounts it).
+- **A hunt in a save**: running at its stage and clock, quietly; or over, and not started again by what started it
+  (its needs still hold: on a fresh game's load it started and ended at once, its line said twice). HUNT's save steps.
 - **PARSE, a Godot parse gate in check_all**: every runtime script of the by-hand plugins and the starter loaded by
   Godot 4.7 and every preset and prefab instanced (174 scripts, 89 scenes), about 40 s with its project kept; a parse
   error put into a starter script for the test was named and failed it.
@@ -208,9 +213,8 @@ Ranked within each part. Effort: S an hour or less, M a few hours, L a day or mo
    lines and cards in a plain font; the HSHud draws conversations, E's prompt and the inventory in its serif. With an
    HSHud in the scene the Story should hand it its words (an export `use_hud`, on). Tutorial v2's pictures then want
    retaking.
-2. **What a save still leaves out (M).** A hunt's stage, the night's director, a searcher or a chase: each wants
-   `save_state`/`load_state` (the group `hs_saves`), as the gun now has. A game of several scenes wants the save's
-   scene loaded first.
+2. **What a save still leaves out (S each).** The night's director, a searcher or a chase start afresh (they're
+   moments; each could join `hs_saves` as the hunt has). A game of several scenes wants the save's scene loaded first.
 3. **One helper for the Godot check harness (M).** `godot_bin()` is copied 18 times, the xvfb command built by hand in
    about 27 files, and only 9 scripts fail when Vulkan falls back to OpenGL (the others would measure on GL3). The kept
    check projects are about 6 GB with nothing pruning them.
