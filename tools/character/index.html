@@ -636,7 +636,7 @@ const slugOf = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^
 function drawOutfits() {
   outfitTabs.replaceChildren(...OUTFIT_GROUPS.map(([g, label]) => { const b = el("button", { textContent: label, className: g === OUTFIT_GROUP ? "on" : "" }); b.dataset.group = g; b.onclick = () => { OUTFIT_GROUP = g; drawOutfits(); }; return b; }));
   outfitGrid.replaceChildren(...Object.keys(OUTFITS).filter(n => outfitGroup(n) === OUTFIT_GROUP).map(n => {
-    const img = el("img", { src: `api/clothes/thumbs/${slugOf(n)}.jpg`, alt: "", loading: "lazy" }); img.onerror = () => img.remove();   // no picture yet: the name alone
+    const img = el("img", { src: `api/clothes/thumbs/${OUTFIT_META[n]?.pic || slugOf(n)}.jpg`, alt: "", loading: "lazy" }); img.onerror = () => img.remove();   // no picture yet: the name alone (one of your own: its own picture, never a preset's)
     const m = OUTFIT_META[n] || {}, b = el("button", { className: "card" + (n === WORN_OUTFIT ? " on" : ""), title: m.after ? `${n}\nafter ${m.after}` : n }, img, el("span", { textContent: n }));
     b.dataset.outfit = n; b.onclick = () => wearOutfit(n); return b;
   }));
