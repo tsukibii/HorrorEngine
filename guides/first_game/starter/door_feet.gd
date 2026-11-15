@@ -13,14 +13,14 @@ signal came
 signal left
 
 @export var door: Node3D                          ## the door it's under (empty: where it's put)
-@export var armed := false
+@export var armed := false   ## ready from the start (else arm(), from a signal)
 @export var lit := true                           ## the light under the door
 @export var width := 0.8                          ## the door's width (m)
 @export var spill := 0.5                          ## how far the light reaches across the floor (m)
-@export var color := Color(1.0, 0.78, 0.5)
-@export var energy := 1.2
-@export var near_m := 4.0
-@export var look_deg := 30.0
+@export var color := Color(1.0, 0.78, 0.5)   ## the light under the door's colour
+@export var energy := 1.2   ## how bright the light under the door is
+@export var near_m := 4.0   ## the feet come only when you're this near, in metres
+@export var look_deg := 30.0   ## and looking within this many degrees of the door's foot
 @export var walk := 0.9                           ## seconds to walk in (and out)
 @export var stand := 4.0                          ## seconds they stand there
 

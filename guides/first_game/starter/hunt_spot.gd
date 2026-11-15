@@ -27,22 +27,22 @@ const MOVE := {"watch": "watch", "wait": "idle", "peek": "peek", "dart": "run", 
 signal played                                             ## the hunt has started it
 
 @export var hunt: Node                                    ## the hunt it's for (empty: any hunt)
-@export_enum("watch", "dart", "peek", "wait", "ambush", "follow", "pass", "door", "decoy", "custom") var kind := "watch"
+@export_enum("watch", "dart", "peek", "wait", "ambush", "follow", "pass", "door", "decoy", "custom") var kind := "watch"   ## what she does here: watch, dart across your view, peek round a corner, wait, ambush, follow, pass cloaked, a door, a decoy, or your own
 @export var to: Node3D                                    ## dart, pass: where she goes
 @export var box: Area3D                                   ## where you must be (empty: its first Area3D child; none: anywhere)
 @export var near_m := 4.0                                 ## your eye to the spot, at least
 @export var far_m := 18.0                                 ## and at most
 @export_range(1, 9) var stage_min := 1                    ## the hunt's stages it belongs to
-@export_range(1, 9) var stage_max := 9
+@export_range(1, 9) var stage_max := 9   ## and the last
 @export var needs := ""                                   ## the Story's words
-@export var once := false
+@export var once := false   ## it plays once at most
 @export var cooldown := 40.0                              ## seconds before it can come again
 @export var weight := 1.0                                 ## how often against the others
 @export_group("What she does")
 @export var move := ""                                    ## her move here (moves.gd); empty: the kind's own
 @export var animation := ""                               ## or an animation of hers by name (on an AnimationPlayer under her)
 @export var sound := ""                                   ## off the shelf, played here
-@export var sound_db := 0.0
+@export var sound_db := 0.0   ## the sound's loudness in dB
 @export var hold := 12.0                                  ## seconds she's there at most, never seen
 @export var stare := 0.8                                  ## seconds looked at before she's gone
 @export var speed := 6.0                                  ## dart: metres a second
@@ -53,7 +53,7 @@ signal played                                             ## the hunt has starte
 @export var target: Node                                  ## its fire() as it plays
 @export var blink_lamp: Light3D                           ## the lamp that blinks out as she goes
 @export var catches := false                              ## ambush: a real catch within a metre (a hunt that can catch)
-@export var head_m := 1.5
+@export var head_m := 1.5   ## her eyes' height, for being seen
 
 var plays := 0
 var last := -10000.0                                      ## when it last played (the hunt's clock)

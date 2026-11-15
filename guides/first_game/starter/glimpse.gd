@@ -15,13 +15,13 @@ signal gone
 @export var figure: Node3D                        ## what's seen; empty: its first Node3D child
 @export var armed := false                        ## watching (or arm() from a signal)
 @export var times := 1                            ## glimpses before it's spent
-@export var min_deg := 30.0
-@export var max_deg := 42.0
-@export var near_m := 5.0
-@export var far_m := 15.0
+@export var min_deg := 30.0   ## it shows only this many degrees off where you look, at the least
+@export var max_deg := 42.0   ## and at the most
+@export var near_m := 5.0   ## and this far away, at the least
+@export var far_m := 15.0   ## and at the most
 @export var hold := 1.2                           ## seconds it stays at most
 @export var swing := 60.0                         ## degrees a second toward it that makes it go
-@export var gone_deg := 25.0
+@export var gone_deg := 25.0   ## it goes once it's within this many degrees of where you look
 @export var flicker: Light3D                      ## a lamp that blinks out as it goes (when it has to go in view)
 
 const Lights := preload("res://starter/lights.gd")

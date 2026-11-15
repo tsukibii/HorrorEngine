@@ -16,14 +16,14 @@ const DEAD_AT := 0.03
 const WARM := 2100.0
 
 @export var battery := 0.0                      ## seconds of light from full; 0: it never runs down
-@export_range(0.0, 1.0) var charge := 1.0
-@export_enum("bulb", "led") var kind := "bulb"
-@export_range(0.0, 1.0) var low_at := 0.25
+@export_range(0.0, 1.0) var charge := 1.0   ## how full the batteries are at the start
+@export_enum("bulb", "led") var kind := "bulb"   ## a bulb (dimmer, warmer and shorter as it empties) or an LED (full to Low At, then a low mode)
+@export_range(0.0, 1.0) var low_at := 0.25   ## the charge at which it starts to fail
 @export var spares := 0                         ## sets of batteries in the pocket
-@export var change_seconds := 2.0
+@export var change_seconds := 2.0   ## seconds of dark while a spare set goes in
 @export var low_says := ""                      ## the line when it runs low ("It's getting dim.")
 @export var low_task := ""                      ## a task it adds then, "id: what it says"
-@export var dead_says := ""
+@export var dead_says := ""   ## a line when it dies
 
 var is_dead := false
 var changing := false

@@ -20,18 +20,18 @@ signal lost                                       ## out of her sight too long
 
 @export var speed := 0.95                         ## times the player's run speed
 @export var secs_min := 20.0                      ## she gives up after this to secs_max seconds
-@export var secs_max := 40.0
+@export var secs_max := 40.0   ## and at the most
 @export var start_secs := 0.8                     ## the beat before she runs: turn and run
 @export var door_secs := 2.0                      ## a door shut in her way holds her this long
 @export var lose_secs := 6.0                      ## out of her sight this long and she's lost you
-@export var see_m := 14.0
-@export var catch_m := 0.8
+@export var see_m := 14.0   ## how far she sees you in the open, in metres
+@export var catch_m := 0.8   ## how near counts as caught, in metres
 @export var safe_rooms := PackedStringArray()     ## an interior's rooms she won't follow you into
 @export var searcher: Node                        ## searcher.gd: lost, she searches; caught, its fright; over, back to her post
 @export var mood := "chase"                       ## the music while it runs ("" leaves it)
-@export var start_sound := "sting_short"
+@export var start_sound := "sting_short"   ## the sting when it starts, off the shelf
 @export var door_sound := "slam"                  ## her at a door you shut, off the shelf
-@export var start_says := ""
+@export var start_says := ""   ## a line when it starts
 @export var head_m := 1.5                         ## her head over her feet (m): where she sees from and where her sounds come from; a child's about 1.2, an imp's 0.8, an ogre's 2.3
 
 var state := "idle"                               ## idle, starting, chasing, door, done

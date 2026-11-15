@@ -10,15 +10,15 @@ extends Node
 
 const Lights := preload("res://starter/lights.gd")
 
-@export var radius := 10.0
+@export var radius := 10.0   ## how near her, in metres, the signs begin
 @export var storey_m := 2.8                       ## a light from her feet to this far over them is on her floor
-@export var lights := true
-@export var flashlight := true
+@export var lights := true   ## the lights near her on her floor dip now and then
+@export var flashlight := true   ## your flashlight dips with them
 @export_range(0.0, 3.0) var max_dips := 2.5       ## dips a second at most, right by her (three flashes a second is the limit)
 @export var static_on: Node3D                     ## a radio, the TV, a phone: static rising as she nears
-@export var static_sound := "noise_01"
-@export var static_db := -8.0
-@export_range(0.0, 1.0) var false_alarm := 0.1
+@export var static_sound := "noise_01"   ## the static's loop, off the shelf (for Static On)
+@export var static_db := -8.0   ## the static's loudness at its loudest, in dB
+@export_range(0.0, 1.0) var false_alarm := 0.1   ## the chance, each time she goes, that the signs come back once without her
 
 var near := 0.0                                   ## the signs' strength now, 0..1 (a check's)
 var dips := 0                                     ## lights dipped (a check's)

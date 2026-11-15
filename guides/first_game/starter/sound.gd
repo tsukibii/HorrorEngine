@@ -23,9 +23,9 @@ const Acoustics := preload("res://starter/acoustics.gd")
 const QUIET := 0.5                                    # a hush's last half second: nothing at all
 
 @export var calm: AudioStream                         ## empty: res://music/calm.ogg
-@export var uneasy: AudioStream
-@export var dread: AudioStream
-@export var chase: AudioStream
+@export var uneasy: AudioStream   ## empty: res://music/uneasy.ogg
+@export var dread: AudioStream   ## empty: res://music/dread.ogg
+@export var chase: AudioStream   ## empty: res://music/chase.ogg
 @export_enum("silence", "calm", "uneasy", "dread", "chase") var mood := "silence"   ## the music when the game starts
 @export var music_db := -6.0                          ## the moods are made at -20 LUFS: about -26 under the game
 @export var tone_db := -22.0                          ## the shelf's loops are near -16 LUFS: about -38, under everything
@@ -34,10 +34,10 @@ const QUIET := 0.5                                    # a hush's last half secon
 @export_group("Sound physics")
 @export var physics := true                           ## sounds traced through the level (off: dry, unmuffled)
 @export var tails := true                             ## the rooms' reverb
-@export var echoes := true
+@export var echoes := true   ## an echo off the loudest late reflection (never on your own steps)
 @export var step_db := -12.0                          ## your footsteps (running a little louder)
 @export var unit_size := 2.0                          ## placed sounds: metres at which they're at their own level
-@export var max_distance := 25.0
+@export var max_distance := 25.0   ## placed sounds: no farther than this they're heard, in metres
 
 const BUS_WORLD := "World"
 const BUS_SFX := "SFX"

@@ -9,13 +9,13 @@ extends Area3D
 signal entered
 
 @export var interior: Node3D                ## the interior (with interior.gd) whose `room` this area fills
-@export var room := ""
-@export var needs := ""
-@export var once := true
-@export var objective := ""
+@export var room := ""   ## the interior's room it fills (its name in the export): the area sized to the room
+@export var needs := ""   ## the Story's words that must hold for it to fire
+@export var once := true   ## it fires once (off: every time you walk in)
+@export var objective := ""   ## the objective changed to this
 @export var add_tasks: PackedStringArray = []      ## each "id: what it says"
 @export var tick := ""                      ## a task it ticks off
-@export var say := ""
+@export var say := ""   ## a line (the Story's say)
 @export var fact := ""                      ## a fact it sets (a word the others' `needs` can name)
 @export_enum("keep", "silence", "calm", "uneasy", "dread", "chase") var music := "keep"   ## the music's mood after (keep: as it is)
 @export_range(-0.01, 1.0, 0.01) var fog := -0.01   ## the air's fog level to roll to (the scene's HSAtmosphere); under 0: as it is
