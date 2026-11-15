@@ -437,6 +437,60 @@ func stage_checkpoint() -> void:
 	ok(bool(story.call("has", "key_d")) and walked, "D: and taken again, the area fired again: a checkpoint puts the world back too")
 
 
+# ---- P. E's prompt over everything you can use (the starter's player on the scene's HSHud): what it says and when -----------------
+func stage_prompt() -> void:
+	var o := origin()
+	var hud := HSHud.new()
+	main.add_child(hud)
+	await secs(1.2)                                           # (a HUD put in once the game's running is found within a second; one there from the start, at once)
+	var door := thing("DoorP", o, "res://starter/door.gd")
+	var locked := thing("LockedP", o + Vector3(3, 0, 0), "res://starter/door.gd")
+	locked.set("locked_by", "key_p")
+	var key := thing("KeyP", o + Vector3(-3, 0, 0), "res://starter/pickup.gd", Vector3(0.25, 0.1, 0.25), false)
+	key.set("item", "key_p")
+	key.set("label", "the cellar key")
+	var note := thing("NoteP", o + Vector3(-3, 0, 3), "res://starter/note.gd", Vector3(0.3, 0.02, 0.2), false)
+	note.set("title", "A letter")
+	var lamp := thing("LampP", o + Vector3(3, 0, 3), "", Vector3(0.2, 0.2, 0.2), false)
+	logic(lamp, {"needs": "power_p", "set_flags": "+lamp_p"})
+	await frames(4)
+	var said := func(at: Node3D, h: float, from: Vector3) -> Array:
+		put(from)
+		look(at.global_position + Vector3(0, h, 0))
+		await secs(0.35)
+		return [hud.cursor_kind, hud.cursor_label, hud.cursor_name]
+	var got_door: Array = await said.call(door, 1.0, o + Vector3(0, 0.1, 1.5))
+	ok(got_door == ["use", "Open", ""], "P: a door: Open", str(got_door))
+	await use_at(door)
+	await secs(0.35)
+	ok([hud.cursor_kind, hud.cursor_label] == ["use", "Close"], "P: and open, Close", str([hud.cursor_kind, hud.cursor_label]))
+	var got_lock: Array = await said.call(locked, 1.0, o + Vector3(3, 0.1, 1.5))
+	ok(got_lock[0] == "locked" and got_lock[1] == "Locked", "P: a door locked by a key you haven't: Locked, in the HUD's red", str(got_lock))
+	var got_key: Array = await said.call(key, 0.05, o + Vector3(-3, 0.1, 1.0))
+	ok(got_key == ["use", "Take", "the cellar key"], "P: a pickup: Take, and its label", str(got_key))
+	await use_at(key, 0.05)
+	await secs(0.35)
+	var got_lock2: Array = await said.call(locked, 1.0, o + Vector3(3, 0.1, 1.5))
+	ok(got_lock2[0] == "use" and got_lock2[1] == "Open", "P: the key in your pocket: Open", str(got_lock2))
+	var got_note: Array = await said.call(note, 0.01, o + Vector3(-3, 0.1, 4.0))
+	ok(got_note == ["use", "Read", "A letter"], "P: a note: Read, and its title", str(got_note))
+	var got_lamp: Array = await said.call(lamp, 0.1, o + Vector3(3, 0.1, 4.0))
+	ok(got_lamp[0] == "locked", "P: a thing whose Logic's flags aren't so: Locked", str(got_lamp))
+	story.call("set_flag", "power_p")
+	await secs(0.35)
+	ok(hud.cursor_kind == "use" and hud.cursor_label == "Use", "P: its flag on: Use", str([hud.cursor_kind, hud.cursor_label]))
+	put(o + Vector3(0, 0.1, -6))
+	look(o + Vector3(0, 1.6, -30))
+	await secs(0.35)
+	ok(hud.cursor_kind == "none" and hud.cursor_label == "", "P: nothing in front of you: the prompt goes", str([hud.cursor_kind, hud.cursor_label]))
+	hud.set_cursor("use", "Talk", "Alex")                     # (a conversation's prompt, the talk box's: never covered or taken off)
+	look(door.global_position + Vector3(0, 1.0, 0))
+	await secs(0.35)
+	ok(hud.cursor_label == "Talk" and hud.cursor_name == "Alex", "P: a conversation's prompt up: left as it is", str([hud.cursor_label, hud.cursor_name]))
+	hud.set_cursor("none", "", null)
+	hud.queue_free()
+
+
 # ---- E. the scene read: who turns each flag on, who needs it; a rename; what can't work ----------------------------------------------
 func stage_scan() -> void:
 	var o := origin()
@@ -627,7 +681,7 @@ func _initialize() -> void:
 	player = main.get_node("Player") as CharacterBody3D
 	eye = player.get_node("Eye") as Camera3D
 	story = main.get_node("Story")
-	for st in [["gate", stage_gate], ["then", stage_then], ["tie", stage_tie], ["checkpoint", stage_checkpoint], ["scan", stage_scan], ["board", stage_board], ["alone", stage_alone]]:
+	for st in [["gate", stage_gate], ["then", stage_then], ["tie", stage_tie], ["checkpoint", stage_checkpoint], ["prompt", stage_prompt], ["scan", stage_scan], ["board", stage_board], ["alone", stage_alone]]:
 		if wants(st[0]):
 			await (st[1] as Callable).call()
 	print("LOGIC result " + JSON.stringify({"errors": errors}))
