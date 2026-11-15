@@ -63,7 +63,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E41 | a00ff660 | The rest of the Look plugin's tooltips (63): every exported field in it now says what it does |
 | E42 | bc07052f | Tooltips for the card and the main menu (E35's), and the starter's hunt, cue and sanity (35 fields) |
 | E43 | 833f60fb | `horror_game.py new "Name" --artist "Your Studio"`: the card says your studio's name from the start |
-| E44 | (next commit) | Tooltips for five more starter scripts: the dread moment, the searcher, gaslight, the scare area and the door (40 fields) |
+| E44 | eabd2517 | Tooltips for five more starter scripts: the dread moment, the searcher, gaslight, the scare area and the door (40 fields) |
 
 ## 1. How it was done
 
