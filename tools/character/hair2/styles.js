@@ -84,6 +84,17 @@ export const FRINGES = {
   choppy: { label: "Choppy (drawn hair's pointed locks)", amount: 0.85, wispy: 0.95, uneven: 0.8, choppy: 0.6, centre: 0.5, curve: 0.45, width: 50, line: MARKS.eye + 0.012, closed: 1 },
 };
 
+// A fringe of `kind` from the fringe she has: every number some kind brings put back to the default first, then the
+// kind's own (a choppy fringe's centre lock and its `closed` stayed on a curtain picked after it, and combed its
+// parting shut); what no kind brings (the face-framing strands, a slant) stays as she had it
+const KIND_KEYS = [...new Set(Object.values(FRINGES).flatMap(f => Object.keys(f)))].filter(k => k !== "label");
+export function withFringe(fringe, kind) {
+  const f = { ...(fringe || {}) }, own = { ...(FRINGES[kind] || {}) };
+  delete own.label;
+  for (const k of KIND_KEYS) if (k in DEFAULTS.fringe) f[k] = DEFAULTS.fringe[k]; else delete f[k];
+  return { ...f, ...own, kind };
+}
+
 const P = MARKS;
 // Long hair ends with just its tips on the shoulders (a cut's line at -0.14, a tail's length to match: DECISIONS
 // 2026-11-12, last; the shoulders' tops are -0.135): longer is a slider away, down to the chest.
