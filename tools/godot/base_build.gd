@@ -5,12 +5,13 @@
 ## the studio's look (the balanced preset: its environment, tape and grade), moonlight, a small room (a floor, four walls
 ## with a doorway, a lamp, a table), a note on the table, the starter's player, the Story (an objective, a task the note
 ## ticks, autosave on), the UI plugin's HSHud with the game's keys, Sound, the pause menu and a checkpoint at the start.
-##   godot --headless --path PROJECT -s base_build.gd -- --name="My Game"
+##   godot --headless --path PROJECT -s base_build.gd -- --name="My Game" [--artist="Your Studio"]
 ## Prints `BASEBUILD saved res://main.tscn` and quits.
 extends SceneTree
 
 var top: Node3D                                       # (the scene being built: SceneTree has a `root` of its own)
 var title := "your game"
+var artist := ""                                      # the card's name (--artist): "<artist> presents"; none, "[Artist] presents"
 
 
 func own(n: Node, parent: Node = null) -> Node:
@@ -52,6 +53,8 @@ func _initialize() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--name="):
 			title = a.substr(7)
+		if a.begins_with("--artist="):
+			artist = a.substr(9).strip_edges().trim_prefix("\"").trim_suffix("\"")
 	top = Node3D.new()
 	top.name = "Main"
 	# the look: the studio's balanced preset (its WorldEnvironment, the tape, the grade)
@@ -148,7 +151,7 @@ func _initialize() -> void:
 	var intro := Control.new()
 	intro.name = "Intro"
 	intro.set_script(load("res://addons/horrorstudio_ui/splash.gd"))
-	intro.set("line", "[Artist] presents")
+	intro.set("line", (artist if artist != "" else "[Artist]") + " presents")
 	intro.set("next_scene", "res://menu.tscn")
 	if err == OK:
 		err = save(intro, "res://intro.tscn")

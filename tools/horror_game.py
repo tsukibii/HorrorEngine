@@ -2,15 +2,15 @@
 """A new horror game for Godot 4.7, made by hand with the studio's plugins, in one command (the user, 2026-11-15: "a
 horror godot package maker wrapper which I can name and creates a base project with everything set up for godot 4.7").
 
-    python tools/horror_game.py new "My Game" [--to DIR]     a project you can open and play (F5) at once
+    python tools/horror_game.py new "My Game" [--to DIR] [--artist "Your Studio"]   a project to open and play (F5) at once
     python tools/horror_game.py update FOLDER                the studio's plugins and starter scripts into it again
     python tools/horror_game.py check                        HORRORGAME: one made in Saved/Godot/_horror_game and played
 
 `new` makes DIR/My_Game (DIR: ~/HorrorGames unless --to says): godot_byhand.py's project (the Look, UI, Weapons, Devices
 and Markers plugins switched on with the balanced look's settings, HumanShaders, the starter kit as res://starter/, the
 sound shelf, the four music moods, the Kimodo reader, exports/ folders), named as you named it, and three scenes Godot
-builds and saves (tools/godot/base_build.gd): intro.tscn, the project's start (black, "[Artist] presents": the UI
-plugin's HSSplash, Godot's own logo not shown), menu.tscn (the main menu: the game's name, Continue, New game, Load
+builds and saves (tools/godot/base_build.gd): intro.tscn, the project's start (black, "[Artist] presents", or
+"Your Studio presents" with --artist: the UI plugin's HSSplash, Godot's own logo not shown), menu.tscn (the main menu: the game's name, Continue, New game, Load
 game, Settings, Quit: HSTitleMenu) and main.tscn, the game: the studio's look, moonlight, a small room with a lamp and
 a table, a note on it, the starter's player, the Story (an objective, a task, autosave), the HSHud with the game's keys,
 Sound, the pause menu (Esc: Save, Load, Settings, Quit to the menu) and a checkpoint at the start. Imported, so Godot opens it at once. A README.md in
@@ -40,8 +40,8 @@ small room at night with a note on the table.
 
 ## What's in it
 
-- `intro.tscn`, where the game starts: black, "[Artist] presents" (its **Line**: your studio's name; **Picture** a logo
-  over it), then `menu.tscn`. Godot's own boot screen is black under it (Project Settings > Application > Boot Splash:
+- `intro.tscn`, where the game starts: black, "[Artist] presents" (its **Line**: your studio's name, or made with
+  `--artist "Your Studio"`; **Picture** a logo over it), then `menu.tscn`. Godot's own boot screen is black under it (Project Settings > Application > Boot Splash:
   no image; put a picture of your own there if you like).
 - `menu.tscn`, the main menu (the UI plugin's HSTitleMenu): the game's name (**Title**, **Subtitle**, a **Backdrop**),
   Continue (the newest save), New game, Load game, Settings, Quit.
@@ -111,8 +111,8 @@ def set_start(proj):
     p.write_text(s, encoding="utf-8")
 
 
-def make(name, proj, quiet=False):
-    """the project and its main scene in `proj`; -> None, or what went wrong"""
+def make(name, proj, quiet=False, artist=""):
+    """the project and its main scene in `proj` (the card naming `artist`); -> None, or what went wrong"""
     g = godot()
     if not g:
         return "no godot on the PATH (Godot 4.7: install it, or set GODOT to its path)"
@@ -122,7 +122,7 @@ def make(name, proj, quiet=False):
         return "godot_byhand.py new didn't make it"
     shutil.copy(HERE / "godot" / "base_build.gd", proj / "base_build.gd")
     subprocess.run([g, "--headless", "--path", str(proj), "--import"], capture_output=True, text=True, timeout=3600)
-    r = subprocess.run([g, "--headless", "--path", str(proj), "-s", "base_build.gd", "--", "--name=" + name],
+    r = subprocess.run([g, "--headless", "--path", str(proj), "-s", "base_build.gd", "--", "--name=" + name] + (["--artist=" + artist] if artist else []),
                        capture_output=True, text=True, timeout=600)
     (proj / "base_build.gd").unlink(missing_ok=True)
     if "BASEBUILD saved" not in r.stdout:   # (the game, the card and the menu)
@@ -193,18 +193,24 @@ def main(argv):
         print(__doc__)
         return 2
     if argv[0] == "new":
-        words = [a for a in argv[1:] if not a.startswith("--")]
-        if "--to" in argv:
-            to = argv[argv.index("--to") + 1]
-            words = [w for w in words if w != to]
+        words, opts, i = [], {}, 1
+        while i < len(argv):                              # (the name's words, and each option's word after it)
+            if argv[i] in ("--to", "--artist") and i + 1 < len(argv):
+                opts[argv[i]] = argv[i + 1]
+                i += 2
+                continue
+            if not argv[i].startswith("--"):
+                words.append(argv[i])
+            i += 1
+        artist = opts.get("--artist", "").strip()
         if not words:
-            print('which name? python tools/horror_game.py new "My Game" [--to DIR]')
+            print('which name? python tools/horror_game.py new "My Game" [--to DIR] [--artist "Your Studio"]')
             return 2
         name = " ".join(words).strip()
-        base = Path(argv[argv.index("--to") + 1]).expanduser() if "--to" in argv else Path.home() / "HorrorGames"
+        base = Path(opts["--to"]).expanduser() if "--to" in opts else Path.home() / "HorrorGames"
         proj = (base / folder_name(name)).resolve()
         print(f"making {name} in {proj} (a minute or two: the plugins, the sounds, the import)")
-        why = make(name, proj)
+        why = make(name, proj, artist=artist)
         if why:
             print("HORRORGAME FAILED: " + why)
             return 1
@@ -228,7 +234,7 @@ def main(argv):
         return 0
     proj = ROOT / "Saved" / "Godot" / "_horror_game"
     shutil.rmtree(proj, ignore_errors=True)
-    why = make("Check Game", proj)
+    why = make("Check Game", proj, artist="Check Studio")
     if why:
         print("ERROR: " + why)
         print("HORRORGAME FAILED")

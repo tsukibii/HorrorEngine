@@ -66,7 +66,7 @@ func _initialize() -> void:
 	await frames(20)
 	var card := current_scene
 	var line := card.get_node_or_null("Card/Line") as Label if card != null else null
-	ok(card != null and card.get_script() != null and line != null and line.text == "[Artist] presents", "the card: [Artist] presents", line.text if line != null else "")
+	ok(card != null and card.get_script() != null and line != null and line.text == "Check Studio presents", "the card: the studio's name (made with --artist)", line.text if line != null else "")
 	await press(KEY_SPACE)
 	var at_menu := await until_scene("res://menu.tscn")
 	var menu := current_scene
