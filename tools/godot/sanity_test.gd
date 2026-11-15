@@ -416,5 +416,33 @@ func _initialize() -> void:
 	torch.set("battery", 0.0)
 	story.call("delete_save", 4)
 
+	# 10. a scare added since the start is heard at once: by Sanity (which looked round every 2 s), the Fear node and the
+	# director (which never did)
+	var fear := Node.new()
+	fear.name = "Fear"
+	fear.set_script(load(S + "fear.gd"))
+	main.add_child(fear)
+	var dr2 := Node.new()
+	dr2.set_script(load(S + "dread.gd"))
+	main.add_child(dr2)
+	await frames(5)
+	var late := Node.new()
+	late.set_script(made("extends Node\nsignal scared\nfunc _ready() -> void:\n\tadd_to_group(\"hs_scare\")\n"))
+	main.add_child(late)
+	await frames(2)
+	san.set_to(1.0)
+	var f0 := float(fear.get("level"))
+	var d0 := float(dr2.get("intensity"))
+	late.emit_signal("scared")
+	await frames(1)
+	var dv := 1.0 - v()
+	var df := float(fear.get("level")) - f0
+	var dd := float(dr2.get("intensity")) - d0
+	say("late", "a scare added after the start, its first scare: the meter down %.2f, the Fear node up %.2f, the director up %.2f" % [dv, df, dd])
+	if dv < 0.05 or df < 0.05 or dd < 0.05:
+		bad("a scare added late (the meter %.2f, the Fear node %.2f, the director %.2f)" % [dv, df, dd])
+	for n in [fear, dr2, late]:
+		n.queue_free()
+
 	print("SANITY result " + JSON.stringify({"errors": errors}))
 	quit()
