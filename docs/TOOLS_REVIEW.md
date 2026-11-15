@@ -58,7 +58,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E36 | 7ca2cf07 | `tools/horror_game.py`: a new horror game in one command, named, ready to play (the card, the menu, a room) |
 | E37 | 0f2898fe | Continue and Load game open the scene a save was made in (a game of several scenes) |
 | E38 | ac7374dc | A game by hand as it ships: Godot's export emptied every list in its scenes; faces, a character's looks and Kimodo motions found in the pack; ready export presets |
-| E39 | (next commit) | What the shotgun breaks kept at a checkpoint and in a save: a lamp shot out lit again when you die, a mug blown up whole; both still broken after a load |
+| E39 | f09bf784 | What the shotgun breaks kept at a checkpoint and in a save: a lamp shot out lit again when you die, a mug blown up whole; both still broken after a load |
 
 ## 1. How it was done
 
