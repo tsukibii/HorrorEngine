@@ -71,7 +71,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E49 | 4b72848f | Once-only scares kept in a save: a glimpse, the closer figure, feet under a door, the steam's writing, a shadow, the mirror figure, a dread moment, a checkpoint |
 | E50 | 34a49a6b | A way into the next level: the Story's `go_to(scene, at)` and `starter/travel.gd` carry the pocket, the to-do list, the facts and the cash into another scene |
 | E51 | 40e403ec | The Story's words on the HSHud by default (your answer to E34: "I prefer HSHud look"); a HUD put in while the game runs taken at once |
-| E52 | (next commit) | The keys only in the pause menu (your: "move the screenshot ones to the pause menu ... sholdnt be visible inside the main game unless I pause"), and every part of the HUD at an edge inside the tape's 4:3 picture at any preset and window size; the menu's legend laid from its foot (a fixed 640 was under a 21:9 window's) |
+| E52 | 91c90599 | The keys only in the pause menu (your: "move the screenshot ones to the pause menu ... sholdnt be visible inside the main game unless I pause"), and every part of the HUD at an edge inside the tape's 4:3 picture at any preset and window size; the menu's legend laid from its foot (a fixed 640 was under a 21:9 window's) |
 
 ## 1. How it was done
 
