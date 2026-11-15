@@ -9,6 +9,10 @@ extends Node
 ## sparks when it's down). Listens to every gun (HSDoubleBarrel; the group hs_weapon): a pellet on it, or an explosive shell's
 ## blast reaching it (its hits carry `blast` and `damage`), is a hit. A harmless shell's pellets (a kind whose damage is
 ## 0: the love hearts, the water) aren't: nothing's counted, nothing goes down; `touched` says so (a line, a blush).
+##
+## Kept with the starter Story's checkpoint and saves (the group hs_keeps): die after shooting a lamp out since the last
+## checkpoint and it's whole and lit again; load a save made after it went down and it's down, dark and gone at once,
+## quietly (no sound, line, sparks or fire()).
 
 signal hit(info: Dictionary)                      ## {point, normal, collider, pellet, hits (pellets on it), count}
 signal down
@@ -28,11 +32,39 @@ var _is_gone := false
 var _solid: Array = []                            # what was solid before it went: [node, layer or use_collision]
 var _guns: Array = []
 var _t := 0.0
+var _was_shown := true                            # what _gone found, for bringing it back
+var _was_hidden := false
 
 
 func _ready() -> void:
 	add_to_group("hs_shootable")                  # (a blast reaching its parent counts it as hit: HSImpacts)
+	add_to_group("hs_keeps")                      # (the starter Story's checkpoint and saves: keep_state, put_state)
 	_listen()
+
+
+## what the starter Story keeps at a checkpoint and in a save
+func keep_state() -> Dictionary:
+	return {"count": count, "down": is_down, "gone": _is_gone}
+
+
+## put back as it was kept: shot down since, whole again (its lamps lit as they were, back where it went from); down in
+## what's put back, down now at once and quietly
+func put_state(d: Dictionary) -> void:
+	var host := get_parent()
+	if host == null:
+		return
+	var down := bool(d.get("down", false))
+	if not down and (is_down or _is_gone):
+		is_down = false
+		_relight(host)
+		_back(host)
+	elif down and not is_down:
+		is_down = true
+		if lights_out:
+			_dark(host)
+		if gone_secs > 0.0:
+			_gone(host, -1.0)
+	count = int(d.get("count", count))
 
 
 func _process(dt: float) -> void:
@@ -109,14 +141,7 @@ func _on_fired(shot_hits: Array) -> void:
 
 # a lamp shot out: its lights dark for good, sparks falling from where it was hit
 func _shot_out(host: Node, at: Vector3) -> void:
-	var lamps := host.find_children("*", "Light3D", true, false)
-	if host is Light3D:
-		lamps.append(host)
-	for l in lamps:
-		(l as Light3D).visible = false
-		(l as Light3D).light_energy = 0.0
-		l.set_meta("hs_lit", false)                  # (a light zone and the starter's lights turn it on by this: never again)
-		l.set_meta("hs_broken", true)
+	_dark(host)
 	var sp := CPUParticles3D.new()
 	sp.emitting = false                              # (started once it's placed: emitting as it enters the tree, its sparks fly from the scene's origin)
 	sp.one_shot = true
@@ -152,6 +177,39 @@ func _shot_out(host: Node, at: Vector3) -> void:
 	get_tree().create_timer(1.2).timeout.connect(sp.queue_free)
 
 
+# its lights dark (what each was kept in its meta, for a checkpoint to light it again)
+func _dark(host: Node) -> void:
+	var lamps := host.find_children("*", "Light3D", true, false)
+	if host is Light3D:
+		lamps.append(host)
+	for l in lamps:
+		if not l.has_meta("hs_shot_was"):
+			l.set_meta("hs_shot_was", {"visible": (l as Light3D).visible, "energy": (l as Light3D).light_energy, "lit": l.get_meta("hs_lit", null)})
+		(l as Light3D).visible = false
+		(l as Light3D).light_energy = 0.0
+		l.set_meta("hs_lit", false)                  # (a light zone and the starter's lights turn it on by this: never again)
+		l.set_meta("hs_broken", true)
+
+
+# its lights as they were before it was shot out
+func _relight(host: Node) -> void:
+	var lamps := host.find_children("*", "Light3D", true, false)
+	if host is Light3D:
+		lamps.append(host)
+	for l in lamps:
+		if not l.has_meta("hs_shot_was"):
+			continue
+		var was: Dictionary = l.get_meta("hs_shot_was")
+		(l as Light3D).light_energy = float(was.get("energy", 1.0))
+		(l as Light3D).visible = bool(was.get("visible", true))
+		if was.get("lit") == null:
+			l.remove_meta("hs_lit")
+		else:
+			l.set_meta("hs_lit", was["lit"])
+		l.remove_meta("hs_broken")
+		l.remove_meta("hs_shot_was")
+
+
 # where to put a sound or the sparks: the running scene, else beside the thing
 func _room(host: Node) -> Node:
 	var cs := get_tree().current_scene
@@ -164,8 +222,8 @@ func _gone(host: Node, secs: float) -> void:
 	if _is_gone:
 		return
 	_is_gone = true
-	var shown := (host as Node3D).visible if host is Node3D else true
-	var hidden_before := bool(host.get_meta("hs_hidden", false))
+	_was_shown = (host as Node3D).visible if host is Node3D else true
+	_was_hidden = bool(host.get_meta("hs_hidden", false))
 	if host is Node3D:
 		(host as Node3D).visible = false
 	host.set_meta("hs_hidden", true)
@@ -180,7 +238,14 @@ func _gone(host: Node, secs: float) -> void:
 	if secs < 0.0:
 		return
 	await get_tree().create_timer(secs).timeout
-	if not is_instance_valid(host) or is_down:
+	if not is_instance_valid(host) or is_down or not _is_gone:
+		return
+	_back(host)
+
+
+# back from being gone: solid, shown and unhidden as it was
+func _back(host: Node) -> void:
+	if not _is_gone:
 		return
 	for e in _solid:
 		if is_instance_valid(e[0]):
@@ -189,7 +254,7 @@ func _gone(host: Node, secs: float) -> void:
 			else:
 				(e[0] as CSGShape3D).use_collision = true
 	_solid.clear()
-	host.set_meta("hs_hidden", hidden_before)
+	host.set_meta("hs_hidden", _was_hidden)
 	if host is Node3D:
-		(host as Node3D).visible = shown
+		(host as Node3D).visible = _was_shown
 	_is_gone = false

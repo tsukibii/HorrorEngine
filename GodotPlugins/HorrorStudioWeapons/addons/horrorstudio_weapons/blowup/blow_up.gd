@@ -17,6 +17,8 @@ extends Node3D
 ## rigid bodies whose colliders are at least 5 cm thick (thinner sinks through a level's floor: LESSONS), laid down onto
 ## the floor when they come to rest; little ones fall by rays, as the gun's hulls do. The player's feet push them.
 ## `blow_up()` breaks it from a script (a cue); `restore()` puts it back. `preview` shows its pieces in the editor.
+## Kept with the starter Story's checkpoint and saves (the group hs_keeps): broken since the last checkpoint, dying
+## puts it back whole; broken in a save, it's gone at once when the save is loaded (no pieces, sound or fire()).
 
 signal prepared                                   ## its pieces are cut and ready
 signal hit(info: Dictionary)                      ## a shot that didn't break it: {damage, worn, point, pellets, dented}
@@ -84,6 +86,7 @@ func _ready() -> void:
 		return
 	add_to_group("hs_shootable")                  # (a blast reaching its thing counts it as hit: HSImpacts)
 	add_to_group("hs_blowup")
+	add_to_group("hs_keeps")                      # (the starter Story's checkpoint and saves: keep_state, put_state)
 	var host := get_parent() as Node3D
 	if host == null:
 		push_warning("HSBlowUp: put it under the thing that breaks (a Node3D).")
@@ -1393,6 +1396,25 @@ func _play(st: AudioStream, at: Vector3, db := 0.0, kind_word := "event") -> voi
 # ---- put back -----------------------------------------------------------------------------------------------------
 
 ## Puts it back as it was before it was shot (its pieces gone, its dents out).
+## what the starter Story keeps at a checkpoint and in a save
+func keep_state() -> Dictionary:
+	return {"broken": is_broken, "damage": damage}
+
+
+## put back as it was kept: broken since, whole again (its pieces cleared); broken in what's put back and whole now,
+## gone at once (hidden, nothing solid, no pieces)
+func put_state(d: Dictionary) -> void:
+	var broken := bool(d.get("broken", false))
+	if is_broken and not broken:
+		restore()
+		damage = float(d.get("damage", 0.0))
+	elif broken and not is_broken:
+		var host := get_parent() as Node3D
+		if host != null:
+			is_broken = true
+			_hide(host)
+
+
 func restore() -> void:
 	_clear_pieces()
 	var host := get_parent() as Node3D

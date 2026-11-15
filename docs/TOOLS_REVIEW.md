@@ -58,6 +58,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E36 | 7ca2cf07 | `tools/horror_game.py`: a new horror game in one command, named, ready to play (the card, the menu, a room) |
 | E37 | 0f2898fe | Continue and Load game open the scene a save was made in (a game of several scenes) |
 | E38 | ac7374dc | A game by hand as it ships: Godot's export emptied every list in its scenes; faces, a character's looks and Kimodo motions found in the pack; ready export presets |
+| E39 | (next commit) | What the shotgun breaks kept at a checkpoint and in a save: a lamp shot out lit again when you die, a mug blown up whole; both still broken after a load |
 
 ## 1. How it was done
 
@@ -115,6 +116,8 @@ Weak in three ways, the same in most tools:
 | Desk | Edit as text couldn't take a shot off a line (it came back from the line before); pasted lines kept their answers' jumps to lines that weren't copied | A shot taken off goes (a pov shot, which the words never show, stays); a jump out of what was copied is dropped | DESK |
 
 | A game by hand, exported | **Godot 4.7's export, converting a scene's text to binary, left out every `PackedStringArray`** (measured in the pack it exports: the Story's tasks and flags, the HUD's keys, a note's `add_tasks`, and so every Logic's and marker's lists): the game as it ships had no to-do list and no key chips. A Studio character's eye, hair and skin records were read from her `.glb`'s own file, which isn't in an export (only what Godot imported is); the Markers' face clips read as text are binary there; HumanShaders' micro detail was listed by file name (`x.png.import` only, there); a Kimodo `.npz` was opened by a path made from res:// (nothing on disk in a pack) and isn't exported unless a preset names it | By-hand projects keep text resources as text in an export (`godot_byhand.py`: new ones, and `install`/`update` on old ones); the records are read off the imported materials' `extras` first (`HSEye.material_records`); faces and micro detail listed and loaded through the resource loader, with the face clip's script put in every by-hand project; `.npz` by its res:// path; `new` writes `export_presets.cfg` (Linux, Windows) naming `*.npz`, and `install` adds it to a project's presets | HORRORGAME: the made game exported as a pack (no templates needed) and played in it, start to Load game, and `base_probe.gd` in it |
+
+| Weapons plugin | A lamp shot out (HSShootable's `lights_out`) or a thing blown up (HSBlowUp) stayed so when you died at a checkpoint from before (a lamp a puzzle needs, dark for good), and a save made after didn't hold them: loaded, they were whole again | Both are in the starter Story's world (`hs_keeps`): whole again when you die, broken at once and quietly (no sparks, no pieces) when a save that has them broken is loaded | WEAPONS' new `weapons_keep_test.gd` (the old scripts fail it) |
 
 ### 3.2 Things that failed quietly
 
@@ -279,9 +282,8 @@ Ranked within each part. Effort: S an hour or less, M a few hours, L a day or mo
 
 ### 4.5 Godot by hand, the rest
 
-- The weapons, devices and look plugins' own nodes keep nothing at a checkpoint (an HSShootable shot out, an HSBlowUp
-  broken, a kettle's life): dying leaves them as they are, which reads right for a broken mug and wrong for a lamp a
-  puzzle needs. Each joining `hs_keeps` is S.
+- The look plugin's own nodes keep nothing at a checkpoint or in a save (a kettle's life, a liquid's level, a lamp a
+  scare switched off): each joining `hs_keeps` is S, as HSShootable and HSBlowUp now do (E39).
 - 148 of the Look nodes' 253 exported properties have no Inspector description (a tooltip is what someone who isn't
   a programmer reads first).
 - Docs: guides/tutorial_v2 is behind the starter (E's prompt, the world at a checkpoint, saves): its bulk update is

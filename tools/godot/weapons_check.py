@@ -153,7 +153,7 @@ if "run/main_scene" not in pg:
     pg = pg.replace('config/name="Weapons"', 'config/name="Weapons"\nrun/main_scene="res://main.tscn"') + "\n[display]\nwindow/size/viewport_width=1600\nwindow/size/viewport_height=900\n"
     (proj / "project.godot").write_text(pg, encoding="utf-8")
 (proj / "weapons.json").write_text(json.dumps({"start": start, "floor": fl, "corridor": corr}, indent=1), encoding="utf-8")
-for f in ["weapons_test.gd", "weapons_shots.gd", "muzzle_shots.gd"]:
+for f in ["weapons_test.gd", "weapons_keep_test.gd", "weapons_shots.gd", "muzzle_shots.gd"]:
     if (ROOT / "tools/godot" / f).is_file():
         shutil.copy(ROOT / "tools/godot" / f, proj / f)
 
@@ -166,6 +166,15 @@ res = next((json.loads(ln.split(" ", 2)[2]) for ln in got if ln.startswith("WEAP
 if res is None:
     sys.exit("WEAPONS FAILED: Godot said nothing: " + (r.stdout + r.stderr)[-2500:])
 errs += res.get("errors", [])
+errs += [f"a script error: {ln.strip()}" for ln in (r.stdout + r.stderr).splitlines() if "SCRIPT ERROR" in ln or "Parse Error" in ln][:6]
+
+# what it breaks kept with the starter Story's checkpoint and saves (a lamp shot out, a mug blown up): its own script
+r = run([G, "--headless", "--path", str(proj), "--fixed-fps", "60", "-s", "weapons_keep_test.gd"], timeout=300)
+got = [ln for ln in r.stdout.splitlines() if ln.startswith("WEAPONS ")]
+for ln in got:
+    print("  " + ln[8:])
+res = next((json.loads(ln.split(" ", 2)[2]) for ln in got if ln.startswith("WEAPONS result ")), None)
+errs += res.get("errors", []) if res is not None else ["the keep test said nothing: " + (r.stdout + r.stderr)[-800:]]
 errs += [f"a script error: {ln.strip()}" for ln in (r.stdout + r.stderr).splitlines() if "SCRIPT ERROR" in ln or "Parse Error" in ln][:6]
 
 if "--pictures" in args and not errs:
