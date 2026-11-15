@@ -80,7 +80,8 @@ def first_scene(story):
         n = flow[nid]
         if n.get("type") == "scene":
             return nid
-        nid = n.get("next") or ((n.get("options") or [{}])[0].get("next") if n.get("options") else None)
+        opts = n.get("options") or [{}]
+        nid = n.get("next") or opts[0].get("to") or opts[0].get("next")   # (a choice's way is its `to`: past one, the guide had no scene's picture)
     return None
 
 
@@ -191,6 +192,21 @@ def main():
                 if not (Path(r["dir"]) / part).exists():            # the plugins (GodotPlugins/) copied in
                     print(f"  GDEXPORT FAIL: {part} missing from the export")
                     ok = False
+            # a Japanese line as long in Godot as on the desk (story.gd ja_secs against storylib's, on the game's own lines with no dur)
+            jl = sorted({str(c.get("ja")) for sc in (L.load(game)[0].get("scenes") or {}).values() for v in [sc, *((sc.get("variants") or {}).values())]
+                         for c in v.get("clips", []) if c.get("ja") and not c.get("dur")} | {"ＡＢＣ「テスト」・123、まだ。", "괜찮아? 大丈夫…"})
+            jf = Path(r["dir"]) / ".desk" / "ja_lines.json"
+            jf.parent.mkdir(exist_ok=True)
+            jf.write_text(json.dumps(jl, ensure_ascii=False), encoding="utf-8")
+            _c, jout = run_godot(r["dir"], "res://addons/horrorstudio/tests/ja_secs.gd", ["--", f"--lines={jf}"])
+            jline = next((ln for ln in jout.splitlines() if ln.startswith("JASECS ")), None)
+            got = json.loads(jline[7:]) if jline else []
+            off = [(t, round(L.ja_secs(t), 3), round(g, 3)) for t, g in zip(jl, got) if abs(L.ja_secs(t) - g) > 0.002]
+            if len(got) != len(jl) or off:
+                print(f"  GDEXPORT FAIL: a Japanese line's length differs in Godot from the desk's: {off[:3] or jout[-300:]}")
+                ok = False
+            else:
+                print(f"  GDEXPORT lines: {len(jl)} Japanese lines as long in Godot as on the desk")
             code, out = run_godot(r["dir"], "res://addons/horrorstudio/tests/load_check.gd")
             lines = out.splitlines()                        # every verdict (the levels, surfaces, materials...), then the tail
             print("\n".join("  " + ln for ln in [ln for ln in lines[:-12] if ln.startswith("GDEXPORT ")] + lines[-12:]))

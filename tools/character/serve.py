@@ -300,7 +300,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.loads(f.read_text(encoding="utf-8")) if f.is_file() else {})
         if parts[:2] == ["api", "people"] and len(parts) == 2:
             out = []
-            for d in sorted(PEOPLE.iterdir()) if PEOPLE.exists() else []:
+            for d in sorted(PEOPLE.iterdir(), key=lambda d: (d.name.startswith("_"), d.name.lower())) if PEOPLE.exists() else []:   # (a check's scratch characters, _studiotest..., last)
                 if d.is_dir() and clean(d.name): out.append({"name": d.name, "pictures": sorted(pictures(d.name)), "body": (d / "body.bin").exists(),
                                                              "hair": (d / "salon" / "salon.json").exists(), "baked": (d / "salon" / "salon.glb").exists()})
             return self.send(200, {"people": out})

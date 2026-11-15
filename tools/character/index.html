@@ -3711,6 +3711,7 @@ let OPENING = 0;                                      // the latest open(): an e
 async function open(name) {
   const me = ++OPENING;
   WHO = name || null; PICS = []; DELTA = null; REPORT = null; drawSlots();
+  if (WHO) try { localStorage.setItem("studio.who", WHO); } catch (e) { /* no storage: it opens the first next time */ }
   const c = WHO ? await api(`api/people/${encodeURIComponent(WHO)}`) : {};
   if (me !== OPENING) return;                          // another character was picked meanwhile: its own open() sets everything
   FACEBAKE = null; const baked = WHO ? await loadFaceBake(WHO) : null;
@@ -4541,6 +4542,10 @@ window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, o
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; } };   // bodytest.js, studiotest.js (a landmark on the page)
 const list = await people();
 document.querySelector('#views button[data-v="body"]').classList.add("on");
-await open(list.length ? list[0].name : null);
+{ // the character you had open last time (kept in this browser), else the first that isn't a check's scratch one
+  let last = null; try { last = localStorage.getItem("studio.who"); } catch (e) { /* no storage: the first */ }
+  const first = list.find(p => p.name === last) || list.find(p => !p.name.startsWith("_")) || list[0];
+  if (first) $("#who").value = first.name;
+  await open(first ? first.name : null); }
 </script>
 </body></html>
