@@ -74,7 +74,7 @@ func own_eye(key: String):
 		var t := character()
 		var path := glb_path if glb_path != "" else (t.scene_file_path if t != null else "")
 		if path.ends_with(".glb"):
-			var recs := HSEye.records(path)
+			var recs := HSEye.records(path, "studioEye", t)
 			for k in recs:
 				if recs[k] is Dictionary and recs[k].get("paint") is Dictionary and (str(recs[k].get("side", "L")) == "L" or recs.size() == 1):
 					_own_eyes.merge(recs[k]["paint"], true)

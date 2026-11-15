@@ -72,16 +72,14 @@ static func material(albedo: Texture2D = null, settings: Dictionary = {}, tone: 
 				m.set_shader_parameter(pair[0], res)
 	var micro := HUMAN + "Resources/MicroDetail/"
 	if DirAccess.dir_exists_absolute(micro):
-		var d := DirAccess.open(micro)
-		if d != null:
-			for f in d.get_files():
-				if f.ends_with(".png") and not f.ends_with(".import"):
-					var t = load(micro + f)
-					if t is Texture2D:
-						m.set_shader_parameter("texture_micro_detail", t)
-						m.set_shader_parameter("use_micro_detail", true)
-						m.set_shader_parameter("micro_detail_scale", 30.0)
-						break
+		for f in ResourceLoader.list_directory(micro):   # (by the names Godot loads them by: an exported game has only x.png.import there)
+			if f.ends_with(".png"):
+				var t = load(micro + f)
+				if t is Texture2D:
+					m.set_shader_parameter("texture_micro_detail", t)
+					m.set_shader_parameter("use_micro_detail", true)
+					m.set_shader_parameter("micro_detail_scale", 30.0)
+					break
 	for pair in [["texture_pores", "skin_pores.png"], ["texture_skin_micro", "skin_micro.png"], ["texture_regions", "mhr_skin_regions.png"], ["texture_tone", "skin_tone.png"], ["texture_depth", "mhr_skin_depth.png"]]:
 		var t = load(DETAIL_TEX + pair[1]) if ResourceLoader.exists(DETAIL_TEX + pair[1]) else null
 		m.set_shader_parameter(pair[0], t if t is Texture2D else (grey() if pair[0] == "texture_tone" else black() if pair[0] == "texture_depth" else flat_normal()))   # missing, they change nothing: no tilt, open skin, the paint's own colour, no region
@@ -187,10 +185,11 @@ static func set_maps(m: ShaderMaterial, maps: Dictionary) -> void:
 			m.set_shader_parameter("subsurface_scattering_strength", clamp(float(rec["wrap"]), 0.0, 1.0))
 
 
-## the studioSkin records of a glb by material name (the Studio's export writes one on its skin material)
-static func records(glb_path: String) -> Dictionary:
-	var out := {}
-	if glb_path == "":
+## the studioSkin records of a glb by material name (the Studio's export writes one on its skin material): off the
+## node's materials when it's given (an exported game has them only there), else the file's JSON
+static func records(glb_path: String, node: Node = null) -> Dictionary:
+	var out := HSEye.material_records(node, "studioSkin")
+	if not out.is_empty() or glb_path == "":
 		return out
 	var j := HSEye.gltf_json(glb_path)
 	for mat in j.get("materials", []):
@@ -251,7 +250,7 @@ static func set_wet(m: Material, settings: Dictionary) -> void:
 ## with the glb's path, its studioSkin numbers too; returns the materials made
 static func wear(node: Node, settings: Dictionary = {}, glb_path: String = "") -> Array:
 	var out: Array = []
-	var recs := records(glb_path)
+	var recs := records(glb_path, node)
 	for mi in node.find_children("*", "MeshInstance3D", true, false):
 		if mi.mesh == null:
 			continue

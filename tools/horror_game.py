@@ -62,6 +62,12 @@ small room at night with a note on the table.
 - `sfx/`, `music/`: the sound shelf and the four moods; `kimodo/`, `animations/`: Kimodo's motions for a character's
   moves; `exports/`: drop the studio's exports here (interiors, streets, characters).
 
+## Shipping it
+
+Project > Export: a Linux and a Windows preset are ready (Godot asks for its export templates the first time: Editor >
+Manage Export Templates). The project keeps its scenes as text when it's exported (Godot 4.7's binary conversion leaves
+out every list in a scene: the to-do list, the HUD's keys), and the presets take Kimodo's motions (`*.npz`) along.
+
 ## Keeping it current
 
 The plugins and the starter are copies of the studio's. After a pull in the studio:
@@ -127,6 +133,61 @@ def make(name, proj, quiet=False):
     return None
 
 
+def played(cmd, cwd=None):
+    """one of the check's scripts run: its lines printed, its errors (and any script error) returned"""
+    import json
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=600, cwd=cwd)
+    text = r.stdout + r.stderr
+    errs = []
+    for ln in text.splitlines():
+        if ln.startswith("HORRORGAME ") and not ln.startswith("HORRORGAME result"):
+            print("  " + ln[11:])
+        if ln.startswith("HORRORGAME result"):
+            errs += json.loads(ln[len("HORRORGAME result "):]).get("errors", [])
+    if not any(ln.startswith("HORRORGAME result") for ln in text.splitlines()):
+        errs.append("the game said nothing: " + text.strip()[-500:])
+    return errs + [f"a script error: {ln.strip()}" for ln in text.splitlines() if "SCRIPT ERROR" in ln or "Parse Error" in ln][:8]
+
+
+def probe_files(proj):
+    """what base_probe.gd reads: a .glb whose materials carry the Studio's records (as a character's export's do), a
+    face clip as the Face page writes one, a Kimodo motion"""
+    import json
+    import struct
+    import zipfile
+    pos = struct.pack("<9f", 0, 0, 0, 1, 0, 0, 0, 1, 0)
+    blob = pos + struct.pack("<3H", 0, 1, 2) + b"\0\0"
+    mats = [{"name": "probe_eye", "extras": {"studioEye": {"limbus": 0.55, "side": "L"}}},
+            {"name": "probe_hair", "extras": {"studioHair": {"normal": "shell"}, "look": {"name": "probe"}}},
+            {"name": "probe_skin", "extras": {"studioSkin": {"pores": 0.7}}}]
+    j = {"asset": {"version": "2.0"}, "scene": 0, "scenes": [{"nodes": [0]}], "nodes": [{"name": "probe", "mesh": 0}],
+         "meshes": [{"name": "probe", "primitives": [{"attributes": {"POSITION": 0}, "indices": 1, "material": i} for i in range(3)]}],
+         "materials": mats,
+         "accessors": [{"bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3", "min": [0, 0, 0], "max": [1, 1, 0]},
+                       {"bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR"}],
+         "bufferViews": [{"buffer": 0, "byteOffset": 0, "byteLength": 36}, {"buffer": 0, "byteOffset": 36, "byteLength": 6}],
+         "buffers": [{"byteLength": len(blob)}]}
+    js = json.dumps(j).encode()
+    js += b" " * (-len(js) % 4)
+    (proj / "probe").mkdir(exist_ok=True)
+    (proj / "probe" / "probe_look.glb").write_bytes(struct.pack("<4sII", b"glTF", 2, 28 + len(js) + len(blob))
+                                                    + struct.pack("<I4s", len(js), b"JSON") + js
+                                                    + struct.pack("<I4s", len(blob), b"BIN\0") + blob)
+    (proj / "faces").mkdir(exist_ok=True)
+    (proj / "faces" / "probe_smile.tres").write_text(
+        '[gd_resource type="Resource" script_class="HSFaceClip" load_steps=2 format=3]\n\n'
+        '[ext_resource type="Script" path="res://addons/horrorstudio/face_clip.gd" id="1_face"]\n\n'
+        '[resource]\nscript = ExtResource("1_face")\nid = "probe_smile"\ntitle = "probe smile"\nloop = false\n'
+        'secs = 0.10000\nfps = 30.00000\nframes = 3\nshapes = PackedStringArray("jawDrop", "lipCornerPuller_L")\n'
+        'weights = PackedFloat32Array(0, 0, 0.5, 0.5, 1, 1)\n', encoding="utf-8")
+    head = "{'descr': '<f4', 'fortran_order': False, 'shape': (4, 77, 3), }"
+    head += " " * (-(10 + len(head) + 1) % 64) + "\n"
+    npy = b"\x93NUMPY\x01\x00" + struct.pack("<H", len(head)) + head.encode() + bytes(4 * 4 * 77 * 3)
+    (proj / "animations").mkdir(exist_ok=True)
+    with zipfile.ZipFile(proj / "animations" / "probe_walk.npz", "w") as z:
+        z.writestr("posed_joints.npy", npy)
+
+
 def main(argv):
     if not argv or argv[0] not in ("new", "update", "check"):
         print(__doc__)
@@ -172,20 +233,25 @@ def main(argv):
         print("ERROR: " + why)
         print("HORRORGAME FAILED")
         return 1
-    shutil.copy(HERE / "godot" / "base_test.gd", proj / "base_test.gd")
-    r = subprocess.run([g, "--headless", "--path", str(proj), "--fixed-fps", "60", "-s", "base_test.gd"],
-                       capture_output=True, text=True, timeout=600)
-    text = r.stdout + r.stderr
-    errs = []
-    for ln in text.splitlines():
-        if ln.startswith("HORRORGAME ") and not ln.startswith("HORRORGAME result"):
-            print("  " + ln[11:])
-        if ln.startswith("HORRORGAME result"):
-            import json
-            errs += json.loads(ln[len("HORRORGAME result "):]).get("errors", [])
-    if not any(ln.startswith("HORRORGAME result") for ln in text.splitlines()):
-        errs.append("the game said nothing: " + text.strip()[-500:])
-    errs += [f"a script error: {ln.strip()}" for ln in text.splitlines() if "SCRIPT ERROR" in ln or "Parse Error" in ln][:8]
+    for f in ("base_test.gd", "base_probe.gd"):
+        shutil.copy(HERE / "godot" / f, proj / f)
+    probe_files(proj)
+    subprocess.run([g, "--headless", "--path", str(proj), "--import"], capture_output=True, text=True, timeout=1200)
+    errs = played([g, "--headless", "--path", str(proj), "--fixed-fps", "60", "-s", "base_test.gd"])
+    errs += played([g, "--headless", "--path", str(proj), "-s", "base_probe.gd"])
+    # the game as it ships: the pack Godot exports with the project's own preset (no export templates needed for a
+    # pack), played the same way and looked inside
+    build = ROOT / "Saved" / "Godot" / "_horror_game_build"
+    shutil.rmtree(build, ignore_errors=True)
+    build.mkdir(parents=True)
+    r = subprocess.run([g, "--headless", "--path", str(proj), "--export-pack", "Linux", str(build / "game.pck")],
+                       capture_output=True, text=True, timeout=1200)
+    if not (build / "game.pck").is_file():
+        errs.append("the pack wasn't exported: " + (r.stdout + r.stderr).strip()[-400:])
+    else:
+        print(f"  (exported: {(build / 'game.pck').stat().st_size / 1e6:.0f} MB with the project's Linux preset)")
+        errs += played([g, "--headless", "--main-pack", str(build / "game.pck"), "--fixed-fps", "60", "-s", "res://base_test.gd", "--", "--packed"], cwd=build)
+        errs += played([g, "--headless", "--main-pack", str(build / "game.pck"), "-s", "res://base_probe.gd", "--", "--packed"], cwd=build)
     main_text = (proj / "main.tscn").read_text(encoding="utf-8") if (proj / "main.tscn").is_file() else ""
     if "_Talk" in main_text or "_reach" in main_text:
         errs.append("main.tscn holds something made while a game ran")

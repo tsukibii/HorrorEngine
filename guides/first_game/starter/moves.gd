@@ -157,7 +157,7 @@ func _clip(h: Node3D, move: String, src: String) -> Dictionary:
 		if str(R.call("detect", sk)) == "":
 			problems.append("%s: her skeleton isn't one the retarget knows (MHR, Mixamo, Godot's humanoid, SOMA)" % move)
 			return {}
-		var frames: Array = N.call("joints", N.call("read", ProjectSettings.globalize_path(src)))
+		var frames: Array = N.call("joints", N.call("read", src))   # (by its res:// path: in an exported game it's inside the pack)
 		if frames.is_empty():
 			problems.append("%s: %s has no posed_joints (is it a Kimodo .npz?)" % [move, src.get_file()])
 			return {}

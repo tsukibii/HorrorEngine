@@ -63,7 +63,7 @@ static func names(with_clips := true) -> PackedStringArray:
 		for folder in FOLDERS:
 			if not DirAccess.dir_exists_absolute(folder):
 				continue
-			for f in DirAccess.get_files_at(folder):
+			for f in ResourceLoader.list_directory(folder):   # (by the names Godot loads them by: an exported game has x.tres.remap there)
 				if f.ends_with(".tres"):
 					var id := "clip:" + f.get_basename()
 					if not (id in out):
@@ -197,7 +197,9 @@ func restore(d: Dictionary) -> void:
 	wear(String(d.get("name", "")) if String(d.get("name", "")) != "" else "neutral", float(d.get("amount", 1.0)), 0.05)
 
 
-# ---- a face clip (the Face page's export: res://faces/<id>.tres), read as text so it needs no script of its own --------------
+# ---- a face clip (the Face page's export: res://faces/<id>.tres), read as text so it needs no script of its own; in an ---------
+# exported game the file is binary (Godot converts text resources on export: only x.tres.remap is there), so it's
+# loaded, which needs its script, res://addons/horrorstudio/face_clip.gd (tools/godot_byhand.py puts it in)
 static func _between(text: String, head: String) -> String:
 	var at := text.find(head)
 	if at < 0:
@@ -210,6 +212,12 @@ static func read_clip(id: String) -> Dictionary:
 	for folder in FOLDERS:
 		var path := "%s/%s.tres" % [folder, id]
 		if not FileAccess.file_exists(path):
+			var r: Resource = load(path) if ResourceLoader.exists(path) else null
+			if r != null and r.get("shapes") is PackedStringArray and r.get("weights") is PackedFloat32Array:
+				var sh: PackedStringArray = r.get("shapes")
+				var ws: PackedFloat32Array = r.get("weights")
+				if not sh.is_empty() and not ws.is_empty():
+					return {"shapes": sh, "weights": ws, "frames": ws.size() / sh.size(), "fps": float(r.get("fps")), "loop": bool(r.get("loop"))}
 			continue
 		var text := FileAccess.get_file_as_string(path)
 		var shapes := PackedStringArray()

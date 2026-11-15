@@ -404,7 +404,7 @@ func clip_from(path: String) -> String:
 		elif not FileAccess.file_exists(path):
 			problems.append("%s isn't there" % path)
 		else:
-			var frames: Array = nz.call("joints", nz.call("read", ProjectSettings.globalize_path(path)))
+			var frames: Array = nz.call("joints", nz.call("read", path))   # (by its res:// path: in an exported game it's inside the pack)
 			if frames.is_empty():
 				problems.append("%s has no motion in it" % path.get_file())
 			else:

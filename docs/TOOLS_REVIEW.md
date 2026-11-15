@@ -57,6 +57,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E35 | f02e6f73 | the UI plugin's card (HSSplash, "[Artist] presents") and main menu (HSTitleMenu); the Story loads the save the menu picked |
 | E36 | 7ca2cf07 | `tools/horror_game.py`: a new horror game in one command, named, ready to play (the card, the menu, a room) |
 | E37 | 0f2898fe | Continue and Load game open the scene a save was made in (a game of several scenes) |
+| E38 | (next commit) | A game by hand as it ships: Godot's export emptied every list in its scenes; faces, a character's looks and Kimodo motions found in the pack; ready export presets |
 
 ## 1. How it was done
 
@@ -112,6 +113,8 @@ Weak in three ways, the same in most tools:
 | Starter kit | Dying put back the pocket, flags and tasks but not the world: a key taken after the checkpoint stayed hidden with its reach box freed (the door it opens never opened again); a once-only area, scare, cue, flag switch or act never fired again; a checkpoint kept while seated stood you on the mattress | A checkpoint keeps the world: every node in the group `hs_keeps` gives `keep_state()` and gets `put_state()` (pickup, food, note, flag switch, act, event area, scare area and what it hid, cue, shown); seated, where you stood | LOGIC's checkpoint stage (fails on the old kit) |
 | Desk | The Inspector's Delete left the card in its act and every arrow into it pointing at nothing (the story check failed); Rename left a death's retry on the old id and took any id; New didn't ask about unsaved edits; the Database's rename of a cast member missed `beam`, `lit`, `flashed` (REFS failed on main) | One delete for the board and the Inspector (`flowedit.removeCard`: arrows into it cut to stubs, out of its acts; the start, a card a choice reads the result of and one a death retries from refused with why); `renameCard` moves every use and refuses a bad or taken id; New asks | DESK (both on TestRoom001), REFS, CMDS |
 | Desk | Edit as text couldn't take a shot off a line (it came back from the line before); pasted lines kept their answers' jumps to lines that weren't copied | A shot taken off goes (a pov shot, which the words never show, stays); a jump out of what was copied is dropped | DESK |
+
+| A game by hand, exported | **Godot 4.7's export, converting a scene's text to binary, left out every `PackedStringArray`** (measured in the pack it exports: the Story's tasks and flags, the HUD's keys, a note's `add_tasks`, and so every Logic's and marker's lists): the game as it ships had no to-do list and no key chips. A Studio character's eye, hair and skin records were read from her `.glb`'s own file, which isn't in an export (only what Godot imported is); the Markers' face clips read as text are binary there; HumanShaders' micro detail was listed by file name (`x.png.import` only, there); a Kimodo `.npz` was opened by a path made from res:// (nothing on disk in a pack) and isn't exported unless a preset names it | By-hand projects keep text resources as text in an export (`godot_byhand.py`: new ones, and `install`/`update` on old ones); the records are read off the imported materials' `extras` first (`HSEye.material_records`); faces and micro detail listed and loaded through the resource loader, with the face clip's script put in every by-hand project; `.npz` by its res:// path; `new` writes `export_presets.cfg` (Linux, Windows) naming `*.npz`, and `install` adds it to a project's presets | HORRORGAME: the made game exported as a pack (no templates needed) and played in it, start to Load game, and `base_probe.gd` in it |
 
 ### 3.2 Things that failed quietly
 
@@ -230,8 +233,9 @@ Ranked within each part. Effort: S an hour or less, M a few hours, L a day or mo
 3. **One helper for the Godot check harness (M).** `godot_bin()` is copied 18 times, the xvfb command built by hand in
    about 27 files, and only 9 scripts fail when Vulkan falls back to OpenGL (the others would measure on GL3). The kept
    check projects are about 6 GB with nothing pruning them.
-4. **Faces in the Markers by ResourceLoader (S).** The Markers read `res://faces/*.tres` as text; an exported game
-   converts resources to binary, so in a shipped build her faces would (suspected, not tried) be gone.
+4. **The desk's export and Director projects as they ship (S each).** E38 measured Godot 4.7's export leaving out
+   every `PackedStringArray` in a converted scene; `storykit/godot.py`'s project settings and `godot_director.py`
+   don't keep text yet (one line each), and nothing exports their games to check.
 5. **The undo in the Character Studio (M).** Head, body, creature, eye-look and look cards, outfits and the Resets
    each change many settings in one click with no undo (the touch-up and the hair editor have one), and there's no
    save history on the server (the desk keeps 50).

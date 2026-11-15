@@ -32,6 +32,7 @@ Godot instead of through Director I can"; guides/godot_by_hand): what guides/god
 Ends with what it did. The Director route instead: tools/godot_director.py."""
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -57,6 +58,43 @@ MOODS = ROOT / "Content" / "Studio" / "Music" / "moods"         # the music's mo
 TAILS = ROOT / "Saved" / "SFX" / "tails"                         # the sounds' reverb tails (tools/sfx.py tails)
 KIMODO = ROOT / "GodotPlugins" / "HorrorStudioDirector" / "addons" / "horrorstudio_director" / "kimodo"   # the Kimodo reader and retarget
 SOMA = ROOT / "Content" / "Studio" / "soma77.json"              # Kimodo's skeleton (the retarget reads it)
+FACE_CLIP = ROOT / "tools" / "godot" / "addons" / "horrorstudio" / "face_clip.gd"   # what a face clip in faces/ is (the Face page's)
+# files the starter reads as files, which Godot exports only when a preset names them (it exports resources by
+# itself): Kimodo's motions in animations/
+EXPORT_FILES = "*.npz"
+
+
+def export_presets(name):
+    """export_presets.cfg: Linux and Windows, everything the game needs in them (Project > Export: the export templates
+    are Godot's own download, Editor > Manage Export Templates)"""
+    slug = re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_") or "game"
+    out = []
+    for i, (title, plat, path) in enumerate([("Linux", "Linux", f"build/linux/{slug}.x86_64"),
+                                             ("Windows", "Windows Desktop", f"build/windows/{slug}.exe")]):
+        out += [f"[preset.{i}]", "", f'name="{title}"', f'platform="{plat}"', "runnable=true", "dedicated_server=false",
+                'custom_features=""', 'export_filter="all_resources"', f'include_filter="{EXPORT_FILES}"',
+                'exclude_filter="build/*"', f'export_path="{path}"', 'encryption_include_filters=""',
+                'encryption_exclude_filters=""', "encrypt_pck=false", "encrypt_directory=false", "",
+                f"[preset.{i}.options]", "", 'binary_format/architecture="x86_64"', ""]
+    return "\n".join(out)
+
+
+def export_files(proj):
+    """the files the starter reads added to every preset a project has (a preset made in the editor names none)"""
+    p = proj / "export_presets.cfg"
+    if not p.is_file():
+        return False
+    s = p.read_text(encoding="utf-8")
+    def add(m):
+        have = [x.strip() for x in m.group(1).split(",") if x.strip()]
+        for f in EXPORT_FILES.split(","):
+            if f.strip() not in have:
+                have.append(f.strip())
+        return 'include_filter="%s"' % ", ".join(have)
+    t = re.sub(r'^include_filter="([^"]*)"', add, s, flags=re.M)
+    if t != s:
+        p.write_text(t, encoding="utf-8")
+    return t != s
 
 
 def project_godot(name):
@@ -68,9 +106,32 @@ def project_godot(name):
     for k, v in GD.PROJECT_LOOK.items():
         sec, key = k.split("/", 1)
         by.setdefault(sec, []).append(f"{key}={'true' if v is True else 'false' if v is False else v}")
+    by.setdefault("editor", []).append(KEEP_TEXT + "=false")
     for sec, kv in by.items():
         lines += [f"[{sec}]"] + kv + [""]
     return "\n".join(lines)
+
+
+# Godot 4.7's export, converting a scene's text into binary, leaves out every PackedStringArray in it (measured by
+# HORRORGAME in the pack it exports: the Story's tasks and flags, the HUD's keys, a note's add_tasks, a Logic's lists
+# all empty in the game as it ships): a game by hand keeps its scenes and resources as text when it's exported
+KEEP_TEXT = "export/convert_text_resources_to_binary"
+
+
+def keep_text(proj):
+    """an existing project.godot given the setting that keeps text resources as text in an export; -> True when added"""
+    pg = proj / "project.godot"
+    if not pg.is_file():
+        return False
+    text = pg.read_text(encoding="utf-8")
+    if KEEP_TEXT in text:
+        return False
+    if re.search(r"^\[editor\]\s*$", text, re.M):
+        text = re.sub(r"^\[editor\]\s*$", "[editor]\n\n" + KEEP_TEXT + "=false", text, count=1, flags=re.M)
+    else:
+        text = text.rstrip("\n") + "\n\n[editor]\n\n" + KEEP_TEXT + "=false\n"
+    pg.write_text(text, encoding="utf-8")
+    return True
 
 
 OFFERED = ".horrorstudio_plugins.json"       # the plugins install has put in a project: one you switched off stays off
@@ -179,6 +240,16 @@ def install(proj, starter=True):
         shutil.copy2(SOMA, proj / "kimodo" / "soma77.json")
         (proj / "animations").mkdir(exist_ok=True)
         did.append("kimodo (the Kimodo reader), animations/")
+    # a face clip's script (the Face page writes faces/<id>.tres with it): the Markers read a clip as text, but an
+    # exported game has it only as a binary resource, which loads only with its script
+    if FACE_CLIP.is_file():
+        (proj / "addons" / "horrorstudio").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(FACE_CLIP, proj / "addons" / "horrorstudio" / "face_clip.gd")
+        did.append("addons/horrorstudio/face_clip.gd")
+    if export_files(proj):
+        did.append(f"export_presets.cfg: {EXPORT_FILES} exported")
+    if keep_text(proj):
+        did.append("project.godot: scenes kept as text in an export (Godot 4.7's binary ones lose their lists)")
     for k in EX.KINDS:
         (proj / "exports" / k).mkdir(parents=True, exist_ok=True)
     return did
@@ -286,6 +357,7 @@ def main(argv):
         proj.mkdir(parents=True, exist_ok=True)
         name = argv[argv.index("--name") + 1] if "--name" in argv else proj.name
         (proj / "project.godot").write_text(project_godot(name), encoding="utf-8")
+        (proj / "export_presets.cfg").write_text(export_presets(name), encoding="utf-8")   # (Project > Export, ready)
         did = install(proj)
         print(f"a new Godot project in {proj}: project.godot, {', '.join(did)}, exports/{{interiors,streets,characters}}")
         print("open it in Godot 4.7 (Import, its project.godot); guides/godot_by_hand and guides/first_game say what's next")

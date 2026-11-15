@@ -3,7 +3,9 @@
 ## there's a save), New game: the look, the room, its note, the player, the Story's objective and task, the HSHud with the
 ## game's keys, the checkpoint's autosave, E on the note (its card, the task ticked), Esc (the pause menu up, the game
 ## held) and back; a save, Quit to the menu (Continue and Load game now), Load game's Slot 1 (the game where it was
-## saved), the menu's Settings and back. Prints `HORRORGAME <what> <how>` lines and `HORRORGAME result {errors}`.
+## saved), the menu's Settings and back; a save made in a second scene opened there (not in the pack Godot exports from
+## the project, `-- --packed`, where nothing can be written into res://). Prints `HORRORGAME <what> <how>` lines and
+## `HORRORGAME result {errors}`.
 extends SceneTree
 
 var errors: Array = []
@@ -145,6 +147,12 @@ func _initialize() -> void:
 	var p2 := current_scene.get_node_or_null("Player") as Node3D if loaded_in else null
 	ok(at1 >= 0 and loaded_in and p2 != null and p2.global_position.distance_to(stood) < 0.05, "Load game, Slot 1: the game where it was saved",
 		"%s; %.2f m off" % [str(slots), p2.global_position.distance_to(stood) if p2 != null else -1.0])
+	if OS.get_cmdline_user_args().has("--packed"):          # (an exported game: its res:// is the pack, nothing written there)
+		for sl in [0, 1, 2, 3]:
+			current_scene.get_node("Story").call("delete_save", sl)
+		print("HORRORGAME result " + JSON.stringify({"errors": errors}))
+		quit()
+		return
 	# a game of two scenes: a save made in the second, loaded from the menu, opens that scene
 	DirAccess.copy_absolute(ProjectSettings.globalize_path("res://main.tscn"), ProjectSettings.globalize_path("res://level_two.tscn"))
 	change_scene_to_file("res://level_two.tscn")

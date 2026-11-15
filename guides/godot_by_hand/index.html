@@ -285,11 +285,16 @@ baked in as blend shapes.</p>
 <section id="ship">
 <h2><span class="n">10</span>Playing and shipping</h2>
 <p><span class="ui">Project → Project Settings → Application → Run → Main Scene</span> picks the scene <kbd>F5</kbd> plays (<kbd>F6</kbd> plays the one open).
-To ship it: <span class="ui">Project → Export…</span>, add a Windows Desktop and a Linux preset, and download the export templates
-when Godot asks.</p>
-<div class="tip"><b>A character's look in a shipped game:</b> <span class="node">HSCharacterLook</span> reads the character's
-<code>.glb</code> itself (its skin's and eyes' records), and an exported game leaves source files out. In the export preset's
-<span class="ui">Resources</span> tab, put <code>*.glb</code> in <span class="ui">Filters to export non-resource files</span>.</div>
+To ship it: <span class="ui">Project → Export…</span>. A project made by <code>godot_byhand.py new</code> (or the full game
+maker, <code>horror_game.py new</code>) has a Linux and a Windows preset ready; download the export templates when Godot asks
+(<span class="ui">Editor → Manage Export Templates</span>).</p>
+<div class="tip"><b>What the presets and the project settings take care of:</b> Kimodo's motions in <code>animations/</code>
+are read as files, so the presets name <code>*.npz</code> in <span class="ui">Filters to export non-resource files</span>.
+And the project keeps its scenes as text in the export
+(<span class="ui">Editor → Export → Convert Text Resources to Binary</span> off): Godot 4.7, converting a scene to binary,
+leaves out every list in it, so the game you ship would have no to-do list and no key chips. A project from before
+gets both with <code>python tools/godot_byhand.py install &lt;project&gt;</code>. A character's look needs nothing: her
+eyes', hair's and skin's records are read off her imported materials, which the game has.</div>
 </section>
 
 <section id="trouble">

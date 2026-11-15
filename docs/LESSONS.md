@@ -3509,6 +3509,11 @@ pale one shows.
   landmarks that the server gets from MediaPipe's worker, which wasn't set up (and then lacked libEGL). Probe the
   thing being waited on after the first timeout, not the third: print the page's errors and its state as it loads.
   The tool now asks the server for the landmarks first and says what's missing.
+- **Play the game as it ships, not only the project.** Every check ran a project in the editor's file system; the
+  first time a pack was exported and played (E38), the to-do list and the HUD's keys were empty: Godot 4.7's export,
+  turning a scene's text into binary, leaves out every `PackedStringArray`, and the plugins' file reads (a `.glb`'s
+  own JSON, a `.tres` as text, a `.png` by its name) find nothing in a pack. `--export-pack` needs no export templates
+  and takes 10 s: HORRORGAME now plays the pack it makes.
 - **A name is not an identity.** Godot's cloth shader found each garment's fabric by its material's name in the
   file's JSON; a pair of jeans has a waistband and a belt both named `jeans_band`, and the belt was dressed as denim.
   A count that didn't add up (20 surfaces dressed, 19 records) found it. Godot 4.7 keeps a glTF material's extras on
