@@ -121,7 +121,45 @@ var _lamp_lit := false
 func _ready() -> void:
 	add_to_group("hs_hunt")
 	add_to_group("hs_scare")
+	add_to_group("hs_saves")                                 # (the Story's save_game: whether it runs or has ended, its stage, its clock)
 	_wire.call_deferred()
+
+
+var _loaded := false                                      # a save just put back: the Story's `revived` that follows isn't a death
+
+
+## the Story's save_game and load_game: running or over, its stage and clock. Loaded, a hunt that was running runs
+## again at its stage, quietly (its facts come back with the save: no line, no checkpoint); one that had ended stays
+## ended, though what starts it holds (it would start again and end at once, its lines said twice)
+func save_state() -> Dictionary:
+	return {"running": running, "done": done, "how": how, "stage": stage, "clock": clock, "deaths": deaths, "revealed": _revealed}
+
+
+func load_state(d: Dictionary) -> void:
+	_loaded = true
+	done = bool(d.get("done", done))
+	how = str(d.get("how", how))
+	deaths = int(d.get("deaths", deaths))
+	_revealed = bool(d.get("revealed", _revealed))
+	if bool(d.get("running", false)):
+		if not running:
+			running = true
+			_begin_quiet(randf_range(gap_min, gap_max) * 0.5)
+			_hide_her()
+			if cloaked and _cloak() != null:
+				_cloak().cloak(0.0)
+		stage = clampi(int(d.get("stage", 1)), 1, stages)
+		_stage_t = 0.0
+		clock = float(d.get("clock", 0.0))
+	elif running:
+		running = false
+		state = "idle"
+		active = null
+		var c := chase
+		if c != null and is_instance_valid(c) and c.has_method("stop"):
+			c.stop()
+		_hide_her()
+		_look("")
 
 
 func _wire() -> void:
@@ -537,6 +575,9 @@ func _on_caught() -> void:
 
 # back from the dead (the Story's checkpoint): the hunt a stage lower than it killed you at, no rush for a while
 func _on_revived() -> void:
+	if _loaded:                                           # (a save put back, not a death: its stage stays)
+		_loaded = false
+		return
 	if not running:
 		return
 	_hide_her()

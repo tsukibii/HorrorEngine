@@ -25,10 +25,10 @@
 ## save holds the Story's own (the tasks, flags, the pocket and what of it is eatable, the cash, the objective, the
 ## doors, where you stood), the world's (the group hs_keeps: what's been picked up, read, fired, shown) and what keeps
 ## its own checkpoint (the group hs_saves, save_state() and load_state(state): the Markers plugin's Logic nodes and
-## characters, the Sanity meter, the flashlight's batteries). `autosave` writes slot 0 at every checkpoint,
+## characters, the Sanity meter, the flashlight's batteries, a hunt, the pause menu's time played, the weapons plugin's gun). `autosave` writes slot 0 at every checkpoint,
 ## `continue_saved` loads it at the start, `save_keys` puts saving and loading on F5 and F9 for testing. A save is for
-## the scene it was made in (its nodes are found by their paths); a gun that came by pickup or parcel, the laptop's
-## orders, a parcel and a hunt's stage aren't in it yet.
+## the scene it was made in (its nodes are found by their paths); the night's director, a searcher and a chase start
+## afresh.
 extends CanvasLayer
 
 signal task_added(id: String)
