@@ -92,6 +92,7 @@ var _idle_acc := 0.0
 var _sfx := {}
 var _hum: AudioStreamPlayer3D
 var _clock := 0.0                                   # seconds it's been running (deliveries come by it)
+var _left: Array = []                               # the parcels it's left (HSPackage), while they're there
 
 
 func _ready() -> void:
@@ -100,6 +101,7 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
 	add_to_group("hs_laptop")
+	add_to_group("hs_keeps")                         # (the Story's checkpoint keeps what's been sold, what's on its way and the parcels left)
 	if look == null:
 		look = HSTerminalLook.new()
 	if catalog == null and ResourceLoader.exists(CATALOG):
@@ -652,7 +654,115 @@ func _drop(spot: Node3D, d: Dictionary) -> void:
 	pkg.position = Vector3(x, y, 0.0)
 	pkg.rotation.y = PI + deg_to_rad(randf_range(-7.0, 7.0))   # its front (+Z) to the spot's -Z
 	(pkg as HSPackage).arrive(knock)
+	_left.append(pkg)
 	delivered.emit(pkg)
+
+
+# ---- dying and saves (the starter's Story) ------------------------------------------------------------------------------
+## the Story's checkpoint: what's been sold and seen, the orders on their way and the parcels it's left (shut, or kept
+## open); put back, the shop is as it was then (a thing sold since can be bought again with the cash the Story gives
+## back), an order on its way then comes again, a parcel there then is there again as it was (opened since or not) and
+## one left since is gone.
+## Things are kept by their file (else their id in the catalog): a thing made in code alone can't be.
+func keep_state() -> Dictionary:
+	var on_way := []
+	for d in deliveries:
+		on_way.append({"number": int(d["number"]), "items": (d["items"] as Array).map(_ref), "counts": Array(d["counts"]),
+			"in": maxf(0.0, float(d["due"]) - _clock)})
+	var left := []
+	for p in _left:
+		if not is_instance_valid(p):                  # (unboxed and gone)
+			continue
+		var pk := p as HSPackage
+		if pk.is_inside_tree() and (not pk.is_open or pk.keep_box):   # (one bursting is on its way out)
+			left.append({"number": pk.order_number, "items": pk.items.map(_ref), "counts": Array(pk.counts), "at": pk.global_transform,
+				"open": pk.is_open, "keep_box": pk.keep_box})
+	return {"sold": sold.duplicate(), "orders": orders, "seen": seen.duplicate(), "unlocked": unlocked_ids.duplicate(), "cash": cash,
+		"on_way": on_way, "left": left}
+
+
+func put_state(s: Dictionary) -> void:
+	sold = (s.get("sold", sold) as Dictionary).duplicate()
+	orders = int(s.get("orders", orders))
+	seen = (s.get("seen", seen) as Dictionary).duplicate()
+	unlocked_ids = (s.get("unlocked", unlocked_ids) as Dictionary).duplicate()
+	cash = float(s.get("cash", cash))
+	deliveries.clear()
+	for d in s.get("on_way", []):
+		var got := _items_back(d)
+		if not (got[0] as Array).is_empty():
+			deliveries.append({"number": int(d["number"]), "items": got[0], "counts": got[1], "due": _clock + float(d.get("in", 0.0))})
+	for p in _left:                                   # the parcels there now go; those there then come back, shut
+		if is_instance_valid(p):
+			if (p as Node).get_parent() != null:
+				(p as Node).get_parent().remove_child(p)
+			(p as Node).queue_free()
+	_left.clear()
+	for d in s.get("left", []):
+		var got := _items_back(d)
+		if not (got[0] as Array).is_empty():
+			_put_parcel(got[0], got[1], int(d["number"]), d.get("at", Transform3D()), bool(d.get("open", false)), bool(d.get("keep_box", false)))
+	if term != null:
+		term.set_cash(cash_now())
+
+
+func _ref(it: HSShopItem) -> Dictionary:
+	return {"id": it.id if it != null else "", "path": it.resource_path if it != null else ""}
+
+
+# [items, counts] from what keep_state wrote, leaving out what can't be found
+func _items_back(d: Dictionary) -> Array:
+	var its: Array = []
+	var ns: Array = []
+	var refs: Array = d.get("items", [])
+	var counts: Array = d.get("counts", [])
+	for i in refs.size():
+		var it := _item_of(refs[i])
+		if it != null:
+			its.append(it)
+			ns.append(int(counts[i]) if i < counts.size() else 1)
+	return [its, ns]
+
+
+func _item_of(r: Variant) -> HSShopItem:
+	if not r is Dictionary:
+		return null
+	var path := str((r as Dictionary).get("path", ""))
+	if path != "" and ResourceLoader.exists(path):
+		var res := load(path)
+		if res is HSShopItem:
+			return res
+	var id := str((r as Dictionary).get("id", ""))
+	if catalog != null and id != "":
+		for it in catalog.all_items():
+			if it != null and it.id == id:
+				return it
+	return null
+
+
+# a parcel left again where it was, as it was, with no knock (it was there all along)
+func _put_parcel(its: Array, ns: Array, number: int, at: Transform3D, open := false, kept := false) -> void:
+	var scene: PackedScene = package if package != null else (load(PACKAGE) as PackedScene)
+	if scene == null:
+		return
+	var pkg := scene.instantiate() as Node3D
+	if not pkg is HSPackage:
+		pkg.queue_free()
+		return
+	(pkg as HSPackage).items.assign(its)
+	(pkg as HSPackage).counts = PackedInt32Array(ns)
+	(pkg as HSPackage).order_number = number
+	(pkg as HSPackage).marker = mark_parcels and not open
+	if kept:
+		(pkg as HSPackage).keep_box = true
+	var under: Node = get_node_or_null(deliver_to)
+	if under == null:
+		under = get_parent()
+	under.add_child(pkg)
+	pkg.global_transform = at
+	if open:
+		(pkg as HSPackage)._open_now()
+	_left.append(pkg)
 
 
 func _story() -> Node:
