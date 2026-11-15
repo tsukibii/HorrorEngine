@@ -24,6 +24,7 @@ signal sat(seat: Node)                  ## sat down or lay down (seat.gd)
 signal stood                            ## up again
 signal gasped                           ## you held your breath too long
 signal hit(by: Node, kind: String)      ## someone's punch or swing landed on you (motion.gd's blows, a marker's Attack)
+signal scared                           ## a blow landed: a scare, heard as any is (the player is in the group hs_scare)
 
 @export var walk_speed := 1.6          ## metres a second
 @export var run_speed := 3.2
@@ -63,6 +64,7 @@ var _look_hi := 1.4
 
 func _ready() -> void:
 	add_to_group("hs_player")
+	add_to_group("hs_scare")                 # a blow on you is a scare: the Fear node, the director and Sanity hook this group's `scared`
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	aim.target_position = Vector3(0, 0, -reach)
 	aim.add_exception(self)
@@ -125,7 +127,8 @@ func struck(by: Node, kind: String) -> void:
 	_knock = 1.0
 	var from := (by as Node3D).global_position - global_position if by is Node3D else -global_basis.z
 	_knock_side = 1.0 if global_basis.x.dot(from) < 0.0 else -1.0       # (hit from your left, your head goes right)
-	get_tree().call_group("hs_scare", "scared", by)
+	scared.emit()                            # (the Fear node, the night's director and the Sanity node: they listen to `scared` signals)
+	get_tree().call_group("hs_scare", "scared", by)   # (and a script of your own with a scared(by) method)
 	hit.emit(by, kind)
 
 

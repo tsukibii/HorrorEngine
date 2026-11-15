@@ -21,6 +21,21 @@ var _body: StaticBody3D
 
 func _ready() -> void:
 	_body = Reach.make(self)
+	add_to_group("hs_keeps")                       # a checkpoint keeps whether it's been taken (the Story's checkpoint and revive)
+
+
+## the Story's checkpoint: whether it's still there; revive puts it back as it was then (taken since: there again)
+func keep_state() -> Dictionary:
+	return {"there": visible}
+
+
+func put_state(s: Dictionary) -> void:
+	visible = bool(s.get("there", visible))
+	if visible and _body == null:
+		_body = Reach.make(self)
+	elif not visible and _body != null:
+		_body.queue_free()
+		_body = null
 
 
 func use(by: Node = null) -> void:

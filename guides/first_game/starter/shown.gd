@@ -68,7 +68,21 @@ func _nodes(paths: Array) -> Array:
 func _ready() -> void:
 	is_shown = shown
 	want = shown
+	add_to_group("hs_keeps")                       # a checkpoint keeps whether it's there (put back at once on revive)
 	_start.call_deferred()
+
+
+## the Story's checkpoint: there or not; revive puts it as it was then, at once (no fade, seen or not)
+func keep_state() -> Dictionary:
+	return {"shown": is_shown, "want": want, "changes": changes}
+
+
+func put_state(s: Dictionary) -> void:
+	want = bool(s.get("want", want))
+	is_shown = bool(s.get("shown", is_shown))
+	changes = int(s.get("changes", changes))
+	if _started:
+		_put(is_shown, 0.0)
 
 
 func _start() -> void:

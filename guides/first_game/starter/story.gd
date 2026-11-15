@@ -435,8 +435,11 @@ func _doors() -> Array:
 	return out
 
 
-## Keep where you are and what you've done: the tasks, the facts, the pocket and the cash, the objective, the doors.
-## die() comes back to it. A checkpoint.gd area calls this; a lethal hunt does when it starts.
+## Keep where you are and what you've done: the tasks, the facts, the pocket and the cash, the objective, the doors,
+## and the world (every node in the group hs_keeps gives its keep_state() and is given it back by put_state(): a pickup
+## or food taken since lies where it was, a note's tasks come again, an area, a scare, a cue, a flag switch or an act
+## that's fired since can fire again, a shown.gd thing is as it was). die() comes back to it. A checkpoint.gd area
+## calls this; a lethal hunt does when it starts. A script of your own joins in by the same two methods and the group.
 func checkpoint() -> void:
 	var pl := get_tree().get_first_node_in_group("hs_player") as Node3D
 	_kept = {"flags": flags.duplicate(), "tasks": _tasks.duplicate(true), "items": items.duplicate(), "names": names.duplicate(),
@@ -444,8 +447,15 @@ func checkpoint() -> void:
 	if pl != null:
 		_kept["at"] = pl.global_transform
 		_kept["pitch"] = float(pl.get("pitch")) if pl.get("pitch") != null else 0.0
+		if pl.get("seat") != null and pl.get("_stood") is Transform3D:   # kept sitting, lying or hiding: where you stood before it
+			_kept["at"] = pl.get("_stood")                                 # (revive gets you up, then here: not on the mattress)
+			_kept["pitch"] = float(pl.get("_stood_pitch"))
 	for d in _doors():
 		_kept["doors"][d.get_path()] = [bool(d.get("open")), bool(d.get("unlocked"))]
+	_kept["world"] = {}                                   # what's in the world: a key on the floor, an area that's fired... (the group hs_keeps)
+	for n in get_tree().get_nodes_in_group("hs_keeps"):
+		if n.has_method("keep_state"):
+			_kept["world"][n.get_path()] = n.call("keep_state")
 	kept.emit()
 
 
@@ -486,6 +496,11 @@ func revive() -> void:
 			if d != null:
 				d.set("unlocked", _kept["doors"][path][1])
 				d.set("open", _kept["doors"][path][0])
+		var world: Dictionary = _kept.get("world", {})        # the world as it was: a key taken since lies where it was again, an
+		for path in world:                                    # area fired since can fire again (pickup, food, note, the areas, cues...)
+			var n := get_node_or_null(path)
+			if n != null and n.has_method("put_state"):
+				n.call("put_state", world[path])
 		var pl := get_tree().get_first_node_in_group("hs_player") as Node3D
 		if pl != null and _kept.has("at"):
 			if pl.get("seat") != null and pl.has_method("rise"):

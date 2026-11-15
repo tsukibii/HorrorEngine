@@ -29,10 +29,20 @@ var _here := false
 
 
 func _ready() -> void:
+	add_to_group("hs_keeps")                       # a checkpoint keeps whether it's fired (one fired since can fire again after dying)
 	body_entered.connect(func(b): if b.is_in_group("hs_player"): _here = true; _try())
 	body_exited.connect(func(b): if b.is_in_group("hs_player"): _here = false)
 	if interior != null and room != "":
 		interior.call_deferred("fit_area", self, room)
+
+
+func keep_state() -> Dictionary:
+	return {"fired": fired}
+
+
+func put_state(s: Dictionary) -> void:
+	fired = bool(s.get("fired", fired))
+	_here = false                                 # (you're back at the checkpoint: walking in again is what fires it)
 
 
 func _physics_process(_dt: float) -> void:

@@ -695,8 +695,19 @@ func stage_blows() -> void:
 		ears.set_script(made("extends Node\nvar got := []\nfunc scared(who) -> void:\n\tgot.append(who)\n"))
 		ears.add_to_group("hs_scare")
 		main.add_child(ears)
+		# (and the starter's real Sanity node, which hears a scare as the Fear node and the director do: by the group's
+		#  `scared` signals. A blow said only by a method call reached nobody but a script with that method)
+		var san: Node = null
+		if ResourceLoader.exists(S + "sanity.gd"):
+			san = Node.new()
+			san.set_script(load(S + "sanity.gd"))
+			for k in ["drain", "dark_drain", "near_drain", "hunt_drain"]:
+				san.set(k, 0.0)
+			san.set("show_meter", false)
+			main.add_child(san)
 		sp.connect("hit", func(by: Node, kind: String) -> void: told.append([by, kind]))
 		await frames(3)
+		var sane0: float = float(san.get("sanity")) if san != null else 1.0
 		sp.call("struck", her, "punch")
 		await frames(2)
 		var eye_node := sp.get_node("Eye") as Camera3D
@@ -704,11 +715,14 @@ func stage_blows() -> void:
 		await frames(40)
 		var roll1: float = absf(eye_node.rotation.z)
 		var got: Array = ears.get("got")
-		if told != [[her, "punch"]] or got != [her] or roll0 < 0.04 or roll1 > 0.001:
-			bad("the starter's player told a blow landed: hit said %d times, a scare heard %d, its view rolled %.1f degrees and %.2f after 0.7 s" % [told.size(), got.size(), rad_to_deg(roll0), rad_to_deg(roll1)])
-		knocked = "its view knocked %.0f degrees aside and level again in 0.7 s, a scare heard" % rad_to_deg(roll0)
+		var sane1: float = float(san.get("sanity")) if san != null else sane0 - 0.06
+		if told != [[her, "punch"]] or got != [her] or roll0 < 0.04 or roll1 > 0.001 or absf(sane0 - sane1 - 0.06) > 0.005:
+			bad("the starter's player told a blow landed: hit said %d times, a scare heard %d, its view rolled %.1f degrees and %.2f after 0.7 s, the Sanity node %.2f to %.2f" % [told.size(), got.size(), rad_to_deg(roll0), rad_to_deg(roll1), sane0, sane1])
+		knocked = "its view knocked %.0f degrees aside and level again in 0.7 s, a scare heard (the Sanity node %.2f to %.2f)" % [rad_to_deg(roll0), sane0, sane1]
 		sp.queue_free()
 		ears.queue_free()
+		if san != null:
+			san.queue_free()
 	say("a punch: %s; stepped aside as it's thrown, %.1f cm (she turned with them); out of reach it doesn't land; at you it stops %.0f cm short of your eye; someone with a Motion node reels; the starter's player: %s; the hunt's moves find her creep, crawl, peek and lunge" % ["; ".join(said), moved * 100.0, short * 100.0, knocked])
 
 

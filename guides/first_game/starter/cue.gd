@@ -90,8 +90,21 @@ var _roll_at := 0.0
 func _ready() -> void:
 	if scare:
 		add_to_group("hs_scare")                  # the Fear node and the director hook every scare's `scared`
+	add_to_group("hs_keeps")                      # a checkpoint keeps how often it's happened
 	if appear != null:
 		appear.visible = false
+
+
+## the Story's checkpoint: how often it's happened; revive puts that back (one that happened since can happen again)
+func keep_state() -> Dictionary:
+	return {"count": count, "last": _last}
+
+
+func put_state(s: Dictionary) -> void:
+	if running:
+		return
+	count = int(s.get("count", count))
+	_last = float(s.get("last", _last))
 
 
 ## on (from a signal: whatever it sends is ignored)

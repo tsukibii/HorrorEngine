@@ -49,6 +49,22 @@ var _held := false
 var _t := 0.0
 
 
+func _ready() -> void:
+	add_to_group("hs_keeps")                       # a checkpoint keeps how often it's run (an act done since can be done again)
+
+
+## the Story's checkpoint: how often it's been asked; revive puts that back (what she did isn't undone: she's where she is)
+func keep_state() -> Dictionary:
+	return {"times": times, "held": _held}
+
+
+func put_state(s: Dictionary) -> void:
+	if running:
+		return
+	times = int(s.get("times", times))
+	_held = bool(s.get("held", _held))
+
+
 func _story() -> Node:
 	return get_tree().get_first_node_in_group("hs_story")
 

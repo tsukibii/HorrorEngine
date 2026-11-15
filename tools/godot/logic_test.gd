@@ -396,6 +396,45 @@ func stage_checkpoint() -> void:
 	await use_at(door)
 	await frames(2)
 	ok(bool(story.call("is_set", "opened_d")) and lg.times == 1, "D: used again: on again (a once counts from the checkpoint)")
+	# and the world with it (the Story's hs_keeps): a key taken since the checkpoint lies where it was and can be picked up
+	# again (it used to stay hidden with its reach box freed: the door it opens never opened again); a once-only area that
+	# fired since fires again
+	var key := thing("KeyD", o + Vector3(2, 0, 0), "res://starter/pickup.gd", Vector3(0.25, 0.1, 0.25), false)
+	key.set("item", "key_d")
+	var ar := Area3D.new()
+	ar.name = "AreaD"
+	var cs := CollisionShape3D.new()
+	var bs := BoxShape3D.new()
+	bs.size = Vector3(1.6, 2.0, 1.6)
+	cs.shape = bs
+	cs.position.y = 1.0
+	ar.add_child(cs)
+	ar.set_script(load("res://starter/event_area.gd"))
+	ar.set("fact", "seen_d")
+	ar.position = main.global_transform.affine_inverse() * (o + Vector3(-3, 0, 0))
+	main.add_child(ar)
+	put(o + Vector3(2, 0.1, 1.0))
+	await frames(4)
+	story.call("checkpoint")
+	await use_at(key, 0.05)
+	await frames(2)
+	put(o + Vector3(-3, 0.1, 0))
+	var walked := await until(func() -> bool: return bool(story.call("is_set", "seen_d")), 2.0)
+	ok(bool(story.call("has", "key_d")) and not key.visible and walked and bool(ar.get("fired")), "D: after the checkpoint the key's taken and the area's fired",
+		"key %s, shown %s, area %s" % [story.call("has", "key_d"), key.visible, ar.get("fired")])
+	story.call("die", "test")
+	await secs(1.2)
+	var reach := key.get_node_or_null("_reach")
+	ok(not bool(story.call("has", "key_d")) and key.visible and reach != null and not bool(ar.get("fired")) and not bool(story.call("is_set", "seen_d")),
+		"D: died: the key lies where it was with its reach box, out of the pocket, and the area hasn't fired",
+		"pocket %s, shown %s, reach %s, fired %s" % [story.call("has", "key_d"), key.visible, reach != null, ar.get("fired")])
+	put(o + Vector3(2, 0.1, 1.0))
+	await frames(3)
+	await use_at(key, 0.05)
+	await frames(2)
+	put(o + Vector3(-3, 0.1, 0))
+	walked = await until(func() -> bool: return bool(story.call("is_set", "seen_d")), 2.0)
+	ok(bool(story.call("has", "key_d")) and walked, "D: and taken again, the area fired again: a checkpoint puts the world back too")
 
 
 # ---- E. the scene read: who turns each flag on, who needs it; a rename; what can't work ----------------------------------------------

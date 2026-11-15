@@ -40,11 +40,30 @@ var busy := false
 
 func _ready() -> void:
 	add_to_group("hs_scare")                     # (the Fear node jumps with every scare)
+	add_to_group("hs_keeps")                     # a checkpoint keeps whether it's fired and what it hid
 	body_entered.connect(_entered)
 	if appear != null:
 		appear.visible = false
 	if interior != null and room != "":
 		interior.call_deferred("fit_area", self, room)
+
+
+## the Story's checkpoint: whether it's fired and whether what it hides is still there; revive puts both back, so a
+## scare that came after the checkpoint comes again
+func keep_state() -> Dictionary:
+	return {"fired": fired, "watching": monitoring, "hidden": hide.visible if hide != null else true,
+		"gone": hide.has_meta("hs_hidden") if hide != null else false}
+
+
+func put_state(s: Dictionary) -> void:
+	fired = bool(s.get("fired", fired))
+	set_deferred("monitoring", bool(s.get("watching", true)))
+	if hide != null:
+		hide.visible = bool(s.get("hidden", hide.visible))
+		if not bool(s.get("gone", false)) and hide.has_meta("hs_hidden"):
+			hide.remove_meta("hs_hidden")
+	if appear != null and not busy:
+		appear.visible = false
 
 
 func _entered(body: Node3D) -> void:

@@ -18,6 +18,15 @@ var was_read := false
 
 func _ready() -> void:
 	Reach.make(self)
+	add_to_group("hs_keeps")                       # a checkpoint keeps whether it's been read (its tasks come again after dying)
+
+
+func keep_state() -> Dictionary:
+	return {"read": was_read}
+
+
+func put_state(s: Dictionary) -> void:
+	was_read = bool(s.get("read", was_read))
 
 
 func use(_by: Node = null) -> void:
