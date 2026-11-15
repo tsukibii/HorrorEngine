@@ -2,9 +2,11 @@
 // buildings; or a layout file of your own, `--file spec.json`: the same shape as a PRESETS entry, the cheap way for
 // Claude to write a place, .claude/skills/build-map) saved as a set, Content/Studio/Sets/<set>/story.json, through the
 // scene builder's own model as the page would save it: its level, someone at her spot, a start, a first glance. A set
-// already there keeps everything but its level (and her spot in it).
-//   node tools/director/layoutset.mjs <layout> [<set>] [--dry]
-//   node tools/director/layoutset.mjs --file spec.json <set> [--dry]      (a file's `repeat`: storeys alike, below)
+// already there keeps everything but that level (its other levels too). What the scene builder added to that level
+// and the layout doesn't make (a room's paint, the outside, a room drawn there) would be lost: then it says what and
+// writes nothing unless --force (put it in the layout file, or Save it again in the page after).
+//   node tools/director/layoutset.mjs <layout> [<set>] [--dry] [--force]
+//   node tools/director/layoutset.mjs --file spec.json <set> [--dry] [--force]      (a file's `repeat`: storeys alike, below)
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -61,7 +63,21 @@ const room = level.rooms.find(r => r.id === home.id);
 room.props = (room.props || []).concat([{ id: "someone_spot", use: "spot", at: [+(her.x - home.x).toFixed(3), +(her.y - home.y).toFixed(3)], rot: her.yaw }]);
 const dir = path.join(ROOT, "Content/Studio/Sets", name), file = path.join(dir, "story.json");
 let story = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null;
-if (story) story.levels = { [name]: level };
+const was = story && story.levels && story.levels[name];
+if (was) {                                                             // what this level holds that the layout doesn't make
+  const lost = Object.keys(was).filter(k => !(k in level)).map(k => `the level's ${k}`), now = new Map(level.rooms.map(r => [r.id, r]));
+  for (const r of was.rooms || []) {
+    const n = now.get(r.id);
+    if (!n) lost.push(`the room ${r.id}`);
+    else for (const k of Object.keys(r)) if (!(k in n)) lost.push(`${r.id}'s ${k}`);
+  }
+  if (lost.length && !argv.includes("--force")) {
+    console.error(`${name}'s level has what this layout doesn't make, which would be lost: ${lost.slice(0, 12).join(", ")}${lost.length > 12 ? ` and ${lost.length - 12} more` : ""}`);
+    console.error("nothing written: put it in the layout file, or run again with --force (the scene builder's Save keeps the page's edits)");
+    process.exit(1);
+  }
+}
+if (story) story.levels = Object.assign({}, story.levels, { [name]: level });   // (its other levels kept)
 else story = {
   format: 3,
   game: { id: name, title: P.name, start: "n_start", target_min: 0, voice: "ja", text: "en", clip_max: 8, subtitles: ["en", "zh"], built_with: { engine: "0.6.0", format: 3 } },
