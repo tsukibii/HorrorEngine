@@ -1974,5 +1974,29 @@ func _initialize() -> void:
 	if not hidden_before or took_name != "ShotgunOnFloor" or not g("owned") or not gun.visible or float(g("_lower")) > 0.01 or int(g("spare")) != sp3 + 4:
 		bad("the gun on the floor wasn't taken and drawn into view (hidden first %s, owned %s, lower %.2f, spare %d)" % [hidden_before, g("owned"), float(g("_lower")), int(g("spare"))])
 
+	# 12. a save (the starter Story's save_game): the gun as it was then, its right barrel fired and the left live; loaded
+	# into a gun that isn't carried, has no shells and both barrels live, it's drawn up again with them as they were
+	var st12: Node = main.get_node("Story")
+	st12.call("delete_save", 6)
+	gun.set("live", [false, true])
+	gun.set("spent", [true, false])
+	var sp4 := int(g("spare"))
+	var wrote: bool = st12.call("save_game", 6)
+	gun.set("spare", 0)
+	gun.set("live", [true, true])
+	gun.set("spent", [false, false])
+	gun.set("owned", false)
+	gun.set("_lower", 1.0)
+	await frames(2)
+	var read: bool = st12.call("load_game", 6)
+	await secs(0.8)
+	var hull = (g("_in_chamber") as Array)[0]
+	say("saved", "saved with %d spare, the right barrel fired; then none, not carried, both live: loaded %s, owned %s, drawn %s, spare %d, live %s, spent %s, a hull in the right chamber %s" % [
+		sp4, read, g("owned"), gun.visible and float(g("_lower")) < 0.01, int(g("spare")), g("live"), g("spent"), hull != null and is_instance_valid(hull)])
+	if not wrote or not read or not g("owned") or not gun.visible or int(g("spare")) != sp4 or g("live") != [false, true] or g("spent") != [true, false] \
+			or hull == null or not is_instance_valid(hull):
+		bad("a save: the gun as it was (owned %s, spare %d of %d, live %s, spent %s)" % [g("owned"), int(g("spare")), sp4, g("live"), g("spent")])
+	st12.call("delete_save", 6)
+
 	print("WEAPONS result " + JSON.stringify({"errors": errors}))
 	quit()

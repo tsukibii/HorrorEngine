@@ -137,6 +137,7 @@ func _ready() -> void:
 		_preview()
 		return
 	add_to_group("hs_weapon")
+	add_to_group("hs_saves")                         # (the starter Story's save_game: whether it's yours, its shells)
 	shell_model = shell_model if shell_model != null else load(DIR + "models/shell_12ga.glb")
 	spent_model = spent_model if spent_model != null else load(DIR + "models/shell_12ga_spent.glb")
 	for pair in [["fire_sound", "shotgun_fire"], ["insert_sound", "shotgun_shell_insert"], ["dry_sound", "shotgun_dry"],
@@ -524,6 +525,54 @@ func reload() -> void:
 ## `aim_spread` says, the sway and bob less; never while reloading or lowered
 func set_aim(on: bool) -> void:
 	aiming = on and aim and owned and raised and not reloading and _lower < 0.05
+
+
+## the starter Story's save_game and load_game (the group hs_saves): whether it's yours and up, the shells in it and in
+## the pocket by kind (each kind by its file, else its id). Dying never took the gun or its shells back, nor does this:
+## a save holds it as it is when it's written
+func save_state() -> Dictionary:
+	return {"owned": owned, "raised": raised, "loaded": loaded, "chambered": chambered, "spare": spare, "pocket": pocket.duplicate(),
+		"load_kind": _kind_ref(load_kind), "kinds": kinds.map(_kind_ref)}
+
+
+func load_state(d: Dictionary) -> void:
+	for r in d.get("kinds", []):
+		var k := _kind_of(r)
+		if k != null and not kinds.has(k):
+			kinds.append(k)
+	var lk := _kind_of(d.get("load_kind"))
+	if lk != null:
+		load_kind = lk
+	spare = int(d.get("spare", spare))
+	pocket = (d.get("pocket", pocket) as Dictionary).duplicate()
+	loaded = int(d.get("loaded", loaded))
+	chambered = bool(d.get("chambered", chambered))
+	var was := owned
+	owned = bool(d.get("owned", owned))
+	if owned and not was:
+		raised = false                               # (drawn up into the view, as a pickup gives it)
+		set_raised(bool(d.get("raised", true)))
+	elif owned:
+		set_raised(bool(d.get("raised", raised)))
+	_show_hud()
+
+
+func _kind_ref(k: HSShellType) -> Dictionary:
+	return {"id": k.id, "path": k.resource_path} if k != null else {}
+
+
+func _kind_of(r: Variant) -> HSShellType:
+	if not r is Dictionary or (r as Dictionary).is_empty():
+		return null
+	var path := str((r as Dictionary).get("path", ""))
+	if path != "" and ResourceLoader.exists(path):
+		var res := load(path)
+		if res is HSShellType:
+			return res
+	for k in kinds:
+		if k != null and k.id == str((r as Dictionary).get("id", "")):
+			return k
+	return null
 
 
 ## give it (a pickup), and some shells with it (`kind`: none, the normal kind)
