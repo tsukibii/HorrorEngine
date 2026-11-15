@@ -59,6 +59,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E37 | 0f2898fe | Continue and Load game open the scene a save was made in (a game of several scenes) |
 | E38 | ac7374dc | A game by hand as it ships: Godot's export emptied every list in its scenes; faces, a character's looks and Kimodo motions found in the pack; ready export presets |
 | E39 | f09bf784 | What the shotgun breaks kept at a checkpoint and in a save: a lamp shot out lit again when you die, a mug blown up whole; both still broken after a load |
+| E40 | (next commit) | Inspector tooltips for 101 of the Look plugin's node fields (light zones, flicker lights, the character look, the grade, wet surfaces, rain, the storm, CRT screens, blood, panes, puddles, leaks, breath) |
 
 ## 1. How it was done
 
@@ -284,8 +285,9 @@ Ranked within each part. Effort: S an hour or less, M a few hours, L a day or mo
 
 - The look plugin's own nodes keep nothing at a checkpoint or in a save (a kettle's life, a liquid's level, a lamp a
   scare switched off): each joining `hs_keeps` is S, as HSShootable and HSBlowUp now do (E39).
-- 148 of the Look nodes' 253 exported properties have no Inspector description (a tooltip is what someone who isn't
-  a programmer reads first).
+- 63 of the Look plugin's 358 exported fields still have no Inspector tooltip (E40 wrote 101): the headlight sweep, the
+  light shaft, the pattern light, the liquid fill, the prop effects, `rain.gd` (a trailing `##` on the field's line is
+  what Godot shows; `godot --doctool DIR --gdscript-docs res://addons/horrorstudio_look/nodes` lists what each says).
 - Docs: guides/tutorial_v2 is behind the starter (E's prompt, the world at a checkpoint, saves): its bulk update is
   its own branch, by the user's word, listed in docs/TUTORIAL_TODO.md. GODOT_LOOK §6 says `realism` is the default
   (it's `balanced`), has two §5d sections, and §7 a VoxelGI per room.

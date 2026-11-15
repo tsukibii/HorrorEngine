@@ -6,9 +6,9 @@
 class_name HSPuddle
 extends Node3D
 
-@export_range(0.1, 6.0) var size: float = 0.9
-@export var seed: int = 1
-@export_range(0.05, 2.0) var depth: float = 0.3
+@export_range(0.1, 6.0) var size: float = 0.9   ## metres across
+@export var seed: int = 1   ## another number, another shape of pool
+@export_range(0.05, 2.0) var depth: float = 0.3   ## how far down it reaches onto what's under it
 var decal: Decal = null
 var _key := 0
 

@@ -7,9 +7,9 @@
 class_name HSWallLeak
 extends HSOnMesh
 
-@export_range(0.05, 3.0) var width: float = 0.4
-@export_range(0.1, 6.0) var length: float = 2.6
-@export_range(0.0, 1.0) var wet: float = 0.8
+@export_range(0.05, 3.0) var width: float = 0.4   ## metres across where the water comes in (it spreads as it goes down)
+@export_range(0.1, 6.0) var length: float = 2.6   ## metres down to the floor
+@export_range(0.0, 1.0) var wet: float = 0.8   ## how wet the band is: darker, glossier
 @export_range(0.0, 20.0) var drip: float = 2.6     ## seconds between drops (0: none)
 var leak: HSLeak = null
 

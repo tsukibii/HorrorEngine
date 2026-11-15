@@ -7,12 +7,12 @@
 class_name HSRainBox
 extends Node3D
 
-@export var size := Vector3(8, 4, 8)
-@export_range(50, 4000) var count: int = 600
-@export_range(0.0, 1.0) var strength: float = 0.45
-@export_range(-2.0, 2.0) var wind: float = 0.25
-@export var splashes := true
-@export var follow_camera := false
+@export var size := Vector3(8, 4, 8)   ## the box it rains in, in metres, centred on the node (its floor is where the splashes land)
+@export_range(50, 4000) var count: int = 600   ## how many streaks at once
+@export_range(0.0, 1.0) var strength: float = 0.45   ## how bright the streaks are
+@export_range(-2.0, 2.0) var wind: float = 0.25   ## how far the rain leans, along the box's X (negative the other way)
+@export var splashes := true   ## drops splashing where they land on the box's floor
+@export var follow_camera := false   ## in the game the box keeps over the player (the drops keep their places in the world)
 var rain: HSRain = null
 var _key := 0
 
