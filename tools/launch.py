@@ -152,6 +152,7 @@ TOOLS = [
 
     ("Checks", "Every offline check, every game", "tools/check_all.py", {}),
     ("Checks", "Every offline check, one game", "tools/check_all.py --game {game}", {}),
+    ("Checks", "Every browser check in turn (the desk and the Studio started for them and stopped after; on the card with an NVIDIA GPU; a report to paste back: Saved/browser_checks)", "tools/browser_checks.py {opt:Only these, e.g. PLAY STUDIO (Enter: every one)}", {}),
     ("Checks", "Story check, verbose", "tools/story_check.py --game {game} -v", {}),
     ("Checks", "Level check", "tools/level_check.py --game {game}", {}),
     ("Checks", "Shots review (plan only, no pictures)", "tools/shots_sheet.py --game {game} --plan", {}),

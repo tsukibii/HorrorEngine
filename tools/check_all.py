@@ -48,7 +48,7 @@ for st in ([] if game else L.sets()):
     r = subprocess.run([sys.executable, str(HERE / "level_check.py"), "--game", "set:" + st], capture_output=True, text=True,
                        encoding="utf-8")
     lines = [ln for ln in r.stdout.splitlines() if ln.strip()]
-    print(f"{'ok  ' if r.returncode == 0 else 'FAIL'}  {('set:' + st)[:12]:<12} {'level_check.py':<16} {lines[-1] if lines else r.stderr.strip()[-300:]}")
+    print(f"{'ok  ' if r.returncode == 0 else 'FAIL'}  {('set:' + st):<12} {'level_check.py':<16} {lines[-1] if lines else r.stderr.strip()[-300:]}")
     if r.returncode:
         bad += 1
         for ln in lines[:-1]:

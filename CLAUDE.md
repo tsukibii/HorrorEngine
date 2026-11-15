@@ -248,7 +248,8 @@ changes).
 **The browser checks when the user is at the machine** (DECISIONS 2026-10-28, later night): here they draw on the CPU
 (no graphics card: STUDIO takes about 50 minutes). When the user is around, push once the offline checks pass and ask
 them for a local run (docs/RUN_LOCALLY.md: `GPU=1` on their 3090, through `tools/browser.cjs`), then fix forward on what
-it reports. When they're away, run the checks here, one at a time.
+it reports. **One command runs them in turn** with the servers they need: `python tools/browser_checks.py [NAMES]`
+(BROWSER: `--list`, `--quick`, `--cpu`; its `Saved/browser_checks/<time>/report.md` is what to paste back). When they're away, run the checks here, one at a time.
 
 ## Rules
 
