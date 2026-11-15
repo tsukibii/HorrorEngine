@@ -133,6 +133,8 @@ def main():
             dest = None                                  # a new version: Saved/Godot/<game>_v<NNN> (DECISIONS 2026-10-30, noon)
         r = G.export(game, dest, a.zip)
         print(f"exported {game}" + (f" as version {r['version']}" if r.get("version") else "") + f": {r['pieces']} pieces, levels {', '.join(r['levels'])} -> {r['dir']}" + (f", {r['zip']}" if r["zip"] else ""))
+        for w in r.get("warnings", []):                     # what it went on without (a kit build, a face's shapes...): never silent
+            print(f"  warning: {w}")
         for rel in r.get("kept", []):                       # a re-export: the files the user changed stay, the new ones beside them
             print(f"  kept yours: {rel} (the desk's new version beside it as {G.desk_name(rel)})")
         if a.check:
