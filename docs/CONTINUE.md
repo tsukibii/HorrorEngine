@@ -58,7 +58,7 @@ every tool and enhancements on this branch until 11am, for the user to review at
 focus on the director tool, most games will be made directly using the horrorengine godotplugin"*: from then the work
 went to the by-hand path, and the desk, the Director and the desk's export were left as they were.
 
-**Every improvement has an ID** (E01 to E46, a commit each, a letter for a part of one): TOOLS_REVIEW §0's table, and
+**Every improvement has an ID** (E01 to E48, a commit each, a letter for a part of one): TOOLS_REVIEW §0's table, and
 a page on claude.ai with a screenshot of each and boxes to pick what to undo (the user asked for it to choose what to
 take out). When the user names IDs to undo: a whole ID is `git revert <commit>`; a lettered one is taken out by hand.
 
@@ -92,8 +92,8 @@ desk's export was tried the same way and is fine (its story is data); a Director
 - **What the shotgun breaks** is part of that world (E39): a lamp shot out lit again when you die, a mug blown up
   whole; broken in a save, broken at once when it's loaded.
 - **Saves open their scene** (E37): Continue and Load game open the scene a save was made in.
-- **Inspector tooltips** (E40 to E42, E44 to E46): every exported field of the Look plugin, the Markers and the Devices,
-  and the starter kit's eighteen busiest scripts, say what they do on hover.
+- **Inspector tooltips** (E40 to E42, E44 to E48): every exported field of the five by-hand plugins and the starter
+  kit says what it does on hover.
 - **E's prompt and ring** over everything you can use, on the scene's HSHud; a blow on you is a scare; a scare added
   after the start is heard; a key on the floor isn't a step; `install` keeps your plugins and says when `--starter`.
 - And outside the by-hand path, before the user's note: the Character Studio, the scene builder, `layoutset.mjs`, the
@@ -114,8 +114,7 @@ user's card is the way, and its `report.md` the thing to paste back.
 
 **What could come next** (TOOLS_REVIEW §4.1): the Story speaking through the HSHud by default (E34 built it, off: the
 user's call, its pictures side by side on the page); what a save still leaves out (the director, a searcher or a
-chase); one helper for the check harness; a Director project as it ships (keep text, one line); the Studio's undo; the
-last tooltips (40 of the starter's, 52 of the Weapons', 20 of them HSMuzzleFlash's). Tutorial v2's own update stays its own bulk branch (docs/TUTORIAL_TODO.md has
+chase); one helper for the check harness; a Director project as it ships (keep text, one line); the Studio's undo. Tutorial v2's own update stays its own bulk branch (docs/TUTORIAL_TODO.md has
 this branch's section: E's prompt, the world at a checkpoint, saves, the pause menu).
 
 ## Before that (2026-11-14, `even-more-animations-v3`, merged in PR #33): animations v3, short NPCs, life and carrying, sequences
