@@ -66,7 +66,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E44 | eabd2517 | Tooltips for five more starter scripts: the dread moment, the searcher, gaslight, the scare area and the door (40 fields) |
 | E45 | 633bc0cf | Tooltips for nine more starter scripts: the director, presence, the chase, feet under the door, the event area, the flashlight, the glimpse, the hunt spot, the sound (48 fields) |
 | E46 | 4a3f60c9 | Tooltips for the Markers' and the Devices' last bare fields (17): a marker's kind and stay, the laptop's words and view, the parcel's sounds |
-| E47 | (next commit) | The starter kit's last tooltips (41): every exported field in it says what it does |
+| E47 | 4f5cda94 | The starter kit's last tooltips (41): every exported field in it says what it does |
 
 ## 1. How it was done
 
