@@ -151,9 +151,20 @@ def main():
                     ok = False
                 else:
                     print(f"  GDEXPORT re-export: kept {r2['kept'][0]}, the new one beside it")
+                # again, with a file of the user's own beside it: the receipt says what the export wrote, so the changed
+                # file is still theirs and their own file stays (it used to list every file there: the third export
+                # overwrote the changed one and deleted the user's own)
+                own = Path(r["dir"]) / "game" / "levels" / "mine_by_hand.tscn"
+                own.write_text("[gd_scene format=3]\n\n[node name=\"Mine\" type=\"Node3D\"]\n", encoding="utf-8")
+                r3 = G.export(game, dest, False, do_import=False)
+                if lvl.read_text(encoding="utf-8") != mine or not own.exists() or r3.get("kept") != r2.get("kept"):
+                    print(f"  GDEXPORT FAIL: a second re-export didn't keep the changed file and the user's own ({r3.get('kept')}, own {own.exists()})")
+                    ok = False
+                else:
+                    print(f"  GDEXPORT re-export again: {r3['kept'][0]} still kept, a file of your own untouched")
                 lvl.write_text(beside.read_text(encoding="utf-8"), encoding="utf-8")    # back to the desk's, for the checks after
                 beside.unlink()
-                G.write_manifest(Path(r["dir"]))
+                own.unlink(missing_ok=True)
             if game == games[-1]:                           # versions: two exports with no folder given are two new folders, numbered, the first untouched
                 vroot = G.CHECK_OUT / "_versions"
                 if vroot.exists():

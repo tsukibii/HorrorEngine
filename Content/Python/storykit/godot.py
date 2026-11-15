@@ -1309,9 +1309,12 @@ def read_manifest(out):
         return None
 
 
-def write_manifest(out):
+def write_manifest(out, files=None):
+    """The receipt: what the export wrote, each file's sha1 as it wrote it. `files` given (a re-export merged into a
+    project someone works in): only those, never what's theirs; else every file in the folder (a folder that's the
+    export's alone)."""
     import datetime  # noqa: PLC0415
-    files = {rel: sha1_of(out / rel) for rel in generated_files(out)}
+    files = {rel: sha1_of(out / rel) for rel in generated_files(out)} if files is None else dict(sorted(files.items()))
     (out / ".desk").mkdir(exist_ok=True)
     (out / MANIFEST).write_text(json.dumps({"written": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "files": files}, indent=1), encoding="utf-8")
     return files
@@ -1327,18 +1330,24 @@ def merge_export(new, final, old_manifest):
     """The fresh export (new) into the project the user has (final), by the last receipt: a generated file they
     changed is kept, the new one written beside it as <name>.desk.<ext>; one they left is overwritten; a stale one
     (generated last time, not this time, unchanged) goes; anything of theirs the export never wrote is untouched.
-    Returns the kept files."""
+    Returns the kept files and the receipt's lines: {rel: sha1 of what the export wrote there}. A kept file's line is
+    the new version's (what the export would have written there), so it's still theirs at the next export; it was
+    the user's own version's, which the next export took as the export's, overwrote, and deleted their own new files."""
     kept = []
     written = set()
+    wrote = {}
     for rel in generated_files(new):
         src = new / rel
         dst = final / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
-        if dst.exists() and rel in old_manifest and sha1_of(dst) != old_manifest[rel] and sha1_of(dst) != sha1_of(src):   # changed by hand, and not into what the export writes now
+        h = sha1_of(src)
+        wrote[rel] = h
+        if dst.exists() and rel in old_manifest and sha1_of(dst) != old_manifest[rel] and sha1_of(dst) != h:   # changed by hand, and not into what the export writes now
             beside = final / desk_name(rel)
             shutil.copy(src, beside)
             kept.append(rel)
             written.add(desk_name(rel))
+            wrote[desk_name(rel)] = h
         else:
             shutil.copy(src, dst)
             written.add(rel)
@@ -1351,7 +1360,19 @@ def merge_export(new, final, old_manifest):
         if stale.exists() and sha1_of(stale) == old_manifest[rel]:
             stale.unlink()
     shutil.rmtree(new)
-    return kept
+    return kept, wrote
+
+
+def stamps(out):
+    """{rel: (mtime_ns, size)} of every file `generated_files` would list: taken before an export writes into a project
+    after its merge (export.json, the guide, .gitignore), so `written_since` can say exactly which it wrote."""
+    return {rel: ((out / rel).stat().st_mtime_ns, (out / rel).stat().st_size) for rel in generated_files(out)}
+
+
+def written_since(out, before):
+    """{rel: sha1} of the files under `out` new or changed since `before` (stamps()), for the receipt."""
+    return {rel: sha1_of(out / rel) for rel in generated_files(out)
+            if before.get(rel) != ((out / rel).stat().st_mtime_ns, (out / rel).stat().st_size)}
 
 
 def rewrite_guide(out, game):
@@ -1359,8 +1380,10 @@ def rewrite_guide(out, game):
     out = Path(out)
     story, _path = L.load(game)
     info = json.loads((out / "game" / "export.json").read_text(encoding="utf-8"))
+    old = read_manifest(out)
+    t0 = stamps(out) if old is not None else None
     GUIDE.write_guide(out, game, story, info, ROOT / "Saved" / "Story" / game / "godot_reference")
-    write_manifest(out)
+    write_manifest(out, None if old is None else {**old, **written_since(out, t0)})   # (the receipt: the guide's files added, nothing of the user's)
 
 
 def import_project(out, timeout=600):
@@ -1530,15 +1553,16 @@ def export(game, out=None, make_zip=False, do_import=True):
             "slots_dressed": slots_dressed, "fittings": fittings, "bake": (previs / "preview.json").exists(), "bodies": baked,
             "bodies_list": sorted(f.name[5:-4] for f in previs.glob("Body_*.glb")) if previs.exists() else [], "engine": L.engine_version(), "godot": "4.7",
             "made": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}
-    kept = []
+    kept, wrote = [], None
     if old_manifest is not None:                           # merged into the project the user has: theirs kept, the new beside
-        kept = merge_export(out, final, old_manifest)
+        kept, wrote = merge_export(out, final, old_manifest)
         out = final
+    t0 = stamps(out) if wrote is not None else None
     info["kept"] = kept
     (out / "game" / "export.json").write_text(json.dumps(info, indent=1), encoding="utf-8")
     GUIDE.write_guide(out, game, story, info, ROOT / "Saved" / "Story" / game / "godot_reference")   # the guide (GODOT_PLAN §7)
     (out / ".gitignore").write_text(".godot/\n", encoding="utf-8")
-    write_manifest(out)
+    write_manifest(out, None if wrote is None else {**wrote, **written_since(out, t0)})   # (merged: what the export wrote, never what's theirs)
     if (arts or surfaced) and do_import:
         import_project(out)
     z = zip_project(out, game) if make_zip else None
