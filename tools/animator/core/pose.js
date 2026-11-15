@@ -64,7 +64,8 @@ export function ankleAt(F, ankleH, o, yaw, pitch) {
                 `pron`: the hand's turn about the forearm, counted from the body (0: the palm to the body's middle; rising: turned over,
                 toward the back when the arm hangs, toward the floor when the forearm points ahead; with `pronArm`, counted from the
                 elbow's own axis instead); `curl`: 0 a flat hand, 0.45 a hand at rest, 1.3 a loose fist with the thumb laid along
-                the first finger
+                the first finger; `curls`: [thumb, first, middle, ring, little] each finger's own curl where it's given (a
+                finger pointing: [1, 0.05, 1.3, 1.3, 1.3]), `curl` for the ones it leaves out (null)
     c.clav.l/.r { up, fwd } */
 export function build(rig, c) {
   const R = rig, pose = new Pose(rig), Dp = ypr(c.pelvis), Dc = ypr(c.chest || {}), Dh = ypr(c.head || {});
@@ -149,11 +150,13 @@ export function build(rig, c) {
     // its two end joints bent a little further the same way, and brought round in front of the palm only slightly;
     // closed to a fist (`fist`) it lies along the side of the first finger, where a runner's thumb rests, and not
     // across the fingers that are curling into the palm.
-    const curl = ac.curl ?? 0.45, open = sm(0.1, 0.45, curl), fist = sm(0.75, 1.25, curl), nh = Q.rot(Dhand, A.palm0), along = Q.rot(Dhand, A.handDir);
+    const curl = ac.curl ?? 0.45, open = sm(0.1, 0.45, curl), nh = Q.rot(Dhand, A.palm0), along = Q.rot(Dhand, A.handDir);
+    const cf = fi => (ac.curls && ac.curls[fi] != null ? ac.curls[fi] : curl);   // a finger's own curl (`curls`), else the hand's
     const dirOf = chain => { const first = chain.find(j => /[1-3]$/.test(R.J[j].name)) ?? chain[0], kid = R.J[first].kids[0]; return Q.rot(Dhand, kid != null ? V.norm(V.sub(R.J[kid].at, R.J[first].at)) : A.handDir); };
     const mid = A.fingers[2] && A.fingers[2].length ? dirOf(A.fingers[2]) : along;
     A.fingers.forEach((chain, fi) => { if (!chain.length) return; const d0 = dirOf(chain); let k = V.norm(V.cross(d0, nh)), acc = 0;
       if (fi === 0) {                                          // the thumb
+        const tc = cf(0), open = sm(0.1, 0.45, tc), fist = sm(0.75, 1.25, tc);
         // (`thumbFlat`: a hand laid flat on something: the thumb, which rests below the palm, brought round the hand's own length into the palm's plane)
         let Dt = Dhand, dt = d0, kt = k;
         if (ac.thumbFlat) { const side = V.perp(V.perp(d0, nh), along), ls = V.len(side); if (ls > 1e-4) { const sd = V.mul(side, 1 / ls), ang = Math.atan2(V.dot(d0, nh), V.dot(d0, sd)), sgn = Math.sign(V.dot(V.cross(along, sd), nh)) || 1, Rf = Q.axis(along, -sgn * ang * ac.thumbFlat);
@@ -163,7 +166,7 @@ export function build(rig, c) {
           acc += amt * (/1$/.test(nm) ? 0.9 : /2$/.test(nm) ? 1.15 : 0.7) + fist * (/2$/.test(nm) ? 0.3 : /3$/.test(nm) ? 0.5 : 0);   // (a fist's thumb bends down over the first finger at its end joints)
           pose.D[j] = Q.mul(Q.axis(Q.rot(Da, kt), acc), Q.mul(Da, Dt)); }
         return; }
-      const kg = V.cross(d0, mid), lg = V.len(kg), base = fi !== 2 && lg > 1e-4 ? Q.mul(Q.axis(V.mul(kg, 1 / lg), 0.7 * open * Math.asin(Math.min(1, lg))), Dhand) : Dhand, amt = curl * (1 + 0.12 * (fi - 2));
+      const kg = V.cross(d0, mid), lg = V.len(kg), base = fi !== 2 && lg > 1e-4 ? Q.mul(Q.axis(V.mul(kg, 1 / lg), 0.7 * open * Math.asin(Math.min(1, lg))), Dhand) : Dhand, amt = cf(fi) * (1 + 0.12 * (fi - 2));
       if (base !== Dhand) k = V.norm(V.cross(Q.rot(base, Q.rot(Q.conj(Dhand), d0)), nh));
       for (const j of chain) { if (/0$/.test(R.J[j].name)) { pose.D[j] = Dhand; continue; } acc += amt * (/1$/.test(R.J[j].name) ? 0.9 : /2$/.test(R.J[j].name) ? 1.15 : 0.7); pose.D[j] = Q.mul(Q.axis(k, acc), base); } });
     info["elbowAt_" + s] = V.add(S, V.mul(du, A.upper)); info["wristAt_" + s] = V.add(info["elbowAt_" + s], V.mul(df, A.fore)); info["handDir_" + s] = along; info["palm_" + s] = nh; info["pron_" + s] = pron;
