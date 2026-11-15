@@ -3,6 +3,18 @@
 // the iris melting into the white, wet eyes, gradient coral lips, bright wet teeth, dewy porcelain skin with a blush
 // under the eyes) and new characters start from it. Only the settings named are changed; the face, the body, the
 // clothes and the hair are the character's own.
+// The eyes a whole look leaves. Only what it names changes, as everywhere here, except when an eye look's card is worn
+// (eyelooks.js: Eyes v3): that eye look is taken off first, its own settings back to the eye's defaults, so "soft
+// cinematic" after Eyes v3 is soft cinematic and not v3's catchlights and cool whites under it, and the card's mark
+// goes. A look that names no eyes leaves them as they are. eyes: the character's (st.eyes); defaults: tools/shared/
+// eye.js EYE_DEFAULTS; eyeLooks: eyelooks.js EYE_LOOKS. -> a new eyes object
+export function lookEyes(eyes, look, defaults, eyeLooks = {}) {
+  if (!look || !look.eyes) return { ...eyes };
+  const out = { ...eyes }, worn = eyeLooks[out.look];
+  if (worn) for (const k of Object.keys(worn.eyes || {})) if (k in defaults) out[k] = defaults[k];
+  return Object.assign(out, look.eyes, { look: "" });
+}
+
 export const LOOKS = {
   "soft cinematic": {
     about: "After the user's reference: dark irises melting into the white, wet eyes (occlusion, a tear line), coral gradient lips with gloss, bright wet teeth, dewy porcelain skin with a blush under the eyes.",

@@ -2756,7 +2756,7 @@ const teethSet = {};
 // ---- whole looks (looks.js): the eyes, the lips, the teeth and the skin together; a new character starts from one ----
 function useLook(name) {
   const L = LOOKS.LOOKS[name]; if (!L) return;
-  if (L.eyes) { Object.assign(st.eyes, L.eyes); eyeSet.all(); paintEyes(); }
+  if (L.eyes) { Object.assign(st.eyes, LOOKS.lookEyes(st.eyes, L, { ...EYEPAINT.EYE_DEFAULTS, ...EYEFIT }, EL.EYE_LOOKS)); eyeLookMark(); eyeSet.all(); paintEyes(); }   // (an eye look worn taken off first)
   if (L.lips) { Object.assign(st.lips, L.lips); lipSet.all(); }
   if (L.teeth) { Object.assign(st.teeth, L.teeth); teethSet.all(); }
   if (L.skin?.off) { st.skin.proc.on = false; procSet.all(); }
