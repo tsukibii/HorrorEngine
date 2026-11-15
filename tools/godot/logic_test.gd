@@ -575,6 +575,12 @@ func stage_menu() -> void:
 			ids.append(str((e as Control).get_meta("id", "")))
 	ok(m != null and bool(pause.get("up")) and paused and bool(m.get("up")) and ids == ["", "save", "load", "settings", "quit"],
 		"M: Esc: the game held, the HUD's menu up: Resume, Save game, Load game, Settings, Quit", "%s, paused %s" % [ids, paused])
+	var rows_said: Array = []
+	if m != null:
+		for row in (m.get("controls_box") as Node).get_children():
+			rows_said.append(str(((row as Node).get_child(1) as Label).text))
+	ok(rows_said == ["Walk", "Run", "Use", "Pocket", "Flashlight", "Hold your breath", "This menu"],
+		"M: its controls the game's own (the HUD has no Keys: the starter player's), not the desk's", str(rows_said))
 	await press(KEY_S)
 	await press(KEY_ENTER)
 	await press(KEY_ENTER)                                    # Slot 1

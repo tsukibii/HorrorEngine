@@ -136,7 +136,7 @@ func _ctx() -> Dictionary:
 		has["torch"] = true
 		if float(fl.get("battery")) > 0.0 and fl.has_method("_change"):       # the flashlight's charge and its spare sets
 			bat = {"charge": float(fl.get("charge")), "sets": int(fl.get("spares")), "change": Callable(fl, "_change")}
-	var ctx := {"game": game_id(), "where": where(), "secs": played, "has": has, "battery": bat}
+	var ctx := {"game": game_id(), "where": where(), "secs": played, "has": has, "battery": bat, "controls": controls()}
 	if st != null and st.has_method("save_game"):
 		ctx["save"] = func(n: int) -> bool: return bool(st.call("save_game", n))
 		ctx["load"] = func(n: int) -> bool:
@@ -144,6 +144,25 @@ func _ctx() -> Dictionary:
 			return true
 		ctx["can_load"] = func(n: int) -> bool: return bool(st.call("has_save", n))
 	return ctx
+
+
+## the controls the menu shows: the game's own keys, the HSHud's chips ("W A S D:walk", "E:use"...), then Esc; none
+## given (an HSHud with no Keys): the starter player's
+func controls() -> Array:
+	var out: Array = []
+	var h := _the_hud()
+	var keys: Array = Array(h.get("keys")) if h != null and h.get("keys") != null else []
+	if keys.is_empty():
+		keys = ["W A S D:walk", "Shift:run", "E:use", "Tab:pocket", "F:flashlight", "Space:hold your breath"]
+	for k in keys:
+		var t := str(k)
+		var i := t.find(":")
+		if i <= 0:
+			continue
+		var what := t.substr(i + 1).strip_edges()
+		out.append({"keys": t.substr(0, i).strip_edges().split(" ", false), "label": what.left(1).to_upper() + what.substr(1)})
+	out.append({"keys": ["Esc"], "label": "This menu"})
+	return out
 
 
 ## what the menu's saves are filed under (the game's name, as a file's)

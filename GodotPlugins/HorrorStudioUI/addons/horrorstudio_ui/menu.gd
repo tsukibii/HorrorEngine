@@ -6,7 +6,8 @@
 ## the frame rate limit, brightness, the volumes, the subtitles. Settings in user://horrorstudio_settings.json, the
 ## saves in user://saves_<game>.json. open(ctx) returns "resume", "escaped", "loaded" or {"quit": "title" | "desktop"}.
 ## A game built by hand (the starter's pause.gd) also gives ctx `save` (a slot's number: the save made, true when it
-## was), `load` and `can_load`: then Save game saves for real and a Load game page lists what can be loaded.
+## was), `load` and `can_load`: then Save game saves for real and a Load game page lists what can be loaded; and
+## `controls` (as CONTROLS: its own keys, the HSHud's chips) in place of the runtime's.
 extends Control
 
 const ThemeC := preload("res://addons/horrorstudio_ui/theme.gd")
@@ -225,7 +226,8 @@ func mouse_tile(what: String) -> PanelContainer:    # a mouse without a cable: i
 func controls_panel(has: Dictionary) -> void:
 	for ch in controls_box.get_children():
 		ch.queue_free()
-	for ctl in CONTROLS:
+	var list: Array = ctx.get("controls") if ctx.get("controls") is Array and not (ctx.get("controls") as Array).is_empty() else CONTROLS
+	for ctl in list:                                  # (by hand: the game's own keys, the HSHud's chips; else the runtime's)
 		if ctl.has("only") and not has.get(ctl["only"], false):
 			continue
 		var row := HBoxContainer.new()
