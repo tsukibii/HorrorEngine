@@ -3,7 +3,8 @@
 ## there's a save), New game: the look, the room, its note, the player, the Story's objective and task, the HSHud with the
 ## game's keys, the checkpoint's autosave, E on the note (its card, the task ticked), Esc (the pause menu up, the game
 ## held) and back; a save, Quit to the menu (Continue and Load game now), Load game's Slot 1 (the game where it was
-## saved), the menu's Settings and back; a save made in a second scene opened there (not in the pack Godot exports from
+## saved), the menu's Settings and back; a save made in a second scene opened there, a way into it (starter/travel.gd)
+## carrying the pocket, the list, the facts and the cash (not in the pack Godot exports from
 ## the project, `-- --packed`, where nothing can be written into res://). Prints `HORRORGAME <what> <how>` lines and
 ## `HORRORGAME result {errors}`.
 extends SceneTree
@@ -167,6 +168,37 @@ func _initialize() -> void:
 	var two_again := await until_scene("res://level_two.tscn")
 	ok(two_saved and two_again, "a save made in a second scene: the menu's Load opens that scene", "saved %s, opened %s" % [two_saved, two_again])
 	await frames(10)
+	# a way into the next level (starter/travel.gd, the Story's go_to): what you carry comes with you
+	change_scene_to_file("res://main.tscn")
+	await until_scene("res://main.tscn")
+	await frames(20)
+	var st_here := current_scene.get_node("Story")
+	var way_down := Area3D.new()
+	way_down.set_script(load("res://starter/travel.gd"))
+	way_down.set("scene", "res://level_two.tscn")
+	way_down.set("at", "Checkpoint")
+	way_down.set("needs", "item:key")
+	current_scene.add_child(way_down)
+	way_down.position = Vector3(0, -40, 0)
+	way_down.call("fire")
+	await frames(6)
+	var stayed := current_scene != null and current_scene.scene_file_path == "res://main.tscn"
+	st_here.call("give", "key", "Cellar key")
+	st_here.call("add_task", "down", "Go down to the cellar.")
+	st_here.call("flag", "lights_out")
+	st_here.call("earn", 7.5)
+	var cash_was := float(st_here.get("cash"))
+	way_down.call("fire")
+	var through := await until_scene("res://level_two.tscn")
+	await frames(10)
+	var st_next := current_scene.get_node_or_null("Story") if through else null
+	var p_next := current_scene.get_node_or_null("Player") as Node3D if through else null
+	var cp_next := current_scene.get_node_or_null("Checkpoint") as Node3D if through else null
+	ok(stayed and through and st_next != null and bool(st_next.call("holds", "item:key")) and bool(st_next.call("has_task", "down")) and bool(st_next.call("has_task", "read"))
+		and bool(st_next.call("holds", "lights_out")) and is_equal_approx(float(st_next.get("cash")), cash_was)
+		and p_next != null and cp_next != null and p_next.global_position.distance_to(cp_next.global_position) < 0.3,
+		"a way to the next level: not without the key; then there with the pocket, the list (and its own task), the facts and the cash, at its Checkpoint",
+		"stayed %s, through %s" % [stayed, through])
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("res://level_two.tscn"))
 	var st2 := current_scene.get_node_or_null("Story")
 	if st2 != null:

@@ -128,6 +128,9 @@ then each branch leaves a section here saying what it changes for the tutorial. 
       honest one to show. (Since then the gun, the laptop, the parcels and the hunt are in a save, and so are what the
       shotgun breaks (E39: the entry's bulb shot out comes back on when you die before it) and the once-only scares (E49:
       the glimpse at 308's door, the closer, feet under the door, the steam's writing never replay after a load).)
+- [ ] §34 *Every system in it*: a game by hand can go **from one scene to another** now (E50: `starter/travel.gd`, the
+      Story's `go_to(scene, at)`, carrying the list, the facts, the pocket and the cash): the night is one scene, so a
+      line in what a game by hand can do is enough.
 - [ ] §2 or a new last section: **shipping the night**: a by-hand project keeps its scenes as text in an export (E38:
       Godot 4.7's binary conversion empties every list in a scene: the tutorial's to-do list, its HUD's keys) and has a
       Linux and a Windows preset with `*.npz`; `godot_byhand.py install` adds both to a project made before.

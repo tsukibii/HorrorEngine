@@ -58,7 +58,7 @@ every tool and enhancements on this branch until 11am, for the user to review at
 focus on the director tool, most games will be made directly using the horrorengine godotplugin"*: from then the work
 went to the by-hand path, and the desk, the Director and the desk's export were left as they were.
 
-**Every improvement has an ID** (E01 to E49, a commit each, a letter for a part of one): TOOLS_REVIEW §0's table, and
+**Every improvement has an ID** (E01 to E50, a commit each, a letter for a part of one): TOOLS_REVIEW §0's table, and
 a page on claude.ai with a screenshot of each and boxes to pick what to undo (the user asked for it to choose what to
 take out). When the user names IDs to undo: a whole ID is `git revert <commit>`; a lettered one is taken out by hand.
 
@@ -93,7 +93,9 @@ desk's export was tried the same way and is fine (its story is data); a Director
   whole; broken in a save, broken at once when it's loaded.
 - **Once-only scares kept** (E49): a glimpse, feet under a door, the steam's writing and the rest never replay after a
   load, and one armed before a save stays armed.
-- **Saves open their scene** (E37): Continue and Load game open the scene a save was made in.
+- **Saves open their scene** (E37): Continue and Load game open the scene a save was made in; and **a way into the
+  next level** (E50): the Story's `go_to(scene, at)` and `starter/travel.gd` carry the pocket, the list, the facts and
+  the cash into another scene.
 - **Inspector tooltips** (E40 to E42, E44 to E48): every exported field of the five by-hand plugins and the starter
   kit says what it does on hover.
 - **E's prompt and ring** over everything you can use, on the scene's HSHud; a blow on you is a scare; a scare added

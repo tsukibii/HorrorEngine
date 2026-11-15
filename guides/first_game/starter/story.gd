@@ -112,6 +112,11 @@ func _ready() -> void:
 		var i := t.find(":")
 		if i > 0:
 			add_task(t.substr(0, i).strip_edges(), t.substr(i + 1).strip_edges())
+	if get_tree().has_meta("hs_carry"):                # come through a door from another scene (go_to): what you carry with you
+		var carry = get_tree().get_meta("hs_carry")
+		get_tree().remove_meta("hs_carry")
+		if carry is Dictionary:
+			_carry_in.call_deferred(carry)
 	var asked := -1                                   # the main menu's Continue or Load game (the UI plugin's HSTitleMenu): that save
 	if get_tree().has_meta("hs_load_slot"):
 		asked = int(get_tree().get_meta("hs_load_slot"))
@@ -124,6 +129,57 @@ func _ready() -> void:
 
 
 var _starting := false                                # a save to load as the game starts: no autosave over it before it's loaded
+
+
+## Into another scene with what you have: the to-do list, the facts, the pocket and the cash, the objective, the deaths
+## (a door into the next level: starter/travel.gd, or any script). `at` names a node of that scene to arrive at (a
+## Marker3D: its place and facing; "": where its player stands). That scene's Story takes it all as it starts, adds its
+## own Tasks and Flags Start to it, keeps its own Objective Text if it has one, and keeps a checkpoint there (an
+## autosave, with Autosave on). What's in the world (a key left on a floor) stays with the scene it's in.
+func go_to(scene: String, at := "") -> void:
+	if scene == "" or not ResourceLoader.exists(scene):
+		push_warning("story.gd: go_to: there's no scene %s" % scene)
+		return
+	get_tree().set_meta("hs_carry", {"flags": flags.duplicate(), "tasks": _tasks.duplicate(true), "items": items.duplicate(),
+		"names": names.duplicate(), "cash": cash, "objective": _obj.text, "eatable": eatable.duplicate(true), "deaths": deaths, "at": at})
+	get_tree().change_scene_to_file.call_deferred(scene)
+
+
+func _carry_in(c: Dictionary) -> void:
+	var own_tasks := _tasks.duplicate(true)               # this scene's own (its Tasks and Flags Start): after what came with you
+	var own_flags := flags.duplicate()
+	flags = (c.get("flags", {}) as Dictionary).duplicate()
+	flags.merge(own_flags, true)
+	_tasks = (c.get("tasks", []) as Array).duplicate(true)
+	for t in own_tasks:
+		if not has_task(str(t["id"])):
+			_tasks.append(t)
+	items = (c.get("items", {}) as Dictionary).duplicate()
+	names = (c.get("names", {}) as Dictionary).duplicate()
+	if c.get("eatable") is Dictionary:
+		eatable = (c["eatable"] as Dictionary).duplicate(true)
+	cash = float(c.get("cash", cash))
+	deaths = int(c.get("deaths", deaths))
+	if objective_text == "":
+		objective(str(c.get("objective", "")))
+	var at := str(c.get("at", ""))
+	var here := get_tree().current_scene
+	var spot := here.find_child(at, true, false) as Node3D if at != "" and here != null else null
+	var pl := get_tree().get_first_node_in_group("hs_player") as Node3D
+	if pl != null and spot != null:
+		pl.global_transform = spot.global_transform
+		pl.set("velocity", Vector3.ZERO)
+		pl.set("pitch", 0.0)
+		var eye := pl.get_node_or_null("Eye") as Node3D
+		if eye != null:
+			eye.rotation.x = 0.0
+		if pl.has_method("snap_eye"):
+			pl.snap_eye()
+	_draw_list()
+	_draw_pocket()
+	cash_changed.emit(cash)
+	pocket_changed.emit()
+	checkpoint()                                      # (the arrival kept: dying here comes back here)
 
 
 func _continue(slot := 0) -> void:                    # (a few frames on: the characters' markers start deferred, and are what a save puts back too)
