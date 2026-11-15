@@ -43,12 +43,40 @@ def main():
     game, args = L.pick_game(sys.argv[1:])
     story, _ = L.load(game)
     errs, pieces = check(story, args[0] if args else None)
+    warns = rule_warnings(story, args[0] if args else None)
+    for w in warns:
+        print("warning:", w)
     for e in errs:
         print("ERROR:", e)
     if errs:
         print(f"LEVEL FAILED ({len(errs)})")
         sys.exit(1)
-    print(f"LEVEL ok ({len(pieces)} pieces)")
+    print(f"LEVEL ok ({len(pieces)} pieces" + (f", {len(warns)} under the animation rules: docs/ANIMATION_RULES.md)" if warns else ")"))
+
+
+DOOR_W = 0.75                       # docs/ANIMATION_RULES.md §0: a door she walks through, its width at the least
+
+
+def rule_warnings(story, level=None):
+    """What's built against the animation rules (docs/ANIMATION_RULES.md: what a character's clips need of a place),
+    warnings and not errors: a level from before the rules still plays, she just brushes through or stops short.
+    A doorway she walks through (no sill, a door's height) narrower than DOOR_W; a store's (a closet's) aside."""
+    out = []
+    rooms = {r["id"]: r for lv in story["levels"].values() for r in lv["rooms"]}
+    level_of = {r["id"]: name for name, lv in story["levels"].items() for r in lv["rooms"]}
+    seen = set()
+    for r in rooms.values():
+        if (level is not None and level_of[r["id"]] != level) or r.get("kind") in STORE:
+            continue
+        for op in r.get("openings", []):
+            if op.get("sill", 0) > 0.3 or op.get("h", 0) < 1.8 or op.get("w", 1) >= DOOR_W - 1e-6:
+                continue
+            name = (op.get("door") or {}).get("id") or f"{r['id']} {op['wall']} opening"
+            if name in seen:
+                continue
+            seen.add(name)
+            out.append(f"{name} is {op['w']:.2f} m wide: a character walks through {DOOR_W:.2f} m at the least (her arms pass the frame; docs/ANIMATION_RULES.md §0)")
+    return out
 
 
 def check(story, level=None):

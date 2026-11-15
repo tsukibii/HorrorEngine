@@ -728,6 +728,7 @@ class Handler(BaseHTTPRequestHandler):
                     SC.check_world(story, things, r)
                     lerrs, _ = LC.check(story, parts[2] if len(parts) == 3 else None)
                     r.errors += lerrs
+                    r.warnings += LC.rule_warnings(story, parts[2] if len(parts) == 3 else None)   # (a door too narrow for the clips: the builder's Check says it)
             except Exception as e:  # noqa: BLE001 - a half-built world: say why
                 return self.send(200, {"errors": [f"the world doesn't plan yet: {e}"], "warnings": []})
             return self.send(200, {"errors": r.errors, "warnings": r.warnings})
