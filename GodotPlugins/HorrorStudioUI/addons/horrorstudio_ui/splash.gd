@@ -12,13 +12,13 @@ signal finished                                       ## over (or skipped): the 
 
 @export_multiline var line := "[Artist] presents"     ## the words (the studio's name)
 @export var picture: Texture2D                        ## a logo above the words (none: the words alone)
-@export_file("*.tscn") var next_scene := "res://menu.tscn"
-@export_range(0.0, 5.0, 0.05) var fade_in := 1.2
-@export_range(0.0, 10.0, 0.05) var hold := 1.8
-@export_range(0.0, 5.0, 0.05) var fade_out := 1.0
+@export_file("*.tscn") var next_scene := "res://menu.tscn"   ## the scene after it (the main menu)
+@export_range(0.0, 5.0, 0.05) var fade_in := 1.2      ## seconds for the words to come up out of the black
+@export_range(0.0, 10.0, 0.05) var hold := 1.8        ## seconds they stay
+@export_range(0.0, 5.0, 0.05) var fade_out := 1.0     ## seconds for them to go back into the black
 @export var skippable := true                         ## any key or click goes on at once
-@export var text_color := Color(0.86, 0.84, 0.8)
-@export_range(10, 96) var text_size := 26
+@export var text_color := Color(0.86, 0.84, 0.8)      ## the words' colour
+@export_range(10, 96) var text_size := 26             ## the words' size in pixels
 
 var _t := 0.0
 var _gone := false

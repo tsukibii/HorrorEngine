@@ -61,6 +61,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E39 | f09bf784 | What the shotgun breaks kept at a checkpoint and in a save: a lamp shot out lit again when you die, a mug blown up whole; both still broken after a load |
 | E40 | 2ec46af4 | Inspector tooltips for 101 of the Look plugin's node fields (light zones, flicker lights, the character look, the grade, wet surfaces, rain, the storm, CRT screens, blood, panes, puddles, leaks, breath) |
 | E41 | a00ff660 | The rest of the Look plugin's tooltips (63): every exported field in it now says what it does |
+| E42 | (next commit) | Tooltips for the card and the main menu (E35's), and the starter's hunt, cue and sanity (35 fields) |
 
 ## 1. How it was done
 
@@ -286,9 +287,10 @@ Ranked within each part. Effort: S an hour or less, M a few hours, L a day or mo
 
 - The look plugin's own nodes keep nothing at a checkpoint or in a save (a kettle's life, a liquid's level, a lamp a
   scare switched off): each joining `hs_keeps` is S, as HSShootable and HSBlowUp now do (E39).
-- Every exported field of the Look plugin has an Inspector tooltip now (E40, E41: a trailing `##` on the field's line,
-  `godot --doctool DIR --gdscript-docs res://addons/horrorstudio_look` lists what each says); the other plugins' and the
-  starter's weren't counted.
+- Every exported field of the Look plugin has an Inspector tooltip now (E40, E41: a trailing `##` on the field's line;
+  `godot --doctool DIR --gdscript-docs res://addons/horrorstudio_look` lists what each says). Still without one: 128 of
+  the starter kit's 571 (E42 did the hunt, the cue and sanity; next the dread moment, the searcher, gaslight), 52 of the
+  Weapons plugin's 295 (20 in HSMuzzleFlash), 10 of the Devices', 7 of the Markers'.
 - Docs: guides/tutorial_v2 is behind the starter (E's prompt, the world at a checkpoint, saves): its bulk update is
   its own branch, by the user's word, listed in docs/TUTORIAL_TODO.md. GODOT_LOOK §6 says `realism` is the default
   (it's `balanced`), has two §5d sections, and §7 a VoxelGI per room.

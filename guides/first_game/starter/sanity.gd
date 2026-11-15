@@ -33,12 +33,12 @@ signal slept
 signal couldnt_sleep(why: String)
 signal broke                                          ## it reached nothing
 
-@export_range(0.0, 1.0) var sanity := 1.0
+@export_range(0.0, 1.0) var sanity := 1.0   ## where it starts: 1 whole, 0 nothing left
 @export_group("What wears it down")
 @export var drain := 0.0                              ## a second, always (0.001: a quarter gone in four minutes)
 @export var dark_drain := 0.004                       ## a second in the dark, on your feet
 @export var near_drain := 0.01                        ## a second with her within `near_m`, nothing between you
-@export var near_m := 8.0
+@export var near_m := 8.0   ## how near her counts
 @export var hunt_drain := 0.003                       ## a second while a hunt runs
 @export var scare_cost := 0.06                        ## each scare (anything in the group hs_scare)
 @export var death_cost := 0.0                         ## dying
@@ -46,7 +46,7 @@ signal broke                                          ## it reached nothing
 @export var sit_rate := 0.01                          ## a second sitting
 @export_range(0.0, 1.0) var sit_to := 0.7             ## sitting mends it no further than this
 @export var lie_rate := 0.015                         ## a second lying down, awake
-@export_range(0.0, 1.0) var lie_to := 0.8
+@export_range(0.0, 1.0) var lie_to := 0.8   ## lying down awake mends it no further than this
 @export var light_rate := 0.0                         ## a second standing in light (0: light only stops the dark's drain)
 @export var foods := {}                               ## pocket things made eatable and how much each mends: {"soda": 0.1, "noodles": 0.3} (hold the left button: story.gd)
 @export_group("Sleep")
@@ -56,20 +56,20 @@ signal broke                                          ## it reached nothing
 @export var sleep_needs := ""                         ## the Story's words that must hold to sleep ("night")
 @export var no_sleep := PackedStringArray()           ## any of these holding and you can't: "on:find304", "hunt:Hunt"
 @export var hunts_stop_sleep := true                  ## no sleep while a hunt runs
-@export var cant_says := "You can't sleep. Not now."
-@export var slept_says := ""
+@export var cant_says := "You can't sleep. Not now."   ## said when you lie down and can't sleep
+@export var slept_says := ""   ## said when you wake
 @export var slept_fact := "slept"                     ## set in the Story each time you've slept
 @export_group("At nothing")
 @export var zero_dies := false                        ## at nothing you die (the Story's die(): back at its checkpoint)
-@export var zero_title := "You lost yourself"
+@export var zero_title := "You lost yourself"   ## the death card's title when it reaches nothing and you die
 @export var zero_target: Node                         ## its fire() at nothing
 @export_range(0.0, 1.0) var revive_to := 0.5          ## back from the dead with at least this
 @export_group("The meter")
-@export var show_meter := true
-@export_enum("always", "when it's not full", "when it changes") var meter_when := "when it's not full"
-@export var label := "SANITY"
-@export var color := Color(0.88, 0.64, 0.37)
-@export var low_color := Color(0.78, 0.17, 0.15)
+@export var show_meter := true   ## the thin meter at the top right
+@export_enum("always", "when it's not full", "when it changes") var meter_when := "when it's not full"   ## when the meter shows
+@export var label := "SANITY"   ## the meter's word
+@export var color := Color(0.88, 0.64, 0.37)   ## the meter's colour
+@export var low_color := Color(0.78, 0.17, 0.15)   ## its colour once it's low
 
 var sleeping := false
 var now_band := "calm"

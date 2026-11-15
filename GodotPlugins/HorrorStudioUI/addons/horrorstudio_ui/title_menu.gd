@@ -19,7 +19,7 @@ const ROWS := ["window", "resolution", "vsync", "fps", "brightness", "guide", "s
 
 @export var title := ""                               ## the game's name (empty: the project's)
 @export var subtitle := ""                            ## a line under it
-@export_file("*.tscn") var game_scene := "res://main.tscn"
+@export_file("*.tscn") var game_scene := "res://main.tscn"   ## what New game starts (Continue and Load game open the scene a save was made in)
 @export var backdrop: Texture2D                       ## a picture behind it (none: the dark)
 @export var theme_name := ""                          ## the UI plugin's theme (empty: the project's, horrorstudio/ui/theme)
 

@@ -38,7 +38,7 @@ signal caught                                             ## she has you
 signal ended(how: String)                                 ## survived, task, safe, shot, stopped
 
 @export var hunter: Node3D                                ## who hunts
-@export_enum("haunting", "stalking", "lethal") var kind := "haunting"
+@export_enum("haunting", "stalking", "lethal") var kind := "haunting"   ## haunting: she never touches you; stalking: caught is a fright; lethal: caught, you die and go back to the checkpoint
 @export_group("Starts and ends")
 @export var needs := ""                                   ## it starts by itself once these hold (the Story's words); empty: start() or fire()
 @export var survive_secs := 0.0                           ## it ends after this long (0: not by time)
@@ -48,17 +48,17 @@ signal ended(how: String)                                 ## survived, task, saf
 @export var again := false                                ## it can start again after it ends
 @export_group("Hidden quest")
 @export var reveal_task := ""                             ## a task shown for it, "id: what it says" (empty: wholly hidden)
-@export_enum("start", "first sighting", "never") var reveal_at := "first sighting"
-@export var start_says := ""
-@export var end_says := ""
+@export_enum("start", "first sighting", "never") var reveal_at := "first sighting"   ## when the hidden task shows: at the start, at the first sighting of her, or never
+@export var start_says := ""   ## a line when it starts (the Story's say)
+@export var end_says := ""   ## a line when it's survived
 @export var fact := ""                                    ## set when it's survived
 @export var tick := ""                                    ## a task ticked when it's survived (the revealed one is ticked anyway)
 @export var target: Node                                  ## its fire() when it's survived
 @export_group("Stages and pace")
-@export_range(1, 9) var stages := 4
+@export_range(1, 9) var stages := 4   ## how many stages it climbs through: each brings her nearer and the spots more often
 @export var stage_secs := PackedFloat32Array([30.0, 45.0, 60.0])   ## how long stages 1, 2, 3... last (the last one stays)
 @export var gap_min := 7.0                                ## seconds between spots
-@export var gap_max := 18.0
+@export var gap_max := 18.0   ## and at the most
 @export var spots: Array[Node] = []                       ## its hunt spots (empty: every one in the scene that's its own or anyone's)
 @export var follow_m := 7.0                               ## follow: how far down your trail she starts
 @export var follow_min_m := 2.2                           ## and the nearest she comes
@@ -69,9 +69,9 @@ signal ended(how: String)                                 ## survived, task, saf
 @export var rush_ran := false                             ## you ran for a second
 @export var rush_stared := false                          ## you looked at her 4 s
 @export var rush_back := false                            ## she's behind you inside 6 m, unseen 3 s
-@export var dark_secs := 3.0
+@export var dark_secs := 3.0   ## the rush in the dark: how long your light has been off first
 @export var tell_secs := 1.4                              ## the warning before she comes (never under a second)
-@export var tell_sound := "breath_close"
+@export var tell_sound := "breath_close"   ## the warning's sound, off the shelf
 @export var tell_look := ""                               ## her look for the tell and the rush (her HSLookSwitch)
 @export var rush_rest := 20.0                             ## seconds before she can rush again
 @export var chase: Node                                   ## her chase.gd (empty: the one under her, or one made)
@@ -79,14 +79,14 @@ signal ended(how: String)                                 ## survived, task, saf
 @export_group("Sanity")
 @export var sanity_sync := 1.0                            ## how much low sanity speeds it up (a Sanity node in the scene): 0 not at all; 1: twice as fast at nothing
 @export_group("Being caught")
-@export var kill_sound := "sting_big"
-@export var death_title := "You died"
-@export_multiline var death_text := ""
+@export var kill_sound := "sting_big"   ## the sound when she catches you, off the shelf
+@export var death_title := "You died"   ## the death card's title (lethal)
+@export_multiline var death_text := ""   ## the death card's words under it
 @export var mercy_after := 2                              ## deaths in this hunt before she goes easier (0: never)
 @export var grace := 10.0                                 ## seconds after a retry with no rush
 @export_group("Invisible")
 @export var cloaked := false                              ## she's cloaked while it runs (an HSCloak under her), seen when a spot shows her
-@export var head_m := 1.5
+@export var head_m := 1.5   ## her eyes' height, for seeing and being seen
 
 var running := false
 var done := false                                         ## it has ended at least once
