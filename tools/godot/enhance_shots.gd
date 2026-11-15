@@ -1,7 +1,8 @@
 ## Pictures of the enhancements branch's by-hand improvements (docs/TOOLS_REVIEW.md; the user, 2026-11-15: "screenshots
 ## of all your improvements with id references"), in tutorial v2's own project (tools/godot/tutorial_v2.py made it):
 ## the hotel floor at night through the player's own eye, the Story and the HSHud as the game shows them. E's prompt
-## (E19) at 304's door and at the note; F5's save (E24); the pause menu (E29): its list, Save game, Load game.
+## (E19) at 304's door and at the note; F5's save (E24); the pause menu (E29): its list, Save game, Load game; its
+## Settings by hand (E33).
 ##   godot --path PROJECT --rendering-driver vulkan --resolution 1280x720 -s enhance_shots.gd -- --out=DIR
 ## Prints `ENHANCESHOTS <name>` lines and quits.
 extends SceneTree
@@ -110,6 +111,15 @@ func _initialize() -> void:
 	await key(KEY_S)
 	await key(KEY_ENTER)
 	await snap("e29_menu_load", 12)
+	await key(KEY_ESCAPE)                                     # back to the list, on Load game
+	await key(KEY_S)                                          # Settings (E33: only what works by hand)
+	await key(KEY_ENTER)
+	await snap("e33_settings_display", 12)
+	await key(KEY_ESCAPE)
+	await key(KEY_S)
+	await key(KEY_ENTER)
+	await snap("e33_settings_graphics", 12)
+	await key(KEY_ESCAPE)
 	await key(KEY_ESCAPE)
 	await key(KEY_ESCAPE)
 	for sl in [0, 1, 2, 3]:

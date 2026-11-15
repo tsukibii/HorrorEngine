@@ -10,6 +10,10 @@
 extends Node
 
 const MenuC := preload("res://addons/horrorstudio_ui/menu.gd")
+## the settings that do something in a game by hand (the menu shows these alone): the window, its size, VSync, the frame
+## rate, the brightness (the scene's WorldEnvironment), the quest marker, the resolution scale, anti-aliasing, the volumes
+## and the lines' size. The runtime's graphics rows go through its own look and aren't shown here.
+const ROWS := ["window", "resolution", "vsync", "fps", "brightness", "guide", "scale", "aa", "master", "music", "sfx", "sub_size"]
 
 signal opened                                         ## the game held, the menu up
 signal closed(result)                                 ## "resume", "escaped", "loaded" or {"quit": "title" | "desktop"}
@@ -136,7 +140,7 @@ func _ctx() -> Dictionary:
 		has["torch"] = true
 		if float(fl.get("battery")) > 0.0 and fl.has_method("_change"):       # the flashlight's charge and its spare sets
 			bat = {"charge": float(fl.get("charge")), "sets": int(fl.get("spares")), "change": Callable(fl, "_change")}
-	var ctx := {"game": game_id(), "where": where(), "secs": played, "has": has, "battery": bat, "controls": controls()}
+	var ctx := {"game": game_id(), "where": where(), "secs": played, "has": has, "battery": bat, "controls": controls(), "rows": ROWS}
 	if st != null and st.has_method("save_game"):
 		ctx["save"] = func(n: int) -> bool: return bool(st.call("save_game", n))
 		ctx["load"] = func(n: int) -> bool:

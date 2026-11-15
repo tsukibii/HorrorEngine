@@ -227,6 +227,8 @@ func _new_menu() -> void:
 func make_menu() -> Node:
 	if menu == null and root != null:
 		pause_menu = true
+		if env == null and is_inside_tree() and get_viewport().find_world_3d() != null:
+			env = get_viewport().find_world_3d().environment   # (the scene's WorldEnvironment: Brightness's)
 		_new_menu()
 		MenuC.apply(MenuC.load_settings(), self)
 	return menu

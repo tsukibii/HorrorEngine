@@ -7,7 +7,8 @@
 ## saves in user://saves_<game>.json. open(ctx) returns "resume", "escaped", "loaded" or {"quit": "title" | "desktop"}.
 ## A game built by hand (the starter's pause.gd) also gives ctx `save` (a slot's number: the save made, true when it
 ## was), `load` and `can_load`: then Save game saves for real and a Load game page lists what can be loaded; and
-## `controls` (as CONTROLS: its own keys, the HSHud's chips) in place of the runtime's.
+## `controls` (as CONTROLS: its own keys, the HSHud's chips) in place of the runtime's; and `rows`, the ids of the
+## settings that do something there (the rest, and a page left with none, aren't shown).
 extends Control
 
 const ThemeC := preload("res://addons/horrorstudio_ui/theme.gd")
@@ -293,10 +294,10 @@ func show_nav() -> void:
 		nav.add_child(label("Flashlight %d%% · %s" % [roundi(float(bat.get("charge", 1.0)) * 100.0), ("%d spare set%s" % [n, "" if n == 1 else "s"]) if n > 0 else "no spare batteries"], 14, c["muted"]))
 	var list: Array = []
 	if settings:
-		for p in SETTINGS:
+		for p in pages():
 			list.append([p["title"], func(): open_page("set:" + p["id"]), "set:" + p["id"]])
 	else:
-		list = [["Resume", func(): close("resume"), ""], ["Save game", func(): open_page("save"), "save"], ["Settings", func(): open_page("set:" + SETTINGS[0]["id"]), "settings"], ["Quit", func(): open_page("quit"), "quit"]]
+		list = [["Resume", func(): close("resume"), ""], ["Save game", func(): open_page("save"), "save"], ["Settings", func(): open_page("set:" + pages()[0]["id"]), "settings"], ["Quit", func(): open_page("quit"), "quit"]]
 		if ctx.get("load") is Callable:                              # (a game built by hand: its saves load)
 			list.insert(2, ["Load game", func(): open_page("load"), "load"])
 		if not bat.is_empty() and int(bat.get("sets", 0)) > 0 and float(bat.get("charge", 1.0)) < 1.0 and bat.get("change") is Callable:
@@ -419,14 +420,32 @@ func show_page() -> void:
 		for p in SETTINGS:
 			if "set:" + p["id"] != at:
 				continue
+			var first := true
 			for g in p["groups"]:
-				if g != p["groups"][0]:
+				var shown := shown_rows(g)
+				if shown.is_empty():
+					continue
+				if not first:
 					var gap := Control.new()                          # a little air before the next group
 					gap.custom_minimum_size = Vector2(0, 8)
 					page_box.add_child(gap)
+				first = false
 				page_box.add_child(crumb(g["title"]))
-				for r in g["rows"]:
+				for r in shown:
 					page_box.add_child(item("page", row_el(r), func(): step(r, 1), func(d): step(r, d)))
+
+
+## a group's rows shown: all of them, or those whose ids the caller's `rows` names (by hand: what works there)
+func shown_rows(g: Dictionary) -> Array:
+	var only = ctx.get("rows")
+	if not only is Array or (only as Array).is_empty():
+		return g["rows"]
+	return (g["rows"] as Array).filter(func(r): return (only as Array).has(r["id"]))
+
+
+## the settings pages with a row to show
+func pages() -> Array:
+	return SETTINGS.filter(func(p): return (p["groups"] as Array).any(func(g): return not shown_rows(g).is_empty()))
 
 
 func set_value(r: Dictionary, v: int) -> void:
@@ -556,12 +575,8 @@ func back(esc: bool = false) -> void:
 		focus("nav", nav_at(back_to))
 		return
 	if at.begins_with("set:") and col == "page":
-		var i := 0
-		for k in SETTINGS.size():
-			if "set:" + SETTINGS[k]["id"] == at:
-				i = k
 		col = "nav"
-		focus("nav", i)
+		focus("nav", nav_at(at))
 		legend_for()
 		return
 	if at.begins_with("set:"):

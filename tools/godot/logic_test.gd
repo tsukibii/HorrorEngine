@@ -554,6 +554,9 @@ func stage_menu() -> void:
 	var o := origin()
 	for sl in [0, 1, 2, 3]:
 		story.call("delete_save", sl)
+	var we := WorldEnvironment.new()                         # (Brightness is the scene's WorldEnvironment's)
+	we.environment = Environment.new()
+	main.add_child(we)
 	var hud := HSHud.new()
 	main.add_child(hud)
 	var pause := Node.new()
@@ -610,6 +613,29 @@ func stage_menu() -> void:
 	ok(not bool(pause.get("up")) and not paused, "M: dead, Esc isn't the menu's")
 	story.call("revive")
 	await frames(3)
+	# Settings: only the rows that do something in a game by hand; Brightness on the scene's WorldEnvironment
+	await press(KEY_ESCAPE)
+	for i in 3:
+		await press(KEY_S)                                    # Resume, Save game, Load game, Settings
+	await press(KEY_ENTER)
+	var page_ids: Array = []
+	for e in (m.get("items") as Dictionary)["nav"]:
+		page_ids.append(str((e as Control).get_meta("id", "")))
+	var shown: Array = []
+	for e in (m.get("items") as Dictionary)["page"]:
+		shown.append(str(((e as Control).get_meta("label") as Label).text))
+	for i in 4:
+		await press(KEY_S)                                    # down to Brightness
+	await press(KEY_D)
+	var bright := we.environment.adjustment_brightness if we.environment.adjustment_enabled else 1.0
+	await press(KEY_A)
+	var back_to := we.environment.adjustment_brightness if we.environment.adjustment_enabled else 1.0
+	for i in 3:
+		await press(KEY_ESCAPE)
+	ok(page_ids == ["set:display", "set:graphics", "set:audio"] and shown == ["Window mode", "Resolution", "VSync", "Frame rate limit", "Brightness", "Quest marker"],
+		"M: Settings shows what works by hand: Display without Motion blur or Film grain", "%s %s" % [page_ids, shown])
+	ok(absf(bright - 1.08) < 0.001 and absf(back_to - 1.0) < 0.001 and not paused, "M: Brightness up a step: the scene's environment 1.08, down again 1.00; Esc back out", "%.2f, %.2f" % [bright, back_to])
+	we.queue_free()
 	for sl in [0, 1, 2, 3]:
 		story.call("delete_save", sl)
 	pause.queue_free()
