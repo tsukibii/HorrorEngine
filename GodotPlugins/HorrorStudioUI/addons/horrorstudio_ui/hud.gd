@@ -115,8 +115,11 @@ class Ornament extends Control:
 
 var root: Control
 ## by hand (the default): it wears the project's UI settings (Project Settings > horrorstudio/ui), starts clear, has no pause
-## menu, and hangs the quest marker over every active HSQuestMarker in the scene. The runtime sets this false before it is added.
+## menu unless asked (`pause_menu`), and hangs the quest marker over every active HSQuestMarker in the scene. The runtime sets this false before it is added.
 @export var standalone := true
+## by hand: the pause menu too (menu.gd, the runtime's: the controls, Resume, Save, Load, Settings, Quit), opened on Esc by
+## the starter's pause.gd, which turns this on itself; its settings are applied when the game starts
+@export var pause_menu := false
 ## by hand: the keys shown as chips at the foot, each "keys:what they do" ("W A S D:walk", "E:use", "Tab:pocket"), in
 ## place of the studio runtime's (Click to play, E inventory, G put down...); a script adds one with hint_key()
 @export var keys: PackedStringArray = []
@@ -207,12 +210,26 @@ func wear(name: String) -> void:
 	if menu != null:
 		menu.queue_free()
 		menu = null
-	if not standalone:                                 # the runtime's pause menu and the player's saved settings
-		menu = MenuC.new(self, theme_name)
-		root.add_child(menu)
+	if not standalone or pause_menu:                   # the runtime's pause menu (by hand, asked for) and the player's saved settings
+		_new_menu()
 	_restyle()
-	if not standalone:
+	if not standalone or pause_menu:
 		MenuC.apply(MenuC.load_settings(), self)
+
+
+func _new_menu() -> void:
+	menu = MenuC.new(self, theme_name)
+	menu.process_mode = Node.PROCESS_MODE_ALWAYS       # (by hand the game is paused while it's up)
+	root.add_child(menu)
+
+
+## by hand: the pause menu made now if it isn't (the starter's pause.gd asks), with the player's saved settings
+func make_menu() -> Node:
+	if menu == null and root != null:
+		pause_menu = true
+		_new_menu()
+		MenuC.apply(MenuC.load_settings(), self)
+	return menu
 
 
 ## what depends on the theme and lives on: the labels that name a part, the two voices, the reticle's colours, the keys

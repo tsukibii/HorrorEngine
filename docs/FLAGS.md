@@ -134,7 +134,8 @@ switched, amber where it's needed.
    **Note**, **Food**, **Show / hide**, **Quest marker**, and things placed by a click in the 3D view: **Area** (an
    event when you walk in), **Scare**, **Checkpoint**; **Rule** (a Logic on its own, by itself). (As built: no Seat
    card, since the starter's seats are scenes dropped onto furniture; no Flag switch, since a Rule does that and more.)
-   **Set up the scene** adds what a game needs and the scene lacks: the player, the Story, the HUD, the Sound node.
+   **Set up the scene** adds what a game needs and the scene lacks: the player, the Story, the HUD, the Sound node
+   (and since the enhancements review the pause menu, a Node called Pause with `starter/pause.gd`).
 2. **The scene's things**: every node that asks or switches something, a row each: what it is, *works only when*,
    *then*. A click selects it.
 3. **The thing picked**: its Logic as a form in plain words (*Works only when* as chips, what it says when it isn't

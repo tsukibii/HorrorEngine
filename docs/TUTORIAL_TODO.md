@@ -116,6 +116,9 @@ then each branch leaves a section here saying what it changes for the tutorial. 
       since lies where it was again, a once-only area or cue fires again: the group `hs_keeps`). Say so where dying is
       explained; the slippers (`shown.gd`) come back to where they were at the checkpoint too, and so do the laptop's
       shop and the parcels (an order on its way comes again, a parcel opened since is there again shut).
+- [ ] §34 *Every system in it*: a game by hand has **the pause menu** now (a Node called Pause with
+      `starter/pause.gd` beside the HUD: Esc holds the game; Save game and Load game are the Story's saves): add it to
+      the tutorial's scene and take "the pause menu" out of what a game by hand can't do yet.
 - [ ] §31 or §34: the night can be **saved** now (the Story's Saving group: *Autosave* at each checkpoint, *Continue
       Saved* at the start, F5 and F9 with *Save Keys*; `save_game`, `load_game`). Say so where dying and checkpoints are
       explained, and take saving out of what a game by hand can't do yet if it's listed. Not in a save yet: the double

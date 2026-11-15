@@ -4,7 +4,9 @@
 ## Audio: rows stepped with ‹ › (A/D), never a slider; levels as ten dashes), Quit (a footer choice). Every setting
 ## keeps the desk's name (and `ue`, the desk's old Unreal name, kept as data and never shown to the player); what Godot can apply, it applies (`apply`): the window mode, VSync,
 ## the frame rate limit, brightness, the volumes, the subtitles. Settings in user://horrorstudio_settings.json, the
-## saves in user://saves_<game>.json. open(ctx) returns "resume", "escaped" or {"quit": "title" | "desktop"}.
+## saves in user://saves_<game>.json. open(ctx) returns "resume", "escaped", "loaded" or {"quit": "title" | "desktop"}.
+## A game built by hand (the starter's pause.gd) also gives ctx `save` (a slot's number: the save made, true when it
+## was), `load` and `can_load`: then Save game saves for real and a Load game page lists what can be loaded.
 extends Control
 
 const ThemeC := preload("res://addons/horrorstudio_ui/theme.gd")
@@ -293,6 +295,8 @@ func show_nav() -> void:
 			list.append([p["title"], func(): open_page("set:" + p["id"]), "set:" + p["id"]])
 	else:
 		list = [["Resume", func(): close("resume"), ""], ["Save game", func(): open_page("save"), "save"], ["Settings", func(): open_page("set:" + SETTINGS[0]["id"]), "settings"], ["Quit", func(): open_page("quit"), "quit"]]
+		if ctx.get("load") is Callable:                              # (a game built by hand: its saves load)
+			list.insert(2, ["Load game", func(): open_page("load"), "load"])
 		if not bat.is_empty() and int(bat.get("sets", 0)) > 0 and float(bat.get("charge", 1.0)) < 1.0 and bat.get("change") is Callable:
 			list.insert(1, ["Change the batteries", func(): (bat["change"] as Callable).call(); close("resume"), "batteries"])
 	for row in list:
@@ -305,7 +309,17 @@ func show_nav() -> void:
 		b.set_meta("mark", mark)
 		b.set_meta("label", l)
 		b.set_meta("open", row[2] == at or (row[2] == "settings" and settings))
+		b.set_meta("id", row[2])
 		nav.add_child(item("nav", b, row[1]))
+
+
+## where a row is in the nav (its id: "save", "load", "settings", "quit", "set:<page>"): rows come and go (Load game,
+## Change the batteries), so nothing counts on a row's place
+func nav_at(id: String) -> int:
+	for i in items["nav"].size():
+		if str((items["nav"][i] as Control).get_meta("id", "")) == id:
+			return i
+	return 0
 
 
 func slot_el(name_: String, sv, auto: bool, n = null) -> VBoxContainer:
@@ -331,6 +345,10 @@ func save_to(n: int) -> void:
 		show_page()
 		focus("page", i)
 		return
+	if ctx.get("save") is Callable and not bool((ctx["save"] as Callable).call(n)):   # (by hand: the Story's save_game)
+		confirm = null
+		hud.log("slot %d couldn't be saved" % n)
+		return
 	saves[str(n)] = {"where": ctx.get("where", ctx.get("game", "")), "secs": float(ctx.get("secs", 0)), "at": Time.get_unix_time_from_system()}
 	write_json(saves_file(str(ctx.get("game", "game"))), saves)
 	confirm = null
@@ -338,6 +356,14 @@ func save_to(n: int) -> void:
 	show_page()
 	focus("page", i)
 	hud.log("saved to slot %d" % n)
+
+
+## a slot loaded (by hand: the caller's `load`), the menu closed on it
+func load_from(n: int) -> void:
+	if ctx.get("load") is Callable and bool((ctx["load"] as Callable).call(n)):
+		close("loaded")
+	else:
+		hud.log("slot %d couldn't be loaded" % n)
 
 
 func row_el(r: Dictionary) -> HBoxContainer:
@@ -367,7 +393,7 @@ func show_page() -> void:
 	items["page"] = []
 	for ch in page_box.get_children():
 		ch.queue_free()
-	page.visible = at == "save" or at.begins_with("set:")
+	page.visible = at == "save" or at == "load" or at.begins_with("set:")
 	controls_box.visible = at == "root" or at == "quit"
 	nav.position = Vector2(430, 90) if controls_box.visible else Vector2(48, 90)   # the controls on the left till a page opens
 	if at == "save":
@@ -375,6 +401,18 @@ func show_page() -> void:
 		page_box.add_child(slot_el("Autosave", saves.get("auto"), true))
 		for n in [1, 2, 3]:
 			page_box.add_child(item("page", slot_el("Slot %d" % n, saves.get(str(n)), false, n), func(): save_to(n)))
+	if at == "load":
+		page_box.add_child(crumb("Load game"))
+		var can: Callable = ctx.get("can_load") if ctx.get("can_load") is Callable else Callable()
+		var any := false
+		for n in [0, 1, 2, 3]:                                     # the autosave, then the slots: only those there are
+			var k := "auto" if n == 0 else str(n)
+			if (can.is_valid() and not bool(can.call(n))) or (not can.is_valid() and not saves.has(k)):
+				continue
+			any = true
+			page_box.add_child(item("page", slot_el("Autosave" if n == 0 else "Slot %d" % n, saves.get(k), n == 0), func(): load_from(n)))
+		if not any:
+			page_box.add_child(label("Nothing saved yet.", 14, c["muted"]))
 	if at.begins_with("set:"):
 		for p in SETTINGS:
 			if "set:" + p["id"] != at:
@@ -492,7 +530,7 @@ func open_page(p: String) -> void:
 	show_page()
 	if p == "quit":
 		ask_quit()
-		focus("nav", 3)
+		focus("nav", nav_at("quit"))
 	elif items["page"].size():
 		focus("page", 0)
 	else:
@@ -510,9 +548,10 @@ func back(esc: bool = false) -> void:
 	if at == "quit":
 		open_page("root")
 		return
-	if col == "page" and at == "save":
+	if col == "page" and (at == "save" or at == "load"):
+		var back_to := at
 		open_page("root")
-		focus("nav", 1)
+		focus("nav", nav_at(back_to))
 		return
 	if at.begins_with("set:") and col == "page":
 		var i := 0
@@ -525,7 +564,7 @@ func back(esc: bool = false) -> void:
 		return
 	if at.begins_with("set:"):
 		open_page("root")
-		focus("nav", 2)
+		focus("nav", nav_at("settings"))
 		return
 	close("escaped" if esc else "resume")
 

@@ -534,6 +534,83 @@ func stage_save() -> void:
 	npc.queue_free()
 
 
+# ---- M. the pause menu (the starter's pause.gd over the scene's HSHud, the UI plugin's menu): Esc holds the game; Save
+# game and Load game go through the Story's saves -------------------------------------------------------------------------------
+func press(k: Key) -> void:
+	var ev := InputEventKey.new()
+	ev.physical_keycode = k
+	ev.keycode = k
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	await frames(2)
+	var off := InputEventKey.new()
+	off.physical_keycode = k
+	off.keycode = k
+	Input.parse_input_event(off)
+	await frames(2)
+
+
+func stage_menu() -> void:
+	var o := origin()
+	for sl in [0, 1, 2, 3]:
+		story.call("delete_save", sl)
+	var hud := HSHud.new()
+	main.add_child(hud)
+	var pause := Node.new()
+	pause.name = "Pause"
+	pause.set_script(load("res://starter/pause.gd"))
+	main.add_child(pause)
+	await secs(0.3)
+	var mf: String = load("res://addons/horrorstudio_ui/menu.gd").saves_file(str(pause.call("game_id")))
+	if FileAccess.file_exists(mf):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(mf))
+	put(o + Vector3(0, 0.1, 0))
+	await frames(3)
+	var stood := player.global_position
+	await press(KEY_ESCAPE)
+	var m = hud.get("menu")
+	var ids: Array = []
+	if m != null:
+		for e in (m.get("items") as Dictionary)["nav"]:
+			ids.append(str((e as Control).get_meta("id", "")))
+	ok(m != null and bool(pause.get("up")) and paused and bool(m.get("up")) and ids == ["", "save", "load", "settings", "quit"],
+		"M: Esc: the game held, the HUD's menu up: Resume, Save game, Load game, Settings, Quit", "%s, paused %s" % [ids, paused])
+	await press(KEY_S)
+	await press(KEY_ENTER)
+	await press(KEY_ENTER)                                    # Slot 1
+	var meta = load("res://addons/horrorstudio_ui/menu.gd").read_json(mf, {})
+	ok(bool(story.call("has_save", 1)) and meta is Dictionary and (meta as Dictionary).has("1") and paused,
+		"M: Save game, Slot 1: the Story's save written while the game's held, and the slot says where and when", str(meta))
+	await press(KEY_ESCAPE)                                   # back to the list
+	await press(KEY_ESCAPE)                                   # and the game goes on
+	ok(not paused and not bool(pause.get("up")), "M: Esc twice: back, then the game goes on")
+	put(o + Vector3(3, 0.1, 3))
+	story.call("flag", "after_m")
+	await frames(3)
+	await press(KEY_ESCAPE)
+	await press(KEY_S)
+	await press(KEY_S)
+	await press(KEY_ENTER)                                    # Load game: Slot 1 (no autosave yet)
+	var rows: int = ((m.get("items") as Dictionary)["page"] as Array).size()
+	await press(KEY_ENTER)
+	await frames(6)
+	ok(rows == 1 and not paused and player.global_position.distance_to(stood) < 0.05 and not bool(story.call("is_set", "after_m")),
+		"M: Load game lists Slot 1 alone and loads it: the game going on where it was saved, the flag set since off",
+		"%d row(s), paused %s, %.2f m off, after_m %s" % [rows, paused, player.global_position.distance_to(stood), story.call("is_set", "after_m")])
+	# not while you're dead
+	story.set("death_secs", 5.0)
+	story.call("die", "test")
+	await press(KEY_ESCAPE)
+	ok(not bool(pause.get("up")) and not paused, "M: dead, Esc isn't the menu's")
+	story.call("revive")
+	await frames(3)
+	for sl in [0, 1, 2, 3]:
+		story.call("delete_save", sl)
+	pause.queue_free()
+	hud.queue_free()
+	await frames(2)
+
+
 # ---- P. E's prompt over everything you can use (the starter's player on the scene's HSHud): what it says and when -----------------
 func stage_prompt() -> void:
 	var o := origin()
@@ -778,7 +855,7 @@ func _initialize() -> void:
 	player = main.get_node("Player") as CharacterBody3D
 	eye = player.get_node("Eye") as Camera3D
 	story = main.get_node("Story")
-	for st in [["gate", stage_gate], ["then", stage_then], ["tie", stage_tie], ["checkpoint", stage_checkpoint], ["save", stage_save], ["prompt", stage_prompt], ["scan", stage_scan], ["board", stage_board], ["alone", stage_alone]]:
+	for st in [["gate", stage_gate], ["then", stage_then], ["tie", stage_tie], ["checkpoint", stage_checkpoint], ["save", stage_save], ["menu", stage_menu], ["prompt", stage_prompt], ["scan", stage_scan], ["board", stage_board], ["alone", stage_alone]]:
 		if wants(st[0]):
 			await (st[1] as Callable).call()
 	print("LOGIC result " + JSON.stringify({"errors": errors}))

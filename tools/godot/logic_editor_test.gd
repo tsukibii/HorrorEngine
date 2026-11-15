@@ -196,7 +196,8 @@ func _run() -> void:
 	await frames(4)
 	var player := root.get_node_or_null("Player")
 	var story := root.get_node_or_null("Story")
-	ok(player != null and story != null and root.get_node_or_null("Hud") != null and root.get_node_or_null("Sound") != null, "Set up the scene adds the player, the Story, the HUD and Sound")
+	ok(player != null and story != null and root.get_node_or_null("Hud") != null and root.get_node_or_null("Sound") != null and root.get_node_or_null("Pause") != null,
+		"Set up the scene adds the player, the Story, the HUD, Sound and the pause menu")
 	ok(player != null and player.owner == root and player.get_node("Eye").owner == player and player.scene_file_path == "res://starter/player.tscn", "the player is an instance of the starter's, its insides its own")
 	ok(wiring.story() == story and story.owner == root, "the Story is found")
 	var hud := root.get_node_or_null("Hud")

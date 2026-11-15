@@ -2,7 +2,7 @@
 ## The Things tab (docs/FLAGS.md §5): along the bottom of the editor, beside NPC Markers and Flags. Three parts.
 ##   Make it a…   cards for what the kit can make of the node selected in the scene (Logic, Pickup, Note, Food, Show /
 ##                hide, Quest marker) and things put where you click in the 3D view (Area, Scare, Checkpoint), a Rule
-##                that happens by itself; Set up the scene (the player, the Story, the HUD, Sound)
+##                that happens by itself; Set up the scene (the player, the Story, the HUD, Sound, the pause menu)
 ##   the things   every node of the scene that asks or switches something, or can be used: what it is, what it works
 ##                only when, what it does then
 ##   the thing    its Logic as a form in plain words (works only when, when, then), and its own fields with the
@@ -55,7 +55,7 @@ func _ready() -> void:
 		b.pressed.connect(_card.bind(c))
 		grid.add_child(b)
 		cards[c["id"]] = b
-	setup_btn = _button("Set up the scene", "play", "Adds what a game needs and this scene lacks: the player, the Story (objective, to-do list, flags), the HUD, the Sound node.")
+	setup_btn = _button("Set up the scene", "play", "Adds what a game needs and this scene lacks: the player, the Story (objective, to-do list, flags, saves), the HUD, the Sound node, the pause menu (Esc).")
 	setup_btn.name = "Setup"
 	setup_btn.pressed.connect(func() -> void:
 		var did: PackedStringArray = wiring.setup_scene()
