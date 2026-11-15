@@ -119,10 +119,11 @@ then each branch leaves a section here saying what it changes for the tutorial. 
       honest one to show.
 - [ ] §9 *The project*: `godot_byhand.py install` now leaves a plugin you switched off off, and says when the
       project's `starter/` differs from the studio's (then `install --starter`).
-- [ ] TUTORIAL2 run again after the starter's `player.gd` (the prompt, a blow as a scare), `story.gd` (the world kept
-      with a checkpoint) and `reach.gd` (a pickup's or a note's reach on layer 2: E still finds it, you no longer step
-      onto it). It wasn't run on this branch (it needs the desk's server): LOGIC, MARKERS, SEQUENCES, SANITY, LAPTOP,
-      MIND, SEATS and HUNT, which use the same player, pass.
+- [x] TUTORIAL2 run again after the starter's `player.gd` (the prompt, a blow as a scare), `story.gd` (the world kept
+      with a checkpoint, saves) and `reach.gd` (a pickup's or a note's reach on layer 2), the laptop and its parcels kept
+      at a checkpoint, scares added late heard: TUTORIAL2 ok on this branch (2026-11-15, with the desk's server here).
+      Its ready-made floor's comparison now leaves out the made sets' names, which hash their sets' file times: a
+      fresh checkout's differ from the machine the floor was made on, though what it holds is alike.
 
 **Should:**
 - [ ] The pictures with a prompt in them: aimed at 304's door the HUD now says *Locked* in red until the key's in the
