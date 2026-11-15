@@ -56,6 +56,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E34 | 8e462467, 3ea77121 | the Story's `use_hud` (off by default): its objective, list and lines on the HSHud |
 | E35 | f02e6f73 | the UI plugin's card (HSSplash, "[Artist] presents") and main menu (HSTitleMenu); the Story loads the save the menu picked |
 | E36 | 7ca2cf07 | `tools/horror_game.py`: a new horror game in one command, named, ready to play (the card, the menu, a room) |
+| E37 | 0f2898fe | Continue and Load game open the scene a save was made in (a game of several scenes) |
 
 ## 1. How it was done
 
@@ -225,7 +226,7 @@ Ranked within each part. Effort: S an hour or less, M a few hours, L a day or mo
    pictures want retaking; its pictures side by side are on the screenshots page. A note's card on the HUD's `panel`
    too would be the rest of it.
 2. **What a save still leaves out (S each).** The night's director, a searcher or a chase start afresh (they're
-   moments; each could join `hs_saves` as the hunt has). A game of several scenes wants the save's scene loaded first.
+   moments; each could join `hs_saves` as the hunt has).
 3. **One helper for the Godot check harness (M).** `godot_bin()` is copied 18 times, the xvfb command built by hand in
    about 27 files, and only 9 scripts fail when Vulkan falls back to OpenGL (the others would measure on GL3). The kept
    check projects are about 6 GB with nothing pruning them.
@@ -277,8 +278,6 @@ Ranked within each part. Effort: S an hour or less, M a few hours, L a day or mo
 - The weapons, devices and look plugins' own nodes keep nothing at a checkpoint (an HSShootable shot out, an HSBlowUp
   broken, a kettle's life): dying leaves them as they are, which reads right for a broken mug and wrong for a lamp a
   puzzle needs. Each joining `hs_keeps` is S.
-- A save is for the scene it was made in (its nodes are found by their paths): a game of several scenes wants the
-  scene's path, which the save records, loaded first.
 - 148 of the Look nodes' 253 exported properties have no Inspector description (a tooltip is what someone who isn't
   a programmer reads first).
 - Docs: guides/tutorial_v2 is behind the starter (E's prompt, the world at a checkpoint, saves): its bulk update is
