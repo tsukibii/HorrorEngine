@@ -11,8 +11,8 @@
 class_name HSBlink
 extends Node
 
-@export var idle := true                 # blink by itself
-@export var hold := Vector2.ZERO         # how shut each eye is asked to be (x the left eye, y the right): a scene's face
+@export var idle := true                 ## blink by itself, now and then
+@export var hold := Vector2.ZERO         ## how shut each eye is asked to be (x the left eye, y the right): a scene's face
 var shapes: Array = []                   # a row a mesh: [MeshInstance3D, left, right], each eye's [[blend shape, its weight (1 the blink itself)]...]
 var movers: Array = []                   # the face's shapes that move a lid (MHR's, by name: the bake's), on the mesh that carries most of them: [MeshInstance3D, [[blend shape, its share]...]]
 var eyes: Array = []                     # the eyes' materials that take `lid_room` (the Studio's eye and its wet layer)

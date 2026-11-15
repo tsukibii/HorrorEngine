@@ -34,10 +34,10 @@ signal phased(out: bool)                          ## fully gone (true) or fully 
 @export_range(1.0, 30.0) var rate: float = 12.0       ## jumps a second
 @export_range(0.0, 0.3) var rise_m: float = 0.05      ## a slice lifts this far as it goes
 @export_range(0.0, 1.0) var darken: float = 0.85      ## how far her colour drains to Tone before she goes
-@export var tone: Color = Color(0.02, 0.025, 0.03)
+@export var tone: Color = Color(0.02, 0.025, 0.03)   ## the colour she drains to before she goes
 @export_group("Sound")
 @export var out_sound := ""                       ## off the sound shelf, as she goes (a game by hand: its Sound node)
-@export var in_sound := ""
+@export var in_sound := ""   ## off the sound shelf, as she comes back (a game by hand: its Sound node)
 
 var amount := 0.0                                 # how far gone now: 0 herself, 1 gone
 var goal := 0.0

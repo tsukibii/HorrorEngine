@@ -12,7 +12,7 @@ const READY := "res://addons/horrorstudio_look/eyes"      ## the ready-made ones
 const SAVED := "res://looks/eyes"                         ## where the Eyes panel saves yours
 
 @export var title: String = ""                    ## what it's called
-@export_multiline var about: String = ""
+@export_multiline var about: String = ""   ## a word about it (what it's for, where it came from)
 @export var paint: Dictionary = {}                ## HSEyePaint's words (the Studio's): only what's named is changed
 
 

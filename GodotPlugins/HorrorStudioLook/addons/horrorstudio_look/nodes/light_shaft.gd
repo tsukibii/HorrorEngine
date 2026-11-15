@@ -15,19 +15,19 @@
 class_name HSLightShaft
 extends Node3D
 
-@export_range(0.1, 6.0, 0.01, "suffix:m") var width: float = 1.2
-@export_range(0.1, 6.0, 0.01, "suffix:m") var height: float = 1.1
-@export_range(0.0, 85.0, 0.5, "suffix:°") var sun_down: float = 35.0
-@export_range(-80.0, 80.0, 0.5, "suffix:°") var sun_side: float = 0.0
-@export var stop_at_floor := true
+@export_range(0.1, 6.0, 0.01, "suffix:m") var width: float = 1.2   ## the window's opening, across (the orange outline in the editor: fit it to the window)
+@export_range(0.1, 6.0, 0.01, "suffix:m") var height: float = 1.1   ## the window's opening, up and down
+@export_range(0.0, 85.0, 0.5, "suffix:°") var sun_down: float = 35.0   ## how steeply the light comes in, in degrees below level
+@export_range(-80.0, 80.0, 0.5, "suffix:°") var sun_side: float = 0.0   ## how far the light slants along the wall, in degrees
+@export var stop_at_floor := true   ## the beam ends where it meets the floor (Floor Y) instead of fading in mid-air
 @export var floor_y: float = 0.0                     ## the floor's height, world metres
 @export_range(0.2, 20.0, 0.1, "suffix:m") var reach: float = 6.0   ## the most it runs (it stops at the floor before that)
-@export_range(0.0, 3.0) var strength: float = 1.0
-@export_range(0.0, 1.0) var dust: float = 0.5
-@export_range(0.0, 1.0) var drift: float = 0.12
+@export_range(0.0, 3.0) var strength: float = 1.0   ## how bright the beam is
+@export_range(0.0, 1.0) var dust: float = 0.5   ## how much dust drifts in it
+@export_range(0.0, 1.0) var drift: float = 0.12   ## how fast the dust drifts
 @export_range(0.02, 0.6) var soft_near: float = 0.1   ## its sides' softness at the glass (of the half width)
 @export_range(0.02, 0.8) var soft_far: float = 0.45   ## and where it lands
-@export var color := Color(1.0, 0.93, 0.8)
+@export var color := Color(1.0, 0.93, 0.8)   ## the light's colour
 @export var aim_lights := true                    ## the lights under it put outside the window, along the beam
 @export var show_outline := true                  ## the window's rectangle and the beam's edges, in the editor only
 var beam: FogVolume = null

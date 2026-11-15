@@ -19,8 +19,8 @@ const PRESETS := {
 		"chroma_shift": 3.0, "luma_noise": 0.5, "chroma_noise": 0.7, "tracking_jitter": 1.0, "tracking_error": 0.5, "head_switch": 1.0, "dropouts": 1.0, "scanlines": 0.15, "ghosting": 0.3},
 }
 
-@export var preset_name: String = "off"
-@export_range(0.0, 1.0) var strength: float = 1.0
+@export var preset_name: String = "off"   ## the tape's look by name (camcorder, camhybrid, worn, nightmare, off)
+@export_range(0.0, 1.0) var strength: float = 1.0   ## how much of the tape's look: 0 a clean picture
 var rect: ColorRect
 const Soften := preload("res://addons/horrorstudio_look/soften.gd")   # the softener (camhybrid), by its path: no class cache needed
 var mat: ShaderMaterial
