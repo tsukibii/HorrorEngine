@@ -27,9 +27,9 @@ import * as SCRIPT from "./screenplay.js";
 import { TASKS as QUICK_TASKS, BEATS as QUICK_BEATS, TASK as QUICK_TASK, BEAT as QUICK_BEAT, buildTask, buildBeat } from "./templates.js";
 import { lint, byObject } from "./lint.js";
 import { merge3, setAt, changedPaths, indexPath } from "./merge.js";
-import { placeOf } from "./refs.js";
+import { placeOf, allIds } from "./refs.js";
 import { States } from "./life.js";
-import { arrows, arrowAt, canCut, setArrow, insertOn, swapNodes, runOf, moveRun } from "./flowedit.js";
+import { arrows, arrowAt, canCut, setArrow, insertOn, swapNodes, runOf, moveRun, removeCard, renameCard } from "./flowedit.js";
 import { playShelf, shelfName } from "./sfx.js";
 import { ExpressionsPanel, DRAG_TYPE } from "./expressions.js";
 
@@ -730,9 +730,12 @@ function leaveActs(ids) {                          // nodes gone: out of their a
   if (!S.frames) return; for (const f of S.frames) f.nodes = (f.nodes || []).filter(n => !ids.includes(n));
   S.frames = S.frames.filter(f => f.nodes.length); if (!S.frames.length) delete S.frames;
 }
-function removeNode(id) {
-  if (!S.flow[id] || !confirm(`Delete node ${id}? (its scene or task stays in the file)`)) return;
-  delete S.flow[id]; leaveActs([id]); if (SEL === id) SEL = S.game.start; touch(); renderInspector(); showStage();
+function removeNode(id) {                         // (the board's Delete and the Inspector's: one way, flowedit.removeCard)
+  if (!S.flow[id]) return;
+  if (S.game.start === id) return alert(`${id} is the start: make another card the start first (Make start), then delete it.`);
+  if (!confirm(`Delete node ${id}? (its scene or task stays in the file; the arrows into it are cut, a stub each)`)) return;
+  const why = removeCard(S, id); if (why) return alert(why);
+  if (SEL === id) SEL = S.game.start; touch(); renderInspector(); showStage();
 }
 function renderBoard() {
   if (!S) return;
@@ -803,7 +806,7 @@ function renderInspector() {
     n.type === "scene" || n.type === "stitch" ? el("button", { class: "primary", title: "the Watch from this node on, as the game plays it", on: { click: () => { const nid = SEL; document.querySelector('nav button[data-v="watchView"]').click(); watch(nid); } } }, "▶ Watch from here") : null,
     el("button", { on: { click: () => { S.game.start = SEL; touch(); renderInspector(); } } }, "Make start"),
     el("button", { on: { click: () => renameNode(SEL) } }, "Rename"),
-    el("button", { on: { click: () => { if (confirm("Delete node " + SEL + "? (its scene or stitch stays in the file)")) { delete S.flow[SEL]; SEL = S.game.start; touch(); renderInspector(); } } } }, "Delete")));
+    el("button", { on: { click: () => removeNode(SEL) } }, "Delete")));   // (it left its acts behind, and every arrow into it pointing at nothing)
   if (n.type === "scene" || n.type === "stitch") {
     const cur = nodeRef(n), lvl = (cur && cur.level) || Object.keys(S.levels || {})[0];
     if (lvl) box.append(el("div", { class: "row" }, el("button", { title: "Open this script's level in the scene builder: its marks shown, the ones this node uses highlighted. Save there and this page reloads it.",
@@ -867,14 +870,10 @@ async function quickBeat(id, st) {
   setTimeout(() => flashIn(`[data-beat="${st.beats[st.beats.length - 1].id}"]`), 50);
 }
 function renameNode(old) {
-  const nid = prompt("New id for this node", old); if (!nid || nid === old || S.flow[nid]) return;
-  S.flow[nid] = S.flow[old]; delete S.flow[old];
-  for (const m of Object.values(S.flow)) { if (m.next === old) m.next = nid; for (const o of m.options || []) if (o.to === old) o.to = nid; if (m.of === old) m.of = nid; }
-  for (const st of Object.values(S.stitches || {})) if (st.timer && st.timer.fail === old) st.timer.fail = nid;
-  for (const it of S.interrupts || []) if (it.to === old) it.to = nid;
-  for (const sc of Object.values(S.scenes || {})) for (const v of [sc, ...Object.values(sc.variants || {})]) for (const c of v.clips || []) for (const o of (c.reply && c.reply.options) || []) if (o.go && o.go.node === old) o.go.node = nid;   // answers that leave for it (§9.9)
-  for (const f of S.frames || []) f.nodes = (f.nodes || []).map(n => (n === old ? nid : n));
-  if (S.game.start === old) S.game.start = nid; SEL = nid; touch(); renderInspector();
+  const nid = (prompt("New id for this node (lower-case letters, digits and _)", old) || "").trim(); if (!nid || nid === old) return;
+  const taken = allIds(S); taken.delete(old);
+  const why = renameCard(S, old, nid, taken); if (why) return alert(why);   // (a retry left on the old id, an id a scene or a cast member has: the check's errors after)
+  SEL = nid; touch(); renderInspector();
 }
 function addNode(type) {
   const n = S.flow[SEL], nid = newId(type === "ending" ? "e_" : "n_", S.flow), cur = nodeRef(n), lvl = (cur && cur.level) || Object.keys(S.levels)[0]; let node;
@@ -2597,7 +2596,8 @@ $("#reload").onclick = () => { if (!DIRTY || confirm("Drop your unsaved edits?")
 $("#history").onclick = () => historyDialog();
 $("#bannerReload").onclick = () => load();
 $("#game").onchange = e => { if (DIRTY && !confirm("Drop unsaved edits?")) { e.target.value = GAME; return; } if (DIRTY) dropDraft(); GAME = e.target.value; SEL = null; FILES = {}; if (BOARD) BOARD.viewSet = false; load(); };
-$("#newGame").onclick = async () => { const name = prompt("New game's name (letters and digits, e.g. LanternHouse)"); if (!name) return; try { const j = await api("/api/new/" + encodeURIComponent(name), { method: "POST" }); fillGames(j.games); GAME = name; $("#game").value = name; SEL = null; await load(); } catch (e) { alert(e.message); } };
+$("#newGame").onclick = async () => { if (DIRTY && !confirm("Drop unsaved edits?")) return;   // (as the game picker asks: New went on without a word)
+  const name = prompt("New game's name (letters and digits, e.g. LanternHouse)"); if (!name) return; try { const j = await api("/api/new/" + encodeURIComponent(name), { method: "POST" }); if (DIRTY) dropDraft(); fillGames(j.games); GAME = name; $("#game").value = name; SEL = null; FILES = {}; if (BOARD) BOARD.viewSet = false; await load(); } catch (e) { alert(e.message); } };
 $("#gameSettings").onclick = () => { if (S) openDb(); };
 $("#undo").onclick = () => undoTo(UNDO, REDO, "undo");
 $("#redo").onclick = () => undoTo(REDO, UNDO, "redo");

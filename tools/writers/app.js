@@ -593,7 +593,7 @@ async function buildDialog() {
   if (!P) return;
   await flush();
   const camel = (P.title || "Game").replace(/[^A-Za-z0-9 ]/g, "").split(/\s+/).filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join("") || "Game";
-  const game = el("input", { value: (P.built || {}).game || (/^[A-Z]/.test(camel) ? camel : "G" + camel) }), force = el("input", { type: "checkbox", checked: !!(P.built || {}).game });
+  const game = el("input", { value: (P.built || {}).game || (/^[A-Z]/.test(camel) ? camel : "G" + camel) }), force = el("input", { type: "checkbox", checked: !!(P.built || {}).game }), replace = el("input", { type: "checkbox" });
   const errs = (CHECK.errors || []).length, sets = (await api("sets").catch(() => ({}))).sets || [];
   // the place: greybox rooms, or a set designed first in the scene builder (DECISIONS 2026-10-27, later)
   const place = el("select", {}, el("option", { value: "" }, "greybox rooms, a room per place (lay out the real place later)"),
@@ -604,10 +604,11 @@ async function buildDialog() {
     ...lab("The place", place),
     el("div", { class: "hint muted small" }, sets.length ? "A set: each place on its room of the same name (else the biggest free one), the things fitted round its furniture." : "No sets yet: design the place first in the scene builder (its game picker: + new set…), and it's offered here."),
     el("label", { class: "chips", style: "margin-top:10px" }, el("label", {}, force, " build over it if it exists (its story goes into the desk's history first)")),
+    el("label", { class: "chips" }, el("label", {}, replace, " replace the desk's edits since this session's last Build (they go into its history; never ticked for you)")),
     errs ? el("p", { style: "color:#ff9b9b" }, `${errs} problem${errs > 1 ? "s" : ""} on the chart: fix them first (the bar at the bottom lists them).`) : null], "Build");
   if (!ok) return;
   try {
-    const r = await api("build/" + encodeURIComponent(SID), { game: game.value.trim(), force: force.checked, set: place.value || null });
+    const r = await api("build/" + encodeURIComponent(SID), { game: game.value.trim(), force: force.checked, set: place.value || null, replace: replace.checked });
     P.built = Object.assign({ game: r.game }, place.value ? { set: place.value } : {}); BASE = JSON.stringify(P); if (r.stamp) STAMP = r.stamp;
     const bad = r.check && !r.check.ok;
     await dialog(bad ? "Built, but the story check fails" : "Built", [el("p", {}, r.message),

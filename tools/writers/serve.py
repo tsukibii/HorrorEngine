@@ -167,9 +167,9 @@ class Handler(BaseHTTPRequestHandler):
                 P = session(sid)
                 if not P:
                     return self.send(404, {"error": "no such session"})
-                res = build.build(P, str(b.get("game") or ""), force=bool(b.get("force")), set_name=str(b.get("set") or "") or None)
+                res = build.build(P, str(b.get("game") or ""), force=bool(b.get("force")), set_name=str(b.get("set") or "") or None, replace=bool(b.get("replace")))
                 if res.get("ok"):
-                    P["built"] = dict({"game": res["game"], "at": proto.now()}, **({"set": b["set"]} if b.get("set") else {}))
+                    P["built"] = dict({"game": res["game"], "at": proto.now(), "sha1": res.get("sha1")}, **({"set": b["set"]} if b.get("set") else {}))
                     store(P)
                     res["stamp"] = stamp(sid)
                 return self.send(200, res) if res.get("ok") else self.send(400, dict(res, error=res.get("message")))

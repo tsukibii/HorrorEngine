@@ -113,6 +113,33 @@ console.log("the flow cut and joined again (flowedit.js)");
       ? ok(`cut after “Mari in the hall”: a stub (${cut.text}), ${loose} cards loose as warnings, no errors, the story check passes; joined again, the flow as it was`)
       : fail(`a cut: ${cut ? cut.sev : "not said"}, errors ${errs.map(p => p.text).join("; ")}, story check ${c}, cuts ${cuts.length}, loose ${loose}, back ${back}`);
   }
+  {  // a card deleted (the board's Delete and the Inspector's: one way now): what led to it cut, out of its act, a death's
+     // retry from it gone, the story check passing; the start refused. The Inspector's left every arrow into it pointing
+     // at nothing and its act holding it (STORY: "isn't a flow node"), and a retry pointing at it
+    const T0 = story("TestRoom001"), S = clone(T0), thT = thingsOf(T0);
+    const death = Object.keys(S.flow).find(k => S.flow[k].type === "ending" && S.flow[k].retry), readBy = S.flow[death].retry;   // (a choice reads its result: refused, saying which)
+    const refusedRead = Object.values(S.flow).some(n => n.of === readBy) ? F.removeCard(S, readBy) : "nothing reads it";
+    const victim = Object.keys(S.flow).find(k => ["scene", "stitch"].includes(S.flow[k].type) && k !== S.game.start && S.flow[k].next && !Object.values(S.flow).some(n => n.of === k)
+      && Object.values(S.flow).some(n => n.next === k));
+    const retryRefused = (() => { const S2 = clone(S); S2.flow[death].retry = victim; return F.removeCard(S2, victim); })();   // a death retrying from it: refused too
+    S.frames = S.frames || []; S.frames.push({ id: "f_victim", title: "Victim's act", nodes: [victim] });
+    const refused = F.removeCard(S, S.game.start) && refusedRead && retryRefused, why = F.removeCard(S, victim);
+    const into = Object.values(S.flow).some(n => n.next === victim || (n.options || []).some(o => o.to === victim)), inAct = (S.frames || []).some(f => f.nodes.includes(victim));
+    const errs = run(S, thT).filter(p => p.sev === "error"), c = (() => { const out = storyCheck("TestRoom001", S); return /STORY ok/.test(out) ? true : out.trim().split("\n").slice(-3).join(" / "); })();
+    victim && refused && !why && !S.flow[victim] && !into && !inAct && !errs.length && c === true
+      ? ok(`a card deleted (${victim}): the arrows into it cut, out of its act, no errors, the story check passes; refused: the start, a card whose result a choice reads (${refusedRead}) and one a death retries from (${retryRefused})`)
+      : fail(`delete ${victim}: refused "${refused}", ${why}, arrows into it ${into}, in its act ${inAct}, errors ${errs.map(p => p.text).slice(0, 3).join("; ")}, story check ${c}`);
+  }
+  {  // a card renamed: every arrow into it, a death's retry, the acts and the start follow; a taken id refused
+    const T0 = story("TestRoom001"), S = clone(T0), R = await import("./refs.js");
+    const death = Object.keys(S.flow).find(k => S.flow[k].type === "ending" && S.flow[k].retry), old = S.flow[death].retry;
+    const sceneId = Object.keys(S.scenes)[0], taken = R.allIds(S); taken.delete(old);
+    const clash = F.renameCard(clone(S), old, sceneId, taken), badId = F.renameCard(clone(S), old, "Not An Id", taken), why = F.renameCard(S, old, "n_renamed", taken);
+    const left = JSON.stringify(S).includes(`"${old}"`), c = (() => { const out = storyCheck("TestRoom001", S); return /STORY ok/.test(out) ? true : out.trim().split("\n").slice(-3).join(" / "); })();
+    !why && clash && badId && S.flow.n_renamed && S.flow[death].retry === "n_renamed" && !left && c === true
+      ? ok(`a card renamed (${old} to n_renamed): its arrows, the death's retry and every other use follow, the story check passes; an id a scene has refused, and a bad id`)
+      : fail(`rename: ${why}, clash "${clash}", bad "${badId}", retry ${S.flow[death].retry}, the old id left ${left}, story check ${c}`);
+  }
   {  // a choice's way cut
     const S = clone(S0), ch = Object.keys(S.flow).find(k => S.flow[k].type === "choice" && S.flow[k].by === "act");
     F.setArrow(S, ch, ["option", 0], null);

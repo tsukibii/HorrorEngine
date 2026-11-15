@@ -29,6 +29,7 @@ The arrows are the flow's `next`s and options; every node sits on the director's
 chart (`xy`), the acts' frames are the board's acts. Achievements: each secret's and ending's own, and the feats.
 """
 import copy
+import hashlib
 import json
 import re
 import shutil
@@ -1350,7 +1351,7 @@ def story_check(path, tool="story_check.py", *args):
     return r.returncode == 0, (lines[-1] if lines else ""), [x for x in lines if x.startswith(("ERROR: ", "FAIL "))]
 
 
-def build(P, game, force=False, games=None, check=True, set_name=None, sset=None):
+def build(P, game, force=False, games=None, check=True, set_name=None, sset=None, replace=False):
     """The chart into Content/Games/<game>/ (or `games`/<game>): story.json, prototype.json, BUILD.md, faces.md.
     A story already there is replaced only with `force` (or when this session built it), kept in the desk's history first.
     `set_name`: built into that set's level (Content/Studio/Sets/<name>, the place designed first; `sset` its story when
@@ -1373,6 +1374,15 @@ def build(P, game, force=False, games=None, check=True, set_name=None, sset=None
             was = None
         if was != P["id"] and not force:
             return {"ok": False, "game": game, "message": f"{game} exists and wasn't built from this session: build over it (its story goes into the desk's history first), or pick another name"}
+        # built from this session, then worked on in the desk: a Build again would replace that work (into the history,
+        # where nobody looks). It says so, unless `replace` (the dialog's own box, never ticked for you)
+        last = (P.get("built") or {}) if (P.get("built") or {}).get("game") == game else {}
+        now_sha = hashlib.sha1(path.read_bytes()).hexdigest()
+        edited = (last.get("sha1") and last["sha1"] != now_sha) or (not last.get("sha1") and last.get("at") and
+                  path.stat().st_mtime > time.mktime(time.strptime(last["at"], "%Y-%m-%dT%H:%M:%S")) + 2)
+        if was == P["id"] and edited and not replace:
+            return {"ok": False, "game": game, "edited": True, "message": f"{game} has been changed in the desk since this session built it: "
+                    "tick 'replace the desk's edits' to build over them (the story as it is goes into the desk's history first), or build under another name"}
     if set_name and sset is None:
         try:
             sset, _ = L.load("set:" + set_name)
@@ -1393,7 +1403,7 @@ def build(P, game, force=False, games=None, check=True, set_name=None, sset=None
     (folder / "prototype.json").write_text(json.dumps(P, ensure_ascii=False, indent=1), encoding="utf-8")
     (folder / "BUILD.md").write_text(build_md(P, S, B.handoff, B.moved, B.rooms), encoding="utf-8")
     (folder / "faces.md").write_text(faces_md(P, S), encoding="utf-8")
-    res = {"ok": True, "game": game, "files": [str(p.relative_to(ROOT)) if ROOT in p.resolve().parents else str(p) for p in
+    res = {"ok": True, "game": game, "sha1": hashlib.sha1(path.read_bytes()).hexdigest(), "files": [str(p.relative_to(ROOT)) if ROOT in p.resolve().parents else str(p) for p in
                                                (path, folder / "prototype.json", folder / "BUILD.md", folder / "faces.md")],
            "nodes": len(S["flow"]), "scenes": len(S["scenes"]), "stitches": len(S["stitches"]),
            "placed": sorted(B.rooms.placed), "items": sorted(t["item"] for t in B.thing.values() if t.get("item"))}   # the blocks and items it made
