@@ -101,3 +101,27 @@ then each branch leaves a section here saying what it changes for the tutorial. 
       numbers a player of the editor can turn (`cloth_fuzz`, `cloth_detail`).
 - [ ] A line on `HSCloth.dress(mesh, 0, "Leather001", colour)` for a prop of cloth made by hand (a curtain, a sofa)
       whose second UV is in metres, if the tutorial ever dresses one.
+
+## From `enhancements`: the tools reviewed (docs/TOOLS_REVIEW.md)
+
+**Must (or the tutorial is wrong or stale):**
+- [ ] §34 *Every system in it*: E's prompt is built now (the starter's player puts Open, Take, Read, Sit, Lie down,
+      Hide, Use, or Locked in red, on the scene's HSHud for whatever it's aimed at): take "E's prompt" out of what a
+      game by hand can't do yet, and say a script of your own gives its words with `use_prompt(by)`.
+- [ ] §31 *the hunt*, dying and checkpoints: dying now puts the world back as the checkpoint had it (a pickup taken
+      since lies where it was again, a once-only area or cue fires again: the group `hs_keeps`). Say so where dying is
+      explained; the slippers (`shown.gd`) come back to where they were at the checkpoint too. A parcel unboxed since
+      doesn't (it's freed, and the pocket loses what came out of it): with a lethal hunt, keep a checkpoint after the
+      parcels (docs/TOOLS_REVIEW.md §4.5).
+- [ ] §9 *The project*: `godot_byhand.py install` now leaves a plugin you switched off off, and says when the
+      project's `starter/` differs from the studio's (then `install --starter`).
+- [ ] TUTORIAL2 run again after the starter's `player.gd` (the prompt, a blow as a scare), `story.gd` (the world kept
+      with a checkpoint) and `reach.gd` (a pickup's or a note's reach on layer 2: E still finds it, you no longer step
+      onto it). It wasn't run on this branch (it needs the desk's server): LOGIC, MARKERS, SEQUENCES, SANITY, LAPTOP,
+      MIND, SEATS and HUNT, which use the same player, pass.
+
+**Should:**
+- [ ] The pictures with a prompt in them: aimed at 304's door the HUD now says *Locked* in red until the key's in the
+      pocket, then *Open*; at the note *Read*; at the key *Take*. §16 and §5's pictures want retaking.
+- [ ] 304's bath door is 0.70 m wide, under the 0.75 m the animation rules want for a door a character walks through
+      (`level_check` now warns): widen it in the set (and make the ready-made export again) if she ever walks in.

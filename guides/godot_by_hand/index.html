@@ -122,22 +122,30 @@ street dropped into a Director project is a model like any other.</p>
   <div class="card"><h4><code>addons/horrorstudio_markers/</code></h4><p>The Markers plugin: the <span class="ui">NPC Markers</span> tab along the bottom of the editor. A character's whole part in the game placed as markers in the 3D view (walk here, talk, sit, grab, vanish), in order, by flags, no code. <a href="../markers/index.html">Its guide</a>.</p></div>
   <div class="card"><h4><code>addons/horrorstudio_weapons/</code>, <code>addons/horrorstudio_devices/</code></h4><p>The double barrel under the camera (<a href="../weapons/index.html">its guide</a>) and the laptop with its shop and parcels (<a href="../laptop/index.html">its guide</a>). Switched on; they do nothing until you put one in a scene.</p></div>
   <div class="card"><h4><code>HumanShaders/</code></h4><p>The skin's and the eyes' textures (MIT). It must sit at the project's root under that name: the plugin looks for <code>res://HumanShaders/</code>.</p></div>
-  <div class="card"><h4><code>starter/</code></h4><p>The first game's scripts: a first-person player, doors, a scare. Yours to change.</p></div>
+  <div class="card"><h4><code>starter/</code></h4><p>The starter kit: a first-person player (with E's prompt over what you can use), the Story (the objective, the to-do list, the pocket, flags, checkpoints and dying), doors, pickups, notes, seats, scares, cues, sound, fear, hunts, sanity, a character's Motion. Yours to change.</p></div>
+  <div class="card"><h4><code>sfx/</code>, <code>music/</code>, <code>kimodo/</code>, <code>animations/</code></h4><p>The sound shelf, the four moods, Kimodo's reader (for a character's moves from <code>.npz</code> clips) and an empty folder to drop those clips into.</p></div>
   <div class="card"><h4><code>exports/</code></h4><p><code>interiors/</code>, <code>streets/</code>, <code>characters/</code>: where the studio's exports go (§4).</p></div>
 </div>
 <p>Open it in Godot 4.7: the Project Manager's <span class="ui">Import</span>, then pick its <code>project.godot</code>.</p>
 <p><b>By hand instead.</b> In the Project Manager, <span class="ui">New Project</span>, the Forward+ renderer. Then copy
-three folders from the studio into the project's folder:</p>
+these folders from the studio into the project's folder (the quick way above does all of it, and the sound shelf and
+the moods besides):</p>
 <table class="keys">
 <tr><td><code>GodotPlugins/HorrorStudioLook/addons/horrorstudio_look</code></td><td>→ <code>addons/horrorstudio_look</code> (the name kept: its scripts load their shaders by that path)</td></tr>
 <tr><td><code>GodotPlugins/HorrorStudioUI/addons/horrorstudio_ui</code></td><td>→ <code>addons/horrorstudio_ui</code> (the HUD and the quest marker)</td></tr>
+<tr><td><code>GodotPlugins/HorrorStudioMarkers/addons/horrorstudio_markers</code></td><td>→ <code>addons/horrorstudio_markers</code> (the NPC Markers, Flags and Things tabs)</td></tr>
+<tr><td><code>GodotPlugins/HorrorStudioWeapons/addons/horrorstudio_weapons</code>, <code>…Devices/addons/horrorstudio_devices</code></td><td>→ <code>addons/</code> under the same names (the double barrel, the laptop)</td></tr>
 <tr><td><code>GodotPlugins/HumanShaders</code></td><td>→ <code>HumanShaders</code>, at the project's root</td></tr>
-<tr><td><code>guides/first_game/starter</code></td><td>→ <code>starter</code> (if you want the first game's scripts)</td></tr>
+<tr><td><code>guides/first_game/starter</code></td><td>→ <code>starter</code> (the starter kit's scripts)</td></tr>
 </table>
-<p>Then <span class="ui">Project → Project Settings → Plugins</span> and tick <b>HorrorStudio Look</b>. The first time
-it's switched on it writes its balanced settings into the project.</p>
+<p>Then <span class="ui">Project → Project Settings → Plugins</span> and tick each <b>HorrorStudio</b> plugin. The
+first time the Look plugin is switched on it writes its balanced settings into the project.</p>
 <div class="tip"><b>After a pull of the studio,</b> the add-ons in your project are still the old copies. To bring them up to date:
-<code>python tools/godot_byhand.py install ~/Games/MyGame</code>. It leaves your <code>starter/</code> alone, and switches on a plugin the project didn't have yet (a project made before NPC markers gets its tab this way).</div>
+<code>python tools/godot_byhand.py install ~/Games/MyGame</code>. It switches on a plugin the project has never had
+(a project made before NPC markers gets its tab this way) and leaves off one you switched off. It leaves your
+<code>starter/</code> alone and says when it differs from the studio's: then
+<code>python tools/godot_byhand.py install ~/Games/MyGame --starter</code> brings the studio's scripts (yours that
+differ are kept in <code>starter_before/</code>); the Logic node, Take from you and E's prompt want the newer ones.</div>
 </section>
 
 <section id="settings">
@@ -255,8 +263,12 @@ baked in as blend shapes.</p>
 <table class="keys">
 <tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>walk (<kbd>Shift</kbd> runs); it steps up anything up to half a metre, like a kerb, a genkan's step or a raised floor</td></tr>
 <tr><td>mouse</td><td>look</td></tr>
-<tr><td><kbd>E</kbd></td><td>use what's in front of you: anything with a <code>use()</code> method, such as a door</td></tr>
+<tr><td><kbd>E</kbd></td><td>use what's in front of you: anything with a <code>use()</code> method, such as a door. With an <code>HSHud</code> in the scene its prompt says what E would do (Open, Take, Read, Sit...; Locked in red)</td></tr>
 <tr><td><kbd>F</kbd></td><td>the flashlight</td></tr>
+<tr><td><kbd>Space</kbd></td><td>hold your breath (eight seconds at most, then a gasp: something hunting you hears it)</td></tr>
+<tr><td><kbd>Tab</kbd>, the wheel</td><td>the pocket's row (with an <code>HSHud</code>): show it, turn to another thing</td></tr>
+<tr><td>left button, held</td><td>eat what's in your hand, when it's food (a meter fills)</td></tr>
+<tr><td><kbd>F7</kbd></td><td>the flag board and the characters' chips (what's on, the tasks, the pocket): for testing</td></tr>
 <tr><td><kbd>Esc</kbd></td><td>let the mouse go (a click takes it back)</td></tr>
 </table>
 <p>An interior's <code>markers/player_start</code> is where its level starts the player. Stand the player there, or anywhere you like.</p>

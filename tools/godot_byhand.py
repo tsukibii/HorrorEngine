@@ -73,14 +73,33 @@ def project_godot(name):
     return "\n".join(lines)
 
 
-def enable(proj):
-    """the studio's plugins a project.godot doesn't have switched on yet, switched on (one added since the project
-    was made); -> the names added"""
+OFFERED = ".horrorstudio_plugins.json"       # the plugins install has put in a project: one you switched off stays off
+
+
+def offered(proj, had=None):
+    """the plugins a project has been given before (its record; a project from before the record: the ones whose
+    folders it had before this install)"""
+    f = proj / OFFERED
+    try:
+        return set(json.loads(f.read_text(encoding="utf-8")).get("plugins", []))
+    except (OSError, ValueError):
+        return set(had or [])
+
+
+def enable(proj, before=None):
+    """the studio's plugins a project.godot doesn't have switched on yet and was never given before, switched on (one
+    added since the project was made); one it had and you switched off is left off (install switched it back on);
+    -> the names added"""
     pg = proj / "project.godot"
     if not pg.is_file():
         return []
     text = pg.read_text(encoding="utf-8")
-    added = [n for n in PLUGINS if f"res://addons/{n}/plugin.cfg" not in text and (proj / "addons" / n / "plugin.cfg").is_file()]
+    old = offered(proj) if before is None else before
+    added = [n for n in PLUGINS if n not in old and f"res://addons/{n}/plugin.cfg" not in text and (proj / "addons" / n / "plugin.cfg").is_file()]
+    try:
+        (proj / OFFERED).write_text(json.dumps({"plugins": sorted(set(old) | set(PLUGINS)), "about": "the HorrorStudio plugins godot_byhand.py install has given this project: one switched off stays off"}, indent=1), encoding="utf-8")
+    except OSError:
+        pass
     if not added:
         return []
     more = ", ".join(f'"res://addons/{n}/plugin.cfg"' for n in added)
@@ -118,6 +137,7 @@ def refresh_starter(proj):
 def install(proj, starter=True):
     """the look and UI plugins, HumanShaders and (when missing, or `starter`) the starter scripts into the project"""
     (proj / "addons").mkdir(parents=True, exist_ok=True)
+    before = offered(proj, {n for n in PLUGINS if (proj / "addons" / n / "plugin.cfg").is_file()})   # (before the copies below: what it had)
     shutil.rmtree(proj / "addons" / "horrorstudio_look", ignore_errors=True)
     shutil.copytree(LOOK, proj / "addons" / "horrorstudio_look", ignore=shutil.ignore_patterns("*.import", "demo"))
     shutil.rmtree(proj / "addons" / "horrorstudio_ui", ignore_errors=True)
@@ -131,7 +151,7 @@ def install(proj, starter=True):
     shutil.rmtree(proj / "HumanShaders", ignore_errors=True)
     shutil.copytree(HUMAN, proj / "HumanShaders", ignore=shutil.ignore_patterns("*.import"))
     did = ["addons/horrorstudio_look", "addons/horrorstudio_ui", "addons/horrorstudio_weapons", "addons/horrorstudio_devices", "addons/horrorstudio_markers", "HumanShaders"]
-    did += [f"{n} switched on" for n in enable(proj)]
+    did += [f"{n} switched on" for n in enable(proj, before)]
     if starter or not (proj / "starter").exists():
         shutil.copytree(STARTER, proj / "starter", dirs_exist_ok=True)
         did.append("starter")
@@ -278,6 +298,12 @@ def main(argv):
             kept = refresh_starter(proj)
             did.append("starter (the studio's scripts" + (f"; yours that differed are in starter_before/: {', '.join(kept)})" if kept else ")"))
         print(f"into {proj}: {', '.join(did)}")
+        if "--starter" not in argv:                       # (it said nothing when the plugins had come on past the project's starter/)
+            behind = [f.name for f in sorted(STARTER.glob("*.gd")) if not (proj / "starter" / f.name).is_file()
+                      or (proj / "starter" / f.name).read_bytes() != f.read_bytes()]
+            if behind:
+                print(f"  your starter/ differs from the studio's in {len(behind)} script{'s' if len(behind) > 1 else ''} ({', '.join(behind[:6])}"
+                      f"{'...' if len(behind) > 6 else ''}): python tools/godot_byhand.py install {proj} --starter brings the studio's (yours that differ are kept in starter_before/)")
     else:
         if not (proj / "project.godot").exists():
             print(f"no project.godot in {proj}")

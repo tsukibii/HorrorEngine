@@ -24,6 +24,8 @@ static func make(n: Node3D, grow := 0.03, least := 0.14) -> StaticBody3D:
 	var size := Vector3(maxf(box.size.x, least), maxf(box.size.y, least), maxf(box.size.z, least))
 	var body := StaticBody3D.new()
 	body.name = "_reach"
+	body.collision_layer = 2                  # the layer only E's aim finds (as a seat's and a Logic's): on layer 1 you stepped up onto a key
+	body.collision_mask = 0                   # on the floor and a character's floor rays lifted her over it
 	var shape := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
 	bs.size = size

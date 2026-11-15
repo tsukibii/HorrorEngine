@@ -360,9 +360,11 @@ func _find_hud() -> Node:
 func _unhandled_input(e: InputEvent) -> void:
 	if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
 		hold_eat(e.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED)     # (the click that takes the mouse back eats nothing)
-	if items.is_empty() or _find_hud() == null or not pocket_row:
+	var tab: bool = e is InputEventKey and e.pressed and not e.echo and e.physical_keycode == KEY_TAB
+	var wheel: bool = e is InputEventMouseButton and e.pressed and e.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]
+	if not (tab or wheel) or items.is_empty() or not pocket_row or _find_hud() == null:   # (the HUD looked for only on Tab or the wheel: it was every mouse move, the whole tree each time when there's none)
 		return
-	if e is InputEventKey and e.pressed and not e.echo and e.physical_keycode == KEY_TAB:
+	if tab:
 		_shown = not _shown
 		_draw_pocket()
 	elif e is InputEventMouseButton and e.pressed and (_shown or _peek > 0.0) and items.size() > 1 \

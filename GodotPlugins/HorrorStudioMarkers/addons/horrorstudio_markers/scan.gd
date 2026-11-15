@@ -30,7 +30,7 @@ const FIELDS := {
 	"needs": "cond", "when": "cond", "start_when": "cond", "starts_when": "cond", "repeat_until": "cond",
 	"shown_when": "cond", "hidden_when": "cond", "ends_when": "cond", "while_needs": "cond", "sleep_needs": "cond",
 	"no_sleep": "conds", "locked_by": "lock",
-	"set_flags": "switch", "flags": "switches", "fact": "flag", "flag": "flag", "slept_fact": "flag",
+	"set_flags": "switch", "flags": "switches", "fact": "flag", "flag": "switch", "slept_fact": "flag",
 	"flags_start": "flags", "task_flags": "task_flags",
 	"tick": "task", "reveal_task": "task", "low_task": "task", "add_tasks": "tasks", "tasks": "tasks",
 	"item": "item", "give_item": "item", "take_item": "takes", "face_rules": "rules", "talks": "talks",

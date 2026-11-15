@@ -126,8 +126,11 @@ asleep, hidden, their face, their look, what's in their hand. A quest that doesn
 <ul>
   <li><b>A project made by hand.</b> A new one has the plugin switched on:
   <pre>python tools/godot_byhand.py new ~/Games/MyGame</pre>
-  One you already have gets it (and has it switched on) with:
-  <pre>python tools/godot_byhand.py install ~/Games/MyGame</pre></li>
+  One you already have gets it (and has it switched on) with the first line; the second brings the starter kit's
+  scripts up to date too (a Take from you and a thing's Logic want the newer player and Story; yours that differ are
+  kept in <code>starter_before/</code>):
+  <pre>python tools/godot_byhand.py install ~/Games/MyGame
+python tools/godot_byhand.py install ~/Games/MyGame --starter</pre></li>
   <li><b>A character.</b> Best: a Character Studio export <a href="../animator/index.html">baked by the Animator</a>
   (it walks at its own pace, sits, sleeps, reaches, opens doors). Any model with animations called idle, walk and run
   also walks. A model with none still goes where it's sent: it slides.</li>
