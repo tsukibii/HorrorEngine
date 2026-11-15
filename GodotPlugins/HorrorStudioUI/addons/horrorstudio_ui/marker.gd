@@ -42,6 +42,8 @@ var accent := Color("#cfe6ff") # the HUD theme's accent (hud.gd sets it), drawn 
 var text_color := Color(1.0, 0.98, 0.94)  # and the theme's text, for the name
 var mode := 1                  # the player's setting: 0 off, 1 subtle, 2 clear (menu.gd apply)
 var modal := false             # a card or a choice is up: the marks step back (hud.gd modal)
+var frame := Rect2()           # the picture under a tape (hud.gd _lay: 4:3 in a wider view); none: the whole view. "In
+                               # view" is in it, and the pointer rides an ellipse inside it, never over the black either side
 var t := 0.0
 ## id -> {k: how shown 0..1, top: the thing's top on the screen, above: where the glyph hangs, d: metres, gem: the
 ## diamond's centre as last drawn, phase, seen: the clear line to it 0..1, on: on the screen 0..1, name, ...}
@@ -74,6 +76,7 @@ func update(targets: Dictionary, cam: Camera3D, dt: float, ctx: Dictionary = {})
 	t += dt
 	var vp := get_viewport_rect().size
 	var sc := vp.y / 1080.0
+	var fr := frame if frame.has_area() else Rect2(Vector2.ZERO, vp)
 	var seen_in: Dictionary = ctx.get("seen", {})
 	var names_in: Dictionary = ctx.get("names", {})
 	var aimed := str(ctx.get("aimed", ""))
@@ -101,7 +104,7 @@ func update(targets: Dictionary, cam: Camera3D, dt: float, ctx: Dictionary = {})
 				m["above"] = cam.unproject_position(above)
 			var a: Vector2 = m["above"]
 			var pad := 20.0 * sc
-			var in_view: bool = not behind and a.x > pad and a.y > pad and a.x < vp.x - pad and a.y < vp.y - pad
+			var in_view: bool = not behind and a.x > fr.position.x + pad and a.y > fr.position.y + pad and a.x < fr.end.x - pad and a.y < fr.end.y - pad
 			m["on"] = move_toward(float(m["on"]), 1.0 if in_view else 0.0, dt * 5.0)
 			m["off_t"] = 0.0 if in_view else float(m["off_t"]) + dt
 			m["seen"] = move_toward(float(m["seen"]), 1.0 if bool(seen_in.get(id, true)) else 0.0, dt * 3.0)
@@ -126,7 +129,7 @@ func update(targets: Dictionary, cam: Camera3D, dt: float, ctx: Dictionary = {})
 			dir2 = dir2.normalized()
 			m["dir"] = dir2
 			var ang := dir2.angle()
-			m["edge"] = vp / 2.0 + Vector2(cos(ang) * ORBIT.x * vp.x, sin(ang) * ORBIT.y * vp.y)
+			m["edge"] = fr.get_center() + Vector2(cos(ang) * ORBIT.x * fr.size.x, sin(ang) * ORBIT.y * fr.size.y)
 			var ready_k := 1.0 if mode == 2 else smoothstep(POINTER_AFTER, POINTER_AFTER + 1.0, float(m["off_t"]))
 			ptr_want = want * 0.62 * ready_k * (1.0 - float(m["on"]))
 			var near_name: bool = d < (14.0 if mode == 2 else DETAIL_FROM) and float(m["seen"]) > 0.9 and float(m["on"]) > 0.9 and str(m["name"]) != "" and aimed != str(id) and not modal

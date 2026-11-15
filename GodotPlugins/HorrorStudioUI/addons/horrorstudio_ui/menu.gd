@@ -1,7 +1,8 @@
 ## The pause menu (Esc in Play; docs/GAMEPLAY_PLAN.md §10; the desk's play/menu.js, ported): the game holds, the lights
 ## go out (the frame darkens) and the menu is drawn over it in the HUD's theme. The controls on the left (each key as a
-## tile with what it does beside it), then Resume, Save game (slots and the autosave), Settings (Display, Graphics,
-## Audio: rows stepped with ‹ › (A/D), never a slider; levels as ten dashes), Quit (a footer choice). Every setting
+## tile with what it does beside it; by hand the HUD's own keys as chips at its foot instead, HSHud.menu_keys), then
+## Resume, Save game (slots and the autosave), Settings (Display, Graphics, Audio: rows stepped with ‹ › (A/D), never a
+## slider; levels as ten dashes), Quit (a footer choice). Every setting
 ## keeps the desk's name (and `ue`, the desk's old Unreal name, kept as data and never shown to the player); what Godot can apply, it applies (`apply`): the window mode, VSync,
 ## the frame rate limit, brightness, the volumes, the subtitles. Settings in user://horrorstudio_settings.json, the
 ## saves in user://saves_<game>.json. open(ctx) returns "resume", "escaped", "loaded" or {"quit": "title" | "desktop"}.
@@ -81,6 +82,7 @@ var quit_sel: int = 0
 var confirm = null
 var dark: ColorRect
 var controls_box: VBoxContainer
+var keys_row: Control = null                 # by hand: the HUD's own keys as chips, on the legend's line at the right (HSHud.menu_keys)
 var nav: VBoxContainer
 var page: PanelContainer
 var page_box: VBoxContainer
@@ -170,12 +172,19 @@ func _ready() -> void:
 	page.add_child(page_box)
 	add_child(page)
 	legend = HBoxContainer.new()
-	legend.position = Vector2(48, 640)
+	legend.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)   # from the foot (at 720 lines its 640, as it was): a fixed 640 was
+	legend.offset_left = 48.0                                # under the foot of a shorter window (a 21:9 one), the keys with it
+	legend.offset_right = 48.0
+	legend.offset_top = -80.0
+	legend.offset_bottom = -46.0
 	legend.add_theme_constant_override("separation", 18)
 	add_child(legend)
 	footer = VBoxContainer.new()
-	footer.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	footer.position = Vector2(200, 560)
+	footer.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)  # from the middle and the foot (at 1280 x 720 its 200, 560, as it was)
+	footer.offset_left = -440.0
+	footer.offset_right = -440.0
+	footer.offset_top = -160.0
+	footer.offset_bottom = -160.0
 	footer.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(footer)
 
@@ -228,6 +237,20 @@ func mouse_tile(what: String) -> PanelContainer:    # a mouse without a cable: i
 func controls_panel(has: Dictionary) -> void:
 	for ch in controls_box.get_children():
 		ch.queue_free()
+	if keys_row != null and is_instance_valid(keys_row):
+		keys_row.queue_free()
+	keys_row = hud.call("menu_keys") if hud != null and hud.has_method("menu_keys") else null
+	if keys_row != null:                              # by hand: the game's keys as the HUD's chips (the user, 2026-11-15), not the tiles on the left:
+		keys_row.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)  # on the legend's line, at the right, as far in from the edge as it is
+		keys_row.offset_left = legend.offset_left
+		keys_row.offset_right = -legend.offset_left
+		keys_row.offset_top = legend.offset_top
+		keys_row.offset_bottom = legend.offset_bottom
+		(keys_row as BoxContainer).alignment = BoxContainer.ALIGNMENT_END
+		for pair in keys_row.get_children():
+			(pair as Control).size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		add_child(keys_row)
+		return
 	var list: Array = ctx.get("controls") if ctx.get("controls") is Array and not (ctx.get("controls") as Array).is_empty() else CONTROLS
 	for ctl in list:                                  # (by hand: the game's own keys, the HSHud's chips; else the runtime's)
 		if ctl.has("only") and not has.get(ctl["only"], false):
@@ -398,7 +421,10 @@ func show_page() -> void:
 	for ch in page_box.get_children():
 		ch.queue_free()
 	page.visible = at == "save" or at == "load" or at.begins_with("set:")
-	controls_box.visible = at == "root" or at == "quit"
+	var front: bool = at == "root" or at == "quit"
+	controls_box.visible = front and keys_row == null
+	if keys_row != null and is_instance_valid(keys_row):
+		keys_row.visible = front                     # (by hand the keys' chips at the foot, on the front page and Quit's)
 	nav.position = Vector2(430, 90) if controls_box.visible else Vector2(48, 90)   # the controls on the left till a page opens
 	if at == "save":
 		page_box.add_child(crumb("Save game"))

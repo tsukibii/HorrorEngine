@@ -2,6 +2,23 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-15, after the review: the keys in the pause menu, the HUD inside the tape's picture (the user)
+
+- **"Ive deciided rater than the controls on the left when I press escape, id like to move the screenshot ones to the
+  pause menu, (so they sholdnt be visible inside the main game unless I pause."** (a screenshot of the HSHud's key
+  chips at the foot on the right): in a game by hand **the HSHud's keys are shown only in the pause menu**, as the
+  HUD's own chips on the menu's legend line at the right, in place of the tiles on its left (E52: the HUD's
+  `keys_in_menu`, on by default; off, they're over the game as before). The menu's list moves to the left. With no
+  Keys given, the chips are the starter player's (they were the desk runtime's: Click to play, E inventory...). The
+  studio's runtime (a desk export, a Director game) keeps its own as they were.
+- **"Also make sure the quests align to not be in the black letter boxes (no matter what vhs style or res), should be
+  inside the frame"**: **every part of the HUD at an edge is laid inside the tape's picture** (the Look plugin's tape is
+  4:3 between black bars in a wider window): the objective and the to-do list, the log, the stance, the footer's lines
+  and choices, a book's side card, the keys, the dark round the edge when hidden, and the quest marker's pointer; a
+  thing in the black is out of view for the marker. Any preset, any window size: the tape says where its picture is
+  (`vhs.gd` `picture()`). The starter's own words (a scene with no HSHud), the sanity meter, the Markers' own
+  conversation and the shotgun's shells row the same.
+
 ## 2026-11-15, after the review: the Story's words on the HSHud (the user)
 
 - **"E34 yes I prefer HSHud look"**: the starter Story's `use_hud` is **on by default** (E51): in a game by hand the

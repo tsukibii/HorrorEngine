@@ -430,11 +430,13 @@ func _kind_dot(at: Vector2, kind: HSShellType, u: float, k: float) -> void:
 	_hud_ctl.draw_circle(at, 2.2 * u, Color(kind.color, 0.9 * k))
 
 
-# where the shells' row ends (its right) and stands (its baseline): low on the right, inside a tape's 4:3 picture,
-# above the studio HUD's keys when the game has them
+# where the shells' row ends (its right) and stands (its baseline): low on the right, inside a tape's picture (its
+# `picture`: 4:3 in a wider view), above the studio HUD's keys when they're shown over the game
 func _hud_at(sz: Vector2, u: float) -> Vector2:
-	var fw := minf(sz.x, sz.y * 4.0 / 3.0) if (_tape_on and fit_tape) else sz.x
-	var at := Vector2(sz.x * 0.5 + fw * 0.5 - 46.0 * u, sz.y - 42.0 * u)
+	var right := sz.x
+	if _tape_on and fit_tape and _tape != null and is_instance_valid(_tape):
+		right = (_tape.call("picture", sz) as Rect2).end.x if _tape.has_method("picture") else sz.x * 0.5 + minf(sz.x, sz.y * 4.0 / 3.0) * 0.5
+	var at := Vector2(right - 46.0 * u, sz.y - 42.0 * u)
 	var chips := _hud_chips()
 	if chips != null and chips.is_visible_in_tree() and chips.modulate.a > 0.02 and chips.get_child_count() > 0:
 		at.y = minf(at.y, chips.get_global_rect().position.y - 12.0 * u)

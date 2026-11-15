@@ -22,8 +22,13 @@ appearing and going an ease, and no panels (words, and where they need it a soft
 1. `python tools/godot_byhand.py new ~/Games/MyGame` (or `install` into a project you have: the plugin is copied in; enable
    **HorrorStudio UI** in Project Settings > Plugins for its settings).
 2. Add an **HSHud** node to your scene. It sets itself up (`standalone`, the default): the project's theme and quest marker
-   setting, no black fade, no pause menu (unless the starter's `pause.gd` asks for one: **Pause Menu**), and the quest markers found in the scene. Give it **Keys**, your game's keys as
-   chips at the foot ("W A S D:walk", "E:use", "Tab:pocket"): without them it shows the studio runtime's.
+   setting, no black fade, no pause menu (unless the starter's `pause.gd` asks for one: **Pause Menu**), and the quest
+   markers found in the scene. Give it **Keys**, your game's keys as chips ("W A S D:walk", "E:use", "Tab:pocket"):
+   they're shown only in the pause menu, at its foot on the right (**Keys In Menu**, on by default: never over the game);
+   with it off, at the foot while you play. Without Keys, the starter player's (walk, run, use, pocket, flashlight, hold
+   your breath). Under the Look plugin's tape (its 4:3 picture between black bars in a wider window) every part at an
+   edge is laid inside the picture, whatever the preset and the window: the objective and the list, the log, the lines,
+   a side card, the keys, the quest marker's pointer.
 3. Add an **HSQuestMarker** as a child of what the player should be pointed at: set its `label` and `height`; turn `active`
    off (or free it) when the task is done, or give it **Needs** in the starter Story's words (`on:find_key`) and it goes
    when the task is ticked (guides/tutorial_v2, the HUD and quest markers).

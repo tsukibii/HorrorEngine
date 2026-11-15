@@ -646,7 +646,8 @@ func _initialize() -> void:
 	await until(func() -> bool: return not g("busy"), 1.0)
 	lamp.queue_free()
 
-	# 8c. the shells' row low on the right: inside the tape's 4:3 picture, and above the studio HUD's keys when there's an HSHud
+	# 8c. the shells' row low on the right: inside the tape's 4:3 picture, and above the studio HUD's keys when they're
+	# shown over the game (by hand they wait for the pause menu: the HSHud's Keys In Menu, on by default)
 	var vsz := gun.get_viewport().get_visible_rect().size
 	var u := clampf(vsz.y / 1080.0, 0.5, 3.0)
 	var at0: Vector2 = gun.call("_hud_at", vsz, u)
@@ -656,11 +657,16 @@ func _initialize() -> void:
 		main.add_child(hud_ui)
 		await secs(4.5)                                          # (the gun looks for a HUD now and then)
 		var chips := hud_ui.get("hint_el") as Control
+		var at_menu: Vector2 = gun.call("_hud_at", vsz, u)       # its keys in the pause menu: nothing to stand over
+		hud_ui.set("keys_in_menu", false)                         # over the game: the row over them
+		await secs(0.2)
 		var at1: Vector2 = gun.call("_hud_at", vsz, u)
 		var top := chips.get_global_rect().position.y if chips != null else -1.0
-		say("shells row", "at (%.0f, %.0f) of %.0f x %.0f; with an HSHud its keys' top at %.0f and the row's baseline at %.0f" % [at0.x, at0.y, vsz.x, vsz.y, top, at1.y])
+		say("shells row", "at (%.0f, %.0f) of %.0f x %.0f; with an HSHud whose keys wait for the menu at %.0f; with them over the game their top at %.0f and the row's baseline at %.0f" % [at0.x, at0.y, vsz.x, vsz.y, at_menu.y, top, at1.y])
+		if absf(at_menu.y - at0.y) > 0.5:
+			bad("the shells' row moved for an HSHud's keys that aren't over the game (%.0f, low at %.0f)" % [at_menu.y, at0.y])
 		if chips == null or chips.get_child_count() == 0 or absf(at1.y - (top - 12.0 * u)) > 1.0 or at1.y >= at0.y:
-			bad("the shells' row isn't above the HSHud's keys (%.0f, the keys at %.0f)" % [at1.y, top])
+			bad("the shells' row isn't above the HSHud's keys over the game (%.0f, the keys at %.0f)" % [at1.y, top])
 		hud_ui.queue_free()
 	if absf(at0.x - (vsz.x - 46.0 * u)) > 1.0 or absf(at0.y - (vsz.y - 42.0 * u)) > 1.0:          # (headless, the view is tiny: its rule, not pixels)
 		bad("the shells' row isn't low on the right (%.0f, %.0f of %.0f x %.0f)" % [at0.x, at0.y, vsz.x, vsz.y])

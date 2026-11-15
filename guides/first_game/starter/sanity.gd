@@ -85,6 +85,7 @@ var _shown := 0.0
 var _moved := 0.0
 var _last := 1.0
 var _bar: Control
+var _frame := Rect2()                                 # the picture the meter was last laid in (a tape's 4:3, else the view)
 var _fill: ColorRect
 var _black: ColorRect
 var _at_kept := -1.0                                  # what it was at the Story's last checkpoint (a save holds that)
@@ -414,9 +415,26 @@ func _build() -> void:
 	_bar.modulate.a = 0.0
 
 
+# the picture a tape leaves (the Look plugin's vhs.gd, `picture`: 4:3 in the middle of a wider view), else the view
+func _picture() -> Rect2:
+	var vs := get_viewport().get_visible_rect().size
+	for t in get_tree().get_nodes_in_group("hs_tape"):
+		if t.has_method("picture") and t.get_viewport() == get_viewport():
+			var r: Rect2 = t.call("picture", vs)
+			if r.size.x < vs.x - 0.5:
+				return r
+	return Rect2(Vector2.ZERO, vs)
+
+
 func _meter(dt: float) -> void:
 	if _bar == null:
 		return
+	var fr := _picture()                                  # inside a tape's picture, never over the black beside it
+	if fr != _frame:
+		_frame = fr
+		var right := maxf(get_viewport().get_visible_rect().size.x - fr.end.x, 0.0)
+		_bar.offset_left = -214.0 - right
+		_bar.offset_right = -34.0 - right
 	if absf(sanity - _last) > 0.002:
 		_moved = 4.0
 		_last = sanity

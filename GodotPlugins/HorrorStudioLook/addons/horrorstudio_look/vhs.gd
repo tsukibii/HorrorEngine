@@ -33,6 +33,7 @@ var ghost_on: bool = true
 
 func _ready() -> void:
 	layer = 5
+	add_to_group("hs_tape")                          # (the HUD and the starter's words lay themselves inside its picture: picture())
 	rect = ColorRect.new()
 	rect.name = "Tape"
 	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -114,6 +115,40 @@ func _soften(amounts) -> void:
 		return
 	var sft = Soften.attach(cam)
 	sft.set_amounts(float(amounts[0]), float(amounts[1]), float(amounts[2]), float(amounts[3]) if amounts.size() > 3 else 0.25)
+
+
+## Where the tape's picture is on the screen, in the viewport's own coordinates (`view` its size; the viewport's when
+## it's left out): 4:3 in the middle of a wider view while the tape is on (the bars either side are black: vhs.gdshader
+## pillarboxes, it never letterboxes), else the whole view. The HSHud lays its corners inside it, and the starter's own
+## words and meters (the user, 2026-11-15: "make sure the quests align to not be in the black letter boxes (no matter
+## what vhs style or res), should be inside the frame")
+func picture(view: Vector2 = Vector2.ZERO) -> Rect2:
+	var vs := view
+	if vs == Vector2.ZERO and is_inside_tree():
+		vs = get_viewport().get_visible_rect().size
+	var whole := Rect2(Vector2.ZERO, vs)
+	if not visible or mat == null or vs.y <= 0.0:
+		return whole
+	if float(mat.get_shader_parameter("strength")) <= 0.0 or not bool(mat.get_shader_parameter("crop_4x3")):
+		return whole                                  # (no tape drawn, or a tape as wide as the view: no bars)
+	if vs.x / vs.y <= 4.0 / 3.0:
+		return whole
+	var w := vs.y * 4.0 / 3.0
+	return Rect2((vs.x - w) * 0.5, 0.0, w, vs.y)
+
+
+## The picture of whichever tape is on in `node`'s tree (the Look plugin's, in the group `hs_tape`), in its viewport's
+## coordinates: the whole view when there's none. For a script that has no tape of its own to ask.
+static func picture_of(node: Node) -> Rect2:
+	if node == null or not node.is_inside_tree():
+		return Rect2()
+	var vs := node.get_viewport().get_visible_rect().size
+	for t in node.get_tree().get_nodes_in_group("hs_tape"):
+		if t.has_method("picture") and t.get_viewport() == node.get_viewport():
+			var r: Rect2 = t.call("picture", vs)
+			if r.size.x < vs.x - 0.5:
+				return r
+	return Rect2(Vector2.ZERO, vs)
 
 
 func set_strength(k: float) -> void:

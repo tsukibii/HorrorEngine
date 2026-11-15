@@ -1,5 +1,6 @@
 ## The pause menu, for a game built by hand (the enhancements review, docs/TOOLS_REVIEW.md): the UI plugin's own (the
-## runtime's menu.gd: the controls on the left, Resume, Save game, Load game, Settings, Quit) over the scene's HSHud.
+## runtime's menu.gd: Resume, Save game, Load game, Settings, Quit, and the game's keys as the HUD's chips at its foot,
+## which are shown only here: the HSHud's Keys In Menu) over the scene's HSHud.
 ## Esc holds the game (the tree paused: the player, her, a hunt, the director all wait) and opens it; Esc again, or
 ## Resume, and the game goes on. Save game writes the Story's save (save_game: a checkpoint where you stand) to slot 1,
 ## 2 or 3; Load game lists the Autosave (the Story's Autosave writes it at every checkpoint) and the slots there are;
@@ -156,8 +157,9 @@ func _ctx() -> Dictionary:
 	return ctx
 
 
-## the controls the menu shows: the game's own keys, the HSHud's chips ("W A S D:walk", "E:use"...), then Esc; none
-## given (an HSHud with no Keys): the starter player's
+## the controls the menu shows as tiles on its left when the HSHud's keys stay over the game (its Keys In Menu off; on,
+## the default, the menu shows the HUD's own chips instead): the game's own keys ("W A S D:walk", "E:use"...), then
+## Esc unless they have it; none given (an HSHud with no Keys): the starter player's
 func controls() -> Array:
 	var out: Array = []
 	var h := _the_hud()
@@ -171,7 +173,8 @@ func controls() -> Array:
 			continue
 		var what := t.substr(i + 1).strip_edges()
 		out.append({"keys": t.substr(0, i).strip_edges().split(" ", false), "label": what.left(1).to_upper() + what.substr(1)})
-	out.append({"keys": ["Esc"], "label": "This menu"})
+	if not out.any(func(c): return (c["keys"] as PackedStringArray).has("Esc")):
+		out.append({"keys": ["Esc"], "label": "This menu"})
 	return out
 
 

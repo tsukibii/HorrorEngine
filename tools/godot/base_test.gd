@@ -113,12 +113,29 @@ func _initialize() -> void:
 	story.call("close_card")
 	await frames(2)
 	ok(bool(story.call("done", "read")), "and the task ticked")
-	# Esc: the pause menu up and the game held; Esc again: on
+	# the HUD inside the tape's picture (the user, 2026-11-15: "make sure the quests align to not be in the black letter
+	# boxes"): at 1280 x 720 the look's tape is 4:3 between black bars, the objective 24 px in from its left, and the keys'
+	# chips are not over the game ("they shouldn't be visible inside the main game unless I pause")
+	root.size = Vector2i(1280, 720)
+	await frames(4)
+	var fr: Rect2 = hud.call("frame_rect")
+	var tl_x := (hud.get("tl") as Control).get_global_rect().position.x
+	ok(fr.is_equal_approx(Rect2(160, 0, 960, 720)) and absf(tl_x - 184.0) < 0.6 and not (hud.get("hint_el") as Control).visible,
+		"at 1280 x 720: the tape's picture 4:3 between black bars, the objective inside it, no keys over the game", "%s, the objective at %.0f" % [fr, tl_x])
+	# Esc: the pause menu up and the game held, the game's keys as the HUD's chips at its foot; Esc again: on
 	await press(KEY_ESCAPE)
 	var m = hud.get("menu")
+	var keys_said: Array = []
+	var krow: Control = m.get("keys_row") if m != null else null
+	if krow != null and is_instance_valid(krow):
+		for pair in krow.get_children():
+			keys_said.append(str(((pair as Node).get_child(1) as Label).text))
 	ok(m != null and bool(pause.get("up")) and paused and bool(m.get("up")), "Esc: the pause menu up, the game held")
+	var last_key: Rect2 = (krow.get_child(krow.get_child_count() - 1) as Control).get_global_rect() if krow != null and krow.get_child_count() > 0 else Rect2()
+	ok(keys_said == ["walk", "run", "use", "pocket", "flashlight", "menu"] and krow.is_visible_in_tree() and absf(last_key.end.x - 1232.0) < 1.0 and absf(last_key.get_center().y - 657.0) < 4.0,
+		"and the game's keys in it, as the HUD's chips on its legend's line at the right", "%s, the last ending at %.0f, its middle at %.0f" % [keys_said, last_key.end.x, last_key.get_center().y])
 	await press(KEY_ESCAPE)
-	ok(not paused and not bool(pause.get("up")), "Esc again: the game goes on")
+	ok(not paused and not bool(pause.get("up")) and not (hud.get("hint_el") as Control).visible, "Esc again: the game goes on, no keys over it")
 	# a save, then Quit to the menu: Continue and Load game now; Load game's Slot 1 puts the game back where it was saved
 	var stood := player.global_position
 	var wrote: bool = story.call("save_game", 1)

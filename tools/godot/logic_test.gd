@@ -578,12 +578,15 @@ func stage_menu() -> void:
 			ids.append(str((e as Control).get_meta("id", "")))
 	ok(m != null and bool(pause.get("up")) and paused and bool(m.get("up")) and ids == ["", "save", "load", "settings", "quit"],
 		"M: Esc: the game held, the HUD's menu up: Resume, Save game, Load game, Settings, Quit", "%s, paused %s" % [ids, paused])
-	var rows_said: Array = []
-	if m != null:
-		for row in (m.get("controls_box") as Node).get_children():
-			rows_said.append(str(((row as Node).get_child(1) as Label).text))
-	ok(rows_said == ["Walk", "Run", "Use", "Pocket", "Flashlight", "Hold your breath", "This menu"],
-		"M: its controls the game's own (the HUD has no Keys: the starter player's), not the desk's", str(rows_said))
+	var keys_said: Array = []
+	var row: Control = m.get("keys_row") if m != null else null
+	if row != null and is_instance_valid(row):
+		for pair in row.get_children():
+			keys_said.append(str(((pair as Node).get_child(1) as Label).text))
+	var tiles: int = (m.get("controls_box") as Node).get_child_count() if m != null else -1
+	ok(keys_said == ["walk", "run", "use", "pocket", "flashlight", "hold your breath", "menu"] and row.is_visible_in_tree()
+		and not (m.get("controls_box") as Control).visible and is_equal_approx((m.get("nav") as Control).position.x, 48.0),
+		"M: its keys the HUD's own chips at its foot, the game's (the HUD has no Keys: the starter player's), no tiles on the left, the list at the left", "%s, %d tiles" % [keys_said, tiles])
 	await press(KEY_S)
 	await press(KEY_ENTER)
 	await press(KEY_ENTER)                                    # Slot 1
@@ -593,6 +596,7 @@ func stage_menu() -> void:
 	await press(KEY_ESCAPE)                                   # back to the list
 	await press(KEY_ESCAPE)                                   # and the game goes on
 	ok(not paused and not bool(pause.get("up")), "M: Esc twice: back, then the game goes on")
+	ok(not (hud.get("hint_el") as Control).visible, "M: and the keys' chips not over the game again (Keys In Menu): only while it's paused")
 	put(o + Vector3(3, 0.1, 3))
 	story.call("flag", "after_m")
 	await frames(3)

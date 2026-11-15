@@ -119,6 +119,14 @@ then each branch leaves a section here saying what it changes for the tutorial. 
 - [ ] The user turned the Story's **`use_hud`** on by default (E34 built it, E51 made it the default: "E34 yes I
       prefer HSHud look"): the tutorial's objective, list and lines are on the HSHud's corners and footer now, so every
       picture with them wants retaking, and the text that says where they are wants saying so.
+- [ ] §24 *the HUD*: by hand the HSHud's **Keys are shown only in the pause menu** now (E52, the user's: "move the
+      screenshot ones to the pause menu ... sholdnt be visible inside the main game unless I pause"; the HUD's *Keys In
+      Menu*, on by default): "the keys at the foot" wants to say the pause menu, and "Without Keys it shows the studio
+      runtime's keys (Click to play, E inventory, G put down...)" is wrong now (without Keys, the starter player's).
+      Every picture with the chips over the game wants retaking, and a picture of Esc's menu with them at its foot.
+- [ ] Every picture under the tape in a wide window: the objective, the list, the lines and the quest marker's
+      pointer are inside the tape's 4:3 picture now, never in the black bars (E52: "make sure the quests align to not
+      be in the black letter boxes (no matter what vhs style or res), should be inside the frame").
 - [ ] §34 *Every system in it*: a game by hand has **the pause menu** now (a Node called Pause with
       `starter/pause.gd` beside the HUD: Esc holds the game; Save game and Load game are the Story's saves): add it to
       the tutorial's scene and take "the pause menu" out of what a game by hand can't do yet.

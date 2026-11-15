@@ -3,6 +3,17 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The HUD inside the tape's picture: what the pictures found (2026-11-15, `enhancements`, E52)
+
+- **Lay a part from the edge it sits at, and look at a short wide window too.** The pause menu's legend sat at a
+  fixed y of 640 (a 720-line design), so in a 1280 x 548 window (21:9) it was under the foot, and the game's keys put
+  on its line went with it; the quit question at a fixed 560 the same. 720p hid it. The legend and the question are
+  laid from the menu's foot now. **A layout check tries the window sizes a player has**: BYHAND lays the HUD at five
+  (16:9 at two sizes, 21:9, 4:3, 5:4) in every tape preset.
+- **A picture taken on the CPU renderer runs slow against a clock.** A line said for 60 seconds was gone before the
+  shot 90 frames later: lavapipe drew the balanced look at about one frame a second. Give what a picture shows a time
+  far past the run's, or tie it to frames.
+
 ## The sequences: what playing real scenes found that the unit stages hadn't (2026-11-14, `even-more-animations-v3`)
 
 - **A check made of whole scenes finds what a check made of cases can't.** MARKERS has 229 passing lines and every

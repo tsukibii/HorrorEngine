@@ -78,6 +78,8 @@ var deaths := 0
 var death_secs := 2.6                                 ## how long the death card stays
 var _kept := {}                                       # the checkpoint: what you'd done and where you stood
 var _tasks: Array = []                                # {id, text, done}
+var _top: VBoxContainer                               # the objective and the list, top left (with no HSHud)
+var _frame := Rect2()                                 # the picture they were last laid in (a tape's 4:3, else the view)
 var _obj: Label
 var _list: RichTextLabel
 var _line: Label
@@ -811,6 +813,7 @@ func end_with(title: String, text: String = "") -> void:
 # ---- on screen ---------------------------------------------------------------------------------------------------
 func _process(dt: float) -> void:
 	_eat(dt)
+	_lay_words()
 	if _peek > 0.0:
 		_peek -= dt
 		if _peek <= 0.0:
@@ -851,8 +854,36 @@ func _label(size: int, col := Color(0.92, 0.9, 0.85)) -> Label:
 	return l
 
 
+# the picture a tape leaves (the Look plugin's vhs.gd, `picture`: 4:3 in the middle of a wider view, black either
+# side), else the whole view
+func _picture() -> Rect2:
+	var vs := get_viewport().get_visible_rect().size
+	for t in get_tree().get_nodes_in_group("hs_tape"):
+		if t.has_method("picture") and t.get_viewport() == get_viewport():
+			var r: Rect2 = t.call("picture", vs)
+			if r.size.x < vs.x - 0.5:
+				return r
+	return Rect2(Vector2.ZERO, vs)
+
+
+# the Story's own words laid inside the picture, never over the black either side (the user, 2026-11-15: "make sure
+# the quests align to not be in the black letter boxes (no matter what vhs style or res)"); the HSHud does its own
+func _lay_words() -> void:
+	if _top == null or not is_inside_tree():
+		return
+	var fr := _picture()
+	if fr == _frame:
+		return
+	_frame = fr
+	_top.position = Vector2(fr.position.x + 28.0, 22.0)
+	var half := minf(500.0, fr.size.x * 0.5 - 24.0)         # the line, about the middle (the picture's is the view's)
+	_line.offset_left = -half
+	_line.offset_right = half
+
+
 func _build() -> void:
 	var top := VBoxContainer.new()
+	_top = top
 	top.position = Vector2(28, 22)
 	top.custom_minimum_size = Vector2(460, 0)
 	add_child(top)
@@ -872,6 +903,8 @@ func _build() -> void:
 	_line = _label(20)
 	_line.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
 	_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # (a long line wraps inside the picture: _lay_words; it grew past it)
+	_line.grow_vertical = Control.GROW_DIRECTION_BEGIN     # (a second row goes up, the first stays where it was)
 	_line.offset_top = -86
 	_line.offset_bottom = -50
 	_line.offset_left = -500
