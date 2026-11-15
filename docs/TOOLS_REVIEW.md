@@ -65,6 +65,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E43 | 833f60fb | `horror_game.py new "Name" --artist "Your Studio"`: the card says your studio's name from the start |
 | E44 | eabd2517 | Tooltips for five more starter scripts: the dread moment, the searcher, gaslight, the scare area and the door (40 fields) |
 | E45 | 633bc0cf | Tooltips for nine more starter scripts: the director, presence, the chase, feet under the door, the event area, the flashlight, the glimpse, the hunt spot, the sound (48 fields) |
+| E46 | (next commit) | Tooltips for the Markers' and the Devices' last bare fields (17): a marker's kind and stay, the laptop's words and view, the parcel's sounds |
 
 ## 1. How it was done
 
@@ -294,7 +295,7 @@ Ranked within each part. Effort: S an hour or less, M a few hours, L a day or mo
 - Every exported field of the Look plugin has an Inspector tooltip now (E40, E41: a trailing `##` on the field's line;
   `godot --doctool DIR --gdscript-docs res://addons/horrorstudio_look` lists what each says). Still without one: 40 of
   the starter kit's 571 (E42, E44 and E45 did its eighteen busiest scripts), 52 of the
-  Weapons plugin's 295 (20 in HSMuzzleFlash), 10 of the Devices', 7 of the Markers'.
+  Weapons plugin's 295 (20 in HSMuzzleFlash); the Markers' and the Devices' all have one (E46).
 - Docs: guides/tutorial_v2 is behind the starter (E's prompt, the world at a checkpoint, saves): its bulk update is
   its own branch, by the user's word, listed in docs/TUTORIAL_TODO.md. GODOT_LOOK §6 says `realism` is the default
   (it's `balanced`), has two §5d sections, and §7 a VoxelGI per room.

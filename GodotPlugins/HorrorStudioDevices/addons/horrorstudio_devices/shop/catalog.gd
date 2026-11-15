@@ -6,7 +6,7 @@ extends Resource
 ## .tres in and it's for sale; nothing to list). The plugin's own is `shop/catalog.tres`: a few things for a night in.
 
 @export var store := "NIGHT-MART"             ## the shop's name at the top of its tab
-@export var currency := "$"
+@export var currency := "$"   ## the money's sign in the shop
 @export var items: Array[HSShopItem] = []     ## its things, in this order
 @export_dir var folder := ""                  ## and every HSShopItem in this folder (its own .tres files, not its subfolders)
 

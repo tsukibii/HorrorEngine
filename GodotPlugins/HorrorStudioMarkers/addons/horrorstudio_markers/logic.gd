@@ -43,7 +43,7 @@ const REACH_MOST := 6.0                       ## a thing with no use() bigger th
 @export var tick := ""                        ## a task ticked
 @export var add_tasks: PackedStringArray = [] ## tasks put on the list: "id: what to do"
 @export var say := ""                         ## a line
-@export_range(0.5, 20.0, 0.1) var say_secs := 3.0
+@export_range(0.5, 20.0, 0.1) var say_secs := 3.0   ## how long the line stays
 @export var sound := ""                       ## a sound: one of the sound shelf's by name
 @export var fires: Array[NodePath] = []       ## things fired: their fire(), start() or use()
 

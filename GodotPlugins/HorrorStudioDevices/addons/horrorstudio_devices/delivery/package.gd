@@ -39,8 +39,8 @@ const MARKER := "res://addons/horrorstudio_ui/quest_marker.gd"
 @export var marker := false                          ## a quest marker over it till it's opened (the UI plugin's HSQuestMarker: an HSHud in the scene draws it); the laptop's Mark Parcels puts one on each it leaves
 @export var marker_label := "Parcel"                 ## the marker's name, seen near
 @export_group("Sound")
-@export var sounds := true
-@export_range(-40.0, 6.0) var volume_db := -4.0
+@export var sounds := true   ## the parcel's sounds (the knock, the tape, the flaps)
+@export_range(-40.0, 6.0) var volume_db := -4.0   ## their loudness in dB
 
 var order_number := 0                                ## the order it came for (the laptop's number); 0 when placed by hand
 var is_open := false

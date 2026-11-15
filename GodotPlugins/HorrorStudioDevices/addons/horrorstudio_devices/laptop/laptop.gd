@@ -31,8 +31,8 @@ const PACKAGE := "res://addons/horrorstudio_devices/delivery/package.tscn"
 @export_range(1, 12) var page_size := 6             ## things a page of the Order tab shows (three a row)
 @export var cash := 40.0                            ## the player's cash when the scene has no Story node (story.gd keeps `cash`)
 @export var user := "guest"                         ## who it greets
-@export var system_name := "VESPER//OS"
-@export_multiline var home_text := "WELCOME, {user}.\n\n{store}: ORDERS TAKEN AT ANY HOUR,\nDELIVERED STRAIGHT TO YOUR POCKET.\n\nCASH ON ACCOUNT ..... {cash}\nLAST LOGIN 03:12 FROM THIS DEVICE"
+@export var system_name := "VESPER//OS"   ## the system's name in the terminal's header
+@export_multiline var home_text := "WELCOME, {user}.\n\n{store}: ORDERS TAKEN AT ANY HOUR,\nDELIVERED STRAIGHT TO YOUR POCKET.\n\nCASH ON ACCOUNT ..... {cash}\nLAST LOGIN 03:12 FROM THIS DEVICE"   ## the HOME tab's words: {user}, {store}, {cash} are filled in
 @export var clock := ""                             ## a time it always shows ("03:13"); the real time when empty
 @export var lid_open := true:                       ## shut, E opens it before the view goes in
 	set(v):
@@ -48,18 +48,18 @@ const PACKAGE := "res://addons/horrorstudio_devices/delivery/package.tscn"
 @export var package: PackedScene                    ## the box it comes in (delivery/package.tscn when empty)
 @export var mark_parcels := true                    ## a quest marker over each parcel left till it's opened (the UI plugin's HSQuestMarker: an HSHud in the scene draws it)
 @export_group("The view")
-@export_range(0.2, 3.0) var zoom_secs := 0.8
+@export_range(0.2, 3.0) var zoom_secs := 0.8   ## how long the view takes to go in to the screen and back
 @export_range(15.0, 90.0) var zoom_fov := 40.0      ## the lens while you're at it: narrow, so the screen's flat
 @export_range(0.5, 1.2) var fill := 0.92            ## how much of the view the screen fills
 @export var system_pointer := false                 ## the system's pointer instead of the terminal's own
 @export_group("The screen")
 @export var look: HSTerminalLook                    ## its colours, font, rain and glass
 @export_range(256, 2048) var screen_px := 1024      ## its picture's width (its height by the screen's shape)
-@export_range(0.0, 4.0) var brightness := 1.7
+@export_range(0.0, 4.0) var brightness := 1.7   ## how bright the screen's picture is
 @export_range(0.0, 50.0) var wake_m := 7.0          ## nearer than this (and in view) its screen keeps drawing
 @export_group("Sound")
-@export var sounds := true
-@export_range(-40.0, 6.0) var volume_db := -8.0
+@export var sounds := true   ## the terminal's sounds (the keys, the order, the boot)
+@export_range(-40.0, 6.0) var volume_db := -8.0   ## their loudness in dB
 
 var using := false                                  ## someone's at it (the view in, or going in or out)
 var term: HSTerminal                                ## its screen's terminal
