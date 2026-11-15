@@ -63,6 +63,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E41 | a00ff660 | The rest of the Look plugin's tooltips (63): every exported field in it now says what it does |
 | E42 | bc07052f | Tooltips for the card and the main menu (E35's), and the starter's hunt, cue and sanity (35 fields) |
 | E43 | 833f60fb | `horror_game.py new "Name" --artist "Your Studio"`: the card says your studio's name from the start |
+| E44 | (next commit) | Tooltips for five more starter scripts: the dread moment, the searcher, gaslight, the scare area and the door (40 fields) |
 
 ## 1. How it was done
 
@@ -240,9 +241,10 @@ Ranked within each part. Effort: S an hour or less, M a few hours, L a day or mo
 3. **One helper for the Godot check harness (M).** `godot_bin()` is copied 18 times, the xvfb command built by hand in
    about 27 files, and only 9 scripts fail when Vulkan falls back to OpenGL (the others would measure on GL3). The kept
    check projects are about 6 GB with nothing pruning them.
-4. **The desk's export and Director projects as they ship (S each).** E38 measured Godot 4.7's export leaving out
-   every `PackedStringArray` in a converted scene; `storykit/godot.py`'s project settings and `godot_director.py`
-   don't keep text yet (one line each), and nothing exports their games to check.
+4. **A Director project as it ships (S).** E38 measured Godot 4.7's export leaving out every `PackedStringArray` in a
+   converted scene. The desk's export is safe from it: the Pilot exported as a pack (binary scenes, Godot's default)
+   plays GDPLAY to its good ending, its story being data. A Director project's nodes carry lists in the scene and
+   weren't tried: `godot_director.py` could keep text as `godot_byhand.py` now does (one line).
 5. **The undo in the Character Studio (M).** Head, body, creature, eye-look and look cards, outfits and the Resets
    each change many settings in one click with no undo (the touch-up and the hair editor have one), and there's no
    save history on the server (the desk keeps 50).
@@ -289,8 +291,9 @@ Ranked within each part. Effort: S an hour or less, M a few hours, L a day or mo
 - The look plugin's own nodes keep nothing at a checkpoint or in a save (a kettle's life, a liquid's level, a lamp a
   scare switched off): each joining `hs_keeps` is S, as HSShootable and HSBlowUp now do (E39).
 - Every exported field of the Look plugin has an Inspector tooltip now (E40, E41: a trailing `##` on the field's line;
-  `godot --doctool DIR --gdscript-docs res://addons/horrorstudio_look` lists what each says). Still without one: 128 of
-  the starter kit's 571 (E42 did the hunt, the cue and sanity; next the dread moment, the searcher, gaslight), 52 of the
+  `godot --doctool DIR --gdscript-docs res://addons/horrorstudio_look` lists what each says). Still without one: 88 of
+  the starter kit's 571 (E42 and E44 did the hunt, the cue, sanity, the dread moment, the searcher, gaslight, the
+  scare area and the door; next the director, presence, the chase, the flashlight), 52 of the
   Weapons plugin's 295 (20 in HSMuzzleFlash), 10 of the Devices', 7 of the Markers'.
 - Docs: guides/tutorial_v2 is behind the starter (E's prompt, the world at a checkpoint, saves): its bulk update is
   its own branch, by the user's word, listed in docs/TUTORIAL_TODO.md. GODOT_LOOK §6 says `realism` is the default

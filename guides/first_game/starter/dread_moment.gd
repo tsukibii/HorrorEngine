@@ -13,16 +13,16 @@ extends Node3D
 signal fired
 
 @export var sound := ""                           ## off the shelf ("knock_three"), played here
-@export var db := 0.0
+@export var db := 0.0   ## the sound's loudness in dB
 @export var target: Node                          ## something to fire() too (empty: only the sound)
-@export_range(1, 3) var tier := 1
-@export var weight := 1.0
-@export var cooldown := 180.0
-@export var once := false
-@export var needs := ""
-@export var near_m := 0.0
-@export var far_m := 40.0
-@export_enum("anywhere", "behind", "in view", "out of sight") var where := "anywhere"
+@export_range(1, 3) var tier := 1   ## 1 a creak or a far door; 2 steps above, a knock, a light dying; 3 a shadow crossing, her glimpse
+@export var weight := 1.0   ## how often it's picked against the others
+@export var cooldown := 180.0   ## seconds before it can come again
+@export var once := false   ## it happens once at most
+@export var needs := ""   ## the Story's words that must hold for it to be ready
+@export var near_m := 0.0   ## it's ready only this far from you at least
+@export var far_m := 40.0   ## and at the most
+@export_enum("anywhere", "behind", "in view", "out of sight") var where := "anywhere"   ## where it must be: anywhere, behind you, in view, or out of sight
 
 var count := 0                                    ## times it's come (a check's)
 var last_at := -1e9                               ## the director's clock when it last came

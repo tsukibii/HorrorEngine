@@ -14,25 +14,25 @@ signal scared
 
 const Lights := preload("res://starter/lights.gd")
 
-@export var lights_of: Node3D
-@export_enum("out", "dim", "flicker", "one by one") var lights_do := "out"
+@export var lights_of: Node3D   ## whose lights it changes: every light under it (an interior, a room's lights, one lamp)
+@export_enum("out", "dim", "flicker", "one by one") var lights_do := "out"   ## what they do: go out, dim, flicker, or go out one by one
 @export var for_seconds := 0.0                  ## 0: for good; else back as they were after this long
 @export_range(0.0, 1.0) var dim_to := 0.2       ## dim: how much light is left
 @export var gap := 0.4                          ## one by one: seconds between them
-@export var appear: Node3D
+@export var appear: Node3D   ## someone (or something) shown when it fires: hidden until then
 @export var appear_for := 0.0                   ## 0: it stays; else gone again after this long (a jump scare)
 @export var hide: Node3D                        ## hidden when it fires (she was down the corridor: now she's here)
 @export var quiet := 0.0                        ## seconds of hush before it (its last half second silent); 0: none
 @export_enum("keep", "silence", "calm", "uneasy", "dread", "chase") var music := "keep"   ## the music's mood after (keep: as it is)
 @export_enum("keep", "camcorder", "camhybrid", "worn", "nightmare") var tape := "keep"   ## the picture breaks up: the scene's tape at this for `tape_for` seconds, then as it was
-@export var tape_for := 1.0
+@export var tape_for := 1.0   ## seconds the picture stays broken up
 @export_range(-0.01, 1.0, 0.01) var fog := -0.01   ## the air's fog level to roll to (the scene's HSAtmosphere); under 0: as it is
-@export var fog_seconds := 4.0
-@export var needs := ""
-@export var once := true
+@export var fog_seconds := 4.0   ## seconds the fog takes to roll there
+@export var needs := ""   ## the Story's words that must hold for it to fire
+@export var once := true   ## it fires once (off: every time you walk in)
 @export var walk_in := true                     ## off: only fire() starts it (a signal wired to it)
 @export var interior: Node3D                    ## the interior (with interior.gd) whose `room` this area fills
-@export var room := ""
+@export var room := ""   ## the interior's room it fills (its name in the export): the area sized to the room
 
 var fired := false
 var busy := false

@@ -24,18 +24,18 @@ signal heard_you(at: Vector3)
 signal found
 signal search_over                                ## back at her post, whether she found you or not
 
-@export var armed := false
+@export var armed := false   ## she's out hunting from the start (else arm(), from a signal)
 @export var replaces: Node3D                      ## her other self: she takes its place when armed, it hidden for good
 @export var hiding_places: Array[Node] = []       ## seat.gd places to hide, each with an Approach (and a Via) Marker3D
 @export var hear_m := 12.0                        ## a run heard this far; a step (0.35) about a third of it
-@export var listen_min := 3.0
-@export var listen_max := 6.0
-@export var walk_speed := 1.1
-@export var checks := 2
+@export var listen_min := 3.0   ## seconds she stops and listens to a noise, at the least
+@export var listen_max := 6.0   ## and at the most
+@export var walk_speed := 1.1   ## how fast she walks between hiding places, in m/s
+@export var checks := 2   ## how many hiding places near the noise she looks in
 @export var check_m := 6.0                        ## hiding places within this of where she heard you
-@export var pass_min := 2.0
-@export var pass_max := 4.0
-@export_range(0.0, 1.0) var find_chance := 0.5
+@export var pass_min := 2.0   ## seconds she stands breathing at a hiding place (the close pass), at the least
+@export var pass_max := 4.0   ## and at the most
+@export_range(0.0, 1.0) var find_chance := 0.5   ## the chance she finds you hiding there (held breath lessens it, a lit flashlight makes it certain)
 @export_range(0.0, 1.0) var held_factor := 0.5    ## the chance times this while you hold your breath (0: never)
 @export var see_m := 7.0                          ## she sees you in the open this far while she's out, your flashlight on
 @export var see_dark_m := 3.0                     ## and this far with it off
@@ -45,7 +45,7 @@ signal search_over                                ## back at her post, whether s
 @export var heard_says := ""                      ## a line the first time she hears you ("She heard that.")
 @export var step_sound := ""                      ## her steps off the shelf; empty: the floor's own (sound.gd)
 @export var breath_sound := "breath_close"        ## her breathing at a close pass
-@export var found_sound := "sting_big"
+@export var found_sound := "sting_big"   ## the sound when she finds you, off the shelf
 @export var head_m := 1.5                         ## her head over her feet (m): where she sees from and where her sounds come from; a child's about 1.2, an imp's 0.8, an ogre's 2.3
 
 var state := "idle"                               ## idle, listening, going, passing, found, leaving, held (a chase has her), gone

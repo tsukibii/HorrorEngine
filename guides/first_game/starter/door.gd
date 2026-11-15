@@ -12,13 +12,13 @@ signal opened
 signal closed
 signal rattled                                  ## tried while it's locked
 
-@export var open := false
-@export var swing_degrees := 95.0
-@export var seconds := 0.8
+@export var open := false   ## open when the game starts
+@export var swing_degrees := 95.0   ## how far it swings open
+@export var seconds := 0.8   ## how long the swing takes
 @export var locked_by := ""                     ## empty: the export's own lock, if it has one
-@export var locked_says := "Locked."
-@export var never_says := "It won't open."
-@export var unlocked_says := "Unlocked."
+@export var locked_says := "Locked."   ## said when you try it locked
+@export var never_says := "It won't open."   ## said when it's locked for good (locked_by flag:never)
+@export var unlocked_says := "Unlocked."   ## said when you unlock it
 @export var tick := ""                          ## a task it ticks off the first time it opens
 var unlocked := false
 var _t := 0.0
