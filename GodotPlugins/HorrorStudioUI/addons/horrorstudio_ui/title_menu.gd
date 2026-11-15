@@ -111,6 +111,15 @@ static func saves() -> Dictionary:
 	return out
 
 
+## the scene a save was made in (the Story writes it: "" when it can't be read)
+static func scene_of(slot: int) -> String:
+	var f := "user://hs_save_%d.save" % slot
+	if not FileAccess.file_exists(f):
+		return ""
+	var d = str_to_var(FileAccess.get_file_as_string(f))
+	return str((d as Dictionary).get("scene", "")) if d is Dictionary else ""
+
+
 ## the newest save's slot (-1: none)
 static func newest() -> int:
 	var best := -1
@@ -201,8 +210,12 @@ func start(slot: int) -> void:
 	elif get_tree().has_meta("hs_load_slot"):
 		get_tree().remove_meta("hs_load_slot")
 	started.emit(slot)
-	if game_scene != "" and ResourceLoader.exists(game_scene):
-		get_tree().change_scene_to_file.call_deferred(game_scene)
+	var go := game_scene
+	var made_in := scene_of(slot) if slot >= 0 else ""
+	if made_in != "" and ResourceLoader.exists(made_in):       # (a game of several scenes: the one the save was made in)
+		go = made_in
+	if go != "" and ResourceLoader.exists(go):
+		get_tree().change_scene_to_file.call_deferred(go)
 
 
 ## the pause menu's Settings pages, on an HSHud of its own (freed when they're shut)

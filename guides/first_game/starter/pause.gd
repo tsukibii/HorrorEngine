@@ -123,9 +123,15 @@ func open() -> Variant:
 		else:
 			get_tree().reload_current_scene()
 	elif _load >= 0:
-		var st := _story()
-		if st != null:
-			st.call("load_game", _load)
+		var made_in := _scene_of(_load)
+		var here := get_tree().current_scene.scene_file_path if get_tree().current_scene != null else ""
+		if made_in != "" and made_in != here and ResourceLoader.exists(made_in):   # (made in another scene: that one, loading it as it starts)
+			get_tree().set_meta("hs_load_slot", _load)
+			get_tree().change_scene_to_file(made_in)
+		else:
+			var st := _story()
+			if st != null:
+				st.call("load_game", _load)
 	closed.emit(r)
 	return r
 
@@ -167,6 +173,15 @@ func controls() -> Array:
 		out.append({"keys": t.substr(0, i).strip_edges().split(" ", false), "label": what.left(1).to_upper() + what.substr(1)})
 	out.append({"keys": ["Esc"], "label": "This menu"})
 	return out
+
+
+# the scene a save was made in (the Story writes it)
+func _scene_of(slot: int) -> String:
+	var f := "user://hs_save_%d.save" % slot
+	if not FileAccess.file_exists(f):
+		return ""
+	var d = str_to_var(FileAccess.get_file_as_string(f))
+	return str((d as Dictionary).get("scene", "")) if d is Dictionary else ""
 
 
 ## what the menu's saves are filed under (the game's name, as a file's)
