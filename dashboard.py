@@ -208,9 +208,9 @@ def save_jobs():
 
 
 def verdict(text, code):
-    """ok or failed, by the exit code and the check's last word (`<NAME> ok`, `<NAME> FAILED`)."""
-    names = re.findall(r"^\s*([A-Z][A-Z0-9 _]{1,30}) (ok|FAILED)\b", text, re.M)
-    if code == 0 and not any(v == "FAILED" for _, v in names[-3:]):
+    """ok or failed, by the exit code and the check's last word (`<NAME> ok`, `<NAME> FAILED` or `<NAME> FAIL`)."""
+    names = re.findall(r"^\s*([A-Z][A-Z0-9 _]{1,30}) (ok|FAILED|FAIL)\b", text, re.M)
+    if code == 0 and not any(v != "ok" for _, v in names[-3:]):
         return "ok"
     return "failed"
 

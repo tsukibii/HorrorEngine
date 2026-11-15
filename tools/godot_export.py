@@ -230,7 +230,7 @@ def main():
             print("GDCULL ok" if all(gd for _, gd in checks) else "GDCULL FAIL")
     if a.check:
         print("GDEXPORT ok" if ok else "GDEXPORT FAIL")
-        sys.exit(0 if ok else 1)
+    sys.exit(0 if ok else 1)                                # every mode: a failed GDPLAY, GDTESTROOM, GDCULL, picture or shot is a failed run
 
 
 if __name__ == "__main__":
