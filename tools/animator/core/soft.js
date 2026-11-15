@@ -30,7 +30,9 @@ export const TICK = 1 / 60;                                   // the plugin step
 // 1 / (1 + 9.81 * stiffness / 60) a tick, which with the weight's own momentum rings at acos(sqrt(that)) a tick
 export const stiffOf = f => { const c = Math.cos(2 * Math.PI * f * TICK) ** 2; return (1 / c - 1) / (9.81 * TICK); };
 /** how a jiggle bone rings: { f (Hz), half (s: the time it takes to lose half its swing) }: the plugin's rule solved */
-export function ringOf(stiff, damp) { const c = 1 / (1 + 9.81 * stiff * TICK), k = Math.max(0, 1 - damp * TICK), r = Math.sqrt(c * k), co = c * (1 + k) / (2 * r);
+// (the pull is slowed by the damping as the weight is, jiggleTick's `* k`: each tick a swing shrinks by 1 / (1 + k * 9.81 *
+//  stiffness / 60), k the damping's 1 - damp / 60; without the k a damped bone was said to ring 4.34 Hz where it rings 4.03)
+export function ringOf(stiff, damp) { const k = Math.max(0, 1 - damp * TICK), c = 1 / (1 + k * 9.81 * stiff * TICK), r = Math.sqrt(c * k), co = c * (1 + k) / (2 * r);
   return co >= 1 ? { f: 0, half: Math.log(0.5) / Math.log(c * (1 + k) / 2 + Math.sqrt((c * (1 + k) / 2) ** 2 - c * k)) * TICK } : { f: Math.acos(co) / (2 * Math.PI * TICK), half: Math.log(0.5) / Math.log(r) * TICK }; }
 /** one tick of a jiggle bone's weight: st { x, xp, j } (the point now and a tick ago, in the world, and where the
     joint was a tick ago) stepped in place. joint: where the bone is; pull: the unit direction it rests along; len:
