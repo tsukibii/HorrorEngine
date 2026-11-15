@@ -649,6 +649,7 @@ func stage_hud() -> void:
 	var own_obj := story.get("_obj") as Label
 	var own_list := story.get("_list") as RichTextLabel
 	var own_line := story.get("_line") as Label
+	var was_hud = story.get("use_hud")                  # (on by default: put back as it was after)
 	story.set("use_hud", true)
 	var hud := HSHud.new()
 	main.add_child(hud)
@@ -682,6 +683,13 @@ func stage_hud() -> void:
 	story.call("objective", "")
 	story.call("say", "And back.", 1.0)
 	ok(own_line.visible and own_line.text == "And back.", "H: off again: the Story's own line")
+	story.set("use_hud", true)                         # (the default) with no HSHud in the scene: the Story draws its own
+	await frames(70)                                   # (its look for a HUD again comes a second on)
+	story.call("say", "Still mine.", 1.0)
+	await frames(2)
+	ok(own_line.visible and own_line.text == "Still mine." and bool(ProjectSettings.get_setting("application/run/main_scene", "") != null),
+		"H: on (the default) with no HSHud in the scene: the Story's own line")
+	story.set("use_hud", was_hud)
 
 
 # ---- P. E's prompt over everything you can use (the starter's player on the scene's HSHud): what it says and when -----------------

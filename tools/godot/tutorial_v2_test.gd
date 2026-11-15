@@ -668,7 +668,7 @@ func _initialize() -> void:
 			break
 	await frames(3)
 	var knock_heard: String = str(dk.heard.stream.resource_path) if dk.heard != null and dk.heard.stream != null else "none"
-	var line: String = story._line.text if story._line.visible else ""
+	var line: String = story.call("line_now")         # (on the HSHud's footer or the Story's own)
 	var knocked: bool = story.is_set("knocked_304")
 	var fear_k := float(fear_n.level)
 	await press(KEY_E)

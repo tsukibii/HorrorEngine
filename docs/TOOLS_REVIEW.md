@@ -70,6 +70,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E48 | ef8de846 | The Weapons plugin's last tooltips (52, 20 of them the muzzle flash's look): every by-hand plugin and the starter kit have one on every field |
 | E49 | 4b72848f | Once-only scares kept in a save: a glimpse, the closer figure, feet under a door, the steam's writing, a shadow, the mirror figure, a dread moment, a checkpoint |
 | E50 | 34a49a6b | A way into the next level: the Story's `go_to(scene, at)` and `starter/travel.gd` carry the pocket, the to-do list, the facts and the cash into another scene |
+| E51 | (next commit) | The Story's words on the HSHud by default (your answer to E34: "I prefer HSHud look"); a HUD put in while the game runs taken at once |
 
 ## 1. How it was done
 
@@ -240,10 +241,8 @@ Ranked within each part. Effort: S an hour or less, M a few hours, L a day or mo
 
 ### 4.1 Worth doing next (my order, for games built by hand)
 
-1. **The HSHud's words by default (your call, S).** The Story's `use_hud` is built (E34) and off: one look by hand, the
-   objective, the list and the lines in the HUD's corners and footer, is a switch. Turned on by default, tutorial v2's
-   pictures want retaking; its pictures side by side are on the screenshots page. A note's card on the HUD's `panel`
-   too would be the rest of it.
+1. ~~The HSHud's words by default~~: done (E51, your answer: "E34 yes I prefer HSHud look"). Tutorial v2's pictures
+   with the objective or the list in them want retaking in its own bulk update (docs/TUTORIAL_TODO.md).
 2. **What a save still leaves out (S each).** The night's director's intensity, a searcher or a chase start afresh
    (moments; each could join `hs_saves` as the hunt has). The once-only scares are kept since E49.
 3. **One helper for the Godot check harness (M).** `godot_bin()` is copied 18 times, the xvfb command built by hand in

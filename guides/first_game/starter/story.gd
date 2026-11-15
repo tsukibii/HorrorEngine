@@ -59,8 +59,9 @@ signal ate(item: String)                              ## a thing in the pocket w
 @export var eat_sound := ""                           ## off the shelf, as something's eaten (a thing's own goes first)
 ## the objective, the to-do list and the lines on the scene's HSHud (the UI plugin's corners and footer: one look with
 ## its prompt, its conversations and its pocket) in place of the Story's own, and a note's card as the HUD's card (E
-## puts it away, as ever); the death card and the ending stay the Story's. Off: as it always was
-@export var use_hud := false
+## puts it away, as ever); the death card and the ending stay the Story's. On by default (the user's choice); with no
+## HSHud in the scene the Story draws its own. Off: the Story's own words, as before
+@export var use_hud := true
 @export_group("Saving")
 @export var autosave := false                         ## each checkpoint written to disk too (save slot 0): the game goes on from it once it's closed
 @export var continue_saved := false                   ## at the start, save slot 0 loaded when there is one (with autosave: the game picks up at its last checkpoint)
@@ -102,6 +103,7 @@ var _hud: Node = null
 
 func _ready() -> void:
 	add_to_group("hs_story")
+	get_tree().node_added.connect(_on_node_added)
 	layer = 5
 	_build()
 	for f in flags_start:
@@ -211,7 +213,10 @@ func _words_hud() -> Node:
 	var h: Node = _find_hud() if (_hud != null and is_instance_valid(_hud)) or _hud_look <= 0.0 else null
 	if h == null:
 		_hud_look = 1.0                                # (not a scan of the tree every frame)
-	return h if h != null and h.has_method("todo") and h.has_method("line") else null
+		return null
+	if not h.is_node_ready():                          # (in the scene before it's built its corners: the Story's own until
+		return null                                    # the next frame, when _process hands the words over)
+	return h if h.has_method("todo") and h.has_method("line") else null
 
 
 func add_task(id: String, text: String) -> void:
@@ -283,6 +288,11 @@ func say(text: String, secs := 3.0) -> void:
 		_line.visible = false                          # (its words still in _line for what reads them)
 	else:
 		_line.visible = true
+
+
+## the line being said now, wherever it's drawn (the Story's own or the HSHud's footer): "" when there's none
+func line_now() -> String:
+	return _line.text if _line_left > 0.0 else ""
 
 
 func card(title: String, text: String) -> void:
@@ -481,6 +491,12 @@ func _draw_pocket() -> void:
 		var nm := str(names.get(id, str(id).replace("_", " ")))
 		list.append({"id": id, "name": nm + (("  x%d" % n) if n > 1 else ""), "model": models.get(id)})
 	h.inventory(list, _at, _shown or _peek > 0.0, false)
+
+
+# an HSHud put in while the game runs (a scene's, a script's): taken at once, not after the second's wait between looks
+func _on_node_added(n: Node) -> void:
+	if use_hud and n is CanvasLayer and n.get_script() != null and (n.get_script() as Script).get_global_name() == &"HSHud":
+		_hud_look = 0.0
 
 
 func _find_hud() -> Node:

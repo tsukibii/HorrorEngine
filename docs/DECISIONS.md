@@ -2,6 +2,14 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-15, after the review: the Story's words on the HSHud (the user)
+
+- **"E34 yes I prefer HSHud look"**: the starter Story's `use_hud` is **on by default** (E51): in a game by hand the
+  objective, the to-do list and the lines are on the scene's HSHud (the UI plugin's corners and footer, with its prompt,
+  its conversations and its pocket: one look), and a note's card is the HUD's card; the death card and the ending stay
+  the Story's. A scene with no HSHud gets the Story's own words, and a project can still switch it off. Tutorial v2's
+  pictures with the objective or the list in them want retaking (docs/TUTORIAL_TODO.md).
+
 ## 2026-11-15, early morning: the tools reviewed, and enhancements on a branch of their own until 11am (the user)
 
 - **"Crweatea a new branch called enhancements , do a review of all the tools we made and work o enhancements on this

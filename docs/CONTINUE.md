@@ -58,7 +58,7 @@ every tool and enhancements on this branch until 11am, for the user to review at
 focus on the director tool, most games will be made directly using the horrorengine godotplugin"*: from then the work
 went to the by-hand path, and the desk, the Director and the desk's export were left as they were.
 
-**Every improvement has an ID** (E01 to E50, a commit each, a letter for a part of one): TOOLS_REVIEW §0's table, and
+**Every improvement has an ID** (E01 to E51, a commit each, a letter for a part of one): TOOLS_REVIEW §0's table, and
 a page on claude.ai with a screenshot of each and boxes to pick what to undo (the user asked for it to choose what to
 take out). When the user names IDs to undo: a whole ID is `git revert <commit>`; a lettered one is taken out by hand.
 
@@ -116,8 +116,10 @@ Blender's props, so here it's played to 5, from `n_chores` and from `n_bath` (as
 browser checks that draw the Studio** (STUDIO is 50 minutes on a CPU): `python tools/browser_checks.py` on the
 user's card is the way, and its `report.md` the thing to paste back.
 
-**What could come next** (TOOLS_REVIEW §4.1): the Story speaking through the HSHud by default (E34 built it, off: the
-user's call, its pictures side by side on the page); what a save still leaves out (the director, a searcher or a
+**After the review** the user chose the HSHud's look ("E34 yes I prefer HSHud look"): the Story's `use_hud` is on by
+default (E51).
+
+**What could come next** (TOOLS_REVIEW §4.1): what a save still leaves out (the director, a searcher or a
 chase); one helper for the check harness; a Director project as it ships (keep text, one line); the Studio's undo. Tutorial v2's own update stays its own bulk branch (docs/TUTORIAL_TODO.md has
 this branch's section: E's prompt, the world at a checkpoint, saves, the pause menu).
 
