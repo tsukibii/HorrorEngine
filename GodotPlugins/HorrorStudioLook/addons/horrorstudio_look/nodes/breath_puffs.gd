@@ -8,10 +8,10 @@
 class_name HSBreathPuffs
 extends Node3D
 
-@export var on := true
-@export_range(0.5, 12.0) var every: float = 4.0
-@export_range(0.0, 1.0) var strength: float = 0.6
-@export var preview := false
+@export var on := true   ## breathing or not (the starter's cold area turns the player's on and off)
+@export_range(0.5, 12.0) var every: float = 4.0   ## seconds between breaths
+@export_range(0.0, 1.0) var strength: float = 0.6   ## how white the breath is (it shows only where a light reaches it)
+@export var preview := false   ## breathing in the editor too
 var breath: HSBreath = null
 var _key := 0
 

@@ -132,7 +132,10 @@ func karma_pick(n: Dictionary, karma: Dictionary) -> Dictionary:
 	return opts[opts.size() - 1] if opts.size() else {}
 
 
-## how long a Japanese line takes (storylib.ja_secs): kana a mora, kanji about 1.7, pauses for punctuation
+## how long a Japanese line takes, storylib.ja_secs's rule to the letter (the desk times the scenes and the bake by it,
+## so a line here as long as there: it was half a second short a line and counted other characters its own way): kana a
+## mora (small ゃ ゅ ょ ride on the one before), a kanji about 1.7, a Latin letter or a digit a third, nothing else
+## counts; punctuation its pause; and half a second of breath. GDEXPORT holds the two the same on the games' own lines
 const JA_PAUSES := {"…": 0.25, "‥": 0.2, "、": 0.25, "。": 0.45, "？": 0.4, "！": 0.3, "?": 0.4, "!": 0.3, "—": 0.3, "―": 0.3}
 const JA_SMALL := "ゃゅょぁぃぅぇぉゎャュョァィゥェォヮ"
 static func ja_secs(t: String) -> float:
@@ -143,17 +146,20 @@ static func ja_secs(t: String) -> float:
 			pauses += JA_PAUSES[ch]
 		elif JA_SMALL.contains(ch):
 			continue
-		elif ch == " " or ch == "　":
-			continue
 		else:
 			var code := ch.unicode_at(0)
-			if code >= 0x4e00 and code <= 0x9fff:
-				morae += 1.7
-			elif code >= 0x3040 and code <= 0x30ff:
+			if code >= 0x3040 and code <= 0x30ff:
 				morae += 1.0
-			else:
-				morae += 0.5
-	return morae / 6.5 + pauses
+			elif (code >= 0x4e00 and code <= 0x9fff) or (code >= 0x3400 and code <= 0x4dbf):
+				morae += 1.7
+			elif _alnum(ch, code):
+				morae += 1.0 / 3.0
+	return morae / 6.5 + pauses + 0.5
+
+
+# Python's str.isalnum() for what a line holds: a cased letter (Latin, Greek, Cyrillic, full width), a digit, Hangul
+static func _alnum(ch: String, code: int) -> bool:
+	return ch.to_lower() != ch.to_upper() or (code >= 0x30 and code <= 0x39) or (code >= 0xFF10 and code <= 0xFF19) or (code >= 0xAC00 and code <= 0xD7A3)
 
 
 const Typing := preload("res://addons/horrorstudio_ui/typing.gd")

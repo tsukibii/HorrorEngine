@@ -59,6 +59,13 @@ level by hand with its **Items** and **Counts** (a parcel waiting on the porch);
 and it stays, empty, the things flying out of it all the same; **Pull** how fast they come, **Copies Max** how many
 of one thing you see flying; **Marker** a quest marker over it till it's opened (**Marker Label**).
 
+**Dying and saves** (the starter kit's Story): a checkpoint keeps the shop as it was (what's been sold and seen, the
+orders on their way, the parcels left, shut or kept open) and every parcel placed by hand (opened or not). Die after
+it and it's all as it was then: a thing bought since can be bought again with the cash the Story gives back, an order
+that was on its way comes again, a parcel that was there is there again as it was, and one left or opened since is
+gone or shut again with what's in it. A save (the Story's `save_game`) holds the same. A thing kept so is found again
+by its file, else by its id in the catalog: a thing made in code alone isn't.
+
 ## The look
 
 `HSTerminalLook` (the laptop's **Look**): its greens and black, font and size, the rain, the glass's scanlines, glow and

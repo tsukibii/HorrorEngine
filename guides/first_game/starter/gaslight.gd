@@ -14,17 +14,17 @@ extends Node
 signal lied(kind: String, words: String)
 
 @export var needs := "sanity:shaken"                ## the Story's words: only while they hold (empty: always)
-@export var gap_min := 35.0
-@export var gap_max := 80.0
+@export var gap_min := 35.0   ## seconds between tricks, at the least (sooner as sanity falls)
+@export var gap_max := 80.0   ## and at the most
 @export var secs := 1.6                             ## how long a lie stays
 @export_range(0.0, 1.0) var sanity_sync := 0.6     ## how much sooner as sanity falls (a Sanity node in the scene)
 @export_group("Tricks")
-@export var task_lies := true
-@export var lies: PackedStringArray = ["Don't look behind you.", "You already did this.", "She is in the room.", "Stay where you are.", "It was never locked."]
-@export var false_lines := true
-@export var whispers: PackedStringArray = ["Did you leave that door open?", "Something moved.", "You've been here before.", "That wasn't there."]
-@export var false_pickup := true
-@export var objective_scramble := true
+@export var task_lies := true   ## a task on the list reads something else for a moment
+@export var lies: PackedStringArray = ["Don't look behind you.", "You already did this.", "She is in the room.", "Stay where you are.", "It was never locked."]   ## what a task can read instead
+@export var false_lines := true   ## a line at the bottom of the screen that nothing said
+@export var whispers: PackedStringArray = ["Did you leave that door open?", "Something moved.", "You've been here before.", "That wasn't there."]   ## the lines nothing said
+@export var false_pickup := true   ## "Picked up:" and something you already carry
+@export var objective_scramble := true   ## the objective's letters out of order for a moment
 
 var count := 0                                      ## lies told so far
 var last := ""                                      ## the last trick's kind

@@ -92,7 +92,8 @@ export function armTo(home, s, to, k, o = {}) {
   const W0 = home.info["wristAt_" + s], E0 = home.info["elbowAt_" + s], S0 = home.shoulder[s], g = s === "l" ? 1 : -1, out = o.via || [(W0[0] + to[0]) / 2 + g * 0.04, (W0[1] + to[1]) / 2 + 0.02, (W0[2] + to[2]) / 2 + 0.05];
   const pole0 = V.sub(E0, S0), pole1 = o.pole || [g * 0.5, -0.75, -0.45], palm1 = o.palm || [0, -1, 0], at0 = bez(W0, out, to, k), at = o.far ? within(at0, S0, o.far) : at0;
   // (the palm: the hanging arm's own turn, and `k` of the way to facing where it's asked: an angle blended, never two directions, which whip round when they face opposite ways)
-  return { hand: o.near ? clearOf(at, S0, o.near) : at, pole: turnV(pole0, pole1, ease(k)), pron: home.info["pron_" + s], pronArm: true, palm: V.norm(palm1), palmK: ease(k), curl: lerp(home.c.arms[s].curl ?? 0.45, o.curl ?? 0.45, k), wrist: (o.wrist || 0) * k, free: true };
+  return { hand: o.near ? clearOf(at, S0, o.near) : at, pole: turnV(pole0, pole1, ease(k)), pron: home.info["pron_" + s], pronArm: true, palm: V.norm(palm1), palmK: ease(k), curl: lerp(home.c.arms[s].curl ?? 0.45, o.curl ?? 0.45, k), wrist: (o.wrist || 0) * k, free: true,
+    ...(o.curls ? { curls: o.curls.map(c => c == null ? null : lerp(home.c.arms[s].curl ?? 0.45, c, k)) } : {}) };
 }
 // the base pose (the idle's first frame) built once
 export function basePose(rig, body, set, X) { const c = idle(rig, body, set, X).ctrl(0), h = homeOf(rig, c); return { ...h, pelvis: c.pelvis.pos.slice() }; }

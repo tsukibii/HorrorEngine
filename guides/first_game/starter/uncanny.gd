@@ -10,11 +10,11 @@
 ##   than `stop_m`, never while your light's on her).
 extends Node
 
-@export var stare := false
-@export_range(0.0, 1.0) var smile := 0.0
-@export_range(-80.0, 80.0) var tilt_deg := 0.0
+@export var stare := false   ## her blink off: the dead stare
+@export_range(0.0, 1.0) var smile := 0.0   ## a smile with nothing in her eyes (her lip corners without her cheeks)
+@export_range(-80.0, 80.0) var tilt_deg := 0.0   ## her head bent past where a neck goes, in degrees
 @export var neck_y := 1.38                        ## a stand-in's neck: where its head turns about (m over its feet)
-@export var mimic := false
+@export var mimic := false   ## a step of hers for each of yours
 @export var step_m := 0.4                         ## her step (mimic)
 @export var stop_m := 2.5                         ## mimic: never nearer than this
 

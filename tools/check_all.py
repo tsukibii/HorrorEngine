@@ -27,6 +27,7 @@ STUDIO = [["pbr.py", "check"], ["sfx.py", "check"], ["face_capture.py", "check"]
           ["character/lashfit_check.mjs"],                                                                              # the lashes kept on top of the lid's skin, on a made-up lid (LASHFIT)
           ["animator/check.mjs"],
           ["godot/sequences.py", "guide"],                                                                              # the guide of sequences: its tables the data's, its pictures and links there (SEQGUIDE),
+          ["godot/parse_check.py"],                                                                                     # every runtime script of the by-hand plugins and the starter loaded by Godot, every preset instanced (PARSE),
           ["anim_rules.py", "check", "--quick"]]                                                                        # the modelling rules' tables current, the kit's and the prop generator's seats, beds and doors inside them (ANIMRULES)                                                                                       # the Animator v2: the clips made on three test bodies, measured, baked and unbaked (ANIMATOR)
 game, _ = L.pick_game(sys.argv[1:])
 bad = 0
@@ -48,7 +49,7 @@ for st in ([] if game else L.sets()):
     r = subprocess.run([sys.executable, str(HERE / "level_check.py"), "--game", "set:" + st], capture_output=True, text=True,
                        encoding="utf-8")
     lines = [ln for ln in r.stdout.splitlines() if ln.strip()]
-    print(f"{'ok  ' if r.returncode == 0 else 'FAIL'}  {('set:' + st)[:12]:<12} {'level_check.py':<16} {lines[-1] if lines else r.stderr.strip()[-300:]}")
+    print(f"{'ok  ' if r.returncode == 0 else 'FAIL'}  {('set:' + st):<12} {'level_check.py':<16} {lines[-1] if lines else r.stderr.strip()[-300:]}")
     if r.returncode:
         bad += 1
         for ln in lines[:-1]:

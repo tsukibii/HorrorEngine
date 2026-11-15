@@ -99,8 +99,8 @@ static func tick(x: Vector3, xp: Vector3, joint: Vector3, pull: Vector3, length:
 
 ## how a jiggle bone rings: {f (Hz), half (s: the time it takes to lose half its swing)}: the plugin's rule solved (soft.js ringOf)
 static func ring_of(stiff: float, damp: float) -> Dictionary:
-	var c := 1.0 / (1.0 + 9.81 * stiff * TICK)
 	var k := maxf(0.0, 1.0 - damp * TICK)
+	var c := 1.0 / (1.0 + k * 9.81 * stiff * TICK)          # (the pull is slowed by the damping as the weight is: tick's `* k`)
 	var r := sqrt(c * k)
 	var co := c * (1.0 + k) / (2.0 * r) if r > 0.0 else 2.0
 	if co >= 1.0:

@@ -86,6 +86,9 @@ def flow_view(story):
 
     def node(nid, depth):
         pad = "  " * depth
+        if not nid or nid not in flow:                  # a cut arrow (the board's "Cut here" leaves one), or a card that's gone
+            print(f"{pad}-> {nid or '(cut here: nothing yet)'}" + ("" if not nid else " (no such card)"))
+            return
         if nid in seen:
             print(f"{pad}-> {nid} (joins above)")
             return
@@ -113,13 +116,13 @@ def flow_view(story):
                     if it.get("during") == "all" or n["ref"] in (it.get("during") or []):
                         print(f"{pad}  ☠ {it.get('label', it.get('id'))} (when {json.dumps(it.get('when'))}):")
                         node(it["to"], depth + 2)
-            node(n["next"], depth)
+            node(n.get("next"), depth)
         elif t == "choice":
             print(f"{pad}{nid}  [choice by {n['by']}] {n.get('prompt', '')}")
-            for o in n["options"]:
+            for o in n.get("options", []):
                 cond = o.get("label") or o.get("result") or (" & ".join(o["if"]) if o.get("if") else "otherwise")
                 print(f"{pad}  ? {cond}")
-                node(o["to"], depth + 2)
+                node(o.get("to"), depth + 2)
         else:
             print(f"{pad}{nid}  [ending: {n.get('kind')}] {n.get('title', '')}")
 
@@ -156,6 +159,12 @@ def main():
         print(__doc__)
         return
     cmd, args = args[0], args[1:]
+    wants = {"new-set": "the set's name", "new": "the new game's name", "show": "an id (a card on the flow, a scene or a stitch)",
+             "durations": "the folder with the takes' .wav files"}
+    if cmd in wants and not args:                      # (it was an IndexError's traceback)
+        sys.exit(f"story.py {cmd} wants {wants[cmd]}: python tools/story.py [--game G] {cmd} <{wants[cmd].split(' (')[0]}>")
+    if cmd == "new" and not L.GAME_NAME.match(args[0]):
+        sys.exit("a game's name is a letter, then letters, digits and _ (the desk and the writers' room open it by that name)")
     if cmd == "new-set":                               # a set: its one level named after it, one room to start from
         name = args[0]
         if not L.SET_NAME.match(name):
@@ -360,6 +369,7 @@ def main():
         print(f"set dur on {n} takes (now rerun the checks: longer takes push the scene's cues along by themselves)")
     else:
         print(__doc__)
+        sys.exit(f"no command {cmd!r} (the list above)")   # (an unknown word read as ok on a dashboard row)
 
 
 if __name__ == "__main__":

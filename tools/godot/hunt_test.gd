@@ -342,6 +342,24 @@ func _initialize() -> void:
 	if auto.size() < 3 or twice or int(h.get("stage")) != 3 or not story.is_set("hunt:Power:3") or int(h.get("rushes")) != 0:
 		bad("the hunt by itself (%d spots, twice running %s, stage %d, rushes %d)" % [auto.size(), twice, h.get("stage"), h.get("rushes")])
 
+	# a save (the Story's save_game): the hunt as it was; stopped since, loaded: running again at its stage and clock,
+	# quietly (no line, no new stage from dying's rule)
+	story.call("delete_save", 5)
+	var sv_stage := int(h.get("stage"))
+	var sv_clock := float(h.get("clock"))
+	var sv_wrote: bool = story.call("save_game", 5)
+	var ends_n := ends.size()
+	h.call("stop")
+	await frames(2)
+	var sv_stopped: bool = not bool(h.get("running"))
+	var sv_read: bool = story.call("load_game", 5)
+	await frames(4)
+	say("saved", "saved running at stage %d after %.1f s; stopped %s; loaded %s: running %s, stage %d, clock %.1f s, ends since %s" % [
+		sv_stage, sv_clock, sv_stopped, sv_read, h.get("running"), h.get("stage"), float(h.get("clock")), str(ends.slice(ends_n + 1))])
+	if not sv_wrote or not sv_stopped or not sv_read or not bool(h.get("running")) or int(h.get("stage")) != sv_stage or absf(float(h.get("clock")) - sv_clock) > 1.0:
+		bad("a save mid-hunt (running %s, stage %d of %d)" % [h.get("running"), h.get("stage"), sv_stage])
+	ends.resize(ends_n)                                       # (the stop's own end out, in place: the signal's lambda holds this array)
+
 	# ended by its task: she's gone, its fact set, its running fact taken back, the shown task ticked
 	story.tick("power")
 	await frames(4)
@@ -349,6 +367,20 @@ func _initialize() -> void:
 		str(ends), h.get("running"), story.is_set("power_back"), story.is_set("hunt:Power"), story.done("dark"), her.visible])
 	if ends != ["task"] or h.get("running") or not story.is_set("power_back") or story.is_set("hunt:Power") or not story.done("dark") or her.visible:
 		bad("the haunting didn't end on its task (%s, running %s, fact %s)" % [str(ends), h.get("running"), story.is_set("power_back")])
+	# saved once it's over, loaded into a game that had just started (the hunt never run): over, and not started again by
+	# its needs (power_out still holds) to end at once and say its line twice
+	story.call("delete_save", 6)
+	var ov_wrote: bool = story.call("save_game", 6)
+	h.set("done", false)
+	h.set("how", "")
+	var ov_ends := ends.size()
+	var ov_read: bool = story.call("load_game", 6)
+	await secs(1.0)
+	say("saved over", "saved once it had ended; loaded into a hunt that never ran: done %s, running %s, ended again %s" % [h.get("done"), h.get("running"), str(ends.slice(ov_ends))])
+	if not ov_wrote or not ov_read or not bool(h.get("done")) or bool(h.get("running")) or ends.size() != ov_ends:
+		bad("a save after the hunt (done %s, running %s, ended again %s)" % [h.get("done"), h.get("running"), str(ends.slice(ov_ends))])
+	for sl in [5, 6]:
+		story.call("delete_save", sl)
 	for s in [s_watch, s_dart, s_peek, s_door, s_decoy, s_amb, s_follow]:
 		s.queue_free()
 

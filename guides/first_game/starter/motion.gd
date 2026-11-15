@@ -41,6 +41,20 @@
 ## A character that wasn't baked still walks if her model has animations called idle, walk and run.
 extends Node
 
+## The Animator's bake this kit is made for (tools/animator/core/animate.js VERSION; ANIMATOR holds the two the same).
+## A character baked by an older Animator still plays, without what came since: bake her again (her settings are kept).
+const ANIMATOR_VERSION := 5
+const SINCE := {2: "her hands and her soft tissue reworked", 3: "animations v3: sneak, crawl, peek, scares, fights, eating", 4: "short characters on a person's furniture", 5: "small movements and carrying"}
+
+
+## what a Problems line says of a character baked by Animator `v`: what she's without, and what to do
+static func baked_before(v: int) -> String:
+	var missing := []
+	for k in range(v + 1, ANIMATOR_VERSION + 1):
+		if SINCE.has(k):
+			missing.append(SINCE[k])
+	return "her .glb was baked by an older Animator (version %d, this kit wants %d): she plays without %s. Open her in the Animator and Bake again, or python tools/animator/bake.mjs --status (and --rebake)" % [v, ANIMATOR_VERSION, ", ".join(missing)]
+
 signal arrived(where: Vector3)                        ## she got where she was walking to
 signal done(what: String)                             ## an act finished: "walk", "sit", "stand", "sleep", "wake", "open", "reach", "pick_up", "play", "face"
 signal event(name: String)                            ## a clip's own moments: "step_l", "step_r", "seated", "grab", "open", "release", "put_away", "hit", "bite", "sip", "peak", "over", "knock"...
@@ -143,8 +157,8 @@ func setup() -> void:
 		problems.append("she has no animations: bake her .glb in the Animator (dashboard: Animator v2)")
 	elif record.is_empty():
 		problems.append("her .glb wasn't baked by the Animator: only what her model calls idle, walk and run will play")
-	elif int(record.get("version", 1)) < 2:
-		problems.append("her .glb was baked by an older Animator (before her hands and her soft tissue were reworked): open her in the Animator and Bake again")
+	elif int(record.get("version", 1)) < ANIMATOR_VERSION:
+		problems.append(baked_before(int(record.get("version", 1))))
 	for n in _names:
 		var a := _ap.get_animation(_names[n])
 		a.loop_mode = Animation.LOOP_LINEAR if String(n).ends_with("_loop") else Animation.LOOP_NONE

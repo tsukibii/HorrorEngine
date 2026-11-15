@@ -16,12 +16,12 @@ extends Resource
 enum Layout { STAR, BURST }
 enum Blend { SOLID, ADD }
 
-@export var title := "Buckshot"
+@export var title := "Buckshot"   ## its name, a label for you (the game never shows it)
 @export_group("Wings")
 @export var layout := Layout.STAR                     ## STAR: the wings in a ring round the bore; BURST: anywhere within `wing_angle_deg` of it (a ball of fire)
 @export_range(0, 16) var wings := 5                   ## the petals (a star seen from in front)
 @export_range(0.0, 90.0) var wing_angle_deg := 76.0   ## each petal's lean off the bore's line (90: straight out to the side)
-@export var wing_length_m := 0.13
+@export var wing_length_m := 0.13   ## a petal's length
 @export_range(1, 12) var wing_spheres := 6             ## the intersecting spheres a petal is made of
 @export var wing_radius_m := 0.028                    ## its first sphere's
 @export_range(0.1, 1.0) var taper := 0.45             ## the tip's sphere over the first's
@@ -29,14 +29,14 @@ enum Blend { SOLID, ADD }
 @export_range(0.0, 1.0) var jitter := 0.35            ## each shot's petals unalike: their lengths, leans and turns
 @export_group("Plume")
 @export var plume_length_m := 0.34                    ## the tongue of fire straight out of the bore (0: none)
-@export_range(1, 12) var plume_spheres := 7
-@export var plume_radius_m := 0.045
+@export_range(1, 12) var plume_spheres := 7   ## the spheres the plume is made of
+@export var plume_radius_m := 0.045   ## the plume's first sphere's radius
 @export var core_radius_m := 0.032                    ## the white ball at the muzzle (0: none)
 @export_group("Fire")
 @export var blend := Blend.ADD                        ## ADD: the spheres added up, white-hot where they overlap (a glow); SOLID: each pixel the nearest sphere's back, cut where it burns out (crisp, all orange)
-@export var core_color := Color(1.0, 0.96, 0.8)
-@export var mid_color := Color(1.0, 0.6, 0.18)
-@export var edge_color := Color(0.72, 0.14, 0.03)
+@export var core_color := Color(1.0, 0.96, 0.8)   ## the fire's colour where it's hottest
+@export var mid_color := Color(1.0, 0.6, 0.18)   ## its colour between
+@export var edge_color := Color(0.72, 0.14, 0.03)   ## its colour at the burnt edges
 @export var energy := 2.0                             ## how bright (HDR: the glow takes what's over white)
 @export var noise_scale := 0.9                        ## the noise's size on each sphere
 @export_range(0.0, 1.5) var burn := 1.0               ## how much of the noise shows in the fire and eats its edges (0: smooth spheres)
@@ -46,27 +46,27 @@ enum Blend { SOLID, ADD }
 @export var life_s := 0.055                           ## the flash's life (a frame or three)
 @export_group("Light")
 @export var light_scale := 1.0                        ## times the muzzle's light_energy (a gun's flash_energy)
-@export var light_color := Color(1.0, 0.72, 0.42)
-@export var light_range_m := 9.0
+@export var light_color := Color(1.0, 0.72, 0.42)   ## the flash's light's colour
+@export var light_range_m := 9.0   ## how far the flash's light reaches
 @export var light_s := 0.05                           ## how long the light takes to fall away
 @export_range(0.0, 1.0) var light_fog := 0.12         ## how much it lights the room's haze (1: as much as a lamp; a flash that lit it fully hung a ball of glow in the air)
 @export_group("Sparks")
-@export_range(0, 200) var sparks := 6
+@export_range(0, 200) var sparks := 6   ## how many sparks a shot throws
 @export var spark_speed := Vector2(4.0, 9.0)          ## m/s, the slowest and fastest
-@export var spark_spread_deg := 16.0
-@export var spark_life_s := 0.14
-@export var spark_length_m := 0.06
-@export var spark_gravity := 3.0
-@export var spark_color := Color(1.0, 0.72, 0.32)
+@export var spark_spread_deg := 16.0   ## how far off the bore's line they fly
+@export var spark_life_s := 0.14   ## a spark's life in seconds
+@export var spark_length_m := 0.06   ## a spark streak's length
+@export var spark_gravity := 3.0   ## how fast sparks fall (below 0 they rise: the love hearts')
+@export var spark_color := Color(1.0, 0.72, 0.32)   ## the sparks' colour
 @export var spark_sprite: Texture2D                   ## each spark this picture turned to the eye instead of a streak (the love-heart shell's hearts: fx/heart.png); `spark_length_m` its size, a `spark_gravity` under 0 floats them up
 @export var spark_energy := 2.6                       ## how bright the sparks are (a streak's is added to what's behind it: lower for a spray of water)
 @export var spark_width_m := 0.0025                   ## a streak's width (a spray of water's drops are thicker than a spark)
 @export_group("Smoke")
 @export_range(0, 64) var puffs := 10                  ## the cloud thrown out with the shot
-@export var puff_size_m := Vector2(0.06, 0.11)
+@export var puff_size_m := Vector2(0.06, 0.11)   ## a puff's size when it's thrown out, the smallest and the largest
 @export var puff_grow := 3.2                          ## how much a puff grows over its life
-@export var puff_speed := Vector2(0.35, 0.9)
-@export var puff_life_s := 1.6
+@export var puff_speed := Vector2(0.35, 0.9)   ## how fast the puffs are thrown out (m/s), the slowest and the fastest
+@export var puff_life_s := 1.6   ## a puff's life in seconds
 @export var trail_s := 1.4                            ## how long the muzzle trails smoke after the shot (0: none)
 @export var trail_life_s := 2.2                       ## each bit of the trail's
 @export var trail_width_m := Vector2(0.025, 0.14)     ## the trail's width where it leaves the muzzle and where it dies
@@ -75,8 +75,8 @@ enum Blend { SOLID, ADD }
 @export var trail_spread := 0.045                     ## how far apart the strands have drifted by the end of their life (m)
 @export var trail_turbulence := 0.22                  ## the curl noise's drift on the oldest of it (m/s): it leaves the barrel straight and curls as it goes
 @export_range(0.0, 1.0) var trail_erode := 0.55       ## how much it frays into wisps as it ages (docs/research/muzzle_smoke.md)
-@export var smoke_color := Color(0.82, 0.8, 0.77)
-@export_range(0.0, 2.0) var smoke_density := 1.0
+@export var smoke_color := Color(0.82, 0.8, 0.77)   ## the smoke's colour
+@export_range(0.0, 2.0) var smoke_density := 1.0   ## how thick the smoke is
 @export_range(0.0, 1.0) var smoke_glow := 0.6                ## a light of its own, so it reads as grey wisps in a dim room as in the user's reference (0: lit by the room's lights only)
 @export_range(0.05, 2.0) var smoke_light_cap := 0.5          ## the most light any one lamp gives the smoke: the next shot's flash beside it lights the cloud a glow, not a white ball (a lamp a metre off is far under it)
 @export_range(-1.0, 1.0) var smoke_occlude := -1.0           ## how much of what's behind it the smoke hides (below 0: the trail's 0.45 and the puffs' 0.7; 1: black smoke, a demon's)

@@ -1,10 +1,16 @@
 ## The pause menu (Esc in Play; docs/GAMEPLAY_PLAN.md §10; the desk's play/menu.js, ported): the game holds, the lights
 ## go out (the frame darkens) and the menu is drawn over it in the HUD's theme. The controls on the left (each key as a
-## tile with what it does beside it), then Resume, Save game (slots and the autosave), Settings (Display, Graphics,
-## Audio: rows stepped with ‹ › (A/D), never a slider; levels as ten dashes), Quit (a footer choice). Every setting
-## keeps the desk's name and its Unreal name (`ue`); what Godot can apply, it applies (`apply`): the window mode, VSync,
+## tile with what it does beside it; by hand the HUD's own keys as chips at its foot instead, HSHud.menu_keys), then
+## Resume, Save game (slots and the autosave), Settings (Display, Graphics, Audio: rows stepped with ‹ › (A/D), never a
+## slider; levels as ten dashes), Quit (a footer choice). Every setting
+## keeps the desk's name (and `ue`, the desk's old Unreal name, kept as data and never shown to the player); what Godot can apply, it applies (`apply`): the window mode, VSync,
 ## the frame rate limit, brightness, the volumes, the subtitles. Settings in user://horrorstudio_settings.json, the
-## saves in user://saves_<game>.json. open(ctx) returns "resume", "escaped" or {"quit": "title" | "desktop"}.
+## saves in user://saves_<game>.json. open(ctx) returns "resume", "escaped", "loaded" or {"quit": "title" | "desktop"}.
+## A game built by hand (the starter's pause.gd) also gives ctx `save` (a slot's number: the save made, true when it
+## was), `load` and `can_load`: then Save game saves for real and a Load game page lists what can be loaded; and
+## `controls` (as CONTROLS: its own keys, the HSHud's chips) in place of the runtime's; and `rows`, the ids of the
+## settings that do something there (the rest, and a page left with none, aren't shown); and `settings_only` (the main
+## menu's Settings, HSTitleMenu): it opens on the settings and back from them shuts it.
 extends Control
 
 const ThemeC := preload("res://addons/horrorstudio_ui/theme.gd")
@@ -76,6 +82,7 @@ var quit_sel: int = 0
 var confirm = null
 var dark: ColorRect
 var controls_box: VBoxContainer
+var keys_row: Control = null                 # by hand: the HUD's own keys as chips, on the legend's line at the right (HSHud.menu_keys)
 var nav: VBoxContainer
 var page: PanelContainer
 var page_box: VBoxContainer
@@ -165,12 +172,19 @@ func _ready() -> void:
 	page.add_child(page_box)
 	add_child(page)
 	legend = HBoxContainer.new()
-	legend.position = Vector2(48, 640)
+	legend.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)   # from the foot (at 720 lines its 640, as it was): a fixed 640 was
+	legend.offset_left = 48.0                                # under the foot of a shorter window (a 21:9 one), the keys with it
+	legend.offset_right = 48.0
+	legend.offset_top = -80.0
+	legend.offset_bottom = -46.0
 	legend.add_theme_constant_override("separation", 18)
 	add_child(legend)
 	footer = VBoxContainer.new()
-	footer.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	footer.position = Vector2(200, 560)
+	footer.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)  # from the middle and the foot (at 1280 x 720 its 200, 560, as it was)
+	footer.offset_left = -440.0
+	footer.offset_right = -440.0
+	footer.offset_top = -160.0
+	footer.offset_bottom = -160.0
 	footer.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(footer)
 
@@ -223,12 +237,27 @@ func mouse_tile(what: String) -> PanelContainer:    # a mouse without a cable: i
 func controls_panel(has: Dictionary) -> void:
 	for ch in controls_box.get_children():
 		ch.queue_free()
-	for ctl in CONTROLS:
+	if keys_row != null and is_instance_valid(keys_row):
+		keys_row.queue_free()
+	keys_row = hud.call("menu_keys") if hud != null and hud.has_method("menu_keys") else null
+	if keys_row != null:                              # by hand: the game's keys as the HUD's chips (the user, 2026-11-15), not the tiles on the left:
+		keys_row.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)  # on the legend's line, at the right, as far in from the edge as it is
+		keys_row.offset_left = legend.offset_left
+		keys_row.offset_right = -legend.offset_left
+		keys_row.offset_top = legend.offset_top
+		keys_row.offset_bottom = legend.offset_bottom
+		(keys_row as BoxContainer).alignment = BoxContainer.ALIGNMENT_END
+		for pair in keys_row.get_children():
+			(pair as Control).size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		add_child(keys_row)
+		return
+	var list: Array = ctx.get("controls") if ctx.get("controls") is Array and not (ctx.get("controls") as Array).is_empty() else CONTROLS
+	for ctl in list:                                  # (by hand: the game's own keys, the HSHud's chips; else the runtime's)
 		if ctl.has("only") and not has.get(ctl["only"], false):
 			continue
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 20)
-		row.tooltip_text = "Unreal: " + str(ctl["ue"])
+		row.tooltip_text = ""                         # (it said "Unreal: IA_Move" to the player: `ue` is the desk's record, never shown)
 		var icon := HBoxContainer.new()
 		icon.custom_minimum_size = Vector2(140, 0)
 		icon.add_theme_constant_override("separation", 4)
@@ -289,10 +318,12 @@ func show_nav() -> void:
 		nav.add_child(label("Flashlight %d%% · %s" % [roundi(float(bat.get("charge", 1.0)) * 100.0), ("%d spare set%s" % [n, "" if n == 1 else "s"]) if n > 0 else "no spare batteries"], 14, c["muted"]))
 	var list: Array = []
 	if settings:
-		for p in SETTINGS:
+		for p in pages():
 			list.append([p["title"], func(): open_page("set:" + p["id"]), "set:" + p["id"]])
 	else:
-		list = [["Resume", func(): close("resume"), ""], ["Save game", func(): open_page("save"), "save"], ["Settings", func(): open_page("set:" + SETTINGS[0]["id"]), "settings"], ["Quit", func(): open_page("quit"), "quit"]]
+		list = [["Resume", func(): close("resume"), ""], ["Save game", func(): open_page("save"), "save"], ["Settings", func(): open_page("set:" + pages()[0]["id"]), "settings"], ["Quit", func(): open_page("quit"), "quit"]]
+		if ctx.get("load") is Callable:                              # (a game built by hand: its saves load)
+			list.insert(2, ["Load game", func(): open_page("load"), "load"])
 		if not bat.is_empty() and int(bat.get("sets", 0)) > 0 and float(bat.get("charge", 1.0)) < 1.0 and bat.get("change") is Callable:
 			list.insert(1, ["Change the batteries", func(): (bat["change"] as Callable).call(); close("resume"), "batteries"])
 	for row in list:
@@ -305,7 +336,17 @@ func show_nav() -> void:
 		b.set_meta("mark", mark)
 		b.set_meta("label", l)
 		b.set_meta("open", row[2] == at or (row[2] == "settings" and settings))
+		b.set_meta("id", row[2])
 		nav.add_child(item("nav", b, row[1]))
+
+
+## where a row is in the nav (its id: "save", "load", "settings", "quit", "set:<page>"): rows come and go (Load game,
+## Change the batteries), so nothing counts on a row's place
+func nav_at(id: String) -> int:
+	for i in items["nav"].size():
+		if str((items["nav"][i] as Control).get_meta("id", "")) == id:
+			return i
+	return 0
 
 
 func slot_el(name_: String, sv, auto: bool, n = null) -> VBoxContainer:
@@ -331,6 +372,10 @@ func save_to(n: int) -> void:
 		show_page()
 		focus("page", i)
 		return
+	if ctx.get("save") is Callable and not bool((ctx["save"] as Callable).call(n)):   # (by hand: the Story's save_game)
+		confirm = null
+		hud.log("slot %d couldn't be saved" % n)
+		return
 	saves[str(n)] = {"where": ctx.get("where", ctx.get("game", "")), "secs": float(ctx.get("secs", 0)), "at": Time.get_unix_time_from_system()}
 	write_json(saves_file(str(ctx.get("game", "game"))), saves)
 	confirm = null
@@ -340,9 +385,17 @@ func save_to(n: int) -> void:
 	hud.log("saved to slot %d" % n)
 
 
+## a slot loaded (by hand: the caller's `load`), the menu closed on it
+func load_from(n: int) -> void:
+	if ctx.get("load") is Callable and bool((ctx["load"] as Callable).call(n)):
+		close("loaded")
+	else:
+		hud.log("slot %d couldn't be loaded" % n)
+
+
 func row_el(r: Dictionary) -> HBoxContainer:
 	var e := HBoxContainer.new()
-	e.tooltip_text = "Unreal: %s · Godot: %s" % [r.get("ue", ""), r.get("godot", "")]
+	e.tooltip_text = ""                              # (it showed the player Unreal's and Godot's own names for the setting)
 	var l := label(r["label"], 15, c["text"])
 	l.custom_minimum_size = Vector2(240, 0)
 	e.add_child(l)
@@ -367,26 +420,59 @@ func show_page() -> void:
 	items["page"] = []
 	for ch in page_box.get_children():
 		ch.queue_free()
-	page.visible = at == "save" or at.begins_with("set:")
-	controls_box.visible = at == "root" or at == "quit"
+	page.visible = at == "save" or at == "load" or at.begins_with("set:")
+	var front: bool = at == "root" or at == "quit"
+	controls_box.visible = front and keys_row == null
+	if keys_row != null and is_instance_valid(keys_row):
+		keys_row.visible = front                     # (by hand the keys' chips at the foot, on the front page and Quit's)
 	nav.position = Vector2(430, 90) if controls_box.visible else Vector2(48, 90)   # the controls on the left till a page opens
 	if at == "save":
 		page_box.add_child(crumb("Save game"))
 		page_box.add_child(slot_el("Autosave", saves.get("auto"), true))
 		for n in [1, 2, 3]:
 			page_box.add_child(item("page", slot_el("Slot %d" % n, saves.get(str(n)), false, n), func(): save_to(n)))
+	if at == "load":
+		page_box.add_child(crumb("Load game"))
+		var can: Callable = ctx.get("can_load") if ctx.get("can_load") is Callable else Callable()
+		var any := false
+		for n in [0, 1, 2, 3]:                                     # the autosave, then the slots: only those there are
+			var k := "auto" if n == 0 else str(n)
+			if (can.is_valid() and not bool(can.call(n))) or (not can.is_valid() and not saves.has(k)):
+				continue
+			any = true
+			page_box.add_child(item("page", slot_el("Autosave" if n == 0 else "Slot %d" % n, saves.get(k), n == 0), func(): load_from(n)))
+		if not any:
+			page_box.add_child(label("Nothing saved yet.", 14, c["muted"]))
 	if at.begins_with("set:"):
 		for p in SETTINGS:
 			if "set:" + p["id"] != at:
 				continue
+			var first := true
 			for g in p["groups"]:
-				if g != p["groups"][0]:
+				var shown := shown_rows(g)
+				if shown.is_empty():
+					continue
+				if not first:
 					var gap := Control.new()                          # a little air before the next group
 					gap.custom_minimum_size = Vector2(0, 8)
 					page_box.add_child(gap)
+				first = false
 				page_box.add_child(crumb(g["title"]))
-				for r in g["rows"]:
+				for r in shown:
 					page_box.add_child(item("page", row_el(r), func(): step(r, 1), func(d): step(r, d)))
+
+
+## a group's rows shown: all of them, or those whose ids the caller's `rows` names (by hand: what works there)
+func shown_rows(g: Dictionary) -> Array:
+	var only = ctx.get("rows")
+	if not only is Array or (only as Array).is_empty():
+		return g["rows"]
+	return (g["rows"] as Array).filter(func(r): return (only as Array).has(r["id"]))
+
+
+## the settings pages with a row to show
+func pages() -> Array:
+	return SETTINGS.filter(func(p): return (p["groups"] as Array).any(func(g): return not shown_rows(g).is_empty()))
 
 
 func set_value(r: Dictionary, v: int) -> void:
@@ -492,7 +578,7 @@ func open_page(p: String) -> void:
 	show_page()
 	if p == "quit":
 		ask_quit()
-		focus("nav", 3)
+		focus("nav", nav_at("quit"))
 	elif items["page"].size():
 		focus("page", 0)
 	else:
@@ -510,22 +596,22 @@ func back(esc: bool = false) -> void:
 	if at == "quit":
 		open_page("root")
 		return
-	if col == "page" and at == "save":
+	if col == "page" and (at == "save" or at == "load"):
+		var back_to := at
 		open_page("root")
-		focus("nav", 1)
+		focus("nav", nav_at(back_to))
 		return
 	if at.begins_with("set:") and col == "page":
-		var i := 0
-		for k in SETTINGS.size():
-			if "set:" + SETTINGS[k]["id"] == at:
-				i = k
 		col = "nav"
-		focus("nav", i)
+		focus("nav", nav_at(at))
 		legend_for()
 		return
 	if at.begins_with("set:"):
+		if ctx.get("settings_only", false):           # (the main menu's Settings: back out of them is out)
+			close("escaped")
+			return
 		open_page("root")
-		focus("nav", 2)
+		focus("nav", nav_at("settings"))
 		return
 	close("escaped" if esc else "resume")
 
@@ -577,7 +663,7 @@ func open(ctx_: Dictionary) -> Variant:
 	up = true
 	visible = true
 	hud.paused(true)
-	open_page("root")
+	open_page("set:" + pages()[0]["id"] if ctx.get("settings_only", false) else "root")
 	var r = await closed
 	return r
 

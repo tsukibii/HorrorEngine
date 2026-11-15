@@ -40,13 +40,13 @@ const SHOT_MASK := 1 | (1 << 10)                 ## what a pellet meets: the wor
 @export_group("Shells")
 @export var capacity := 2                         ## the shells it holds
 @export var loaded := 2                           ## in it now
-@export var chambered := true
+@export var chambered := true   ## a shell in the chamber when it starts
 @export var spare := 4                            ## shells in the pocket of the kind loaded next (few: every one counts); the other kinds' in `pocket`
 @export var kinds: Array[HSShellType] = []        ## the kinds of shell it takes, the normal one first (none: the plugin's buckshot and explosive)
 @export_group("Shot")
 @export var pellets := 9                          ## 00 buckshot
 @export var spread_deg := 0.9                     ## the cone's half angle (a real choke's: improved cylinder about 0.9°, modified 0.7°)
-@export var reach_m := 45.0
+@export var reach_m := 45.0   ## how far a pellet flies, in metres
 @export var push := 0.9                           ## the impulse a pellet gives a thing that moves
 @export var noise := 3.0                          ## how loud a shot is to listeners (noise.gd: a step 0.35, a run 1)
 @export var ring_secs := 2.5                      ## the ears ringing after a shot (the Fear node's ring; 0 none)
@@ -55,16 +55,16 @@ const SHOT_MASK := 1 | (1 << 10)                 ## what a pellet meets: the wor
 @export var flash_energy := 5.0                   ## the muzzle flash's light (for a frame or two; 1.5 for fewer flashes), times the shell's look's light_scale
 @export_group("Models")
 @export var model: PackedScene                    ## the gun (a prop generator's weapon: its parts and sockets)
-@export var shell_model: PackedScene
-@export var spent_model: PackedScene
+@export var shell_model: PackedScene   ## a live shell's model, for the reload and the pocket (none: the plugin's)
+@export var spent_model: PackedScene   ## a fired hull's model, flicked out and lying on the floor (none: the plugin's)
 @export_group("Hold")
 @export var hold := Vector3(0.14, -0.165, -0.34)  ## where the chamber sits from the eye (metres: x right, y up, -z ahead)
 @export var aim_at_m := 1.1                       ## the barrel's line meets the middle of the view this far ahead
 @export var beam_at_m := 12.0                     ## the carried flashlight's beam meets the middle of the view this far ahead
 @export var cant_deg := 7.0                       ## the gun leaned in
 @export var fov := 0.0                            ## the gun's own lens (0: the camera's)
-@export var sway := 1.0
-@export var bob := 1.0
+@export var sway := 1.0   ## how much it sways as you look round (0: none)
+@export var bob := 1.0   ## how much it bobs as you walk (0: none)
 @export var fit_tape := true                      ## drawn in to sit in the tape's 4:3 picture when one's on (HSTape)
 @export_group("Aim")
 @export var aim := true                           ## the right button raises it to the eye, the barrel straight ahead
@@ -73,11 +73,11 @@ const SHOT_MASK := 1 | (1 << 10)                 ## what a pellet meets: the wor
 @export var aim_fov := 58.0                       ## the camera's lens while aimed (0: as it is)
 @export var aim_spread := 1.0                     ## the cone while aimed (1: the same; a choke doesn't change when you aim)
 @export_group("Sounds")
-@export var fire_sound: AudioStream
-@export var insert_sound: AudioStream
-@export var dry_sound: AudioStream
-@export var drop_sound: AudioStream
-@export var handle_sound: AudioStream
+@export var fire_sound: AudioStream   ## the shot (none: the plugin's own; a shell's kind can bring its own)
+@export var insert_sound: AudioStream   ## a shell going in (none: the plugin's own)
+@export var dry_sound: AudioStream   ## the click with nothing in the chamber (none: the plugin's own)
+@export var drop_sound: AudioStream   ## a hull landing on the floor (none: the plugin's own)
+@export var handle_sound: AudioStream   ## raising and lowering it (none: the plugin's own)
 
 var busy := false                                 ## firing, reloading or raising (a check's)
 var reloading := false
@@ -137,6 +137,7 @@ func _ready() -> void:
 		_preview()
 		return
 	add_to_group("hs_weapon")
+	add_to_group("hs_saves")                         # (the starter Story's save_game: whether it's yours, its shells)
 	shell_model = shell_model if shell_model != null else load(DIR + "models/shell_12ga.glb")
 	spent_model = spent_model if spent_model != null else load(DIR + "models/shell_12ga_spent.glb")
 	for pair in [["fire_sound", "shotgun_fire"], ["insert_sound", "shotgun_shell_insert"], ["dry_sound", "shotgun_dry"],
@@ -429,11 +430,13 @@ func _kind_dot(at: Vector2, kind: HSShellType, u: float, k: float) -> void:
 	_hud_ctl.draw_circle(at, 2.2 * u, Color(kind.color, 0.9 * k))
 
 
-# where the shells' row ends (its right) and stands (its baseline): low on the right, inside a tape's 4:3 picture,
-# above the studio HUD's keys when the game has them
+# where the shells' row ends (its right) and stands (its baseline): low on the right, inside a tape's picture (its
+# `picture`: 4:3 in a wider view), above the studio HUD's keys when they're shown over the game
 func _hud_at(sz: Vector2, u: float) -> Vector2:
-	var fw := minf(sz.x, sz.y * 4.0 / 3.0) if (_tape_on and fit_tape) else sz.x
-	var at := Vector2(sz.x * 0.5 + fw * 0.5 - 46.0 * u, sz.y - 42.0 * u)
+	var right := sz.x
+	if _tape_on and fit_tape and _tape != null and is_instance_valid(_tape):
+		right = (_tape.call("picture", sz) as Rect2).end.x if _tape.has_method("picture") else sz.x * 0.5 + minf(sz.x, sz.y * 4.0 / 3.0) * 0.5
+	var at := Vector2(right - 46.0 * u, sz.y - 42.0 * u)
 	var chips := _hud_chips()
 	if chips != null and chips.is_visible_in_tree() and chips.modulate.a > 0.02 and chips.get_child_count() > 0:
 		at.y = minf(at.y, chips.get_global_rect().position.y - 12.0 * u)
@@ -524,6 +527,54 @@ func reload() -> void:
 ## `aim_spread` says, the sway and bob less; never while reloading or lowered
 func set_aim(on: bool) -> void:
 	aiming = on and aim and owned and raised and not reloading and _lower < 0.05
+
+
+## the starter Story's save_game and load_game (the group hs_saves): whether it's yours and up, the shells in it and in
+## the pocket by kind (each kind by its file, else its id). Dying never took the gun or its shells back, nor does this:
+## a save holds it as it is when it's written
+func save_state() -> Dictionary:
+	return {"owned": owned, "raised": raised, "loaded": loaded, "chambered": chambered, "spare": spare, "pocket": pocket.duplicate(),
+		"load_kind": _kind_ref(load_kind), "kinds": kinds.map(_kind_ref)}
+
+
+func load_state(d: Dictionary) -> void:
+	for r in d.get("kinds", []):
+		var k := _kind_of(r)
+		if k != null and not kinds.has(k):
+			kinds.append(k)
+	var lk := _kind_of(d.get("load_kind"))
+	if lk != null:
+		load_kind = lk
+	spare = int(d.get("spare", spare))
+	pocket = (d.get("pocket", pocket) as Dictionary).duplicate()
+	loaded = int(d.get("loaded", loaded))
+	chambered = bool(d.get("chambered", chambered))
+	var was := owned
+	owned = bool(d.get("owned", owned))
+	if owned and not was:
+		raised = false                               # (drawn up into the view, as a pickup gives it)
+		set_raised(bool(d.get("raised", true)))
+	elif owned:
+		set_raised(bool(d.get("raised", raised)))
+	_show_hud()
+
+
+func _kind_ref(k: HSShellType) -> Dictionary:
+	return {"id": k.id, "path": k.resource_path} if k != null else {}
+
+
+func _kind_of(r: Variant) -> HSShellType:
+	if not r is Dictionary or (r as Dictionary).is_empty():
+		return null
+	var path := str((r as Dictionary).get("path", ""))
+	if path != "" and ResourceLoader.exists(path):
+		var res := load(path)
+		if res is HSShellType:
+			return res
+	for k in kinds:
+		if k != null and k.id == str((r as Dictionary).get("id", "")):
+			return k
+	return null
 
 
 ## give it (a pickup), and some shells with it (`kind`: none, the normal kind)

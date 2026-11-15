@@ -73,10 +73,16 @@ static func set_look(m: Material, look: Dictionary) -> void:
 
 
 ## the hair records of a glb by material name (the salon's bake and the Studio's brows and lashes write `look` and
-## `studioHair` in their materials' extras); Godot's importer keeps no extras, so the file's JSON is read (HSEye)
-static func records(glb_path: String) -> Dictionary:
+## `studioHair` in their materials' extras): off the node's materials when it's given (Godot 4.7 keeps the extras: the
+## only place they are in an exported game), else the file's JSON (HSEye)
+static func records(glb_path: String, node: Node = null) -> Dictionary:
 	var out := {}
-	if glb_path == "":
+	var kept := HSEye.material_records(node, "")
+	for name in kept:
+		var ex: Dictionary = kept[name]
+		if ex.has("studioHair") or ex.has("look"):
+			out[name] = ex
+	if not out.is_empty() or glb_path == "":
 		return out
 	var j := HSEye.gltf_json(glb_path)
 	for mat in j.get("materials", []):
@@ -162,7 +168,7 @@ static func is_hair(names: String) -> bool:
 ## salon's bake as its records say (set_bake); returns the materials made
 static func wear(node: Node, look: Dictionary = {}, glb_path: String = "") -> Array:
 	var out: Array = []
-	var recs := records(glb_path)
+	var recs := records(glb_path, node)
 	var meshes: Array = node.find_children("*", "MeshInstance3D", true, false)
 	if node is MeshInstance3D:
 		meshes.push_front(node)                      # the node itself when it is the hair

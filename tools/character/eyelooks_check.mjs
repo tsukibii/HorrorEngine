@@ -96,5 +96,16 @@ for (const [id, L] of Object.entries(EL.EYE_LOOKS)) {
   if (write) { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, text); }
   say(fs.existsSync(file) && fs.readFileSync(file, "utf8") === text, `its ready-made HSEyeLook (addons/horrorstudio_look/eyes/eyes_${id}.tres) holds its ${Object.keys(words).length} eyeball settings` + (fs.existsSync(file) && fs.readFileSync(file, "utf8") === text ? "" : " (not as eyelooks.js has them: node tools/character/eyelooks_check.mjs --write)"));
 }
+// a whole look (looks.js) after an eye look: the eye look taken off first, so the look is the same whatever was worn
+// before it (soft cinematic after Eyes v3 kept v3's catchlights and cool whites under it); with no eye look worn,
+// only what the look names changes (a pupil set by hand stays)
+{ const LK = await import("./looks.js"), fitSrc = fs.readFileSync(path.join(ROOT, "tools", "character", "index.html"), "utf8").match(/const EYEFIT = (\{[^}]*\});/);
+  const D = { ...EYE.EYE_DEFAULTS, ...(fitSrc ? Function(`return ${fitSrc[1]}`)() : {}) }, fresh = { ...D, look: "" }, off = [];   // (the Studio's: the eye's paint and its fit, index.html EYEFIT)
+  for (const [id, el] of Object.entries(EL.EYE_LOOKS)) {
+    const wearing = { ...fresh, ...el.eyes, look: id };
+    for (const [n, look] of Object.entries(LK.LOOKS)) if (look.eyes && JSON.stringify(LK.lookEyes(wearing, look, D, EL.EYE_LOOKS)) !== JSON.stringify(LK.lookEyes(fresh, look, D, EL.EYE_LOOKS))) off.push(`${n} after ${id}`);
+  }
+  const mine = LK.lookEyes({ ...fresh, pupilShape: "heart" }, LK.LOOKS["soft cinematic"], D, EL.EYE_LOOKS);
+  say(!off.length && mine.pupilShape === "heart" && mine.look === "", `every whole look the same after an eye look as on fresh eyes, the eye look's card taken off; with none worn a hand-set pupil kept${off.length ? ": " + off.slice(0, 4).join(", ") : ""}`); }
 console.log(ok ? "EYELOOKS ok" : "EYELOOKS FAIL");
 process.exit(ok ? 0 : 1);

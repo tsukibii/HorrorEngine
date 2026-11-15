@@ -58,6 +58,13 @@ def outfit_slug(n):
     return re.sub(r"^_|_$", "", re.sub(r"[^a-z0-9]+", "_", n.lower()))
 
 
+def mine_pic(n):
+    """the picture of an outfit of one's own: never a preset's name (they're tracked; "Cardigan and skirt" wrote over
+    the preset "cardigan and skirt"'s), and a name in other letters gets one too (it slugged to "" and wrote .jpg)"""
+    import hashlib  # noqa: PLC0415
+    return "mine_" + (outfit_slug(n) or hashlib.sha1(n.encode("utf-8")).hexdigest()[:10])
+
+
 def clean(n):
     """a character's or a file's name: letters, digits, _ - . and no leading dot"""
     n = urllib.parse.unquote(n or "")
@@ -293,7 +300,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.loads(f.read_text(encoding="utf-8")) if f.is_file() else {})
         if parts[:2] == ["api", "people"] and len(parts) == 2:
             out = []
-            for d in sorted(PEOPLE.iterdir()) if PEOPLE.exists() else []:
+            for d in sorted(PEOPLE.iterdir(), key=lambda d: (d.name.startswith("_"), d.name.lower())) if PEOPLE.exists() else []:   # (a check's scratch characters, _studiotest..., last)
                 if d.is_dir() and clean(d.name): out.append({"name": d.name, "pictures": sorted(pictures(d.name)), "body": (d / "body.bin").exists(),
                                                              "hair": (d / "salon" / "salon.json").exists(), "baked": (d / "salon" / "salon.glb").exists()})
             return self.send(200, {"people": out})
@@ -397,19 +404,24 @@ class Handler(BaseHTTPRequestHandler):
         if parts == ["api", "clothes", "myoutfits"]:                             # {name, list, thumb: a JPEG data URL} saved, or {delete: name}
             req, data = json.loads(self.body().decode("utf-8")), my_outfits()
             presets = json.loads((CLOTHES / "outfits.json").read_text(encoding="utf-8")).get("outfits", {})
+            taken = {outfit_slug(k) for k in presets}
             if req.get("delete"):
-                n = req["delete"]; data["outfits"].pop(n, None); data["meta"].pop(n, None)
-                t = CLOTHES / "thumbs" / (outfit_slug(n) + ".jpg")
-                if n not in presets and t.is_file(): t.unlink()
+                n = req["delete"]; m = data["meta"].pop(n, None) or {}; data["outfits"].pop(n, None)
+                pic = m.get("pic") or outfit_slug(n)                               # (one saved before pictures of their own: its old name)
+                t = CLOTHES / "thumbs" / (pic + ".jpg")
+                if n not in presets and (pic.startswith("mine_") or pic not in taken) and t.is_file(): t.unlink()   # never a preset's picture
             else:
                 n = str(req.get("name", "")).strip()[:80]
-                if not n or n in presets or not isinstance(req.get("list"), list):
-                    return self.send(400, {"error": "a name that isn't a preset's, and a list of garments"})
-                data["outfits"][n] = req["list"]; data["meta"][n] = {"group": "mine"}
+                if not n or n in presets or outfit_slug(n) in taken or not isinstance(req.get("list"), list):
+                    return self.send(400, {"error": "a name that isn't a preset's (in any case), and a list of garments"})
+                pic = mine_pic(n)
+                if any((data["meta"].get(k) or {}).get("pic") == pic for k in data["outfits"] if k != n):
+                    return self.send(400, {"error": f"an outfit of yours has a name too like that one: another name, or save over it by its own"})
+                data["outfits"][n] = req["list"]; data["meta"][n] = {"group": "mine", "pic": pic}
                 th = str(req.get("thumb", ""))
                 if th.startswith("data:image/jpeg;base64,"):
                     (CLOTHES / "thumbs").mkdir(parents=True, exist_ok=True)
-                    (CLOTHES / "thumbs" / (outfit_slug(n) + ".jpg")).write_bytes(base64.b64decode(th.split(",", 1)[1]))
+                    (CLOTHES / "thumbs" / (pic + ".jpg")).write_bytes(base64.b64decode(th.split(",", 1)[1]))
             (CLOTHES / "my_outfits.json").write_text(json.dumps(data, indent=1, ensure_ascii=False), encoding="utf-8")
             return self.send(200, data)
         if parts == ["api", "hair2", "styles"]:                                  # {name, style, set, thumb: a JPEG data URL} kept, or {delete: id}
@@ -420,9 +432,11 @@ class Handler(BaseHTTPRequestHandler):
                 if clean(i) and t.is_file(): t.unlink()
             else:
                 label = str(req.get("name", "")).strip()[:60]
-                i = outfit_slug(label)
+                i = outfit_slug(label) or ("s" + __import__("hashlib").sha1(label.encode("utf-8")).hexdigest()[:10] if label else "")   # (a name in other letters: refused, saying it wanted a name)
                 if not i or not isinstance(req.get("set"), dict):
                     return self.send(400, {"error": "a name, the style it started from and what differs"})
+                if i in data["styles"] and data["styles"][i].get("label") != label and not req.get("replace"):
+                    return self.send(400, {"error": f"a style of yours is called {data['styles'][i].get('label')!r}, too like that name: another name"})
                 data["styles"][i] = {"label": label, "style": str(req.get("style", "")), "set": req["set"]}
                 th = str(req.get("thumb") or "")
                 if th.startswith("data:image/jpeg;base64,"):

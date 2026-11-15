@@ -23,6 +23,19 @@ var _held := false
 var _t := 0.0
 
 
+func _ready() -> void:
+	add_to_group("hs_keeps")                       # a checkpoint keeps how often it's switched (one that's fired since can again)
+
+
+func keep_state() -> Dictionary:
+	return {"times": times, "held": _held}
+
+
+func put_state(s: Dictionary) -> void:
+	times = int(s.get("times", times))
+	_held = bool(s.get("held", _held))
+
+
 func _story() -> Node:
 	return get_tree().get_first_node_in_group("hs_story")
 

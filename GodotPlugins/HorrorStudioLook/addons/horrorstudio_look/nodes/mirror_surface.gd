@@ -10,8 +10,8 @@ class_name HSMirrorSurface
 extends Node
 
 @export var target: MeshInstance3D = null      ## the glass's mesh; empty: the parent
-@export var surface: int = -1
-@export_enum("160:160", "288:288", "512:512") var resolution: int = 288
+@export var surface: int = -1   ## the glass's surface on the mesh (-1: the one named mirror, or whose material is, else the first)
+@export_enum("160:160", "288:288", "512:512") var resolution: int = 288   ## the reflection's picture size: higher, sharper and dearer
 @export_range(0.0, 1.0) var steam: float = 0.0:     ## fogged over from the bottom edge (1 all of it)
 	set(v):
 		steam = v

@@ -87,7 +87,7 @@ export function toText(clips, cast = {}) {
     if (c.think) return `"${c.en || "…"}"${c.act ? `\n(${c.act})` : ""}`;
     const who = c.who === "player" ? "You" : ((cast[c.who] || {}).name || c.who || "?");
     const say = [c.ja, c.en].filter(Boolean).join(" / ") || "…";
-    return `${who}: ${say}${c.shot ? ` [${c.shot.toUpperCase()}]` : ""}${c.act ? `\n(${c.act})` : ""}`;
+    return `${who}: ${say}${SHOTS.includes(c.shot) ? ` [${c.shot.toUpperCase()}]` : ""}${c.act ? `\n(${c.act})` : ""}`;   // (a pov shot isn't the text's: it's left on its line, not typed into its words)
   }).join("\n");
 }
 const bag = c => new Set(`${c.en || ""} ${c.ja || ""}`.toLowerCase().match(/[a-z0-9']+|[\u3040-\u9fff]/g) || []);
@@ -107,7 +107,7 @@ export function applyTo(clips, lines, newId) {
     for (const k of ["en", "ja"]) { if (l[k]) c[k] = l[k]; else delete c[k]; }
     if (l.think) c.think = true; else delete c.think;
     if (l.act) c.act = l.act; else delete c.act;
-    if (l.shot) c.shot = l.shot;
+    if (l.shot) c.shot = l.shot; else if (SHOTS.includes(c.shot)) delete c.shot;   // (a shot taken off in the text goes; one the text can't show, pov_down, stays)
     used.add(c); out.push(c);
   };
   for (const [pi, pj] of pairs) {

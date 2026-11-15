@@ -202,11 +202,12 @@ $("#helpBtn").onclick = e => { e.preventDefault(); $("#help").showModal(); };
 $("#open").onclick = () => $("#file").click();
 $("#file").onchange = async e => { const f = e.target.files[0]; if (!f) return; status(`Bringing in ${f.name}…`);
   const r = await fetch(`/api/open?name=${encodeURIComponent(f.name)}`, { method: "POST", body: await f.arrayBuffer() }), j = await r.json(); if (!r.ok) return status(j.error, "bad"); await characters(j.name); e.target.value = ""; };
-$("#bake").onclick = async () => {
+$("#bake").onclick = () => bake().catch(e => { $("#bake").disabled = false; status(`the bake: ${e.message} (the Animator's server stopped? python tools/animator/serve.py)`, "bad"); });   // (a failed poll left Bake greyed out until a reload)
+async function bake() {
   const log = $("#log"); log.textContent = ""; $("#bake").disabled = true; status(`Baking ${S.name}…`);
   const j = await (await fetch("/api/bake", { method: "POST", body: JSON.stringify({ name: S.name, settings: S.set }) })).json(); if (j.error) { status(j.error, "bad"); $("#bake").disabled = false; return; }
   let from = 0; for (;;) { await new Promise(r => setTimeout(r, 400)); const s = await (await fetch(`/api/job/${j.job}?from=${from}`)).json(); from = s.lines; if (s.log.length) { log.textContent += s.log.join("\n") + "\n"; log.scrollTop = log.scrollHeight; }
     if (s.state !== "running") { $("#bake").disabled = false; const name = S.name; await characters(); const c = S.chars.find(x => x.name === name);
       status(s.state === "ok" ? `${name}: baked, ${c ? c.clips.length : "its"} clips in ${c ? c.where : "its file"} (${s.secs} s)` : `${name}: the bake failed (its log is on the right)`, s.state === "ok" ? "good" : "bad"); break; } }
-};
+}
 characters().catch(e => status(e.message, "bad"));

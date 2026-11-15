@@ -33,12 +33,12 @@ signal slept
 signal couldnt_sleep(why: String)
 signal broke                                          ## it reached nothing
 
-@export_range(0.0, 1.0) var sanity := 1.0
+@export_range(0.0, 1.0) var sanity := 1.0   ## where it starts: 1 whole, 0 nothing left
 @export_group("What wears it down")
 @export var drain := 0.0                              ## a second, always (0.001: a quarter gone in four minutes)
 @export var dark_drain := 0.004                       ## a second in the dark, on your feet
 @export var near_drain := 0.01                        ## a second with her within `near_m`, nothing between you
-@export var near_m := 8.0
+@export var near_m := 8.0   ## how near her counts
 @export var hunt_drain := 0.003                       ## a second while a hunt runs
 @export var scare_cost := 0.06                        ## each scare (anything in the group hs_scare)
 @export var death_cost := 0.0                         ## dying
@@ -46,7 +46,7 @@ signal broke                                          ## it reached nothing
 @export var sit_rate := 0.01                          ## a second sitting
 @export_range(0.0, 1.0) var sit_to := 0.7             ## sitting mends it no further than this
 @export var lie_rate := 0.015                         ## a second lying down, awake
-@export_range(0.0, 1.0) var lie_to := 0.8
+@export_range(0.0, 1.0) var lie_to := 0.8   ## lying down awake mends it no further than this
 @export var light_rate := 0.0                         ## a second standing in light (0: light only stops the dark's drain)
 @export var foods := {}                               ## pocket things made eatable and how much each mends: {"soda": 0.1, "noodles": 0.3} (hold the left button: story.gd)
 @export_group("Sleep")
@@ -56,20 +56,20 @@ signal broke                                          ## it reached nothing
 @export var sleep_needs := ""                         ## the Story's words that must hold to sleep ("night")
 @export var no_sleep := PackedStringArray()           ## any of these holding and you can't: "on:find304", "hunt:Hunt"
 @export var hunts_stop_sleep := true                  ## no sleep while a hunt runs
-@export var cant_says := "You can't sleep. Not now."
-@export var slept_says := ""
+@export var cant_says := "You can't sleep. Not now."   ## said when you lie down and can't sleep
+@export var slept_says := ""   ## said when you wake
 @export var slept_fact := "slept"                     ## set in the Story each time you've slept
 @export_group("At nothing")
 @export var zero_dies := false                        ## at nothing you die (the Story's die(): back at its checkpoint)
-@export var zero_title := "You lost yourself"
+@export var zero_title := "You lost yourself"   ## the death card's title when it reaches nothing and you die
 @export var zero_target: Node                         ## its fire() at nothing
 @export_range(0.0, 1.0) var revive_to := 0.5          ## back from the dead with at least this
 @export_group("The meter")
-@export var show_meter := true
-@export_enum("always", "when it's not full", "when it changes") var meter_when := "when it's not full"
-@export var label := "SANITY"
-@export var color := Color(0.88, 0.64, 0.37)
-@export var low_color := Color(0.78, 0.17, 0.15)
+@export var show_meter := true   ## the thin meter at the top right
+@export_enum("always", "when it's not full", "when it changes") var meter_when := "when it's not full"   ## when the meter shows
+@export var label := "SANITY"   ## the meter's word
+@export var color := Color(0.88, 0.64, 0.37)   ## the meter's colour
+@export var low_color := Color(0.78, 0.17, 0.15)   ## its colour once it's low
 
 var sleeping := false
 var now_band := "calm"
@@ -85,16 +85,33 @@ var _shown := 0.0
 var _moved := 0.0
 var _last := 1.0
 var _bar: Control
+var _frame := Rect2()                                 # the picture the meter was last laid in (a tape's 4:3, else the view)
 var _fill: ColorRect
 var _black: ColorRect
+var _at_kept := -1.0                                  # what it was at the Story's last checkpoint (a save holds that)
+var _loaded := -1.0                                   # a save's, put back at the Story's revived (load_game)
 
 
 func _ready() -> void:
 	add_to_group("hs_sanity")
+	add_to_group("hs_saves")
 	_last = sanity
 	_build()
 	_hook.call_deferred()
 	_facts.call_deferred()
+	get_tree().node_added.connect(_on_added)
+
+
+# a scare added since the start (an instanced room, a cue or a hunt made by a script) is heard too: hooked once its own
+# _ready has put it in the group, so the first scare it gives isn't missed
+func _on_added(n: Node) -> void:
+	if n.has_signal("scared"):
+		_hear_late.call_deferred(n)
+
+
+func _hear_late(n: Node) -> void:
+	if is_instance_valid(n) and n.is_inside_tree() and n.is_in_group("hs_scare") and not n.is_connected("scared", _on_scare):
+		n.connect("scared", _on_scare)
 
 
 func _story() -> Node:
@@ -111,6 +128,8 @@ func _hook() -> void:
 			st.died.connect(_on_died)
 		if st.has_signal("revived") and not st.revived.is_connected(_on_revived):
 			st.revived.connect(_on_revived)
+		if st.has_signal("kept") and not st.kept.is_connected(_on_kept):
+			st.kept.connect(_on_kept)
 		if st.has_method("set_eatable"):                  # its foods: eatable out of the pocket (the Story's eat meter)
 			for item in foods:
 				if not st.is_eatable(str(item)):
@@ -127,7 +146,24 @@ func _on_died(_how := "") -> void:
 
 func _on_revived() -> void:
 	_broke = false
+	if _loaded >= 0.0:                                # a save loaded: as it was then
+		set_to(_loaded)
+		_loaded = -1.0
+		return
 	set_to(maxf(sanity, revive_to))
+
+
+func _on_kept() -> void:
+	_at_kept = sanity
+
+
+## the Story's save_game and load_game: the meter at the checkpoint the save holds
+func save_state() -> Dictionary:
+	return {"sanity": _at_kept if _at_kept >= 0.0 else sanity}
+
+
+func load_state(d: Dictionary) -> void:
+	_loaded = clampf(float(d.get("sanity", sanity)), 0.0, 1.0)
 
 
 ## 1 calm to 1 + `sync` at nothing: how much faster a hunt or the director goes (hunt.gd, dread.gd)
@@ -379,9 +415,26 @@ func _build() -> void:
 	_bar.modulate.a = 0.0
 
 
+# the picture a tape leaves (the Look plugin's vhs.gd, `picture`: 4:3 in the middle of a wider view), else the view
+func _picture() -> Rect2:
+	var vs := get_viewport().get_visible_rect().size
+	for t in get_tree().get_nodes_in_group("hs_tape"):
+		if t.has_method("picture") and t.get_viewport() == get_viewport():
+			var r: Rect2 = t.call("picture", vs)
+			if r.size.x < vs.x - 0.5:
+				return r
+	return Rect2(Vector2.ZERO, vs)
+
+
 func _meter(dt: float) -> void:
 	if _bar == null:
 		return
+	var fr := _picture()                                  # inside a tape's picture, never over the black beside it
+	if fr != _frame:
+		_frame = fr
+		var right := maxf(get_viewport().get_visible_rect().size.x - fr.end.x, 0.0)
+		_bar.offset_left = -214.0 - right
+		_bar.offset_right = -34.0 - right
 	if absf(sanity - _last) > 0.002:
 		_moved = 4.0
 		_last = sanity

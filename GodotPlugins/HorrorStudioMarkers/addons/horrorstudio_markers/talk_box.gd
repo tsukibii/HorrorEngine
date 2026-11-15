@@ -51,6 +51,7 @@ var _cursor_set := false
 var _colors := {}
 var _scrim: TextureRect
 var _foot: VBoxContainer
+var _frame := Rect2()                                      # the picture the footer was last laid in (a tape's 4:3, else the view)
 var _who_l: Label
 var _line_l: Label
 var _row: HBoxContainer
@@ -570,7 +571,25 @@ func caption(text: String, secs := 3.0) -> void:
 	_caption_left = secs if text != "" else 0.0
 
 
+# the picture a tape leaves (the Look plugin's vhs.gd, `picture`: 4:3 in the middle of a wider view), else the view:
+# the footer's lines wrap inside it, never over the black either side (the HSHud lays its own)
+func _picture() -> Rect2:
+	var vs := get_viewport().get_visible_rect().size
+	for t in get_tree().get_nodes_in_group("hs_tape"):
+		if t.has_method("picture") and t.get_viewport() == get_viewport():
+			var r: Rect2 = t.call("picture", vs)
+			if r.size.x < vs.x - 0.5:
+				return r
+	return Rect2(Vector2.ZERO, vs)
+
+
 func _process(dt: float) -> void:
+	if _foot != null:
+		var fr := _picture()
+		if fr != _frame:
+			_frame = fr
+			_foot.offset_left = fr.position.x
+			_foot.offset_right = -maxf(get_viewport().get_visible_rect().size.x - fr.end.x, 0.0)
 	if not _prompts.is_empty() or _cursor_set:
 		_prompt_t -= dt
 		if _prompt_t <= 0.0:

@@ -49,6 +49,25 @@ main{flex:1;display:flex;min-height:0}
 .chip.failed,.chip.lost{color:var(--bad);border-color:#5a2424}
 .chip.running{color:var(--warn);border-color:#5a4220}
 .chip.stopped{color:var(--ash)}
+/* the New game card: the project maker by a name and a click */
+.newgame{background:linear-gradient(135deg,#1a0f10,#110c0c);border:1px solid #4a1a1e;border-radius:var(--r);padding:14px 16px 12px;margin-bottom:20px}
+.ng-h{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--blood);margin-bottom:10px}
+.ng-row{display:flex;gap:8px;flex-wrap:wrap}
+#ngName{flex:2 1 260px;font-size:16px;padding:8px 12px}
+#ngStudio{flex:1 1 200px}
+#ngCreate{font-size:15px;padding:8px 24px}
+.ng-note{font-size:12px;color:var(--ash);margin-top:8px;min-height:26px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ng-note.ok{color:var(--ok)}
+.ng-note.bad{color:var(--bad)}
+.ng-note.busy{color:var(--warn)}
+.ng-sub{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ash);margin:12px 0 2px;display:flex;gap:8px;align-items:center}
+.ng-sub .where{text-transform:none;letter-spacing:0;font:11px ui-monospace,Menlo,Consolas,monospace;color:#6d625c}
+.ng-game{display:flex;align-items:center;gap:10px;padding:5px 6px;border-radius:7px}
+.ng-game:hover{background:#140f10}
+.ng-game .t{flex:1;min-width:0}
+.ng-game .label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ng-game .cmd{font:11px ui-monospace,Menlo,Consolas,monospace;color:#6d625c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ng-game .when{font-size:11px;color:var(--ash)}
 /* start here: the pages, as tiles */
 #start{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-bottom:22px}
 .tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:118px}

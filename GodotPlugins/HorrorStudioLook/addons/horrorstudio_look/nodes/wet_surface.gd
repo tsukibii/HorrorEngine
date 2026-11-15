@@ -6,13 +6,13 @@
 class_name HSWetSurface
 extends HSOnMesh
 
-@export_range(0.0, 1.0) var wetness: float = 0.8
-@export_range(0.0, 1.0) var puddles: float = 0.5
-@export_range(0.1, 5.0) var puddle_scale: float = 0.9
-@export_range(0.0, 1.0) var ripples: float = 0.0
-@export_range(0.1, 4.0) var ripple_rate: float = 1.0
-@export var water_tint := Color(0.04, 0.05, 0.06)
-@export_range(0.0, 0.5) var edge: float = 0.12
+@export_range(0.0, 1.0) var wetness: float = 0.8   ## how wet: darker and glossier, 0 dry
+@export_range(0.0, 1.0) var puddles: float = 0.5   ## how much of it stands in pools that mirror the room
+@export_range(0.1, 5.0) var puddle_scale: float = 0.9   ## about how many metres a pool is across: larger, bigger and fewer pools
+@export_range(0.0, 1.0) var ripples: float = 0.0   ## rain's rings in the pools (0: still water)
+@export_range(0.1, 4.0) var ripple_rate: float = 1.0   ## how often drops land: rings a second, times this
+@export var water_tint := Color(0.04, 0.05, 0.06)   ## the water's own colour in the pools
+@export_range(0.0, 0.5) var edge: float = 0.12   ## how wide the damp rim round each pool is
 
 
 func _settings() -> Dictionary:

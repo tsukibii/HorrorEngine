@@ -3,7 +3,7 @@
 @tool
 extends Node
 
-@export var degrees := 52.0:
+@export var degrees := 52.0:   ## how far down her arms come from the export's pose, in degrees
 	set(v):
 		degrees = v
 		apply()

@@ -12,9 +12,9 @@ signal taken
 
 const DIR := "res://addons/horrorstudio_weapons/"
 
-@export_enum("double", "shells") var kind := "double"
-@export var shells := 5
-@export var say := ""
+@export_enum("double", "shells") var kind := "double"   ## the gun itself, or a box of shells
+@export var shells := 5   ## a box of shells: how many in it
+@export var say := ""   ## a line when it's taken
 @export_range(0.0, 110.0) var lid_open := 0.0     ## a box of shells' lid, degrees open (0 shut): the shells inside show
 @export var shell: HSShellType                    ## the kind of shells (none: the gun's normal kind)
 @export var box_model: PackedScene                ## the box (none: the kind's own box, else the plugin's box of five)

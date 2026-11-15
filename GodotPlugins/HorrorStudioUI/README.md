@@ -12,7 +12,9 @@ appearing and going an ease, and no panels (words, and where they need it a soft
 | **A thing's model in a slot** | `model_slot.gd` (`HSModelSlot`) | `HSModelSlot.make(model, Vector2i(64, 64), true)`: the thing itself in a small world of its own, fitted, the TextureRect to show it (the inventory row's slots, the laptop's shop); `HSModelSlot.of_scene(scene)` a model from a scene, `copy_of(node)` from a thing in the room |
 | **The quest marker** | `quest_marker.gd` (`HSQuestMarker`, a Node3D), `marker.gd` (what draws it) | add an `HSQuestMarker` as a child of a door, a person, an item, a trigger: while `active` the HSHud hangs a diamond over it. **The nearer the clearer**: nearly opaque inside 3 m, faint far off, gone by 72 m, and about half as strong with a wall between (a physics ray against `sight_mask`: you can see roughly where it is through the rooms); its `label` comes over it once you're close; a small diamond with a chevron points to it from the screen's edge once it has been out of view a moment. `height`: metres up to the top of the thing. `needs`: shown only while the starter Story's words hold (`on:find_key`: while that task is on the list and not done), so it comes and goes with the to-do list by itself. Off, Subtle or Clear in Project Settings |
 | **The look** | `theme.gd`, `halo.gdshader` | the four themes (`glass` the default, `glass-rose`, `neumorph`, `plain`: colours, a surface, a voice), the serif for what people say and write (a system serif: Source Serif 4, Noto Serif, Georgia, Liberation, DejaVu; the default font where there's none), small letter-spaced capitals for labels; `halo.gdshader` a soft edgeless dark behind a card's words |
-| **The pause menu** | `menu.gd` | the controls, Save game, Settings (display, graphics, audio, Quest marker), Quit: the studio's runtime uses it (`HSHud.standalone = false`); a game by hand has none |
+| **A studio's card** | `splash.gd` (`HSSplash`, a Control) | black, the words (**Line**: "[Artist] presents") and a **Picture**, easing in and out, then **Next Scene**; any key or click skips it. The project maker's `intro.tscn`, with Godot's own boot screen black under it |
+| **The main menu** | `title_menu.gd` (`HSTitleMenu`, a Control) | the game's name (**Title**, **Subtitle**, **Backdrop**), Continue (the newest save), New game, Load game, Settings (the pause menu's pages), Quit, in the HUD's look; it starts **Game Scene**, and Continue and Load game tell the starter Story which save to load (the tree's meta `hs_load_slot`). The project maker's `menu.tscn` |
+| **The pause menu** | `menu.gd` | the controls, Save game, Settings (display, graphics, audio, Quest marker), Quit: the studio's runtime uses it (`HSHud.standalone = false`); a game by hand has it with the starter kit's `pause.gd` (a Node called Pause: Esc holds the game, Save game and Load game are the starter Story's saves) |
 | **Typed thoughts** | `typing.gd` | a thought typing itself out, retyped or breaking off (the story's `type`) |
 
 ## By hand
@@ -20,8 +22,13 @@ appearing and going an ease, and no panels (words, and where they need it a soft
 1. `python tools/godot_byhand.py new ~/Games/MyGame` (or `install` into a project you have: the plugin is copied in; enable
    **HorrorStudio UI** in Project Settings > Plugins for its settings).
 2. Add an **HSHud** node to your scene. It sets itself up (`standalone`, the default): the project's theme and quest marker
-   setting, no black fade, no pause menu, and the quest markers found in the scene. Give it **Keys**, your game's keys as
-   chips at the foot ("W A S D:walk", "E:use", "Tab:pocket"): without them it shows the studio runtime's.
+   setting, no black fade, no pause menu (unless the starter's `pause.gd` asks for one: **Pause Menu**), and the quest
+   markers found in the scene. Give it **Keys**, your game's keys as chips ("W A S D:walk", "E:use", "Tab:pocket"):
+   they're shown only in the pause menu, at its foot on the right (**Keys In Menu**, on by default: never over the game);
+   with it off, at the foot while you play. Without Keys, the starter player's (walk, run, use, pocket, flashlight, hold
+   your breath). Under the Look plugin's tape (its 4:3 picture between black bars in a wider window) every part at an
+   edge is laid inside the picture, whatever the preset and the window: the objective and the list, the log, the lines,
+   a side card, the keys, the quest marker's pointer.
 3. Add an **HSQuestMarker** as a child of what the player should be pointed at: set its `label` and `height`; turn `active`
    off (or free it) when the task is done, or give it **Needs** in the starter Story's words (`on:find_key`) and it goes
    when the task is ticked (guides/tutorial_v2, the HUD and quest markers).

@@ -43,7 +43,7 @@ const REACH_MOST := 6.0                       ## a thing with no use() bigger th
 @export var tick := ""                        ## a task ticked
 @export var add_tasks: PackedStringArray = [] ## tasks put on the list: "id: what to do"
 @export var say := ""                         ## a line
-@export_range(0.5, 20.0, 0.1) var say_secs := 3.0
+@export_range(0.5, 20.0, 0.1) var say_secs := 3.0   ## how long the line stays
 @export var sound := ""                       ## a sound: one of the sound shelf's by name
 @export var fires: Array[NodePath] = []       ## things fired: their fire(), start() or use()
 
@@ -77,6 +77,7 @@ func _ready() -> void:
 		set_process(false)
 		return
 	add_to_group("hs_logic")
+	add_to_group("hs_saves")                                 # (the Story's save_game writes how often it had fired at its checkpoint)
 	HSFlagBoard.of(get_tree())                                # (F7 lists the flags)
 	_listen.call_deferred()
 	set_process(on == "itself")
@@ -200,6 +201,16 @@ func _on_kept() -> void:
 func _on_revived() -> void:
 	times = _kept
 	_held = false
+
+
+## the Story's save_game and load_game: how often it had fired at the checkpoint the save holds (load_game puts it back
+## as dying does, at `revived`)
+func save_state() -> Dictionary:
+	return {"kept": _kept}
+
+
+func load_state(d: Dictionary) -> void:
+	_kept = int(d.get("kept", _kept))
 
 
 ## is it so now?

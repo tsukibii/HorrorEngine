@@ -8,11 +8,11 @@
 class_name HSLookEnvironment
 extends WorldEnvironment
 
-@export_enum("balanced", "realism", "plain") var preset: String = "balanced":
+@export_enum("balanced", "realism", "plain") var preset: String = "balanced":   ## the look shown while you edit: balanced (the default), realism, or plain
 	set(v):
 		preset = v
 		_wear()
-@export var editor_only := true
+@export var editor_only := true   ## steps aside when the game runs (the game's own environment counts); off keeps it in the game too, for a project with no other environment
 
 
 func _ready() -> void:

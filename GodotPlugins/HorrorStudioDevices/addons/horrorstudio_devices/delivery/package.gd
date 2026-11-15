@@ -15,6 +15,9 @@ extends Node3D
 ## The prefab is delivery/package.tscn: the prop generator's `parcel` (a customizable recipe: its print, tape and label are
 ## its own pictures, PROPGEN §34). Its sounds: a knock and the box set down when it arrives; the tape, the poof, a pop a
 ## thing.
+## Dying and saves (the starter's Story): one placed by hand is kept by the Story's checkpoint (the group hs_keeps), so
+## opened since, it's shut again where it was with what's in it (and it's hidden once unboxed, never freed); a laptop's
+## own are the laptop's to keep (its orders on their way and the parcels it's left).
 
 signal arrived                                       ## set down where it was sent (its knock and its thud)
 signal opened                                        ## E: the tape torn and the box burst (or, `keep_box`, its flaps open)
@@ -36,8 +39,8 @@ const MARKER := "res://addons/horrorstudio_ui/quest_marker.gd"
 @export var marker := false                          ## a quest marker over it till it's opened (the UI plugin's HSQuestMarker: an HSHud in the scene draws it); the laptop's Mark Parcels puts one on each it leaves
 @export var marker_label := "Parcel"                 ## the marker's name, seen near
 @export_group("Sound")
-@export var sounds := true
-@export_range(-40.0, 6.0) var volume_db := -4.0
+@export var sounds := true   ## the parcel's sounds (the knock, the tape, the flaps)
+@export_range(-40.0, 6.0) var volume_db := -4.0   ## their loudness in dB
 
 var order_number := 0                                ## the order it came for (the laptop's number); 0 when placed by hand
 var is_open := false
@@ -55,6 +58,8 @@ var _queue: Array = []                               # what's still to come out:
 var _burst := false
 var _finished := false
 var _sfx := {}
+var _layers := [1, 1]                                # the body's collision layer and mask, shut
+var _scale := Vector3.ONE                            # the model's, shut
 
 
 func _ready() -> void:
@@ -62,10 +67,82 @@ func _ready() -> void:
 	for f in flaps:
 		_set_flap(f, 0.0)
 	add_to_group("hs_package")
+	if order_number == 0:
+		add_to_group("hs_keeps")                     # (placed by hand: a checkpoint keeps whether it's been opened)
 	_make_body()
+	if _body != null:
+		_layers = [_body.collision_layer, _body.collision_mask]
+	if _model != null:
+		_scale = _model.scale
 	_make_sounds()
 	if marker:
 		_make_marker()
+
+
+## the Story's checkpoint: whether it's been opened; put back from before it was, it's shut again with what's in it (the
+## pocket put back without what came out of it); a save that had it opened, loaded into a game that hasn't, opens it
+func keep_state() -> Dictionary:
+	return {"open": is_open}
+
+
+func put_state(s: Dictionary) -> void:
+	var was := bool(s.get("open", is_open))
+	if not was and is_open:
+		_reset()
+	elif was and not is_open:
+		_open_now()
+
+
+# shut again as it came
+func _reset() -> void:
+	for f in flying:
+		if is_instance_valid(f["node"]):
+			(f["node"] as Node).queue_free()
+	flying.clear()
+	for p in puff:
+		if is_instance_valid(p):
+			(p as Node).queue_free()
+	puff.clear()
+	_queue.clear()
+	is_open = false
+	is_empty = false
+	_t = -1.0
+	_burst = false
+	_finished = false
+	visible = true
+	if _model != null:
+		_model.visible = true
+		_model.scale = _scale
+	for f in flaps:
+		_set_flap(f, 0.0)
+	if _body != null:
+		_body.collision_layer = int(_layers[0])
+		_body.collision_mask = int(_layers[1])
+	if marker and (mark == null or not is_instance_valid(mark)):
+		_make_marker()
+
+
+# opened and done with at once: what was in it is in the pocket already
+func _open_now() -> void:
+	is_open = true
+	is_empty = true
+	_finished = true
+	if mark != null and is_instance_valid(mark):
+		mark.queue_free()
+	mark = null
+	if keep_box:
+		for f in flaps:
+			_set_flap(f, 1.0)
+	else:
+		_gone()
+
+
+# unboxed and not kept: nothing there to see, walk into or use (hidden, so a checkpoint from before can shut it again)
+func _gone() -> void:
+	visible = false
+	if _body != null:
+		_body.collision_layer = 0
+		_body.collision_mask = 0
 
 
 # ---- what it's made of ---------------------------------------------------------------------------------------------------
@@ -272,7 +349,10 @@ func _process(dt: float) -> void:
 		is_empty = true
 		unboxed.emit(items, Array(counts))
 		if not keep_box:
-			queue_free()
+			if order_number == 0:
+				_gone()                              # placed by hand: hidden (a checkpoint from before shuts it again)
+			else:
+				queue_free()                         # a laptop's: the laptop keeps what it's left
 
 
 # the box's last moment: it squashes, stretches as its flaps are flung, and is gone in the puff

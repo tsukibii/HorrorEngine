@@ -7,17 +7,26 @@ signal read
 
 const Reach := preload("res://starter/reach.gd")
 
-@export var title := ""
-@export_multiline var text := ""
+@export var title := ""   ## the card's title
+@export_multiline var text := ""   ## the card's words
 @export var tick := ""                          ## a task it ticks off
 @export var add_tasks: PackedStringArray = []   ## tasks it adds, each "id: what it says"
-@export var objective := ""
+@export var objective := ""   ## the objective changed to this when it's read
 
 var was_read := false
 
 
 func _ready() -> void:
 	Reach.make(self)
+	add_to_group("hs_keeps")                       # a checkpoint keeps whether it's been read (its tasks come again after dying)
+
+
+func keep_state() -> Dictionary:
+	return {"read": was_read}
+
+
+func put_state(s: Dictionary) -> void:
+	was_read = bool(s.get("read", was_read))
 
 
 func use(_by: Node = null) -> void:

@@ -7,23 +7,24 @@
 class_name HSGrade
 extends Node
 
+## a look to start from: picking one fills the numbers below with its own, to tune from there
 @export_enum("cinema", "teal-orange", "cold", "sodium", "bleach", "noir", "warm", "none") var preset: String = "cinema":
 	set(v):
 		preset = v
 		if Engine.is_editor_hint() and is_node_ready():
 			_fill()
-@export_range(0.0, 1.0) var amount: float = 1.0
-@export var lift := Vector3(-0.012, 0.0, 0.028)
-@export var gamma := Vector3(1, 1, 1)
-@export var gain := Vector3(1.03, 1.0, 0.95)
-@export_range(-1.0, 1.0) var warmth: float = 0.0
-@export_range(0.0, 2.0) var saturation: float = 0.94
-@export_range(0.5, 2.0) var contrast: float = 1.06
-@export_range(0.0, 0.3) var fade: float = 0.0
-@export_range(0.0, 1.0) var vignette: float = 0.3
-@export_range(0.05, 1.0) var vignette_soft: float = 0.55
-@export_range(0.0, 1.0) var grain: float = 0.15
-@export_range(0.0, 3.0) var aberration: float = 0.6
+@export_range(0.0, 1.0) var amount: float = 1.0   ## how much of the grade: 0 the picture as it is, 1 all of it
+@export var lift := Vector3(-0.012, 0.0, 0.028)   ## the shadows raised (above 0) or sunk, red, green and blue apart: (-0.01, 0, 0.03) cool shadows
+@export var gamma := Vector3(1, 1, 1)   ## the midtones, red, green and blue apart: above 1 brighter, below 1 darker
+@export var gain := Vector3(1.03, 1.0, 0.95)   ## the highlights times this, red, green and blue apart: (1.03, 1, 0.95) warm highlights
+@export_range(-1.0, 1.0) var warmth: float = 0.0   ## the whole picture toward orange (above 0) or blue (below 0)
+@export_range(0.0, 2.0) var saturation: float = 0.94   ## colour: 0 grey, 1 as it is, 2 twice
+@export_range(0.5, 2.0) var contrast: float = 1.06   ## about the middle grey: 1 as it is, more the darks darker and the lights lighter
+@export_range(0.0, 0.3) var fade: float = 0.0   ## a film fade: the blacks lifted toward a milky grey-blue
+@export_range(0.0, 1.0) var vignette: float = 0.3   ## the picture darkened toward its edges and corners
+@export_range(0.05, 1.0) var vignette_soft: float = 0.55   ## how far in the vignette starts: small only the corners, 1 from near the middle
+@export_range(0.0, 1.0) var grain: float = 0.15   ## film grain (the players' Film grain setting caps it)
+@export_range(0.0, 3.0) var aberration: float = 0.6   ## the colours pulled apart toward the picture's edge, in pixels there
 var post: HSPost = null
 var _prev = null
 var _own := false

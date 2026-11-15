@@ -17,7 +17,7 @@ const Sight := preload("res://starter/sight.gd")
 
 signal moved(count: int)
 
-@export_enum("face you", "next mark", "nudge", "tip", "vanish") var what := "face you"
+@export_enum("face you", "next mark", "nudge", "tip", "vanish") var what := "face you"   ## what it does unseen: turns to face you, goes to its next mark, is nudged, tips over, or is gone
 @export var marks: Array[NodePath] = []             ## next mark: where it goes, in turn (Marker3Ds)
 @export_range(0.0, 180.0) var turn_max_deg := 180.0  ## face you: the most it turns in one go
 @export var nudge_m := 0.25                         ## nudge: how far it shifts

@@ -7,15 +7,15 @@
 class_name HSHeadlightSweep
 extends Node3D
 
-@export_range(0.0, 600.0) var every: float = 40.0
-@export_range(0.5, 20.0) var secs: float = 3.0
-@export_range(1.0, 30.0) var out: float = 6.0
-@export_range(1.0, 40.0) var span: float = 10.0
-@export_range(0.0, 60.0) var energy: float = 10.0
-@export_range(0.0, 10.0) var aim: float = 1.5
-@export var seed: int = 1
-@export var color := Color(0.95, 0.92, 0.8)
-@export_range(0.0, 60.0) var preview_every: float = 6.0
+@export_range(0.0, 600.0) var every: float = 40.0   ## a car every this many seconds (0: only when fire() is called)
+@export_range(0.5, 20.0) var secs: float = 3.0   ## how long a pass takes
+@export_range(1.0, 30.0) var out: float = 6.0   ## how far outside the window the street is, in metres
+@export_range(1.0, 40.0) var span: float = 10.0   ## how far the car drives each way along the street, in metres
+@export_range(0.0, 60.0) var energy: float = 10.0   ## the headlights' brightness
+@export_range(0.0, 10.0) var aim: float = 1.5   ## how far inside the window the beam points, in metres
+@export var seed: int = 1   ## another number, other gaps between cars
+@export var color := Color(0.95, 0.92, 0.8)   ## the headlights' colour
+@export_range(0.0, 60.0) var preview_every: float = 6.0   ## a pass in the editor every this many seconds, to see it (0: none)
 var sweep: HSSweep = null
 var _key := 0
 

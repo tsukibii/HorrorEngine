@@ -9,7 +9,7 @@
 //   node tools/character/hair2/check.mjs [style ...]
 import { bodyByName, loadPores } from "./node.mjs";
 import { prepare, grow, BUDGET } from "./engine.js";
-import { STYLES, GROUPS, CONTROLS, DEFAULTS, settings, differs, lookOf, drawLook, dyed, DYES, FRINGES } from "./styles.js";
+import { STYLES, GROUPS, CONTROLS, DEFAULTS, settings, differs, lookOf, drawLook, dyed, DYES, FRINGES, withFringe } from "./styles.js";
 import { tiesOf, tail, drills } from "./ties.js";
 import { K, TS } from "./strands.js";
 import { linear } from "../hairtex.js";
@@ -50,6 +50,13 @@ for (const [id, st] of Object.entries(STYLES)) for (const sec of CONTROLS) for (
   if (r[2] === "pick" && typeof v === "string") say(r[3].some(o => o[0] === v), `${id}: ${r[0]} (${v}) is one of its choices`);
 }
 say(Object.keys(FRINGES).length >= 8, "the fringes");
+{ // a fringe's kind picked after another is the kind as it comes, nothing of the last one left (a choppy fringe's closed
+  // parting stayed on a curtain); what no kind brings (the face-framing strands) stays as it was
+  const kinds = Object.keys(FRINGES), mine = { ...DEFAULTS.fringe, frame: 0.6, frameLocks: 2 };
+  const off = kinds.flatMap(a => kinds.filter(b => JSON.stringify(withFringe(withFringe(mine, a), b)) !== JSON.stringify(withFringe(mine, b))).map(b => `${a}->${b}`));
+  say(!off.length && withFringe(withFringe(mine, "choppy"), "curtain").closed === 0 && withFringe(mine, "wispy").frame === 0.6,
+    "a fringe's kind after any other is that kind as it comes, the face-framing strands kept", off.slice(0, 4).join(", "));
+}
 
 // ---- the hairline and the thinning: which pores grow
 { const n = k => alive(pores, k).n, soft = n({ shape: "soft_round" });

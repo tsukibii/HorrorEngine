@@ -14,7 +14,7 @@
 //   H2.worn()         is it on                                         H2.ready()    a promise: the finished hair of the settings as they are, on the body as it is
 //   H2.group          what's drawn (under ctx.rig), H2.group.userData.rev counts each remake (the page's pose shift)
 import * as THREE from "three";
-import { STYLES, GROUPS, CONTROLS, FRINGES, settings, differs, lookOf, drawLook } from "./styles.js";
+import { STYLES, GROUPS, CONTROLS, FRINGES, settings, differs, lookOf, drawLook, withFringe } from "./styles.js";
 import { frameMatrix } from "./body.js";
 import { atlas as hairAtlas, record } from "./bake.js";
 import { tile as shellTile } from "./shell.js";
@@ -229,7 +229,7 @@ export function mountHair2(ctx) {
       } else if (kind === "pick") {
         const sel = el("select"); for (const [v, t] of r[3]) sel.append(el("option", { value: v, textContent: t }));
         sel.onchange = () => {
-          if (path === "fringe.kind") { const f = { ...(FRINGES[sel.value] || {}) }; delete f.label; S.fringe = { ...S.fringe, ...f, kind: sel.value }; syncs.forEach(f2 => f2()); }   // a kind brings its own numbers
+          if (path === "fringe.kind") { S.fringe = withFringe(S.fringe, sel.value); syncs.forEach(f2 => f2()); }   // a kind brings its own numbers, and none of the last kind's
           else put(S, path, sel.value);
           changed(false);
         };
@@ -258,7 +258,14 @@ export function mountHair2(ctx) {
   const resetB = el("button", { textContent: "Back to the style", title: "Every setting as the style's card has it" }), saveB = el("button", { textContent: "Save as my style…" }), godotB = el("button", { textContent: "Preview in Godot", title: "This head and hair pictured by Godot itself, as a game wears it (HSHair): front, three-quarter, side, back" });
   undoB.onclick = () => { if (!UNDO.length) return; REDO.push(snap()); restore(UNDO.pop()); };
   redoB.onclick = () => { if (!REDO.length) return; UNDO.push(snap()); restore(REDO.pop()); };
-  poresB.onclick = () => { showPores = !showPores; poresB.classList.toggle("on", showPores); if (!H.on) wear(true, true); else ask(false); };
+  // (the pores on a character that doesn't wear this hair: shown for a look, never put on her; it put the v2 hair on
+  //  without a word, hid the salon's, and the next Export carried it)
+  poresB.onclick = () => {
+    showPores = !showPores; poresB.classList.toggle("on", showPores);
+    if (H.on) return ask(false);
+    group.visible = showPores;
+    if (showPores) { sendBody(false); ask(false); }
+  };
   resetB.onclick = () => { H.set = {}; S = settings(H.style); after(); };
   saveB.onclick = async () => {
     const name = (prompt("A name for this style", STYLES[H.style]?.label || "") || "").trim(); if (!name) return;

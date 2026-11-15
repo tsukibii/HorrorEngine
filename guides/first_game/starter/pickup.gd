@@ -10,7 +10,7 @@ signal picked(item: String)
 
 const Reach := preload("res://starter/reach.gd")
 
-@export var item := "key"
+@export var item := "key"   ## what goes into the pocket (a name your doors and tasks can ask for)
 @export var label := ""                         ## what the line says it is ("Room 304's key")
 @export var tick := ""                          ## a task it ticks off
 @export var add_tasks: PackedStringArray = []   ## tasks it adds, each "id: what it says"
@@ -21,6 +21,25 @@ var _body: StaticBody3D
 
 func _ready() -> void:
 	_body = Reach.make(self)
+	add_to_group("hs_keeps")                       # a checkpoint keeps whether it's been taken (the Story's checkpoint and revive)
+
+
+## the Story's checkpoint: whether it's still there; revive puts it back as it was then (taken since: there again)
+func keep_state() -> Dictionary:
+	return {"there": visible}
+
+
+func put_state(s: Dictionary) -> void:
+	visible = bool(s.get("there", visible))
+	if visible and _body == null:
+		_body = Reach.make(self)
+	elif not visible and _body != null:
+		_body.queue_free()
+		_body = null
+	if not visible and item != "":                    # taken: a loaded save's pocket has it by name, but not what it looks like
+		var st := get_tree().get_first_node_in_group("hs_story")
+		if st != null and st.has_method("has") and st.has(item) and "models" in st and not is_instance_valid(st.models.get(item)):
+			st.models[item] = _copy()
 
 
 func use(by: Node = null) -> void:

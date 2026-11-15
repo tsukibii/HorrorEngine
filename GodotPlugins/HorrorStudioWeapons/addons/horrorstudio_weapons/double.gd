@@ -23,9 +23,9 @@ signal closed                                     ## snapped shut
 @export var open_deg := 38.0                      ## how far the barrels drop on the hinge
 @export var lever_deg := 30.0                     ## the top lever over to the right
 @export var pop_secs := 0.16                      ## a shell from behind the breech into its chamber
-@export var open_sound: AudioStream
-@export var close_sound: AudioStream
-@export var flick_sound: AudioStream
+@export var open_sound: AudioStream   ## breaking it open (none: the plugin's own)
+@export var close_sound: AudioStream   ## snapping it shut (none: the plugin's own)
+@export var flick_sound: AudioStream   ## the ejectors flicking the hulls out (none: the plugin's own)
 
 var live := [true, true]                          ## a live shell in the right and the left chamber
 var spent := [false, false]                       ## a fired hull still in it
@@ -215,6 +215,35 @@ func _turn(prop: String, to: float, secs: float, ease_: Tween.EaseType) -> void:
 	var tw := create_tween()
 	tw.tween_property(self, prop, to, secs).set_trans(Tween.TRANS_QUAD).set_ease(ease_)
 	await tw.finished
+
+
+## a save (the gun's, and each chamber: a live shell or a fired hull, of which kind)
+func save_state() -> Dictionary:
+	var d := super()
+	d["live"] = live.duplicate()
+	d["spent"] = spent.duplicate()
+	d["barrel_kind"] = barrel_kind.map(_kind_ref)
+	return d
+
+
+func load_state(d: Dictionary) -> void:
+	super(d)
+	var lv: Array = d.get("live", live)
+	var sp: Array = d.get("spent", spent)
+	var bk: Array = d.get("barrel_kind", [])
+	for b in 2:
+		live[b] = bool(lv[b]) if b < lv.size() else live[b]
+		spent[b] = bool(sp[b]) if b < sp.size() else spent[b]
+		barrel_kind[b] = _kind_of(bk[b]) if b < bk.size() else barrel_kind[b]
+		if _barrels == null:
+			continue
+		if live[b] or spent[b]:
+			_seat(b, spent[b] and not live[b])
+		elif _in_chamber[b] != null and is_instance_valid(_in_chamber[b]):
+			(_in_chamber[b] as Node).queue_free()
+			_in_chamber[b] = null
+	_count()                                         # (`loaded` from the chambers: they follow it every frame)
+	_show_hud()
 
 
 # the shell in a chamber: its base half a millimetre proud of the breech (an extractor's lift), along the bore; a

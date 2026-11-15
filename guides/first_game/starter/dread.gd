@@ -13,13 +13,13 @@ extends Node
 
 signal moment(name: String)                       ## a moment came
 
-@export_enum("gentle", "normal", "relentless") var pace := "normal"
-@export var gap_min := 25.0
-@export var gap_max := 70.0
-@export_range(0.0, 1.0) var peak := 0.85
-@export var hold := 4.0
-@export var relax_min := 30.0
-@export var relax_max := 60.0
+@export_enum("gentle", "normal", "relentless") var pace := "normal"   ## how often things happen: gentle, normal or relentless
+@export var gap_min := 25.0   ## build: seconds between moments, at the least (jittered: a steady gap reads as a clock)
+@export var gap_max := 70.0   ## and at the most
+@export_range(0.0, 1.0) var peak := 0.85   ## the intensity at which it peaks and stops adding
+@export var hold := 4.0   ## seconds the peak is held with nothing new
+@export var relax_min := 30.0   ## relax: seconds of nothing after a peak, at the least
+@export var relax_max := 60.0   ## and at the most
 @export var fall := 0.01                          ## a second
 @export var safe_rooms := PackedStringArray()     ## an interior's room names: nothing comes while you're in one
 @export var sanity_sync := 0.6                    ## how much low sanity brings its moments closer (a Sanity node in the scene): 0 not at all
@@ -39,6 +39,19 @@ func _ready() -> void:
 	_rng.randomize()
 	_next = _gap()
 	_hook.call_deferred()
+	get_tree().node_added.connect(_on_added)
+
+
+# a scare added since the start (an instanced room, a cue or a hunt made by a script) is heard too: hooked once its own
+# _ready has put it in the group, so the first scare it gives isn't missed
+func _on_added(n: Node) -> void:
+	if n.has_signal("scared"):
+		_hear_late.call_deferred(n)
+
+
+func _hear_late(n: Node) -> void:
+	if is_instance_valid(n) and n.is_inside_tree() and n.is_in_group("hs_scare") and not n.is_connected("scared", _on_scare):
+		n.connect("scared", _on_scare)
 
 
 func _hook() -> void:

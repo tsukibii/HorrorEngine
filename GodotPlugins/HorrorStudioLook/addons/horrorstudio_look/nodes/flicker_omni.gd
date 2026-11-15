@@ -8,14 +8,14 @@
 class_name HSFlickerLight
 extends OmniLight3D
 
-@export_enum("fluorescent", "dying", "candle", "pulse", "custom", "wobble") var mode: String = "fluorescent"
-@export_range(0.0, 1.0) var amount: float = 1.0
+@export_enum("fluorescent", "dying", "candle", "pulse", "custom", "wobble") var mode: String = "fluorescent"   ## how it flickers: a tube's stutters, a dying bulb (out more than on), a candle, a pulse, your own letters (custom), a gentle wobble
+@export_range(0.0, 1.0) var amount: float = 1.0   ## how much it flickers: 0 steady at full, 1 the whole curve
 @export_range(0.0, 60.0) var interval: float = 0.0   ## seconds between a tube's stutters (0: 6)
 @export_range(0.0, 30.0) var rate: float = 0.0       ## pulses or letters a second (0: the mode's own)
 @export var letters: String = ""                      ## custom: a (dark) to z (double), m full; empty: a tube's
 @export var seed: int = 0                             ## 0: from the node's name
-@export var preview_in_editor := true
-@export var on_mains := true
+@export var preview_in_editor := true   ## flicker in the editor's view too (the scene saves it at full either way)
+@export var on_mains := true   ## goes out with the game's power cut (the story's power) and comes back with it
 var drive := HSFlickerDrive.new()
 
 

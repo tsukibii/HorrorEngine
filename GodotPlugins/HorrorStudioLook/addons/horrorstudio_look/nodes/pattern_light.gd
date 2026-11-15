@@ -8,15 +8,15 @@
 class_name HSPatternLight
 extends SpotLight3D
 
-@export_enum("caustics", "leaves", "blinds", "clouds") var pattern: String = "caustics"
-@export_range(0.0, 20.0) var feature_m: float = 0.0
+@export_enum("caustics", "leaves", "blinds", "clouds") var pattern: String = "caustics"   ## what it throws: water's caustics, leaves, a blind's bars, clouds' shadows passing
+@export_range(0.0, 20.0) var feature_m: float = 0.0   ## how big one ripple, leaf or bar is where the light lands, in metres (0: the pattern's own)
 @export_range(-1.0, 4.0) var speed: float = -1.0     ## -1: the pattern's own
-@export_range(0.0, 1.0) var open: float = 0.5
-@export_range(-90.0, 90.0) var angle: float = 0.0
-@export_range(0.1, 30.0) var aim_distance: float = 3.0
-@export_enum("64:64", "128:128", "256:256") var size_px: int = 128
-@export_range(1, 120) var frames: int = 40
-@export_range(0.5, 30.0) var period: float = 5.0
+@export_range(0.0, 1.0) var open: float = 0.5   ## blinds: how far open
+@export_range(-90.0, 90.0) var angle: float = 0.0   ## blinds: the bars' angle, in degrees
+@export_range(0.1, 30.0) var aim_distance: float = 3.0   ## how far from the light the surface it lights is, in metres (for Feature M)
+@export_enum("64:64", "128:128", "256:256") var size_px: int = 128   ## each frame of the pattern's size in pixels
+@export_range(1, 120) var frames: int = 40   ## how many frames make its loop (drawn when the scene starts)
+@export_range(0.5, 30.0) var period: float = 5.0   ## seconds for the loop to go round once
 var hp: HSPattern = null
 var _key := 0
 

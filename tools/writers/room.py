@@ -27,6 +27,7 @@ check. The page is serve.py.
 import argparse
 import copy
 import json
+import tempfile
 import os
 import sys
 from pathlib import Path
@@ -113,10 +114,10 @@ def cmd_build(a):
     if HOME:
         build.GAMES = HOME / "Games"
     P = load_session(a.id)
-    out = build.build(P, a.game, force=a.force, set_name=a.set or None)
+    out = build.build(P, a.game, force=a.force, set_name=a.set or None, replace=getattr(a, "replace", False))
     print(out["message"])
     if out.get("ok"):
-        P["built"] = dict({"game": out["game"], "at": proto.now()}, **({"set": a.set} if a.set else {}))
+        P["built"] = dict({"game": out["game"], "at": proto.now(), "sha1": out.get("sha1")}, **({"set": a.set} if a.set else {}))
         proto.save(P)
         print("\n".join("  " + f for f in out["files"]) + f"\nthen, in Claude Code: build {out['game']} from its BUILD.md")
     for e in (out.get("check") or {}).get("errors", []):
@@ -370,6 +371,22 @@ def cmd_check(a):
     import build
     res = build.check_build(P)
     (ok if res["ok"] else bad)(res["message"])
+    # a Build again over the desk's edits: refused unless asked for (it replaced them, into the history, with nothing said)
+    with tempfile.TemporaryDirectory() as tmp:
+        PB = copy.deepcopy(P)
+        r1 = build.build(PB, "RebuildCheck", games=tmp, check=False)
+        PB["built"] = {"game": "RebuildCheck", "at": proto.now(), "sha1": r1.get("sha1")}
+        r2 = build.build(PB, "RebuildCheck", games=tmp, check=False)                 # nothing changed since: builds again
+        PB["built"]["sha1"] = r2.get("sha1")
+        sp = Path(tmp) / "RebuildCheck" / "story.json"
+        S2 = json.loads(sp.read_text(encoding="utf-8")); S2["game"]["title"] = "Edited in the desk"; sp.write_text(json.dumps(S2), encoding="utf-8")
+        r3 = build.build(PB, "RebuildCheck", games=tmp, check=False)                 # edited since: refused, the edit still there
+        kept = json.loads(sp.read_text(encoding="utf-8"))["game"]["title"] == "Edited in the desk"
+        r4 = build.build(PB, "RebuildCheck", games=tmp, check=False, replace=True)   # asked for: built over, the edit in the history
+        hist = list((Path(tmp) / "RebuildCheck" / "history").glob("*.json"))
+        good = r1.get("ok") and r2.get("ok") and not r3.get("ok") and r3.get("edited") and kept and r4.get("ok") and any("Edited in the desk" in h.read_text(encoding="utf-8") for h in hist)
+        (ok if good else bad)("a Build again over a story changed in the desk since is refused, the change kept; with replace it builds over it, the change in the history"
+                              + ("" if good else f" ({r1.get('ok')}, {r2.get('ok')}, {r3.get('message')}, kept {kept}, {r4.get('ok')}, {len(hist)} in history)"))
     # only the dialogue, the tasks and the gameplay go across (HANDOFF_DIRECTOR_TODO §3): the cast still, the things blocks
     B0 = build.Builder(copy.deepcopy(P), "BareCheck")
     S0, placed0 = B0.build(), sorted(B0.rooms.placed)
@@ -514,6 +531,7 @@ def main(argv=None):
     s = sub.add_parser("show"); s.add_argument("id"); s.add_argument("shape", nargs="?")
     sub.add_parser("now")
     s = sub.add_parser("build"); s.add_argument("id"); s.add_argument("--game", default=""); s.add_argument("--force", action="store_true"); s.add_argument("--set", default="")
+    s.add_argument("--replace", action="store_true", help="build over the desk's edits since this session's last Build (they go into its history)")
     sub.add_parser("sets")
     s = sub.add_parser("import"); s.add_argument("file"); s.add_argument("--into", default=""); s.add_argument("--notes", default="")
     s.add_argument("-v", "--verbose", action="store_true")

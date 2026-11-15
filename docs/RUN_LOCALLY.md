@@ -16,6 +16,20 @@ One line, for the user to give Claude on their machine, for example:
 
 ## Doing the run
 
+**The quick way** (2026-11-15): one command does steps 3 to 5 for every browser check, or the ones named:
+
+```bash
+python3 tools/browser_checks.py STUDIO PLAY TESTROOM
+```
+
+It starts the desk or the Character Studio only when a check needs one and nothing answers on its port, stops what it
+started once no check left needs it, runs each check on the card (`GPU=1` when `nvidia-smi` finds one; `--gpu egl`,
+`--gpu headed`, `--cpu`), keeps each check's whole output in `Saved/browser_checks/<time>/<NAME>.log`, and ends with
+`report.md` beside them: the lines step 5 asks for (each check's last line, its time, the `GL:` line, a failure's
+picture). `--list` names every check with the server it needs; `--quick` leaves out the ones that take most of an
+hour on a CPU; with no names it runs them all. A server already running keeps the code it started with: restart it
+after a pull, as step 3 says. The steps below are the same run by hand.
+
 1. **The branch.** In the project folder: `git status` first; if the user has changes of their own, ask before
    anything else. Then `git fetch origin <branch> && git checkout <branch> && git pull --ff-only`.
 2. **Once per machine:** Playwright and its Chromium (`npm install -g playwright`, then `npx playwright install
@@ -43,7 +57,6 @@ One line, for the user to give Claude on their machine, for example:
    | GROWPAGE | `GPU=1 node tools/character/growpagetest.mjs` | Studio (a new character's start and the preset cards, its v2 mouth and lip shapes, ages, Cutify, monster mode, horns and ears on a scratch character, `_growtest`; it runs JIGGLE on its export when Godot is there) |
    | PRESETS | `GPU=1 node tools/character/presets.mjs thumbs` | Studio (the head and body presets' cards pictured again into `Content/Studio/Presets/thumbs/`; only when a preset changed) |
    | MOUTHSHOTS | `GPU=1 node tools/character/mouthshots.mjs --out Saved/Mouth/shots --pitch 8 --key front --lips '{"shine": 0}' --sculpt '{"lip_upper": -0.75, "lip_lower": -0.2, "lip_bow": 0.2, "lip_corners": 0.6}' --shapes` | Studio (the open smile on a scratch character, `_mouth`, from the user's picture's side and under its light, and each lip shape at rest; then `python3 docs/research/mouthfit/compare.py Saved/Mouth/shots` lays it over the picture, `Saved/Mouth/ref/m1.jpg`, and prints the overlay's numbers: needs `docs/research/mouthfit/out/d3.json`, the picture's landmarks, from `docs/research/headfit/lm.py`; only when the mouth changes) |
-   | UEEYE | `GPU=1 node tools/character/ueeye.mjs` | none |
    | PLAY | `GPU=1 node tools/director/playtest.js` | desk |
    | TESTROOM | `GPU=1 node tools/director/testroom.mjs` | desk |
    | EXPRESSIONS | `GPU=1 node tools/director/exprtest.mjs` | desk |

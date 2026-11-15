@@ -112,8 +112,11 @@ export function levelGroup(stage, plan, story, level, opts = {}) {
     L.name = "light_" + clean(id); L.position.copy(l.position);
     L.userData = { kind: "light", id, lamp: l.userData.kind || "bulb", lit: !!base, room: l.userData.room || null };
     if (!base) L.intensity = energyOf(1);                           // a lamp the story lights later: there at its energy, its extras say so
+    if (L.isSpotLight) {                                           // glTF and Godot take a spot's direction from its node's -Z, not from a target:
+      L.lookAt(l.target.position);                                  // turned to what it lights (a target beside it left every spot pointing level and north)
+      L.target.position.set(0, 0, -1); L.add(L.target); L.target.visible = false;   // (the exporter's rule for a target; hidden, so no empty node is written)
+    }
     lights.add(L);
-    if (L.isSpotLight) { L.target.position.copy(l.target.position); lights.add(L.target); L.target.name = L.name + "_aim"; }
   }
   // each room's surfaces (its floor's kind, the sets or colours on its floor, walls and ceiling), carried on its volume
   // marker: the room's sound and its footsteps (the starter's acoustics) are read off them

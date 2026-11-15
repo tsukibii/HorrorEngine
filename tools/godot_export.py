@@ -80,7 +80,8 @@ def first_scene(story):
         n = flow[nid]
         if n.get("type") == "scene":
             return nid
-        nid = n.get("next") or ((n.get("options") or [{}])[0].get("next") if n.get("options") else None)
+        opts = n.get("options") or [{}]
+        nid = n.get("next") or opts[0].get("to") or opts[0].get("next")   # (a choice's way is its `to`: past one, the guide had no scene's picture)
     return None
 
 
@@ -133,6 +134,8 @@ def main():
             dest = None                                  # a new version: Saved/Godot/<game>_v<NNN> (DECISIONS 2026-10-30, noon)
         r = G.export(game, dest, a.zip)
         print(f"exported {game}" + (f" as version {r['version']}" if r.get("version") else "") + f": {r['pieces']} pieces, levels {', '.join(r['levels'])} -> {r['dir']}" + (f", {r['zip']}" if r["zip"] else ""))
+        for w in r.get("warnings", []):                     # what it went on without (a kit build, a face's shapes...): never silent
+            print(f"  warning: {w}")
         for rel in r.get("kept", []):                       # a re-export: the files the user changed stay, the new ones beside them
             print(f"  kept yours: {rel} (the desk's new version beside it as {G.desk_name(rel)})")
         if a.check:
@@ -151,9 +154,20 @@ def main():
                     ok = False
                 else:
                     print(f"  GDEXPORT re-export: kept {r2['kept'][0]}, the new one beside it")
+                # again, with a file of the user's own beside it: the receipt says what the export wrote, so the changed
+                # file is still theirs and their own file stays (it used to list every file there: the third export
+                # overwrote the changed one and deleted the user's own)
+                own = Path(r["dir"]) / "game" / "levels" / "mine_by_hand.tscn"
+                own.write_text("[gd_scene format=3]\n\n[node name=\"Mine\" type=\"Node3D\"]\n", encoding="utf-8")
+                r3 = G.export(game, dest, False, do_import=False)
+                if lvl.read_text(encoding="utf-8") != mine or not own.exists() or r3.get("kept") != r2.get("kept"):
+                    print(f"  GDEXPORT FAIL: a second re-export didn't keep the changed file and the user's own ({r3.get('kept')}, own {own.exists()})")
+                    ok = False
+                else:
+                    print(f"  GDEXPORT re-export again: {r3['kept'][0]} still kept, a file of your own untouched")
                 lvl.write_text(beside.read_text(encoding="utf-8"), encoding="utf-8")    # back to the desk's, for the checks after
                 beside.unlink()
-                G.write_manifest(Path(r["dir"]))
+                own.unlink(missing_ok=True)
             if game == games[-1]:                           # versions: two exports with no folder given are two new folders, numbered, the first untouched
                 vroot = G.CHECK_OUT / "_versions"
                 if vroot.exists():
@@ -178,6 +192,21 @@ def main():
                 if not (Path(r["dir"]) / part).exists():            # the plugins (GodotPlugins/) copied in
                     print(f"  GDEXPORT FAIL: {part} missing from the export")
                     ok = False
+            # a Japanese line as long in Godot as on the desk (story.gd ja_secs against storylib's, on the game's own lines with no dur)
+            jl = sorted({str(c.get("ja")) for sc in (L.load(game)[0].get("scenes") or {}).values() for v in [sc, *((sc.get("variants") or {}).values())]
+                         for c in v.get("clips", []) if c.get("ja") and not c.get("dur")} | {"ＡＢＣ「テスト」・123、まだ。", "괜찮아? 大丈夫…"})
+            jf = Path(r["dir"]) / ".desk" / "ja_lines.json"
+            jf.parent.mkdir(exist_ok=True)
+            jf.write_text(json.dumps(jl, ensure_ascii=False), encoding="utf-8")
+            _c, jout = run_godot(r["dir"], "res://addons/horrorstudio/tests/ja_secs.gd", ["--", f"--lines={jf}"])
+            jline = next((ln for ln in jout.splitlines() if ln.startswith("JASECS ")), None)
+            got = json.loads(jline[7:]) if jline else []
+            off = [(t, round(L.ja_secs(t), 3), round(g, 3)) for t, g in zip(jl, got) if abs(L.ja_secs(t) - g) > 0.002]
+            if len(got) != len(jl) or off:
+                print(f"  GDEXPORT FAIL: a Japanese line's length differs in Godot from the desk's: {off[:3] or jout[-300:]}")
+                ok = False
+            else:
+                print(f"  GDEXPORT lines: {len(jl)} Japanese lines as long in Godot as on the desk")
             code, out = run_godot(r["dir"], "res://addons/horrorstudio/tests/load_check.gd")
             lines = out.splitlines()                        # every verdict (the levels, surfaces, materials...), then the tail
             print("\n".join("  " + ln for ln in [ln for ln in lines[:-12] if ln.startswith("GDEXPORT ")] + lines[-12:]))
@@ -230,7 +259,7 @@ def main():
             print("GDCULL ok" if all(gd for _, gd in checks) else "GDCULL FAIL")
     if a.check:
         print("GDEXPORT ok" if ok else "GDEXPORT FAIL")
-        sys.exit(0 if ok else 1)
+    sys.exit(0 if ok else 1)                                # every mode: a failed GDPLAY, GDTESTROOM, GDCULL, picture or shot is a failed run
 
 
 if __name__ == "__main__":

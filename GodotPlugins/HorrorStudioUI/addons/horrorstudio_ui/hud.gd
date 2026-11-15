@@ -115,11 +115,24 @@ class Ornament extends Control:
 
 var root: Control
 ## by hand (the default): it wears the project's UI settings (Project Settings > horrorstudio/ui), starts clear, has no pause
-## menu, and hangs the quest marker over every active HSQuestMarker in the scene. The runtime sets this false before it is added.
+## menu unless asked (`pause_menu`), and hangs the quest marker over every active HSQuestMarker in the scene. The runtime sets this false before it is added.
 @export var standalone := true
-## by hand: the keys shown as chips at the foot, each "keys:what they do" ("W A S D:walk", "E:use", "Tab:pocket"), in
-## place of the studio runtime's (Click to play, E inventory, G put down...); a script adds one with hint_key()
+## by hand: the pause menu too (menu.gd, the runtime's: the controls, Resume, Save, Load, Settings, Quit), opened on Esc by
+## the starter's pause.gd, which turns this on itself; its settings are applied when the game starts
+@export var pause_menu := false
+## by hand: the game's keys as chips, each "keys:what they do" ("W A S D:walk", "E:use", "Tab:pocket"), shown in the
+## pause menu (Keys In Menu) or at the foot; none given: the starter player's (HAND_KEYS); a script adds one with hint_key()
 @export var keys: PackedStringArray = []
+## by hand: the keys' chips are shown only while the game's paused, at the pause menu's foot in place of its controls
+## (the user, 2026-11-15: "they shouldn't be visible inside the main game unless I pause"); off: at the foot while you
+## play, as they were. The studio's runtime (`standalone` off) keeps its own over the game
+@export var keys_in_menu := true:
+	set(v):
+		keys_in_menu = v
+		if hint_el != null:
+			hint_el.visible = keys_in_play() and not modal_up
+## the starter player's keys: the chips by hand when the HUD's `keys` are left empty (the runtime's own are the desk's)
+const HAND_KEYS := ["W A S D:walk", "Shift:run", "E:use", "Tab:pocket", "F:flashlight", "Space:hold your breath"]
 var auto_markers := false                      # standalone: feed the guide from the scene's HSQuestMarkers (their sight from physics rays)
 var _los := {}                                 # marker id -> {clear, at}: its line of sight, looked at a few times a second
 var guide = null                               # the markers over what open tasks need (marker.gd: a todo's `guide`)
@@ -144,7 +157,8 @@ var scrim: TextureRect                         # under the footer: rises while s
 var vignette: TextureRect                      # the dark round the edge while hidden
 var inv_box: HBoxContainer
 var inv_name: Label
-var hint_el: HBoxContainer                     # the keys as chips, right at the foot
+var hint_el: HBoxContainer                     # the keys as chips, right at the foot (by hand: in the pause menu instead)
+var frame := Rect2()                           # the picture the HUD was last laid in (frame_rect: a tape's 4:3, else the view)
 var hint_tw: Tween = null
 var veil: ColorRect = null                     # behind a card held up to read: the world dims, a little
 var card_halo: ColorRect = null                # the soft dark behind a card's words: no panel, no edge (halo.gdshader)
@@ -207,12 +221,28 @@ func wear(name: String) -> void:
 	if menu != null:
 		menu.queue_free()
 		menu = null
-	if not standalone:                                 # the runtime's pause menu and the player's saved settings
-		menu = MenuC.new(self, theme_name)
-		root.add_child(menu)
+	if not standalone or pause_menu:                   # the runtime's pause menu (by hand, asked for) and the player's saved settings
+		_new_menu()
 	_restyle()
-	if not standalone:
+	if not standalone or pause_menu:
 		MenuC.apply(MenuC.load_settings(), self)
+
+
+func _new_menu() -> void:
+	menu = MenuC.new(self, theme_name)
+	menu.process_mode = Node.PROCESS_MODE_ALWAYS       # (by hand the game is paused while it's up)
+	root.add_child(menu)
+
+
+## by hand: the pause menu made now if it isn't (the starter's pause.gd asks), with the player's saved settings
+func make_menu() -> Node:
+	if menu == null and root != null:
+		pause_menu = true
+		if env == null and is_inside_tree() and get_viewport().find_world_3d() != null:
+			env = get_viewport().find_world_3d().environment   # (the scene's WorldEnvironment: Brightness's)
+		_new_menu()
+		MenuC.apply(MenuC.load_settings(), self)
+	return menu
 
 
 ## what depends on the theme and lives on: the labels that name a part, the two voices, the reticle's colours, the keys
@@ -516,12 +546,12 @@ func _ready() -> void:
 		guide.mode = clampi(int(ProjectSettings.get_setting("horrorstudio/ui/quest_marker", 1)), 0, 2)
 		set_fade(0.0)
 		auto_markers = true
-		if not keys.is_empty():                          # your game's keys in place of the studio runtime's
-			hints.clear()
-			for k in keys:
-				if str(k).contains(":"):
-					hints[str(k)] = true
-			_draw_hints()
+		hints.clear()                                    # your game's keys in place of the studio runtime's (none given: the starter player's)
+		for k in (keys if not keys.is_empty() else PackedStringArray(HAND_KEYS)):
+			if str(k).contains(":"):
+				hints[str(k)] = true
+		_draw_hints()
+		hint_el.visible = keys_in_play()                 # (by hand they wait for the pause menu: menu_keys)
 
 
 func _label(text: String, size: int) -> Label:
@@ -908,7 +938,7 @@ func set_stance(s: String) -> void:
 
 
 func locked(on: bool) -> void:
-	hint_el.visible = not on and not modal_up
+	hint_el.visible = not on and not modal_up and keys_in_play()
 
 
 func peep(on: bool) -> void:
@@ -947,8 +977,43 @@ func _draw_hints() -> void:
 	for ch in hint_el.get_children():
 		hint_el.remove_child(ch)
 		ch.queue_free()
+	_fill_chips(hint_el, hints.keys())
+
+
+## are the keys' chips shown over the game (the runtime's; by hand only with keys_in_menu off), or only in the pause menu
+func keys_in_play() -> bool:
+	return not (standalone and keys_in_menu)
+
+
+## a row of keys as chips, each "keys:what they do" ("W A S D:walk", "E:use"), in the HUD's look (its own row's, and the
+## pause menu's by hand)
+func chips(list: Array) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.name = "Keys"
+	row.add_theme_constant_override("separation", 18)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fill_chips(row, list)
+	return row
+
+
+## by hand (keys_in_menu): the game's keys as chips for the pause menu, which puts them on its legend's line at the
+## right, in place of its own controls; Esc's added when the game's keys leave it out. Null while they're shown over
+## the game instead (the runtime's, or keys_in_menu off): the menu draws its controls then
+func menu_keys() -> HBoxContainer:
+	if keys_in_play():
+		return null
+	var list: Array = hints.keys()
+	var esc := false
+	for k in list:
+		esc = esc or str(k).begins_with("Esc")
+	if not esc:
+		list.append("Esc:menu")
+	return chips(list)
+
+
+func _fill_chips(row: HBoxContainer, list: Array) -> void:
 	var c := ThemeC.colors(theme_name)
-	for h in hints:
+	for h in list:
 		var kv: PackedStringArray = str(h).split(":", true, 1)
 		var pair := HBoxContainer.new()
 		pair.add_theme_constant_override("separation", 7)
@@ -967,7 +1032,7 @@ func _draw_hints() -> void:
 		w.add_theme_color_override("font_color", c["muted"])
 		w.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		pair.add_child(w)
-		hint_el.add_child(pair)
+		row.add_child(pair)
 
 
 ## the keys full for a while after one is new, then at rest
@@ -1105,8 +1170,53 @@ func _process(delta: float) -> void:
 	tick(delta)
 
 
+## where the picture is, in the HUD's own coordinates: a tape's (the Look plugin's vhs.gd, `picture`: 4:3 in the middle
+## of a wider view while it's on, black either side), else the whole view. The corners, the footer, the side card, the
+## keys and the marker's pointer are laid inside it (the user, 2026-11-15: "make sure the quests align to not be in the
+## black letter boxes (no matter what vhs style or res), should be inside the frame")
+func frame_rect() -> Rect2:
+	if not is_inside_tree():
+		return Rect2()
+	var vs := get_viewport().get_visible_rect().size
+	for t in get_tree().get_nodes_in_group("hs_tape"):
+		if t.has_method("picture") and t.get_viewport() == get_viewport():
+			var r: Rect2 = t.call("picture", vs)
+			if r.size.x < vs.x - 0.5:
+				return r
+	return Rect2(Vector2.ZERO, vs)
+
+
+## the parts at the edges laid inside the picture (`fr`): each the margin it has from the view's edge, from the
+## picture's instead; the middle ones (the reticle, the timer, a card, the chapter) are where they were
+func _lay(fr: Rect2) -> void:
+	frame = fr
+	if tl == null:
+		return
+	var vs := get_viewport().get_visible_rect().size
+	var left := fr.position.x
+	var right := maxf(vs.x - fr.end.x, 0.0)            # the bar on the right (0: none)
+	tl.position = Vector2(left + 24.0, 20.0)            # the objective and the to-do list
+	log_box.offset_left = -340.0 - right                # the log, top right
+	log_box.offset_right = -20.0 - right
+	stance_el.offset_left = left + 24.0                 # the stance, bottom left
+	stance_el.offset_right = left + 24.0
+	hint_el.offset_right = -24.0 - right                # the keys
+	foot.offset_left = left                             # the lines and a choice wrap inside it
+	foot.offset_right = -right
+	vignette.offset_left = left                         # the dark round the edge, round the picture's
+	vignette.offset_right = -right
+	if panel_el != null and is_instance_valid(panel_el) and bool(panel_el.get_meta("side", false)):
+		panel_el.offset_left = -470.0 - right
+		panel_el.offset_right = -36.0 - right
+	if guide != null:
+		guide.frame = fr if (left > 0.0 or right > 0.0) else Rect2()
+
+
 func tick(dt: float = 0.0) -> void:
 	type_tick(dt)
+	var fr := frame_rect()
+	if fr != frame:
+		_lay(fr)
 	_sync_halo()
 	if auto_markers:
 		_auto_guide(dt)
@@ -1196,12 +1306,14 @@ func panel(spec: Dictionary) -> Variant:
 		panel_el.anchor_right = 1.0
 		panel_el.anchor_top = 0.0
 		panel_el.anchor_bottom = 1.0
-		panel_el.offset_left = -470
-		panel_el.offset_right = -36
+		var right := maxf(get_viewport().get_visible_rect().size.x - frame.end.x, 0.0) if frame.has_area() else 0.0
+		panel_el.offset_left = -470 - right              # (inside the picture: _lay)
+		panel_el.offset_right = -36 - right
 		panel_el.offset_top = 48
 		panel_el.offset_bottom = -64
 		panel_el.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 		panel_el.custom_minimum_size = Vector2(430, 0)
+		panel_el.set_meta("side", true)
 	elif spec.get("low", false):                  # under a thing in the hands: low on the screen, growing up from its foot
 		panel_el.anchor_left = 0.5
 		panel_el.anchor_right = 0.5

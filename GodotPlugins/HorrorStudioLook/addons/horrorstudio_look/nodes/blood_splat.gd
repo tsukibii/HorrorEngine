@@ -6,13 +6,13 @@
 class_name HSBloodSplat
 extends Node3D
 
-@export_range(0.05, 4.0) var size: float = 0.6
-@export var seed: float = 1.0
-@export_range(0.0, 1.0) var dry: float = 0.0
-@export_range(0.0, 1.0) var opacity: float = 1.0
-@export_range(0.0, 1.0) var pool: float = 0.55
-@export_range(0.0, 1.0) var ragged: float = 0.35
-@export_range(0.0, 1.0) var drops: float = 0.6
+@export_range(0.05, 4.0) var size: float = 0.6   ## metres across
+@export var seed: float = 1.0   ## another number, another splat
+@export_range(0.0, 1.0) var dry: float = 0.0   ## from glossy and wet (0) to dull and brown (1)
+@export_range(0.0, 1.0) var opacity: float = 1.0   ## 1 as it was spilled, less as it's scrubbed away
+@export_range(0.0, 1.0) var pool: float = 0.55   ## how much of it is the pool in the middle
+@export_range(0.0, 1.0) var ragged: float = 0.35   ## how ragged the pool's edge is
+@export_range(0.0, 1.0) var drops: float = 0.6   ## how many drops are flung round it
 @export_range(-1.0, 1.0) var drips: float = -1.0     ## -1: by the surface (0.5 on a wall, none on a floor)
 var splat: MeshInstance3D = null
 var _key := 0

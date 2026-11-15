@@ -490,9 +490,89 @@ func _run() -> void:
 		var g0: Dictionary = pk2.flying[0]
 		long = HSModelSlot.bounds_of(g0["node"], g0["node"]).get_longest_axis_size() * float(g0["s"])
 	await secs(1.6)
-	if u2 != pk2 or long < box_x * 2.5 or st.call("count_of", "shotgun") != 1 or is_instance_valid(pk2):
-		return fail("a shotgun from a parcel: E found it %s; in the air %.2f m long out of a %.2f m box; in the pocket %d; the parcel still there %s" % [u2 == pk2, long, box_x,
-				st.call("count_of", "shotgun"), is_instance_valid(pk2)])
-	ok("a parcel placed by hand with a shotgun in it: out of the puff %.2f m long from a %.2f m box, pulled into the player, in the pocket" % [long, box_x])
-	print("LAPTOP ok (%d steps: the prefab, E, the boot, clicks through the glass, pages, an order into the pocket and the HUD's row, too dear, sold out, a thing added by file, what's for sale and locked, Esc and E back, idle drawing, cash picked up, a shut lid, delivery, the burst and the pull, a kept box, a shotgun from a parcel)" % notes.size())
+	var pk2_there: bool = is_instance_valid(pk2) and (pk2.visible or pk2._body.collision_layer != 0)
+	if u2 != pk2 or long < box_x * 2.5 or st.call("count_of", "shotgun") != 1 or pk2_there or not is_instance_valid(pk2):
+		return fail("a shotgun from a parcel: E found it %s; in the air %.2f m long out of a %.2f m box; in the pocket %d; the parcel still seen or solid %s, kept %s" % [u2 == pk2, long, box_x,
+				st.call("count_of", "shotgun"), pk2_there, is_instance_valid(pk2)])
+	ok("a parcel placed by hand with a shotgun in it: out of the puff %.2f m long from a %.2f m box, pulled into the player, in the pocket; the box hidden and not solid (kept for a checkpoint)" % [long, box_x])
+	# ---- dying (the starter Story's checkpoint): the shop and its parcels as they were then. Kept with a soda on its way and
+	# a parcel placed by hand still shut; then the soda's parcel left, the one by hand opened, another soda bought; died: the
+	# one by hand shut again, the soda on its way again (the parcel it came in gone), the second soda not bought, the cash as
+	# it was, the candle's kept box still there open
+	var soda_it: HSShopItem = null
+	for it_ in lap.items():
+		if it_.id == "soda":
+			soda_it = it_
+	var pk3: HSPackage = (load("res://addons/horrorstudio_devices/delivery/package.tscn") as PackedScene).instantiate()
+	pk3.items.assign([soda_it])
+	(R["world"] as Node3D).add_child(pk3)
+	pk3.global_position = Vector3(-0.6, 0.0, 1.2)
+	pl.global_position = Vector3(0.0, 0.0, 0.42)
+	pl.rotation = Vector3.ZERO
+	pl.set("pitch", deg_to_rad(-42.0))
+	eye.rotation = Vector3(deg_to_rad(-42.0), 0, 0)
+	await frames(3)
+	if lap._seen(spot):
+		return fail("dying: the doorstep's in view from where the check stands")
+	var r1: Dictionary = lap.place_order(soda_it, 1)
+	var cash_k := float(st.get("cash"))
+	var sold_k := int(lap.sold.get("soda", 0))
+	st.call("checkpoint")
+	var got2: Array = []
+	lap.delivered.connect(func(p: HSPackage) -> void: got2.append(p))
+	await secs(lap.delivery_secs + 0.6)
+	pk3.unbox()
+	await secs(HSPackage.BURST + 2.2)
+	var r2: Dictionary = lap.place_order(soda_it, 1)
+	if not r1.get("ok", false) or not r2.get("ok", false) or got2.size() != 1 or pk3.visible or lap.deliveries.size() != 1:
+		return fail("before dying: ordered %s and %s, %d parcel(s) left, the one by hand seen %s, on its way %d" % [r1.get("ok"), r2.get("ok"), got2.size(), pk3.visible, lap.deliveries.size()])
+	st.set("death_secs", 0.3)
+	st.call("die", "test")
+	await secs(1.2)
+	var first_gone: bool = not is_instance_valid(got2[0]) or not (got2[0] as Node).is_inside_tree()
+	var kept_open: Array = spot.get_children().filter(func(c: Node) -> bool: return c is HSPackage and (c as HSPackage).keep_box and (c as HSPackage).is_open and c.is_inside_tree())
+	if not pk3.visible or pk3.is_open or pk3._body.collision_layer == 0 or not pk3._model.visible or lap.deliveries.size() != 1 or not first_gone \
+			or int(lap.sold.get("soda", 0)) != sold_k or absf(float(st.get("cash")) - cash_k) > 0.001 or kept_open.size() != 1:
+		return fail("died: the one by hand seen %s, open %s, solid %d; on its way %d; the parcel left since gone %s; sodas sold %d (then %d); cash %.2f (then %.2f); the kept box %d" % [
+				pk3.visible, pk3.is_open, pk3._body.collision_layer, lap.deliveries.size(), first_gone, int(lap.sold.get("soda", 0)), sold_k,
+				float(st.get("cash")), cash_k, kept_open.size()])
+	ok("died after the checkpoint: the parcel by hand shut again where it was, the soda that was on its way on its way again (the parcel it had come in gone), the soda bought since not bought, the cash as it was, the kept box still there open")
+	# kept with the soda's parcel left and shut, opened since: died, it's there again, shut, where it was
+	got2.clear()
+	await secs(lap.delivery_secs + 0.6)
+	if got2.size() != 1:
+		return fail("the soda on its way again: %d parcel(s) left" % got2.size())
+	var pd: HSPackage = got2[0]
+	var at_k := pd.global_transform
+	var soda_k: int = st.call("count_of", "soda")
+	st.call("checkpoint")
+	pd.unbox()
+	await secs(HSPackage.BURST + 2.2)
+	var opened_ok: bool = not is_instance_valid(pd) and st.call("count_of", "soda") == soda_k + 1
+	st.call("die", "test")
+	await secs(1.2)
+	var back: Array = spot.get_children().filter(func(c: Node) -> bool: return c is HSPackage and not (c as HSPackage).is_open and c.is_inside_tree())
+	if not opened_ok or back.size() != 1 or (back[0] as HSPackage).items.size() != 1 or (back[0] as HSPackage).items[0] != soda_it \
+			or (back[0] as Node3D).global_transform.origin.distance_to(at_k.origin) > 0.001 or st.call("count_of", "soda") != soda_k:
+		return fail("a parcel left before the checkpoint, opened since: opened %s; died: %d shut there, at %s (then %s), the soda %d (then %d)" % [opened_ok, back.size(),
+				(back[0] as Node3D).global_position if not back.is_empty() else Vector3.ZERO, at_k.origin, st.call("count_of", "soda"), soda_k])
+	ok("a parcel left before the checkpoint and opened since: died, it's on the doorstep again shut where it was, the soda out of the pocket again")
+	# a save (the Story's save_game): loaded into a shop that's forgotten it all, the parcel's there again and the sales
+	st.call("delete_save", 7)
+	var wrote: bool = st.call("save_game", 7)
+	var sold_s := lap.sold.duplicate()
+	for c in spot.get_children():
+		if c is HSPackage:
+			spot.remove_child(c)
+			c.queue_free()
+	lap._left.clear()
+	lap.sold.clear()
+	var read: bool = st.call("load_game", 7)
+	await frames(3)
+	var back2: Array = spot.get_children().filter(func(c: Node) -> bool: return c is HSPackage and not (c as HSPackage).is_open)
+	st.call("delete_save", 7)
+	if not wrote or not read or back2.size() != 1 or lap.sold != sold_s:
+		return fail("a save: written %s, loaded %s, %d parcel(s) shut on the doorstep, sold %s (saved %s)" % [wrote, read, back2.size(), lap.sold, sold_s])
+	ok("a save loaded into a shop that had forgotten it: the parcel on the doorstep again, the sales as they were")
+	print("LAPTOP ok (%d steps: the prefab, E, the boot, clicks through the glass, pages, an order into the pocket and the HUD's row, too dear, sold out, a thing added by file, what's for sale and locked, Esc and E back, idle drawing, cash picked up, a shut lid, delivery, the burst and the pull, a kept box, a shotgun from a parcel, dying and a save: the shop and its parcels as they were)" % notes.size())
 	quit(0)

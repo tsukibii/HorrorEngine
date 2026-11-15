@@ -6,7 +6,7 @@ extends Resource
 ## (docs/research/hit_reactions.md). The plugin's `react/looks/demon.tres` is a start: duplicate it, change it in the
 ## Inspector, and give it to an HSHitReact's `look` (a pale ghost's, a shadow's...).
 
-@export var title := "Demon"
+@export var title := "Demon"   ## its name, a label for you (the game never shows it)
 @export_group("Ichor")
 @export var ichor_color := Color(1, 1, 1)               ## times the ichor's maps (white: as drawn, black with a dark oxblood film; fx/ichor_*)
 @export var embers := 2.5                               ## the flecks in fresh ichor glowing (0: none)
@@ -36,7 +36,7 @@ extends Resource
 @export_group("Going")
 @export var char_color := Color(0.02, 0.016, 0.018)     ## her skin charring over
 @export var char_edge := Color(1.0, 0.3, 0.06)          ## the char's burning edge
-@export var char_edge_energy := 3.0
+@export var char_edge_energy := 3.0   ## how bright the char's burning edge glows
 @export var dissolve_s := 2.4                           ## from the first char to gone into the smoke
 @export_group("Sound")
 @export var hit_sound: AudioStream                      ## a wound (none: sounds/ichor_hit.ogg: wet, heavy, a hiss)

@@ -8,6 +8,7 @@ its own file on Bake.
 Node does the work (tools/animator/bake.mjs); this serves the page, the files and the bake's log.
 """
 import json
+import urllib.parse
 import os
 import re
 import struct
@@ -68,7 +69,7 @@ def characters():
                 info["studio"] = bool(j and ((j.get("scenes") or [{}])[j.get("scene", 0)].get("extras") or {}).get("studio"))
             except Exception as e:                            # (a broken file is listed, and says so)
                 info["error"] = str(e)
-            side = f.with_suffix("").with_suffix(".motion.json") if False else f.parent / (f.stem + ".motion.json")
+            side = f.parent / (f.stem + ".motion.json")
             if side.is_file() and not info["settings"]:      # exported again since its bake: the settings it was baked with are still beside it
                 try:
                     info["last"] = json.loads(side.read_text(encoding="utf-8")).get("settings")
@@ -167,7 +168,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.file(SHARED.joinpath(*parts[1:]))
         if a == "api":
             what = parts[1] if len(parts) > 1 else ""
-            name = parts[2].replace("%20", " ") if len(parts) > 2 else ""
+            name = urllib.parse.unquote(parts[2]) if len(parts) > 2 else ""   # (a name the Studio allows, まり, came as %E3%81%BE...: "no such character")
             if what == "characters":
                 return self.send(200, {"characters": list(characters().values()), "places": [str(p.relative_to(ROOT)) if ROOT in p.parents else str(p) for p in PLACES]})
             if what == "preview" and name:
@@ -192,7 +193,7 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 return self.send(400, {"error": str(e)})
         if parts[:2] == ["api", "open"]:                      # a .glb from the person's own disk, kept in Saved/Animator/in
-            name = (re.search(r"name=([^&]+)", qs) or [0, ""])[1].replace("%20", " ")
+            name = urllib.parse.unquote((re.search(r"name=([^&]+)", qs) or [0, ""])[1])
             name = re.sub(r"\.glb$", "", name, flags=re.I)
             if not NAME.match(name) or raw[:4] != b"glTF":
                 return self.send(400, {"error": "a .glb file, its name letters, digits, _ and -"})

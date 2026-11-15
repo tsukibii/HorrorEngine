@@ -628,6 +628,11 @@ func setup_scene() -> PackedStringArray:
 		snd.name = "Sound"
 		snd.set_script(load("res://starter/sound.gd"))
 		adds.append(snd)
+	if not has.call("starter/pause.gd") and ResourceLoader.exists("res://starter/pause.gd"):   # (a starter from before it has none)
+		var pz := Node.new()
+		pz.name = "Pause"
+		pz.set_script(load("res://starter/pause.gd"))
+		adds.append(pz)
 	if adds.is_empty():
 		return out
 	ur.create_action("Things: set up the scene", UndoRedo.MERGE_DISABLE, r)

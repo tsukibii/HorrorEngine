@@ -8,26 +8,26 @@ class_name HSLiquidFill
 extends Node
 
 @export var target: MeshInstance3D = null          ## the liquid's mesh; empty: the parent
-@export_range(-1.0, 1.0) var fill: float = -1.0:
+@export_range(-1.0, 1.0) var fill: float = -1.0:   ## how full: 0 empty, 1 to the brim (-1: the prop's own)
 	set(v):
 		fill = v
 		_dirty = true
 @export var own_colors := true                    ## the prop's own colours; off: the three below
-@export var liquid_color := Color(0.11, 0.03, 0.012):
+@export var liquid_color := Color(0.11, 0.03, 0.012):   ## the liquid's colour seen through its body
 	set(v):
 		liquid_color = v
 		_dirty = true
-@export var surface_color := Color(0.2, 0.07, 0.03):
+@export var surface_color := Color(0.2, 0.07, 0.03):   ## the colour of its top surface
 	set(v):
 		surface_color = v
 		_dirty = true
-@export var foam_color := Color(0.35, 0.16, 0.07):
+@export var foam_color := Color(0.35, 0.16, 0.07):   ## the foam's colour at the rim
 	set(v):
 		foam_color = v
 		_dirty = true
-@export var slosh := 0.35
-@export var settle := 1.6
-@export var swing := 1.4
+@export var slosh := 0.35   ## how far the surface swings when the bottle moves
+@export var settle := 1.6   ## how fast it calms down
+@export var swing := 1.4   ## how quickly it rocks
 
 var mat: ShaderMaterial = null
 var _dirty := true

@@ -8,12 +8,12 @@
 class_name HSRain
 extends MultiMeshInstance3D
 
-@export var size: Vector3 = Vector3(8, 4, 8)
-@export var count: int = 600
-@export var strength: float = 0.45
-@export var wind: float = 0.25
-@export var follow: Node3D = null
-@export var splashes: bool = true
+@export var size: Vector3 = Vector3(8, 4, 8)   ## the box it rains in, in metres, centred on the node
+@export var count: int = 600   ## how many streaks at once (a few hundred in a room, a few thousand outside)
+@export var strength: float = 0.45   ## the downpour: 0 none, 1 heavy
+@export var wind: float = 0.25   ## how far the rain leans
+@export var follow: Node3D = null   ## a node the box keeps over (the camera: the rain stays round the player outdoors)
+@export var splashes: bool = true   ## drops splashing where they land on the box's floor
 var mat: ShaderMaterial
 var splash_mat: ShaderMaterial
 var splash_node: MultiMeshInstance3D

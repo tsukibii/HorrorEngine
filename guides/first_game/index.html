@@ -150,7 +150,8 @@ it exactly as these steps do, if you'd like to open the finished one beside your
 
 <section id="project">
 <h2><span class="n">6</span>The project</h2>
-<p>Make the project. It comes with the Look plugin, HumanShaders and the starter scripts:</p>
+<p>Make the project. It comes with the studio's plugins (Look, UI, Markers, Weapons, Devices), HumanShaders, the sound
+shelf and the starter scripts:</p>
 <pre>python tools/godot_byhand.py new ~/Games/FirstGame</pre>
 <p>Open it in Godot (Project Manager, <span class="ui">Import</span>, its <code>project.godot</code>). Then bring the
 three exports in: drag <code>Exports/interiors/bungalow</code>, <code>Exports/streets/hill_motel</code> and
@@ -159,8 +160,12 @@ three exports in: drag <code>Exports/interiors/bungalow</code>, <code>Exports/st
 <pre>python tools/godot_byhand.py exports ~/Games/FirstGame --link</pre>
 <div class="tree">res://
   addons/horrorstudio_look/     <i>the Look plugin</i>
+  addons/horrorstudio_ui/       <i>the HUD and the quest marker</i>
+  addons/horrorstudio_markers/  <i>the NPC Markers, Flags and Things tabs</i>
+  addons/horrorstudio_weapons/, addons/horrorstudio_devices/
   HumanShaders/                 <i>its skin and eyes</i>
-  starter/                      <i>player.tscn, player.gd, interior.gd, door.gd, scare_area.gd, arms_down.gd</i>
+  starter/                      <i>player.tscn, player.gd, interior.gd, door.gd, scare_area.gd, arms_down.gd, story.gd... (this guide uses these six)</i>
+  sfx/, music/, kimodo/, animations/
   exports/interiors/bungalow/bungalow.glb
   exports/streets/hill_motel/hill_motel.glb
   exports/characters/<i>&lt;her name&gt;</i>/<i>&lt;her name&gt;</i>.glb</div>
@@ -246,7 +251,21 @@ top of the 3D view to see through it.</p>
   <li><b>Her face</b>: an <span class="node">AnimationPlayer</span> keying her blend shapes (<code>eyesClosed_L</code>,
   <code>jawDrop</code>...), or the face clips the studio's Face page makes.</li>
   <li><b>More rooms</b>: another set exported, another walk-in building on the street.</li>
-  <li><b>Quests, conversations and endings</b>: that's what the Director is for. <a href="../director/index.html">Its guide</a>.</li>
+  <li><b>A whole game by hand</b>: Room 304, every system in one floor of a hotel, step by step. <a href="../tutorial_v2/index.html">Tutorial v2</a>.</li>
+  <li><b>Her part in the game</b>: where she walks, what she says, what she does, by quests, as markers in the 3D view (no
+  code). <a href="../markers/index.html">NPC markers</a>; little scenes made of them, <a href="../sequences/index.html">sequences</a>.</li>
+  <li><b>Doors that need a flag, things tied to markers</b>: <a href="../flags/index.html">flags and things</a>.</li>
+  <li><b>Saving</b>: on the <b>Story</b> node, Saving's <b>Autosave</b> writes every checkpoint to disk (an Area3D with
+  <code>res://starter/checkpoint.gd</code> keeps one when you walk in), and <b>Continue Saved</b> starts the game from the
+  last one. <b>Save Keys</b> puts saving where you stand on <kbd>F5</kbd> and loading it on <kbd>F9</kbd> while you test.
+  From a script of your own: <code>save_game(slot)</code>, <code>load_game(slot)</code>, <code>has_save(slot)</code>. What
+  a save holds: the tasks, the facts, the pocket, the cash, the doors, where you stood, what's been picked up, read or set
+  off, the characters' markers, the Logic nodes, the Sanity meter, the flashlight's batteries, the laptop's orders and
+  parcels, a hunt and the gun.</li>
+  <li><b>A pause menu</b>: under <b>Main</b> add a Node, name it <b>Pause</b>, give it <code>res://starter/pause.gd</code>, beside the
+  Story and an HSHud. <kbd>Esc</kbd> holds the game and opens the UI plugin's menu: the controls, Resume, Save game (slots
+  1 to 3), Load game (the Autosave and the slots there are), Settings and Quit.</li>
+  <li><b>Quests, conversations and endings from the desk's story</b>: that's what the Director is for. <a href="../director/index.html">Its guide</a>.</li>
 </ul>
 </section>
 

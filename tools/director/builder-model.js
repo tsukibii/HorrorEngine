@@ -64,12 +64,19 @@ export function newOpening(type, id, line, c, z, o = {}) {
 
 // ---- a reference layout -> the model ----
 export function presetToModel(P) {
-  const rooms = P.rooms.map(([id, kind, name, x0, y0, x1, y1, o = {}]) =>
+  const ops = [], problems = [];
+  // (a layout file of one's own, layoutset.mjs --file: what it names that isn't there is a problem said by name, not a
+  //  "Cannot read properties of undefined" from deep in here)
+  if (!Array.isArray(P.rooms) || !P.rooms.length) problems.push("layout: no rooms ([id, kind, name, x0, y0, x1, y1, {...}] each)");
+  for (const [k, what] of [["start", "where the player begins"], ["her", "where someone stands"]])
+    if (!Array.isArray(P[k]) || P[k].length < 3) { problems.push(`layout: no ${k} ([x, y, yaw]: ${what})`); P = Object.assign({}, P, { [k]: [0, 0, 0] }); }
+  const rooms = (P.rooms || []).map(([id, kind, name, x0, y0, x1, y1, o = {}]) =>
     newRoom(kind, id, x0, y0, o.z || 0, Object.assign({}, o, { name, size: [r3(x1 - x0), r3(y1 - y0)] })));
   const byId = Object.fromEntries(rooms.map(r => [r.id, r]));
-  const ops = [], problems = [];
   for (const [a, b, type, o = {}] of P.doors || []) {
     const ra = byId[a], rb = byId[b];
+    if (!ra || !rb) { problems.push(`layout: a door between ${a} and ${b}, but no room ${!ra ? a : b}`); continue; }
+    if (!OPENINGS[type]) { problems.push(`layout: a door between ${a} and ${b} of a kind there isn't, ${type} (${Object.keys(OPENINGS).join(", ")})`); continue; }
     const z = o.z ?? Math.max(ra.z, rb.z);
     const sh = shared(ra, rb).sort((p, q) => (q.hi - q.lo) - (p.hi - p.lo))[0];
     if (!sh) { problems.push(`layout: ${a} and ${b} don't touch`); continue; }
@@ -79,15 +86,22 @@ export function presetToModel(P) {
     ops.push(newOpening(type, id, sh, r3(c), z, Object.assign({}, o, { w: r3(w) })));
   }
   for (const [rid, wall, type, o = {}] of P.windows || []) {
-    const r = byId[rid], ln = wallLine(r, wall);
+    const r = byId[rid];
+    if (!r) { problems.push(`layout: a window in ${rid}, no such room`); continue; }
+    if (!OPENINGS[type]) { problems.push(`layout: a window in ${rid} of a kind there isn't, ${type}`); continue; }
+    if (typeof wall !== "string" || wall.length !== 1 || !"nsew".includes(wall)) { problems.push(`layout: a window on ${rid}'s ${wall} wall: no such wall (n, s, e, w)`); continue; }
+    const ln = wallLine(r, wall);
     const w = Math.min(o.w || OPENINGS[type].w, ln.hi - ln.lo - 0.3);
     ops.push(newOpening(type, `${rid}_${wall}_${type}`, ln, r3(ln.lo + (ln.hi - ln.lo) * (o.at ?? 0.5)), r.z, Object.assign({}, o, { w })));
   }
   const floors = (P.floors || [0]).slice();      // a copy: the floors buttons change the model's array in place, never the preset's (a reopened house came back with the basement, 2026-11-06)
   const items = (P.items || []).map(([rid, wall, kind, at = 0.5], i) => {
-    const r = byId[rid], ln = wallLine(r, wall), W = WALL_ITEMS[kind];
+    const r = byId[rid];
+    if (!r || !WALL_ITEMS[kind]) { problems.push(r ? `layout: a wall item ${kind} in ${rid}: no such kind (${Object.keys(WALL_ITEMS).join(", ")})` : `layout: a wall item ${kind} in ${rid}, no such room`); return null; }
+    if (typeof wall !== "string" || wall.length !== 1 || !"nsew".includes(wall)) { problems.push(`layout: a wall item ${kind} on ${rid}'s ${wall} wall: no such wall (n, s, e, w)`); return null; }
+    const ln = wallLine(r, wall);
     return newItem(kind, `${rid}_wi_${kind}_${i + 1}`, rid, wall, r3((ln.hi - ln.lo) * at));
-  });
+  }).filter(Boolean);
   // furniture: [room, preset, x, y (room metres), rot, {z, size, extra, ...what differs from the preset}] (a school's
   // classroom: builder-presets.js classroomKits)
   const kits = [];

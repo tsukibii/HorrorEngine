@@ -24,7 +24,7 @@ extends CanvasLayer
 @export_group("")
 @export_range(0.0, 1.0) var most: float = 1.0     ## the most of it ever drawn (a player's setting: 0 turns it off)
 @export_range(0.0, 1.0) var fire_amount: float = 0.6   ## fire(): a spike of this much
-@export var fire_secs := 3.0
+@export var fire_secs := 3.0   ## fire(): how long the spike takes to die away, in seconds
 
 var shown := 0.0                                  # what's drawn now: amount and any spike, eased
 var rect: ColorRect

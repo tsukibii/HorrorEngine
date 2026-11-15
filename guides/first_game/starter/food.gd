@@ -24,6 +24,25 @@ var _body: StaticBody3D
 
 func _ready() -> void:
 	_body = Reach.make(self)
+	add_to_group("hs_keeps")                       # a checkpoint keeps whether it's been taken (the Story's checkpoint and revive)
+
+
+## the Story's checkpoint: whether it's still there; revive puts it back as it was then (taken since: there again)
+func keep_state() -> Dictionary:
+	return {"there": visible}
+
+
+func put_state(s: Dictionary) -> void:
+	visible = bool(s.get("there", visible))
+	if visible and _body == null:
+		_body = Reach.make(self)
+	elif not visible and _body != null:
+		_body.queue_free()
+		_body = null
+	if not visible and id() != "":                    # taken: a loaded save's pocket has it by name, but not what it looks like
+		var st := get_tree().get_first_node_in_group("hs_story")
+		if st != null and st.has_method("has") and st.has(id()) and "models" in st and not is_instance_valid(st.models.get(id())):
+			st.models[id()] = _copy()
 
 
 func id() -> String:

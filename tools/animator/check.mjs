@@ -16,9 +16,12 @@
 // gets to what it reaches for. And life and carrying (§11, §12; section 6e): the flourishes on every body and laid over
 // a walk and a seat by the layer (layer.js), the carry poses.
 import { testBody, bodyGlb, mhrRigBuffer, TEST_BODIES, CREATURE_BODIES, CHILD_BODIES } from "./bodies.mjs";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { furniture, PERSONS, FEET_ON } from "./core/acts.js";
 import { parseGlb } from "./core/glb.js";
-import { prepare, attach, animate, makers, makeClip, settingsFor } from "./core/animate.js";
+import { prepare, attach, animate, makers, makeClip, settingsFor, VERSION } from "./core/animate.js";
 import { measure, meshPoints, summary } from "./core/measure.js";
 import { unbake, baked, record } from "./core/bake.js";
 import { jiggleTick, ringOf, stiffOf, softUse, TICK } from "./core/soft.js";
@@ -168,7 +171,14 @@ lap("before 5b. the soft bones are jiggle bones");
   for (let t = 0; t < 120; t++) { jiggleTick(st, [0, 0, 0], rest, len, stiff, damp); const dd = V.norm(st.x); ang.push(Math.atan2(V.dot(V.cross(rest, dd), [1, 0, 0]), V.dot(rest, dd))); }
   const cross = [], peaks = []; for (let i = 1; i < ang.length; i++) { if ((ang[i - 1] < 0) !== (ang[i] < 0)) cross.push(i - 1 + Math.abs(ang[i - 1]) / (Math.abs(ang[i - 1]) + Math.abs(ang[i]))); if (i < ang.length - 1 && Math.abs(ang[i]) > Math.abs(ang[i - 1]) && Math.abs(ang[i]) >= Math.abs(ang[i + 1]) && Math.abs(ang[i]) > 3e-4) peaks.push([i, Math.abs(ang[i])]); }
   const hz = (cross.length - 1) / (2 * (cross[cross.length - 1] - cross[0]) * TICK), half = (peaks[peaks.length - 1][0] - peaks[0][0]) * TICK * Math.log(0.5) / Math.log(peaks[peaks.length - 1][1] / peaks[0][1]), want = ringOf(stiff, damp);
-  ok(Math.abs(hz / want.f - 1) < 0.03 && Math.abs(half / want.half - 1) < 0.1 && Math.abs(V.len(st.x) - len) < 1e-9, "a weight let go rings at the rate and dies in the time the rule gives, and stays on its rod", `${hz.toFixed(2)} Hz, half in ${half.toFixed(3)} s (${want.f.toFixed(2)}, ${want.half.toFixed(3)})`);
+  { // and a heavily damped one (damping 9): the rule said 4.34 Hz where a thigh's bone rings 4.03, its pull's damping left out
+    const st9 = { x: V.mul(Q.rot(Q.axis([1, 0, 0], 0.3), rest), len) }, a9 = []; st9.xp = st9.x.slice();
+    for (let t = 0; t < 120; t++) { jiggleTick(st9, [0, 0, 0], rest, len, 1.2, 9); const dd = V.norm(st9.x); a9.push(Math.atan2(V.dot(V.cross(rest, dd), [1, 0, 0]), V.dot(rest, dd))); }
+    const c9 = []; for (let i = 1; i < a9.length; i++) if ((a9[i - 1] < 0) !== (a9[i] < 0)) c9.push(i - 1 + Math.abs(a9[i - 1]) / (Math.abs(a9[i - 1]) + Math.abs(a9[i])));
+    const hz9 = c9.length > 1 ? (c9.length - 1) / (2 * (c9[c9.length - 1] - c9[0]) * TICK) : 0, want9 = ringOf(1.2, 9);
+    ok(Math.abs(hz9 / want9.f - 1) < 0.01, "a heavily damped weight (damping 9) rings at the rate the rule gives, within 1%", `${hz9.toFixed(2)} Hz measured, ${want9.f.toFixed(2)} by the rule`);
+  }
+  ok(Math.abs(hz / want.f - 1) < 0.01 && Math.abs(half / want.half - 1) < 0.1 && Math.abs(V.len(st.x) - len) < 1e-9, "a weight let go rings at the rate and dies in the time the rule gives (within 1%), and stays on its rod", `${hz.toFixed(2)} Hz, half in ${half.toFixed(3)} s (${want.f.toFixed(2)}, ${want.half.toFixed(3)})`);
   ok(Math.abs(ang[9] + 0.154851) < 1e-5 && Math.abs(ang[19] - 0.074595) < 1e-5 && Math.abs(ang[29] + 0.032468) < 1e-5, "the same weight after 10, 20 and 30 ticks as Godot's HSSoftJiggle is held to (JIGGLE)", `${ang[9].toFixed(6)}, ${ang[19].toFixed(6)}, ${ang[29].toFixed(6)}`);
   // each soft bone a rod from where the flesh is rooted to its middle: the joint deeper in the body than the middle
   for (const [n, ctx] of Object.entries(ctxs)) { const bad = [], rig = ctx.rig;
@@ -545,6 +555,12 @@ lap("before 7. the bake");
 }
 
 lap("the bake");
+{ // the bake's version where Godot reads it: the starter's motion.gd and the Markers' body.gd say a character baked by an
+  // older Animator needs baking again by these (motion.gd warned only under 2 while the bake was at 5: a v4 character had
+  // no small movements and nothing said so)
+  const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", ".."), rd = f => fs.readFileSync(path.join(ROOT, f), "utf8").match(/const ANIMATOR_VERSION := (\d+)/), m1 = rd("guides/first_game/starter/motion.gd"), m2 = rd("GodotPlugins/HorrorStudioMarkers/addons/horrorstudio_markers/body.gd");
+  ok(m1 && +m1[1] === VERSION && m2 && +m2[1] === VERSION, `Godot's ANIMATOR_VERSION (motion.gd ${m1 && m1[1]}, the Markers' body.gd ${m2 && m2[1]}) is the bake's VERSION ${VERSION}`);
+}
 for (const e of errs) console.log("ERROR: " + e);
 console.log(errs.length ? `ANIMATOR FAILED (${errs.length})` : `ANIMATOR ok (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
 process.exit(errs.length ? 1 : 0);

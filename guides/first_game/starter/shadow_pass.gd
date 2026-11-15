@@ -11,7 +11,7 @@ signal passed
 
 @export var figure: Node3D                        ## who; empty: its first Node3D child
 @export var lamp: Light3D                         ## the light behind you that throws her shadow
-@export var armed := false
+@export var armed := false   ## ready from the start (else arm(), from a signal)
 @export var behind_m := 0.7                       ## how far behind you she passes
 @export var cross_m := 1.4                        ## how far she walks across behind you
 @export var secs := 1.8                           ## how long it takes
@@ -27,6 +27,7 @@ var _to := Vector3.ZERO
 
 
 func _ready() -> void:
+	add_to_group("hs_keeps")                      # (the starter Story's checkpoint and saves: keep_state, put_state)
 	if figure == null:
 		for c in get_children():
 			if c is Node3D:
@@ -105,3 +106,17 @@ func pose(you: Vector3, k := 0.5) -> void:
 	_lay(you)
 	_at(k)
 
+## what the starter Story keeps at a checkpoint and in a save (the group hs_keeps): a save loaded after it's happened
+## doesn't play it again, and one armed by a signal before the save is still armed
+func keep_state() -> Dictionary:
+	return {"armed": armed, "done": done}
+
+
+## put back as it was kept (a shadow crossing now is gone)
+func put_state(d: Dictionary) -> void:
+	if running and figure != null:
+		figure.visible = false
+	running = false
+	_t = 0.0
+	done = bool(d.get("done", done))
+	armed = bool(d.get("armed", armed)) and not done

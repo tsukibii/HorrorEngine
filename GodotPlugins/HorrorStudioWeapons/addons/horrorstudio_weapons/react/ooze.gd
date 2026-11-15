@@ -21,7 +21,7 @@ const SHADERS := {Kind.SPRAY: "res://addons/horrorstudio_weapons/react/ooze_spra
 	Kind.DROP: "res://addons/horrorstudio_weapons/react/ooze_drop.gdshader"}
 const REACH := {Kind.SPRAY: 0.9, Kind.POOL: 1.12, Kind.WOUND: 1.95, Kind.DROP: 1.1}   # its box's half width over its size
 
-@export var kind := Kind.SPRAY:
+@export var kind := Kind.SPRAY:   ## what it is: a spray on a wall, a pool, a wound on her, a drop
 	set(v):
 		kind = v
 		_apply()

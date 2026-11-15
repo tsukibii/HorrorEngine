@@ -11,13 +11,13 @@ signal steamed
 signal cleared
 
 @export var mirror: Node                          ## the HSMirrorSurface on the glass
-@export var text := "308"
-@export var steam_seconds := 6.0
+@export var text := "308"   ## the words a finger left on the glass
+@export var steam_seconds := 6.0   ## seconds the glass takes to fog over
 @export var hold := 20.0                          ## seconds fogged over, the words there
-@export var clear_seconds := 10.0
-@export var once := true
+@export var clear_seconds := 10.0   ## seconds it takes to clear again
+@export var once := true   ## it happens once
 @export var sound := ""                           ## off the shelf, at the mirror, as it starts
-@export var sound_db := -6.0
+@export var sound_db := -6.0   ## the sound's loudness in dB
 
 var level := 0.0                                  ## the steam now, 0..1 (a check's)
 var phase := "idle"                               ## idle, steaming, holding, clearing
@@ -61,3 +61,24 @@ func _process(dt: float) -> void:
 				cleared.emit()
 	if level != was and mirror != null:
 		mirror.set("steam", level)
+
+## what the starter Story keeps at a checkpoint and in a save (the group hs_keeps): a save loaded after it's happened
+## doesn't play it again, and one armed by a signal before the save is still armed
+func keep_state() -> Dictionary:
+	return {"count": count}
+
+
+## put back as it was kept (steam rising now clears at once, its words with it)
+func put_state(d: Dictionary) -> void:
+	if phase != "idle" or level > 0.0:
+		phase = "idle"
+		level = 0.0
+		_t = 0.0
+		if mirror != null:
+			mirror.set("writing", "")
+			mirror.set("steam", 0.0)
+	count = int(d.get("count", count))
+
+
+func _ready() -> void:
+	add_to_group("hs_keeps")                      # (the starter Story's checkpoint and saves: keep_state, put_state)

@@ -38,19 +38,19 @@ signal ended                                      ## over: what appeared is gone
 @export_group("Where you look")
 @export var spot: Node3D                          ## where it is (empty: the head of what appears, else this node)
 @export_enum("anywhere", "in view", "middle", "left", "right", "either side", "top", "bottom", "top left", "top right",
-	"bottom left", "bottom right", "any corner", "edge", "out of view") var look := "anywhere"
+	"bottom left", "bottom right", "any corner", "edge", "out of view") var look := "anywhere"   ## where in your view the spot must be: the frame in thirds, a corner, the edge, or out of view
 @export_range(0.0, 0.33, 0.01) var tolerance := 0.1   ## every region this much wider (of the frame's half)
 @export var line_of_sight := true                 ## seen only with nothing in the way (else it's out of view)
 @export_group("What must be so")
 @export var needs := ""                           ## on:x (task x on your list, not done), task:x (done), item:x, a fact; ! for not
-@export_enum("any", "standing", "walking", "running", "still", "moving", "sitting", "lying", "seated", "hiding") var doing := "any"
-@export_enum("any", "on", "off") var flashlight := "any"
+@export_enum("any", "standing", "walking", "running", "still", "moving", "sitting", "lying", "seated", "hiding") var doing := "any"   ## what you must be doing
+@export_enum("any", "on", "off") var flashlight := "any"   ## your flashlight on, off, or either
 @export var near_m := 0.0                         ## from your eye to the spot
-@export var far_m := 100.0
+@export var far_m := 100.0   ## and at the most
 @export var after_secs := 0.0                     ## all of it so this long first
 @export_range(0.0, 1.0, 0.01) var chance := 1.0   ## then rolled once a second while it stays so
 @export var armed := true                         ## off: nothing until arm() (from a signal), or fire()
-@export var once := true
+@export var once := true   ## it happens once (off: again after its cooldown)
 @export var cooldown := 30.0                      ## seconds before it can come again (once off)
 @export_group("What happens")
 @export var appear: Node3D                        ## someone (or something) there: hidden until then
@@ -58,19 +58,19 @@ signal ended                                      ## over: what appeared is gone
 @export var face_you := true                      ## turned about the vertical to face you (its front, +Z); not if it lies or hangs
 @export var animation := ""                       ## played on an AnimationPlayer under what appears
 @export var until_looked_at := false              ## gone sooner, the moment you turn to look straight at it (the spot into the middle)
-@export_enum("at once", "in a blink", "when unseen") var vanish := "in a blink"
+@export_enum("at once", "in a blink", "when unseen") var vanish := "in a blink"   ## how what appeared goes: at once, in a lamp's blink, or once you aren't looking
 @export var blink_lamp: Light3D                   ## the lamp that blinks out as it goes (with your flashlight)
 @export var sound := ""                           ## off the shelf (sting_big, knock_three...) or a path
-@export var sound_db := 0.0
+@export var sound_db := 0.0   ## the sound's loudness in dB
 @export var sound_at: Node3D                      ## where it sounds (empty: at what appears, else the spot)
 @export var hush := 0.0                           ## seconds of quiet first (0: none)
 @export var scare := true                         ## a scare: you jump and the night's director hears it (off for a cue that isn't one)
-@export var say := ""
-@export var objective := ""
+@export var say := ""   ## a line (the Story's say)
+@export var objective := ""   ## the objective changed to this
 @export var add_tasks: PackedStringArray = []     ## each "id: what it says"
-@export var tick := ""
-@export var fact := ""
-@export_enum("keep", "silence", "calm", "uneasy", "dread", "chase") var music := "keep"
+@export var tick := ""   ## a task ticked
+@export var fact := ""   ## a fact set in the Story
+@export_enum("keep", "silence", "calm", "uneasy", "dread", "chase") var music := "keep"   ## the music's mood changed to (keep: as it is)
 @export var target: Node                          ## its fire() too
 @export var look_of: Node                         ## a character (or her HSLookSwitch) whose look this changes
 @export var her_look := ""                        ## the look she turns to: a name in her switch's Looks, or default
@@ -90,8 +90,21 @@ var _roll_at := 0.0
 func _ready() -> void:
 	if scare:
 		add_to_group("hs_scare")                  # the Fear node and the director hook every scare's `scared`
+	add_to_group("hs_keeps")                      # a checkpoint keeps how often it's happened
 	if appear != null:
 		appear.visible = false
+
+
+## the Story's checkpoint: how often it's happened; revive puts that back (one that happened since can happen again)
+func keep_state() -> Dictionary:
+	return {"count": count, "last": _last}
+
+
+func put_state(s: Dictionary) -> void:
+	if running:
+		return
+	count = int(s.get("count", count))
+	_last = float(s.get("last", _last))
 
 
 ## on (from a signal: whatever it sends is ignored)

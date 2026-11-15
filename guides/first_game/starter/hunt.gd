@@ -38,7 +38,7 @@ signal caught                                             ## she has you
 signal ended(how: String)                                 ## survived, task, safe, shot, stopped
 
 @export var hunter: Node3D                                ## who hunts
-@export_enum("haunting", "stalking", "lethal") var kind := "haunting"
+@export_enum("haunting", "stalking", "lethal") var kind := "haunting"   ## haunting: she never touches you; stalking: caught is a fright; lethal: caught, you die and go back to the checkpoint
 @export_group("Starts and ends")
 @export var needs := ""                                   ## it starts by itself once these hold (the Story's words); empty: start() or fire()
 @export var survive_secs := 0.0                           ## it ends after this long (0: not by time)
@@ -48,17 +48,17 @@ signal ended(how: String)                                 ## survived, task, saf
 @export var again := false                                ## it can start again after it ends
 @export_group("Hidden quest")
 @export var reveal_task := ""                             ## a task shown for it, "id: what it says" (empty: wholly hidden)
-@export_enum("start", "first sighting", "never") var reveal_at := "first sighting"
-@export var start_says := ""
-@export var end_says := ""
+@export_enum("start", "first sighting", "never") var reveal_at := "first sighting"   ## when the hidden task shows: at the start, at the first sighting of her, or never
+@export var start_says := ""   ## a line when it starts (the Story's say)
+@export var end_says := ""   ## a line when it's survived
 @export var fact := ""                                    ## set when it's survived
 @export var tick := ""                                    ## a task ticked when it's survived (the revealed one is ticked anyway)
 @export var target: Node                                  ## its fire() when it's survived
 @export_group("Stages and pace")
-@export_range(1, 9) var stages := 4
+@export_range(1, 9) var stages := 4   ## how many stages it climbs through: each brings her nearer and the spots more often
 @export var stage_secs := PackedFloat32Array([30.0, 45.0, 60.0])   ## how long stages 1, 2, 3... last (the last one stays)
 @export var gap_min := 7.0                                ## seconds between spots
-@export var gap_max := 18.0
+@export var gap_max := 18.0   ## and at the most
 @export var spots: Array[Node] = []                       ## its hunt spots (empty: every one in the scene that's its own or anyone's)
 @export var follow_m := 7.0                               ## follow: how far down your trail she starts
 @export var follow_min_m := 2.2                           ## and the nearest she comes
@@ -69,9 +69,9 @@ signal ended(how: String)                                 ## survived, task, saf
 @export var rush_ran := false                             ## you ran for a second
 @export var rush_stared := false                          ## you looked at her 4 s
 @export var rush_back := false                            ## she's behind you inside 6 m, unseen 3 s
-@export var dark_secs := 3.0
+@export var dark_secs := 3.0   ## the rush in the dark: how long your light has been off first
 @export var tell_secs := 1.4                              ## the warning before she comes (never under a second)
-@export var tell_sound := "breath_close"
+@export var tell_sound := "breath_close"   ## the warning's sound, off the shelf
 @export var tell_look := ""                               ## her look for the tell and the rush (her HSLookSwitch)
 @export var rush_rest := 20.0                             ## seconds before she can rush again
 @export var chase: Node                                   ## her chase.gd (empty: the one under her, or one made)
@@ -79,14 +79,14 @@ signal ended(how: String)                                 ## survived, task, saf
 @export_group("Sanity")
 @export var sanity_sync := 1.0                            ## how much low sanity speeds it up (a Sanity node in the scene): 0 not at all; 1: twice as fast at nothing
 @export_group("Being caught")
-@export var kill_sound := "sting_big"
-@export var death_title := "You died"
-@export_multiline var death_text := ""
+@export var kill_sound := "sting_big"   ## the sound when she catches you, off the shelf
+@export var death_title := "You died"   ## the death card's title (lethal)
+@export_multiline var death_text := ""   ## the death card's words under it
 @export var mercy_after := 2                              ## deaths in this hunt before she goes easier (0: never)
 @export var grace := 10.0                                 ## seconds after a retry with no rush
 @export_group("Invisible")
 @export var cloaked := false                              ## she's cloaked while it runs (an HSCloak under her), seen when a spot shows her
-@export var head_m := 1.5
+@export var head_m := 1.5   ## her eyes' height, for seeing and being seen
 
 var running := false
 var done := false                                         ## it has ended at least once
@@ -121,7 +121,45 @@ var _lamp_lit := false
 func _ready() -> void:
 	add_to_group("hs_hunt")
 	add_to_group("hs_scare")
+	add_to_group("hs_saves")                                 # (the Story's save_game: whether it runs or has ended, its stage, its clock)
 	_wire.call_deferred()
+
+
+var _loaded := false                                      # a save just put back: the Story's `revived` that follows isn't a death
+
+
+## the Story's save_game and load_game: running or over, its stage and clock. Loaded, a hunt that was running runs
+## again at its stage, quietly (its facts come back with the save: no line, no checkpoint); one that had ended stays
+## ended, though what starts it holds (it would start again and end at once, its lines said twice)
+func save_state() -> Dictionary:
+	return {"running": running, "done": done, "how": how, "stage": stage, "clock": clock, "deaths": deaths, "revealed": _revealed}
+
+
+func load_state(d: Dictionary) -> void:
+	_loaded = true
+	done = bool(d.get("done", done))
+	how = str(d.get("how", how))
+	deaths = int(d.get("deaths", deaths))
+	_revealed = bool(d.get("revealed", _revealed))
+	if bool(d.get("running", false)):
+		if not running:
+			running = true
+			_begin_quiet(randf_range(gap_min, gap_max) * 0.5)
+			_hide_her()
+			if cloaked and _cloak() != null:
+				_cloak().cloak(0.0)
+		stage = clampi(int(d.get("stage", 1)), 1, stages)
+		_stage_t = 0.0
+		clock = float(d.get("clock", 0.0))
+	elif running:
+		running = false
+		state = "idle"
+		active = null
+		var c := chase
+		if c != null and is_instance_valid(c) and c.has_method("stop"):
+			c.stop()
+		_hide_her()
+		_look("")
 
 
 func _wire() -> void:
@@ -537,6 +575,9 @@ func _on_caught() -> void:
 
 # back from the dead (the Story's checkpoint): the hunt a stage lower than it killed you at, no rush for a while
 func _on_revived() -> void:
+	if _loaded:                                           # (a save put back, not a death: its stage stays)
+		_loaded = false
+		return
 	if not running:
 		return
 	_hide_her()

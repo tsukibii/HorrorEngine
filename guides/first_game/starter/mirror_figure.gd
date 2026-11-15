@@ -29,6 +29,7 @@ var _done := false
 
 
 func _ready() -> void:
+	add_to_group("hs_keeps")                      # (the starter Story's checkpoint and saves: keep_state, put_state)
 	if figure == null:
 		for c in get_children():
 			if c is Node3D:
@@ -103,3 +104,19 @@ func in_a_glass(p: Vector3) -> bool:
 		if Rect2(lo, hi - lo).has_point(sp):
 			return true
 	return false
+
+## what the starter Story keeps at a checkpoint and in a save (the group hs_keeps): a save loaded after it's happened
+## doesn't play it again, and one armed by a signal before the save is still armed
+func keep_state() -> Dictionary:
+	return {"armed": armed, "done": _done}
+
+
+## put back as it was kept (shown now, she's gone)
+func put_state(d: Dictionary) -> void:
+	if shown and figure != null:
+		figure.visible = false
+	shown = false
+	seen_for = 0.0
+	was_seen = false
+	_done = bool(d.get("done", _done))
+	armed = bool(d.get("armed", armed)) and not _done

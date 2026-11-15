@@ -46,6 +46,7 @@ import json
 import math
 import os
 import shutil
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -63,6 +64,21 @@ proj = Path(args[args.index("--keep") + 1]).resolve() if "--keep" in args else R
 SET = "hotel_floor"
 GUIDE = ROOT / "guides" / "tutorial_v2"
 errs = []
+
+
+MADE = re.compile(r"pbr/_made/[0-9a-f]{12}")
+
+
+def unmade(v):
+    """v with every made set's name as one word: its name is its recipe and its sets' file times, which a checkout sets
+    (storykit/pbr.py stamp), so the ready-made floor names the made sets of the machine it was made on"""
+    if isinstance(v, str):
+        return MADE.sub("pbr/_made/*", v)
+    if isinstance(v, dict):
+        return {k: unmade(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [unmade(x) for x in v]
+    return v
 
 
 def run(cmd, **kw):
@@ -97,11 +113,13 @@ else:
         errs.append(f"no ready-made floor, {EX.rel(ready_glb)}: {BH.READY_HOW}")
     else:
         mine, kept = EX.signature(proj / "exports/interiors/hotel_floor/hotel_floor.glb"), EX.signature(ready_glb)
-        if mine[0] != kept[0]:
-            errs.append(f"the ready-made floor ({EX.rel(ready_glb.parent)}) isn't the set as it exports now: "
-                        f"{EX.differ(kept[1], mine[1], ('the ready-made', 'this export'))}; {BH.READY_HOW}, then commit it")
-        else:
+        if mine[0] == kept[0]:
             print(f"  the ready-made floor ({EX.rel(ready_glb.parent)}) is this export: {len(mine[1])} nodes alike")
+        elif unmade(mine[1]) == unmade(kept[1]):     # a made set's name hashes its sets' file times (storykit/pbr.py stamp): a checkout's own
+            print(f"  the ready-made floor ({EX.rel(ready_glb.parent)}) is this export: {len(mine[1])} nodes alike but for the made sets' names (their sets' file times on this checkout)")
+        else:
+            errs.append(f"the ready-made floor ({EX.rel(ready_glb.parent)}) isn't the set as it exports now: "
+                        f"{EX.differ(unmade(kept[1]), unmade(mine[1]), ('the ready-made', 'this export'))}; {BH.READY_HOW}, then commit it")
     # 2. her
     people = ROOT / "Content" / "Studio" / "People"
     who = "_studiotest" if (people / "_studiotest/export/_studiotest.glb").is_file() else next((p.name for p in sorted(people.glob("*")) if (p / "export" / f"{p.name}.glb").is_file()), None) if people.is_dir() else None

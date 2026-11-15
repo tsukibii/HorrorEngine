@@ -15,8 +15,9 @@ then each branch leaves a section here saying what it changes for the tutorial. 
       the tutorial doesn't name either).
 - [ ] §9 *The project*: a project made before this needs `python tools/godot_byhand.py install <folder> --starter`
       once (the player asks a thing's Logic); say so beside the install line.
-- [ ] TUTORIAL2 run again after the starter's `player.gd` change (`use()` asks Logic first). It wasn't run on this
-      branch: it needs the desk's server. SEATS, MARKERS and LOGIC, which use the same player, pass.
+- [x] TUTORIAL2 run again after the starter's `player.gd` change (`use()` asks Logic first). It wasn't run on this
+      branch: it needs the desk's server. SEATS, MARKERS and LOGIC, which use the same player, pass. (Run on
+      `enhancements`, 2026-11-15, with this merged: TUTORIAL2 ok.)
 
 **Should (the tutorial done the fast way, which is the point of the tabs):**
 - [ ] §10 *The scene*: the player, the Story, the HUD and Sound added by the Things tab's **Set up the scene**
@@ -60,8 +61,9 @@ then each branch leaves a section here saying what it changes for the tutorial. 
       "moves" out of what a game by hand can't do yet (her own creep, crawl, peek and lunge are baked now), and
       "faces" if the markers' Face row is used.
 - [ ] §35 *Where to go next*: point at `guides/animator/index.html` and `guides/sequences/index.html`.
-- [ ] TUTORIAL2 run again after the starter's `motion.gd`, `act.gd` and `player.gd` changes (`struck`, the life
-      layer's calls). It wasn't run on this branch: it needs the desk's server.
+- [x] TUTORIAL2 run again after the starter's `motion.gd`, `act.gd` and `player.gd` changes (`struck`, the life
+      layer's calls). It wasn't run on this branch: it needs the desk's server. (Run on `enhancements`, 2026-11-15,
+      with this merged: TUTORIAL2 ok.)
 
 **Should (what the new animations are for):**
 - [ ] §31 *the hunt*: her `moves.gd` is given Kimodo clips with prompts. With a baked character it can be left
@@ -93,11 +95,64 @@ then each branch leaves a section here saying what it changes for the tutorial. 
 - [ ] Her export made again: the tutorial's character was exported before the fabric sets and the collar rule, so her
       file carries no fabric records and her collar is as it was. Dress her in sets (the PBR set picker, or a
       **Fabric sets** outfit) and export again, or say she wears the older fabrics.
-- [ ] TUTORIAL2 run again: the look plugin grew (`cloth.gd`, the packs in `textures/cloth/`, 16 MB) and the
-      character look node calls `HSCloth.wear`. It wasn't run on this branch (it needs the desk's server).
+- [x] TUTORIAL2 run again: the look plugin grew (`cloth.gd`, the packs in `textures/cloth/`, 16 MB) and the
+      character look node calls `HSCloth.wear`. It wasn't run on this branch (it needs the desk's server). (Run on
+      `enhancements`, 2026-11-15, with this merged: TUTORIAL2 ok, with her as a stand-in capsule: no Studio export
+      on that machine.)
 
 **Should:**
 - [ ] §30 *Her looks* or the character's section: one picture of her knit or her tights close up, and the two
       numbers a player of the editor can turn (`cloth_fuzz`, `cloth_detail`).
 - [ ] A line on `HSCloth.dress(mesh, 0, "Leather001", colour)` for a prop of cloth made by hand (a curtain, a sofa)
       whose second UV is in metres, if the tutorial ever dresses one.
+
+## From `enhancements`: the tools reviewed (docs/TOOLS_REVIEW.md)
+
+**Must (or the tutorial is wrong or stale):**
+- [ ] §34 *Every system in it*: E's prompt is built now (the starter's player puts Open, Take, Read, Sit, Lie down,
+      Hide, Use, or Locked in red, on the scene's HSHud for whatever it's aimed at): take "E's prompt" out of what a
+      game by hand can't do yet, and say a script of your own gives its words with `use_prompt(by)`.
+- [ ] §31 *the hunt*, dying and checkpoints: dying now puts the world back as the checkpoint had it (a pickup taken
+      since lies where it was again, a once-only area or cue fires again: the group `hs_keeps`). Say so where dying is
+      explained; the slippers (`shown.gd`) come back to where they were at the checkpoint too, and so do the laptop's
+      shop and the parcels (an order on its way comes again, a parcel opened since is there again shut).
+- [ ] The user turned the Story's **`use_hud`** on by default (E34 built it, E51 made it the default: "E34 yes I
+      prefer HSHud look"): the tutorial's objective, list and lines are on the HSHud's corners and footer now, so every
+      picture with them wants retaking, and the text that says where they are wants saying so.
+- [ ] §24 *the HUD*: by hand the HSHud's **Keys are shown only in the pause menu** now (E52, the user's: "move the
+      screenshot ones to the pause menu ... sholdnt be visible inside the main game unless I pause"; the HUD's *Keys In
+      Menu*, on by default): "the keys at the foot" wants to say the pause menu, and "Without Keys it shows the studio
+      runtime's keys (Click to play, E inventory, G put down...)" is wrong now (without Keys, the starter player's).
+      Every picture with the chips over the game wants retaking, and a picture of Esc's menu with them at its foot.
+- [ ] Every picture under the tape in a wide window: the objective, the list, the lines and the quest marker's
+      pointer are inside the tape's 4:3 picture now, never in the black bars (E52: "make sure the quests align to not
+      be in the black letter boxes (no matter what vhs style or res), should be inside the frame").
+- [ ] §34 *Every system in it*: a game by hand has **the pause menu** now (a Node called Pause with
+      `starter/pause.gd` beside the HUD: Esc holds the game; Save game and Load game are the Story's saves): add it to
+      the tutorial's scene and take "the pause menu" out of what a game by hand can't do yet.
+- [ ] §31 or §34: the night can be **saved** now (the Story's Saving group: *Autosave* at each checkpoint, *Continue
+      Saved* at the start, F5 and F9 with *Save Keys*; `save_game`, `load_game`). Say so where dying and checkpoints are
+      explained, and take saving out of what a game by hand can't do yet if it's listed. Not in a save yet: the double
+      once it came in a parcel, the laptop's orders, a parcel, the hunt's stage: a save made before the gun comes is the
+      honest one to show. (Since then the gun, the laptop, the parcels and the hunt are in a save, and so are what the
+      shotgun breaks (E39: the entry's bulb shot out comes back on when you die before it) and the once-only scares (E49:
+      the glimpse at 308's door, the closer, feet under the door, the steam's writing never replay after a load).)
+- [ ] §34 *Every system in it*: a game by hand can go **from one scene to another** now (E50: `starter/travel.gd`, the
+      Story's `go_to(scene, at)`, carrying the list, the facts, the pocket and the cash): the night is one scene, so a
+      line in what a game by hand can do is enough.
+- [ ] §2 or a new last section: **shipping the night**: a by-hand project keeps its scenes as text in an export (E38:
+      Godot 4.7's binary conversion empties every list in a scene: the tutorial's to-do list, its HUD's keys) and has a
+      Linux and a Windows preset with `*.npz`; `godot_byhand.py install` adds both to a project made before.
+- [ ] §9 *The project*: `godot_byhand.py install` now leaves a plugin you switched off off, and says when the
+      project's `starter/` differs from the studio's (then `install --starter`).
+- [x] TUTORIAL2 run again after the starter's `player.gd` (the prompt, a blow as a scare), `story.gd` (the world kept
+      with a checkpoint, saves) and `reach.gd` (a pickup's or a note's reach on layer 2), the laptop and its parcels kept
+      at a checkpoint, scares added late heard: TUTORIAL2 ok on this branch (2026-11-15, with the desk's server here).
+      Its ready-made floor's comparison now leaves out the made sets' names, which hash their sets' file times: a
+      fresh checkout's differ from the machine the floor was made on, though what it holds is alike.
+
+**Should:**
+- [ ] The pictures with a prompt in them: aimed at 304's door the HUD now says *Locked* in red until the key's in the
+      pocket, then *Open*; at the note *Read*; at the key *Take*. §16 and §5's pictures want retaking.
+- [ ] 304's bath door is 0.70 m wide, under the 0.75 m the animation rules want for a door a character walks through
+      (`level_check` now warns): widen it in the set (and make the ready-made export again) if she ever walks in.

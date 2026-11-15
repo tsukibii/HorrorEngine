@@ -45,7 +45,7 @@ const PUFFS := {
 		_dirty = true
 @export_range(0.0, 1.0) var glow_flicker := 0.0      ## a dying screen, a faulty LED
 @export_group("Flame")
-@export var flame := true:
+@export var flame := true:   ## its candle flames, each with a flickering candle light
 	set(v):
 		flame = v
 		_dirty = true
@@ -53,15 +53,15 @@ const PUFFS := {
 	set(v):
 		flame_light = v
 		_dirty = true
-@export var flame_shadows := true:
+@export var flame_shadows := true:   ## the candle lights cast shadows
 	set(v):
 		flame_shadows = v
 		_dirty = true
-@export_range(0.2, 3.0) var flame_size := 1.0:
+@export_range(0.2, 3.0) var flame_size := 1.0:   ## the flames' size, times the prop's own
 	set(v):
 		flame_size = v
 		_dirty = true
-@export var flame_color := Color(1.0, 0.62, 0.3):
+@export var flame_color := Color(1.0, 0.62, 0.3):   ## the flames' colour and their light's
 	set(v):
 		flame_color = v
 		_dirty = true
@@ -74,7 +74,7 @@ const PUFFS := {
 	set(v):
 		steam = v
 		_dirty = true
-@export_range(0.0, 3.0) var puff_rate := 1.0
+@export_range(0.0, 3.0) var puff_rate := 1.0   ## how often the smoke and steam puff out
 @export_range(0.0, 2.0) var puff_brightness := 1.0:   ## the puffs are unlit: lower in a dark room, higher in a bright one
 	set(v):
 		puff_brightness = v
@@ -84,7 +84,7 @@ const PUFFS := {
 	set(v):
 		wax = v
 		_dirty = true
-@export_range(0.0, 1.0) var wax_glow := 0.4:
+@export_range(0.0, 1.0) var wax_glow := 0.4:   ## how much light shines into the wax
 	set(v):
 		wax_glow = v
 		_dirty = true

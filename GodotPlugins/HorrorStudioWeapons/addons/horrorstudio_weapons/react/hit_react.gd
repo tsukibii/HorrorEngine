@@ -51,7 +51,7 @@ const SKIP := ["twist", "proc", "null", "_end", "roll", "ik_", "pole", "nub", "t
 @export var stagger_s := 0.9                      ## held where she is this long
 @export var push_m := 0.35                        ## shoved back this far by a close shot's stagger (a blast's more; a flinch: a fifth of it)
 @export var flinch := 1.0                         ## how hard she flinches (0: never)
-@export var down_mode := Down.DISSOLVE
+@export var down_mode := Down.DISSOLVE   ## how she goes when she's down: charred and crumbled into smoke, vanished, a ragdoll, or nothing
 @export var gone_secs := 0.0                      ## down, back whole after this long (0: never; a demon stays gone)
 @export var look: HSWoundLook                     ## how she bleeds (none: react/looks/demon.tres)
 @export var hitboxes := true                      ## capsules on her bones (none: her own colliders, or a capsule round her)

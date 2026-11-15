@@ -6,14 +6,15 @@ extends Area3D
 
 signal kept
 
-@export var needs := ""
-@export var once := true
+@export var needs := ""   ## the Story's words that must hold for it to count
+@export var once := true   ## it counts once (off: each time you walk in)
 @export var say := ""                                 ## a line as it's kept (most games: none)
 
 var count := 0
 
 
 func _ready() -> void:
+	add_to_group("hs_keeps")                      # (the starter Story's checkpoint and saves: keep_state, put_state)
 	body_entered.connect(_on_body)
 
 
@@ -36,3 +37,12 @@ func keep(_a = null, _b = null) -> void:
 	if say != "":
 		st.say(say)
 	kept.emit()
+
+## what the starter Story keeps at a checkpoint and in a save (the group hs_keeps): a save loaded after it's happened
+## doesn't play it again, and one armed by a signal before the save is still armed
+func keep_state() -> Dictionary:
+	return {"count": count}
+
+
+func put_state(d: Dictionary) -> void:
+	count = int(d.get("count", count))

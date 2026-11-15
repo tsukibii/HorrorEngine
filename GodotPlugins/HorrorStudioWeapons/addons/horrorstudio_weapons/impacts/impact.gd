@@ -23,14 +23,14 @@ extends Resource
 ## `impacts/water.tres` splashes (`droplets`, `mist`), leaves a wet patch that runs down a wall (`fx/wet_*`,
 ## `fx/wet_drip_*`) and dries, and puts out embers and flames within `douse_m`. Their `sound` plays once a shot.
 
-@export var title := "Pellet"
+@export var title := "Pellet"   ## its name, a label for you (the game never shows it)
 @export_group("Mark")
 @export_enum("crater", "scorch", "heart", "wet", "none") var mark := "crater"   ## the decal's maps (fx/crater_* a pellet's, fx/scorch_* an explosion's; on concrete, stone or metal a pellet's is fx/smear_*, a lead smear; fx/heart_* a printed heart and fx/wet_* a wet patch, on a wall fx/wet_drip_*: nothing of the wall missing, upright on a wall)
 @export var mark_size_m := 0.05                         ## its width: the chipped ring round the hole
 @export_range(0.0, 1.0) var mark_jitter := 0.25         ## each one's size this much unalike
 @export var keep := 180                                 ## the most marks kept in the world (the oldest go)
 @export var embers_s := 0.0                             ## how long its embers glow (the scorch's emission map; a heart's glow), 0 none
-@export var embers_energy := 2.5
+@export var embers_energy := 2.5   ## how bright its embers glow
 @export var fade_s := 0.0                               ## the mark gone after this long, fading over its second half (a heart, water drying); 0: it stays
 @export_group("Together")
 @export var merge_m := 0.016                            ## pellets landing closer than this run into one torn hole (a 00 pellet's hole is 8 mm: nearer, the bridge between two tears; 0: never, each its own)

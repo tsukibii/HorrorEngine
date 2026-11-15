@@ -396,6 +396,358 @@ func stage_checkpoint() -> void:
 	await use_at(door)
 	await frames(2)
 	ok(bool(story.call("is_set", "opened_d")) and lg.times == 1, "D: used again: on again (a once counts from the checkpoint)")
+	# and the world with it (the Story's hs_keeps): a key taken since the checkpoint lies where it was and can be picked up
+	# again (it used to stay hidden with its reach box freed: the door it opens never opened again); a once-only area that
+	# fired since fires again
+	var key := thing("KeyD", o + Vector3(2, 0, 0), "res://starter/pickup.gd", Vector3(0.25, 0.1, 0.25), false)
+	key.set("item", "key_d")
+	var ar := Area3D.new()
+	ar.name = "AreaD"
+	var cs := CollisionShape3D.new()
+	var bs := BoxShape3D.new()
+	bs.size = Vector3(1.6, 2.0, 1.6)
+	cs.shape = bs
+	cs.position.y = 1.0
+	ar.add_child(cs)
+	ar.set_script(load("res://starter/event_area.gd"))
+	ar.set("fact", "seen_d")
+	ar.position = main.global_transform.affine_inverse() * (o + Vector3(-3, 0, 0))
+	main.add_child(ar)
+	put(o + Vector3(2, 0.1, 1.0))
+	await frames(4)
+	story.call("checkpoint")
+	await use_at(key, 0.05)
+	await frames(2)
+	put(o + Vector3(-3, 0.1, 0))
+	var walked := await until(func() -> bool: return bool(story.call("is_set", "seen_d")), 2.0)
+	ok(bool(story.call("has", "key_d")) and not key.visible and walked and bool(ar.get("fired")), "D: after the checkpoint the key's taken and the area's fired",
+		"key %s, shown %s, area %s" % [story.call("has", "key_d"), key.visible, ar.get("fired")])
+	story.call("die", "test")
+	await secs(1.2)
+	var reach := key.get_node_or_null("_reach")
+	ok(not bool(story.call("has", "key_d")) and key.visible and reach != null and not bool(ar.get("fired")) and not bool(story.call("is_set", "seen_d")),
+		"D: died: the key lies where it was with its reach box, out of the pocket, and the area hasn't fired",
+		"pocket %s, shown %s, reach %s, fired %s" % [story.call("has", "key_d"), key.visible, reach != null, ar.get("fired")])
+	put(o + Vector3(2, 0.1, 1.0))
+	await frames(3)
+	await use_at(key, 0.05)
+	await frames(2)
+	put(o + Vector3(-3, 0.1, 0))
+	walked = await until(func() -> bool: return bool(story.call("is_set", "seen_d")), 2.0)
+	ok(bool(story.call("has", "key_d")) and walked, "D: and taken again, the area fired again: a checkpoint puts the world back too")
+
+
+# ---- S. a save on disk (the Story's save_game and load_game): the checkpoint, where you stand, the world, the Logic, her markers ------
+func stage_save() -> void:
+	var o := origin()
+	for sl in [0, 1, 2, 3]:
+		story.call("delete_save", sl)
+	var door := thing("DoorS", o, "res://starter/door.gd")
+	var lg := logic(door, {"set_flags": "+opened_s"})
+	var key := thing("KeyS", o + Vector3(2, 0, 0), "res://starter/pickup.gd", Vector3(0.25, 0.1, 0.25), false)
+	key.set("item", "key_s")
+	key.set("label", "The S key")
+	var p1 := o + Vector3(-4, 0, -3)
+	var p2 := o + Vector3(-4, 0, 2)
+	var her := standin(o + Vector3(-2, 0, -3), "HerS")
+	var npc := npc_for(her, "Sal")
+	var q := quest(npc, "One")
+	mk(q, "appear", o + Vector3(-2, 0, -3))
+	mk(q, "walk", p1, {"start_when": "opened_s"})
+	var on := mk(q, "walk", p2, {"start_when": "go_on_s"})
+	npc.start()
+	await secs(0.6)
+	var run: HSNpcRunner = npc.runner
+	put(o + Vector3(0, 0.1, 1.5))
+	await use_at(door)
+	put(o + Vector3(2, 0.1, 1.0))
+	await frames(3)
+	await use_at(key, 0.05)
+	story.call("set_eatable", "apple_s", 0.3, 1.5)
+	story.call("give", "apple_s", "An apple")
+	var there := await until(func() -> bool: return run.cur == on and her.global_position.distance_to(p1) < 0.3, 10.0)
+	ok(there and lg.times == 1 and bool(story.call("has", "key_s")), "S: the door used, the key taken, she's walked to her first place and waits",
+		"%s, times %d" % [run.status(), lg.times])
+	var stood := player.global_position
+	ok(bool(story.call("save_game", 1)) and bool(story.call("has_save", 1)), "S: saved into slot 1")
+	var text := FileAccess.get_file_as_string(str(story.call("save_path", 1)))
+	ok(text.contains("key_s") and text.contains("opened_s") and text.contains("Sal markers") and text.contains("DoorS/Logic"),
+		"S: the save is text: the pocket, the flags, her markers and the door's Logic in it", "%d characters" % text.length())
+	story.call("switch_flags", "+go_on_s, +late_s")
+	story.call("take", "key_s")
+	var moved := await until(func() -> bool: return her.global_position.distance_to(p2) < 0.3, 10.0)
+	put(o + Vector3(5, 0.1, 5))
+	await frames(2)
+	ok(moved and not bool(story.call("has", "key_s")), "S: later: she's walked on, the key's gone from the pocket, you're elsewhere")
+	ok(bool(story.call("load_game", 1)), "S: loaded")
+	await frames(6)
+	ok(her.global_position.distance_to(p1) < 0.3 and run.cur == on and run.phase == "gate", "S: she's back at her first place, waiting again", "%s at %s" % [run.status(), her.global_position - o])
+	ok(bool(story.call("is_set", "opened_s")) and not bool(story.call("is_set", "go_on_s")) and not bool(story.call("is_set", "late_s")),
+		"S: the flags as they were when it was saved")
+	ok(bool(story.call("has", "key_s")) and not key.visible and player.global_position.distance_to(stood) < 0.05 and lg.times == 1,
+		"S: the key in the pocket and not on the floor, you where you saved, the door's Logic fired once",
+		"key %s, shown %s, %.2f m, times %d" % [story.call("has", "key_s"), key.visible, player.global_position.distance_to(stood), lg.times])
+	# a game started again: nothing of this in memory, and the save loaded
+	(story.get("models") as Dictionary).clear()
+	(story.get("items") as Dictionary).clear()
+	(story.get("eatable") as Dictionary).clear()
+	story.set("_kept", {})
+	lg.set("_kept", 0)
+	lg.times = 0
+	run._kept = {}
+	story.call("switch_flags", "-opened_s, +go_on_s")
+	key.call("put_state", {"there": true})
+	var moved2 := await until(func() -> bool: return her.global_position.distance_to(p2) < 0.3, 10.0)
+	ok(moved2 and bool(story.call("load_game", 1)), "S: as if the game had just started: loaded again")
+	await frames(6)
+	var model = (story.get("models") as Dictionary).get("key_s")
+	ok(bool(story.call("has", "key_s")) and is_instance_valid(model) and not key.visible, "S: the key in the pocket with what it looks like (a model isn't saved: the pickup gives it again)")
+	ok(bool(story.call("has", "apple_s")) and bool(story.call("is_eatable", "apple_s")), "S: the apple still in the pocket and still something to eat")
+	ok(lg.times == 1 and int(lg.get("_kept")) == 1 and her.global_position.distance_to(p1) < 0.3 and run.cur == on,
+		"S: the Logic and her markers as they were saved", "times %d, %s at %s" % [lg.times, run.status(), her.global_position - o])
+	# an autosave at each checkpoint; F5 and F9 when the Story's save keys are on; what isn't a save
+	story.set("autosave", true)
+	story.call("checkpoint")
+	story.set("autosave", false)
+	ok(bool(story.call("has_save", 0)), "S: autosave: a checkpoint writes slot 0")
+	story.call("delete_save", 0)
+	story.set("save_keys", true)
+	var f5 := InputEventKey.new()
+	f5.physical_keycode = KEY_F5
+	f5.pressed = true
+	Input.parse_input_event(f5)
+	await frames(3)
+	ok(bool(story.call("has_save", 0)) and line() == "Saved.", "S: F5 saves", line())
+	var f9 := InputEventKey.new()
+	f9.physical_keycode = KEY_F9
+	f9.pressed = true
+	Input.parse_input_event(f9)
+	await frames(3)
+	ok(line() == "Loaded.", "S: F9 loads", line())
+	story.set("save_keys", false)
+	var w := FileAccess.open(str(story.call("save_path", 2)), FileAccess.WRITE)
+	w.store_string(var_to_str([1, 2, 3]))
+	w.close()
+	ok(not bool(story.call("load_game", 2)) and not bool(story.call("load_game", 3)), "S: a file that isn't a save and no file at all load nothing")
+	for sl in [0, 1, 2]:
+		story.call("delete_save", sl)
+	npc.queue_free()
+
+
+# ---- M. the pause menu (the starter's pause.gd over the scene's HSHud, the UI plugin's menu): Esc holds the game; Save
+# game and Load game go through the Story's saves -------------------------------------------------------------------------------
+func press(k: Key) -> void:
+	var ev := InputEventKey.new()
+	ev.physical_keycode = k
+	ev.keycode = k
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	await frames(2)
+	var off := InputEventKey.new()
+	off.physical_keycode = k
+	off.keycode = k
+	Input.parse_input_event(off)
+	await frames(2)
+
+
+func stage_menu() -> void:
+	var o := origin()
+	for sl in [0, 1, 2, 3]:
+		story.call("delete_save", sl)
+	var we := WorldEnvironment.new()                         # (Brightness is the scene's WorldEnvironment's)
+	we.environment = Environment.new()
+	main.add_child(we)
+	var hud := HSHud.new()
+	main.add_child(hud)
+	var pause := Node.new()
+	pause.name = "Pause"
+	pause.set_script(load("res://starter/pause.gd"))
+	main.add_child(pause)
+	await secs(0.3)
+	var mf: String = load("res://addons/horrorstudio_ui/menu.gd").saves_file(str(pause.call("game_id")))
+	if FileAccess.file_exists(mf):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(mf))
+	put(o + Vector3(0, 0.1, 0))
+	await frames(3)
+	var stood := player.global_position
+	await press(KEY_ESCAPE)
+	var m = hud.get("menu")
+	var ids: Array = []
+	if m != null:
+		for e in (m.get("items") as Dictionary)["nav"]:
+			ids.append(str((e as Control).get_meta("id", "")))
+	ok(m != null and bool(pause.get("up")) and paused and bool(m.get("up")) and ids == ["", "save", "load", "settings", "quit"],
+		"M: Esc: the game held, the HUD's menu up: Resume, Save game, Load game, Settings, Quit", "%s, paused %s" % [ids, paused])
+	var keys_said: Array = []
+	var row: Control = m.get("keys_row") if m != null else null
+	if row != null and is_instance_valid(row):
+		for pair in row.get_children():
+			keys_said.append(str(((pair as Node).get_child(1) as Label).text))
+	var tiles: int = (m.get("controls_box") as Node).get_child_count() if m != null else -1
+	ok(keys_said == ["walk", "run", "use", "pocket", "flashlight", "hold your breath", "menu"] and row.is_visible_in_tree()
+		and not (m.get("controls_box") as Control).visible and is_equal_approx((m.get("nav") as Control).position.x, 48.0),
+		"M: its keys the HUD's own chips at its foot, the game's (the HUD has no Keys: the starter player's), no tiles on the left, the list at the left", "%s, %d tiles" % [keys_said, tiles])
+	await press(KEY_S)
+	await press(KEY_ENTER)
+	await press(KEY_ENTER)                                    # Slot 1
+	var meta = load("res://addons/horrorstudio_ui/menu.gd").read_json(mf, {})
+	ok(bool(story.call("has_save", 1)) and meta is Dictionary and (meta as Dictionary).has("1") and paused,
+		"M: Save game, Slot 1: the Story's save written while the game's held, and the slot says where and when", str(meta))
+	await press(KEY_ESCAPE)                                   # back to the list
+	await press(KEY_ESCAPE)                                   # and the game goes on
+	ok(not paused and not bool(pause.get("up")), "M: Esc twice: back, then the game goes on")
+	ok(not (hud.get("hint_el") as Control).visible, "M: and the keys' chips not over the game again (Keys In Menu): only while it's paused")
+	put(o + Vector3(3, 0.1, 3))
+	story.call("flag", "after_m")
+	await frames(3)
+	await press(KEY_ESCAPE)
+	await press(KEY_S)
+	await press(KEY_S)
+	await press(KEY_ENTER)                                    # Load game: Slot 1 (no autosave yet)
+	var rows: int = ((m.get("items") as Dictionary)["page"] as Array).size()
+	await press(KEY_ENTER)
+	await frames(6)
+	ok(rows == 1 and not paused and player.global_position.distance_to(stood) < 0.05 and not bool(story.call("is_set", "after_m")),
+		"M: Load game lists Slot 1 alone and loads it: the game going on where it was saved, the flag set since off",
+		"%d row(s), paused %s, %.2f m off, after_m %s" % [rows, paused, player.global_position.distance_to(stood), story.call("is_set", "after_m")])
+	# not while you're dead
+	story.set("death_secs", 5.0)
+	story.call("die", "test")
+	await press(KEY_ESCAPE)
+	ok(not bool(pause.get("up")) and not paused, "M: dead, Esc isn't the menu's")
+	story.call("revive")
+	await frames(3)
+	# Settings: only the rows that do something in a game by hand; Brightness on the scene's WorldEnvironment
+	await press(KEY_ESCAPE)
+	for i in 3:
+		await press(KEY_S)                                    # Resume, Save game, Load game, Settings
+	await press(KEY_ENTER)
+	var page_ids: Array = []
+	for e in (m.get("items") as Dictionary)["nav"]:
+		page_ids.append(str((e as Control).get_meta("id", "")))
+	var shown: Array = []
+	for e in (m.get("items") as Dictionary)["page"]:
+		shown.append(str(((e as Control).get_meta("label") as Label).text))
+	for i in 4:
+		await press(KEY_S)                                    # down to Brightness
+	await press(KEY_D)
+	var bright := we.environment.adjustment_brightness if we.environment.adjustment_enabled else 1.0
+	await press(KEY_A)
+	var back_to := we.environment.adjustment_brightness if we.environment.adjustment_enabled else 1.0
+	for i in 3:
+		await press(KEY_ESCAPE)
+	ok(page_ids == ["set:display", "set:graphics", "set:audio"] and shown == ["Window mode", "Resolution", "VSync", "Frame rate limit", "Brightness", "Quest marker"],
+		"M: Settings shows what works by hand: Display without Motion blur or Film grain", "%s %s" % [page_ids, shown])
+	ok(absf(bright - 1.08) < 0.001 and absf(back_to - 1.0) < 0.001 and not paused, "M: Brightness up a step: the scene's environment 1.08, down again 1.00; Esc back out", "%.2f, %.2f" % [bright, back_to])
+	we.queue_free()
+	for sl in [0, 1, 2, 3]:
+		story.call("delete_save", sl)
+	pause.queue_free()
+	hud.queue_free()
+	await frames(2)
+
+
+# ---- H. the Story's words on the scene's HSHud (use_hud): the objective, the to-do list and the lines in the UI plugin's
+# corners and footer; off, the Story's own as ever --------------------------------------------------------------------------------
+func stage_hud() -> void:
+	var own_obj := story.get("_obj") as Label
+	var own_list := story.get("_list") as RichTextLabel
+	var own_line := story.get("_line") as Label
+	var was_hud = story.get("use_hud")                  # (on by default: put back as it was after)
+	story.set("use_hud", true)
+	var hud := HSHud.new()
+	main.add_child(hud)
+	await secs(1.4)                                           # (a HUD put in once the game's running is found within a second)
+	story.call("objective", "Find the cellar key")
+	story.call("add_task", "cellar_h", "Find the cellar key")
+	story.call("say", "Something moved downstairs.", 3.0)
+	await frames(3)
+	var on_hud: bool = str((hud.get("obj") as Label).text) == "Find the cellar key" and (hud.get("rows") as Dictionary).has("cellar_h") \
+		and str(hud.get("line_text")) == "Something moved downstairs."
+	var own_hidden: bool = not own_obj.visible and not own_list.visible and not own_line.visible
+	ok(on_hud and own_hidden and own_line.text == "Something moved downstairs.",
+		"H: use_hud: the objective, the task and the line on the HSHud, the Story's own hidden (its words still there)",
+		"hud %s, own hidden %s" % [on_hud, own_hidden])
+	story.call("tick", "cellar_h")
+	await frames(3)
+	var row: Label = (hud.get("rows") as Dictionary).get("cellar_h")
+	ok(row != null and str(row.get_meta("state", "")) == "done", "H: ticked: the HUD's row done")
+	story.call("card", "A letter", "Don't go down there.")
+	await frames(3)
+	var card_on_hud: bool = hud.get("panel_el") != null and bool(story.call("card_up")) and not (story.get("_card") as Control).visible
+	story.call("close_card")
+	await frames(3)
+	ok(card_on_hud and hud.get("panel_el") == null and not bool(story.call("card_up")), "H: a note's card as the HUD's card, up while it's shown, put away by close_card (E)",
+		"on the HUD %s, after %s" % [card_on_hud, hud.get("panel_el") != null])
+	story.set("use_hud", false)
+	hud.call("objective", null)
+	hud.call("todo", [], false)
+	hud.queue_free()
+	await frames(2)
+	story.call("objective", "")
+	story.call("say", "And back.", 1.0)
+	ok(own_line.visible and own_line.text == "And back.", "H: off again: the Story's own line")
+	story.set("use_hud", true)                         # (the default) with no HSHud in the scene: the Story draws its own
+	await frames(70)                                   # (its look for a HUD again comes a second on)
+	story.call("say", "Still mine.", 1.0)
+	await frames(2)
+	ok(own_line.visible and own_line.text == "Still mine." and bool(ProjectSettings.get_setting("application/run/main_scene", "") != null),
+		"H: on (the default) with no HSHud in the scene: the Story's own line")
+	story.set("use_hud", was_hud)
+
+
+# ---- P. E's prompt over everything you can use (the starter's player on the scene's HSHud): what it says and when -----------------
+func stage_prompt() -> void:
+	var o := origin()
+	var hud := HSHud.new()
+	main.add_child(hud)
+	await secs(1.2)                                           # (a HUD put in once the game's running is found within a second; one there from the start, at once)
+	var door := thing("DoorP", o, "res://starter/door.gd")
+	var locked := thing("LockedP", o + Vector3(3, 0, 0), "res://starter/door.gd")
+	locked.set("locked_by", "key_p")
+	var key := thing("KeyP", o + Vector3(-3, 0, 0), "res://starter/pickup.gd", Vector3(0.25, 0.1, 0.25), false)
+	key.set("item", "key_p")
+	key.set("label", "the cellar key")
+	var note := thing("NoteP", o + Vector3(-3, 0, 3), "res://starter/note.gd", Vector3(0.3, 0.02, 0.2), false)
+	note.set("title", "A letter")
+	var lamp := thing("LampP", o + Vector3(3, 0, 3), "", Vector3(0.2, 0.2, 0.2), false)
+	logic(lamp, {"needs": "power_p", "set_flags": "+lamp_p"})
+	await frames(4)
+	var said := func(at: Node3D, h: float, from: Vector3) -> Array:
+		put(from)
+		look(at.global_position + Vector3(0, h, 0))
+		await secs(0.35)
+		return [hud.cursor_kind, hud.cursor_label, hud.cursor_name]
+	var got_door: Array = await said.call(door, 1.0, o + Vector3(0, 0.1, 1.5))
+	ok(got_door == ["use", "Open", ""], "P: a door: Open", str(got_door))
+	await use_at(door)
+	await secs(0.35)
+	ok([hud.cursor_kind, hud.cursor_label] == ["use", "Close"], "P: and open, Close", str([hud.cursor_kind, hud.cursor_label]))
+	var got_lock: Array = await said.call(locked, 1.0, o + Vector3(3, 0.1, 1.5))
+	ok(got_lock[0] == "locked" and got_lock[1] == "Locked", "P: a door locked by a key you haven't: Locked, in the HUD's red", str(got_lock))
+	var got_key: Array = await said.call(key, 0.05, o + Vector3(-3, 0.1, 1.0))
+	ok(got_key == ["use", "Take", "the cellar key"], "P: a pickup: Take, and its label", str(got_key))
+	await use_at(key, 0.05)
+	await secs(0.35)
+	var got_lock2: Array = await said.call(locked, 1.0, o + Vector3(3, 0.1, 1.5))
+	ok(got_lock2[0] == "use" and got_lock2[1] == "Open", "P: the key in your pocket: Open", str(got_lock2))
+	var got_note: Array = await said.call(note, 0.01, o + Vector3(-3, 0.1, 4.0))
+	ok(got_note == ["use", "Read", "A letter"], "P: a note: Read, and its title", str(got_note))
+	var got_lamp: Array = await said.call(lamp, 0.1, o + Vector3(3, 0.1, 4.0))
+	ok(got_lamp[0] == "locked", "P: a thing whose Logic's flags aren't so: Locked", str(got_lamp))
+	story.call("set_flag", "power_p")
+	await secs(0.35)
+	ok(hud.cursor_kind == "use" and hud.cursor_label == "Use", "P: its flag on: Use", str([hud.cursor_kind, hud.cursor_label]))
+	put(o + Vector3(0, 0.1, -6))
+	look(o + Vector3(0, 1.6, -30))
+	await secs(0.35)
+	ok(hud.cursor_kind == "none" and hud.cursor_label == "", "P: nothing in front of you: the prompt goes", str([hud.cursor_kind, hud.cursor_label]))
+	hud.set_cursor("use", "Talk", "Alex")                     # (a conversation's prompt, the talk box's: never covered or taken off)
+	look(door.global_position + Vector3(0, 1.0, 0))
+	await secs(0.35)
+	ok(hud.cursor_label == "Talk" and hud.cursor_name == "Alex", "P: a conversation's prompt up: left as it is", str([hud.cursor_label, hud.cursor_name]))
+	hud.set_cursor("none", "", null)
+	hud.queue_free()
 
 
 # ---- E. the scene read: who turns each flag on, who needs it; a rename; what can't work ----------------------------------------------
@@ -588,7 +940,7 @@ func _initialize() -> void:
 	player = main.get_node("Player") as CharacterBody3D
 	eye = player.get_node("Eye") as Camera3D
 	story = main.get_node("Story")
-	for st in [["gate", stage_gate], ["then", stage_then], ["tie", stage_tie], ["checkpoint", stage_checkpoint], ["scan", stage_scan], ["board", stage_board], ["alone", stage_alone]]:
+	for st in [["gate", stage_gate], ["then", stage_then], ["tie", stage_tie], ["checkpoint", stage_checkpoint], ["save", stage_save], ["menu", stage_menu], ["hud", stage_hud], ["prompt", stage_prompt], ["scan", stage_scan], ["board", stage_board], ["alone", stage_alone]]:
 		if wants(st[0]):
 			await (st[1] as Callable).call()
 	print("LOGIC result " + JSON.stringify({"errors": errors}))

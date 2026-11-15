@@ -98,6 +98,9 @@ def say(text, kind="note"):
     print(paint(mark, *codes) + " " + (paint(text, *ASH) if kind == "note" else text))
 
 
+# (Rows taken out 2026-11-15, their tools left in tools/: the script generator (DECISIONS 2026-10-27: the user writes the
+# story, no AI drafts it), Windows-only placeholder voices (the user's machine is Arch; lines are text since 2026-10-30) and
+# the retarget to FBX (Unreal's; `retarget.py setup`, the Blender module, stays below.)
 # (section, label, command, options). In a command: {game} asks for the game; {ask:Prompt} asks for a word or path;
 # {opt:Prompt|--flag} the same, but empty leaves it out (and --flag goes before the answer when there is one).
 # options: url (a page: started in its own window, then opened).
@@ -126,7 +129,7 @@ TOOLS = [
     ("Godot", "Director Manager: a Director game's story in a page (quests, people, moments, states, endings, facts, Coverage, saves)", "tools/director_manager/serve.py --project {ask:The Godot project's folder}", {"url": "http://127.0.0.1:8796"}),
     ("Godot", "Director check (the sample played to its ending, the dock in the editor, the Kimodo link: DIRECTOR)", "tools/godot_director.py check", {}),
     ("Godot", "Director guide's pictures, made again by Godot (the sample played, its editor and dock; guides/director/index.html is the guide)", "tools/godot_director.py guide", {}),
-    ("Godot", "Director: a desk game as a Director project (its levels the Director's own nodes, its story the Director file; Saved/Godot/<game>_director, made again over the last)", "tools/godot_director.py from-desk {game} --force", {}),
+    ("Godot", "Director: a desk game as a Director project (its levels the Director's own nodes, its story the Director file; Saved/Godot/<game>_director, made again: the last one kept aside as <game>_director.old-<time>)", "tools/godot_director.py from-desk {game} --force", {}),
     ("Godot", "Director from the desk, played through (the Pilot or TestRoom001 made a Director project and played as their export's checks play them: FROMDESK)", "tools/godot_director.py from-desk {game} --force --play", {}),
     ("Godot", "Export a game as its own Godot 4.7 project, a new version each time (Saved/Godot/<game>_v001, _v002... and its .zip, with a guide to editing it; record the scenes on the desk first)", "tools/godot_export.py --game {game} --zip", {}),
     ("Godot", "Record a game's scenes for the export (the desk running)", "node tools/godot/bake.mjs --game {game}", {}),
@@ -142,6 +145,9 @@ TOOLS = [
     ("Godot", "A street for a Godot project built by hand (Exports/streets/<street>/: the .glb and its README; the desk running)", "node tools/director/streetexport.mjs --street {ask:Street}", {}),
     ("Godot", "A level (a game's or a set's: set:<name>) for a Godot project built by hand (Exports/interiors/<name>/: the .glb and its README; the desk running)", "node tools/director/levelexport.mjs --game {ask:Game or set:name}", {}),
     ("Godot", "The exports in a fresh Godot project (EXPORTS: an interior, a street and a character dragged in, their colliders, doors, lamps and markers; the desk running)", "tools/godot/exports_check.py", {}),
+    ("Godot", "A new horror game: a Godot 4.7 project named as you say, every plugin on, a card ([Artist] presents), a main menu and a room to play (tools/horror_game.py; the dashboard's New game card)", "tools/horror_game.py new {ask:The game's name} {opt:Your studio, for the card's \"... presents\" (Enter: [Artist])|--artist}", {}),
+    ("Godot", "A horror game made by the maker opened in Godot's editor (its folder, or its name in ~/HorrorGames)", "tools/horror_game.py open {ask:The game's folder or name}", {}),
+    ("Godot", "A horror game made by the maker brought up to date: the studio's plugins and starter scripts into it again, imported", "tools/horror_game.py update {ask:The game's folder}", {}),
     ("Godot", "By hand: a new Godot project for the exports (the Look, UI, Weapons, Devices and Markers plugins, HumanShaders, the first game's starter scripts, exports/ folders; guides/godot_by_hand)", "tools/godot_byhand.py new {ask:Folder for the new project}", {}),
     ("Godot", "By hand: the plugins and HumanShaders into a Godot project you have (again after a pull: they're copies; a new one, such as the NPC markers, is switched on)", "tools/godot_byhand.py install {ask:The Godot project's folder}", {}),
     ("Godot", "By hand: the same, and the studio's starter scripts over the project's (a newer player.gd for the Logic node; yours that differed kept in starter_before/)", "tools/godot_byhand.py install {ask:The Godot project's folder} --starter", {}),
@@ -152,6 +158,7 @@ TOOLS = [
 
     ("Checks", "Every offline check, every game", "tools/check_all.py", {}),
     ("Checks", "Every offline check, one game", "tools/check_all.py --game {game}", {}),
+    ("Checks", "Every browser check in turn (the desk and the Studio started for them and stopped after; on the card with an NVIDIA GPU; a report to paste back: Saved/browser_checks)", "tools/browser_checks.py {opt:Only these, e.g. PLAY STUDIO (Enter: every one)}", {}),
     ("Checks", "Story check, verbose", "tools/story_check.py --game {game} -v", {}),
     ("Checks", "Level check", "tools/level_check.py --game {game}", {}),
     ("Checks", "Shots review (plan only, no pictures)", "tools/shots_sheet.py --game {game} --plan", {}),
@@ -254,16 +261,12 @@ TOOLS = [
     ("Script", "Writers' room: what the page shows now", "tools/writers/room.py now", {}),
     ("Script", "Writers' room: a session's chart as text", "tools/writers/room.py show {ask:Session id}", {}),
     ("Script", "Writers' room: build a session into the director", "tools/writers/room.py build {ask:Session id}", {}),
-    ("Script", "Script generator: outline to story (Ollama)", "tools/scriptgen.py --game {game} new {ask:Outline file}", {}),
-    ("Script", "Script generator: review pack", "tools/scriptgen.py --game {game} review", {}),
-    ("Script", "Script generator: set up Ollama", "tools/scriptgen.py setup", {}),
 
     ("Takes", "Takes to record (clips list)", "tools/story.py --game {game} clips", {}),
     ("Takes", "MiniMax prompts, ready to paste", "tools/story.py --game {game} minimax", {}),
     ("Takes", "One-off voice lines", "tools/story.py --game {game} lines", {}),
     ("Takes", "Takes status (recorded, missing, too long)", "tools/intake.py --game {game} --status", {}),
     ("Takes", "Bring in takes from a folder", "tools/intake.py --game {game} {ask:Folder with the takes}", {}),
-    ("Takes", "Placeholder voices (Windows speech)", "tools/voice_placeholder.py --game {game} {opt:Language, ja or en (Enter: ja)|--lang}", {}),
 
     ("Motion", "Kimodo shot list", "tools/motion.py --game {game} shotlist", {}),
     ("Motion", "Import motions saved from Kimodo", "tools/motion.py --game {game} import", {}),
@@ -271,7 +274,6 @@ TOOLS = [
     ("Motion", "Motion check", "tools/motion.py --game {game} check", {}),
     ("Motion", "Motion preview into the desk", "tools/motion.py --game {game} preview", {}),
     ("Motion", "Kimodo check (CUDA, token, encoder)", "tools/kimodo.py check", {}),
-    ("Motion", "Retarget: motions to FBX", "tools/retarget.py --game {game} fbx", {}),
 
     ("Look", "Clothes: an outfit's contact sheet (Saved/tailor_sheet.png)", "node tools/character/tailor/sheet.mjs --outfit {ask:Outfit (e.g. work uniform)} {opt:Body (feminine, masculine, average)|--body} --out Saved/tailor_sheet.png", {}),
     ("Look", "Clothes: pictures of every outfit and design on the default model, for the Studio's picker (Content/Studio/Clothes/thumbs)", "node tools/character/tailor/thumbs.mjs", {}),
@@ -318,7 +320,7 @@ TOOLS = [
     ("Library", "Score room: fetch the added instruments", "tools/score/fetch_samples.py", {}),
 
 
-    ("Setup", "Find Unreal, Visual Studio, git", "setup/setup.py env", {}),
+    ("Setup", "What this machine has (Node, Playwright, Godot 4.7, Blender, MediaPipe, Kimodo, a card) and how to set up what's missing", "setup/setup.py doctor", {}),
     ("Setup", "Install or update Kimodo", "setup/setup.py kimodo", {}),
     ("Setup", "Kimodo demo additions: check", "setup/setup.py kimodo-patch check", {}),
     ("Setup", "Kimodo demo additions: apply", "setup/setup.py kimodo-patch apply", {}),

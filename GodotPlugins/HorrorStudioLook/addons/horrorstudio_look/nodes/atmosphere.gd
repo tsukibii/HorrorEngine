@@ -13,7 +13,7 @@
 class_name HSAtmosphere
 extends Node3D
 
-@export_enum("custom", "clear", "clean_room", "dusty_room", "hazy_night", "woods_mist", "fog", "thick_fog") var preset: String = "custom":
+@export_enum("custom", "clear", "clean_room", "dusty_room", "hazy_night", "woods_mist", "fog", "thick_fog") var preset: String = "custom":   ## a place's air to start from: picking one sets the numbers below (custom: your own)
 	set(v):
 		preset = v
 		if v != "custom" and HSAir.PRESETS.has(v):

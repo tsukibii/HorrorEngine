@@ -15,13 +15,13 @@ signal gone
 @export var figure: Node3D                        ## what's seen; empty: its first Node3D child
 @export var armed := false                        ## watching (or arm() from a signal)
 @export var times := 1                            ## glimpses before it's spent
-@export var min_deg := 30.0
-@export var max_deg := 42.0
-@export var near_m := 5.0
-@export var far_m := 15.0
+@export var min_deg := 30.0   ## it shows only this many degrees off where you look, at the least
+@export var max_deg := 42.0   ## and at the most
+@export var near_m := 5.0   ## and this far away, at the least
+@export var far_m := 15.0   ## and at the most
 @export var hold := 1.2                           ## seconds it stays at most
 @export var swing := 60.0                         ## degrees a second toward it that makes it go
-@export var gone_deg := 25.0
+@export var gone_deg := 25.0   ## it goes once it's within this many degrees of where you look
 @export var flicker: Light3D                      ## a lamp that blinks out as it goes (when it has to go in view)
 
 const Lights := preload("res://starter/lights.gd")
@@ -34,6 +34,7 @@ var _prev := -1.0
 
 
 func _ready() -> void:
+	add_to_group("hs_keeps")                      # (the starter Story's checkpoint and saves: keep_state, put_state)
 	if figure == null:
 		for c in get_children():
 			if c is Node3D:
@@ -108,3 +109,18 @@ func _clear() -> bool:
 		q.exclude = [pl.get_rid()]
 	var hit := get_world_3d().direct_space_state.intersect_ray(q)
 	return hit.is_empty() or (hit.collider is Node and is_ancestor_of(hit.collider))
+
+## what the starter Story keeps at a checkpoint and in a save (the group hs_keeps): a save loaded after it's happened
+## doesn't play it again, and one armed by a signal before the save is still armed
+func keep_state() -> Dictionary:
+	return {"armed": armed, "count": count}
+
+
+## put back as it was kept (a glimpse showing now is gone, quietly)
+func put_state(d: Dictionary) -> void:
+	if shown and figure != null:
+		figure.visible = false
+	shown = false
+	_t = 0.0
+	armed = bool(d.get("armed", armed))
+	count = int(d.get("count", count))

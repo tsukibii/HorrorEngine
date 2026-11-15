@@ -43,7 +43,7 @@ const NPZ := ["res://kimodo/npz.gd", "res://addons/horrorstudio_director/kimodo/
 @export var more := {}                                ## moves of your own: {"wave": "res://animations/wave.npz"}
 @export_group("How")
 @export var in_place := PackedStringArray(["walk", "run", "stalk", "crawl"])   ## made without their travel (the script moves her)
-@export var loops := PackedStringArray(["idle", "walk", "run", "stalk", "crawl", "watch", "search"])
+@export var loops := PackedStringArray(["idle", "walk", "run", "stalk", "crawl", "watch", "search"])   ## the moves whose clips loop
 @export var blend := 0.25                             ## seconds from one move into the next
 @export var fps := 30.0                               ## a Kimodo motion's frames a second
 @export var match_speed := true                       ## a walk played by how fast she's going
@@ -157,7 +157,7 @@ func _clip(h: Node3D, move: String, src: String) -> Dictionary:
 		if str(R.call("detect", sk)) == "":
 			problems.append("%s: her skeleton isn't one the retarget knows (MHR, Mixamo, Godot's humanoid, SOMA)" % move)
 			return {}
-		var frames: Array = N.call("joints", N.call("read", ProjectSettings.globalize_path(src)))
+		var frames: Array = N.call("joints", N.call("read", src))   # (by its res:// path: in an exported game it's inside the pack)
 		if frames.is_empty():
 			problems.append("%s: %s has no posed_joints (is it a Kimodo .npz?)" % [move, src.get_file()])
 			return {}

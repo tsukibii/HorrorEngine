@@ -3161,6 +3161,9 @@ def main():
     r = Report()
     if story.get("format") not in (2, 3):
         r.err("this check reads formats 2 and 3 (scenes, stitches, flow): see docs/STORY_FORMAT.md")
+        print("ERROR:", r.errors[0])                   # (nothing below reads a story of no format: it went on into a TypeError,
+        print("STORY FAILED (1 errors)")               #  which the desk's live check read as "no answer")
+        sys.exit(1)
     if FORMAT >= 3:
         bw, eng = story["game"].get("built_with") or {}, L.engine_version()
         if not bw:

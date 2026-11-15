@@ -18,7 +18,7 @@ extends Resource
 @export var glyphs := "0123456789ABCDEFXZ$#%&*+=<>?/\\|:;@!"   ## what the rain is made of
 @export_range(0.0, 1.0) var scanlines := 0.22       ## the glass's rows
 @export_range(0.0, 2.0) var glow := 0.6             ## the phosphor's glow round what's lit
-@export_range(0.0, 0.2) var flicker := 0.02
+@export_range(0.0, 0.2) var flicker := 0.02   ## how much the screen flickers
 @export var boot := true                            ## the boot's lines typed out the first time it wakes
 @export var models_in_ink := true                   ## the things' models in the terminal's green (off: their own colours)
 

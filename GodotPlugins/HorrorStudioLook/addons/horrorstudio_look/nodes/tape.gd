@@ -9,8 +9,8 @@ extends Node
 
 const VHS := preload("res://addons/horrorstudio_look/vhs.gd")
 
-@export_enum("camcorder", "camhybrid", "worn", "nightmare", "off") var preset: String = "camhybrid"
-@export_range(0.0, 1.0) var strength: float = 1.0
+@export_enum("camcorder", "camhybrid", "worn", "nightmare", "off") var preset: String = "camhybrid"   ## the tape's look: a camcorder, the studio's camhybrid (4:3, softer with distance), worn, a nightmare, or off
+@export_range(0.0, 1.0) var strength: float = 1.0   ## how much of the tape's look: 0 a clean picture
 var vhs: CanvasLayer = null
 var _prev := []
 var _own := false

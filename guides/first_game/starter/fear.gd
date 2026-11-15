@@ -15,10 +15,10 @@
 ## Put it in the main scene: a Node called Fear with this script.
 extends Node
 
-@export var heartbeat := true
-@export var breathing := true
+@export var heartbeat := true   ## a heartbeat that quickens with fear (some players will want it off)
+@export var breathing := true   ## breathing that quickens with fear
 @export var dull := true                          ## the world's sound dulled as fear rises
-@export var vignette := true
+@export var vignette := true   ## the edges of the view darken with fear
 @export var tremor := true                        ## the beam shaking in your hand
 @export_range(0.0, 1.0) var calm := 0.0           ## where it settles when nothing's near
 @export var fall := 0.025                         ## a second, back toward calm
@@ -51,6 +51,19 @@ func _ready() -> void:
 		p.bus = "Body" if AudioServer.get_bus_index("Body") >= 0 else "Master"
 		add_child(p)
 	_hook.call_deferred()
+	get_tree().node_added.connect(_on_added)
+
+
+# a scare added since the start (an instanced room, a cue or a hunt made by a script) is heard too: hooked once its own
+# _ready has put it in the group, so the first scare it gives isn't missed
+func _on_added(n: Node) -> void:
+	if n.has_signal("scared"):
+		_hear_late.call_deferred(n)
+
+
+func _hear_late(n: Node) -> void:
+	if is_instance_valid(n) and n.is_inside_tree() and n.is_in_group("hs_scare") and not n.is_connected("scared", _on_scared):
+		n.connect("scared", _on_scared)
 
 
 # every scare in the scene makes you jump; the World bus's low-pass; the grade

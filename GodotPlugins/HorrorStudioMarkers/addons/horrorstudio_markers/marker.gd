@@ -56,7 +56,7 @@ const USED_BY := {
 	"fire": BODY + ["event", "disappear"], "scare": ["event"], "let_go": ["event"],
 }
 
-@export_enum("appear", "walk", "wait", "sit", "sleep", "grab", "animation", "event", "disappear", "choice", "repeat", "attack", "scare", "gesture", "peek") var kind := "walk":
+@export_enum("appear", "walk", "wait", "sit", "sleep", "grab", "animation", "event", "disappear", "choice", "repeat", "attack", "scare", "gesture", "peek") var kind := "walk":   ## what she does here: appear, walk, wait, sit, sleep, grab, play an animation, an event, disappear, a choice, repeat, attack, a jump scare, a small movement, peek
 	set(v):
 		kind = v
 		notify_property_list_changed()
@@ -76,13 +76,13 @@ const USED_BY := {
 
 @export_group("Stay")
 @export_enum("next", "secs", "talked") var stay := "next"   ## how long: until the next marker can start, for some seconds, until you talk to her
-@export_range(0.0, 600.0, 0.1) var stay_secs := 3.0
+@export_range(0.0, 600.0, 0.1) var stay_secs := 3.0   ## the seconds, when it's for some seconds
 @export var face_player := false                         ## she keeps turning to face you while she waits
 
 @export_group("Grab")
 @export_enum("reach", "pick_up", "put_down", "open", "eat", "drink", "take_from", "give_to") var action := "reach"   ## the last two are between her and you: she takes a thing you carry, or hands you what she holds
 @export var target: NodePath                             ## the thing she picks up, eats or drinks from (none: what she holds), or the door she opens (its use() or fire() is called)
-@export_enum("push", "pull", "slide") var door_opens := "push"
+@export_enum("push", "pull", "slide") var door_opens := "push"   ## how the door she opens opens: pushed, pulled or slid
 @export var left_hand := false                           ## with her left hand (a Peek: out to her left; a small movement: her left hand's)
 @export var keep_in_hand := true                         ## picked up or taken from you, it stays in her hand and is carried (off: it's put away, hidden)
 @export var take_item := ""                              ## Take from you: the thing you carry, by its name in your pocket ("apple"); it goes into her hand
@@ -129,12 +129,12 @@ const USED_BY := {
 
 @export_group("Face and look")
 @export var face := ""                                   ## an expression she wears from here on: "smile", "sad"... ("": as she was; "neutral": none)
-@export_range(0.0, 1.5, 0.05) var face_amount := 1.0
+@export_range(0.0, 1.5, 0.05) var face_amount := 1.0   ## how strongly she wears it: 1 the expression, more stronger
 @export var face_rules: PackedStringArray = []           ## by flags, while she's here: "gave_gift => smile", "=> sad" (the first that's so)
 @export var look := ""                                   ## a look of her HSLookSwitch by name ("default": her own; "": as she was)
 @export var look_skin := ""                              ## or a skin: chrome, ember, cloak... ("default": her own)
 @export var look_eyes := ""                              ## and eyes: glow, black, void...
-@export var look_eye_color := Color(0, 0, 0, 0)
+@export var look_eye_color := Color(0, 0, 0, 0)   ## the eyes' colour (see-through: the look's own)
 @export_range(0.0, 5.0, 0.05) var look_secs := 0.6       ## how long the look takes to turn
 
 @export_group("Talk")
@@ -145,7 +145,7 @@ const USED_BY := {
 
 @export_group("Then")
 @export var say := ""                                    ## a line as it starts
-@export_range(0.5, 20.0, 0.1) var say_secs := 3.0
+@export_range(0.5, 20.0, 0.1) var say_secs := 3.0   ## how long the line stays
 @export var sound := ""                                  ## a sound as it starts: one of the sound shelf's by name, or a file
 @export var fire: Array[NodePath] = []                   ## nodes fired as it starts (their fire(), or start()): a scare area, a cue, a look switch...
 @export var scare := false                               ## it's a jump scare: the Fear node and the night's director hear it

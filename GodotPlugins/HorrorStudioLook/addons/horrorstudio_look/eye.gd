@@ -46,9 +46,35 @@ static func gltf_json(path: String) -> Dictionary:
 	return parsed if parsed is Dictionary else {}
 
 
-## the studioEye records by material name (and the tear line's studioTear)
-static func records(glb_path: String, key: String = "studioEye") -> Dictionary:
+## the records under `key` by material name, off the materials of the meshes under a node: Godot 4.7's importer keeps
+## a glTF material's extras as its `extras` metadata. In an exported game this is the only place they are: the .glb
+## itself isn't in the pack (only what Godot imported from it), so a file read finds nothing there.
+static func material_records(node: Node, key: String) -> Dictionary:
 	var out := {}
+	if node == null:
+		return out
+	var meshes: Array = node.find_children("*", "MeshInstance3D", true, false)
+	if node is MeshInstance3D:
+		meshes.push_front(node)
+	for mi in meshes:
+		var mesh: Mesh = (mi as MeshInstance3D).mesh
+		if mesh == null:
+			continue
+		for s in mesh.get_surface_count():
+			for mat in [mesh.surface_get_material(s), (mi as MeshInstance3D).get_surface_override_material(s)]:
+				if mat != null and mat.has_meta("extras"):
+					var ex = mat.get_meta("extras")
+					if ex is Dictionary and (key == "" or ex.has(key)):
+						out[mat.resource_name] = ex if key == "" else ex[key]
+	return out
+
+
+## the studioEye records by material name (and the tear line's studioTear): off the node's materials when it's given
+## and they carry them (what an exported game has), else from the glb's own JSON
+static func records(glb_path: String, key: String = "studioEye", node: Node = null) -> Dictionary:
+	var out := material_records(node, key)
+	if not out.is_empty():
+		return out
 	var j := gltf_json(glb_path)
 	for m in j.get("materials", []):
 		var ex = m.get("extras")
@@ -166,7 +192,7 @@ static func wet_material(rec: Dictionary, mesh: Mesh) -> ShaderMaterial:
 ## layer without the prefix, and `"wet": false` leaves the layer off (the lids' shadow then the eye's own ellipse)
 static func wear(node: Node, glb_path: String, overrides: Dictionary = {}) -> Dictionary:
 	var out := {}
-	var recs := records(glb_path)
+	var recs := records(glb_path, "studioEye", node)
 	if recs.is_empty():
 		return out
 	var wet: bool = not overrides.has("wet") or bool(overrides["wet"])
@@ -203,7 +229,7 @@ static func wear(node: Node, glb_path: String, overrides: Dictionary = {}) -> Di
 		bl.room = -1.0                                 # (set on its next frame, whatever the materials start with)
 		if overrides.has("lid_room"):
 			bl.room_scale = float(overrides["lid_room"]) / LID_ROOM
-	var tears := records(glb_path, "studioTear")
+	var tears := records(glb_path, "studioTear", node)
 	for mi in node.find_children("*", "MeshInstance3D", true, false):   # the tear line, wet
 		if mi.mesh == null:
 			continue

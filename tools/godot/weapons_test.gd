@@ -646,7 +646,8 @@ func _initialize() -> void:
 	await until(func() -> bool: return not g("busy"), 1.0)
 	lamp.queue_free()
 
-	# 8c. the shells' row low on the right: inside the tape's 4:3 picture, and above the studio HUD's keys when there's an HSHud
+	# 8c. the shells' row low on the right: inside the tape's 4:3 picture, and above the studio HUD's keys when they're
+	# shown over the game (by hand they wait for the pause menu: the HSHud's Keys In Menu, on by default)
 	var vsz := gun.get_viewport().get_visible_rect().size
 	var u := clampf(vsz.y / 1080.0, 0.5, 3.0)
 	var at0: Vector2 = gun.call("_hud_at", vsz, u)
@@ -656,11 +657,16 @@ func _initialize() -> void:
 		main.add_child(hud_ui)
 		await secs(4.5)                                          # (the gun looks for a HUD now and then)
 		var chips := hud_ui.get("hint_el") as Control
+		var at_menu: Vector2 = gun.call("_hud_at", vsz, u)       # its keys in the pause menu: nothing to stand over
+		hud_ui.set("keys_in_menu", false)                         # over the game: the row over them
+		await secs(0.2)
 		var at1: Vector2 = gun.call("_hud_at", vsz, u)
 		var top := chips.get_global_rect().position.y if chips != null else -1.0
-		say("shells row", "at (%.0f, %.0f) of %.0f x %.0f; with an HSHud its keys' top at %.0f and the row's baseline at %.0f" % [at0.x, at0.y, vsz.x, vsz.y, top, at1.y])
+		say("shells row", "at (%.0f, %.0f) of %.0f x %.0f; with an HSHud whose keys wait for the menu at %.0f; with them over the game their top at %.0f and the row's baseline at %.0f" % [at0.x, at0.y, vsz.x, vsz.y, at_menu.y, top, at1.y])
+		if absf(at_menu.y - at0.y) > 0.5:
+			bad("the shells' row moved for an HSHud's keys that aren't over the game (%.0f, low at %.0f)" % [at_menu.y, at0.y])
 		if chips == null or chips.get_child_count() == 0 or absf(at1.y - (top - 12.0 * u)) > 1.0 or at1.y >= at0.y:
-			bad("the shells' row isn't above the HSHud's keys (%.0f, the keys at %.0f)" % [at1.y, top])
+			bad("the shells' row isn't above the HSHud's keys over the game (%.0f, the keys at %.0f)" % [at1.y, top])
 		hud_ui.queue_free()
 	if absf(at0.x - (vsz.x - 46.0 * u)) > 1.0 or absf(at0.y - (vsz.y - 42.0 * u)) > 1.0:          # (headless, the view is tiny: its rule, not pixels)
 		bad("the shells' row isn't low on the right (%.0f, %.0f of %.0f x %.0f)" % [at0.x, at0.y, vsz.x, vsz.y])
@@ -1973,6 +1979,30 @@ func _initialize() -> void:
 		g("owned"), gun.visible and float(g("_lower")) < 0.01, sp3, int(g("spare"))])
 	if not hidden_before or took_name != "ShotgunOnFloor" or not g("owned") or not gun.visible or float(g("_lower")) > 0.01 or int(g("spare")) != sp3 + 4:
 		bad("the gun on the floor wasn't taken and drawn into view (hidden first %s, owned %s, lower %.2f, spare %d)" % [hidden_before, g("owned"), float(g("_lower")), int(g("spare"))])
+
+	# 12. a save (the starter Story's save_game): the gun as it was then, its right barrel fired and the left live; loaded
+	# into a gun that isn't carried, has no shells and both barrels live, it's drawn up again with them as they were
+	var st12: Node = main.get_node("Story")
+	st12.call("delete_save", 6)
+	gun.set("live", [false, true])
+	gun.set("spent", [true, false])
+	var sp4 := int(g("spare"))
+	var wrote: bool = st12.call("save_game", 6)
+	gun.set("spare", 0)
+	gun.set("live", [true, true])
+	gun.set("spent", [false, false])
+	gun.set("owned", false)
+	gun.set("_lower", 1.0)
+	await frames(2)
+	var read: bool = st12.call("load_game", 6)
+	await secs(0.8)
+	var hull = (g("_in_chamber") as Array)[0]
+	say("saved", "saved with %d spare, the right barrel fired; then none, not carried, both live: loaded %s, owned %s, drawn %s, spare %d, live %s, spent %s, a hull in the right chamber %s" % [
+		sp4, read, g("owned"), gun.visible and float(g("_lower")) < 0.01, int(g("spare")), g("live"), g("spent"), hull != null and is_instance_valid(hull)])
+	if not wrote or not read or not g("owned") or not gun.visible or int(g("spare")) != sp4 or g("live") != [false, true] or g("spent") != [true, false] \
+			or hull == null or not is_instance_valid(hull):
+		bad("a save: the gun as it was (owned %s, spare %d of %d, live %s, spent %s)" % [g("owned"), int(g("spare")), sp4, g("live"), g("spent")])
+	st12.call("delete_save", 6)
 
 	print("WEAPONS result " + JSON.stringify({"errors": errors}))
 	quit()

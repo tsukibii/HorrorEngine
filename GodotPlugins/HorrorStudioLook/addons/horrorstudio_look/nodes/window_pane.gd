@@ -7,14 +7,14 @@
 class_name HSWindowPane
 extends HSOnMesh
 
-@export var size_m := Vector2.ZERO
-@export var seed: float = 1.0
-@export_range(0.0, 1.0) var rain: float = 0.6
-@export_range(0.0, 1.0) var clarity: float = 0.96
-@export var tint := Color(0.94, 0.96, 0.98)
-@export_range(0.5, 6.0) var drop_cm: float = 2.2
-@export_range(0.0, 4.0) var speed: float = 1.0
-@export_range(0.0, 0.1) var bend: float = 0.02
+@export var size_m := Vector2.ZERO   ## the glass in metres, for the drops' real size (zero: the mesh's own size)
+@export var seed: float = 1.0   ## another number, other drops
+@export_range(0.0, 1.0) var rain: float = 0.6   ## rain running down it: 0 dry, 1 a downpour
+@export_range(0.0, 1.0) var clarity: float = 0.96   ## how clearly the room behind it shows (less: misted)
+@export var tint := Color(0.94, 0.96, 0.98)   ## the glass's colour
+@export_range(0.5, 6.0) var drop_cm: float = 2.2   ## a drop's size in centimetres
+@export_range(0.0, 4.0) var speed: float = 1.0   ## how fast the drops run down
+@export_range(0.0, 0.1) var bend: float = 0.02   ## how much the glass and its drops bend what's behind
 @export_range(0.0, 1.0) var frost: float = 0.0:    ## frost up from its bottom edge (1: three quarters up): set live, nothing rebuilt
 	set(v):
 		frost = v

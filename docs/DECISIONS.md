@@ -2,6 +2,66 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-15, after the review: the dashboard's New game card (the user)
+
+- **"can you make sure the dashboard has a new game tab maybe s I dont have to manually run horror_game.py , just a
+  thing that accepts a string name and says "create" button"**: the dashboard (`python dashboard.py`) has a **New
+  game** card at its top (E53): the game's name, Create, and the project maker (`tools/horror_game.py new`) runs as a
+  job with its output beside it. Also on the card, both optional: your studio's name for the "... presents" card
+  (remembered; without it the card says "[Artist] presents"), and the games already made (`~/HorrorGames`) listed
+  with **Open in Godot** (`horror_game.py open`: Godot's editor on it) and **Update**.
+
+## 2026-11-15, after the review: the keys in the pause menu, the HUD inside the tape's picture (the user)
+
+- **"Ive deciided rater than the controls on the left when I press escape, id like to move the screenshot ones to the
+  pause menu, (so they sholdnt be visible inside the main game unless I pause."** (a screenshot of the HSHud's key
+  chips at the foot on the right): in a game by hand **the HSHud's keys are shown only in the pause menu**, as the
+  HUD's own chips on the menu's legend line at the right, in place of the tiles on its left (E52: the HUD's
+  `keys_in_menu`, on by default; off, they're over the game as before). The menu's list moves to the left. With no
+  Keys given, the chips are the starter player's (they were the desk runtime's: Click to play, E inventory...). The
+  studio's runtime (a desk export, a Director game) keeps its own as they were.
+- **"Also make sure the quests align to not be in the black letter boxes (no matter what vhs style or res), should be
+  inside the frame"**: **every part of the HUD at an edge is laid inside the tape's picture** (the Look plugin's tape is
+  4:3 between black bars in a wider window): the objective and the to-do list, the log, the stance, the footer's lines
+  and choices, a book's side card, the keys, the dark round the edge when hidden, and the quest marker's pointer; a
+  thing in the black is out of view for the marker. Any preset, any window size: the tape says where its picture is
+  (`vhs.gd` `picture()`). The starter's own words (a scene with no HSHud), the sanity meter, the Markers' own
+  conversation and the shotgun's shells row the same.
+
+## 2026-11-15, after the review: the Story's words on the HSHud (the user)
+
+- **"E34 yes I prefer HSHud look"**: the starter Story's `use_hud` is **on by default** (E51): in a game by hand the
+  objective, the to-do list and the lines are on the scene's HSHud (the UI plugin's corners and footer, with its prompt,
+  its conversations and its pocket: one look), and a note's card is the HUD's card; the death card and the ending stay
+  the Story's. A scene with no HSHud gets the Story's own words, and a project can still switch it off. Tutorial v2's
+  pictures with the objective or the list in them want retaking (docs/TUTORIAL_TODO.md).
+
+## 2026-11-15, early morning: the tools reviewed, and enhancements on a branch of their own until 11am (the user)
+
+- **"Crweatea a new branch called enhancements , do a review of all the tools we made and work o enhancements on this
+  new branch until 11am,  Iwil review at the end"**: the branch `enhancements` from main (after
+  tsukibii/HorrorEngine#33). The review is **docs/TOOLS_REVIEW.md**: what was found, what the branch did about it
+  (each fix its own commit with the check that holds it) and what's left, ranked with its size. Nothing is merged:
+  the user reviews it at the end.
+- **"note dont focus on the director tool, msot games will be made directly using the horrorengine godotplugin"**
+  (part way through): **games are made by hand with the plugins**, so their path comes first: the starter kit, the
+  Markers, UI, Devices, Weapons and Look plugins, `godot_byhand.py`, and the Animator and Character Studio that feed
+  them. From then the desk, the Director and the desk's export were left as they were; their findings are at the end
+  of the review's §4. A standing priority, not only for this branch.
+- **"at the end can you show screenshots of all your improvements with id references so if I decide to undo some i
+  can ref what i want removed"**: every commit an ID (E01 on, oldest first; a letter for one part of a commit), the
+  table in docs/TOOLS_REVIEW.md §0, and a page on claude.ai with a screenshot of each (in the game or the page where
+  there's something to see, else its check's output or its commit) and boxes to pick what to undo.
+- **"can you make sure that each enhancement is applied via the horror plugin ro fithats not the right way make a horror
+  godot package maker wrapper which I can name and creates a base project with evrythign setu p for godot 4.7"**: a
+  game's pieces live in five plugins (addons/) and the starter kit (res://starter/: scenes reference it by path, so it
+  stays a folder of its own, not a plugin), so the answer is the maker: `python tools/horror_game.py new "Name"` makes a
+  Godot 4.7 project with all of them and a game ready to play; `update` brings the studio's newer plugins and starter.
+- **"Since your building everything herre now might be worth adding a main menu screen too and an overridable launcehr
+  (override the godot opener logo with our own for now just a black screen with [Artist Presents] " then main menu"**:
+  the UI plugin's HSSplash (black, "[Artist] presents", any key skips it) and HSTitleMenu (Continue, New game, Load
+  game, Settings, Quit); the maker's project starts on the card with Godot's own boot screen black and no logo.
+
 ## 2026-11-14, night: a pull request for `even-more-animations-v3`, with main merged in (the user, on the guide's report)
 
 - **"can you createa pr for this , merge in main too"**: main (advanced PBRs, tsukibii/HorrorEngine#32) merged into

@@ -44,6 +44,7 @@ var _at := Vector3.ZERO                           # where the player stood when 
 
 
 func _ready() -> void:
+	add_to_group("hs_keeps")                      # (the starter Story's checkpoint and saves: keep_state, put_state)
 	for c in get_children():
 		if c is Marker3D:
 			marks.append(c)
@@ -216,3 +217,20 @@ func _in_mirror(cam: Camera3D, p: Vector3) -> bool:
 		if (mc as Camera3D).is_position_in_frustum(p) and _clear(c + (p - c).normalized() * 0.05, p):
 			return true
 	return false
+
+## what the starter Story keeps at a checkpoint and in a save (the group hs_keeps): a save loaded after it's happened
+## doesn't play it again, and one armed by a signal before the save is still armed
+func keep_state() -> Dictionary:
+	return {"armed": armed, "done": _done}
+
+
+## put back as it was kept: she's gone from where she stood (and out again from the first mark, if she isn't done)
+func put_state(d: Dictionary) -> void:
+	if figure != null:
+		figure.visible = false
+	mark = -1
+	_unseen = 0.0
+	_caught = -1.0
+	_behind_t = 0.0
+	_done = bool(d.get("done", _done))
+	armed = bool(d.get("armed", armed)) and not _done

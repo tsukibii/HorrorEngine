@@ -9,26 +9,26 @@
 class_name HSCrtScreen
 extends HSOnMesh
 
-@export var picture: Texture2D = null
-@export_range(0.0, 4.0) var brightness: float = 1.0
-@export var tint := Color(1.0, 1.0, 1.0)
-@export var size_mm := Vector2.ZERO
+@export var picture: Texture2D = null   ## what the set shows (none: snow)
+@export_range(0.0, 4.0) var brightness: float = 1.0   ## how bright the picture is: 0 the set off, the dark glass alone
+@export var tint := Color(1.0, 1.0, 1.0)   ## the picture's colour times this
+@export var size_mm := Vector2.ZERO   ## the glass's size in millimetres, for the stripes' and lines' true size (zero: the mesh's own size)
 @export var surface: int = -1                              ## the surface it goes on; -1 the whole mesh
-@export_range(0.1, 2.0) var pitch_mm: float = 0.3
-@export_range(60.0, 1200.0) var scan_lines: float = 240.0
-@export_range(0.0, 1.0) var scan_dark: float = 0.55
-@export_range(0.0, 1.0) var phosphor: float = 0.6
+@export_range(0.1, 2.0) var pitch_mm: float = 0.3   ## the phosphor stripes' pitch on the glass (red, green and blue: a TV's is about 0.3 to 0.8 mm)
+@export_range(60.0, 1200.0) var scan_lines: float = 240.0   ## how many scanlines down the picture
+@export_range(0.0, 1.0) var scan_dark: float = 0.55   ## how dark the gaps between scanlines are
+@export_range(0.0, 1.0) var phosphor: float = 0.6   ## how strongly the coloured stripes show
 @export_range(0.5, 4.0) var scale_up: float = 1.0        ## 1 true size; more: a coarser, stronger look
-@export_range(0.0, 0.3) var curve: float = 0.08
-@export_range(0.0, 30.0) var border_mm: float = 6.0
-@export_range(0.0, 1.0) var bleed: float = 0.35
-@export_range(0.0, 1.0) var flicker: float = 0.5
-@export_range(0.0, 1.0) var roll: float = 0.3
-@export_range(1.0, 30.0) var roll_secs: float = 7.0
-@export_range(1.0, 8.0) var fade_px: float = 3.0
-@export_range(0.0, 1.0) var glass: float = 0.5
-@export_range(0.02, 0.5) var roughness: float = 0.12
-@export var seed: float = 1.0
+@export_range(0.0, 0.3) var curve: float = 0.08   ## how much the picture bulges toward its middle
+@export_range(0.0, 30.0) var border_mm: float = 6.0   ## the black border round the picture, on the glass
+@export_range(0.0, 1.0) var bleed: float = 0.35   ## the halo round the picture's bright parts
+@export_range(0.0, 1.0) var flicker: float = 0.5   ## the hum's flicker
+@export_range(0.0, 1.0) var roll: float = 0.3   ## how dark the bar rolling up the picture is (0: none)
+@export_range(1.0, 30.0) var roll_secs: float = 7.0   ## seconds for the rolling bar to go round once
+@export_range(1.0, 8.0) var fade_px: float = 3.0   ## the stripes and lines fade out once they're closer together than this many pixels: no moiré across a room
+@export_range(0.0, 1.0) var glass: float = 0.5   ## how much of the room the glass reflects
+@export_range(0.02, 0.5) var roughness: float = 0.12   ## how blurred that reflection is
+@export var seed: float = 1.0   ## the snow's pattern when there's no picture
 var materials: Array = []                                  ## the material on each mesh
 var _surf_was: Array = []                                  # [mesh, surface, its own override] put back by _unapply
 

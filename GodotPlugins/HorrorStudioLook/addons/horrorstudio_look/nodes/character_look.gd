@@ -13,11 +13,11 @@ class_name HSCharacterLook
 extends Node
 
 @export var target: Node3D = null              ## the character; empty: the parent
-@export var skin := true
-@export_range(0.0, 1.0) var wetness: float = 0.0
-@export_range(0.0, 1.0) var sweat: float = 0.0
-@export_range(0.0, 1.0) var drips: float = 0.0
-@export_range(0.0, 1.0) var oil: float = 0.0
+@export var skin := true   ## her skin on HumanShaders' skin shader, her own colour and maps kept (and a Studio export's detail and depth)
+@export_range(0.0, 1.0) var wetness: float = 0.0   ## wet all over: darker and glossy (rain, a shower)
+@export_range(0.0, 1.0) var sweat: float = 0.0   ## a film of sweat with beads that catch the light
+@export_range(0.0, 1.0) var drips: float = 0.0   ## drops running down her skin
+@export_range(0.0, 1.0) var oil: float = 0.0   ## an oily sheen
 @export_enum("auto", "young", "natural", "adult", "old", "off") var skin_detail: String = "auto"   ## the pores, furrows and colour's unevenness at their true size (HSSkin.DETAIL_PRESETS; auto: from the export's own age and pores)
 @export_range(0.0, 2.0) var detail_amount: float = 1.0                 ## the detail layer as a whole
 @export_range(0.0, 3.0) var skin_depth: float = 1.0                    ## light from under the skin, warm round the eyes, the nose, the mouth and the ears (HSSkin.set_depth): times the character's own Depth; 0 off
@@ -28,8 +28,8 @@ extends Node
 @export_range(0.0, 2.0) var depth_fingers: float = 0.7                 ## the fingers' thin skin lit through by the room, as an ear's
 @export_range(0.0, 2.0) var depth_lips: float = 0.5                    ## the lips themselves
 @export_group("")
-@export var eyes := true
-@export var hair := true
+@export var eyes := true   ## a Character Studio export's eyes on the Studio's eye: the cornea refracting the iris behind it, the wet layer, the tear line, the blink
+@export var hair := true   ## card hair, lashes and brows on the hair shader (a Studio export's records read off its materials)
 @export var cloth := true                      ## her garments that wear one of the studio's fabric sets on the cloth shader (HSCloth: the weave at its real size, the fuzz)
 @export_range(0.0, 1.0) var cloth_detail: float = 1.0      ## the weave's relief
 @export_range(0.0, 2.0) var cloth_fuzz: float = 1.0        ## the fuzz, times each fabric's own
@@ -74,7 +74,7 @@ func own_eye(key: String):
 		var t := character()
 		var path := glb_path if glb_path != "" else (t.scene_file_path if t != null else "")
 		if path.ends_with(".glb"):
-			var recs := HSEye.records(path)
+			var recs := HSEye.records(path, "studioEye", t)
 			for k in recs:
 				if recs[k] is Dictionary and recs[k].get("paint") is Dictionary and (str(recs[k].get("side", "L")) == "L" or recs.size() == 1):
 					_own_eyes.merge(recs[k]["paint"], true)

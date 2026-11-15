@@ -4,9 +4,9 @@
 ## interior's export), or a CollisionShape3D of your own.
 extends Area3D
 
-@export var tone: AudioStream
+@export var tone: AudioStream   ## the room's quiet loop, played while you're in it (the sound shelf's room tones, hums and winds: sfx/ambience)
 @export var interior: Node3D                ## the interior (with interior.gd) whose `room` this area fills
-@export var room := ""
+@export var room := ""   ## the interior's room it fills (its name in the export)
 
 static var inside: Array = []               # the tone areas the player is in, the last one entered last
 

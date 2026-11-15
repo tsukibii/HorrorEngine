@@ -341,6 +341,8 @@ class Materials:
                     out_name = re.sub(r"\.(png|jpe?g)$", "", normal) + "_gl.png"
                     if not (dst / out_name).exists():
                         out_name = flip_green(src / normal, dst / out_name) and out_name
+                        if not out_name:
+                            warn(f"{name}: its normal map left out (a DirectX normal's green is turned with Pillow: pip install pillow)")
                 elif not (dst / out_name).exists():
                     shutil.copy(src / normal, dst / out_name)
                 if out_name:
@@ -1195,6 +1197,20 @@ look/settings_applied=true
 '''
 
 
+WARNINGS = []                       # what an export did without (a kit build, a face's shapes, a normal map): said by godot_export.py and kept in export.json
+
+
+def warn(w):
+    """an export going on without something: said, never silent (it was boxes, flat faces and missing normals with no word)"""
+    if w not in WARNINGS:
+        WARNINGS.append(w)
+
+
+def _last_line(r):
+    t = ((r.stderr or "") + "\n" + (r.stdout or "")).strip().splitlines()
+    return t[-1][:200] if t else f"exit {r.returncode}"
+
+
 def flip_green(src, dst):
     """A DirectX normal map (Y down) as the OpenGL one Godot reads (Y up): the green channel inverted. False without PIL."""
     try:
@@ -1309,9 +1325,12 @@ def read_manifest(out):
         return None
 
 
-def write_manifest(out):
+def write_manifest(out, files=None):
+    """The receipt: what the export wrote, each file's sha1 as it wrote it. `files` given (a re-export merged into a
+    project someone works in): only those, never what's theirs; else every file in the folder (a folder that's the
+    export's alone)."""
     import datetime  # noqa: PLC0415
-    files = {rel: sha1_of(out / rel) for rel in generated_files(out)}
+    files = {rel: sha1_of(out / rel) for rel in generated_files(out)} if files is None else dict(sorted(files.items()))
     (out / ".desk").mkdir(exist_ok=True)
     (out / MANIFEST).write_text(json.dumps({"written": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "files": files}, indent=1), encoding="utf-8")
     return files
@@ -1327,18 +1346,24 @@ def merge_export(new, final, old_manifest):
     """The fresh export (new) into the project the user has (final), by the last receipt: a generated file they
     changed is kept, the new one written beside it as <name>.desk.<ext>; one they left is overwritten; a stale one
     (generated last time, not this time, unchanged) goes; anything of theirs the export never wrote is untouched.
-    Returns the kept files."""
+    Returns the kept files and the receipt's lines: {rel: sha1 of what the export wrote there}. A kept file's line is
+    the new version's (what the export would have written there), so it's still theirs at the next export; it was
+    the user's own version's, which the next export took as the export's, overwrote, and deleted their own new files."""
     kept = []
     written = set()
+    wrote = {}
     for rel in generated_files(new):
         src = new / rel
         dst = final / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
-        if dst.exists() and rel in old_manifest and sha1_of(dst) != old_manifest[rel] and sha1_of(dst) != sha1_of(src):   # changed by hand, and not into what the export writes now
+        h = sha1_of(src)
+        wrote[rel] = h
+        if dst.exists() and rel in old_manifest and sha1_of(dst) != old_manifest[rel] and sha1_of(dst) != h:   # changed by hand, and not into what the export writes now
             beside = final / desk_name(rel)
             shutil.copy(src, beside)
             kept.append(rel)
             written.add(desk_name(rel))
+            wrote[desk_name(rel)] = h
         else:
             shutil.copy(src, dst)
             written.add(rel)
@@ -1351,7 +1376,19 @@ def merge_export(new, final, old_manifest):
         if stale.exists() and sha1_of(stale) == old_manifest[rel]:
             stale.unlink()
     shutil.rmtree(new)
-    return kept
+    return kept, wrote
+
+
+def stamps(out):
+    """{rel: (mtime_ns, size)} of every file `generated_files` would list: taken before an export writes into a project
+    after its merge (export.json, the guide, .gitignore), so `written_since` can say exactly which it wrote."""
+    return {rel: ((out / rel).stat().st_mtime_ns, (out / rel).stat().st_size) for rel in generated_files(out)}
+
+
+def written_since(out, before):
+    """{rel: sha1} of the files under `out` new or changed since `before` (stamps()), for the receipt."""
+    return {rel: sha1_of(out / rel) for rel in generated_files(out)
+            if before.get(rel) != ((out / rel).stat().st_mtime_ns, (out / rel).stat().st_size)}
 
 
 def rewrite_guide(out, game):
@@ -1359,8 +1396,10 @@ def rewrite_guide(out, game):
     out = Path(out)
     story, _path = L.load(game)
     info = json.loads((out / "game" / "export.json").read_text(encoding="utf-8"))
+    old = read_manifest(out)
+    t0 = stamps(out) if old is not None else None
     GUIDE.write_guide(out, game, story, info, ROOT / "Saved" / "Story" / game / "godot_reference")
-    write_manifest(out)
+    write_manifest(out, None if old is None else {**old, **written_since(out, t0)})   # (the receipt: the guide's files added, nothing of the user's)
 
 
 def import_project(out, timeout=600):
@@ -1432,13 +1471,21 @@ def export(game, out=None, make_zip=False, do_import=True):
     occluders = 0
     surface_sets = set()
     kit_index = {}
+    WARNINGS.clear()
+    import subprocess  # noqa: PLC0415
     try:
-        import subprocess  # noqa: PLC0415
         specs = ROOT / "Saved" / "kit" / f"{game}.json"
-        if KIT.write_specs(story, specs) and shutil.which("node"):
-            subprocess.run([shutil.which("node"), str(ROOT / "tools" / "kit" / "build.mjs"), "--specs", str(specs)], capture_output=True, text=True, timeout=900)
-    except (OSError, ValueError, subprocess.TimeoutExpired):
-        pass
+        if KIT.write_specs(story, specs):
+            if not shutil.which("node"):
+                warn("node isn't on the PATH: the kit's things (furniture, doors, stairs) are plain boxes")
+            else:
+                r = subprocess.run([shutil.which("node"), str(ROOT / "tools" / "kit" / "build.mjs"), "--specs", str(specs)], capture_output=True, text=True, timeout=900)
+                if r.returncode:
+                    warn(f"the kit's meshes didn't build ({_last_line(r)}): those things are plain boxes")
+    except subprocess.TimeoutExpired:
+        warn("the kit's meshes took over 15 minutes and were left: those things are plain boxes")
+    except (OSError, ValueError) as e:
+        warn(f"the kit's meshes: {e}")
     version = None
     if out:
         final = Path(out)
@@ -1467,11 +1514,14 @@ def export(game, out=None, make_zip=False, do_import=True):
                     shutil.copy(src, out / "game" / "people" / f"{name}.glb")
                     people += 1
                     if shutil.which("node"):                  # MHR's 72 face shapes baked into the copy (tools/face_morphs.mjs): the story's `expr` plays on her face
-                        import subprocess  # noqa: PLC0415
                         try:
-                            subprocess.run([shutil.which("node"), str(ROOT / "tools" / "face_morphs.mjs"), str(out / "game" / "people" / f"{name}.glb")], capture_output=True, text=True, timeout=300)
-                        except (OSError, subprocess.TimeoutExpired):
-                            pass
+                            r = subprocess.run([shutil.which("node"), str(ROOT / "tools" / "face_morphs.mjs"), str(out / "game" / "people" / f"{name}.glb")], capture_output=True, text=True, timeout=300)
+                            if r.returncode:
+                                warn(f"{name}: MHR's face shapes weren't baked into her copy ({_last_line(r)}): her expressions won't play")
+                        except (OSError, subprocess.TimeoutExpired) as e:
+                            warn(f"{name}: MHR's face shapes weren't baked into her copy ({type(e).__name__}): her expressions won't play")
+                    else:
+                        warn(f"{name}: node isn't on the PATH, so her face shapes weren't baked: her expressions won't play")
     previs = L.GAMES / game / "Previs"
     baked = copy_previs(game, out)
     if LIVES.exists():
@@ -1517,11 +1567,14 @@ def export(game, out=None, make_zip=False, do_import=True):
     copy_moods(out, game)                                          # the music's moods as beds (tools/score/moods.mjs): the game's over the studio's
     faces = sorted(faces_used(story))                             # the expressions the story puts on faces in play (`expr`): baked into faces/ (tools/face_export.mjs)
     if faces and shutil.which("node"):
-        import subprocess  # noqa: PLC0415
         try:
-            subprocess.run([shutil.which("node"), str(ROOT / "tools" / "face_export.mjs"), "--project", str(out)] + faces, capture_output=True, text=True, timeout=300)
-        except (OSError, subprocess.TimeoutExpired):
-            pass
+            r = subprocess.run([shutil.which("node"), str(ROOT / "tools" / "face_export.mjs"), "--project", str(out)] + faces, capture_output=True, text=True, timeout=300)
+            if r.returncode:
+                warn(f"the expressions the story uses weren't baked into faces/ ({_last_line(r)}): {', '.join(faces[:6])} won't play")
+        except (OSError, subprocess.TimeoutExpired) as e:
+            warn(f"the expressions the story uses weren't baked into faces/ ({type(e).__name__})")
+    elif faces:
+        warn(f"node isn't on the PATH: the expressions the story uses ({', '.join(faces[:6])}) weren't baked and won't play")
     import datetime  # noqa: PLC0415
     info = {"game": game, "story": str(path), "levels": levels, "pieces": len(pieces), "arts": arts, "acts": acts, "surfaced": surfaced, "occluders": occluders, "surface_sets": sorted(surface_sets),
             "materials": {r: m for r, m in sorted(mats.files.items(), key=lambda kv: str(kv[0])) if m and isinstance(r, str)},
@@ -1530,19 +1583,21 @@ def export(game, out=None, make_zip=False, do_import=True):
             "slots_dressed": slots_dressed, "fittings": fittings, "bake": (previs / "preview.json").exists(), "bodies": baked,
             "bodies_list": sorted(f.name[5:-4] for f in previs.glob("Body_*.glb")) if previs.exists() else [], "engine": L.engine_version(), "godot": "4.7",
             "made": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}
-    kept = []
+    kept, wrote = [], None
     if old_manifest is not None:                           # merged into the project the user has: theirs kept, the new beside
-        kept = merge_export(out, final, old_manifest)
+        kept, wrote = merge_export(out, final, old_manifest)
         out = final
+    t0 = stamps(out) if wrote is not None else None
     info["kept"] = kept
+    info["warnings"] = list(WARNINGS)                      # what it went on without (nothing: [])
     (out / "game" / "export.json").write_text(json.dumps(info, indent=1), encoding="utf-8")
     GUIDE.write_guide(out, game, story, info, ROOT / "Saved" / "Story" / game / "godot_reference")   # the guide (GODOT_PLAN §7)
     (out / ".gitignore").write_text(".godot/\n", encoding="utf-8")
-    write_manifest(out)
+    write_manifest(out, None if wrote is None else {**wrote, **written_since(out, t0)})   # (merged: what the export wrote, never what's theirs)
     if (arts or surfaced) and do_import:
         import_project(out)
     z = zip_project(out, game) if make_zip else None
-    return {"dir": str(out), "zip": str(z) if z else None, "levels": levels, "pieces": len(pieces), "arts": arts, "kept": kept, "version": version}
+    return {"dir": str(out), "zip": str(z) if z else None, "levels": levels, "pieces": len(pieces), "arts": arts, "kept": kept, "version": version, "warnings": list(WARNINGS)}
 
 
 def zip_project(out, game):

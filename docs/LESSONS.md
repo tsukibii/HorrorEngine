@@ -3,6 +3,17 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## The HUD inside the tape's picture: what the pictures found (2026-11-15, `enhancements`, E52)
+
+- **Lay a part from the edge it sits at, and look at a short wide window too.** The pause menu's legend sat at a
+  fixed y of 640 (a 720-line design), so in a 1280 x 548 window (21:9) it was under the foot, and the game's keys put
+  on its line went with it; the quit question at a fixed 560 the same. 720p hid it. The legend and the question are
+  laid from the menu's foot now. **A layout check tries the window sizes a player has**: BYHAND lays the HUD at five
+  (16:9 at two sizes, 21:9, 4:3, 5:4) in every tape preset.
+- **A picture taken on the CPU renderer runs slow against a clock.** A line said for 60 seconds was gone before the
+  shot 90 frames later: lavapipe drew the balanced look at about one frame a second. Give what a picture shows a time
+  far past the run's, or tie it to frames.
+
 ## The sequences: what playing real scenes found that the unit stages hadn't (2026-11-14, `even-more-animations-v3`)
 
 - **A check made of whole scenes finds what a check made of cases can't.** MARKERS has 229 passing lines and every
@@ -3509,6 +3520,11 @@ pale one shows.
   landmarks that the server gets from MediaPipe's worker, which wasn't set up (and then lacked libEGL). Probe the
   thing being waited on after the first timeout, not the third: print the page's errors and its state as it loads.
   The tool now asks the server for the landmarks first and says what's missing.
+- **Play the game as it ships, not only the project.** Every check ran a project in the editor's file system; the
+  first time a pack was exported and played (E38), the to-do list and the HUD's keys were empty: Godot 4.7's export,
+  turning a scene's text into binary, leaves out every `PackedStringArray`, and the plugins' file reads (a `.glb`'s
+  own JSON, a `.tres` as text, a `.png` by its name) find nothing in a pack. `--export-pack` needs no export templates
+  and takes 10 s: HORRORGAME now plays the pack it makes.
 - **A name is not an identity.** Godot's cloth shader found each garment's fabric by its material's name in the
   file's JSON; a pair of jeans has a waistband and a belt both named `jeans_band`, and the belt was dressed as denim.
   A count that didn't add up (20 surfaces dressed, 19 records) found it. Godot 4.7 keeps a glTF material's extras on

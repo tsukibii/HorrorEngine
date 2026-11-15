@@ -16,6 +16,8 @@
 class_name HSNpcBody
 extends RefCounted
 
+const ANIMATOR_VERSION := 5                  ## the Animator's bake the markers are made for (tools/animator/core/animate.js VERSION; ANIMATOR holds it)
+
 const WALK := 1.3                          # her speeds when nothing says (m/s)
 const RUN := 3.0
 ## the low ways of going (animations v3, docs/ANIMATOR_V3.md): its loop, the loop she rests in after, and how fast when her record doesn't say
@@ -139,6 +141,8 @@ func setup(character: Node3D, settings: Dictionary = {}) -> void:
 		problems.append("no animations: the character slides from marker to marker (bake the .glb in the Animator)")
 	elif record.is_empty():
 		problems.append("the .glb wasn't baked by the Animator: only the animations the model has play (idle, walk, run by their names)")
+	elif int(record.get("version", 1)) < ANIMATOR_VERSION:              # (it said nothing: a v4 bake has no small movements, so Alive did nothing)
+		problems.append("the .glb was baked by an older Animator (version %d, the markers want %d: small movements, carrying and the furniture by her size came since): bake her again (python tools/animator/bake.mjs --status)" % [int(record.get("version", 1)), ANIMATOR_VERSION])
 	for need in ["idle_loop", "walk_loop"]:
 		if not _players.is_empty() and not names.has(need):
 			problems.append("no animation for '%s'" % need.trim_suffix("_loop"))
@@ -400,7 +404,7 @@ func clip_from(path: String) -> String:
 		elif not FileAccess.file_exists(path):
 			problems.append("%s isn't there" % path)
 		else:
-			var frames: Array = nz.call("joints", nz.call("read", ProjectSettings.globalize_path(path)))
+			var frames: Array = nz.call("joints", nz.call("read", path))   # (by its res:// path: in an exported game it's inside the pack)
 			if frames.is_empty():
 				problems.append("%s has no motion in it" % path.get_file())
 			else:

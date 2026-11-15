@@ -17,7 +17,7 @@ extends Node3D
 const GAIN := 3.0                                     ## the beam's brightness for the air's density: at the look's haze (fog 0.25) a flashlight's beam is faint but there
 
 @export var light: SpotLight3D = null                 ## the light; empty: the parent
-@export_range(0.0, 4.0, 0.01) var strength: float = 1.0
+@export_range(0.0, 4.0, 0.01) var strength: float = 1.0   ## how bright the beam is in the air, times the light's own energy
 @export_enum("light's own", "flashlight", "led", "lantern") var cookie: String = "light's own"   ## a flashlight's beam on the light (its projector); the light's own projector otherwise, if it has one
 @export_range(-0.9, 0.9, 0.01) var phase: float = 0.0 ## 0 as bright from every side; above 0 brighter facing the light, below 0 brighter from behind it
 @export_enum("12", "24", "32") var quality: String = "24"   ## samples along each ray

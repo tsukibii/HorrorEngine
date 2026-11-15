@@ -20,6 +20,15 @@
 ## fills over its seconds, then one of it is gone from the pocket and the Sanity node is mended by its `restores`.
 ## Let go early and nothing's eaten. Not while a gun is up (the click is the gun's: Q lowers it), a card is, or the
 ## laptop has the mouse.
+## Saving (the enhancements review, docs/TOOLS_REVIEW.md): save_game(slot) writes a checkpoint kept where you stand to
+## user://hs_save_<slot>.save, as text; load_game(slot) puts it back as dying puts a checkpoint back, with no card. A
+## save holds the Story's own (the tasks, flags, the pocket and what of it is eatable, the cash, the objective, the
+## doors, where you stood), the world's (the group hs_keeps: what's been picked up, read, fired, shown) and what keeps
+## its own checkpoint (the group hs_saves, save_state() and load_state(state): the Markers plugin's Logic nodes and
+## characters, the Sanity meter, the flashlight's batteries, a hunt, the pause menu's time played, the weapons plugin's gun). `autosave` writes slot 0 at every checkpoint,
+## `continue_saved` loads it at the start, `save_keys` puts saving and loading on F5 and F9 for testing. A save is for
+## the scene it was made in (its nodes are found by their paths); the night's director, a searcher and a chase start
+## afresh.
 extends CanvasLayer
 
 signal task_added(id: String)
@@ -30,7 +39,9 @@ signal unflagged(fact: String)                        ## a flag switched off
 signal ended(title: String)
 signal kept                                           ## a checkpoint was kept (checkpoint())
 signal died(how: String)                              ## die()
-signal revived                                        ## back at the checkpoint after dying
+signal revived                                        ## back at the checkpoint after dying (and after a save is loaded)
+signal saved(slot: int)                               ## save_game() wrote a save on disk
+signal loaded(slot: int)                              ## load_game() put one back
 signal pocket_changed                                 ## something came into the pocket or went out of it
 signal cash_changed(cash: float)
 signal ate(item: String)                              ## a thing in the pocket was eaten
@@ -38,7 +49,7 @@ signal ate(item: String)                              ## a thing in the pocket w
 @export var objective_text := ""                      ## the objective when the game starts
 @export var tasks: PackedStringArray = []             ## the to-do list when it starts, each "id: what it says"
 @export var ending_title := "The end"                 ## what end() shows
-@export_multiline var ending_text := ""
+@export_multiline var ending_text := ""   ## the ending card's words under its title
 @export var accent := Color(0.88, 0.64, 0.37)         ## the list's ticks and the cards' titles
 @export var cash := 0.0                               ## the player's money: what the laptop's shop takes
 @export var flags_start: PackedStringArray = []       ## flags that are on when the game starts (a flag is just a name: type a new one anywhere)
@@ -46,6 +57,16 @@ signal ate(item: String)                              ## a thing in the pocket w
 @export var pocket_row := true                        ## the pocket shown as an HSHud's inventory row (when the scene has one)
 @export var eat_secs := 2.0                           ## how long the left button is held to eat something that doesn't say
 @export var eat_sound := ""                           ## off the shelf, as something's eaten (a thing's own goes first)
+## the objective, the to-do list and the lines on the scene's HSHud (the UI plugin's corners and footer: one look with
+## its prompt, its conversations and its pocket) in place of the Story's own, and a note's card as the HUD's card (E
+## puts it away, as ever); the death card and the ending stay the Story's. On by default (the user's choice); with no
+## HSHud in the scene the Story draws its own. Off: the Story's own words, as before
+@export var use_hud := true
+@export_group("Saving")
+@export var autosave := false                         ## each checkpoint written to disk too (save slot 0): the game goes on from it once it's closed
+@export var continue_saved := false                   ## at the start, save slot 0 loaded when there is one (with autosave: the game picks up at its last checkpoint)
+@export var save_keys := false                        ## F5 saves where you stand (a checkpoint, then slot 0), F9 loads it: for testing
+@export_group("")
 
 var items := {}                                       # what's carried: its name -> how many
 var names := {}                                       # what each is called on screen
@@ -57,6 +78,8 @@ var deaths := 0
 var death_secs := 2.6                                 ## how long the death card stays
 var _kept := {}                                       # the checkpoint: what you'd done and where you stood
 var _tasks: Array = []                                # {id, text, done}
+var _top: VBoxContainer                               # the objective and the list, top left (with no HSHud)
+var _frame := Rect2()                                 # the picture they were last laid in (a tape's 4:3, else the view)
 var _obj: Label
 var _list: RichTextLabel
 var _line: Label
@@ -82,6 +105,7 @@ var _hud: Node = null
 
 func _ready() -> void:
 	add_to_group("hs_story")
+	get_tree().node_added.connect(_on_node_added)
 	layer = 5
 	_build()
 	for f in flags_start:
@@ -92,12 +116,109 @@ func _ready() -> void:
 		var i := t.find(":")
 		if i > 0:
 			add_task(t.substr(0, i).strip_edges(), t.substr(i + 1).strip_edges())
+	if get_tree().has_meta("hs_carry"):                # come through a door from another scene (go_to): what you carry with you
+		var carry = get_tree().get_meta("hs_carry")
+		get_tree().remove_meta("hs_carry")
+		if carry is Dictionary:
+			_carry_in.call_deferred(carry)
+	var asked := -1                                   # the main menu's Continue or Load game (the UI plugin's HSTitleMenu): that save
+	if get_tree().has_meta("hs_load_slot"):
+		asked = int(get_tree().get_meta("hs_load_slot"))
+		get_tree().remove_meta("hs_load_slot")
+	elif continue_saved:
+		asked = 0
+	if asked >= 0 and has_save(asked):
+		_starting = true
+		_continue.call_deferred(asked)
+
+
+var _starting := false                                # a save to load as the game starts: no autosave over it before it's loaded
+
+
+## Into another scene with what you have: the to-do list, the facts, the pocket and the cash, the objective, the deaths
+## (a door into the next level: starter/travel.gd, or any script). `at` names a node of that scene to arrive at (a
+## Marker3D: its place and facing; "": where its player stands). That scene's Story takes it all as it starts, adds its
+## own Tasks and Flags Start to it, keeps its own Objective Text if it has one, and keeps a checkpoint there (an
+## autosave, with Autosave on). What's in the world (a key left on a floor) stays with the scene it's in.
+func go_to(scene: String, at := "") -> void:
+	if scene == "" or not ResourceLoader.exists(scene):
+		push_warning("story.gd: go_to: there's no scene %s" % scene)
+		return
+	get_tree().set_meta("hs_carry", {"flags": flags.duplicate(), "tasks": _tasks.duplicate(true), "items": items.duplicate(),
+		"names": names.duplicate(), "cash": cash, "objective": _obj.text, "eatable": eatable.duplicate(true), "deaths": deaths, "at": at})
+	get_tree().change_scene_to_file.call_deferred(scene)
+
+
+func _carry_in(c: Dictionary) -> void:
+	var own_tasks := _tasks.duplicate(true)               # this scene's own (its Tasks and Flags Start): after what came with you
+	var own_flags := flags.duplicate()
+	flags = (c.get("flags", {}) as Dictionary).duplicate()
+	flags.merge(own_flags, true)
+	_tasks = (c.get("tasks", []) as Array).duplicate(true)
+	for t in own_tasks:
+		if not has_task(str(t["id"])):
+			_tasks.append(t)
+	items = (c.get("items", {}) as Dictionary).duplicate()
+	names = (c.get("names", {}) as Dictionary).duplicate()
+	if c.get("eatable") is Dictionary:
+		eatable = (c["eatable"] as Dictionary).duplicate(true)
+	cash = float(c.get("cash", cash))
+	deaths = int(c.get("deaths", deaths))
+	if objective_text == "":
+		objective(str(c.get("objective", "")))
+	var at := str(c.get("at", ""))
+	var here := get_tree().current_scene
+	var spot := here.find_child(at, true, false) as Node3D if at != "" and here != null else null
+	var pl := get_tree().get_first_node_in_group("hs_player") as Node3D
+	if pl != null and spot != null:
+		pl.global_transform = spot.global_transform
+		pl.set("velocity", Vector3.ZERO)
+		pl.set("pitch", 0.0)
+		var eye := pl.get_node_or_null("Eye") as Node3D
+		if eye != null:
+			eye.rotation.x = 0.0
+		if pl.has_method("snap_eye"):
+			pl.snap_eye()
+	_draw_list()
+	_draw_pocket()
+	cash_changed.emit(cash)
+	pocket_changed.emit()
+	checkpoint()                                      # (the arrival kept: dying here comes back here)
+
+
+func _continue(slot := 0) -> void:                    # (a few frames on: the characters' markers start deferred, and are what a save puts back too)
+	for i in 3:
+		await get_tree().process_frame
+	load_game(slot)
+	_starting = false
 
 
 # ---- what the other scripts call ---------------------------------------------------------------------------------
 func objective(text: String) -> void:
 	_obj.text = text
-	_obj.visible = text != ""
+	var h := _words_hud()
+	if h != null:
+		h.objective(text if text != "" else null)
+		_obj.visible = false
+	else:
+		_obj.visible = text != ""
+
+
+var _on_hud := false                                  # use_hud: the HUD has the words
+var _hud_look := 0.0                                  # use_hud and no HUD yet: when to look for one again
+
+
+# the HSHud that takes the Story's words (use_hud), or null: the Story draws them itself
+func _words_hud() -> Node:
+	if not use_hud:
+		return null
+	var h: Node = _find_hud() if (_hud != null and is_instance_valid(_hud)) or _hud_look <= 0.0 else null
+	if h == null:
+		_hud_look = 1.0                                # (not a scan of the tree every frame)
+		return null
+	if not h.is_node_ready():                          # (in the scene before it's built its corners: the Story's own until
+		return null                                    # the next frame, when _process hands the words over)
+	return h if h.has_method("todo") and h.has_method("line") else null
 
 
 func add_task(id: String, text: String) -> void:
@@ -162,23 +283,52 @@ func done(id: String) -> bool:
 
 func say(text: String, secs := 3.0) -> void:
 	_line.text = text
-	_line.visible = true
 	_line_left = secs
+	var h := _words_hud()
+	if h != null:
+		h.line(text, null, secs, false)
+		_line.visible = false                          # (its words still in _line for what reads them)
+	else:
+		_line.visible = true
+
+
+## the line being said now, wherever it's drawn (the Story's own or the HSHud's footer): "" when there's none
+func line_now() -> String:
+	return _line.text if _line_left > 0.0 else ""
 
 
 func card(title: String, text: String) -> void:
 	_card_title.text = title
 	_card_title.visible = title != ""
 	_card_text.text = text
-	_card.visible = true
+	var h := _words_hud()
+	if h != null and h.has_method("panel"):
+		h.panel({"title": title, "text": text, "hint": "E to put it away"})   # (not waited for: E puts it away, close_card)
+		_card_on_hud = true
+		_card.visible = false
+	else:
+		_card.visible = true
+
+
+var _card_on_hud := false                             # use_hud: the card up is the HUD's
 
 
 func card_up() -> bool:
+	if _card_on_hud:
+		var h := _words_hud()
+		if h != null and h.get("panel_el") != null:
+			return true
+		_card_on_hud = false
 	return _card.visible
 
 
 func close_card() -> void:
 	_card.visible = false
+	if _card_on_hud:
+		var h := _words_hud()
+		if h != null and h.has_method("_finish_panel"):
+			h.call("_finish_panel", true)
+		_card_on_hud = false
 
 
 ## into the pocket: `label` what it's called (its name when not given), `model` what it looks like in its slot (a copy of
@@ -345,6 +495,12 @@ func _draw_pocket() -> void:
 	h.inventory(list, _at, _shown or _peek > 0.0, false)
 
 
+# an HSHud put in while the game runs (a scene's, a script's): taken at once, not after the second's wait between looks
+func _on_node_added(n: Node) -> void:
+	if use_hud and n is CanvasLayer and n.get_script() != null and (n.get_script() as Script).get_global_name() == &"HSHud":
+		_hud_look = 0.0
+
+
 func _find_hud() -> Node:
 	if _hud != null and is_instance_valid(_hud):
 		return _hud
@@ -360,9 +516,11 @@ func _find_hud() -> Node:
 func _unhandled_input(e: InputEvent) -> void:
 	if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
 		hold_eat(e.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED)     # (the click that takes the mouse back eats nothing)
-	if items.is_empty() or _find_hud() == null or not pocket_row:
+	var tab: bool = e is InputEventKey and e.pressed and not e.echo and e.physical_keycode == KEY_TAB
+	var wheel: bool = e is InputEventMouseButton and e.pressed and e.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]
+	if not (tab or wheel) or items.is_empty() or not pocket_row or _find_hud() == null:   # (the HUD looked for only on Tab or the wheel: it was every mouse move, the whole tree each time when there's none)
 		return
-	if e is InputEventKey and e.pressed and not e.echo and e.physical_keycode == KEY_TAB:
+	if tab:
 		_shown = not _shown
 		_draw_pocket()
 	elif e is InputEventMouseButton and e.pressed and (_shown or _peek > 0.0) and items.size() > 1 \
@@ -435,18 +593,102 @@ func _doors() -> Array:
 	return out
 
 
-## Keep where you are and what you've done: the tasks, the facts, the pocket and the cash, the objective, the doors.
-## die() comes back to it. A checkpoint.gd area calls this; a lethal hunt does when it starts.
+## Keep where you are and what you've done: the tasks, the facts, the pocket and the cash, the objective, the doors,
+## and the world (every node in the group hs_keeps gives its keep_state() and is given it back by put_state(): a pickup
+## or food taken since lies where it was, a note's tasks come again, an area, a scare, a cue, a flag switch or an act
+## that's fired since can fire again, a shown.gd thing is as it was). die() comes back to it. A checkpoint.gd area
+## calls this; a lethal hunt does when it starts. A script of your own joins in by the same two methods and the group.
 func checkpoint() -> void:
 	var pl := get_tree().get_first_node_in_group("hs_player") as Node3D
 	_kept = {"flags": flags.duplicate(), "tasks": _tasks.duplicate(true), "items": items.duplicate(), "names": names.duplicate(),
-		"cash": cash, "objective": _obj.text, "doors": {}}
+		"cash": cash, "objective": _obj.text, "doors": {}, "eatable": eatable.duplicate(true)}
 	if pl != null:
 		_kept["at"] = pl.global_transform
 		_kept["pitch"] = float(pl.get("pitch")) if pl.get("pitch") != null else 0.0
+		if pl.get("seat") != null and pl.get("_stood") is Transform3D:   # kept sitting, lying or hiding: where you stood before it
+			_kept["at"] = pl.get("_stood")                                 # (revive gets you up, then here: not on the mattress)
+			_kept["pitch"] = float(pl.get("_stood_pitch"))
 	for d in _doors():
 		_kept["doors"][d.get_path()] = [bool(d.get("open")), bool(d.get("unlocked"))]
+	_kept["world"] = {}                                   # what's in the world: a key on the floor, an area that's fired... (the group hs_keeps)
+	for n in get_tree().get_nodes_in_group("hs_keeps"):
+		if n.has_method("keep_state"):
+			_kept["world"][n.get_path()] = n.call("keep_state")
 	kept.emit()
+	if autosave and not _starting:                    # (a checkpoint where you start fires before the save asked for is loaded)
+		save_game(0, false)
+
+
+## A save on disk (user://hs_save_<slot>.save): the last checkpoint, kept where you stand now first (`now`), and what
+## keeps its own checkpoint (the group hs_saves, save_state() and load_state(state): the Logic nodes, the characters'
+## markers). It's text (Godot's var_to_str): open it to see what it holds. -> whether it was written
+func save_game(slot := 0, now := true) -> bool:
+	if now or _kept.is_empty():
+		var auto := autosave
+		autosave = false                              # (checkpoint() here writes this save, not slot 0 too)
+		checkpoint()
+		autosave = auto
+	var extras := {}
+	for n in get_tree().get_nodes_in_group("hs_saves"):
+		if n.has_method("save_state"):
+			extras[str(n.get_path())] = n.call("save_state")
+	var scene := get_tree().current_scene
+	var data := {"version": 1, "scene": scene.scene_file_path if scene != null else "", "at": Time.get_datetime_string_from_system(),
+		"kept": _kept, "extras": extras, "deaths": deaths}
+	var f := FileAccess.open(save_path(slot), FileAccess.WRITE)
+	if f == null:
+		push_warning("story.gd: the save %s couldn't be written (%s)" % [save_path(slot), error_string(FileAccess.get_open_error())])
+		return false
+	f.store_string(var_to_str(data))
+	f.close()
+	saved.emit(slot)
+	return true
+
+
+func save_path(slot := 0) -> String:
+	return "user://hs_save_%d.save" % slot
+
+
+func has_save(slot := 0) -> bool:
+	return FileAccess.file_exists(save_path(slot))
+
+
+func delete_save(slot := 0) -> void:
+	if has_save(slot):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path(slot)))
+
+
+## A save put back as dying puts a checkpoint back (the same scene: its nodes are found by their paths), with no card.
+## What the pocket's things look like isn't saved (they're models): a loaded pocket shows their names. -> whether it was
+func load_game(slot := 0) -> bool:
+	if not has_save(slot):
+		return false
+	var data = str_to_var(FileAccess.get_file_as_string(save_path(slot)))
+	if not data is Dictionary or not (data as Dictionary).get("kept") is Dictionary:
+		push_warning("story.gd: %s isn't a save this Story can read" % save_path(slot))
+		return false
+	_kept = (data["kept"] as Dictionary).duplicate(true)
+	deaths = int(data.get("deaths", deaths))
+	var extras: Dictionary = data.get("extras", {})
+	for path in extras:
+		var n := get_node_or_null(NodePath(path))
+		if n != null and n.has_method("load_state"):
+			n.call("load_state", extras[path])
+	dead = false
+	over = false
+	_put_back()
+	revived.emit()                                    # (what keeps its own checkpoint puts it back now: the Logic nodes, the markers)
+	loaded.emit(slot)
+	return true
+
+
+func _unhandled_key_input(e: InputEvent) -> void:
+	if not save_keys or not (e is InputEventKey) or not e.pressed or e.echo:
+		return
+	if e.physical_keycode == KEY_F5 and not over:
+		say("Saved." if save_game(0) else "It couldn't be saved.")
+	elif e.physical_keycode == KEY_F9:
+		say("Loaded." if load_game(0) else "Nothing saved yet.")
 
 
 func has_checkpoint() -> bool:
@@ -474,11 +716,28 @@ func die(how := "", title := "You died", text := "") -> void:
 func revive() -> void:
 	if not dead:
 		return
+	_put_back()
+	dead = false
+	over = false
+	_card.visible = false
+	var tw := create_tween()
+	tw.tween_property(_end, "modulate:a", 0.0, 0.6)
+	tw.tween_callback(func() -> void:
+		if not over:
+			_end.visible = false)
+	revived.emit()
+
+
+# the last checkpoint put back: the Story's own (flags, tasks, the pocket, the cash, the objective, the doors), the
+# world's (hs_keeps) and where you stood (revive, load_game)
+func _put_back() -> void:
 	if not _kept.is_empty():
 		flags = (_kept["flags"] as Dictionary).duplicate()
 		_tasks = (_kept["tasks"] as Array).duplicate(true)
 		items = (_kept["items"] as Dictionary).duplicate()
 		names = (_kept["names"] as Dictionary).duplicate()
+		if _kept.get("eatable") is Dictionary:
+			eatable = (_kept["eatable"] as Dictionary).duplicate(true)
 		cash = float(_kept["cash"])
 		objective(str(_kept["objective"]))
 		for path in _kept["doors"]:
@@ -486,6 +745,11 @@ func revive() -> void:
 			if d != null:
 				d.set("unlocked", _kept["doors"][path][1])
 				d.set("open", _kept["doors"][path][0])
+		var world: Dictionary = _kept.get("world", {})        # the world as it was: a key taken since lies where it was again, an
+		for path in world:                                    # area fired since can fire again (pickup, food, note, the areas, cues...)
+			var n := get_node_or_null(path)
+			if n != null and n.has_method("put_state"):
+				n.call("put_state", world[path])
 		var pl := get_tree().get_first_node_in_group("hs_player") as Node3D
 		if pl != null and _kept.has("at"):
 			if pl.get("seat") != null and pl.has_method("rise"):
@@ -501,15 +765,6 @@ func revive() -> void:
 		_draw_list()
 		_draw_pocket()
 		cash_changed.emit(cash)
-	dead = false
-	over = false
-	_card.visible = false
-	var tw := create_tween()
-	tw.tween_property(_end, "modulate:a", 0.0, 0.6)
-	tw.tween_callback(func() -> void:
-		if not over:
-			_end.visible = false)
-	revived.emit()
 
 
 ## what an area's, a door's or a cue's `needs` says: "" always, "task:<id>" that task done, "on:<id>" that task on the
@@ -558,6 +813,7 @@ func end_with(title: String, text: String = "") -> void:
 # ---- on screen ---------------------------------------------------------------------------------------------------
 func _process(dt: float) -> void:
 	_eat(dt)
+	_lay_words()
 	if _peek > 0.0:
 		_peek -= dt
 		if _peek <= 0.0:
@@ -566,6 +822,12 @@ func _process(dt: float) -> void:
 		_line_left -= dt
 		if _line_left <= 0.0:
 			_line.visible = false
+	if use_hud and not _on_hud:                          # the HUD came after the Story: the words over to it
+		_hud_look -= dt
+		if _words_hud() != null:
+			_on_hud = true
+			objective(_obj.text)
+			_draw_list()
 
 
 func _draw_list() -> void:
@@ -574,7 +836,12 @@ func _draw_list() -> void:
 	for t in _tasks:
 		s += ("[color=#%s]■[/color] [color=#8a8780][s]%s[/s][/color]\n" % [a, t["text"]]) if t["done"] else ("[color=#%s]□[/color] %s\n" % [a, t["text"]])
 	_list.text = s
-	_list.visible = not _tasks.is_empty()
+	var h := _words_hud()
+	if h != null:
+		h.todo(_tasks.map(func(t): return {"id": t["id"], "text": t["text"], "state": "done" if t["done"] else "open"}), true)
+		_list.visible = false
+	else:
+		_list.visible = not _tasks.is_empty()
 
 
 func _label(size: int, col := Color(0.92, 0.9, 0.85)) -> Label:
@@ -587,8 +854,36 @@ func _label(size: int, col := Color(0.92, 0.9, 0.85)) -> Label:
 	return l
 
 
+# the picture a tape leaves (the Look plugin's vhs.gd, `picture`: 4:3 in the middle of a wider view, black either
+# side), else the whole view
+func _picture() -> Rect2:
+	var vs := get_viewport().get_visible_rect().size
+	for t in get_tree().get_nodes_in_group("hs_tape"):
+		if t.has_method("picture") and t.get_viewport() == get_viewport():
+			var r: Rect2 = t.call("picture", vs)
+			if r.size.x < vs.x - 0.5:
+				return r
+	return Rect2(Vector2.ZERO, vs)
+
+
+# the Story's own words laid inside the picture, never over the black either side (the user, 2026-11-15: "make sure
+# the quests align to not be in the black letter boxes (no matter what vhs style or res)"); the HSHud does its own
+func _lay_words() -> void:
+	if _top == null or not is_inside_tree():
+		return
+	var fr := _picture()
+	if fr == _frame:
+		return
+	_frame = fr
+	_top.position = Vector2(fr.position.x + 28.0, 22.0)
+	var half := minf(500.0, fr.size.x * 0.5 - 24.0)         # the line, about the middle (the picture's is the view's)
+	_line.offset_left = -half
+	_line.offset_right = half
+
+
 func _build() -> void:
 	var top := VBoxContainer.new()
+	_top = top
 	top.position = Vector2(28, 22)
 	top.custom_minimum_size = Vector2(460, 0)
 	add_child(top)
@@ -608,6 +903,8 @@ func _build() -> void:
 	_line = _label(20)
 	_line.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
 	_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # (a long line wraps inside the picture: _lay_words; it grew past it)
+	_line.grow_vertical = Control.GROW_DIRECTION_BEGIN     # (a second row goes up, the first stays where it was)
 	_line.offset_top = -86
 	_line.offset_bottom = -50
 	_line.offset_left = -500

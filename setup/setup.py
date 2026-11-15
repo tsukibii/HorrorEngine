@@ -6,12 +6,16 @@ ship from Godot, tools/godot_setup.sh.)
     python setup/setup.py kimodo [--home DIR] [--cuda cu128|cu126|cpu|none] [--python 3.11] [--demo] [--text-cpu] [--rev REV]
                                                  NVIDIA Kimodo from source with uv (no Docker): repo, Python, torch, models and
                                                  caches all in one folder (default vendor/kimodo); then `tools/kimodo.py check`
+    python setup/setup.py doctor                 what of the toolchain this machine has (Node, Playwright and its Chromium,
+                                                 Godot 4.7, Blender, MediaPipe, Kimodo, a card...), what each is for and the
+                                                 command that sets up what's missing; installs nothing
     python setup/setup.py kimodo-patch [apply|check|refresh|remove]
                                                  our additions to Kimodo's demo (setup/kimodo_studio.patch: Loop, In place,
                                                  Drop last frame, Stage, Path, Pose): put them in, see if they fit, save the
                                                  checkout's changes back into the patch, or take them out
 """
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -178,8 +182,100 @@ def cmd_kimodo(args):
     print("      2) python tools/kimodo.py login     3) python tools/kimodo.py check   (KIMODO ok)")
 
 
+def _which_godot():
+    for c in [os.environ.get("GODOT"), "godot", "godot-mono"]:
+        if c and shutil.which(c):
+            return shutil.which(c)
+    return None
+
+
+def _out(cmd, **kw):
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=60, **kw)
+        return r.returncode, (r.stdout + r.stderr).strip()
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return 1, str(e)
+
+
+def _venv_python(home, name):
+    return home / name / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+
+
+def doctor_rows():
+    """(found, what, what it's for, how to set it up), one a piece of the toolchain; nothing is installed."""
+    rows = []
+
+    def add(ok, what, why, how=""):
+        rows.append((bool(ok), what, why, how))
+
+    v = sys.version_info
+    add(v >= (3, 10), "Python %d.%d" % (v[0], v[1]), "every tool", "Python 3.10 or newer")
+    for mod, why in [("numpy", "the checks, the prop and fabric makers, the hair and clothing bakes"),
+                     ("scipy", "the clothing library's bake (clothing_library.py bake)"),
+                     ("PIL", "contact sheets and pictures (plan_view.py, the Godot sheets)")]:
+        code, _ = _out([sys.executable, "-c", "import " + mod])
+        add(code == 0, mod if mod != "PIL" else "Pillow", why, "pip install " + ("pillow" if mod == "PIL" else mod))
+    node = shutil.which("node")
+    code, ver = _out([node, "--version"]) if node else (1, "")
+    add(node and code == 0, "Node.js " + (ver if node else ""), "the pages' checks, the Animator, the kit, the bakes", "https://nodejs.org (18 or newer)")
+    env = dict(os.environ)
+    probe = "const p=require(process.env.PLAYWRIGHT||'playwright');const fs=require('fs');const e=p.chromium.executablePath();process.stdout.write(e+' '+fs.existsSync(e))"
+    code, out = _out([node, "-e", probe], cwd=ROOT, env=env) if node else (1, "")
+    if code and node and not env.get("NODE_PATH") and shutil.which("npm"):
+        _, root = _out([shutil.which("npm"), "root", "-g"])
+        if root:
+            env["NODE_PATH"] = root.splitlines()[-1]
+            code, out = _out([node, "-e", probe], cwd=ROOT, env=env)
+    found = code == 0 and out.endswith(" true")
+    add(found, "Playwright and its Chromium" + (" (NODE_PATH=$(npm root -g))" if found and env.get("NODE_PATH") != os.environ.get("NODE_PATH") else ""),
+        "every browser check (python tools/browser_checks.py)",
+        "npm install -g playwright && npx playwright install chromium; export NODE_PATH=\"$(npm root -g)\" (docs/RUN_LOCALLY.md)"
+        if code else "the Playwright package and its Chromium differ: npx playwright install chromium (docs/RUN_LOCALLY.md, step 2)")
+    smi = shutil.which("nvidia-smi")
+    code, out = _out([smi, "-L"]) if smi else (1, "")
+    add(smi and code == 0, "NVIDIA card" + (": " + out.splitlines()[0].split(" (UUID")[0] if smi and code == 0 and out else ""),
+        "the browser checks on the card (GPU=1) and Godot's pictures in seconds", "none here: everything draws on the CPU, slowly")
+    gd = _which_godot()
+    code, ver = _out([gd, "--version"]) if gd else (1, "")
+    add(gd and code == 0 and ver.startswith("4.7"), "Godot 4.7" + (" (" + ver.splitlines()[0] + " at " + gd + ")" if gd else ""),
+        "the exports, the plugins, every Godot check", "godot-mono 4.7 on the PATH, or $GODOT (tools/godot_setup.sh on a cloud session)")
+    add(shutil.which("xvfb-run"), "xvfb-run", "Godot's pictures without a window (the checks' sheets)", "the xvfb package")
+    add(shutil.which("ffmpeg"), "ffmpeg", "the made sounds into Ogg (weapon_sounds.py, device_sounds.py), clips", "the ffmpeg package")
+    add(shutil.which("uv"), "uv", "the setups below (their own Pythons)", "https://docs.astral.sh/uv/")
+    cfg = json.loads(ENV.read_text(encoding="utf-8")) if ENV.exists() else {}
+    bl = os.environ.get("BLENDER") or shutil.which("blender")
+    bhome = Path((cfg.get("blender") or {}).get("home") or ROOT / "vendor" / "blender")
+    bmod = _venv_python(bhome, ".venv").exists()
+    add(bl or bmod, "Blender" + (" (" + bl + ")" if bl else " (its Python module)" if bmod else ""),
+        "the prop generator, the street's bake, the fabrics, the retarget",
+        "blender on the PATH, $BLENDER, or python tools/retarget.py setup (its module)")
+    add(_venv_python(ROOT / "vendor" / "face_mesh", "venv").exists(), "MediaPipe (face mesh)",
+        "photos to a head, the Studio's face fit (STUDIO, FACEPAGE)", "python tools/face_mesh.py setup")
+    gh = Path(os.environ.get("GSHAIR_HOME") or ROOT / "vendor" / "gshair")
+    add(_venv_python(gh, "venv").exists(), "the salon's reference (torch, OpenCV)", "a turntable video as the salon's locked reference",
+        "python tools/gshair.py setup")
+    try:
+        sys.path.insert(0, str(ROOT / "tools"))
+        import kimodo as K
+        kim = (K.paths(K.settings()[0])["src"] / ".git").exists()
+    except Exception:                                            # its settings unreadable: say it's not set up
+        kim = False
+    add(kim, "Kimodo", "one-off motions made from words (the Kimodo demo)", "python setup/setup.py kimodo")
+    return rows
+
+
+def cmd_doctor(args):
+    """What of the toolchain this machine has, what each piece is for, and how to set up what's missing."""
+    rows = doctor_rows()
+    for ok, what, why, how in rows:
+        print(("  ok   " if ok else "  --   ") + what)
+        print("         for " + why + ("" if ok or not how else "\n         set up: " + how))
+    missing = sum(1 for r in rows if not r[0])
+    print("DOCTOR ok (%d of %d there%s)" % (len(rows) - missing, len(rows), "; what's missing only matters for what it's for" if missing else ""))
+
+
 def main():
-    cmds = {"kimodo": cmd_kimodo, "kimodo-patch": cmd_kimodo_patch}
+    cmds = {"kimodo": cmd_kimodo, "kimodo-patch": cmd_kimodo_patch, "doctor": cmd_doctor}
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
         print(__doc__)
         return

@@ -390,5 +390,59 @@ func _initialize() -> void:
 	if z_fired != 1 or broke_n[0] != 2 or not dead or story.get("dead") or not near(v(), 0.5, 0.001):
 		bad("at nothing (fired %d, broke %d, dead %s, back at %.2f)" % [z_fired, broke_n[0], dead, v()])
 
+	# 9. a save on disk (the Story's save_game and load_game): the meter as it was at the save's checkpoint (not raised to
+	# revive_to as coming back from the dead is), and the flashlight's charge and spare batteries as they were
+	san.set("zero_dies", false)
+	story.call("delete_save", 4)
+	san.set_to(0.3)
+	torch.set("battery", 120.0)
+	torch.set("charge", 0.62)
+	torch.set("spares", 2)
+	torch.visible = true
+	var wrote: bool = story.save_game(4)
+	san.set_to(0.9)
+	torch.set("charge", 0.2)
+	torch.set("spares", 0)
+	torch.visible = false
+	var read: bool = story.load_game(4)
+	await frames(3)
+	var at_load := v()
+	var ch := float(torch.get("charge"))
+	var spare_n := int(torch.get("spares"))
+	say("saved", "saved at 0.30 with the flashlight at 0.62 and 2 spares, then 0.90, 0.20 and none: loaded %s, the meter %.2f, the flashlight %.2f with %d spares, on %s" % [
+		read, at_load, ch, spare_n, torch.visible])
+	if not wrote or not read or not near(at_load, 0.3, 0.02) or absf(ch - 0.62) > 0.02 or spare_n != 2 or not torch.visible:
+		bad("a save (wrote %s, loaded %s, %.2f, %.2f, %d, on %s)" % [wrote, read, at_load, ch, spare_n, torch.visible])
+	torch.set("battery", 0.0)
+	story.call("delete_save", 4)
+
+	# 10. a scare added since the start is heard at once: by Sanity (which looked round every 2 s), the Fear node and the
+	# director (which never did)
+	var fear := Node.new()
+	fear.name = "Fear"
+	fear.set_script(load(S + "fear.gd"))
+	main.add_child(fear)
+	var dr2 := Node.new()
+	dr2.set_script(load(S + "dread.gd"))
+	main.add_child(dr2)
+	await frames(5)
+	var late := Node.new()
+	late.set_script(made("extends Node\nsignal scared\nfunc _ready() -> void:\n\tadd_to_group(\"hs_scare\")\n"))
+	main.add_child(late)
+	await frames(2)
+	san.set_to(1.0)
+	var f0 := float(fear.get("level"))
+	var d0 := float(dr2.get("intensity"))
+	late.emit_signal("scared")
+	await frames(1)
+	var dv := 1.0 - v()
+	var df := float(fear.get("level")) - f0
+	var dd := float(dr2.get("intensity")) - d0
+	say("late", "a scare added after the start, its first scare: the meter down %.2f, the Fear node up %.2f, the director up %.2f" % [dv, df, dd])
+	if dv < 0.05 or df < 0.05 or dd < 0.05:
+		bad("a scare added late (the meter %.2f, the Fear node %.2f, the director %.2f)" % [dv, df, dd])
+	for n in [fear, dr2, late]:
+		n.queue_free()
+
 	print("SANITY result " + JSON.stringify({"errors": errors}))
 	quit()

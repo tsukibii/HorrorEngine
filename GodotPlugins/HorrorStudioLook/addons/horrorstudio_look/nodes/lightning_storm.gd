@@ -10,19 +10,19 @@
 class_name HSLightningStorm
 extends Node3D
 
-@export_range(0.0, 600.0) var every: float = 45.0
-@export_range(0.0, 20.0) var strength: float = 4.0
+@export_range(0.0, 600.0) var every: float = 45.0   ## a strike every this many seconds, jittered (0: only when fire() is called)
+@export_range(0.0, 20.0) var strength: float = 4.0   ## the flash's light at its brightest
 @export_range(0, 2) var restrikes: int = 2        ## re-brightenings on the glow (none counts as a flash of its own)
 @export_range(0.0, 10.0) var km: float = 1.5      ## how far off: the thunder 3 s a kilometre after the flash
 @export_range(0.0, 1.0) var reduce: float = 1.0   ## the players' setting: 1 full, 0 no flash (the thunder stays)
-@export var color := Color(0.78, 0.84, 1.0)
-@export var thunder: AudioStream
-@export var thunder_db := 0.0
-@export var bus := "Master"
+@export var color := Color(0.78, 0.84, 1.0)   ## the flash's colour
+@export var thunder: AudioStream   ## the thunder's sound, played Km × 3 s after the flash (none: no thunder)
+@export var thunder_db := 0.0   ## the thunder's loudness in dB
+@export var bus := "Master"   ## the audio bus the thunder plays on
 @export var figure: Node3D                        ## shown only while the flash lights them
 @export var figure_times: int = 0                 ## in this many strikes (0: every one)
-@export var seed: int = 1
-@export_range(0.0, 120.0) var preview_every: float = 0.0
+@export var seed: int = 1   ## the strikes' timing and shape: another number, another storm
+@export_range(0.0, 120.0) var preview_every: float = 0.0   ## strikes in the editor too, every this many seconds (0: none: a flashing viewport is hard to work in)
 var storm: HSLightning = null
 var _key := 0
 

@@ -46,8 +46,11 @@ try {
   const back = await (await page.request.get(URL + "api/clothes/my_outfits.json")).json();
   const saved = back.outfits?._wardrobetest;
   say(Array.isArray(saved) && saved.length === 4 && saved[3][3]?.folds?.seed === 3, "saved to My outfits, the shorts' folds with it (the Studio's route reads it)");
-  const thumb = await page.request.get(URL + "api/clothes/thumbs/wardrobetest.jpg");
-  say(thumb.ok() && (await thumb.body()).length > 3000, "its picture saved for the Studio's card");
+  const pic = back.meta?._wardrobetest?.pic, thumb = await page.request.get(URL + `api/clothes/thumbs/${pic}.jpg`);
+  say(pic === "mine_wardrobetest" && thumb.ok() && (await thumb.body()).length > 3000, `its picture saved for the Studio's card, under a name of its own (${pic}): never a preset's`);
+  const preset = Object.keys(JSON.parse(readFileSync(new globalThis.URL("../../Content/Studio/Clothes/outfits.json", import.meta.url), "utf8")).outfits)[0];
+  const clash = await page.request.post(URL + "api/clothes/myoutfits", { data: JSON.stringify({ name: preset.toUpperCase(), list: saved }) });
+  say(clash.status() === 400, `a name like a preset's in another case (${preset.toUpperCase()}) refused: its picture is tracked`);
   await page.evaluate(() => { document.querySelector("#worn details:not([open])")?.setAttribute("open", ""); });
   await page.screenshot({ path: process.env.WARDROBE_SHOT || "/dev/null" }).catch(() => {});
   const del = await (await page.request.post(URL + "api/clothes/myoutfits", { data: JSON.stringify({ delete: "_wardrobetest" }) })).json();

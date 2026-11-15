@@ -60,7 +60,7 @@ async function loadGames() {
   await loadGame(sel.value);
 }
 async function loadGame(game) {
-  B.game = game; localStorage.setItem("builder.game", game);
+  B.game = game; localStorage.setItem("builder.game", game); forgetUndo(); B.dirty = false;
   const j = await api("/api/story/" + encodeURIComponent(game));
   B.story = j.story; B.mtime = j.mtime;
   const sel = $("#level"); sel.innerHTML = "";
@@ -75,7 +75,7 @@ async function loadGame(game) {
   await setupFigure();
 }
 function openLevel(name) {
-  B.level = name; B.target = name;
+  B.level = name; B.target = name; forgetUndo();
   B.model = BM.levelToModel(B.story, name);
   afterLoad(`level ${name}: ${B.model.rooms.length} rooms`);
 }
@@ -111,9 +111,17 @@ function frame() {                         // fit the plan in view
 }
 
 // ---- undo ----
-const snapshot = () => JSON.stringify({ m: B.model, f: B.floor });
+// (a snapshot carries the level it's of: a layout or another game's level opened as a new one comes back under its
+//  own name, and opening another level or game starts the history again, so Undo never brings one level's rooms back
+//  under another's name for Save to write there)
+const snapshot = () => JSON.stringify({ m: B.model, f: B.floor, t: B.target });
 function pushUndo() { if (!B.model) return; B.undo.push(snapshot()); if (B.undo.length > 120) B.undo.shift(); B.redo = []; }
-function restore(s) { const o = JSON.parse(s); B.model = o.m; B.floor = Math.min(o.f, B.model.floors.length - 1); B.sel = null; renderFloors(); renderOutside(); changed(); }
+function forgetUndo() { B.undo = []; B.redo = []; }
+function restore(s) {
+  const o = JSON.parse(s); B.model = o.m; B.floor = Math.min(o.f, B.model.floors.length - 1); B.sel = null;
+  if (o.t && o.t !== B.target) { B.target = o.t; const sel = $("#level"); if ([...sel.options].some(x => x.value === o.t)) sel.value = o.t; }
+  renderFloors(); renderOutside(); changed();
+}
 function undo() { if (!B.undo.length) return; B.redo.push(snapshot()); restore(B.undo.pop()); }
 function redo() { if (!B.redo.length) return; B.undo.push(snapshot()); restore(B.redo.pop()); }
 
@@ -923,10 +931,13 @@ window.addEventListener("mousemove", e => {
 window.addEventListener("mouseup", () => { if (lookDrag) { const o = lookDrag.orbit; lookDrag = null; if (!o) changedPlayer(); } });
 
 // ---- keys on the page ----
+addEventListener("beforeunload", e => { if (B.dirty) { e.preventDefault(); e.returnValue = ""; } });   // unsaved: leaving asks, as the street builder does
+document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s" && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) { e.preventDefault(); save(false); } });
 document.addEventListener("keydown", e => {
   if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName) || e.target === view) return;
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(false); return; }
   if (e.key === "Delete" || e.key === "Backspace") { removeSel(); e.preventDefault(); return; }
   if (e.key === "Escape") { B.tool = "select"; B.measure = null; renderTools(); B.sel = null; changed(false); return; }
   const kk = B.sel && B.sel.kit && B.model.kits.find(q => q.id === B.sel.kit);
@@ -953,6 +964,7 @@ async function boot() {
   BM.KITS.presets = LIBRARY.kit; BM.KITS.props = LIBRARY.props;
   const css = document.createElement("style"); css.textContent = KIT_CSS; document.head.append(css);
   $("#game").onchange = async () => {
+    if (B.dirty && !confirm(`Leave ${B.game}'s ${B.target}? Its unsaved changes are lost (Cancel, then Save, keeps them).`)) { $("#game").value = B.game; return; }
     if ($("#game").value !== "__newset") return loadGame($("#game").value);
     const name = prompt("The new set's name (lower-case, _ between words): the place, like studio_apartment", "studio_apartment");
     if (!name || !/^[a-z][a-z0-9_]*$/.test(name)) { $("#game").value = B.game; return; }

@@ -64,6 +64,36 @@ function mapInto(S, f) {
   forAnswers(S, o => { if (isObj(o.go) && o.go.node) { const t = f(o.go.node); if (t) o.go.node = t; else delete o.go; } });
   if (S.game && S.game.start) S.game.start = f(S.game.start) || S.game.start;
 }
+// a card taken out of the flow (the board's Delete, the Inspector's): what led to it is cut there (a stub on its card,
+// a warning while it's sliced; left pointing at a card that's gone, every one was an error), an answer that jumped to
+// it goes on to its next line again, it leaves its acts (an empty act goes). Never the start, nor a card a choice reads
+// the result of or a death retries from (those are changed first: the story check wants them). -> "" done, else why not
+export function removeCard(S, id) {
+  if (!(S.flow || {})[id]) return `no card ${id}`;
+  if (S.game && S.game.start === id) return `${id} is the start: make another card the start first`;
+  const reads = Object.keys(S.flow).filter(k => S.flow[k].of === id);           // a choice by its result: nothing to read once it's gone
+  if (reads.length) return `${reads.join(", ")} ${reads.length > 1 ? "read" : "reads"} ${id}'s result: change or delete ${reads.length > 1 ? "those choices" : "that choice"} first`;
+  const retries = Object.keys(S.flow).filter(k => S.flow[k].retry === id);      // a death has to say where its retry goes back to
+  if (retries.length) return `${retries.join(", ")} ${retries.length > 1 ? "retry" : "retries"} from ${id}: point ${retries.length > 1 ? "their" : "its"} retry at another card first`;
+  delete S.flow[id];
+  for (const n of Object.values(S.flow)) { if (n.next === id) n.next = null; for (const o of n.options || []) if (o.to === id) o.to = ""; }
+  forAnswers(S, o => { if (isObj(o.go) && o.go.node === id) delete o.go; });
+  if (S.frames) { for (const f of S.frames) f.nodes = (f.nodes || []).filter(n => n !== id); S.frames = S.frames.filter(f => f.nodes.length); if (!S.frames.length) delete S.frames; }
+  return "";
+}
+// a card's id changed everywhere it's named: every arrow into it (mapInto), a choice's `of`, a death's retry, the acts.
+// `taken`: every id the file has (refs.js allIds: they're unique across it). -> "" done, else why not
+export function renameCard(S, old, nid, taken = new Set()) {
+  if (!(S.flow || {})[old]) return `no card ${old}`;
+  if (!/^[a-z][a-z0-9_]*$/.test(nid || "")) return "an id is lower-case letters, digits and _, starting with a letter";
+  if (nid === old) return "";
+  if (S.flow[nid] || taken.has(nid)) return `${nid} is already used in this file (ids are unique across it)`;
+  S.flow[nid] = S.flow[old]; delete S.flow[old];
+  mapInto(S, t => (t === old ? nid : t));
+  for (const n of Object.values(S.flow)) { if (n.of === old) n.of = nid; if (n.retry === old) n.retry = nid; }
+  for (const f of S.frames || []) f.nodes = (f.nodes || []).map(n => (n === old ? nid : n));
+  return "";
+}
 // two cards (scenes or tasks) trade places in the flow: what led to each leads to the other, each goes on where the
 // other went, and each takes the other's place on the board and in the acts
 export function swapNodes(S, a, b) {

@@ -16,14 +16,14 @@ const DEAD_AT := 0.03
 const WARM := 2100.0
 
 @export var battery := 0.0                      ## seconds of light from full; 0: it never runs down
-@export_range(0.0, 1.0) var charge := 1.0
-@export_enum("bulb", "led") var kind := "bulb"
-@export_range(0.0, 1.0) var low_at := 0.25
+@export_range(0.0, 1.0) var charge := 1.0   ## how full the batteries are at the start
+@export_enum("bulb", "led") var kind := "bulb"   ## a bulb (dimmer, warmer and shorter as it empties) or an LED (full to Low At, then a low mode)
+@export_range(0.0, 1.0) var low_at := 0.25   ## the charge at which it starts to fail
 @export var spares := 0                         ## sets of batteries in the pocket
-@export var change_seconds := 2.0
+@export var change_seconds := 2.0   ## seconds of dark while a spare set goes in
 @export var low_says := ""                      ## the line when it runs low ("It's getting dim.")
 @export var low_task := ""                      ## a task it adds then, "id: what it says"
-@export var dead_says := ""
+@export var dead_says := ""   ## a line when it dies
 
 var is_dead := false
 var changing := false
@@ -40,9 +40,25 @@ var _color := Color.WHITE
 
 func _ready() -> void:
 	add_to_group("hs_no_zone")                   # the Look plugin's light zones leave it alone: it goes everywhere
+	add_to_group("hs_saves")                     # (the Story's save_game: its charge, its spares, on or off)
 	_full = light_energy
 	_range = spot_range
 	_color = light_color
+
+
+## the Story's save_game and load_game: as it is when the save's written (dying never put a battery back, so neither
+## does a checkpoint)
+func save_state() -> Dictionary:
+	return {"charge": charge, "spares": spares, "on": visible}
+
+
+func load_state(d: Dictionary) -> void:
+	charge = clampf(float(d.get("charge", charge)), 0.0, 1.0)
+	spares = int(d.get("spares", spares))
+	is_dead = battery > 0.0 and charge <= DEAD_AT
+	visible = bool(d.get("on", visible)) and not is_dead
+	_low_t = null if charge >= low_at else _T
+	light_energy = _full
 
 
 ## F: on or off (dead, or the batteries going in: a click)

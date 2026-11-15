@@ -19,7 +19,7 @@ extends Resource
 @export_group("Eyes")
 @export_enum("default", "glow", "black", "void", "white", "blind", "bloodshot", "spiral", "hearts", "star", "slit", "cross", "dilated", "pinprick") var eyes: String = "default"   ## her own eyes (default) or an eye look (HSEyeFx.LOOKS)
 @export var eye_color: Color = Color(0, 0, 0, 0)          ## the look's colour in place of its own (see-through: the look's): the glow's, the hearts', the spiral's
-@export_range(0.0, 1.0) var eye_amount: float = 1.0
+@export_range(0.0, 1.0) var eye_amount: float = 1.0   ## how much of the eye look: 0 her own eyes, 1 all of it
 @export_enum("both", "L", "R") var eye_side: String = "both"   ## one eye only
 @export_group("Under the cloak")
 @export var eyes_show: bool = false                       ## cloaked, her eyes are left to see (on by itself when Eyes isn't default)

@@ -24,16 +24,18 @@ signal sat(seat: Node)                  ## sat down or lay down (seat.gd)
 signal stood                            ## up again
 signal gasped                           ## you held your breath too long
 signal hit(by: Node, kind: String)      ## someone's punch or swing landed on you (motion.gd's blows, a marker's Attack)
+signal scared                           ## a blow landed: a scare, heard as any is (the player is in the group hs_scare)
 
 @export var walk_speed := 1.6          ## metres a second
-@export var run_speed := 3.2
+@export var run_speed := 3.2   ## metres a second with Shift
 @export var mouse_turn := 0.0025       ## radians a pixel
 @export var reach := 2.0               ## how far E reaches
-@export var gravity := 9.8
+@export var gravity := 9.8   ## how fast you fall, metres a second squared
 @export var step_height := 0.5         ## the highest step it walks up
 @export var breath_secs := 8.0         ## how long you can hold your breath (Space)
 @export var gasp_sound := "breath_02"  ## off the shelf: the gasp when you can't any longer
 @export var settle_secs := 0.35        ## how long the eye takes down onto a seat and up again (0: at once)
+@export var prompts := true            ## E's prompt and ring over what you can use (Open, Take, Read, Sit...), on the scene's HSHud
 
 var pitch := 0.0
 var steps := Footsteps.new()
@@ -56,6 +58,10 @@ var _seat_yaw := 0.0                    # the way the seat faces, and how far yo
 var _look_side := PI
 var _look_lo := -1.4
 var _look_hi := 1.4
+var _prompt_t := 0.0                    # E's prompt: looked at ten times a second
+var _prompt_mine := []                  # [kind, verb, name] this put on the HUD (it takes off only its own: a conversation's is the talk box's)
+var _hud: Node = null
+var _hud_wait := 0.0                    # seconds of game time before the HUD's looked for again (none found)
 @onready var eye: Camera3D = $Eye
 @onready var aim: RayCast3D = $Eye/Aim
 @onready var torch: SpotLight3D = $Eye/Flashlight
@@ -63,6 +69,7 @@ var _look_hi := 1.4
 
 func _ready() -> void:
 	add_to_group("hs_player")
+	add_to_group("hs_scare")                 # a blow on you is a scare: the Fear node, the director and Sanity hook this group's `scared`
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	aim.target_position = Vector3(0, 0, -reach)
 	aim.add_exception(self)
@@ -125,13 +132,16 @@ func struck(by: Node, kind: String) -> void:
 	_knock = 1.0
 	var from := (by as Node3D).global_position - global_position if by is Node3D else -global_basis.z
 	_knock_side = 1.0 if global_basis.x.dot(from) < 0.0 else -1.0       # (hit from your left, your head goes right)
-	get_tree().call_group("hs_scare", "scared", by)
+	scared.emit()                            # (the Fear node, the night's director and the Sanity node: they listen to `scared` signals)
+	get_tree().call_group("hs_scare", "scared", by)   # (and a script of your own with a scared(by) method)
 	hit.emit(by, kind)
 
 
 ## your breath: held while Space is down (the Fear node's breathing stops), up to breath_secs; then a gasp, loud, and
 ## a few seconds before you can again
 func _process(dt: float) -> void:
+	if prompts:
+		_prompt_tick(dt)
 	if _knock > 0.0:                                 # a blow's jolt: the view rolled aside and tipped back, settling
 		_knock = maxf(0.0, _knock - dt / 0.35)
 		var kk := _knock * _knock
@@ -278,6 +288,89 @@ func use() -> Node:
 		if is_instance_valid(l):
 			l.used(self)
 	return n
+
+
+## what E would use now, and what its prompt says: [kind ("use", "locked" or "none"), the verb, its name]. A script of
+## your own says its own words with use_prompt(by) -> [verb, name] (or [verb, name, "locked"])
+func aimed() -> Node:
+	aim.force_raycast_update()
+	var n: Node = aim.get_collider()
+	while n != null and not n.has_method("use"):
+		n = n.get_parent()
+	return n
+
+
+func prompt_for(n: Node) -> Array:
+	if n == null or seat != null or (str(n.name) == "_Talk" and n.get("npc") != null):   # (a character's talk body: the Markers' talk box says "Talk")
+		return ["none", "", ""]
+	if n.has_method("use_prompt"):
+		var w: Array = n.call("use_prompt", self)
+		return ["locked" if w.size() > 2 and str(w[2]) == "locked" else "use", str(w[0]) if w.size() > 0 else "Use", str(w[1]) if w.size() > 1 else ""]
+	var logics := logic_of(n)
+	var own = n.get("logic")                     # a plain mesh made usable by a Logic: its reach box (logic_body.gd) carries it
+	if own is Node and own.has_method("holds"):
+		logics.append(own)
+		if own.has_method("thing_node") and own.thing_node() != null:
+			n = own.thing_node()
+	var nm := ""
+	for k in ["label", "title"]:
+		if n.get(k) is String and str(n.get(k)) != "":
+			nm = str(n.get(k))
+			break
+	for l in logics:                             # a Logic whose flags aren't so: it would say no (and why, when tried)
+		if l.has_method("holds") and not l.holds():
+			return ["locked", "Locked", nm]
+	if n.get("locked_by") != null and n.has_method("lock"):          # a door (door.gd): its lock, as its use() decides it
+		if bool(n.get("open")):
+			return ["use", "Close", nm]
+		var lk := str(n.call("lock"))
+		if lk != "":
+			var st := get_tree().get_first_node_in_group("hs_story")
+			var can: bool = st != null and bool((lk.substr(5) != "never" and st.is_set(lk.substr(5))) if lk.begins_with("flag:") else st.has(lk))
+			if not can:
+				return ["locked", "Locked", nm]
+		return ["use", "Open", nm]
+	if n.get("was_read") != null:
+		return ["use", "Read", nm]
+	if n.get("pose") is String and "furniture" in n:                 # a seat (seat.gd)
+		return ["use", {"lying": "Lie down", "hiding": "Hide"}.get(str(n.get("pose")), "Sit"), nm]
+	if n.has_signal("picked"):                                       # a pickup, food
+		return ["use", "Take", nm if nm != "" else str(n.get("item")).replace("_", " ") if n.get("item") is String else ""]
+	return ["use", "Use", nm]
+
+
+# E's prompt on the scene's HUD (the UI plugin's HSHud), what's aimed at as prompt_for() says it; a conversation's own
+# prompt (the Markers' talk box) comes first: one that isn't this one's is never covered or taken off
+func _prompt_tick(dt: float) -> void:
+	_prompt_t -= dt
+	if _prompt_t > 0.0:
+		return
+	_prompt_t = 0.1
+	if _hud == null or not is_instance_valid(_hud) or not _hud.is_inside_tree():
+		_hud = null
+		_hud_wait -= 0.1
+		if _hud_wait > 0.0:                                         # (none a moment ago: looked for again a second of game time on)
+			return
+		_hud_wait = 1.0
+		for c in get_tree().root.find_children("*", "CanvasLayer", true, false):
+			if c.has_method("set_cursor") and c.get("cursor_kind") != null:
+				_hud = c
+				break
+		if _hud == null:
+			return
+	var p: Array = prompt_for(aimed()) if not ended() else ["none", "", ""]
+	var cur := [str(_hud.get("cursor_kind")), str(_hud.get("cursor_label")), str(_hud.get("cursor_name"))]
+	if p[0] == "none":
+		if not _prompt_mine.is_empty() and cur == _prompt_mine:
+			_hud.set_cursor("none", "", null)
+		_prompt_mine = []
+		return
+	if cur[0] != "none" and cur != _prompt_mine:                # someone else's prompt up (a conversation's): theirs
+		_prompt_mine = []
+		return
+	if cur != p:
+		_hud.set_cursor(p[0], p[1], p[2] if p[2] != "" else null)
+	_prompt_mine = p
 
 
 ## the Logic nodes of a thing (the group hs_logic: anything with thing_node(), allows(by) and used(by))

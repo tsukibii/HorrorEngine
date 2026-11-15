@@ -350,8 +350,9 @@ for (const [g, [a, b]] of Object.entries(INFO.groups)) {
     shapeSet[i] = slider(d, i, `${i}: ${INFO.labels[i] || ""}`, -3, 3, 0.05, 0, "", (v, row) => { st.shape[i] = v; row.classList.toggle("moved", v !== 0); changed("body"); }, INFO.labels[i]);
   $("#shapeRows").append(d);
 }
-for (const b of document.querySelectorAll(".bases button")) b.onclick = () => { st.base = +b.dataset.base; set.base(st.base); changed("body"); };   // (the base alone: the presets, what its feminine end is, stay as picked)
-$("#resetShape").onclick = () => { st.shape.fill(0); shapeSet.forEach(f => f(0)); document.querySelectorAll(".row.moved").forEach(r => r.classList.remove("moved")); changed("body"); };
+for (const b of document.querySelectorAll(".bases button")) b.onclick = () => { st.base = +b.dataset.base; set.base(st.base); UNSAVED = true; changed("body"); };   // (the base alone: the presets, what its feminine end is, stay as picked)
+$("#resetShape").onclick = () => { if (st.shape.some(v => v) && !confirm("Put all 45 of MHR's shape sliders back to 0?")) return;
+  st.shape.fill(0); shapeSet.forEach(f => f(0)); document.querySelectorAll(".row.moved").forEach(r => r.classList.remove("moved")); UNSAVED = true; changed("body"); };
 
 function weights() {                                   // the base blended in, the sliders on top
   // the body between the two bases (0 halfway between them, not MHR's heavy average); the head and the hands toward the
@@ -529,7 +530,7 @@ async function loadSkin() {
   }
   usePhoto.disabled = !SKIN;
   await TOUCH.load(`api/skin/${encodeURIComponent(WHO)}?paint=1&v=${Date.now()}`, `api/skin/${encodeURIComponent(WHO)}?touch=1&v=${Date.now()}`, `api/skin/${encodeURIComponent(WHO)}?pigment=1&v=${Date.now()}`);
-  touchState(); skinLook();
+  TOUCH_SAVED = true; touchState(); skinLook();
 }
 // the light on the skin (/shared/skinlight.js, after HumanShaders): on or off to compare, and its numbers; saved with
 // the character, and carried by the export for the desk and Unreal
@@ -601,7 +602,7 @@ photoBtn.onclick = async () => {
     const r = await api("api/face/skin", { name: WHO, weights: weights(), settings: { ...st.face, relative: $("#relative").checked }, side, size: st.skin.size });
     const t = r.report.tone_bgr;                       // the body takes the picture's own skin tone (the procedural skin starts from it)
     if (t) { st.skin.tone = "#" + [t[2], t[1], t[0]].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, "0")).join(""); toneIn.value = st.skin.tone; }
-    await loadSkin(); st.skin.photo = usePhoto.checked = !!SKIN; skinLook();
+    await loadSkin(); st.skin.photo = usePhoto.checked = !!SKIN; skinLook(); UNSAVED = true;   // (its tone may be the picture's now)
     status(`skin: ${r.path} (${r.report.triangles} triangles from ${r.report.picture})`, "ok");
   } catch (e) { status(e.message, "bad"); }
 };
@@ -635,7 +636,7 @@ const slugOf = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^
 function drawOutfits() {
   outfitTabs.replaceChildren(...OUTFIT_GROUPS.map(([g, label]) => { const b = el("button", { textContent: label, className: g === OUTFIT_GROUP ? "on" : "" }); b.dataset.group = g; b.onclick = () => { OUTFIT_GROUP = g; drawOutfits(); }; return b; }));
   outfitGrid.replaceChildren(...Object.keys(OUTFITS).filter(n => outfitGroup(n) === OUTFIT_GROUP).map(n => {
-    const img = el("img", { src: `api/clothes/thumbs/${slugOf(n)}.jpg`, alt: "", loading: "lazy" }); img.onerror = () => img.remove();   // no picture yet: the name alone
+    const img = el("img", { src: `api/clothes/thumbs/${OUTFIT_META[n]?.pic || slugOf(n)}.jpg`, alt: "", loading: "lazy" }); img.onerror = () => img.remove();   // no picture yet: the name alone (one of your own: its own picture, never a preset's)
     const m = OUTFIT_META[n] || {}, b = el("button", { className: "card" + (n === WORN_OUTFIT ? " on" : ""), title: m.after ? `${n}\nafter ${m.after}` : n }, img, el("span", { textContent: n }));
     b.dataset.outfit = n; b.onclick = () => wearOutfit(n); return b;
   }));
@@ -1126,7 +1127,7 @@ function dropGarment() {                               // let go: the new value,
   const c = st.clothes.find(x => x.design === m.userData.design); if (!c) return;
   setEdit(c, m.userData.h, m.userData.h.value + d / m.userData.h.rate);
   if (EDITING) EDIT_DIRTY = true;
-  drawWorn(); refresh();
+  UNSAVED = true; drawWorn(); refresh();
 }
 function shapeRows(c) {                                // the same lines as sliders, and how loose it sits
   const box = keepOpen(el("details", {}, el("summary", { textContent: "Shape" })), c.design + ":shape"), p = pieceOf(c);
@@ -1171,7 +1172,7 @@ function drawWorn() {
   $("#worn").replaceChildren(...st.clothes.map((c, i) => {
     const col = el("input", { type: "color", value: c.color }), x = el("button", { textContent: "×", title: "take it off" });
     col.oninput = () => { c.color = col.value; restyle(c); };
-    x.onclick = () => { st.clothes.splice(i, 1); if (EDITING) EDIT_DIRTY = true; drawWorn(); if (typeof drawLibrary === "function") drawLibrary(); refresh(); };
+    x.onclick = () => { st.clothes.splice(i, 1); if (EDITING) EDIT_DIRTY = true; UNSAVED = true; drawWorn(); if (typeof drawLibrary === "function") drawLibrary(); refresh(); };
     if (isLib(c)) return el("div", {}, el("div", { className: "row" }, el("span", { textContent: (LIB.has.get(c.library)?.label || c.library) + " (library)" }), col, x), libRows(c));
     return el("div", {}, el("div", { className: "row" }, el("span", { textContent: DESIGNS[c.design]?.label || c.design }), col, x), shapeRows(c),
               ...(DESIGNS[c.design]?.piece?.drape ? [hangRows(c)] : []), lookRows(c));
@@ -1181,7 +1182,7 @@ addBtn.onclick = () => {
   const design = designSel.value; if (!design) return;
   st.clothes = st.clothes.filter(c => c.design !== design).concat([{ design, color: gColor.value }]);
   if (EDITING) EDIT_DIRTY = true;
-  drawWorn(); refresh();
+  UNSAVED = true; drawWorn(); refresh();
 };
 function wearOutfit(name) {                           // the outfit's garments in its order, and the accessories it brings (a hat, sunglasses) in place of the kinds it brings
   st.clothes = (OUTFITS[name] || []).map(([design, color, look, edit]) => ({ design, color: color || DESIGNS[design]?.color || "#888888", ...(look || {}), ...(edit ? { edit: { ...edit } } : {}) }));   // an outfit's own edit (a fit)
@@ -1197,7 +1198,7 @@ function wearOutfit(name) {                           // the outfit's garments i
   }
   WORN_OUTFIT = name; drawOutfits();
   if (EDITING) EDIT_DIRTY = true;
-  drawWorn(); refresh();
+  UNSAVED = true; drawWorn(); refresh();
 }
 clothesExp.onclick = async () => {
   if (EDITING) setEditing(false);                      // written as cut and hung, never as lines
@@ -2316,6 +2317,11 @@ $("#wire").onchange = () => { material.wireframe = $("#wire").checked; };
 // right-click has no menu in the view, the middle button neither scrolls nor pastes (Linux's primary selection),
 // Backspace and Alt+arrows never go back unless you're typing; and leaving with unsaved changes asks first
 let UNSAVED = false;
+// (anything here not saved: the settings, the touch-up, the paint layers, the salon's own page. Another character, New
+//  and Import ask first, as leaving the page does: they all replace what's shown)
+const dirty = () => UNSAVED || !TOUCH_SAVED || !!(LAY && !LAY.saved()) || !!SALONF.contentWindow?.__salon?.unsaved;
+const mayLeave = what => !WHO || !dirty() || confirm(`${WHO} has changes that aren't saved. ${what} anyway? They'll be lost (Cancel, then Save, keeps them).`);
+window.__unsaved = () => ({ who: WHO, dirty: dirty(), settings: UNSAVED, touch: !TOUCH_SAVED });   // (for the checks)
 for (const ev of ["mousedown", "mouseup", "auxclick", "pointerdown", "pointerup"])
   addEventListener(ev, e => { if (e.button === 3 || e.button === 4) { e.preventDefault(); e.stopPropagation(); } }, true);
 view.addEventListener("contextmenu", e => e.preventDefault());
@@ -2327,10 +2333,7 @@ addEventListener("keydown", e => {
   if (e.key === "Backspace" || e.key === "BrowserBack" || e.key === "BrowserForward" || (e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight"))) e.preventDefault();
 }, true);
 for (const ev of ["input", "change"]) $("aside").addEventListener(ev, () => { UNSAVED = true; });
-addEventListener("beforeunload", e => {
-  const salon = SALONF.contentWindow?.__salon?.unsaved;
-  if (UNSAVED || salon || !TOUCH_SAVED || (LAY && !LAY.saved())) { e.preventDefault(); e.returnValue = ""; }
-});
+addEventListener("beforeunload", e => { if (dirty()) { e.preventDefault(); e.returnValue = ""; } });
 // ---- the sculpt's sliders (Body, Sculpt) and its handles on the body: a circle on each feature (its twin across the
 // middle), dragged; the sliders it moves follow the pointer as closely as their own motions there allow, and light up
 if (LMK) {
@@ -2362,7 +2365,8 @@ const animeBust = slider($("#animeRows"), "animeBust", "Bust", GW.SPAN.bust[0], 
 const animeIn = $("#animeRows").lastElementChild.querySelector("input");
 if (sculptSet.bust) { const plain = sculptSet.bust; sculptSet.bust = v => { plain(v); animeBust(v); }; }   // (whatever sets the sculpt's slider sets this one: a circle dragged, Reset, a character opened)
 function sculptAll() { for (const id in sculptSet) { const v = st.sculpt[id] || 0; sculptSet[id](v); sculptRow[id].classList.toggle("moved", v !== 0); } }
-$("#resetSculpt").onclick = () => { st.sculpt = {}; sculptAll(); compose(); };
+$("#resetSculpt").onclick = () => { if (Object.values(st.sculpt).some(v => v) && !confirm("Put every sculpt slider back to 0 (the lips' shape too)?")) return;
+  st.sculpt = {}; sculptAll(); UNSAVED = true; compose(); };
 // ---- monster mode (DECISIONS 2026-11-10, night): the sliders' and the circles' reach three times a person's, the height
 // from 0.4 to 3.5 m, the Creature group shown, creatures to start from (grow.js MONSTERS). Off: what's past a person's
 // range comes back into it (asked first when something is)
@@ -2632,7 +2636,7 @@ resize();
 // ---- the touch-up: paint on the body over the photo and the procedural skin (touchup.js) ------------------------------
 const TOUCH = new TouchUp();
 SKU.uTouchPaint.value = TOUCH.paintTex; SKU.uTouchMask.value = TOUCH.maskTex; SKU.uTouchPig.value = TOUCH.pigTex;
-let PAINTING = false, STROKE = false, TOUCH_SAVED = true;
+let PAINTING = false, STROKE = false, TOUCH_SAVED = true, SAVE_TOUCH = null;   // SAVE_TOUCH: the touch-up's Save (the page's Save and Export call it too)
 const ray = new THREE.Raycaster();
 function touchAt(e, first) {                           // a dab where the pointer is on the body; false when it's off the body
   const r = renderer.domElement.getBoundingClientRect();
@@ -2695,7 +2699,7 @@ function touchState() {
         save = el("button", { id: "touchSave", textContent: "Saved" });
   undo.onclick = () => { if (TOUCH.back()) { TOUCH_SAVED = false; touchState(); } };
   clear.onclick = () => { if (!confirm("Clear all the touch-up?")) return; TOUCH.clear(); TOUCH_SAVED = false; touchState(); };
-  save.onclick = async () => {
+  SAVE_TOUCH = save.onclick = async () => {
     if (!WHO) return status("make or pick a character first", "bad");
     const [p, m, q] = await TOUCH.blobs();
     try {
@@ -2752,7 +2756,7 @@ const teethSet = {};
 // ---- whole looks (looks.js): the eyes, the lips, the teeth and the skin together; a new character starts from one ----
 function useLook(name) {
   const L = LOOKS.LOOKS[name]; if (!L) return;
-  if (L.eyes) { Object.assign(st.eyes, L.eyes); eyeSet.all(); paintEyes(); }
+  if (L.eyes) { Object.assign(st.eyes, LOOKS.lookEyes(st.eyes, L, { ...EYEPAINT.EYE_DEFAULTS, ...EYEFIT }, EL.EYE_LOOKS)); eyeLookMark(); eyeSet.all(); paintEyes(); }   // (an eye look worn taken off first)
   if (L.lips) { Object.assign(st.lips, L.lips); lipSet.all(); }
   if (L.teeth) { Object.assign(st.teeth, L.teeth); teethSet.all(); }
   if (L.skin?.off) { st.skin.proc.on = false; procSet.all(); }
@@ -3707,6 +3711,7 @@ let OPENING = 0;                                      // the latest open(): an e
 async function open(name) {
   const me = ++OPENING;
   WHO = name || null; PICS = []; DELTA = null; REPORT = null; drawSlots();
+  if (WHO) try { localStorage.setItem("studio.who", WHO); } catch (e) { /* no storage: it opens the first next time */ }
   const c = WHO ? await api(`api/people/${encodeURIComponent(WHO)}`) : {};
   if (me !== OPENING) return;                          // another character was picked meanwhile: its own open() sets everything
   FACEBAKE = null; const baked = WHO ? await loadFaceBake(WHO) : null;
@@ -3748,16 +3753,18 @@ async function open(name) {
   await loadSalon().catch(() => null);
   if (me !== OPENING) return;
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
+  if (me === OPENING) UNSAVED = false;                 // as it was saved (opening it set its sliders, which marks them)
   if (me === OPENING && WHO) detect();
 }
 const character = () => ({ base: st.base, headPreset: st.headPreset || undefined, bodyPreset: st.bodyPreset || undefined, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), age: st.age, cute: st.cute, monster: st.monster, anime: st.anime || undefined, creature: st.monster && st.creature ? st.creature : undefined, hairHead: st.hairHead || undefined, hair2: HAIR2?.record(), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, drape: st.drape, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, groom: st.groom, accessories: st.accessories,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
-$("#who").onchange = () => open($("#who").value);
+$("#who").onchange = () => { if (!mayLeave(`Open ${$("#who").value}`)) { $("#who").value = WHO || ""; return; } open($("#who").value); };
 $("#make").onclick = async () => {
   const n = $("#newName").value.trim();
   if (!/^[A-Za-z0-9_-][A-Za-z0-9_.-]*$/.test(n)) return status("a name is letters, digits, _ - .", "bad");
   const exists = [...$("#who").options].some(o => o.value === n);
-  if (exists && !confirm(`${n} exists: start it again from the defaults? (its pictures and a baked face stay)`)) return;
+  if (exists && !confirm(`${n} exists: start it again from the defaults? (its pictures, its baked face, its paint layers, its touch-up, its clothes as they hung and its salon hair stay)`)) return;
+  if (!mayLeave(`Start ${n}`)) return;
   await api(`api/people/${encodeURIComponent(n)}`, {}); $("#newName").value = "";   // a fresh character: the defaults
   await people(n); await open(n); newStart(); useLook(LOOKS.NEW_LOOK);   // a new character starts from the studio's look, on the studio's own head and body (the Presets cards)
   await api(`api/people/${encodeURIComponent(n)}`, character()); UNSAVED = false;
@@ -3768,7 +3775,8 @@ $("#save").onclick = async () => {
   const r = await api(`api/people/${encodeURIComponent(WHO)}`, character()); await LAY.save();
   await api(`api/people/${encodeURIComponent(WHO)}/body.bin`, new Blob([neutralBody()]));   // the salon's head (its face too)
   await saveDrape();                                   // the clothes as they hang
-  status(`saved ${r.path} (its body, for the salon, and its clothes as they hang)`, "ok"); UNSAVED = false;
+  const touch = !TOUCH_SAVED && SAVE_TOUCH; if (touch) await SAVE_TOUCH();   // the touch-up with it: one Save keeps everything
+  status(`saved ${r.path} (its body, for the salon, and its clothes as they hang${touch ? ", and the touch-up" : ""})`, "ok"); UNSAVED = false;
 };
 function objText(head) {                               // metres, Y up, facing +Z; the head cut 0.245 m under its top (as MHR_head.obj)
   const cut = TOP - 0.245 * SCALE, keep = new Int32Array(N).fill(-1), v = [], f = [];
@@ -4466,6 +4474,8 @@ async function exportPackage() {
   if (HAIR2?.worn() && !(await HAIR2.ready())) return status("the hair editor's hair isn't made yet (its tab says why)", "bad");
   await api(`api/people/${encodeURIComponent(WHO)}`, character()); await LAY.save();
   await api(`api/people/${encodeURIComponent(WHO)}/body.bin`, new Blob([neutralBody()])); await saveDrape();
+  if (!TOUCH_SAVED && SAVE_TOUCH) await SAVE_TOUCH();  // (the skin's baked with the strokes on it: the recipe has to carry them)
+  UNSAVED = false;                                     // (all of it saved above: the recipe is read from what's on disk)
   const rec = await api(`api/recipe/${encodeURIComponent(WHO)}`), was = st.expr.slice(), pose = POSE;
   st.expr.fill(0); POSE = "rest"; compose();           // neutral, in MHR's own pose (the T-pose is only the view's)
   const root = new THREE.Scene(); root.name = WHO; root.userData = { studio: rec };
@@ -4501,6 +4511,7 @@ async function recipeOf(file) {                       // a .glb from Export (its
   return (json.scenes || []).map(s => s.extras && s.extras.studio).find(Boolean);
 }
 async function importPackage(file, as) {
+  if (!as && !mayLeave(`Bring back ${file.name}`)) return;
   const rec = await recipeOf(file).catch(e => { status(e.message, "bad"); return null; });
   if (!rec || !rec.files || !rec.files["character.json"]) return status("that file doesn't carry a Studio character (export one with Export for Godot)", "bad");
   let name = as || prompt("Bring it back as", rec.name);
@@ -4531,6 +4542,10 @@ window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, o
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; } };   // bodytest.js, studiotest.js (a landmark on the page)
 const list = await people();
 document.querySelector('#views button[data-v="body"]').classList.add("on");
-await open(list.length ? list[0].name : null);
+{ // the character you had open last time (kept in this browser), else the first that isn't a check's scratch one
+  let last = null; try { last = localStorage.getItem("studio.who"); } catch (e) { /* no storage: the first */ }
+  const first = list.find(p => p.name === last) || list.find(p => !p.name.startsWith("_")) || list[0];
+  if (first) $("#who").value = first.name;
+  await open(first ? first.name : null); }
 </script>
 </body></html>

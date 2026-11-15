@@ -7,7 +7,7 @@
 class_name HSAirZone
 extends Node3D
 
-@export var size := Vector3(4, 3, 4):
+@export var size := Vector3(4, 3, 4):   ## the box in metres, centred on the node: while the eye is inside it, its air
 	set(v):
 		size = v
 		_outline()

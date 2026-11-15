@@ -113,7 +113,18 @@ street dropped into a Director project is a model like any other.</p>
 
 <section id="project">
 <h2><span class="n">2</span>A project</h2>
-<p><b>The quick way.</b> From the studio's folder, one command makes the project with everything below in it:</p>
+<p><b>A whole game to start from.</b> From the studio's folder, give it a name:</p>
+<pre>python tools/horror_game.py new "My Game"</pre>
+<p>It makes <code>~/HorrorGames/My_Game</code> (<code>--to</code> for another folder): everything below, and three scenes
+ready to play with F5. <code>intro.tscn</code> is a black card ("[Artist] presents": its <b>Line</b> your studio's name;
+Godot's own logo isn't shown), then <code>menu.tscn</code>, the main menu (the game's name, Continue, New game, Load game,
+Settings, Quit), then <code>main.tscn</code>, a small room at night with the player, the Story, the HUD, sound, the pause
+menu, saves and a note to read. After a pull in the studio, <code>python tools/horror_game.py update ~/HorrorGames/My_Game</code>
+brings the plugins and the starter's scripts again.</p>
+<p><b>Or with a click.</b> <code>python dashboard.py</code> opens the studio's dashboard; its <b>New game</b> card at the
+top takes the game's name (and your studio's, for the "… presents" card) and <b>Create</b> makes it, its output beside it.
+Your games are listed under it, each with <b>Open in Godot</b> (Godot's editor on it) and <b>Update</b>.</p>
+<p><b>The project alone.</b> One command makes the project with everything below in it and no scenes:</p>
 <pre>python tools/godot_byhand.py new ~/Games/MyGame</pre>
 <div class="cols">
   <div class="card"><h4><code>project.godot</code></h4><p>The studio's plugins switched on (Look, UI, Weapons, Devices, Markers) and the balanced look's settings (§3).</p></div>
@@ -122,22 +133,30 @@ street dropped into a Director project is a model like any other.</p>
   <div class="card"><h4><code>addons/horrorstudio_markers/</code></h4><p>The Markers plugin: the <span class="ui">NPC Markers</span> tab along the bottom of the editor. A character's whole part in the game placed as markers in the 3D view (walk here, talk, sit, grab, vanish), in order, by flags, no code. <a href="../markers/index.html">Its guide</a>.</p></div>
   <div class="card"><h4><code>addons/horrorstudio_weapons/</code>, <code>addons/horrorstudio_devices/</code></h4><p>The double barrel under the camera (<a href="../weapons/index.html">its guide</a>) and the laptop with its shop and parcels (<a href="../laptop/index.html">its guide</a>). Switched on; they do nothing until you put one in a scene.</p></div>
   <div class="card"><h4><code>HumanShaders/</code></h4><p>The skin's and the eyes' textures (MIT). It must sit at the project's root under that name: the plugin looks for <code>res://HumanShaders/</code>.</p></div>
-  <div class="card"><h4><code>starter/</code></h4><p>The first game's scripts: a first-person player, doors, a scare. Yours to change.</p></div>
+  <div class="card"><h4><code>starter/</code></h4><p>The starter kit: a first-person player (with E's prompt over what you can use), the Story (the objective, the to-do list, the pocket, flags, checkpoints and dying), doors, pickups, notes, seats, scares, cues, sound, fear, hunts, sanity, a character's Motion. Yours to change.</p></div>
+  <div class="card"><h4><code>sfx/</code>, <code>music/</code>, <code>kimodo/</code>, <code>animations/</code></h4><p>The sound shelf, the four moods, Kimodo's reader (for a character's moves from <code>.npz</code> clips) and an empty folder to drop those clips into.</p></div>
   <div class="card"><h4><code>exports/</code></h4><p><code>interiors/</code>, <code>streets/</code>, <code>characters/</code>: where the studio's exports go (§4).</p></div>
 </div>
 <p>Open it in Godot 4.7: the Project Manager's <span class="ui">Import</span>, then pick its <code>project.godot</code>.</p>
 <p><b>By hand instead.</b> In the Project Manager, <span class="ui">New Project</span>, the Forward+ renderer. Then copy
-three folders from the studio into the project's folder:</p>
+these folders from the studio into the project's folder (the quick way above does all of it, and the sound shelf and
+the moods besides):</p>
 <table class="keys">
 <tr><td><code>GodotPlugins/HorrorStudioLook/addons/horrorstudio_look</code></td><td>→ <code>addons/horrorstudio_look</code> (the name kept: its scripts load their shaders by that path)</td></tr>
 <tr><td><code>GodotPlugins/HorrorStudioUI/addons/horrorstudio_ui</code></td><td>→ <code>addons/horrorstudio_ui</code> (the HUD and the quest marker)</td></tr>
+<tr><td><code>GodotPlugins/HorrorStudioMarkers/addons/horrorstudio_markers</code></td><td>→ <code>addons/horrorstudio_markers</code> (the NPC Markers, Flags and Things tabs)</td></tr>
+<tr><td><code>GodotPlugins/HorrorStudioWeapons/addons/horrorstudio_weapons</code>, <code>…Devices/addons/horrorstudio_devices</code></td><td>→ <code>addons/</code> under the same names (the double barrel, the laptop)</td></tr>
 <tr><td><code>GodotPlugins/HumanShaders</code></td><td>→ <code>HumanShaders</code>, at the project's root</td></tr>
-<tr><td><code>guides/first_game/starter</code></td><td>→ <code>starter</code> (if you want the first game's scripts)</td></tr>
+<tr><td><code>guides/first_game/starter</code></td><td>→ <code>starter</code> (the starter kit's scripts)</td></tr>
 </table>
-<p>Then <span class="ui">Project → Project Settings → Plugins</span> and tick <b>HorrorStudio Look</b>. The first time
-it's switched on it writes its balanced settings into the project.</p>
+<p>Then <span class="ui">Project → Project Settings → Plugins</span> and tick each <b>HorrorStudio</b> plugin. The
+first time the Look plugin is switched on it writes its balanced settings into the project.</p>
 <div class="tip"><b>After a pull of the studio,</b> the add-ons in your project are still the old copies. To bring them up to date:
-<code>python tools/godot_byhand.py install ~/Games/MyGame</code>. It leaves your <code>starter/</code> alone, and switches on a plugin the project didn't have yet (a project made before NPC markers gets its tab this way).</div>
+<code>python tools/godot_byhand.py install ~/Games/MyGame</code>. It switches on a plugin the project has never had
+(a project made before NPC markers gets its tab this way) and leaves off one you switched off. It leaves your
+<code>starter/</code> alone and says when it differs from the studio's: then
+<code>python tools/godot_byhand.py install ~/Games/MyGame --starter</code> brings the studio's scripts (yours that
+differ are kept in <code>starter_before/</code>); the Logic node, Take from you and E's prompt want the newer ones.</div>
 </section>
 
 <section id="settings">
@@ -255,8 +274,12 @@ baked in as blend shapes.</p>
 <table class="keys">
 <tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>walk (<kbd>Shift</kbd> runs); it steps up anything up to half a metre, like a kerb, a genkan's step or a raised floor</td></tr>
 <tr><td>mouse</td><td>look</td></tr>
-<tr><td><kbd>E</kbd></td><td>use what's in front of you: anything with a <code>use()</code> method, such as a door</td></tr>
+<tr><td><kbd>E</kbd></td><td>use what's in front of you: anything with a <code>use()</code> method, such as a door. With an <code>HSHud</code> in the scene its prompt says what E would do (Open, Take, Read, Sit...; Locked in red)</td></tr>
 <tr><td><kbd>F</kbd></td><td>the flashlight</td></tr>
+<tr><td><kbd>Space</kbd></td><td>hold your breath (eight seconds at most, then a gasp: something hunting you hears it)</td></tr>
+<tr><td><kbd>Tab</kbd>, the wheel</td><td>the pocket's row (with an <code>HSHud</code>): show it, turn to another thing</td></tr>
+<tr><td>left button, held</td><td>eat what's in your hand, when it's food (a meter fills)</td></tr>
+<tr><td><kbd>F7</kbd></td><td>the flag board and the characters' chips (what's on, the tasks, the pocket): for testing</td></tr>
 <tr><td><kbd>Esc</kbd></td><td>let the mouse go (a click takes it back)</td></tr>
 </table>
 <p>An interior's <code>markers/player_start</code> is where its level starts the player. Stand the player there, or anywhere you like.</p>
@@ -265,11 +288,16 @@ baked in as blend shapes.</p>
 <section id="ship">
 <h2><span class="n">10</span>Playing and shipping</h2>
 <p><span class="ui">Project → Project Settings → Application → Run → Main Scene</span> picks the scene <kbd>F5</kbd> plays (<kbd>F6</kbd> plays the one open).
-To ship it: <span class="ui">Project → Export…</span>, add a Windows Desktop and a Linux preset, and download the export templates
-when Godot asks.</p>
-<div class="tip"><b>A character's look in a shipped game:</b> <span class="node">HSCharacterLook</span> reads the character's
-<code>.glb</code> itself (its skin's and eyes' records), and an exported game leaves source files out. In the export preset's
-<span class="ui">Resources</span> tab, put <code>*.glb</code> in <span class="ui">Filters to export non-resource files</span>.</div>
+To ship it: <span class="ui">Project → Export…</span>. A project made by <code>godot_byhand.py new</code> (or the full game
+maker, <code>horror_game.py new</code>) has a Linux and a Windows preset ready; download the export templates when Godot asks
+(<span class="ui">Editor → Manage Export Templates</span>).</p>
+<div class="tip"><b>What the presets and the project settings take care of:</b> Kimodo's motions in <code>animations/</code>
+are read as files, so the presets name <code>*.npz</code> in <span class="ui">Filters to export non-resource files</span>.
+And the project keeps its scenes as text in the export
+(<span class="ui">Editor → Export → Convert Text Resources to Binary</span> off): Godot 4.7, converting a scene to binary,
+leaves out every list in it, so the game you ship would have no to-do list and no key chips. A project from before
+gets both with <code>python tools/godot_byhand.py install &lt;project&gt;</code>. A character's look needs nothing: her
+eyes', hair's and skin's records are read off her imported materials, which the game has.</div>
 </section>
 
 <section id="trouble">
