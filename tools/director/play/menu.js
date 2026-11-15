@@ -122,7 +122,7 @@ export function controlsPanel(has = {}) {
   for (const c of CONTROLS.filter(c => !c.only || has[c.only])) {
     const row = mk("div", "ph-ctl"), icon = mk("div", "ph-ctl-icon");
     icon.innerHTML = c.keys ? keysSvg(c) : mouseSvg(c);
-    row.title = "Unreal: " + c.ue; row.append(icon, mk("span", "ph-ctl-label", c.label)); box.append(row);
+    row.append(icon, mk("span", "ph-ctl-label", c.label)); box.append(row);   // (no "Unreal: IA_Move" tooltip: `ue` is kept as data)
   }
   return box;
 }
@@ -215,7 +215,7 @@ export function pauseMenu(hud, ctx) {
     };
     const rowEl = r => {
       const e = mk("div", "ph-row"), val = mk("div", "ph-val");
-      e.title = "Unreal: " + r.ue; e.append(mk("span", "ph-row-label", r.label), val);
+      e.append(mk("span", "ph-row-label", r.label), val);
       const left = mk("button", "ph-arrow", "‹"), right = mk("button", "ph-arrow", "›");
       left.onclick = () => step(r, -1); right.onclick = () => step(r, 1);
       if (r.steps) {

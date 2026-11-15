@@ -171,7 +171,36 @@ def made_sets(S, clean=True):
                         used.append(MIX.made(v, write=False)[0])
                     except ValueError:                           # a set that isn't on this machine's shelf: STREET warns
                         pass
+    used += story_looks()                                       # and every game's and set's: the scene builder's painted rooms, a set's outside
     MIX.clean(used)
+
+
+def story_looks():
+    """The made sets every game and every set (Content/Games, Content/Studio/Sets) paints with: a street bake's clean-up
+    took them off the shelf as unused (they're made again, slowly, on the next plan)."""
+    from storykit import pbrmix as MIX  # noqa: PLC0415
+
+    def walk(o):
+        if isinstance(o, dict):
+            if isinstance(o.get("set"), str) and o["set"].startswith("pbr/"):
+                yield o
+            for v in o.values():
+                yield from walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                yield from walk(v)
+    out = []
+    for f in sorted(ROOT.glob("Content/Games/*/story.json")) + sorted(ROOT.glob("Content/Studio/Sets/*/story.json")):
+        try:
+            story = json.loads(f.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+        for v in walk(story):
+            try:
+                out.append(MIX.made(v, write=False)[0])
+            except ValueError:
+                pass
+    return out
 
 
 def look_or_bake(cmd, argv):

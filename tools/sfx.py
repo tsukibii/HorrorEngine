@@ -342,10 +342,15 @@ def cmd_add(a):
     index = json.loads(INDEX.read_text("utf-8")) if INDEX.is_file() else {"format": "horrorstudio-sfx", "version": 1, "sounds": {}}
     if not a.name or not a.name.replace("_", "").isalnum() or a.name != a.name.lower():
         sys.exit("--name: lower case letters, digits and _")
+    tags = [t.strip() for t in (a.tags or "").split(",") if t.strip()]
+    if not tags:                                    # (the shelf's check fails a sound with none: it broke check_all afterwards)
+        sys.exit("--tags: a few words to find it by, commas between (--tags \"door, creak, wood\")")
+    if a.name in index["sounds"] and not a.replace:
+        sys.exit(f"{a.name} is on the shelf already ({index['sounds'][a.name]['file']}): another --name, or --replace")
     x = finish(load(Path(a.file)), a.max, a.loop)
     rel = "%s/%s.ogg" % (a.category, a.name)
     write_ogg(x, SHELF / rel)
-    index["sounds"][a.name] = dict(file=rel, category=a.category, tags=[t.strip() for t in (a.tags or "").split(",") if t.strip()], secs=round(len(x) / SR, 2),
+    index["sounds"][a.name] = dict(file=rel, category=a.category, tags=tags, secs=round(len(x) / SR, 2),
                                    loop=a.loop, credit=a.credit or "HorrorStudio", license=a.license, source="added from " + Path(a.file).name)
     index["sounds"] = dict(sorted(index["sounds"].items()))
     INDEX.write_text(json.dumps(index, indent=1, ensure_ascii=False) + "\n", "utf-8")
@@ -544,7 +549,8 @@ def main():
     ad.add_argument("file")
     ad.add_argument("--name", required=True)
     ad.add_argument("--category", default="ours")
-    ad.add_argument("--tags", default="")
+    ad.add_argument("--tags", required=True, help="words to find it by, commas between")
+    ad.add_argument("--replace", action="store_true", help="a sound of that name on the shelf already: replace it")
     ad.add_argument("--loop", action="store_true")
     ad.add_argument("--max", type=float, default=30)
     ad.add_argument("--credit")

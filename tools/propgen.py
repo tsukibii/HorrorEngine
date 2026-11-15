@@ -129,6 +129,13 @@ def main():
                 for g in os.listdir(f):
                     if os.path.splitext(g)[1].lower() in PBR.IMG:
                         shutil.copy(os.path.join(f, g), dst / g)
+            elif f.lower().endswith(".zip"):          # its maps straight into the set (a zip copied in was unpacked by the scan into a
+                import zipfile  # noqa: PLC0415       #  folder of its own, pbr/NAME/<zip>, and NAME had no colour map)
+                with zipfile.ZipFile(f) as z:
+                    for info in z.infolist():
+                        name = os.path.basename(info.filename)   # (only a file's own name: nothing in a zip can write outside the set)
+                        if name and not info.is_dir() and os.path.splitext(name)[1].lower() in PBR.IMG:
+                            (dst / name).write_bytes(z.read(info))
             else:
                 shutil.copy(f, dst / os.path.basename(f))
         sets = PBR.scan(write=True)

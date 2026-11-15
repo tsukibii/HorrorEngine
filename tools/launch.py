@@ -98,6 +98,9 @@ def say(text, kind="note"):
     print(paint(mark, *codes) + " " + (paint(text, *ASH) if kind == "note" else text))
 
 
+# (Rows taken out 2026-11-15, their tools left in tools/: the script generator (DECISIONS 2026-10-27: the user writes the
+# story, no AI drafts it), Windows-only placeholder voices (the user's machine is Arch; lines are text since 2026-10-30) and
+# the retarget to FBX (Unreal's; `retarget.py setup`, the Blender module, stays below.)
 # (section, label, command, options). In a command: {game} asks for the game; {ask:Prompt} asks for a word or path;
 # {opt:Prompt|--flag} the same, but empty leaves it out (and --flag goes before the answer when there is one).
 # options: url (a page: started in its own window, then opened).
@@ -255,16 +258,12 @@ TOOLS = [
     ("Script", "Writers' room: what the page shows now", "tools/writers/room.py now", {}),
     ("Script", "Writers' room: a session's chart as text", "tools/writers/room.py show {ask:Session id}", {}),
     ("Script", "Writers' room: build a session into the director", "tools/writers/room.py build {ask:Session id}", {}),
-    ("Script", "Script generator: outline to story (Ollama)", "tools/scriptgen.py --game {game} new {ask:Outline file}", {}),
-    ("Script", "Script generator: review pack", "tools/scriptgen.py --game {game} review", {}),
-    ("Script", "Script generator: set up Ollama", "tools/scriptgen.py setup", {}),
 
     ("Takes", "Takes to record (clips list)", "tools/story.py --game {game} clips", {}),
     ("Takes", "MiniMax prompts, ready to paste", "tools/story.py --game {game} minimax", {}),
     ("Takes", "One-off voice lines", "tools/story.py --game {game} lines", {}),
     ("Takes", "Takes status (recorded, missing, too long)", "tools/intake.py --game {game} --status", {}),
     ("Takes", "Bring in takes from a folder", "tools/intake.py --game {game} {ask:Folder with the takes}", {}),
-    ("Takes", "Placeholder voices (Windows speech)", "tools/voice_placeholder.py --game {game} {opt:Language, ja or en (Enter: ja)|--lang}", {}),
 
     ("Motion", "Kimodo shot list", "tools/motion.py --game {game} shotlist", {}),
     ("Motion", "Import motions saved from Kimodo", "tools/motion.py --game {game} import", {}),
@@ -272,7 +271,6 @@ TOOLS = [
     ("Motion", "Motion check", "tools/motion.py --game {game} check", {}),
     ("Motion", "Motion preview into the desk", "tools/motion.py --game {game} preview", {}),
     ("Motion", "Kimodo check (CUDA, token, encoder)", "tools/kimodo.py check", {}),
-    ("Motion", "Retarget: motions to FBX", "tools/retarget.py --game {game} fbx", {}),
 
     ("Look", "Clothes: an outfit's contact sheet (Saved/tailor_sheet.png)", "node tools/character/tailor/sheet.mjs --outfit {ask:Outfit (e.g. work uniform)} {opt:Body (feminine, masculine, average)|--body} --out Saved/tailor_sheet.png", {}),
     ("Look", "Clothes: pictures of every outfit and design on the default model, for the Studio's picker (Content/Studio/Clothes/thumbs)", "node tools/character/tailor/thumbs.mjs", {}),

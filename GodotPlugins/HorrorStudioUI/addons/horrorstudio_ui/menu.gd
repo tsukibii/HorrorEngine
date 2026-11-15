@@ -2,7 +2,7 @@
 ## go out (the frame darkens) and the menu is drawn over it in the HUD's theme. The controls on the left (each key as a
 ## tile with what it does beside it), then Resume, Save game (slots and the autosave), Settings (Display, Graphics,
 ## Audio: rows stepped with ‹ › (A/D), never a slider; levels as ten dashes), Quit (a footer choice). Every setting
-## keeps the desk's name and its Unreal name (`ue`); what Godot can apply, it applies (`apply`): the window mode, VSync,
+## keeps the desk's name (and `ue`, the desk's old Unreal name, kept as data and never shown to the player); what Godot can apply, it applies (`apply`): the window mode, VSync,
 ## the frame rate limit, brightness, the volumes, the subtitles. Settings in user://horrorstudio_settings.json, the
 ## saves in user://saves_<game>.json. open(ctx) returns "resume", "escaped" or {"quit": "title" | "desktop"}.
 extends Control
@@ -228,7 +228,7 @@ func controls_panel(has: Dictionary) -> void:
 			continue
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 20)
-		row.tooltip_text = "Unreal: " + str(ctl["ue"])
+		row.tooltip_text = ""                         # (it said "Unreal: IA_Move" to the player: `ue` is the desk's record, never shown)
 		var icon := HBoxContainer.new()
 		icon.custom_minimum_size = Vector2(140, 0)
 		icon.add_theme_constant_override("separation", 4)
@@ -342,7 +342,7 @@ func save_to(n: int) -> void:
 
 func row_el(r: Dictionary) -> HBoxContainer:
 	var e := HBoxContainer.new()
-	e.tooltip_text = "Unreal: %s · Godot: %s" % [r.get("ue", ""), r.get("godot", "")]
+	e.tooltip_text = ""                              # (it showed the player Unreal's and Godot's own names for the setting)
 	var l := label(r["label"], 15, c["text"])
 	l.custom_minimum_size = Vector2(240, 0)
 	e.add_child(l)
