@@ -45,11 +45,59 @@ NPCs on a person's furniture**; then **rules for modelling, small movements laid
 thing carried in any pose**, then **a guide of sequences made of markers** (§0 below; pull request to main opened
 2026-11-14 with main merged in again); beside it, 2026-11-14 on `advanced-pbrs` (from main, merged, PR #32):
 **clothing fabric sets made from code**, the Studio's and Godot's cloth shaders, and two thirds of the neck as the
-most any top or coat reaches ("Beside it: where `advanced-pbrs` stopped", below). Read this after CLAUDE.md's start
-list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
-not an order. Overwrite this file at the end of the next session.
+most any top or coat reaches ("Beside it: where `advanced-pbrs` stopped", below); then 2026-11-15 on
+`enhancements` (from main after PR #33): **the tools reviewed** (docs/TOOLS_REVIEW.md) and, at the user's word part way
+through, **games built by hand with the plugins** made the focus: saves, a pause menu, the world kept at a checkpoint
+(§0 below). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing
+now**; §4 is the menu, not an order. Overwrite this file at the end of the next session.
 
-## 0. Where `even-more-animations-v3` stopped (2026-11-14)
+## 0. Where `enhancements` stopped (2026-11-15)
+
+**The branch** was made from main after tsukibii/HorrorEngine#33, at the user's word (DECISIONS 2026-11-15): a review of
+every tool and enhancements on this branch until 11am, for the user to review at the end. Part way through: *"dont
+focus on the director tool, most games will be made directly using the horrorengine godotplugin"*: from then the work
+went to the by-hand path, and the desk, the Director and the desk's export were left as they were.
+
+**Every improvement has an ID** (E01 to E30, a commit each, a letter for a part of one): TOOLS_REVIEW §0's table, and
+a page on claude.ai with a screenshot of each and boxes to pick what to undo (the user asked for it to choose what to
+take out). When the user names IDs to undo: a whole ID is `git revert <commit>`; a lettered one is taken out by hand.
+
+**The review is docs/TOOLS_REVIEW.md**: how it was done (a green baseline, six reviews by area, every finding checked
+again before it was fixed), what the tools are like, **§3 what this branch did** (each a commit with the check that
+holds it), **§4 what was found and not done**, ranked, with its size, by-hand first (§4.1 is the menu).
+
+**The headline, for games built by hand** (each in §3):
+- **Saves**: the starter Story's `save_game(slot)` / `load_game(slot)` (a checkpoint where you stand, as text in
+  `user://hs_save_<slot>.save`), `autosave`, `continue_saved`, F5 and F9 (`save_keys`); what keeps its own state joins
+  the group `hs_saves` (the Markers' Logic nodes and characters, Sanity, the flashlight, the pause node).
+- **A pause menu**: `starter/pause.gd` (a Node called Pause beside the HSHud; *Set up the scene* adds it): Esc holds
+  the game and opens the UI plugin's own menu, now with a Load game page and the game's own keys; Save and Load are
+  the Story's saves. The weapons plugin's gun is in a save too.
+- **Dying puts the world back**: the group `hs_keeps` (pickups, food, notes, areas, scares, cues, flag switches,
+  acts, shown things; the laptop's shop, its orders on their way and its parcels; a parcel placed by hand).
+- **E's prompt and ring** over everything you can use, on the scene's HSHud; a blow on you is a scare; a scare added
+  after the start is heard; a key on the floor isn't a step; `install` keeps your plugins and says when `--starter`.
+- And outside the by-hand path, before the user's note: the Character Studio, the scene builder, `layoutset.mjs`, the
+  writers' room and the Godot export no longer lose work unasked; failed Godot runs fail; which characters want
+  baking again (`bake.mjs --status`); `tools/browser_checks.py` (every browser check with its servers, a report to
+  paste back) and `setup/setup.py doctor`.
+
+**Checks run here** (the cloud session: no card, no Blender, no Studio export), the last round on the final code:
+CHECKS; LOGIC (with its new save and menu stages), LOGICEDITOR, MARKERS, SEQUENCES, HUNT, SEATS, MIND, SANITY (save
+and late scares), LAPTOP (dying and a save), WEAPONS (the gun in a save), GDUI, GDPLAY, FIRSTGAME, and **TUTORIAL2, the
+whole tutorial played on this branch** (with the desk's server; her a stand-in capsule). The
+rest of what each commit touched is in its message. GDTESTROOM: station 6 wants the desk's bake and station 13
+Blender's props, so here it's played to 5, from `n_chores` and from `n_bath` (as on main). **Not run here: the
+browser checks that draw the Studio** (STUDIO is 50 minutes on a CPU): `python tools/browser_checks.py` on the
+user's card is the way, and its `report.md` the thing to paste back.
+
+**What could come next** (TOOLS_REVIEW §4.1): the Story speaking through the HSHud (one HUD by hand, not two: a look
+the user should see first, tutorial v2's pictures with it); what a save still leaves out (a hunt's stage, the
+director, a searcher or a chase); a Godot parse gate in check_all; one helper for the check harness; faces in the Markers
+by ResourceLoader; the Studio's undo. Tutorial v2's own update stays its own bulk branch (docs/TUTORIAL_TODO.md has
+this branch's section: E's prompt, the world at a checkpoint, saves, the pause menu).
+
+## Before that (2026-11-14, `even-more-animations-v3`, merged in PR #33): animations v3, short NPCs, life and carrying, sequences
 
 **The branch** was made from `marker-system` (merged since: tsukibii/HorrorEngine#30), and **main was merged into
 it on 2026-11-14** at the user's word, once flags and things (tsukibii/HorrorEngine#31) was in: so it carries the

@@ -2,6 +2,23 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-15, early morning: the tools reviewed, and enhancements on a branch of their own until 11am (the user)
+
+- **"Crweatea a new branch called enhancements , do a review of all the tools we made and work o enhancements on this
+  new branch until 11am,  Iwil review at the end"**: the branch `enhancements` from main (after
+  tsukibii/HorrorEngine#33). The review is **docs/TOOLS_REVIEW.md**: what was found, what the branch did about it
+  (each fix its own commit with the check that holds it) and what's left, ranked with its size. Nothing is merged:
+  the user reviews it at the end.
+- **"note dont focus on the director tool, msot games will be made directly using the horrorengine godotplugin"**
+  (part way through): **games are made by hand with the plugins**, so their path comes first: the starter kit, the
+  Markers, UI, Devices, Weapons and Look plugins, `godot_byhand.py`, and the Animator and Character Studio that feed
+  them. From then the desk, the Director and the desk's export were left as they were; their findings are at the end
+  of the review's §4. A standing priority, not only for this branch.
+- **"at the end can you show screenshots of all your improvements with id references so if I decide to undo some i
+  can ref what i want removed"**: every commit an ID (E01 on, oldest first; a letter for one part of a commit), the
+  table in docs/TOOLS_REVIEW.md §0, and a page on claude.ai with a screenshot of each (in the game or the page where
+  there's something to see, else its check's output or its commit) and boxes to pick what to undo.
+
 ## 2026-11-14, night: a pull request for `even-more-animations-v3`, with main merged in (the user, on the guide's report)
 
 - **"can you createa pr for this , merge in main too"**: main (advanced PBRs, tsukibii/HorrorEngine#32) merged into
