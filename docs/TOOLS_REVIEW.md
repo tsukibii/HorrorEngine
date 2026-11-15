@@ -69,7 +69,7 @@ picture: in the game or the page where there's something to see, else its check'
 | E47 | 4f5cda94 | The starter kit's last tooltips (41): every exported field in it says what it does |
 | E48 | ef8de846 | The Weapons plugin's last tooltips (52, 20 of them the muzzle flash's look): every by-hand plugin and the starter kit have one on every field |
 | E49 | 4b72848f | Once-only scares kept in a save: a glimpse, the closer figure, feet under a door, the steam's writing, a shadow, the mirror figure, a dread moment, a checkpoint |
-| E50 | (next commit) | A way into the next level: the Story's `go_to(scene, at)` and `starter/travel.gd` carry the pocket, the to-do list, the facts and the cash into another scene |
+| E50 | 34a49a6b | A way into the next level: the Story's `go_to(scene, at)` and `starter/travel.gd` carry the pocket, the to-do list, the facts and the cash into another scene |
 
 ## 1. How it was done
 
