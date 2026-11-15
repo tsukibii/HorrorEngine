@@ -125,7 +125,12 @@ then each branch leaves a section here saying what it changes for the tutorial. 
       Saved* at the start, F5 and F9 with *Save Keys*; `save_game`, `load_game`). Say so where dying and checkpoints are
       explained, and take saving out of what a game by hand can't do yet if it's listed. Not in a save yet: the double
       once it came in a parcel, the laptop's orders, a parcel, the hunt's stage: a save made before the gun comes is the
-      honest one to show.
+      honest one to show. (Since then the gun, the laptop, the parcels and the hunt are in a save, and so are what the
+      shotgun breaks (E39: the entry's bulb shot out comes back on when you die before it) and the once-only scares (E49:
+      the glimpse at 308's door, the closer, feet under the door, the steam's writing never replay after a load).)
+- [ ] §2 or a new last section: **shipping the night**: a by-hand project keeps its scenes as text in an export (E38:
+      Godot 4.7's binary conversion empties every list in a scene: the tutorial's to-do list, its HUD's keys) and has a
+      Linux and a Windows preset with `*.npz`; `godot_byhand.py install` adds both to a project made before.
 - [ ] §9 *The project*: `godot_byhand.py install` now leaves a plugin you switched off off, and says when the
       project's `starter/` differs from the studio's (then `install --starter`).
 - [x] TUTORIAL2 run again after the starter's `player.gd` (the prompt, a blow as a scare), `story.gd` (the world kept
