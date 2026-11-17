@@ -1721,34 +1721,44 @@ float lidY(vec2 P[17], float x) {                                  // a lid's he
 // scales all of it (uTear: at 0.5, 0.4 of what the strip reflects)
 const TEARM = new THREE.MeshPhysicalMaterial({ color: 0x000000, roughness: 0.18, side: THREE.DoubleSide,
   transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, envMapIntensity: 1 });
-TEARM.userData.k = { value: 0 };
+TEARM.userData.k = { value: 0 }; TEARM.userData.wet = { value: 0 };
 TEARM.onBeforeCompile = sh => {
-  sh.uniforms.uTear = TEARM.userData.k;
-  sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute float fade; varying float vFade;")
-    .replace("#include <begin_vertex>", "#include <begin_vertex>\nvFade = fade;");
-  sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying float vFade; uniform float uTear;")
-    .replace("#include <opaque_fragment>", "#include <opaque_fragment>\ngl_FragColor.rgb *= vFade * uTear;");
+  sh.uniforms.uTear = TEARM.userData.k; sh.uniforms.uTearWet = TEARM.userData.wet;
+  sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute float fade; attribute float pool; varying float vFade, vPool;")
+    .replace("#include <begin_vertex>", "#include <begin_vertex>\nvFade = fade; vPool = pool;");
+  // (Wet eyes: the film glistens whatever the light's angle, a soft line, and where it pools at the corners a blob of light: Godot's tear.gdshader gives each lamp's light back the same way)
+  sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying float vFade, vPool; uniform float uTear, uTearWet;")
+    .replace("#include <opaque_fragment>", "#include <opaque_fragment>\ngl_FragColor.rgb = gl_FragColor.rgb * vFade * uTear + vec3(vFade * uTearWet * (1.0 + 7.0 * vPool * vPool));");
 };
-TEARM.customProgramCacheKey = () => "studio-tear-2";
+TEARM.customProgramCacheKey = () => "studio-tear-4";
 const TEAR = {};
 for (const side of ["L", "R"]) {
   const g = new THREE.BufferGeometry(), idx = [], fade = new Float32Array(17 * 3);
   for (let i = 0; i < 16; i++) { const a = i * 3; idx.push(a, a + 1, a + 3, a + 1, a + 4, a + 3, a + 1, a + 2, a + 4, a + 2, a + 5, a + 4); }
   for (let i = 0; i <= 16; i++) fade[i * 3 + 1] = Math.pow(Math.sin(Math.PI * i / 16), 1.5);   // the middle row only; the edges stay 0
   g.setIndex(idx); g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(17 * 3 * 3), 3)); g.setAttribute("fade", new THREE.BufferAttribute(fade, 1));
+  g.setAttribute("pool", new THREE.BufferAttribute(new Float32Array(17 * 3), 1));   // (Wet eyes: how much of a pool this part of the film is: the middle row, at the corners)
   const m = TEAR[side] = new THREE.Mesh(g, TEARM); m.renderOrder = 4; m.frustumCulled = false; m.userData.noShadow = true; m.visible = false; m.name = `tearline_${side}`; rig.add(m);
 }
+// Wet eyes (DECISIONS 2026-11-17, cuter eyes; tools/shared/eye.js `wet`): the film thicker: the strip reaches further
+// onto the eye and carries on into the corners, where it pools (the outer one most, as in the picture: a blob of light
+// where the lids meet), brighter and sharper; a wet eye has a tear line whatever the Tear line slider says
+const tearOf = () => { const wet = st.eyes.wet ?? 0; return { wet, k: Math.max(st.eyes.tearline ?? 0, 0.6 * wet) }; };
 function tearLine(side, pts, c) {                      // pts: the opening's outline now (0..16 the lower lid, outer corner to inner)
-  const k = st.eyes.tearline ?? 0, m = TEAR[side]; m.visible = k > 0 && !!pts; if (!m.visible) return;
-  const P = m.geometry.attributes.position.array, mm = 0.001 * SCALE;
+  const { wet, k } = tearOf(), m = TEAR[side]; m.visible = k > 0 && !!pts; if (!m.visible) return;
+  const P = m.geometry.attributes.position.array, F = m.geometry.attributes.fade.array, PL = m.geometry.attributes.pool.array, mm = 0.001 * SCALE;
   for (let i = 0; i <= 16; i++) {
-    const p = pts[i], t = Math.sqrt(Math.sin(Math.PI * i / 16)), dx = c[0] - p[0], dy = c[1] - p[1], l = Math.hypot(dx, dy) || 1;
+    const p = pts[i], s = Math.sin(Math.PI * i / 16), pool = wet * (0.9 * Math.exp(-((i - 1.2) ** 2) / 2) + 0.55 * Math.exp(-((i - 14.8) ** 2) / 2));   // (the film pooled where the lids meet)
+    const t = Math.sqrt(s) * (1 + 0.35 * wet) + 2.4 * pool, dx = c[0] - p[0], dy = c[1] - p[1], l = Math.hypot(dx, dy) || 1;
     P.set([p[0] + dx / l * 0.45 * mm * t, p[1] + dy / l * 0.45 * mm * t, p[2] + 0.2 * mm], i * 9);           // onto the eye
-    P.set([p[0] + dx / l * 0.1 * mm * t, p[1] + dy / l * 0.1 * mm * t, p[2] + (0.2 + 0.25 * t) * mm], i * 9 + 3);   // the meniscus, raised
+    P.set([p[0] + dx / l * 0.1 * mm * t, p[1] + dy / l * 0.1 * mm * t, p[2] + (0.2 + 0.25 * Math.min(1.3, t)) * mm], i * 9 + 3);   // the meniscus, raised
     P.set([p[0] - dx / l * 0.2 * mm * t, p[1] - dy / l * 0.2 * mm * t, p[2] + 0.2 * mm], i * 9 + 6);         // onto the lid's rim
+    const even = 1 - 0.55 * wet * (0.5 + 0.5 * Math.sin(i * 2.4 + 1.3));    // (wet, the film isn't even along the lid: it glistens in stretches, never as one white line)
+    F[i * 3 + 1] = Math.max(Math.pow(s, 1.5) * even, Math.min(1, 1.15 * pool));   // the middle row only; the edges stay 0
+    PL[i * 3 + 1] = Math.min(1, 1.15 * pool);
   }
-  m.geometry.attributes.position.needsUpdate = true; m.geometry.computeVertexNormals(); m.geometry.computeBoundingSphere();
-  TEARM.userData.k.value = 0.8 * k;
+  m.geometry.attributes.position.needsUpdate = true; m.geometry.attributes.fade.needsUpdate = true; m.geometry.attributes.pool.needsUpdate = true; m.geometry.computeVertexNormals(); m.geometry.computeBoundingSphere();
+  TEARM.userData.k.value = 0.8 * k * (1 + 0.5 * wet); TEARM.userData.wet.value = 0.07 * wet; TEARM.roughness = 0.18 - 0.08 * wet;
 }
 function outline(side, k = st.eyes.opening || 1, moved = true) {   // the lid outline now, smoothed and scaled by Opening (or k): 32 points
   if (graftOn() && GRAFTV[side]) return EG.outline32(GRAFT, side, GRAFTV[side]);   // the grafted eyes: where their lids meet the eyeball
@@ -2796,6 +2806,24 @@ function useEyeLook(key, o = {}) {                     // o.shape (true): with i
   skinLook(); eyeLookMark(); UNSAVED = true; changed(o.shape !== false ? "body" : "expr");
   status(`${L.label}: a start, every slider still yours (Skin, Eyes; Brows & lashes; Makeup)`, "ok");
 }
+// the Cute eye switch (Skin, Eyes; DECISIONS 2026-11-17, cuter eyes): on, the picture's kind of eye: the opening (the
+// Cute eye shape key at 1), a single lid with its skin a little over the inner corner (eyegraft.js CUTE_KEYS), the
+// iris at least CUTE_IRIS degrees (the picture's iris is 0.58 of the opening's length), Wet eyes; what those were is
+// kept (st.eyes.cuteWas, saved with the character) and put back when it's switched off. Both eyes: the right eye is
+// the left mirrored, as every shape key is
+const CUTE_IRIS = 36;
+function setCuteEye(on) {
+  const e = st.eyes, now = { ...EG.KEYS0, ...(e.shape || {}) };
+  if (on) {
+    if (!e.cuteWas || !(now.cute > 0)) e.cuteWas = { shape: { ...now, cute: 0 }, irisSize: e.irisSize, wet: e.wet ?? 0 };   // (what it's switched on over)
+    e.shape = { ...now, ...EG.CUTE_KEYS }; e.irisSize = Math.max(e.irisSize ?? 31, CUTE_IRIS); e.wet = 1;
+  } else {
+    const was = e.cuteWas || { shape: { ...now, cute: 0, crease: now.crease === EG.CUTE_KEYS.crease ? 0 : now.crease, fold: now.fold === EG.CUTE_KEYS.fold ? 0 : now.fold }, irisSize: e.irisSize, wet: 0 };
+    e.shape = { ...EG.KEYS0, ...was.shape, cute: 0 }; e.irisSize = was.irisSize; e.wet = was.wet ?? 0; delete e.cuteWas;
+  }
+  eyeSet.all(); paintEyes(); UNSAVED = true; changed("body");
+  status(on ? "Cute eye: the diagonal opening, a single lid, a big iris, wet (Skin, Eyes: every slider still yours)" : "Cute eye off: the eyes as they were", "ok");
+}
 function eyeLookMark() { for (const c of document.querySelectorAll("#eyeLookCards .card")) c.classList.toggle("on", c.dataset.look === st.eyes.look); }
 $("#eyeLookCards").append(...Object.entries(EL.EYE_LOOKS).map(([k, L]) => {
   const pic = el("img", { src: `api/eyelooks/thumbs/${k}.jpg`, alt: L.label, loading: "lazy" }), b = el("button", { className: "card", title: L.about || L.label }, pic, el("span", { textContent: L.label }));
@@ -2979,10 +3007,16 @@ const eyeSet = {};
   box.append(el("p", { className: "note", textContent: GRAFT ? "The lids are thick flesh resting on the eyeball, their edge rolling in to touch it, with a crease and the lower lid's roll (Blender's human base mesh, grafted onto this face): they follow the sliders, the sculpt, a photo's fit and the expressions, and shut their own way. Shape them below." : "The grafted eyes aren't here (Content/Studio/Bodies/MHR_eyes.bin): MHR's own lids, cut along the eyelid line below." }));
   const shapeBox = el("div", { className: "sub" }), shapeSet = {};   // the eye's shape keys (eyegraft.js SHAPE_KEYS), under the grafted eyes
   const shapePre = el("select", {}, el("option", { value: "", textContent: "Shape preset…" }), ...Object.keys(EG.EYE_PRESETS).map(k => el("option", { value: k, textContent: k })));
-  shapePre.onchange = () => { if (!shapePre.value) return; st.eyes.shape = { ...EG.KEYS0, ...EG.EYE_PRESETS[shapePre.value] }; shapePre.value = ""; for (const [k] of EG.SHAPE_KEYS) shapeSet[k](st.eyes.shape[k]); changed("expr"); };
+  shapePre.onchange = () => { if (!shapePre.value) return; st.eyes.shape = { ...EG.KEYS0, ...EG.EYE_PRESETS[shapePre.value] }; shapePre.value = ""; eyeSet.shape(); changed("expr"); };
+  // the Cute eye switch (DECISIONS 2026-11-17, cuter eyes: "have a toggle button for this kind of eye called cute-eye"):
+  // on, the eye is the picture's kind: its opening (the Cute eye shape key), a single lid, the iris big enough to fill
+  // it, wet; off, what it was before (kept in st.eyes.cuteWas with the character). Every one is a plain slider after
+  const cute = el("input", { type: "checkbox", id: "cuteEye" });
+  cute.onchange = () => { setCuteEye(cute.checked); };
+  shapeBox.append(el("label", { className: "tog", id: "cuteEyeRow" }, cute, el("span", {}, "Cute eye", el("small", { textContent: "This kind of eye, after your picture, on both eyes as mirrors: a diagonal opening (the inner corner low and pointed, the outer corner high), a single lid, a big iris, wet. Off: the eyes as they were. The sliders below and Wet eyes (further down) are still yours to move." }))));
   shapeBox.append(el("div", { className: "row" }, el("span", { textContent: "Eye shape" }), shapePre, el("output")));
-  for (const [k, label, lo, hi, step, help] of EG.SHAPE_KEYS) shapeSet[k] = slider(shapeBox, "eyeshape_" + k, label, lo, hi, step, 0, help, v => { st.eyes.shape = { ...EG.KEYS0, ...(st.eyes.shape || {}), [k]: v }; changed("expr"); });
-  eyeSet.shape = () => { for (const [k] of EG.SHAPE_KEYS) shapeSet[k](st.eyes.shape?.[k] ?? 0); shapeBox.style.display = GRAFT ? "" : "none"; };
+  for (const [k, label, lo, hi, step, help] of EG.SHAPE_KEYS) shapeSet[k] = slider(shapeBox, "eyeshape_" + k, label, lo, hi, step, 0, help, v => { st.eyes.shape = { ...EG.KEYS0, ...(st.eyes.shape || {}), [k]: v }; if (k === "cute") cute.checked = v > 0; changed("expr"); });
+  eyeSet.shape = () => { for (const [k] of EG.SHAPE_KEYS) shapeSet[k](st.eyes.shape?.[k] ?? 0); cute.checked = (st.eyes.shape?.cute ?? 0) > 0; shapeBox.style.display = GRAFT ? "" : "none"; };
   box.append(shapeBox); eyeSet.shape();
   const real = el("input", { type: "checkbox", checked: true });   // the shared eye's refracting cornea (tools/shared/eye.js)
   real.onchange = () => { st.eyes.real = real.checked; paintEyes(); changed("expr"); };
@@ -3062,7 +3096,7 @@ const eyeSet = {};
     const c = cols[k] = el("input", { type: "color", value: st.eyes[k] }); c.oninput = () => { st.eyes[k] = c.value; repaint(); };
     box.append(el("div", { className: "row" }, el("span", { textContent: label }), c, el("output")));
   }
-  for (const [k, label, lo, hi, step, def, help] of EYEPAINT.EYE_CONTROLS) eyeSet[k] = slider(box, "eye_" + k, label, lo, hi, step, def, help, v => { st.eyes[k] = v; repaint(); });
+  for (const [k, label, lo, hi, step, def, help] of EYEPAINT.EYE_CONTROLS) eyeSet[k] = slider(box, "eye_" + k, label, lo, hi, step, def, help, v => { st.eyes[k] = v; repaint(); if (k === "wet") changed("expr"); });   // (Wet eyes: the tear line's too)
   eyeSet.all = () => { on.checked = st.eyes.on; real.checked = st.eyes.real !== false; eyeSet.shape(); eyeSet.lid(); for (const k of ["size", "depth", "opening", "lidShade", "occlusion", "tearline"]) eyeSet[k](st.eyes[k]); for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); for (const f of Object.values(picks)) f(); };
 }
 
@@ -3876,10 +3910,11 @@ function fileLook(x, g) {
   }
   if (L === TEARM) {                                    // the tear line: a strip that only reflects (Godot's HSEye draws it added over what's behind: tear.gdshader), its fade in the vertices' colour;
     const f = g.attributes.fade, c = new Float32Array(g.attributes.position.count * 3);   // glTF has no adding, so elsewhere (the desk, a plain viewer) it's wholly see-through: a black strip would darken the lid
-    for (let i = 0; i < c.length / 3; i++) c.fill(f ? f.getX(i) : 1, i * 3, i * 3 + 3);
-    g.setAttribute("color", new THREE.BufferAttribute(c, 3)); g.deleteAttribute("fade");
+    const pl = g.attributes.pool;                       // (Wet eyes: where the film pools, as the red under the green: tear.gdshader reads the fade from the greater and the pool from how far the red is under it; an export before it is grey: no pool)
+    for (let i = 0; i < c.length / 3; i++) { const v = f ? f.getX(i) : 1; c.fill(v, i * 3, i * 3 + 3); if (pl) c[i * 3] = v * (1 - 0.5 * pl.getX(i)); }
+    g.setAttribute("color", new THREE.BufferAttribute(c, 3)); g.deleteAttribute("fade"); g.deleteAttribute("pool");
     const m = new THREE.MeshStandardMaterial({ name: `${WHO}_tearline`, color: 0x000000, roughness: 0.05, transparent: true, opacity: 0, vertexColors: true, depthWrite: false });
-    m.userData.studioTear = { strength: +(0.8 * (st.eyes.tearline ?? 0.5)).toFixed(3) };
+    m.userData.studioTear = { strength: +(0.8 * tearOf().k).toFixed(3), wet: +tearOf().wet.toFixed(3) };   // (Wet eyes: Godot's tear.gdshader glistens by it)
     return m;
   }
   if (L && L.isShaderMaterial && L.userData.file) {
@@ -4125,7 +4160,12 @@ function lidsRest(P, O, gap = LIDGAP, reach = 0.004) {   // P: the drawn skin, a
 // desk's, over the straight line), set by its hat (1 at its weight, nothing at its neighbours') beside the blink's own w
 // (Godot's HSBlink): the lid follows the curve within a hair (EYELIDS). The cut's edges meet over the last quarter.
 // They move only the points round the eyes: the file writes them sparse (sparseTargets)
-const BLINKS = ["L", "R"], BLINKW = [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 0.9375, 1];
+// A cute eye (DECISIONS 2026-11-17, cuter eyes) is kept at sixteenths: its lid travels half as far again, over a bigger
+// cornea, and at eighths a sliver of the eye showed through it mid-blink (EYELIDS: 0.29 mm2 at 40%) and the lashes
+// dipped under the lid just before it shut (LASHFIT). HSBlink reads whatever in-betweens a file has
+const BLINKS = ["L", "R"], BLINK8 = [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 0.9375, 1];
+const BLINK16 = [...Array.from({ length: 15 }, (_, k) => (k + 1) / 16), 0.96875, 1];
+let BLINKW = BLINK8;                                   // (set by blinkShapes, the first to use it in an export)
 const inName = (side, w) => w === 1 ? `eyesClosed_${side}` : `eyesClosed_${side}_in${Math.round(w * 10000)}`;   // its weight in ten-thousandths
 function eyeKeep(side) {                               // pushes points out of this eyeball so that none is deeper into it than it rests
   const e = EYES[side]; if (!e.visible) return null;
@@ -4145,6 +4185,7 @@ function eyeKeep(side) {                               // pushes points out of t
   };
 }
 function blinkShapes() {                               // at neutral: each eye at each of BLINKW as the face shows it: MHR's points and the brows' and lashes' places
+  BLINKW = (st.eyes.shape?.cute ?? 0) > 0.25 ? BLINK16 : BLINK8;
   const at = ENAMES.indexOf("eyesClosed_L"), amt = st.exprAmt || 1, parts = [...Object.values(BLM), TEAR.L, TEAR.R].filter(o => o.visible);
   if (at < 0) return null;
   if (graftOn() && GRAFTM) parts.push(GRAFTM);           // (the grafted eyes shut their own way: the skin's targets take the graft's places from here)
@@ -4535,7 +4576,7 @@ $("#poseSel").onchange = () => { POSE = $("#poseSel").value; try { localStorage.
 $("#povShot").onchange = () => { orbit.focus = "pov"; repose(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, on: graftOn() }), EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, useCreature, usePreset, useLips, newStart, changed, mhrPreset, AMAP, setExpr, get MOUTHPARTS() { return MOUTH; }, creatureLook, useEyeLook, EL, setLight, setAnime, GW, SKINSH, loadSalon, get salonHair() { return SALONH; }, get hair2() { return HAIR2; }, get headBase() { return HEADBASE; }, get hairStale() { return HAIRSTALE; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { graft: () => ({ G: GRAFT, M: GRAFTM, V: GRAFTV, E: GRAFTEYE, on: graftOn() }), setCuteEye, EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, useCreature, usePreset, useLips, newStart, changed, mhrPreset, AMAP, setExpr, get MOUTHPARTS() { return MOUTH; }, creatureLook, useEyeLook, EL, setLight, setAnime, GW, SKINSH, loadSalon, get salonHair() { return SALONH; }, get hair2() { return HAIR2; }, get headBase() { return HEADBASE; }, get hairStale() { return HAIRSTALE; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

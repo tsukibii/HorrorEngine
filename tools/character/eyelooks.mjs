@@ -44,9 +44,10 @@ const fresh = async name => {                            // a character made (or
 const exists = async name => { await page.waitForFunction(() => document.querySelector("#who").options.length > 0, null, { timeout: 20000 }).catch(() => {});   // (the list comes a moment after the page)
   return B(n => [...document.querySelector("#who").options].some(o => o.value === n), name); };
 const openIt = async name => { await page.selectOption("#who", name); await page.waitForFunction(n => window.__body.who === n, name, { timeout: 600000 }); await settle(); };
-const base = async which => {                            // the base's button (v2female: the feminine base with its head and neck)
-  const sel = { v2female: '.bases button[data-v2="1"]:not([data-b2])', bodyv2: '.bases button[data-b2="1"]', feminine: '.bases button[data-base="-1"]:not([data-v2])',
-                average: '.bases button[data-base="0"]', masculine: '.bases button[data-base="1"]' }[which];
+const base = async which => {                            // the head and body a look is shown on: v2female's head and bodyv2's body are the cards a new character starts on (heads and bodies as preset cards, 2026-11-12: the old base buttons for them are gone); the plain bases still buttons
+  const card = { v2female: ["head", "v2female"], bodyv2: ["body", "bodyv2"] }[which];
+  if (card) { const set = await B(([kind, key]) => { const b = window.__body; if (b.st[kind + "Preset"] === key) return false; b.usePreset(kind, key); return true; }, card); if (set) await settle(); return; }
+  const sel = { feminine: '.bases button[data-base="-1"]', average: '.bases button[data-base="0"]', masculine: '.bases button[data-base="1"]' }[which];
   if (!sel) throw new Error(`no base named ${which}`);
   await page.click(sel, { noWaitAfter: true }); await settle();
 };
@@ -104,7 +105,9 @@ try {
       await wear(k, null); await frame("card", clip);
       // her left eye cut out of the picture of both (a view any closer is inside the lens's reach): one eye fills a card,
       // where two side by side are too small to read
-      const jpg = await jpeg(Buffer.from(await crop(await page.screenshot({ clip }), 0.6, 0.35, 0.3, 0.3), "base64"), 320);
+      // (a look can say its card's frame: `thumb: { wide, up }`, shares of the picture: a taller opening wants a little more of it, and higher)
+      const th = EL.EYE_LOOKS[k].thumb || {}, wide = th.wide || 0, up = th.up || 0;
+      const jpg = await jpeg(Buffer.from(await crop(await page.screenshot({ clip }), 0.6 - wide / 2, 0.35 - wide / 2 - up, 0.3 + wide, 0.3 + wide), "base64"), 320);
       fs.writeFileSync(path.join(out, k + ".jpg"), Buffer.from(jpg, "base64"));
       console.log(`  ok  ${k}: ${path.relative(ROOT, path.join(out, k + ".jpg"))} (${Math.round(Buffer.from(jpg, "base64").length / 1024)} KB)`);
     }

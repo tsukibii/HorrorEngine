@@ -62,6 +62,7 @@ CHECKS = [
     ("WARDROBE", "tools/character/wardrobetest.mjs", "studio", False, ""),
     ("GPUDRAPE", "tools/character/tailor/gputest.mjs", "studio", False, "needs WebGPU"),
     ("GROOM", "tools/character/groomtest.mjs", "studio", False, ""),
+    ("CUTEEYE", "tools/character/cuteeyetest.mjs", "studio", False, "needs MediaPipe (python tools/face_mesh.py setup)"),
     ("LIBRARYPAGE", "tools/character/librarypagetest.mjs", "studio", False, ""),
     ("SALON", "tools/character/salontest.js", "studio", True, ""),
     ("GROWPAGE", "tools/character/growpagetest.mjs", "studio", True, ""),

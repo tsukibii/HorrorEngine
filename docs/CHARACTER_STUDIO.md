@@ -1124,6 +1124,131 @@ held to the number it was the head the user called deformed. v2 pixie's ear is M
 more), her eye is taller than ours in profile, and the picture's exact angle is a guess between 65 and 80 degrees
 round, which trades against the nose's length.
 
+## 2o. The cute eye: a single-lidded eye on a diagonal, a switch, wet (DECISIONS 2026-11-17, cuter eyes)
+
+The user's picture (one eye, small and soft; kept out of git in `Saved/Eyes/ref/cute_eye.png`) and their own tracing of
+it: "recreate this exact eye shape, we currently lack 'asian' eye shapes, try get the exact curvature ... this eye
+shape is more diagonal than our current horizontal ones ... have a toggle button for this kind of eye called cute-eye".
+The picture is read as the eye on the right of a face seen from the front (her left eye, the nose to the picture's
+left: DECISIONS has why); both eyes get it as mirrors, as every shape key does.
+
+**What the shape is**, measured on the picture's outline (`Content/Studio/Eyes/cute_outline.json`: the corners and
+each lid as points, read where the picture's skin ends and from the tracing, smoothed):
+
+| | The picture | Our eye before (a new character) |
+|---|---|---|
+| the corners' line | the outer corner 20.6 degrees higher than the inner | 2.2 |
+| the upper lid over that line | 8.5 mm at its highest, a little inward of the middle; it leaves the inner corner at 47 degrees and comes down to the outer one nearly square | 6.5 mm, a low arch |
+| the lower lid under it | 4.7 mm, its lowest by the inner corner as the picture shows it (the line is tilted) | 4.0 mm |
+| the inner corner | a point | a rounded bay 3 mm tall (the tear duct's) |
+| the iris | 0.58 of the opening's length, its top under the lid, white under it by the inner corner | 0.43 |
+
+(lengths at our eye's size: the opening is 23 to 24 mm from corner to corner where the lids meet the eyeball.) In the
+corners' own frame the opening is an almond with a tall upper arch; nearly all of "diagonal" is the tilt.
+
+**The shape key** (*Cute eye*, 0 to 1, with the grafted eye's others: §2c; `eyegraft.js` `placeAll`, `eye_patch.py`
+`apply`: the same maths, our own fields, in this order before the lids are seated on the eyeball):
+
+1. **The inner corner narrowed to a point** (`CUTE_PINCH`): each point's height over the inner corner taken down by
+   0.6 of itself, within 2.5 mm toward the eye, 1.5 toward the nose and 3 above or below. A squeeze, so the skin
+   beside the corner goes with it smoothly.
+2. **Each lid's edge turned about the eye's own x axis by a profile along the opening** (`CUTE_UP`, `CUTE_LO`: 17
+   values in degrees from the inner corner to the outer, closer together toward the corners, a smooth curve through
+   them: `prof`). The upper lid goes up by 10 to 13 degrees over most of its length; the lower down by 5 over its
+   inner half and up by 2 toward the outer corner. **The skin takes it by how near it is to where the lids meet the
+   eye** (a bell 7 mm wide, nothing within 2.5 mm of the graft's edge), and **only the lid's own edge (within about
+   2 mm) takes the profile as it is: further off the skin takes a gentler one** (`wide`: the profile drawn toward its
+   neighbours and eased out to nothing over the fifth of the opening by each corner).
+3. **The diagonal** (`CUTE_TILT`, 19.9 degrees; `CUTE_PIVOT`, 4 mm): every point lifted by its distance toward the
+   temple from a point 4 mm outward of the eye's middle, times the tangent of the angle: the outer corner up 3.3 mm,
+   the inner down 5.5, **nothing moved sideways**. The skin takes it by how far it is from the graft's edge (all of
+   it from 8 mm in) and how near the opening (a bell 10 mm wide: the cheek stays).
+4. **The eyeball's height in its lids** (`CUTE_RISE`, -0.2 mm, in `eyeOf`): with the pivot the opening already sits
+   1.4 mm lower on the eye, so with the eyes level the upper lid rests on the iris's top and the white shows under
+   it by the inner corner, as in the picture (there the eye also looks up a little).
+
+5. **The skin it has moved, smoothed** (`CUTE_RELAX`, 12 passes, after the other keys): each point drawn half way
+   toward the middle of its neighbours: the upper lid's skin from past its rim to short of the graft's edge, and both
+   lids' beside the outer corner. A single lid has no fold to keep, and the lift leaves fine ones (in Godot's light
+   they showed as four or five lines along the lid). The lid's own rim and where it meets the eye aren't touched.
+
+**Why it's built this way: the side sag.** The first version turned the whole eye region about the eye's middle and
+let all the skin out to the graft's edge follow the lids. The user ringed the result: a fold from the outer corner
+down the side of the cheek ("the weird side sag"). Measured as the angles between neighbouring triangles of the skin
+that shows, against the plain eye's (rms of the increase, degrees):
+
+| | beside and under the outer corner | above it | the upper lid | under the eye |
+|---|---|---|---|---|
+| a lift straight up and down, all the skin out to the graft's edge following the lids' turn | 7.2 | 16.8 | 10.6 | 7.9 |
+| only skin near the lid's edge following the turn; the lift fading from the opening | 4.5 | 15.0 | 8.8 | 3.1 |
+| ... and a gentler profile away from the edge | 4.3 | 11.1 | 8.5 | 2.6 |
+| ... and the pivot 4 mm outward | 3.1 | 6.7 | 6.4 | 3.6 |
+| ... and the skin it moved smoothed (as built) | 2.2 | 3.3 | 6.3 | 3.6 |
+
+(The very first version, a turn of the whole region, was taken out before this measure was made; its picture is the
+one the user ringed.) A turn moves the skin under the outer corner outward as well as up, into the skin beside it that doesn't move; a
+profile that changes fast along the lid, followed by a whole column of skin, is a crease down that column; and there
+are 8 mm of skin over the outer corner where there are 18 under the inner one. The fall-off made for the other keys
+(`fade`) halves within 2 mm of a corner, where this key moves the most, so it isn't used here.
+
+The profiles and the tilt are **fitted, not drawn** (`python docs/research/cute_eye/fit.py BODY.bin --write`): each
+profile value moved by how far the lid's edge is from the outline there, sixty passes (more smoothing by the
+corners), the tilt until the corners' line is the picture's (they're seated on the eyeball again after the lift,
+which moves them). On a new character's eye (the v2female head, what the numbers were fitted on): **the outer corner
+20.6 degrees higher (the picture's 20.6), the points where the lids meet the eyeball 0.08 mm from the outline (rms),
+0.27 at most**; on MHR's plain base 19.6 degrees and 0.19 mm. The pinch, the reaches, the pivot and the rise are
+chosen by looking and by the table above.
+
+**The switch** (Skin, Eyes, the first row under the eye's shape: *Cute eye*; `setCuteEye`): on, the eyes are this
+kind: Cute eye 1, Crease -0.85 (a single lid: the picture's, "the mono eyelid eye shape"), Inner fold 0.45
+(`eyegraft.js` `CUTE_KEYS`), the iris at least 36 degrees, **Wet eyes** 1. What those were is kept with the character
+(`st.eyes.cuteWas`) and put back when it's switched off. It follows the Cute eye slider (taken to 0 by hand, it shows
+off), an eye look's card and a head card. The shape preset menu has *Cute eye* (the three keys alone).
+
+**Wet eyes** (Skin, Eyes, with the eye's paint: 0 to 1; `tools/shared/eye.js` `wet`, in every export's eye record):
+the tear film as a wet eye shows it. The tear line (the strip along the lower lid, §2 of the eyes) reaches further
+onto the eye, is uneven along the lid (it glistens in stretches, never one white line) and **carries on into the
+corners, where it pools** (the outer one most: the picture's blob of light where the lids meet); it's brighter and
+sharper, and a wet eye has one whatever the Tear line slider says. The eye's own gloss goes up with it (`wetGloss`).
+Godot draws the rest (docs/GODOT_LOOK.md §5ab). **Catchlights tall** (with the catchlights that stay): taller than
+wide, a window's reflection (the picture's two are about three times as tall as wide).
+
+**The card** (Face, Eye looks: *Cute eye (wet)*; `eyelooks.js` `cute`) is the picture's whole eye on any character:
+
+| In the picture | Here |
+|---|---|
+| the opening, a single lid | the switch's keys |
+| a big, very dark brown iris the pupil melts into | `iris` `#1c0d0b`, `iris2` `#3a1d18`, Iris size 36, Pupil 0.44, Fibres 0.15, a soft limbus |
+| two tall catchlights near the iris's left and right edges | Catchlights that stay 1, at -0.7 and 0.72 across, Catchlights tall 3.2, the second the bigger |
+| a bluish line low on the cornea | left out (Wet line in the cornea 0: at any strength it reads as a white blob under so dark an iris) |
+| a cool lavender white, shaded under the lid | Sclera `#e6e5f2`, White warmth -0.3, White brightness 0.8, Lid shadow 0.7 |
+| a pool of light where the lids meet, glints beside it | Wet eyes 1, Tear line 0.6 |
+| a soft dark line along the upper lid, hardly lashes, none below | the lash style Eyes v3 (a soft band lying down over the eye) at 4.5 mm with no lower lashes, brown-black |
+| the lid's line carried on down past the outer corner (the tracing's tail), reddish-brown | Eyeliner 0.55 with Liner wing -0.6 (a puppy liner), Eyeshadow gathered at the outer corner |
+| a wet pink rim under the eye | Waterline 0.6, Under-eye shadow, Aegyo-sal |
+
+A picture: `docs/godot_sheets/2026-11-17_cute_eye.jpg` (the card on a new character, in the Studio and in Godot);
+`docs/research/cute_eye/fit.jpg` (the opening before and after, on the picture's outline).
+
+**Checks.** EYEPATCH (`python tools/eye_patch.py check`, in check_all): the key at 1 and the switch's keys on MHR's
+base: nothing of a lid in the eyeball open or shut, the lids meeting shut; the opening's tilt and its distance from
+the picture's outline; half the key half way; the two eyes mirrors; the Studio's numbers the ones in `eye_patch.py`; and the Studio's own code
+(`eyegraft.js`, run in node by `eyegraft_points.mjs`) putting every point of the graft where `apply` does, with no
+keys, the switch's keys and every key at once, open and shut: under half a micron apart.
+CUTEEYE (`node tools/character/cuteeyetest.mjs [--out DIR]`, the Studio's server running): the switch in the page on
+a scratch character: off on a new one; clicked: its keys, the iris, wet, what was kept, the opening measured against
+the outline as the page has it (its outer corner 20.5 degrees higher where the picture's is 20.6 and a new character's
+2.1; the lids' edges 0.24 mm from the outline, 0.60 at most, with the single lid and the cornea under the lid), the
+right eye the left mirrored (0.04 mm); the slider by hand; clicked again: as it was; the card; saved. Ten minutes
+where the page draws on the CPU. EYELOOKS: the card's settings all controls that exist, its picture, its Godot eye look.
+
+**Not there**: the tail as geometry (the lid's line past the outer corner is makeup: the liner's wing and the
+shadow); the lashes' roots follow the new lid as they follow any (they're made on the lid as it is), but a single
+lid's lashes lying under its fold aren't modelled: the card uses the short band; the pivot and the eyeball's rise
+aren't sliders; the upper lid's skin is still creased 6 degrees more than the plain eye's on average (its sharpest
+folds are no sharper: the 95th of a hundred is 23 degrees on both), most of it where the lid rises steeply from the
+inner corner.
+
 ## 3. Each stage against the rule (as of this branch)
 
 | Stage | Sources kept | Bakes | Gaps |

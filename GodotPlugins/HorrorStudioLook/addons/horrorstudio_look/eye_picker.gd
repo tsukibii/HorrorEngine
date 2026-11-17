@@ -16,8 +16,8 @@ const LAYER := "HSEyePickerLayer"
 ## the sliders in their sections (HSEyePaint.CONTROLS' keys)
 const SECTIONS := [
 	["Iris", ["irisSize", "pupil", "pupilTurn", "patternAmt", "burst", "detail", "fibres", "limbal", "limbalWidth", "limbalSoft", "irisBright", "caustic"]],
-	["White", ["whiteBright", "whiteWarm", "veins", "cornerPink", "scleraShade", "gloss"]],
-	["Catchlights", ["catchKeep", "catch1", "catchSize", "catchX", "catchY", "catch2", "catch2Size", "catch2X", "catch2Y", "catchLine", "catchRoom", "catchGlow"]]]
+	["White", ["whiteBright", "whiteWarm", "veins", "cornerPink", "scleraShade", "gloss", "wet"]],
+	["Catchlights", ["catchKeep", "catch1", "catchSize", "catchTall", "catchX", "catchY", "catch2", "catch2Size", "catch2X", "catch2Y", "catchLine", "catchRoom", "catchGlow"]]]
 var save_dir := HSEyeLook.SAVED
 var who: Node = null
 var painter: HSEyePaint = null

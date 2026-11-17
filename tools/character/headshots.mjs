@@ -70,7 +70,7 @@ try {
       for (const k of Object.keys(b.st.sculpt)) delete b.st.sculpt[k]; Object.assign(b.st.sculpt, own);
       if (v.look) b.useLook(v.look);
       b.usePreset("head", v.head === "plain" ? "" : v.head);
-      if (v.eyes) b.st.eyes.shape = { size: 0, crease: 0, fold: 0, tilt: 0, opening: 0, depth: 0, ...v.eyes };
+      if (v.eyes) b.st.eyes.shape = { size: 0, crease: 0, fold: 0, tilt: 0, opening: 0, depth: 0, cute: 0, ...v.eyes };
       if (v.lips) for (const id of G.LIP_IDS) { if (v.lips[id]) b.st.sculpt[id] = v.lips[id]; else delete b.st.sculpt[id]; }
       Object.assign(b.st.sculpt, v.sculpt || {}); b.changed("body"); return { head: b.st.headPreset, eyes: b.st.eyes.shape }; }, [v, own]);
     if (typeof said === "string") throw new Error(said);

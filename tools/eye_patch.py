@@ -26,6 +26,7 @@ and meet, never through it.
 """
 import argparse
 import json
+import re
 import struct
 import subprocess
 import sys
@@ -382,15 +383,103 @@ def order_ring(Ts, RING, k, V, c):                      # a loop's points (RING 
 
 # ---- what the graft does to a body (the Studio's and the export's maths, in numpy) -----------------------------------------
 
-KEYS = {"size": 0.0, "crease": 0.0, "fold": 0.0, "tilt": 0.0, "opening": 0.0, "depth": 0.0}   # the eye's shape keys (eyegraft.js SHAPE_KEYS)
+KEYS = {"size": 0.0, "crease": 0.0, "fold": 0.0, "tilt": 0.0, "opening": 0.0, "depth": 0.0, "cute": 0.0}   # the eye's shape keys (eyegraft.js SHAPE_KEYS)
 KEY_LOW = {"opening": -2.5}                             # a key whose slider runs further down than -1 (the Opening: a heavy lid, eyes v3)
+KEY_FROM0 = ("fold", "cute")                            # keys that start at 0 (no -1 end)
+CUTE = {"crease": -0.85, "fold": 0.45, "cute": 1.0}     # the Cute eye switch's keys (eyegraft.js CUTE_KEYS)
 PRESETS = {"Default": {}, "East Asian": {"crease": -0.8, "fold": 0.6, "tilt": 0.25, "opening": -0.3, "depth": 0.35},
-           "Caucasian": {"crease": 0.6, "opening": 0.15, "depth": -0.4}}
+           "Caucasian": {"crease": 0.6, "opening": 0.15, "depth": -0.4}, "Cute eye": CUTE}
+# the cute eye (DECISIONS 2026-11-17, cuter eyes; eyegraft.js CUTE_*: the same numbers): the inner corner narrowed to a
+# point (CUTE_PINCH: how much of each point's height over the corner is taken, within so many mm of it toward the eye,
+# toward the nose and above or below); each lid's edge turned about the eye's own x axis by a profile along the opening
+# (CUTE_UP, CUTE_LO: degrees up at 17 places from the inner corner to the outer, closer together toward the corners:
+# _prof); the opening set on a diagonal: every point lifted by its distance from the eye's middle toward the temple
+# times the tangent of CUTE_TILT degrees (the outer corner up, the inner down, nothing moved sideways: a turn of the
+# whole region pushed the skin under the outer corner out into a ridge against the skin beside it), about a point
+# CUTE_PIVOT mm toward the temple from the eye's middle (the outer corner rises less and the inner drops more: there
+# are 8 mm of skin over the outer corner and 18 under the inner one); the eyeball CUTE_RISE mm higher in its lids (with
+# the pivot, the opening sits lower on the eye: the upper lid rests on the iris, as in the picture). How much of each the skin
+# round the opening takes (CUTE_REACH, mm): the lids' turn and the pinch by how near it is to where the lids meet the
+# eye (a bell that wide, and nothing within the second number of the graft's edge: a profile changes fast along the
+# lid near a corner, and turning the whole column of skin under it by the lid's own angle ran a crease down the
+# cheek from the outer corner: the user's "weird side sag"); the lift by how far it is from the graft's edge (all of it
+# from the third number in, none at the edge: the fall-off made for the other keys halves within 2 mm of a corner,
+# where the lift is greatest; and by how near it is to the opening, a bell the fourth number wide: the cheek under the
+# eye stays). The fifth: how near the lid's edge the skin takes the profile as it is; further off it takes a gentler
+# one (`_wide`). Last, after the other keys, the skin it has moved is smoothed (CUTE_RELAX passes, each point drawn
+# half way toward the middle of its neighbours: the upper lid's skin from past its rim to short of the graft's edge,
+# and both lids' beside the outer corner): a single lid has no folds, and the lift leaves fine ones. Fitted on a new character's eye so the opening's outline is the reference's
+# (docs/research/cute_eye/)
+CUTE_TILT = 19.88
+CUTE_PINCH = (0.6, 2.5, 1.5, 3.0)
+CUTE_RISE = -0.2
+CUTE_PIVOT = 4
+CUTE_RELAX = 12
+CUTE_REACH = (7.0, 2.5, 8.0, 10.0, 2.0)
+CUTE_UP = [0, -4.56, -5.95, -2.81, 4.15, 13.2, 13.32, 11.34, 10.42, 9.92, 9.91, 9.46, 8.55, 6.71, 5.24, 3.2, 0]
+CUTE_LO = [0, 0.26, -0.3, -1.8, -3.86, -4.97, -4.95, -4.79, -4.03, -3.08, -0.85, 0.71, 1.95, 2.24, 1.18, -0.54, 0]
 
 
 def _smooth(u):
     import numpy as np
     u = np.clip(u, 0, 1); return u * u * (3 - 2 * u)
+
+
+def _prof(tab, u):
+    """a profile's value at u (0..1 along the opening): a Catmull-Rom curve through its values, which stand closer
+    together toward the corners (the j-th of n+1 at u = (1 - cos(pi j / n)) / 2: the lids turn fastest there)"""
+    import numpy as np
+    t = np.asarray(tab, float); n = len(t) - 1; x = np.arccos(1 - 2 * np.clip(u, 0, 1)) / np.pi * n; i = np.minimum(np.floor(x).astype(int), n - 1); f = x - i
+    p0, p1, p2, p3 = t[np.maximum(i - 1, 0)], t[i], t[i + 1], t[np.minimum(i + 2, n)]
+    return 0.5 * (2 * p1 + (p2 - p0) * f + (2 * p0 - 5 * p1 + 4 * p2 - p3) * f * f + (3 * p1 - p0 - 3 * p2 + p3) * f ** 3)
+
+
+def _wide(tab):
+    """a profile as the skin away from the lid's edge takes it: drawn toward its neighbours eight times and eased out
+    to nothing over the fifth of the opening by each corner (eyegraft.js `wide`: the same sums)"""
+    import numpy as np
+    t = np.array(tab, float); n = len(t) - 1
+    for _ in range(8): t[1:-1] = 0.25 * t[:-2] + 0.5 * t[1:-1] + 0.25 * t[2:]
+    uk = 0.5 * (1 - np.cos(np.pi * np.arange(n + 1) / n))
+    return t * _smooth(uk / 0.2) * _smooth((1 - uk) / 0.2)
+
+
+def relax_zone(E, side):
+    """where the cute eye smooths the skin it has moved (0..1 a point): the upper lid's skin from past its rim to short
+    of the graft's edge (a single lid has no fold to keep), and both lids' beside the outer corner; and each point's
+    neighbours (the points it shares a triangle with), as rows padded with -1"""
+    import numpy as np
+    g = E[side]
+    if "_relax" not in g:
+        lid, u, sx = fields(E, side); rf = g["ring"].astype(float)
+        by_ring = _smooth((rf - 4) / 3) * (1 - _smooth((rf - 17) / 3)) * (g["ring"] < 999)
+        g["_relax"] = by_ring * np.maximum(lid > 0, _smooth((u - 0.85) / 0.15))
+        nb = [set() for _ in range(len(rf))]
+        for a, b, c in g["faces"].reshape(-1, 3): nb[a] |= {b, c}; nb[b] |= {a, c}; nb[c] |= {a, b}
+        idx = np.full((len(nb), max(len(x) for x in nb)), -1)
+        for i, x in enumerate(nb): idx[i, :len(x)] = sorted(x)
+        g["_nb"] = idx
+    return g["_relax"], g["_nb"]
+
+
+def edge_dist(E, side):
+    """each point's distance (mm, at rest) from the graft's edge: its last loop and MHR's own points round the hole"""
+    import numpy as np
+    g = E[side]
+    if "_edge" not in g:
+        e = g["pos"][g["ring"] >= E["header"]["loops"]["out"]]
+        g["_edge"] = np.linalg.norm(g["pos"][:, None] - e[None], axis=2).min(1) * 1000
+    return g["_edge"]
+
+
+def rim_dist(E, side):
+    """each point's distance (mm, at rest) from where the lids meet the eyeball (the nearest point of that loop)"""
+    import numpy as np
+    g = E[side]
+    if "_rim" not in g:
+        e = g["pos"][g["ring"] == 0]
+        g["_rim"] = np.linalg.norm(g["pos"][:, None] - e[None], axis=2).min(1) * 1000
+    return g["_rim"]
 
 
 def fields(E, side):
@@ -403,6 +492,50 @@ def fields(E, side):
     line = yin + (yout - yin) * np.clip((lx - xin) / (xout - xin), 0, 1)
     lid = np.where(g["blink"] > 0, 1, np.where(g["blink"] < 0, -1, np.where(ly > line, 1, -1)))
     return lid, (lx - xin) / (xout - xin), sx
+
+
+CUTE_OUTLINE = ROOT / "Content" / "Studio" / "Eyes" / "cute_outline.json"   # the picture's opening: its corners and each lid as points
+
+
+def cute_target(length, n=400):
+    """the reference's opening for an eye `length` from corner to corner (the picture's own outline, smoothed: its
+    points joined, resampled evenly and passed through a 1-2-1 filter, the corners kept): each lid as points in the
+    frame of the corners (s along them from their middle, h square to them, up), and the corners' tilt in degrees"""
+    import numpy as np
+    d = json.loads(CUTE_OUTLINE.read_text(encoding="utf-8")); I, O = np.array(d["inner"], float), np.array(d["outer"], float)
+
+    def curve(P):
+        P = np.array([I] + P + [O], float); t = np.r_[0, np.cumsum(np.hypot(*np.diff(P, axis=0).T))]; e = np.linspace(0, t[-1], n)
+        C = np.c_[np.interp(e, t, P[:, 0]), np.interp(e, t, P[:, 1])]
+        for _ in range(36): C[1:-1] = 0.25 * C[:-2] + 0.5 * C[1:-1] + 0.25 * C[2:]
+        return C
+    M = 0.5 * (I + O); L = np.hypot(*(O - I)); k = length / L; th = np.arctan2(-(O[1] - I[1]), O[0] - I[0])
+    R = np.array([[np.cos(th), np.sin(th)], [-np.sin(th), np.cos(th)]])
+    to = lambda C: np.c_[(C[:, 0] - M[0]) * k, -(C[:, 1] - M[1]) * k] @ R.T
+    return to(curve(d["upper"])), to(curve(d["lower"])), float(np.degrees(th))
+
+
+def opening(E, side, v, c):
+    """the opening as it is on a body (v, c from apply): the points where the lids meet the eyeball in the frame of its
+    own corners (mm; s along them toward the temple, h up), which lid each is, the corners' tilt (degrees, the outer
+    corner higher) and their distance"""
+    import numpy as np
+    g = E[side]; lid, u, sx = fields(E, side); cl = g["ring"] == 0
+    q = (v[cl] - c)[:, :2] * 1000; q[:, 0] *= sx
+    a, b = q[np.argmin(u[cl])], q[np.argmax(u[cl])]; th = np.arctan2(b[1] - a[1], b[0] - a[0])
+    R = np.array([[np.cos(th), np.sin(th)], [-np.sin(th), np.cos(th)]])
+    return (q - 0.5 * (a + b)) @ R.T, lid[cl], float(np.degrees(th)), float(np.hypot(*(b - a))), np.abs(g["blink"][cl]) > 0
+
+
+def cute_fit(E, side, v, c):
+    """how far the opening is from the reference's: its tilt against the picture's (degrees), and its points' distance
+    from the picture's outline, each to its own lid's line (mm: rms, the most)"""
+    import numpy as np
+    A, lid, tilt, length, moving = opening(E, side, v, c); up, lo, want = cute_target(length); e = []
+    for sel, T_ in ((lid > 0, up), (lid < 0, lo)):
+        sel = sel & moving; e += list(np.linalg.norm(A[sel][:, None] - T_[None], axis=2).min(1))
+    e = np.array(e)
+    return tilt - want, float(np.sqrt((e ** 2).mean())), float(np.abs(e).max()), tilt, length
 
 
 def _turn_x(v, c, a):                                   # each point turned about the head's x axis through c by its angle
@@ -431,8 +564,17 @@ def apply(E, side, P, P0, T, blink=0.0, keys=None):
     lid, u, sx = fields(E, side)
     tap = _smooth(u / 0.25) * _smooth((1 - u) / 0.2)     # (nothing at the corners)
     fd = G["fade"] if "fade" in G else np.where(own, 1 - _smooth((rf - 8) / 8), 0)   # (1 at the opening, 0 at the edge)
-    r = r0 * sc * (1 + 0.08 * k["size"]); c = c + np.array([0, 0, 1.2 * mm * k["depth"]])
+    r = r0 * sc * (1 + 0.08 * k["size"]); c = c + np.array([0, CUTE_RISE * mm * k["cute"], 1.2 * mm * k["depth"]])
     v = v + (v - c) * (0.08 * k["size"] * _smooth(fd / 0.6))[:, None]
+    if k["cute"]:                                        # the cute eye, in the eye's own frame
+        ed = edge_dist(E, side); w = np.exp(-(rim_dist(E, side) / CUTE_REACH[0]) ** 2) * _smooth(ed / CUTE_REACH[1])   # (how much of the pinch and the turn the skin takes: by how near it is to where the lids meet the eye)
+        ci = int(np.nonzero(ring == 0)[0][np.argmin(((base - c0)[:, 0] * sx)[ring == 0])])   # the inner corner: narrowed to a point
+        d = (v[:, 0] - v[ci, 0]) * sx / mm; dy = v[:, 1] - v[ci, 1]
+        v[:, 1] -= CUTE_PINCH[0] * k["cute"] * dy * np.exp(-(d / np.where(d > 0, CUTE_PINCH[1], CUTE_PINCH[2])) ** 2 - (dy / (CUTE_PINCH[3] * mm)) ** 2) * w
+        near = np.exp(-(rim_dist(E, side) / CUTE_REACH[4]) ** 2)   # (the lid's own edge takes its profile as it is; the skin further off a gentler one that eases out toward the corners: a profile that stops dead at a corner is a step in the skin above it)
+        turn = np.where(lid > 0, _prof(CUTE_UP, u), _prof(CUTE_LO, u)) * near + np.where(lid > 0, _prof(_wide(CUTE_UP), u), _prof(_wide(CUTE_LO), u)) * (1 - near)
+        v = _turn_x(v, c, -np.radians(turn) * k["cute"] * w)   # each lid's edge turned by its profile
+        v[:, 1] += np.tan(np.radians(CUTE_TILT) * k["cute"]) * ((v[:, 0] - c[0]) * sx - CUTE_PIVOT * mm) * _smooth(ed / CUTE_REACH[2]) * np.exp(-(rim_dist(E, side) / CUTE_REACH[3]) ** 2)   # on a diagonal: the outer corner up, the inner down, about a point CUTE_PIVOT mm toward the temple
     a = np.radians(8) * k["tilt"] * _smooth(fd / 0.5)
     lx, ly = (v[:, 0] - c[0]) * sx, v[:, 1] - c[1]
     v[:, 0] = c[0] + (lx * np.cos(a) - ly * np.sin(a)) * sx; v[:, 1] = c[1] + lx * np.sin(a) + ly * np.cos(a)
@@ -450,6 +592,10 @@ def apply(E, side, P, P0, T, blink=0.0, keys=None):
         b = np.exp(-((rf - 12) / 3.5) ** 2) * up * tap; v = v + nrm * (1.4 * mm * -k["crease"] * b)[:, None]; v[:, 1] -= 0.8 * mm * -k["crease"] * b
     f = (1 - _smooth(u / 0.3)) * np.exp(-((rf - 7) / 4) ** 2) * _smooth((rf - 3) / 2) * up   # (the lid's edge stays: the skin above it drapes over the corner)
     v = v + k["fold"] * f[:, None] * np.array([-0.8 * mm * sx, -1.2 * mm, 0.4 * mm])
+    if k["cute"]:                                        # the skin the cute eye has moved, smoothed: each point drawn half way toward the middle of its neighbours, CUTE_RELAX times
+        z, nb = relax_zone(E, side); has = nb >= 0; cnt = np.maximum(has.sum(1), 1)[:, None]
+        for _ in range(CUTE_RELAX):
+            v = v + (0.5 * k["cute"] * z)[:, None] * (np.where(has[..., None], v[np.maximum(nb, 0)], 0).sum(1) / cnt - v)
     if blink:
         q = v - c; psi = np.arctan2(q[:, 1], q[:, 2]); x = q[:, 0]; w = G["blink"]
         cl = ring == 0; upc, loc_ = cl & (w >= 0), cl & (w <= 0)   # (the corners in both lids: each closes onto them)
@@ -558,7 +704,7 @@ def cmd_check(a):
     for b in sorted((ROOT / "Content" / "Studio" / "People").glob("*/body.bin")):
         if b.stat().st_size == P0.size * 4: bodies[b.parent.name] = np.frombuffer(b.read_bytes(), dtype=np.float32).reshape(-1, 3).astype(np.float64)
     tries = [(n, P, {}) for n, P in list(bodies.items())[:4]] + [(f"MHR's base, {pn}", P0, pk) for pn, pk in PRESETS.items() if pk]
-    tries += [(f"MHR's base, {kk} {vv:+g}", P0, {kk: vv}) for kk in KEYS for vv in ((KEY_LOW.get(kk, -1), 1) if kk != "fold" else (1,))]
+    tries += [(f"MHR's base, {kk} {vv:+g}", P0, {kk: vv}) for kk in KEYS for vv in ((KEY_LOW.get(kk, -1), 1) if kk not in KEY_FROM0 else (1,))]
     for name, P, keys in tries:
         for side in ("L", "R"):
             g = E[side]; lid = (g["ring"] > 0) & (g["ring"] < 999)
@@ -571,6 +717,47 @@ def cmd_check(a):
             seat = np.abs(np.linalg.norm(v0[cl] - c, axis=1) - r).max() * 1000
             if keys and side == "R": continue                 # (the keys are mirrored: the left says it)
             say(ins0 == 0 and ins1 == 0 and gap <= 1.05 and seat < 0.5, f"{name} {side}: the eyeball {r * 1000:.1f} mm; open and shut nothing of the lids inside it ({ins0}, {ins1}); shut the lids meet ({dd.max() * 1000:.2f} mm at most, {gap:.2f} of the edge's own spacing); their edge on it within {seat:.2f} mm")
+    # the cute eye (DECISIONS 2026-11-17, cuter eyes): its opening is the picture's, on MHR's base and on a new character's
+    # body when there's one here; half of it is half way there; the two eyes mirrors; the Studio's numbers these
+    if CUTE_OUTLINE.exists():
+        named = [(n, P) for n, P in bodies.items()][:3]
+        for name, P in named:
+            v, c, _ = apply(E, "L", P, P0, T, 0.0, {"cute": 1.0}); dt, rms, most, tilt, length = cute_fit(E, "L", v, c)
+            v0, c0_, _ = apply(E, "L", P, P0, T, 0.0, {}); t0 = opening(E, "L", v0, c0_)[2]
+            words = (f"{name}, the cute eye: the opening {length:.1f} mm from corner to corner, its outer corner {tilt:.1f} deg higher (the picture's {tilt - dt:.1f}; without the key {t0:.1f}), "
+                     f"its points {rms:.2f} mm from the picture's outline (rms), {most:.2f} at most")
+            if name == "MHR's base": say(abs(dt) < 2.0 and rms < 0.4 and most < 1.2, words)   # (fitted on a new character's eye, the v2female head: MHR's base a little off it)
+            else: print("  --  " + words)                # (a character's own face: said, not judged; a creature's eyes are its own)
+        vh, ch, _ = apply(E, "L", P0, P0, T, 0.0, {"cute": 0.5}); th = opening(E, "L", vh, ch)[2]
+        v1, c1, _ = apply(E, "L", P0, P0, T, 0.0, {"cute": 1.0}); t1 = opening(E, "L", v1, c1)[2]; v0, c0_, _ = apply(E, "L", P0, P0, T, 0.0, {}); t0 = opening(E, "L", v0, c0_)[2]
+        say(abs(th - 0.5 * (t0 + t1)) < 1.0, f"at half the key the opening is half way there ({th:.1f} deg between {t0:.1f} and {t1:.1f})")
+        vr, cr, _ = apply(E, "R", P0, P0, T, 0.0, CUTE); vl, cl_, _ = apply(E, "L", P0, P0, T, 0.0, CUTE); m = E["L"]["ring"] < E["header"]["loops"]["ease"]
+        off = np.abs((vr[m] - cr) * [-1, 1, 1] - (vl[m] - cl_)).max() * 1000
+        say(off < 0.05, f"the two eyes are mirrors with the Cute eye switch's keys ({off:.3f} mm apart at most, each about its own eyeball)")
+    src = (ROOT / "tools" / "character" / "eyegraft.js").read_text(encoding="utf-8")
+    num = lambda name: [float(x) for x in re.search(rf"export const {name} = \[?([-\d., ]+)\]?", src).group(1).split(",")]
+    keys = {k: float(x) for k, x in re.findall(r"(\w+): (-?[\d.]+)", re.search(r"export const CUTE_KEYS = \{([^}]*)\}", src).group(1))}
+    rise = float(re.search(r"CUTE_RISE = ([-\d.]+)", src).group(1))
+    say(num("CUTE_TILT") == [CUTE_TILT] and num("CUTE_UP") == list(CUTE_UP) and num("CUTE_LO") == list(CUTE_LO) and num("CUTE_PINCH") == list(CUTE_PINCH) and num("CUTE_REACH") == list(CUTE_REACH) and rise == CUTE_RISE and float(re.search(r"CUTE_PIVOT = ([-\d.]+)", src).group(1)) == CUTE_PIVOT and int(re.search(r"CUTE_RELAX = (\d+)", src).group(1)) == CUTE_RELAX and keys == CUTE,
+        f"the Studio's cute eye (eyegraft.js) has these numbers: the tilt {CUTE_TILT}, the two profiles' {len(CUTE_UP)} values each, the pinch, the reach, the rise, the pivot, the smoothing's passes, the switch's keys")
+    # and the Studio's own code, run in node, puts every point where apply() does (the maths is written twice)
+    import shutil
+    node = shutil.which("node")
+    if not node:
+        print("  --  no node here: the Studio's own code (eyegraft.js) isn't run against this")
+    else:
+        OUTDIR.mkdir(parents=True, exist_ok=True)
+        pf, tf, of = OUTDIR / "_p0.f32", OUTDIR / "_tris.u32", OUTDIR / "_js.f32"
+        P0.astype("<f4").tofile(pf); T.astype("<u4").tofile(tf)
+        for name, keys in (("no keys", {}), ("the Cute eye switch's keys", CUTE), ("every key at once", {"size": 0.5, "crease": 0.6, "fold": 0.5, "tilt": -0.7, "opening": -1.2, "depth": 0.4, "cute": 0.6})):
+            r = subprocess.run([node, str(ROOT / "tools" / "character" / "eyegraft_points.mjs"), str(BIN), str(pf), str(tf), json.dumps(keys), str(of)], capture_output=True, text=True, timeout=300)
+            if r.returncode or not of.exists():
+                say(False, f"the Studio's own code (eyegraft.js) didn't run in node: {(r.stderr or r.stdout)[-300:]}"); break
+            js = np.fromfile(of, dtype="<f4").reshape(2, -1, 3).astype(np.float64); own = E["L"]["ring"] < 999
+            v0, _, _ = apply(E, "L", P0.astype("<f4").astype(np.float64), P0, T, 0.0, keys); v1, _, _ = apply(E, "L", P0.astype("<f4").astype(np.float64), P0, T, 1.0, keys)
+            d0 = np.linalg.norm(js[0] - v0, axis=1)[own].max() * 1e6; d1 = np.linalg.norm(js[1] - v1, axis=1)[own].max() * 1e6
+            say(d0 < 3 and d1 < 3, f"the Studio's own code (eyegraft.js, run in node) puts the graft's {int(own.sum())} points where this does, {name}: {d0:.2f} microns apart at most open, {d1:.2f} shut")
+        for f in (pf, tf, of): f.unlink(missing_ok=True)
     print("EYEPATCH " + ("FAIL" if bad else "ok")); sys.exit(1 if bad else 0)
 
 
