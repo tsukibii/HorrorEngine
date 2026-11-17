@@ -3,6 +3,81 @@
 What each bug that took more than one try taught us: the rule, then the story in a line. Add one before pushing
 the fix.
 
+## Cuter eyes: what took a second try, and what the export's checks found (2026-11-17, `Cuter-Eyes`)
+
+- **A lid lifted alone bunches under its fold.** The first Cute eye key turned each lid's edge by the blink's own
+  weights (all of it at the edge, none by the 13th loop), as the Opening key does for a degree or two. For the 8
+  degrees a tall round eye wants, the lid's plate (2.9 mm from its edge to its crease, seen from the front) was pressed
+  into half a millimetre: a hard ridge with a dark line over it. The skin round the opening has to go with the lid,
+  all the way to the graft's edge (`1 - (1 - fade)^2.5`). A weight made for a small move isn't the weight for a big one.
+- **A squeeze has to be a field, not two parts moved toward each other.** The inner corner was first narrowed by
+  letting the two lids' profiles be non-zero right at the corner: the lids' points moved 1.2 mm while the corner's own
+  point and the skin beside it (which belong to neither lid) stood still, and the skin crumpled. Narrowed by a smooth
+  squeeze toward the corner's height that every point near it takes, it's a point with nothing torn.
+- **Fit against the thing as it ends up, not as it started.** The first fit sized the picture's outline by the
+  opening's length before the key; the key's turn and the eyeball's rise seat the corners on the eyeball again and the
+  opening comes out 5% shorter, so the lids were fitted to an outline 5% too big and the fit's own report (0.2 mm)
+  was against that wrong outline. Sized by the opening as it is on each pass: 0.06 mm.
+- **An error measured square to one axis blows up where the curve runs along that axis.** "How far under the outline
+  is each point" said 2 mm at the outer corner, where the outline comes down nearly square to the corners' line and
+  the points were 0.2 mm from it. The check measures each point's distance to the nearest part of its lid's line.
+- **Where a pose hides in a reference, don't copy it into the shape.** In the picture the iris sits high in the
+  opening because the eye looks up at the camera. Placing the opening by the iris would have put the lower lid 13 mm
+  under the eyeball's middle. The opening is placed on the eyeball as a level gaze wants it (the upper lid resting on
+  the iris) and the picture's own gaze is left to a pose.
+- **A wet line that's even is a white stripe.** The first Wet eyes made the tear line brighter all along: a solid white
+  line along the lid in the Studio, a band in Godot. Wet is uneven: stretches that glisten, small glints, and most of
+  the light where the film pools. And it's lit only by lamps: a glisten that glows by itself shows in the dark.
+- **Turning a patch of a face like a wheel pushes its skin sideways into its neighbours.** The first diagonal was a
+  turn of the whole eye region about the eye's middle. Under the outer corner the skin moved outward as well as up,
+  into skin that doesn't move: a fold from the corner down the cheek (the user ringed it: "the weird side sag"). A
+  diagonal eye is the corners lifted and lowered, straight up and down; every cross-section of a lid stays as it was.
+- **What a lid's edge does, the column of skin under it mustn't.** The lids' profiles change fast along the lid by a
+  corner (they have to: the outline does). Followed by all the skin above and below at the same place along the lid,
+  each fast change was a crease running away from the lid for as far as the skin followed. Only skin near the edge
+  follows the profile as it is; further off it follows a blurred one that eases out before the corners.
+- **Spend a move where there's skin to take it.** All the lift was at the outer corner (8 mm of skin above it to the
+  graft's edge) and the inner corner dropped as much into 18 mm. Moving the pivot 4 mm outward halves the creasing
+  above the outer corner for a little more under the eye.
+- **A fall-off that's right for one key isn't for the next.** The graft's `fade` is harmonic from the opening to the
+  edge: even, except at the opening's corners, where any such function halves within 2 mm (a tip). The Tilt key's 8
+  degrees never showed it; 20 did. Ask where a new move is biggest and look at the fall-off there.
+- **Measure a fold before looking for it again.** Each Studio picture took five minutes; the angles between
+  neighbouring triangles of the skin, against the plain eye's, by zone, took three seconds and said which term made
+  which crease (take one term out, measure again). A quick clay render in numpy showed the same folds to the eye.
+  Then one Studio picture to confirm.
+- **Look in the other renderer before calling a surface smooth.** The upper lid looked smooth in the Studio's soft
+  light; Godot's lamp showed four or five fine fold lines along it. What a key moves a lot, smooth afterwards (a few
+  passes of each point toward the middle of its neighbours, kept off the lid's rim), and look under a hard light.
+- **Read which machine the clock is on before waiting.** I counted the Studio's software-drawn runs as "ten minutes
+  each" from the first one, which had failed on a missing library (MediaPipe's worker wanted `libEGL`: `apt-get
+  install libegl1`; the page then waits for ever for its landmarks). With it, a run is three to seven minutes here.
+  When a page never finishes loading, ask its routes directly (`curl -X POST .../api/face/landmarks`) before waiting
+  again.
+- **A new shape isn't done at rest: run what holds its movement.** The cute eye passed everything open and shut, and
+  the two checks an export's lids have (LASHFIT, EYELIDS) both failed on its first export. A lid that starts 13
+  degrees higher travels further to shut, and what was tuned for a plain eye's way (eight in-between weights, lashes
+  to within 7% of the inner corner) wasn't enough for it. Make an export and run its checks before calling a new eye
+  shape built.
+- **When a check fails, find the points before changing a number.** "1165 lash points under the skin" read as a big
+  fault. Tallied by where they were along the lid and at which weight, they were the innermost lashes in a corner
+  drawn to a point, and one more turned out to be a point level with the skin's edge whose twin a micron away read
+  +0.2 mm where it read -0.2. Three different causes, three different fixes; a looser limit would have hidden all
+  three.
+- **A signed distance to an open surface has no sign beside its edge.** The skin a lash can lie on ends at the lid's
+  back edge (the lining is left out on purpose), and lashes are rooted along that edge. Say what the measure means
+  there (level with the edge is outside) instead of letting rounding say it, in the fit and in the check alike.
+- **Don't give a fit and its check the same margin.** Forgiving "within 6 degrees of level" in the fit left roots
+  unlifted in one state of the blink and lifted in the next: between them they went under, 36 where there had been
+  8. The fit forgives only rounding (half a degree); the check counts what's beside the edge apart from what's under
+  the skin.
+- **Where a file says what a thing is, a check reads it.** EYELIDS told a lid's lining from its front by which way
+  each triangle faces (a threshold, 0.30), though the file lists its lining's triangles and LASHFIT already read the
+  list. On a lid whose edge runs diagonally three lining triangles faced out by 0.31. The angle test stays for files
+  that don't say.
+- **A name that holds a number holds only so many digits.** The blink's in-between targets are named by their weight
+  in ten-thousandths; 0.96875 is `in9688`. Half a micron of a lid's travel, but choose weights the name holds (0.97).
+
 ## The HUD inside the tape's picture: what the pictures found (2026-11-15, `enhancements`, E52)
 
 - **Lay a part from the edge it sits at, and look at a short wide window too.** The pause menu's legend sat at a
@@ -3553,55 +3628,3 @@ pale one shows.
   is heard in one place.
 - **A reach test out of reach passes.** "E on the key does nothing while its flag is off" passed from 2.1 m away,
   where E reaches nothing at all. A refusal is counted (the Logic's `refused`), not inferred from nothing happening.
-
-## 2026-11-17, cuter eyes (the cute eye's shape key, wet eyes)
-
-- **A lid lifted alone bunches under its fold.** The first Cute eye key turned each lid's edge by the blink's own
-  weights (all of it at the edge, none by the 13th loop), as the Opening key does for a degree or two. For the 8
-  degrees a tall round eye wants, the lid's plate (2.9 mm from its edge to its crease, seen from the front) was pressed
-  into half a millimetre: a hard ridge with a dark line over it. The skin round the opening has to go with the lid,
-  all the way to the graft's edge (`1 - (1 - fade)^2.5`). A weight made for a small move isn't the weight for a big one.
-- **A squeeze has to be a field, not two parts moved toward each other.** The inner corner was first narrowed by
-  letting the two lids' profiles be non-zero right at the corner: the lids' points moved 1.2 mm while the corner's own
-  point and the skin beside it (which belong to neither lid) stood still, and the skin crumpled. Narrowed by a smooth
-  squeeze toward the corner's height that every point near it takes, it's a point with nothing torn.
-- **Fit against the thing as it ends up, not as it started.** The first fit sized the picture's outline by the
-  opening's length before the key; the key's turn and the eyeball's rise seat the corners on the eyeball again and the
-  opening comes out 5% shorter, so the lids were fitted to an outline 5% too big and the fit's own report (0.2 mm)
-  was against that wrong outline. Sized by the opening as it is on each pass: 0.06 mm.
-- **An error measured square to one axis blows up where the curve runs along that axis.** "How far under the outline
-  is each point" said 2 mm at the outer corner, where the outline comes down nearly square to the corners' line and
-  the points were 0.2 mm from it. The check measures each point's distance to the nearest part of its lid's line.
-- **Where a pose hides in a reference, don't copy it into the shape.** In the picture the iris sits high in the
-  opening because the eye looks up at the camera. Placing the opening by the iris would have put the lower lid 13 mm
-  under the eyeball's middle. The opening is placed on the eyeball as a level gaze wants it (the upper lid resting on
-  the iris) and the picture's own gaze is left to a pose.
-- **A wet line that's even is a white stripe.** The first Wet eyes made the tear line brighter all along: a solid white
-  line along the lid in the Studio, a band in Godot. Wet is uneven: stretches that glisten, small glints, and most of
-  the light where the film pools. And it's lit only by lamps: a glisten that glows by itself shows in the dark.
-- **Turning a patch of a face like a wheel pushes its skin sideways into its neighbours.** The first diagonal was a
-  turn of the whole eye region about the eye's middle. Under the outer corner the skin moved outward as well as up,
-  into skin that doesn't move: a fold from the corner down the cheek (the user ringed it: "the weird side sag"). A
-  diagonal eye is the corners lifted and lowered, straight up and down; every cross-section of a lid stays as it was.
-- **What a lid's edge does, the column of skin under it mustn't.** The lids' profiles change fast along the lid by a
-  corner (they have to: the outline does). Followed by all the skin above and below at the same place along the lid,
-  each fast change was a crease running away from the lid for as far as the skin followed. Only skin near the edge
-  follows the profile as it is; further off it follows a blurred one that eases out before the corners.
-- **Spend a move where there's skin to take it.** All the lift was at the outer corner (8 mm of skin above it to the
-  graft's edge) and the inner corner dropped as much into 18 mm. Moving the pivot 4 mm outward halves the creasing
-  above the outer corner for a little more under the eye.
-- **A fall-off that's right for one key isn't for the next.** The graft's `fade` is harmonic from the opening to the
-  edge: even, except at the opening's corners, where any such function halves within 2 mm (a tip). The Tilt key's 8
-  degrees never showed it; 20 did. Ask where a new move is biggest and look at the fall-off there.
-- **Measure a fold before looking for it again.** Each Studio picture took five minutes; the angles between
-  neighbouring triangles of the skin, against the plain eye's, by zone, took three seconds and said which term made
-  which crease (take one term out, measure again). A quick clay render in numpy showed the same folds to the eye.
-  Then one Studio picture to confirm.
-- **Look in the other renderer before calling a surface smooth.** The upper lid looked smooth in the Studio's soft
-  light; Godot's lamp showed four or five fine fold lines along it. What a key moves a lot, smooth afterwards (a few
-  passes of each point toward the middle of its neighbours, kept off the lid's rim), and look under a hard light.
-- **Read which machine the clock is on before waiting.** I counted the Studio's software-drawn runs as "ten minutes
-  each" from the first one, which had failed on a missing library (MediaPipe's worker wanted `libEGL`: `apt-get
-  install libegl1`; the page then waits for ever for its landmarks). With it, a run is three to seven minutes here.
-  When a page never finishes loading, ask its routes directly (`curl -X POST .../api/face/landmarks`) before waiting
-  again.

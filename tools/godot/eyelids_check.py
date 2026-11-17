@@ -76,7 +76,12 @@ def glb_parts(path):
         if nm.endswith("_skin"):
             names = (m.get("extras") or {}).get("targetNames", [])
             targets = {names[i]: acc(t["POSITION"]).astype(np.float64) for i, t in enumerate(pr.get("targets", [])) if i < len(names) and "POSITION" in t}
-            skin = (P, T, targets, bool((nd.get("extras") or {}).get("eyeGraft")))   # (the grafted eyes: their lining lies inside the eyeball, CHARACTER_STUDIO §2c)
+            ex = nd.get("extras") or {}
+            lining = np.zeros(len(T), bool)            # the triangles the file calls the lids' lining (runs of [first, how many]); none said: none
+            runs = ex.get("lining") or []
+            for k in range(0, len(runs) - 1, 2):
+                lining[runs[k]:runs[k] + runs[k + 1]] = True
+            skin = (P, T, targets, bool(ex.get("eyeGraft")), lining)   # (the grafted eyes: their lining lies inside the eyeball, CHARACTER_STUDIO §2c)
         elif "_eye_" in nm:
             eyes[nm[-1]] = (P, T)
     return skin, eyes
@@ -85,13 +90,16 @@ def glb_parts(path):
 FRONT = 0.3      # a lid's front faces out from the eye's middle by more than this (the cosine: 72 degrees); its margin stands edge-on (within it)
 
 
-def zbuf(P, T, R, o, box, facing=None):
+def zbuf(P, T, R, o, box, facing=None, lining=None):
     """the nearest surface's depth (towards the viewer, +z after R) on a grid over box, -inf where there's none; with
     facing (an array like the grid), whether that nearest surface is not a lid's front: it faces o (its winding's
     normal toward it: a socket's lining, a lid's back on the eye) or stands edge-on to it (FRONT: a lid's margin, the
     ledge between its front and its back, which runs into the eyeball by design: over the white the part of it in the
     eye is inside the white's sphere, but under a lid that lies on the cornea the eye's surface is the dome's, further
-    out, and from above or below the dome hides the ledge's inner part as it should)"""
+    out, and from above or below the dome hides the ledge's inner part as it should), or is one of the triangles the
+    file itself calls the lids' lining (lining: a flag a triangle, the skin's `lining` extras as LASHFIT reads them: on
+    a lid whose edge runs on a diagonal, the cute eye's, the lining's first loop under the cornea's dome faces out a
+    degree past FRONT half way through the blink and was taken for a lid's front)"""
     Q = (P - o) @ R.T
     x0, y0, x1, y1 = box
     W, H = int((x1 - x0) / RES), int((y1 - y0) / RES)
@@ -99,7 +107,8 @@ def zbuf(P, T, R, o, box, facing=None):
     A, B, C = Q[T[:, 0]], Q[T[:, 1]], Q[T[:, 2]]
     keep = ((np.minimum(np.minimum(A[:, 0], B[:, 0]), C[:, 0]) < x1) & (np.maximum(np.maximum(A[:, 0], B[:, 0]), C[:, 0]) > x0) &
             (np.minimum(np.minimum(A[:, 1], B[:, 1]), C[:, 1]) < y1) & (np.maximum(np.maximum(A[:, 1], B[:, 1]), C[:, 1]) > y0))
-    for a, b, c in zip(A[keep], B[keep], C[keep]):
+    lin = lining[keep] if lining is not None else np.zeros(int(keep.sum()), bool)
+    for a, b, c, is_lining in zip(A[keep], B[keep], C[keep], lin):
         mnx, mxx = max(int((min(a[0], b[0], c[0]) - x0) / RES), 0), min(int((max(a[0], b[0], c[0]) - x0) / RES) + 1, W)
         mny, mxy = max(int((min(a[1], b[1], c[1]) - y0) / RES), 0), min(int((max(a[1], b[1], c[1]) - y0) / RES) + 1, H)
         if mnx >= mxx or mny >= mxy:
@@ -116,7 +125,7 @@ def zbuf(P, T, R, o, box, facing=None):
         z = np.where(m, w0 * a[2] + w1 * b[2] + w2 * c[2], -np.inf)
         if facing is not None:
             nrm = np.cross(b - a, c - a); cen = (a + b + c) / 3
-            inward = float(np.dot(nrm, cen)) < FRONT * float(np.linalg.norm(nrm) * np.linalg.norm(cen))
+            inward = bool(is_lining) or float(np.dot(nrm, cen)) < FRONT * float(np.linalg.norm(nrm) * np.linalg.norm(cen))
             fsub = facing[mny:mxy, mnx:mxx]; fsub[z > sub] = inward
         np.maximum(sub, z, out=sub)
     return Z
@@ -170,7 +179,7 @@ def sweep(skin, eyes):
             SP = skin_at(skin, w)
             for name, R in turns.items():
                 inward = np.zeros((H_, W_), bool) if lined else None
-                Zs, Ze = zbuf(SP, skin[1], R, c, box, inward), eyez[name]
+                Zs, Ze = zbuf(SP, skin[1], R, c, box, inward, skin[4] if lined and len(skin) > 4 else None), eyez[name]
                 eye = np.isfinite(Ze)
                 with np.errstate(invalid="ignore"):
                     dz = Ze - Zs

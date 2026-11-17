@@ -3160,7 +3160,7 @@ function browLash() {
     brows[side] = { upper: BROWROWS[side].upper.map(lmk), lower: BROWROWS[side].lower.map(lmk) };
   }
   const C = v(234).add(v(454)).multiplyScalar(0.5);
-  const r = BL.build({ lids, brows, F: F.toArray(), U: U.toArray(), C: C.toArray(), scale: SCALE, skin: st.brow.on ? browSkin(brows) : null }, st.groom.on ? { ...st.lash, line: st.groom.lash.line ?? 0.22 } : st.lash, st.brow); BLLIDS = lids;   // (by hand: the lash line's own darkness)
+  const r = BL.build({ lids, brows, F: F.toArray(), U: U.toArray(), C: C.toArray(), scale: SCALE, skin: st.brow.on ? browSkin(brows) : null }, { ...st.lash, ...(st.groom.on ? { line: st.groom.lash.line ?? 0.22 } : {}), pinch: st.eyes.shape?.cute ?? 0 }, st.brow); BLLIDS = lids;   // (by hand: the lash line's own darkness)
   if (st.groom.on) {                                     // the brows and lashes by hand (groom.js) in place of the clumped ones: made on the face as it is now
     const G = groomNow(lids, brows, F, U, X);
     r.lashes.dispose(); r.lashes = BL.strandCards(G.lashes, "lashes");
@@ -4164,7 +4164,7 @@ function lidsRest(P, O, gap = LIDGAP, reach = 0.004) {   // P: the drawn skin, a
 // cornea, and at eighths a sliver of the eye showed through it mid-blink (EYELIDS: 0.29 mm2 at 40%) and the lashes
 // dipped under the lid just before it shut (LASHFIT). HSBlink reads whatever in-betweens a file has
 const BLINKS = ["L", "R"], BLINK8 = [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 0.9375, 1];
-const BLINK16 = [...Array.from({ length: 15 }, (_, k) => (k + 1) / 16), 0.96875, 1];
+const BLINK16 = [...Array.from({ length: 15 }, (_, k) => (k + 1) / 16), 0.97, 1];   // (a target's name holds its weight in ten-thousandths: every one of these is whole there)
 let BLINKW = BLINK8;                                   // (set by blinkShapes, the first to use it in an export)
 const inName = (side, w) => w === 1 ? `eyesClosed_${side}` : `eyesClosed_${side}_in${Math.round(w * 10000)}`;   // its weight in ten-thousandths
 function eyeKeep(side) {                               // pushes points out of this eyeball so that none is deeper into it than it rests

@@ -86,8 +86,15 @@ run `python docs/research/cute_eye/fit.py BODY.bin --write` again.
   Studio's tear line pooled into the corners; Godot's `tear.gdshader` (the glisten, its own `light()`),
   `eye.gdshader` (`wet`, `kept_tall`), `HSEye.set_wet`, HSEyePaint and the picker.
 - **The eye look card Cute eye (wet)** (`eyelooks.js` `cute`, `eyes/eyes_cute.tres`).
-- **Checks**: EYEPATCH grown (in check_all: the outline, and the Studio's code run in node against the numpy code, point by point), CUTEEYE (`node tools/character/cuteeyetest.mjs`, the Studio's page),
-  WETEYES (`python tools/godot/wet_eyes_check.py`), EYELOOKS (the card).
+- **Its blink and lashes** (CHARACTER_STUDIO §2o, *Its blink and its lashes*): a cute export keeps its blink at
+  sixteen in-between weights (`BLINK16`; a plain eye's eight as they were), has no upper lashes on the lid's innermost
+  fifth (`browlash.js` `o.pinch`), and two checks say more exactly what they measure: LASHFIT (`lashfit.js`: beside
+  the skin's edge and level with it is not under the skin) and EYELIDS (the lining by the file's own `lining`).
+- **Checks**: EYEPATCH grown (in check_all: the outline, and the Studio's code run in node against the numpy code,
+  point by point), CUTEEYE (`node tools/character/cuteeyetest.mjs`, the Studio's page), WETEYES (`python
+  tools/godot/wet_eyes_check.py`), EYELOOKS (the card); on an export of the card's character (`node
+  tools/character/eyelooks.mjs make --only cute --hair daz_twin_tails --export`): LASHFIT and EYELIDS `--person
+  eyes_cute`, and on a plain one (`--only v3`, `--person eyes_v3`) as before.
 
 **Setting this cloud session up took**: `tools/godot_setup.sh --force` (Godot 4.7, xvfb, lavapipe), `python
 tools/face_mesh.py setup` and `apt-get install -y libegl1 libgles2` (MediaPipe's worker wants libEGL: without it the
@@ -97,6 +104,11 @@ draws on the CPU here: three to seven minutes each, one at a time.
 **For the user to look at and say**: the eye's direction (above); how diagonal (the Cute eye slider is the amount: 1
 is the picture's 20.6 degrees, which is a lot on a real head); the card's lashes (the picture has almost none: the
 card uses the short band and no lower lashes); how wet (Wet eyes; the pools at the corners are the strongest part).
+
+**Seen and not chased**: shut, the card's eyeshadow has a toothed upper edge on the lid (CHARACTER_STUDIO §2o):
+the file's texture has few texels for the lid skin that is folded away while the eye is open. A blink hides it; a
+character asleep would show it. The eyes v3 character has it too (not the cute eye's): a fix belongs to how the
+export bakes the lid's hidden skin, for every character.
 
 **What could come next**: the tail past the outer corner as geometry (now makeup: the liner's wing down); a tear
 that runs (the skin's wet layer has drips: tie one to Wet eyes); a marker or a starter script that wets the eyes

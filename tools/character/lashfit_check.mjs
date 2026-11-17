@@ -15,7 +15,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { makeSkin, closest, conform, inSeam } from "./lashfit.js";
+import { makeSkin, closest, conform, inSeam, behind } from "./lashfit.js";
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", ".."), args = process.argv.slice(2), opt = k => { const i = args.indexOf(k); return i < 0 ? null : args[i + 1]; };
 let ok = true;
 const say = (good, what) => { console.log((good ? "  ok  " : "  BAD ") + what); ok = ok && !!good; };
@@ -48,6 +48,15 @@ for (let k = 0; k < 400; k++) {
 say(n > 150 && worst < 1e-7, `the signed distance by the grid is the one over every triangle (${n} points near the skin, the furthest apart ${(worst / mm).toExponential(1)} mm)`);
 say(closest(S, 0, R + 3 * mm, R + 0.5 * mm, 2 * mm) > 0.49 * mm && closest(S, 0, R + 3 * mm, R - 0.4 * mm, 2 * mm) < -0.39 * mm && Number.isNaN(closest(S, 0, R + 3 * mm, R + 5 * mm, 2 * mm)),
   "in front of the lid it's outside, behind its skin inside, past its reach nothing");
+{ // beside the skin's edge: one triangle of skin 5 mm across, a point 0.2 mm past its edge
+  const tri = makeSkin(Float32Array.from([0, 0, 0, 5 * mm, 0, 0, 0, 5 * mm, 0]), [0, 1, 2], { cell: 1.2 * mm }), by = (dz) => closest(tri, -0.2 * mm, 2 * mm, dz, 2 * mm);
+  const h = [0, 0, 0, 0, 0, 0], sq = dz => { closest(tri, -0.2 * mm, 2 * mm, dz, 2 * mm, h); return behind(-0.2 * mm, 2 * mm, dz, h); };
+  say(by(1e-9) > 0.19 * mm && by(-1e-9) > 0.19 * mm && by(-0.02 * mm) < -0.2 * mm && closest(tri, 1 * mm, 1 * mm, -0.1 * mm, 2 * mm) < -0.099 * mm,
+    "a point beside the skin's edge and level with it is outside whichever side of level rounding puts it (0.2 mm off, a millionth of a millimetre over and under); a fiftieth of a millimetre lower it's under, as under the skin itself");
+  closest(tri, 1 * mm, 1 * mm, -0.1 * mm, 2 * mm, h);
+  say(Math.abs(behind(1 * mm, 1 * mm, -0.1 * mm, h) - 1) < 1e-6 && Math.abs(sq(-0.02 * mm) - 0.0995) < 0.002 && Math.abs(sq(-0.2 * mm) - 0.707) < 0.002,
+    "how squarely a point is behind the skin: 1 straight behind it, 0.10 a fiftieth of a millimetre under the level of its edge 0.2 mm beside it, 0.71 as far under as beside");
+}
 
 // ---- the lash line: a strip from the margin over the rim and up the lid, laid as three flat chords (as a strip through
 // a few points of the rim is): under the rounded rim between them
@@ -137,15 +146,20 @@ if (glbFile) {
       const lin = new Uint8Array(skin.idx.length / 3), runs = skin.extras.lining || []; let nLin = 0; for (let k = 0; k < runs.length; k += 2) for (let t = runs[k]; t < runs[k] + runs[k + 1]; t++) lin[t] = 1;
       const faces = []; for (let t = 0; t < skin.idx.length; t += 3) if (nearBox(skin.idx[t]) && nearBox(skin.idx[t + 1]) && nearBox(skin.idx[t + 2])) { if (lin[t / 3]) nLin++; else faces.push(skin.idx[t], skin.idx[t + 1], skin.idx[t + 2]); }
       const size = Math.hypot(hi[0] - lo[0], hi[1] - lo[1]), k = size / 0.11;                // (the lashes' span against an adult's eleven centimetres: a child's or a creature's hair's breadth)
-      const TOL = 0.05 * mm * k, rows = [];
+      // under the skin is behind it: a point whose nearest skin is the skin's own edge (the lid's back edge, where the lining that isn't skin begins: a lash is rooted
+      // along it, so that no bare skin shows between the eye and the lashes) and that is within 15 degrees of level with it (BESIDE: a quarter of its way from the skin
+      // behind it) is beside the skin, past where it ends, with nothing over it. The fit lifts whatever is below level at all in the states it fits; this is for between them
+      const TOL = 0.05 * mm * k, BESIDE = 0.25, rows = [];
       // every twentieth of the blink, and the weights the file holds a target for (its in-betweens' own, in ten-thousandths: there the lashes are as they were fitted; between them Godot blends two fitted states)
       const baked = [...new Set(Object.keys(lashes.targets).map(nm => /_in(\d+)$/.exec(nm)).filter(Boolean).map(m => parseInt(m[1]) / 10000))], steps = [...new Set([...Array.from({ length: 21 }, (_, s) => s / 20), ...baked])].sort((a, b) => a - b);
       for (const w of steps) { const SK = makeSkin(at(skin, w), faces, { cell: 1.2 * mm * k }), row = { w, baked: w === 0 || w === 1 || baked.includes(w) };
         for (const [nm, p] of [["lashes", lashes], ["line", lline]]) { if (!p) continue; const X = at(p, w), lift = (nm === "line" ? 0.09 : 0.06) * mm * k; let under = 0, deep = 0, nearN = 0, sum = 0;
-          let seam = 0; const h = [0, 0, 0, 0, 0, 0];
+          let seam = 0, edge = 0; const h = [0, 0, 0, 0, 0, 0];
           for (let i = 0; i < X.length; i += 3) { const d = closest(SK, X[i], X[i + 1], X[i + 2], 2 * mm * k, h); if (d !== d) continue; nearN++; sum += d;
-            if (d < -TOL) { if (inSeam(SK, h, lift, 2 * mm * k, 0.35 * mm * k)) seam++; else { under++; deep = Math.max(deep, -d); } } }   // (between the two lids' margins pressed together: hidden by both, with no place on top of either)
-          row[nm] = { under, deep: deep / mm / k, near: nearN, mean: nearN ? sum / nearN / mm / k : 0, seam }; }
+            if (d < -TOL) { if (inSeam(SK, h, lift, 2 * mm * k, 0.35 * mm * k)) seam++;   // (between the two lids' margins pressed together: hidden by both, with no place on top of either)
+              else if (behind(X[i], X[i + 1], X[i + 2], h) < BESIDE) edge++;                // (beside the skin's edge, nearly level with it: past where the skin ends, where a lash's root is by design)
+              else { under++; deep = Math.max(deep, -d); } } }
+          row[nm] = { under, deep: deep / mm / k, near: nearN, mean: nearN ? sum / nearN / mm / k : 0, seam, edge }; }
         rows.push(row); }
       const worstOf = (nm, R = rows) => R.reduce((b, r) => r[nm] && r[nm].under > (b?.[nm]?.under ?? -1) ? r : b, null);
       const held = rows.filter(r => r.baked), wl = worstOf("lashes", held), wn = lline ? worstOf("line", held) : null, bl = worstOf("lashes"), bn = lline ? worstOf("line") : null;
@@ -158,7 +172,7 @@ if (glbFile) {
       // between two of the file's weights Godot blends two fitted states: a point that lies on the skin in both can pass a hair under it between them
       // (round a lid's rim: a lash moves whole with its root while the lid bends, so its place on the rim's top at one weight and on its front at the next are joined by a line through the rim's corner)
       const few = Math.max(3, Math.ceil(0.001 * rest.lashes.near)), deepB = Math.max(bl.lashes.deep, bn ? bn.line.deep : 0), mostB = Math.max(bl.lashes.under, bn ? bn.line.under : 0);
-      say((mostB <= few && deepB < 0.3) || before, `and at every twentieth of the blink between them: the most ${bl.lashes.under} of the lashes' points (${bl.lashes.deep.toFixed(2)} mm, ${Math.round(bl.w * 100)}% shut)${bn ? ` and ${bn.line.under} of the lash line's (${bn.line.deep.toFixed(2)} mm, ${Math.round(bn.w * 100)}% shut)` : ""}: no more than a thousandth of them (${few}), none 0.3 mm deep`);
+      say((mostB <= few && deepB < 0.3) || before, `and at every twentieth of the blink between them: the most ${bl.lashes.under} of the lashes' points (${bl.lashes.deep.toFixed(2)} mm, ${Math.round(bl.w * 100)}% shut)${bn ? ` and ${bn.line.under} of the lash line's (${bn.line.deep.toFixed(2)} mm, ${Math.round(bn.w * 100)}% shut)` : ""}: no more than a thousandth of them (${few}), none 0.3 mm deep; beside the skin's edge and within 15 degrees of level with it (past where the skin ends: not under it) ${Math.max(...rows.map(r => r.lashes.edge + (r.line?.edge || 0)))} at the most`);
       const shut = rows[rows.length - 1], seams = rows.reduce((a, r) => a + r.lashes.seam + (r.line?.seam || 0), 0), open = rows.filter(r => r.w < 0.9).reduce((a, r) => a + r.lashes.seam + (r.line?.seam || 0), 0);
       say(open === 0 || before, `between the two lids' margins where they press together (hidden by both, no place on top of either): ${shut.lashes.seam} points of lashes and ${shut.line?.seam || 0} of the lash line shut, ${seams} over the whole blink, none while the eye is under nine tenths shut${open ? ` (${open})` : ""}`);
     }

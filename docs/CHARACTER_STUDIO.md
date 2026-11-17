@@ -1008,7 +1008,10 @@ none 0.3 mm deep. (That much is left, and is what a blend of two states is: a la
 the lid bends, so its place on the rim's top at one weight and on the rim's front at the next are joined by a
 straight line through the rim's rounded corner. Ten points of 24,352 on the eyes v3 character, for a frame of a
 blink.) The points in the seam are counted apart, and there are none while the eye is under nine
-tenths shut. On the eyes v3 character before the fit: 2,440 of 21,398 points under at rest, 3,794 shut (1.2 mm
+tenths shut. **Beside the skin's edge** (2026-11-17, §2o): the skin a lash can lie on ends at the lid's back edge,
+where lashes are rooted; a point beside that edge and level with it (to within half a degree) is outside, in the fit
+and here, where rounding used to say which; and the points beside the edge within 15 degrees of level are counted
+apart from the points under the skin (`behind`: how squarely a point is behind its nearest skin). On the eyes v3 character before the fit: 2,440 of 21,398 points under at rest, 3,794 shut (1.2 mm
 deep), 54 of the lash line's 330.
 
 ## 2m. v2 pear: a skinny waist over thick thighs, and Hips & thighs as one slider (DECISIONS 2026-11-13, more body presets)
@@ -1227,6 +1230,44 @@ wide, a window's reflection (the picture's two are about three times as tall as 
 | the lid's line carried on down past the outer corner (the tracing's tail), reddish-brown | Eyeliner 0.55 with Liner wing -0.6 (a puppy liner), Eyeshadow gathered at the outer corner |
 | a wet pink rim under the eye | Waterline 0.6, Under-eye shadow, Aegyo-sal |
 
+**Its blink and its lashes.** A cute eye's upper lid starts 10 to 13 degrees higher on the eyeball than a plain
+eye's and its edge runs on a diagonal, so it travels further to shut and passes over the cornea at a slant. Four things
+that held for a plain eye had to be made to hold for this one, each found by the two checks an export's lids have
+(LASHFIT, EYELIDS: both failed on the first cute export):
+
+- **The blink is kept at sixteen in-between weights** (`BLINK16` in the Studio's page: a sixteenth apart, and 0.97;
+  a plain eye's eight as they were, `BLINK8`; an export is a cute one when its Cute eye key is over 0.25). A morph
+  target moves a point on a straight line, so a file keeps the lids' way down at in-between weights and the lashes
+  fitted to the lid at each (GODOT_LOOK §5f, §2l here); between two of them Godot blends. On the longer way that
+  blend took lashes under the lid: at eighths 1165 lash points under the skin, to 0.41 mm, with the eye 95% shut; at
+  sixteenths 40. Each weight is a morph target on the skin, the lashes, the lash line and the brows: the file is
+  60 MB where it was 52. Godot's HSBlink reads whatever weights a mesh's targets name.
+- **No upper lashes on the lid's innermost fifth** (`browlash.js` `o.pinch`: the Cute eye key; on a plain eye the
+  innermost 7%, as it was). The corner is drawn to a point under a fold, which on such an eye covers the lashes there;
+  rooted in so narrow a corner they were wedged between the two lids as it shuts (those 40 were all within 3 mm of the
+  inner corner). The lash line, the dark roots along the rim, still runs to the corner: the eye looks the same open.
+- **Beside the skin's edge is not under the skin** (`lashfit.js` `closest`, `behind`). A lash is rooted along the
+  lid's back edge, where the skin a lash can lie on ends and the lining begins (so that no bare skin shows between
+  the eye and the lashes). A point beside that edge and level with it is neither over the skin nor under it, and which
+  it was called was rounding: two corners of one lash card, a micron apart, came out 0.2 mm over the skin and 0.2 mm
+  under it, and the second was a lash "under the skin" at a state the fit had fitted. Level with the edge to within
+  half a degree is now outside, in the fit and in the check; and LASHFIT counts the points beside the edge within 15
+  degrees of level apart from the points under the skin. (A wider margin in the fit itself was tried and taken out: a
+  root left beside the edge in one state of the blink and lifted onto it in the next passed under it between them,
+  36 points where there had been 8.)
+- **EYELIDS takes the lining by the file's own word** (the skin's `lining`, as LASHFIT does) as well as by which way
+  a triangle faces. Half way through the cute eye's blink three triangles of the lining's first loop, under the
+  cornea's dome where they belong, faced out by 0.31 where the test for a lid's front is 0.30: 0.29 mm² of eye "in
+  front of a lid" from 30 to 85% shut. By the file's word, none.
+
+On the export made last (`eyes_cute`, `node tools/character/eyelooks.mjs make --only cute --hair daz_twin_tails
+--export`): LASHFIT no lash point under the skin at rest or at any of the 18 states the file holds, one between them
+(0.12 mm, 95% shut; 19 allowed), 4 beside the skin's edge at the most; EYELIDS nothing of an eye in front of a lid
+at any twentieth of the blink from five sides (0.000 mm²), shut nothing of it from the front, in Godot held shut no
+pixel of it. **A plain eye's export is made as it was** but for the rounding rule: the eyes v3 character made again
+(`--only v3`: 18 targets, eighths, lashes from 7%) passes both (LASHFIT none held, one between at 0.14 mm; EYELIDS
+0.010 mm² at the most).
+
 A picture: `docs/godot_sheets/2026-11-17_cute_eye.jpg` (the card on a new character, in the Studio and in Godot);
 `docs/research/cute_eye/fit.jpg` (the opening before and after, on the picture's outline).
 
@@ -1241,6 +1282,12 @@ the outline as the page has it (its outer corner 20.5 degrees higher where the p
 2.1; the lids' edges 0.24 mm from the outline, 0.60 at most, with the single lid and the cornea under the lid), the
 right eye the left mirrored (0.04 mm); the slider by hand; clicked again: as it was; the card; saved. Ten minutes
 where the page draws on the CPU. EYELOOKS: the card's settings all controls that exist, its picture, its Godot eye look.
+
+**Seen and not chased**: with the eye shut, the card's eyeshadow has a toothed upper edge on the lid (the skin
+between the lash line and the crease is folded away while the eye is open, and the file's texture has few texels
+for it: `Saved/Story/_look/godot_eyelids/blink.jpg`). It lasts a blink; a character asleep shows it. It isn't the
+cute eye's: the eyes v3 character's shut lid, made by the code as it was, has the same teeth under its own shadow
+(the two were looked at side by side); the cute lid is taller, so more of it shows.
 
 **Not there**: the tail as geometry (the lid's line past the outer corner is makeup: the liner's wing and the
 shadow); the lashes' roots follow the new lid as they follow any (they're made on the lid as it is), but a single

@@ -276,8 +276,12 @@ function eyeLashes(G, B, lid, o, F, U, S, side, seed) {
     const raw = [], m = upper ? 6 : 8;                                     // each hair: the root, three points over the rim (the upper lid), then m points of the hair itself
     for (const h of hairs) {
       // along the lid, 0 at the inner corner, 1 at the outer: no lashes on the innermost 7% (a real lid has none beside
-      // the tear duct, and lashes rooted in the corner's fold came out of its skin) and the last 3% at the outer
-      const tt = Math.max(0, Math.min(1, h.t)), t = upper ? 0.07 + 0.9 * tt : 0.03 + 0.9 * tt, outer = upper ? t : 1 - t;
+      // the tear duct, and lashes rooted in the corner's fold came out of its skin) and the last 3% at the outer; on an
+      // eye whose inner corner is drawn to a point under a fold (o.pinch: the Cute eye key), none on the upper lid's
+      // innermost fifth: there the fold covers them, and rooted in so narrow a corner they were wedged between the two
+      // lids as it shuts (LASHFIT)
+      const in0 = 0.07 + 0.13 * Math.max(0, Math.min(1, o.pinch ?? 0));
+      const tt = Math.max(0, Math.min(1, h.t)), t = upper ? in0 + (0.97 - in0) * tt : 0.03 + 0.9 * tt, outer = upper ? t : 1 - t;
       const { root, tg, ang0, droop, rim, rim0, vo } = frame(t);
       // out from the lid: square to the lid's own line in the face's plane, away from the eye's middle (with the eye open;
       // the way from the eye's middle points along the eye at the corners, where a lash still grows across the margin)

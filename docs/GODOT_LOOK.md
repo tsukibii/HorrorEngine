@@ -710,7 +710,10 @@ the cut's T-junctions):
 - **In-betweens**: a morph target moves each point on a straight line, and a lid's way over the round eye and its
   cornea is a curve (straight, it ran up to 0.7 mm into the cornea 60 to 90% shut). The way is kept at eight more
   weights (an eighth apart and a sixteenth before the end), each its own target (`eyesClosed_L_in1250` ...
-  `_in9375`, its weight in ten-thousandths: what the lid lacks there over the straight line), set by its hat.
+  `_in9375`, its weight in ten-thousandths: what the lid lacks there over the straight line), set by its hat. **A cute
+  eye's is kept at sixteen more** (a sixteenth apart, `_in625` ... `_in9375`, and one before the end: CHARACTER_STUDIO
+  §2o): its upper lid starts 10 to 13 degrees higher and travels that much further. HSBlink reads whatever weights a
+  mesh's targets name.
 - **Sparse**: the blink's 36 targets move the corners round the eyes; written whole each was 1.6 MB, sparse (glTF's
   accessor without a buffer view, the moved points alone, `sparseTargets`) the file grows about a tenth.
 
@@ -739,7 +742,7 @@ the lift before they were pinned.)
 **EYELIDS** (`tools/godot/eyelids_check.py`): the file's skin and eyeballs drawn as depth from the front and four sides at
 every twentieth of the blink, as Godot puts the targets together: nothing of the eye in front of a lid (at most
 0.005 mm², 0.01 mm deep, on `_skintest`), open the eyes show, shut nothing of them from the front; then in Godot with the
-eyeballs a flat green: open thousands of green pixels, held shut none; `blink.jpg` open, half and shut. A file with the grafted eyes (its skin's extras `eyeGraft`, CHARACTER_STUDIO §2c) is measured with its lining and its lids' backs on the eye left out (they face the eyeball and lie in it), a 2.5 mm reach and the lids' touch within 0.1 mm.
+eyeballs a flat green: open thousands of green pixels, held shut none; `blink.jpg` open, half and shut. A file with the grafted eyes (its skin's extras `eyeGraft`, CHARACTER_STUDIO §2c) is measured with its lining and its lids' backs on the eye left out (they face the eyeball and lie in it), a 2.5 mm reach and the lids' touch within 0.1 mm. **The lining is also taken by the file's own word** (the skin's extras `lining`, the triangles LASHFIT leaves out; 2026-11-17, cuter eyes): a cute eye's lid edge runs on a diagonal, and half way through its blink three triangles of the lining's first loop, under the cornea's dome as they're meant to be, faced out by 0.31 where the test for a lid's front is 0.30: 0.29 mm² of eye "in front of a lid" at every stage from 30 to 85% shut; by the file's word, none.
 
 **Not yet**: the eyes don't turn in Godot (a glance, look-at); the lid has no thickness of its own (MetaHuman's waterline);
 (the Studio's own export carries only the blink of MHR's 72 shapes: the copy a Godot project wears has the other

@@ -75,12 +75,26 @@ The user's answers, newest first. They override the plan, the research and the d
     against the numpy code point by point), CUTEEYE (the switch in the Studio's page: 20.5 degrees, 0.24 mm from the
     outline, the two eyes mirrors within 0.04 mm, off again, the card, saved), WETEYES (the wet look in Godot),
     EYELOOKS (the card).
+  - **Its blink and its lashes** (found by the two checks an export's lids have, LASHFIT and EYELIDS, which both
+    failed on the first cute export; CHARACTER_STUDIO §2o has each with its numbers). The upper lid starts 10 to 13
+    degrees higher and travels further, so: a cute export keeps its blink at **sixteen in-between weights** where a
+    plain eye's has eight (lashes fitted at each state dipped under the lid between two: 1165 points at eighths, 40
+    at sixteenths; the file is 60 MB where it was 52); it has **no upper lashes on the lid's innermost fifth** (the
+    fold covers them on such an eye, and those 40 were all rooted within 3 mm of the corner; the dark lash line still
+    runs to it: the open eye looks the same). Two checks now say more exactly what they measure, for every
+    character: LASHFIT calls a point level with the skin's edge and beside it outside (it was called over or under
+    by rounding) and counts points beside the edge apart from points under the skin; EYELIDS takes a lid's lining
+    by the file's own list as well as by which way a triangle faces. A plain eye's export is made as it was (the
+    eyes v3 character made again passes both). On the cute character as last exported: no lash point under the skin
+    at any state the file holds and one between them, nothing of an eye in front of a lid at any stage of the blink.
   - **Also fixed on the way**: `tools/character/eyelooks.mjs` (the tool that makes an eye look's card picture and a
     character wearing it) still clicked the "v2female base" button, gone since heads became cards: it timed out on
     main. It now sets the head card (a new character already starts on it).
 - **What took a second try** (docs/LESSONS.md): lifting only the lid bunched it into a ridge under its fold, and
   squeezing the inner corner with the lids' own turn crumpled the skin beside it; the first fit was against an outline
-  5% too big (the corners move when they're seated on the eyeball again); the side sag (above): a third and a fourth.
+  5% too big (the corners move when they're seated on the eyeball again); the side sag (above): a third and a fourth;
+  a margin for "beside the skin's edge" put in the lash fit itself made the blink worse between its states and came
+  out again (only rounding is forgiven there).
 
 ## 2026-11-15, after the review: the dashboard's New game card (the user)
 
