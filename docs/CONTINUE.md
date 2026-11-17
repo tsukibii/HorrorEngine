@@ -48,10 +48,74 @@ thing carried in any pose**, then **a guide of sequences made of markers** (§0 
 most any top or coat reaches ("Beside it: where `advanced-pbrs` stopped", below); then 2026-11-15 on
 `enhancements` (from main after PR #33): **the tools reviewed** (docs/TOOLS_REVIEW.md) and, at the user's word part way
 through, **games built by hand with the plugins** made the focus: saves, a pause menu, the world kept at a checkpoint
-(§0 below). Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing
+("Before that", below); and 2026-11-17 on `Cuter-Eyes` (from main after PR #34): **the cute eye**: a single-lidded
+eye on a diagonal after the user's picture, a switch for it in the Studio, wet eyes in Godot (§0 below). Read this
+after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing
 now**; §4 is the menu, not an order. Overwrite this file at the end of the next session.
 
-## 0. Where `enhancements` stopped (2026-11-15)
+## 0. Where `Cuter-Eyes` stopped (2026-11-17)
+
+**The branch** is `Cuter-Eyes`, from main after tsukibii/HorrorEngine#34 (DECISIONS 2026-11-17, cuter eyes). Not
+merged, no pull request: the user reviews it.
+
+**What the user asked**: their picture of one eye (small, soft; `Saved/Eyes/ref/cute_eye.png`, out of git: to be sent
+again in a new session) recreated as an eye shape in the Character Studio ("the exact curvature", "more diagonal than
+our current horizontal ones", "we currently lack 'asian' eye shapes"), both eyes as mirrors, "a toggle button for this
+kind of eye called cute-eye", and "the wet eye look too inside godot". Then their own tracing of the outline ("the
+mono eyelid eye shape ... make it more smoother lines").
+
+**My reading of the picture, to be overruled if wrong**: it's the eye on the right of a face seen from the front
+(her left eye, the nose to the picture's left), so the eye slants **up toward the temple** by 20.6 degrees. If the
+user says it's the other eye (a drooping one), the change is small: mirror the outline in
+`Content/Studio/Eyes/cute_outline.json` (or the sign of `CUTE_TILT` and the two profiles read from the other end) and
+run `python docs/research/cute_eye/fit.py BODY.bin --write` again.
+
+**What's built** (docs/CHARACTER_STUDIO.md §2o, docs/GODOT_LOOK.md §5ab):
+
+- **The Cute eye shape key** on the grafted eyes (`tools/character/eyegraft.js`, `tools/eye_patch.py`: the same
+  numbers, EYEPATCH compares them): the inner corner narrowed to a point, a profile a lid (skin near the lid's edge
+  follows it; further off a gentler one), the outer corner lifted and the inner lowered straight up and down about a
+  point 4 mm toward the temple. **Fitted** to the picture's outline (`Content/Studio/Eyes/cute_outline.json`,
+  `docs/research/cute_eye/fit.py`): on a new character 20.6 degrees and 0.08 mm from the outline. **The user's "weird
+  side sag"** (a fold from the outer corner down the cheek in the first version) is why it isn't a turn of the whole
+  region: CHARACTER_STUDIO §2o has the table; if a fold shows again after a change to the key, measure it the same
+  way (the angles between neighbouring triangles of the skin, against the plain eye's) before looking.
+- **The Cute eye switch** (Skin, Eyes; `setCuteEye` in index.html): the key at 1, a single lid, the iris at least 36
+  degrees, Wet eyes 1; off, what the eyes were (`st.eyes.cuteWas`).
+- **Wet eyes** and **Catchlights tall** as eye settings (`tools/shared/eye.js`), in every export's records; the
+  Studio's tear line pooled into the corners; Godot's `tear.gdshader` (the glisten, its own `light()`),
+  `eye.gdshader` (`wet`, `kept_tall`), `HSEye.set_wet`, HSEyePaint and the picker.
+- **The eye look card Cute eye (wet)** (`eyelooks.js` `cute`, `eyes/eyes_cute.tres`).
+- **Its blink and lashes** (CHARACTER_STUDIO §2o, *Its blink and its lashes*): a cute export keeps its blink at
+  sixteen in-between weights (`BLINK16`; a plain eye's eight as they were), has no upper lashes on the lid's innermost
+  fifth (`browlash.js` `o.pinch`), and two checks say more exactly what they measure: LASHFIT (`lashfit.js`: beside
+  the skin's edge and level with it is not under the skin) and EYELIDS (the lining by the file's own `lining`).
+- **Checks**: EYEPATCH grown (in check_all: the outline, and the Studio's code run in node against the numpy code,
+  point by point), CUTEEYE (`node tools/character/cuteeyetest.mjs`, the Studio's page), WETEYES (`python
+  tools/godot/wet_eyes_check.py`), EYELOOKS (the card); on an export of the card's character (`node
+  tools/character/eyelooks.mjs make --only cute --hair daz_twin_tails --export`): LASHFIT and EYELIDS `--person
+  eyes_cute`, and on a plain one (`--only v3`, `--person eyes_v3`) as before.
+
+**Setting this cloud session up took**: `tools/godot_setup.sh --force` (Godot 4.7, xvfb, lavapipe), `python
+tools/face_mesh.py setup` and `apt-get install -y libegl1 libgles2` (MediaPipe's worker wants libEGL: without it the
+Studio's page waits for ever for its landmarks), `pip install scipy` (only for reading the picture). A Studio run
+draws on the CPU here: three to seven minutes each, one at a time.
+
+**For the user to look at and say**: the eye's direction (above); how diagonal (the Cute eye slider is the amount: 1
+is the picture's 20.6 degrees, which is a lot on a real head); the card's lashes (the picture has almost none: the
+card uses the short band and no lower lashes); how wet (Wet eyes; the pools at the corners are the strongest part).
+
+**Seen and not chased**: shut, the card's eyeshadow has a toothed upper edge on the lid (CHARACTER_STUDIO §2o):
+the file's texture has few texels for the lid skin that is folded away while the eye is open. A blink hides it; a
+character asleep would show it. The eyes v3 character has it too (not the cute eye's): a fix belongs to how the
+export bakes the lid's hidden skin, for every character.
+
+**What could come next**: the tail past the outer corner as geometry (now makeup: the liner's wing down); a tear
+that runs (the skin's wet layer has drips: tie one to Wet eyes); a marker or a starter script that wets the eyes
+(`HSEye.set_wet` eased: a cry); more eye shapes fitted the same way from a picture (the fit script takes any outline
+file); a head card that carries the cute eye.
+
+## Before that: where `enhancements` stopped (2026-11-15)
 
 **The branch** was made from main after tsukibii/HorrorEngine#33, at the user's word (DECISIONS 2026-11-15): a review of
 every tool and enhancements on this branch until 11am, for the user to review at the end. Part way through: *"dont

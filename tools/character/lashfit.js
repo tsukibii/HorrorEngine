@@ -18,6 +18,7 @@
 //                                                                    skip(i): a point whose triangles aren't skin (the lid's lining)
 //   closest(S, x, y, z, reach, out)        the signed distance to the skin (+ outside, by the nearest triangle's own facing), or
 //                                          NaN past reach; out: the nearest point and that triangle's normal (6 numbers)
+//   behind(x, y, z, out)                   how squarely the point is behind that skin: 1 straight behind, 0 beside its edge
 //   conform(pos, S, { lift, reach, all })  pos (x, y, z each) changed in place; all: every point within reach put at
 //                                          lift (the lash line); else only those under lift. Returns { near, moved, under, deepest }
 // Plain arrays, no three.js (lashfit_check.mjs runs it in node: LASHFIT).
@@ -78,7 +79,12 @@ function onTriangle(T, k, px, py, pz) {
 }
 // the signed distance from a point to the skin within reach (NaN past it): + on the side the nearest triangle faces.
 // Where two triangles are as near (the point over an edge between them), the one the point is more squarely in front
-// of or behind decides, so a point just inside a fold's crease isn't called outside by the fold's other face
+// of or behind decides, so a point just inside a fold's crease isn't called outside by the fold's other face; a point
+// beside the skin's edge, level with it, is outside
+const LEVEL = 0.01;
+// how squarely a point is behind the skin it's nearest to (closest()'s out): 1 straight behind it, 0 level with it
+// (beside its edge), under 0 in front of it
+export function behind(x, y, z, hit) { const dx = x - hit[0], dy = y - hit[1], dz = z - hit[2], d = Math.hypot(dx, dy, dz); return d ? -(dx * hit[3] + dy * hit[4] + dz * hit[5]) / d : 0; }
 export function closest(S, x, y, z, reach, out = null) {
   const L = nearOf(S, x, y, z, reach), T = S.T; let best = reach * reach, bt = -1, bx = 0, by = 0, bz = 0, bq = 0;
   for (let i = 0; i < L.length; i++) {
@@ -89,9 +95,14 @@ export function closest(S, x, y, z, reach, out = null) {
     if (d2 < best * 0.9998 - 1e-18 || sq > bq) { best = Math.min(best, d2); bt = k; bx = q[0]; by = q[1]; bz = q[2]; bq = sq; }
   }
   if (bt < 0) return NaN;
-  const side = (x - bx) * T[bt + 9] + (y - by) * T[bt + 10] + (z - bz) * T[bt + 11] >= 0 ? 1 : -1;
+  // a point level with the skin's edge and beside it (its way from the skin all in the nearest triangle's own plane:
+  // past where the skin ends, at a lid's back edge, where the lining that isn't skin begins) is neither on the skin nor
+  // under it, and which side it fell on was rounding (two corners of one lash card a micron apart came out 0.2 mm over
+  // the skin and 0.2 mm under it): it's outside. LEVEL: level to within half a degree. (No more than that here: a
+  // point left beside the edge in one state of a blink and lifted onto it in the next passes under it between them)
+  const dist = Math.sqrt(best), side = (x - bx) * T[bt + 9] + (y - by) * T[bt + 10] + (z - bz) * T[bt + 11] >= -LEVEL * dist ? 1 : -1;
   if (out) { out[0] = bx; out[1] = by; out[2] = bz; out[3] = T[bt + 9]; out[4] = T[bt + 10]; out[5] = T[bt + 11]; }
-  return side * Math.sqrt(best);
+  return side * dist;
 }
 // a point pressed between two skins (the lids' margins, shut: the upper's facing down on the lower's facing up, with
 // nothing between them): it's under one, and put out of that one it's behind another whose facing is against the

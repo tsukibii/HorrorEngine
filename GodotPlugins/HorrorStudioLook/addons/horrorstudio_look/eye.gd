@@ -88,7 +88,50 @@ static func tear_material(rec: Dictionary) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
 	m.shader = load("res://addons/horrorstudio_look/tear.gdshader")
 	m.set_shader_parameter("strength", float(rec.get("strength", 0.4)))
+	m.set_shader_parameter("wet", float(rec.get("wet", 0.0)))   # (the eye's Wet eyes, as the export says it: GODOT_LOOK §5ab)
 	return m
+
+
+## the tear lines under a node (the surfaces on tear.gdshader): their materials
+static func tears(node: Node) -> Array:
+	var out := []
+	if node == null:
+		return out
+	var sh: Shader = load("res://addons/horrorstudio_look/tear.gdshader")
+	for mi in node.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null:
+			continue
+		for s in mi.mesh.get_surface_count():
+			var m = mi.get_surface_override_material(s)
+			if m is ShaderMaterial and m.shader == sh:
+				out.append(m)
+	return out
+
+
+## Wet eyes on a character whose eyes are worn (0 dry, 1 as the cute eye's picture): the tear lines and the eyes' own
+## gloss and coat; what an export's record says is what `wear` starts from. HSEyePaint.set_paint({"wet": ...}) does
+## this too (and keeps it in the eye's record)
+static func set_wet(node: Node, amount: float) -> void:
+	var k := clampf(amount, 0.0, 1.0)
+	var painter = node.get_node_or_null("HSEyePaint") if node != null else null
+	if painter != null and painter.has_method("set_paint"):    # (her painter keeps each eye's record: through it, so its next change keeps this one)
+		painter.set_paint({"wet": k})
+		return
+	for m in tears(node):
+		m.set_shader_parameter("wet", k)
+	var sh := shader()
+	for mi in node.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null:
+			continue
+		for s in mi.mesh.get_surface_count():
+			var m = mi.get_surface_override_material(s)
+			if m is ShaderMaterial and m.shader == sh and m.has_meta("hs_eye"):
+				var meta: Dictionary = m.get_meta("hs_eye")
+				var rec: Dictionary = meta["rec"]
+				if not (rec.get("paint") is Dictionary):
+					rec["paint"] = {}
+				rec["paint"]["wet"] = k
+				apply(m, rec, bool(meta["wet"]), meta["over"])
 
 
 ## a catchlight's direction for its place on the iris (eyes v3; eye.gdshader's kept_dir1/2): `x`, `y` in iris radii as
@@ -108,7 +151,9 @@ static func params(rec: Dictionary) -> Dictionary:
 	var s: Dictionary = rec.get("shape", {}) if rec.get("shape") is Dictionary else {}
 	var p: Dictionary = rec.get("paint", {}) if rec.get("paint") is Dictionary else {}
 	var real: bool = not (p.get("real") is bool and p["real"] == false)
+	var wet: float = clampf(float(p.get("wet", 0.0)), 0.0, 1.0)      # Wet eyes (GODOT_LOOK §5ab): the eye glassier (tools/shared/eye.js wetGloss: the same sum)
 	var gloss: float = float(p.get("gloss", 0.9))
+	gloss += (1.0 - gloss) * wet
 	var rho: float = float(s.get("rho", 0.5))
 	var rc: float = float(s.get("rc", 0.65))
 	var size1: float = 2.0 * float(p.get("catchSize", 0.17)) * rho / maxf(rc, 0.0001)   # (a disc that wide on the dome, as the reflected ray's angle: twice the normal's)
@@ -119,6 +164,7 @@ static func params(rec: Dictionary) -> Dictionary:
 		"kept_dir2": catch_dir(float(p.get("catch2X", 0.3)), float(p.get("catch2Y", -0.1)), rho, rc),
 		"kept_size": Vector2(size1, size1 * float(p.get("catch2Size", 0.6))),
 		"kept_gain": Vector2(float(p.get("catch1", 0.9)), float(p.get("catch2", 0.5))),
+		"kept_tall": float(p.get("catchTall", 1.0)), "wet": wet,
 		"kept_line": float(p.get("catchLine", 0.0)),
 		"kept_line_at": Vector4(0.0, catch_dir(0.0, float(p.get("catchLineY", -0.86)), rho, rc).y, 0.34, 0.012),
 		"lamp_catch": float(p.get("catchRoom", 1.0)),

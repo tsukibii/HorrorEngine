@@ -79,12 +79,17 @@ uniform vec3 kept_dir2 = vec3(-0.47, -0.16, 0.87);
 uniform vec2 kept_size = vec2(0.14, 0.09);          // each one's radius, as an angle of the reflected ray (rad)
 uniform vec2 kept_gain = vec2(1.0, 0.55);           // each one's strength
 uniform vec3 kept_tint2 : source_color = vec3(0.82, 0.9, 1.0);   // the second one's colour (a fill light is cooler)
+uniform float kept_tall = 1.0;       // how tall each is against its width (1 round: a lamp's; 2.5 a tall window's reflection: the cute eye's)
 uniform float kept_halo = 0.12;      // a soft glow round each (the lens's bloom, before the game's own glow)
 uniform float kept_line = 0.0;       // the lower lid's wet line reflected low on the cornea: a thin bright arc
 uniform vec4 kept_line_at = vec4(0.0, -0.98, 0.55, 0.012);  // its direction's x and y, how far it runs to each side (the reflected ray's x), and how thick it is
 uniform float lamp_catch = 1.0;      // the room's own lamps reflected in the cornea: 1 as they are, 0 none (the catchlights that stay alone, the same in any room)
 uniform float kept_lit = 6.0;        // how brightly each lamp that reaches the eye lights them
 uniform float kept_glow = 0.0;       // and how bright they are by themselves (0: gone in the dark)
+// ---- wet eyes (docs/GODOT_LOOK.md §5ab, DECISIONS 2026-11-17, cuter eyes): the eye under a thicker tear film: the
+// white's coat stronger and every lamp's shine on the eye allowed to burn brighter (the tear line carries the rest:
+// tear.gdshader; the eye's own gloss is raised by HSEye.params)
+uniform float wet : hint_range(0.0, 1.0) = 0.0;
 
 varying vec3 v_ex;                    // the eye's own axes in view space (x across, y down the eye, z out along its gaze): the same from every vertex
 varying vec3 v_ey;
@@ -273,7 +278,10 @@ void fragment() {
 		vec3 vy = cross(VIEW, vx);
 		vec3 rf = reflect(-VIEW, n_view);
 		vec3 rr = vec3(dot(rf, vx), dot(rf, vy), dot(rf, VIEW));
-		float t1 = length(rr - kept_dir1) / max(kept_size.x, 1e-4), t2 = length(rr - kept_dir2) / max(kept_size.y, 1e-4);
+		vec3 d1 = rr - kept_dir1, d2 = rr - kept_dir2;
+		d1.y /= max(kept_tall, 0.1);                               // (taller than wide: a window's)
+		d2.y /= max(kept_tall, 0.1);
+		float t1 = length(d1) / max(kept_size.x, 1e-4), t2 = length(d2) / max(kept_size.y, 1e-4);
 		float k1 = kept_gain.x * ((1.0 - smoothstep(0.65, 1.35, t1)) + kept_halo * exp(-0.45 * t1 * t1));
 		float k2 = kept_gain.y * ((1.0 - smoothstep(0.65, 1.35, t2)) + kept_halo * exp(-0.45 * t2 * t2));
 		float ln = kept_line * exp(-pow((rr.y - kept_line_at.y) / kept_line_at.w, 2.0)) * (1.0 - smoothstep(0.4 * kept_line_at.z, kept_line_at.z, abs(rr.x - kept_line_at.x)));
@@ -287,7 +295,7 @@ void fragment() {
 	v_irisw = irisW;
 	ROUGHNESS = roughness;
 	SPECULAR = 0.5 * (1.0 - irisW) * (1.0 - sock);        // under the cornea: no shine of its own; the socket keeps the room off the white
-	CLEARCOAT = coat * (1.0 - 0.7 * occ) * (1.0 - sock * (onC ? 0.5 : 1.0));   // the cornea keeps half of it (its catchlight)
+	CLEARCOAT = min(1.0, coat * (1.0 + 0.6 * wet)) * (1.0 - 0.7 * occ) * (1.0 - sock * (onC ? 0.5 : 1.0));   // the cornea keeps half of it (its catchlight); a wet eye's film is thicker
 	CLEARCOAT_ROUGHNESS = coat_roughness;
 	v_coat = CLEARCOAT;
 	v_spec = SPECULAR;
@@ -311,6 +319,6 @@ void light() {
 	float ac = coat_roughness * coat_roughness + catch_size, ar = roughness * roughness + catch_size;
 	float shine = eye_ggx(ndh, ac) * eye_vis(ndl, ndv, ac) * mix(0.04, 1.0, f5) * v_coat * mix(1.0, lamp_catch, v_corn)
 		+ eye_ggx(ndh, ar) * eye_vis(ndl, ndv, ar) * mix(0.16 * v_spec * v_spec, 1.0, f5) * step(0.001, v_spec);
-	SPECULAR_LIGHT += min(shine * ndl, catch_cap) * ATTENUATION * LIGHT_COLOR * SPECULAR_AMOUNT;
+	SPECULAR_LIGHT += min(shine * ndl, catch_cap * (1.0 + wet)) * ATTENUATION * LIGHT_COLOR * SPECULAR_AMOUNT;   // (a wet eye's glints burn brighter)
 	SPECULAR_LIGHT += v_kept_col * (v_kept * kept_lit) * ATTENUATION * LIGHT_COLOR * SPECULAR_AMOUNT / PI;   // the catchlights that stay
 }

@@ -1,0 +1,7 @@
+{
+  "about": "The cute eye's opening (DECISIONS 2026-11-17, cuter eyes): the outline of the eye in the user's picture, read off the picture (where its skin's redness ends) and the user's own tracing of it, smoothed. In the picture's pixels times ten, y down; the picture is the eye on the right of a face seen from the front (her left eye): the nose to its left, x toward the temple. `inner` and `outer` the corners, `upper` and `lower` each lid from the inner corner to the outer. tools/eye_patch.py `cute_target` reads it: EYEPATCH holds the Cute eye shape key's opening to it; docs/research/cute_eye/fit.py fits the key's numbers to it.",
+  "inner": [190, 348],
+  "outer": [718, 150],
+  "upper": [[215, 290], [245, 215], [272, 152], [302, 108], [350, 78], [420, 56], [480, 45], [520, 40], [560, 40], [610, 52], [660, 80], [700, 114]],
+  "lower": [[232, 368], [293, 380], [360, 378], [450, 367], [520, 340], [565, 310], [612, 280], [660, 243], [700, 198]]
+}

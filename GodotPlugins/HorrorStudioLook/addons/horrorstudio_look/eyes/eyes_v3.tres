@@ -47,5 +47,7 @@ paint = {
 "catchRoom": 0.25,
 "catchGlow": 0.0,
 "whiteBright": 0.52,
-"whiteWarm": -0.5
+"whiteWarm": -0.5,
+"catchTall": 1.0,
+"wet": 0.0
 }

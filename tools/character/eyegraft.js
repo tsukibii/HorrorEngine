@@ -25,11 +25,57 @@ export const SHAPE_KEYS = [
   ["tilt", "Tilt", -1, 1, 0.01, "The outer corner up (+1, a lifted almond) or down (−1), about the eye's middle (8° either way)."],
   ["opening", "Opening", -2.5, 1, 0.01, "−1 narrower (the upper lid lower, the lower higher), −2.5 a heavy lid resting low over the iris (a doll's sleepy almond: eyes v3); +1 rounder."],
   ["depth", "Depth", -1, 1, 0.01, "−1 deep-set (the eye and its lids 1.2 mm back under the brow), +1 prominent."],
+  ["cute", "Cute eye", 0, 1, 0.01, "The cute eye's opening (after your picture): diagonal, the inner corner low and pointed, the outer corner high, the upper lid a tall round arch and the lower lid running straight up to the outer corner. 1: the picture's own outline; the switch above sets it with a single lid."],
 ];
-export const KEYS0 = { size: 0, crease: 0, fold: 0, tilt: 0, opening: 0, depth: 0 };
+export const KEYS0 = { size: 0, crease: 0, fold: 0, tilt: 0, opening: 0, depth: 0, cute: 0 };
+// the Cute eye switch's keys (DECISIONS 2026-11-17, cuter eyes: "a toggle button for this kind of eye called cute-eye";
+// the user's picture is a single-lidded eye: "the mono eyelid eye shape"): the opening, a single lid, its skin a
+// little over the inner corner (eye_patch.py CUTE: the same)
+export const CUTE_KEYS = { crease: -0.85, fold: 0.45, cute: 1 };
 export const EYE_PRESETS = {
-  "Default": {}, "East Asian": { crease: -0.8, fold: 0.6, tilt: 0.25, opening: -0.3, depth: 0.35 }, "Caucasian": { crease: 0.6, opening: 0.15, depth: -0.4 },
+  "Default": {}, "East Asian": { crease: -0.8, fold: 0.6, tilt: 0.25, opening: -0.3, depth: 0.35 }, "Caucasian": { crease: 0.6, opening: 0.15, depth: -0.4 }, "Cute eye": CUTE_KEYS,
 };
+// the cute eye (eye_patch.py CUTE_*: the same numbers, EYEPATCH compares them): the inner corner narrowed to a point
+// (CUTE_PINCH: how much of each point's height over the corner is taken, within so many mm of it toward the eye, toward
+// the nose and above or below); each lid's edge turned about the eye's own x axis by a profile along the opening
+// (CUTE_UP, CUTE_LO: degrees up at 17 places from the inner corner to the outer, closer together toward the corners);
+// the opening set on a diagonal: every point lifted by its distance from the eye's middle toward the temple times the
+// tangent of CUTE_TILT degrees (the outer corner up, the inner down, nothing moved sideways: a turn of the whole
+// region pushed the skin under the outer corner out into a ridge against the skin beside it: the user's "weird side
+// sag"), about a point CUTE_PIVOT mm toward the temple from the eye's middle (the outer corner rises less and the
+// inner drops more: there are 8 mm of skin over the outer corner and 18 under the inner one); the eyeball CUTE_RISE mm
+// higher in its lids (with the pivot, the opening sits lower on the eye: the upper lid rests on the iris, as in the picture). How much of
+// each the skin round the opening takes (CUTE_REACH, mm): the lids' turn and the pinch by how near it is to where the
+// lids meet the eye (a bell that wide, and nothing within the second number of the graft's edge: a profile changes
+// fast along the lid near a corner, and turning the whole column of skin under it by the lid's own angle ran a crease
+// down the cheek from the outer corner: the "side sag" again); the lift by how far it is from the graft's edge (all
+// of it from the third number in, none at the edge: the fall-off made for the other keys halves within 2 mm of a
+// corner, where the lift is greatest; and by how near it is to the opening, a bell the fourth number wide: the cheek
+// under the eye stays). The fifth: how near the lid's edge the skin takes the profile as it is; further off it takes a
+// gentler one (`wide`). Last, after the other keys, the skin it has moved is smoothed (CUTE_RELAX passes, each point
+// drawn half way toward the middle of its neighbours: the upper lid's skin from past its rim to short of the graft's
+// edge, and both lids' beside the outer corner): a single lid has no folds, and the lift leaves fine ones. Fitted on
+// a new character's eye so the opening's outline is the reference's
+// (the user's picture and their tracing of it, smoothed: docs/research/cute_eye/)
+export const CUTE_TILT = 19.88;
+export const CUTE_PINCH = [0.6, 2.5, 1.5, 3.0], CUTE_RISE = -0.2, CUTE_PIVOT = 4, CUTE_RELAX = 12;
+export const CUTE_REACH = [7.0, 2.5, 8.0, 10.0, 2.0];
+export const CUTE_UP = [0, -4.56, -5.95, -2.81, 4.15, 13.2, 13.32, 11.34, 10.42, 9.92, 9.91, 9.46, 8.55, 6.71, 5.24, 3.2, 0];
+export const CUTE_LO = [0, 0.26, -0.3, -1.8, -3.86, -4.97, -4.95, -4.79, -4.03, -3.08, -0.85, 0.71, 1.95, 2.24, 1.18, -0.54, 0];
+// a profile's value at u (0..1 along the opening): a Catmull-Rom curve through its values, the j-th of n+1 at
+// u = (1 − cos(π j / n)) / 2 (they stand closer together toward the corners, where the lids turn fastest)
+// a profile as the skin away from the lid's edge takes it: drawn toward its neighbours eight times and eased out to
+// nothing over the fifth of the opening by each corner (eye_patch.py `_wide`: the same sums)
+export function wide(tab) {
+  const t = tab.slice(), n = t.length - 1;
+  for (let pass = 0; pass < 8; pass++) { const q = t.slice(); for (let j = 1; j < n; j++) t[j] = 0.25 * q[j - 1] + 0.5 * q[j] + 0.25 * q[j + 1]; }
+  return t.map((v, j) => { const u = 0.5 * (1 - Math.cos(Math.PI * j / n)); return v * smooth(u / 0.2) * smooth((1 - u) / 0.2); });
+}
+export function prof(tab, u) {
+  const n = tab.length - 1, x = Math.acos(1 - 2 * Math.min(1, Math.max(0, u))) / Math.PI * n, i = Math.min(Math.floor(x), n - 1), f = x - i;
+  const p0 = tab[Math.max(i - 1, 0)], p1 = tab[i], p2 = tab[i + 1], p3 = tab[Math.min(i + 2, n)];
+  return 0.5 * (2 * p1 + (p2 - p0) * f + (2 * p0 - 5 * p1 + 4 * p2 - p3) * f * f + (3 * p1 - p0 - 3 * p2 + p3) * f * f * f);
+}
 
 export async function load(url, BASEP, TRIS) {         // the graft, or null when it hasn't been made on this machine
   const r = await fetch(url).catch(() => null); if (!r || !r.ok) return null;
@@ -55,6 +101,15 @@ export async function load(url, BASEP, TRIS) {         // the graft, or null whe
       const u = o.u[i] = (lx(i) - xin) / (xout - xin), line = yin + (yout - yin) * Math.min(1, Math.max(0, u));
       o.lid[i] = o.blink[i] > 0 ? 1 : o.blink[i] < 0 ? -1 : ly(i) > line ? 1 : -1;
     }
+    { const out = H.loops?.out ?? 21, E_ = []; for (let i = 0; i < n; i++) if (o.ring[i] >= out) E_.push(i);   // each point's distance (m, at rest) from the graft's edge: its last loop and MHR's own points round the hole
+      const near = L => { const D = new Float32Array(n); for (let i = 0; i < n; i++) { let b = Infinity; for (const e of L) { const q = (o.pos[i * 3] - o.pos[e * 3]) ** 2 + (o.pos[i * 3 + 1] - o.pos[e * 3 + 1]) ** 2 + (o.pos[i * 3 + 2] - o.pos[e * 3 + 2]) ** 2; if (q < b) b = q; } D[i] = Math.sqrt(b); } return D; };
+      o.edge = near(E_); o.rim = near([...o.ring.keys()].filter(i => o.ring[i] === 0)); }   // (and from where the lids meet the eyeball)
+    // where the cute eye smooths the skin it has moved (eye_patch.py relax_zone: the same), and each point's neighbours
+    o.relax = Float32Array.from(o.ring, (k, i) => k >= 999 ? 0 : smooth((k - 4) / 3) * (1 - smooth((k - 17) / 3)) * Math.max(o.lid[i] > 0 ? 1 : 0, smooth((o.u[i] - 0.85) / 0.15)));
+    { const sets = Array.from({ length: n }, () => new Set()), f = o.faces;
+      for (let t = 0; t < f.length; t += 3) { const a = f[t], b = f[t + 1], c2 = f[t + 2]; sets[a].add(b).add(c2); sets[b].add(a).add(c2); sets[c2].add(a).add(b); }
+      o.nb = sets.map(x => Int32Array.from(x)); }
+    o.cin = 0; { let b = Infinity; for (let i = 0; i < n; i++) if (o.ring[i] === 0 && lx(i) < b) { b = lx(i); o.cin = i; } }   // the inner corner's point
     o.outer = Int32Array.from([...o.ring.keys()].filter(i => o.ring[i] >= OUTER));
     // the flat lid: each upper lid point from the lash line to the crease (loops FLAT_A to FLAT_B) with the points of
     // those two loops at its angle round the eye (seen from the front) and its share of the way between them
@@ -74,6 +129,7 @@ export async function load(url, BASEP, TRIS) {         // the graft, or null whe
   return G;
 }
 
+const CUTE_UP_WIDE = wide(CUTE_UP), CUTE_LO_WIDE = wide(CUTE_LO);
 // the eyeball from the face before any expression (P: the Studio's points then, lo: RAW's lowest y, scale: SCALE):
 // its centre and radius in the Studio's space, and how much the skin round it grew
 export function eyeOf(G, side, P, scale, lo, keys = null) {
@@ -85,7 +141,7 @@ export function eyeOf(G, side, P, scale, lo, keys = null) {
   }
   let sp = 0; for (const v of pts) sp += Math.hypot(v[0] - at[0], v[1] - at[1], v[2] - at[2]); sp /= pts.length;
   const grow = sp / (scale * o.spread0), K = { ...KEYS0, ...(keys || {}) }, mm = 0.001 * scale * grow;
-  return { c: [scale * c0[0] + mv[0], scale * (c0[1] - lo) + mv[1], scale * c0[2] + mv[2] + 1.2 * mm * K.depth], r: scale * r0 * grow * (1 + 0.08 * K.size), grow, scale, keys: K };
+  return { c: [scale * c0[0] + mv[0], scale * (c0[1] - lo) + mv[1] + CUTE_RISE * mm * K.cute, scale * c0[2] + mv[2] + 1.2 * mm * K.depth], r: scale * r0 * grow * (1 + 0.08 * K.size), grow, scale, keys: K };
 }
 function place(o, i, P, scale) {                        // a point riding its triangle
   const t = o.tri[i], v = [scale * o.off[i * 3], scale * o.off[i * 3 + 1], scale * o.off[i * 3 + 2]];
@@ -99,13 +155,24 @@ export function bindTris(TRIS) { TRIS_ = TRIS; }
 // blink), the eye from eyeOf, shut by blink (0..1)
 export function placeAll(G, side, P, eye, blink, out, surf = null) {   // surf(x, y, z): how far the eyeball's surface is from its centre that way (the cornea's bulge), or null: its white's sphere
   const o = G.sides[side], n = o.n, { c, r, grow, scale } = eye, K = eye.keys || KEYS0, mm = 0.001 * scale * grow, sx = o.sx;
-  const moves = K.size || K.tilt || K.opening || K.depth;
+  const moves = K.size || K.tilt || K.opening || K.depth || K.cute;
+  let cin = null;                                       // the inner corner now (the cute eye narrows the opening onto it)
+  if (K.cute) { const v = place(o, o.cin, P, scale), sz = 1 + 0.08 * K.size; cin = [c[0] + (v[0] - c[0]) * sz, c[1] + (v[1] - c[1]) * sz]; }
   for (let i = 0; i < n; i++) {
     const v = place(o, i, P, scale), w = o.seat[i], k = o.ring[i];
     if (moves && k < 999) {                             // size, tilt, opening, depth: the lids with the eyeball
       let x = v[0] - c[0], y = v[1] - c[1], z = v[2] - c[2];
       const fd = o.fade[i], sz = 1 + 0.08 * K.size * smooth(fd / 0.6); x *= sz; y *= sz; z *= sz;   // (the falloff: 1 at the opening, 0 at the graft's edge)
-      const a = 8 * D2R * K.tilt * smooth(fd / 0.5);
+      if (K.cute) {                                     // the cute eye, in the eye's own frame
+        const ed = o.edge[i] * 1000, w = Math.exp(-((o.rim[i] * 1000 / CUTE_REACH[0]) ** 2)) * smooth(ed / CUTE_REACH[1]);   // (how much of the pinch and the turn the skin takes: by how near it is to where the lids meet the eye)
+        const d = (c[0] + x - cin[0]) * sx / mm, dy = c[1] + y - cin[1];   // the inner corner narrowed to a point
+        y -= CUTE_PINCH[0] * K.cute * dy * Math.exp(-((d / (d > 0 ? CUTE_PINCH[1] : CUTE_PINCH[2])) ** 2) - (dy / (CUTE_PINCH[3] * mm)) ** 2) * w;
+        const near = Math.exp(-((o.rim[i] * 1000 / CUTE_REACH[4]) ** 2)), up = o.lid[i] > 0;   // (the lid's own edge takes its profile as it is; the skin further off a gentler one that eases out toward the corners: a profile that stops dead at a corner is a step in the skin above it)
+        const turn = prof(up ? CUTE_UP : CUTE_LO, o.u[i]) * near + prof(up ? CUTE_UP_WIDE : CUTE_LO_WIDE, o.u[i]) * (1 - near);
+        const b = -turn * D2R * K.cute * w, ca = Math.cos(b), sa = Math.sin(b), ny = y * ca - z * sa; z = y * sa + z * ca; y = ny;   // each lid's edge turned by its profile
+        y += Math.tan(CUTE_TILT * D2R * K.cute) * (x * sx - CUTE_PIVOT * mm) * smooth(ed / CUTE_REACH[2]) * Math.exp(-((o.rim[i] * 1000 / CUTE_REACH[3]) ** 2));   // on a diagonal: the outer corner up, the inner down, about a point CUTE_PIVOT mm toward the temple
+      }
+      const a = 8 * K.tilt * D2R * smooth(fd / 0.5);
       if (a) { const lx = x * sx, ca = Math.cos(a), sa = Math.sin(a), ny = lx * sa + y * ca; x = (lx * ca - y * sa) * sx; y = ny; }
       const u = o.u[i], tap = smooth(u / 0.25) * smooth((1 - u) / 0.2), b = (o.lid[i] > 0 ? -5 : 2.5) * D2R * K.opening * Math.abs(o.blink[i]) * tap;
       if (b) { const ca = Math.cos(b), sa = Math.sin(b), ny = y * ca - z * sa; z = y * sa + z * ca; y = ny; }
@@ -127,6 +194,17 @@ export function placeAll(G, side, P, eye, blink, out, surf = null) {   // surf(x
     else if (K.crease < 0) { const b = Math.exp(-(((k - 12) / 3.5) ** 2)) * tap; push = 1.4 * mm * -K.crease * b; down = 0.8 * mm * -K.crease * b; }   // a monolid: filled, a little lower
     out[i * 3] += qx / d * push; out[i * 3 + 1] += qy / d * push - down; out[i * 3 + 2] += qz / d * push;
     if (K.fold) { const f = K.fold * (1 - smooth(u / 0.3)) * Math.exp(-(((k - 7) / 4) ** 2)) * smooth((k - 3) / 2); out[i * 3] += -0.8 * mm * sx * f; out[i * 3 + 1] += -1.2 * mm * f; out[i * 3 + 2] += 0.4 * mm * f; }   // (the lid's edge stays: the skin above it drapes over the corner)
+  }
+  if (K.cute) {                                         // the skin the cute eye has moved, smoothed: each point drawn half way toward the middle of its neighbours, CUTE_RELAX times
+    const was = new Float32Array(n * 3);
+    for (let pass = 0; pass < CUTE_RELAX; pass++) {
+      was.set(out.subarray(0, n * 3));
+      for (let i = 0; i < n; i++) {
+        const z = 0.5 * K.cute * o.relax[i]; if (!z) continue;
+        const nb = o.nb[i]; let x = 0, y = 0, zz = 0; for (const j of nb) { x += was[j * 3]; y += was[j * 3 + 1]; zz += was[j * 3 + 2]; }
+        out[i * 3] += z * (x / nb.length - was[i * 3]); out[i * 3 + 1] += z * (y / nb.length - was[i * 3 + 1]); out[i * 3 + 2] += z * (zz / nb.length - was[i * 3 + 2]);
+      }
+    }
   }
   if (blink > 0) shut(G, o, out, c, blink, mm);
   if (surf) for (let i = 0; i < n; i++) {               // over the cornea's bulge the lid rides out with it (open over the iris's top, shut over all of it), its thickness kept: never into it

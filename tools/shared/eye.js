@@ -58,6 +58,7 @@ export const EYE_CONTROLS = [   // [key, label, lo, hi, step, default, help]
   ["catch2Size", "Second's size", 0.2, 1.5, 0.01, 0.6, "Against the first's."],
   ["catch2X", "Second across", -0.8, 0.8, 0.01, 0.3, "Where the second one sits: left to right on the iris."],
   ["catch2Y", "Second up", -0.8, 0.8, 0.01, -0.1, "Down to up on the iris."],
+  ["catchTall", "Catchlights tall", 0.5, 4, 0.01, 1, "The catchlights that stay taller than they're wide: 1 round (a lamp), 2.5 a tall window's reflection, as in the cute eye's picture; under 1 wider than tall."],
   ["catchLine", "Wet line in the cornea", 0, 1, 0.01, 0, "The lower lid's wet edge reflected low on the cornea: a thin bright arc just above the lower lid (with Catchlights that stay)."],
   ["catchRoom", "Room lights in the cornea (game)", 0, 1, 0.01, 1, "In a game the room's own lamps reflect in the cornea too, each a small glint. 1: as they are; lower, they're dimmed there, so with the catchlights that stay the eye reads the same in any room (0: those alone)."],
   ["catchGlow", "Catchlights in the dark", 0, 4, 0.01, 0, "In a game the catchlights that stay are lit by the lamps that reach the eye, and gone in the dark. Above 0 they also glow by themselves: eyes that glint out of the dark."],
@@ -67,6 +68,11 @@ export const EYE_CONTROLS = [   // [key, label, lo, hi, step, default, help]
   ["socket", "Socket shade", 0, 1, 0.01, 0.35, "The eye in its socket: the white and its shine darker all over, most toward the brow and into the corners, the iris a little (the brow, the lids and the cheek keep the light off it). MetaHuman's whites, measured in a face, are about a fifth as bright as a white card under the same light: the skin's brightness or darker, never paper (docs/research/eyes.md §7)."],
   ["cornerPink", "Corner pink", 0, 1, 0.01, 0.35, "The inner corner (and a little of the outer) and the waterline."],
   ["gloss", "Wet gloss", 0, 1, 0.01, 0.9, "How wet and glassy the eye looks."],
+  // wet eyes (DECISIONS 2026-11-17, cuter eyes: "try re-create the wet eye look too inside godot"): the tear film as it
+  // shows on a wet eye: along the lower lid a brighter, wider line that pools into the corners, where it glints
+  // whatever the light, and a glassier white. Drawn by the tear line (the Studio's TEARM, Godot's tear.gdshader) and
+  // the eye's own gloss; 0 on every character saved before it
+  ["wet", "Wet eyes", 0, 1, 0.01, 0, "The eye wet with tears: the tear film along the lower lid brighter and wider, pooled into the corners where it glints in any light, and the white glassier. 1: as the cute eye's picture (the Cute eye switch sets it)."],
   ["irisDepth", "Iris depth (mm)", 0, 2, 0.05, 0.2, "How far behind the limbus the iris lies, under the cornea: deeper, it slides further against the white as the eye or the view turns."],
   ["bulge", "Cornea bulge", 0, 1.5, 0.05, 1, "The cornea's dome over the iris (1: an adult's, 7.8 mm round; 0: none, the white's own curve). It bends the view onto the iris and carries the reflections."],
   ["ior", "Refraction", 1, 1.5, 0.005, 1.336, "How strongly the cornea bends the view onto the iris (1.336: the eye's own fluid; 1: not at all)."],
@@ -167,7 +173,7 @@ uniform vec4 uShape;     // the limbus's radius and plane, the dome's centre and
 uniform vec4 uShape2;    // the iris's plane, 1 / IOR, caustic, the iris's brightness
 uniform vec4 uPat;       // the iris's pattern (EYE_CHOICES' order: 0 natural), its strength, the burst's reach, detail
 uniform vec4 uPup;       // the pupil's shape (EYE_CHOICES' order: 0 round), its turn (rad)
-uniform vec4 uSock;      // the socket's shade
+uniform vec4 uSock;      // the socket's shade, how tall the catchlights that stay are against their width
 uniform vec4 uKept;     // the catchlights that stay: how much, the first's and the second's size (rad), the wet line
 uniform vec4 uKeptG;    // the first's and the second's strength, the line's height, their brightness
 uniform vec3 uKeptD1, uKeptD2;                               // where they are: the reflected ray's direction about the view ray
@@ -353,7 +359,7 @@ function setUniforms(u, p, s, side) {
   srgb(u.uAccent.value, p.accent ?? EYE_DEFAULTS.accent); srgb(u.uPupilCol.value, p.pupilColor ?? EYE_DEFAULTS.pupilColor);
   u.uPat.value.set(Math.max(0, PATTERNS.indexOf(p.pattern)), p.patternAmt ?? 1, p.burst ?? 0.55, p.detail ?? 0.5);
   u.uPup.value.set(Math.max(0, PUPILS.indexOf(p.pupilShape)), (p.pupilTurn ?? 0) * Math.PI / 180, 0, 0);
-  u.uSock.value.set(p.socket ?? 0, 0, 0, 0);
+  u.uSock.value.set(p.socket ?? 0, p.catchTall ?? 1, 0, 0);
   // the catchlights that stay: how much, each one's size (the reflected ray's angle: twice the normal's), the line; their
   // strengths, the line's height, their brightness here (the Studio's lights are always on: about a lamp's worth)
   const size = 2 * (p.catchSize ?? 0.17) * s.rho / s.rc, real = p.real !== false;
@@ -406,7 +412,8 @@ export function eyeMaterial(side, extend = null, key = "") {
   float eyeKept = 0.0; vec3 eyeKeptCol = vec3(1.0);
   if (uKept.x > 0.0 && eyeOnC > 0.5) {
     vec3 kv = -eyeDv, kx = normalize(cross(vec3(0.0, 1.0, 0.0), kv)), ky = cross(kv, kx), kf = reflect(eyeDv, eyeCoatV), kr = vec3(dot(kf, kx), dot(kf, ky), dot(kf, kv));
-    float t1 = length(kr - uKeptD1) / max(uKept.y, 1e-4), t2 = length(kr - uKeptD2) / max(uKept.z, 1e-4);
+    vec3 kd1 = kr - uKeptD1, kd2 = kr - uKeptD2; kd1.y /= max(uSock.y, 0.1); kd2.y /= max(uSock.y, 0.1);   // (taller than wide: a window's)
+    float t1 = length(kd1) / max(uKept.y, 1e-4), t2 = length(kd2) / max(uKept.z, 1e-4);
     float k1 = uKeptG.x * ((1.0 - eyeSm(0.65, 1.35, t1)) + 0.12 * exp(-0.45 * t1 * t1)), k2 = uKeptG.y * ((1.0 - eyeSm(0.65, 1.35, t2)) + 0.12 * exp(-0.45 * t2 * t2));
     float kl = uKept.w * exp(-pow((kr.y - uKeptG.z) / 0.012, 2.0)) * (1.0 - eyeSm(0.136, 0.34, abs(kr.x)));
     eyeKept = (k1 + k2 + kl) * uKept.x * (1.0 - 0.5 * eyeSock);
@@ -423,14 +430,17 @@ export function eyeMaterial(side, extend = null, key = "") {
 #endif`);
     extend?.(sh);
   };
-  m.customProgramCacheKey = () => "studio-eye-9" + key;
+  m.customProgramCacheKey = () => "studio-eye-10" + key;
   return m;
 }
 
+// the eye's gloss with Wet eyes on it: a wet eye is glassier (Godot's HSEye.params: the same sum)
+export const wetGloss = p => { const g = p.gloss ?? 0.9; return g + (1 - g) * (p.wet ?? 0); };
 // the paint, the shape and the wet look onto a material from eyeMaterial
 export function setEye(m, p, s) {
   setUniforms(m.userData.eyeU, p, s, m.userData.eyeSide);
-  m.roughness = 0.4 - 0.34 * p.gloss; m.clearcoat = 1; m.clearcoatRoughness = 0.18 - 0.16 * p.gloss;
+  const gloss = wetGloss(p);
+  m.roughness = 0.4 - 0.34 * gloss; m.clearcoat = 1; m.clearcoatRoughness = 0.18 - 0.16 * gloss;
 }
 
 // the paint baked flat (the eye's layout, sRGB) into a canvas, size × size: what a file carries, unrefracted

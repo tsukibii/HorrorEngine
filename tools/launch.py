@@ -208,6 +208,8 @@ TOOLS = [
     ("Checks", "Faces in Godot check (an export's 72 face shapes beside its blink, an expression played on every mesh; needs a Studio export)", "tools/godot/faces_check.py", {}),
     ("Checks", "Creature skins check (chrome, pearl, greasy, the cloak and the rest on balls and on a creature in Godot, with the sheet)", "tools/godot/creature_skin_check.py", {}),
     ("Checks", "Creepy eyes check (glowing, black, spiral, hearts and the rest on eyeballs and on a character in Godot, with the sheet)", "tools/godot/eye_fx_check.py", {}),
+    ("Checks", "Wet eyes check (the tear line dry and wet, its pools and glints, tall catchlights, set in a game, in Godot, with the sheet: WETEYES)", "tools/godot/wet_eyes_check.py", {}),
+    ("Checks", "Cute eye page test (the Cute eye switch on a scratch character in a headless browser: its opening against the picture's outline; the Character Studio's server running: CUTEEYE)", "node tools/character/cuteeyetest.mjs", {}),
     ("Checks", "Sanity check (the starter kit's sanity meter: what wears it down and mends it, food, sleep and what stops it, its facts, hunts and the director synced to it; headless in a by-hand project)", "tools/godot/sanity_check.py", {}),
     ("Checks", "Mind check (flicker_lit, moved and gaslight in the starter kit; the look plugin's HSPhase and HSUnease, played headless and their shaders drawn and measured)", "tools/godot/mind_check.py", {}),
     ("Checks", "Seats check (the starter kit's seat.gd: where your eye goes on a bed, a chair or a stool, worked out from the furniture; the eye eased there, a head's limits, an interior's bed; headless in a by-hand project)", "tools/godot/seat_check.py", {}),

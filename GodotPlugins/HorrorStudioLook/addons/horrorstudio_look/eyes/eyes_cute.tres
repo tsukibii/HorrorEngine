@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="HSEyeLook" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio_look/eye_look.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Cute eye (wet)"
+about = "The Character Studio's eye look of that name, its eyeball alone (the iris, the pupil, the white, the catchlights that stay): on any character's eyes. The lids, the lashes and the makeup are the Studio's to make."
+paint = {
+"iris": "#1c0d0b",
+"iris2": "#3a1d18",
+"accent": "#e8a33a",
+"pupilColor": "#030202",
+"sclera": "#e6e5f2",
+"corner": "#e9a0a8",
+"pattern": "natural",
+"pupilShape": "round",
+"pupilTurn": 0.0,
+"irisSize": 36.0,
+"pupil": 0.44,
+"fibres": 0.15,
+"limbal": 0.4,
+"limbalWidth": 0.2,
+"limbalSoft": 0.7,
+"scleraShade": 0.35,
+"socket": 0.25,
+"cornerPink": 0.5,
+"gloss": 1.0,
+"irisDepth": 0.2,
+"bulge": 0.6,
+"ior": 1.336,
+"caustic": 0.5,
+"irisBright": 0.9,
+"limbusView": 0.5,
+"veins": 0.05,
+"patternAmt": 1.0,
+"catchKeep": 1.0,
+"catch1": 0.85,
+"catchSize": 0.07,
+"catchTall": 3.2,
+"catchX": -0.7,
+"catchY": 0.1,
+"catch2": 1.0,
+"catch2Size": 1.25,
+"catch2X": 0.72,
+"catch2Y": 0.14,
+"catchLine": 0.0,
+"catchRoom": 0.35,
+"catchGlow": 0.0,
+"whiteBright": 0.8,
+"whiteWarm": -0.3,
+"wet": 1.0
+}

@@ -6,9 +6,9 @@
 // under-eye, the inner corner, the waterline, aegyo-sal). A card sets them together; every one is a plain slider
 // afterwards. The face, the lips, the skin, the brows and the hair are the character's own.
 //
-//   EYE_LOOKS[id] = { label, about,
+//   EYE_LOOKS[id] = { label, about, thumb (its card's frame, eyelooks.mjs: { wide, up }; none: the usual),
 //     eyes:   the eyeball's settings (tools/shared/eye.js EYE_COLOURS, EYE_CONTROLS, EYE_CHOICES; and the fit's: lidShade, occlusion, tearline, depth, size),
-//     shape:  the grafted eye's shape keys (eyegraft.js SHAPE_KEYS: size, crease, fold, tilt, opening, depth),
+//     shape:  the grafted eye's shape keys (eyegraft.js SHAPE_KEYS: size, crease, fold, tilt, opening, depth, cute),
 //     sculpt: the sculpt's eye controls (sculpt.js: eye_size, eye_spacing, eye_depth, eye_tilt, hooded_lids): only those named are set,
 //     lash:   { style (browlash.js LASH_STYLES), set: {its own over the style}, look },
 //     makeup: the eye's makeup (skinshader.js: only the keys in EYE_MAKEUP are taken) }
@@ -35,12 +35,32 @@ export const EYE_LOOKS = {
             irisSize: 32.5, pupil: 0.42, fibres: 0.12, limbal: 0.35, limbalWidth: 0.22, limbalSoft: 0.75, scleraShade: 0.7, socket: 0.3, cornerPink: 0.7, gloss: 1, irisDepth: 0.2, bulge: 0.5,
             ior: 1.336, caustic: 0.5, irisBright: 0.7, limbusView: 0.5, veins: 0.05, patternAmt: 1,
             catchKeep: 1, catch1: 1, catchSize: 0.095, catchX: 0.27, catchY: 0.42, catch2: 0.7, catch2Size: 0.65, catch2X: -0.3, catch2Y: -0.1, catchLine: 0.35, catchRoom: 0.25, catchGlow: 0,
-            whiteBright: 0.52, whiteWarm: -0.5, lidShade: 0.9, occlusion: 0.6, tearline: 0.35 },
-    shape: { size: 0.9, crease: 0.2, fold: 0.15, tilt: 0.3, opening: -1.9, depth: 0 },
+            whiteBright: 0.52, whiteWarm: -0.5, lidShade: 0.9, occlusion: 0.6, tearline: 0.35, catchTall: 1, wet: 0 },   // (round catchlights, dry: said, so the card is the same after the Cute eye card)
+    shape: { size: 0.9, crease: 0.2, fold: 0.15, tilt: 0.3, opening: -1.9, depth: 0, cute: 0 },
     sculpt: { eye_size: 1, hooded_lids: 0.45 },
     lash: { style: "v3", look: "lash_ink" },
     makeup: { liner: 0.8, wing: 0.2, linerWidth: 1.5, linerInner: 0.2, linerColor: "#241a1e", shadow: 0.7, shadowPlace: 0.2, shadowSize: 1.5, shadowColor: "#a8485c",
               under: 0.5, underColor: "#d9788a", corner: 0.5, cornerColor: "#f4b0bc", waterline: 0.7, waterColor: "#dd7d8f", aegyo: 0.5, lidGloss: 0.6, lidGlitter: 0.7, glitterColor: "#dfe6f2" },
+  },
+  // the cute eye (DECISIONS 2026-11-17, cuter eyes): the user's picture (a small, soft close-up of one eye, made with
+  // a Polaroid prompt) and their tracing of its outline: a single-lidded eye set on a diagonal, the inner corner low and
+  // pointed with the lid's line carrying on down past it, the outer corner high, the upper lid a tall round arch and the
+  // lower lid running straight up to the outer corner; a big, very dark brown iris the pupil melts into, the upper
+  // lid's shadow over its top; two tall catchlights (a window's) near its left and right edges; a cool, lavender white;
+  // wet: a bright pool of light where the lids meet at the outer corner, small glints beside it, a bluish wet line low
+  // on the cornea; a soft dark lash line more than lashes, a reddish-brown shadow carried down past the outer corner
+  cute: {
+    label: "Cute eye (wet)", thumb: { wide: 0.06, up: 0.015 },   // (its card's picture a little wider and higher than the others': the opening is tall)
+    about: "After your picture: a single-lidded eye set on a diagonal (the inner corner low and pointed, the outer corner high), a big, very dark brown iris the pupil melts into with two tall window catchlights, cool whites, wet: the tear film bright along the lower lid and pooled where the lids meet; a soft dark lash line, a reddish-brown shadow carried down past the outer corner, a pink wet waterline.",
+    eyes: { iris: "#1c0d0b", iris2: "#3a1d18", accent: "#e8a33a", pupilColor: "#030202", sclera: "#e6e5f2", corner: "#e9a0a8", pattern: "natural", pupilShape: "round", pupilTurn: 0,
+            irisSize: 36, pupil: 0.44, fibres: 0.15, limbal: 0.4, limbalWidth: 0.2, limbalSoft: 0.7, scleraShade: 0.35, socket: 0.25, cornerPink: 0.5, gloss: 1, irisDepth: 0.2, bulge: 0.6,
+            ior: 1.336, caustic: 0.5, irisBright: 0.9, limbusView: 0.5, veins: 0.05, patternAmt: 1,
+            catchKeep: 1, catch1: 0.85, catchSize: 0.07, catchTall: 3.2, catchX: -0.7, catchY: 0.1, catch2: 1, catch2Size: 1.25, catch2X: 0.72, catch2Y: 0.14, catchLine: 0, catchRoom: 0.35, catchGlow: 0,
+            whiteBright: 0.8, whiteWarm: -0.3, wet: 1, lidShade: 0.7, occlusion: 0.5, tearline: 0.6 },
+    shape: { size: 0, crease: -0.85, fold: 0.45, tilt: 0, opening: 0, depth: 0, cute: 1 },
+    lash: { style: "v3", set: { length: 4.5, sweep: 0.2, lowerCount: 0 }, look: "lash_brown_black" },   // (a single lid's lashes lie down over the eye: a soft dark line more than hairs; none below)
+    makeup: { liner: 0.55, wing: -0.6, linerWidth: 1.3, linerInner: 0.25, linerColor: "#3a2420", shadow: 0.45, shadowPlace: 0.7, shadowSize: 1.5, shadowColor: "#9a5248",
+              under: 0.3, underColor: "#e08a94", corner: 0.3, cornerColor: "#f6d0d4", waterline: 0.6, waterColor: "#e8a2aa", aegyo: 0.5, lidGloss: 0.35 },
   },
 };
 export const eyeMakeup = L => ({ ...BARE, ...Object.fromEntries(Object.entries(L.makeup || {}).filter(([k]) => EYE_MAKEUP.includes(k))) });

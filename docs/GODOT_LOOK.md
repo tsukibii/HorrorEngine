@@ -710,7 +710,10 @@ the cut's T-junctions):
 - **In-betweens**: a morph target moves each point on a straight line, and a lid's way over the round eye and its
   cornea is a curve (straight, it ran up to 0.7 mm into the cornea 60 to 90% shut). The way is kept at eight more
   weights (an eighth apart and a sixteenth before the end), each its own target (`eyesClosed_L_in1250` ...
-  `_in9375`, its weight in ten-thousandths: what the lid lacks there over the straight line), set by its hat.
+  `_in9375`, its weight in ten-thousandths: what the lid lacks there over the straight line), set by its hat. **A cute
+  eye's is kept at sixteen more** (a sixteenth apart, `_in625` ... `_in9375`, and one before the end: CHARACTER_STUDIO
+  §2o): its upper lid starts 10 to 13 degrees higher and travels that much further. HSBlink reads whatever weights a
+  mesh's targets name.
 - **Sparse**: the blink's 36 targets move the corners round the eyes; written whole each was 1.6 MB, sparse (glTF's
   accessor without a buffer view, the moved points alone, `sparseTargets`) the file grows about a tenth.
 
@@ -739,7 +742,7 @@ the lift before they were pinned.)
 **EYELIDS** (`tools/godot/eyelids_check.py`): the file's skin and eyeballs drawn as depth from the front and four sides at
 every twentieth of the blink, as Godot puts the targets together: nothing of the eye in front of a lid (at most
 0.005 mm², 0.01 mm deep, on `_skintest`), open the eyes show, shut nothing of them from the front; then in Godot with the
-eyeballs a flat green: open thousands of green pixels, held shut none; `blink.jpg` open, half and shut. A file with the grafted eyes (its skin's extras `eyeGraft`, CHARACTER_STUDIO §2c) is measured with its lining and its lids' backs on the eye left out (they face the eyeball and lie in it), a 2.5 mm reach and the lids' touch within 0.1 mm.
+eyeballs a flat green: open thousands of green pixels, held shut none; `blink.jpg` open, half and shut. A file with the grafted eyes (its skin's extras `eyeGraft`, CHARACTER_STUDIO §2c) is measured with its lining and its lids' backs on the eye left out (they face the eyeball and lie in it), a 2.5 mm reach and the lids' touch within 0.1 mm. **The lining is also taken by the file's own word** (the skin's extras `lining`, the triangles LASHFIT leaves out; 2026-11-17, cuter eyes): a cute eye's lid edge runs on a diagonal, and half way through its blink three triangles of the lining's first loop, under the cornea's dome as they're meant to be, faced out by 0.31 where the test for a lid's front is 0.30: 0.29 mm² of eye "in front of a lid" at every stage from 30 to 85% shut; by the file's word, none.
 
 **Not yet**: the eyes don't turn in Godot (a glance, look-at); the lid has no thickness of its own (MetaHuman's waterline);
 (the Studio's own export carries only the blink of MHR's 72 shapes: the copy a Godot project wears has the other
@@ -1911,6 +1914,58 @@ surfaces on the cloth shader), its chest's picture changed. The pictures: `docs/
 **Not done**: anisotropy (a satin, a filament knit's highlight along its wales); light through thin cloth (Godot's
 backlight); a sheer knit inside the skin's own shader (no blending to sort); the cloth wet (the story's `skin` word
 has no cloth side); a Director or desk game's stand-in bodies that aren't Studio exports.
+
+## 5ab. Wet eyes, and catchlights as tall as a window (`tear.gdshader`, `eye.gdshader`'s `wet` and `kept_tall`, `HSEye.set_wet`; DECISIONS 2026-11-17, cuter eyes)
+
+The user's picture of one eye (docs/CHARACTER_STUDIO.md §2o: the cute eye) is wet: "try re-create the wet eye look too
+inside godot". What reads as wet in it: a bright blob of light where the lids meet at the outer corner, small glints
+beside it, a line low on the cornea, two tall catchlights, a glassy white. The lids, the iris and where the
+catchlights sit are the Studio's to make; this is what Godot draws from the export's records.
+
+**Wet eyes** is one number, 0 to 1 (the Studio's eye setting of that name: in `studioEye`'s paint as `wet` and in
+`studioTear` as `wet`; 0 in every export before it, which draws as it did).
+
+- **The tear line** (`tear.gdshader`: the strip along each lower lid that only reflects). The Studio builds it wider
+  when wet, uneven along the lid, and carried on into the corners where it pools; Godot gets that as the strip's
+  shape and its fade. In the shader, wet: the strip's strength up to four times (`wet_gain`), sharper (roughness to
+  0.07), and **the glisten**: in `light()` each lamp's light is given back whatever the angle (`wet_sheen`), since a
+  meniscus turns through every direction across its width and some of it always faces the light; broken into small
+  glints by a noise at half a millimetre in the model's space that drifts slowly (`wet_sparkle`, `wet_grain`), and
+  scaled by the strip's fade twice over, so it's soft at its edges. **Where the film pools** (the corners: the export
+  says so in the strip's colour, the red under the green) it's lit evenly, `wet_pool` times the glisten: a blob of
+  light where the lids meet, as in the picture. It's lit only by the lamps
+  that reach it: nothing in the dark. The shader now has its own `light()` (Godot's GGX for the strip's own shine, as
+  it always drew it, capped; then the glisten).
+- **The eye** (`eye.gdshader`'s `wet`): the white's coat up to 1.6 times as strong and every lamp's shine on the eye
+  allowed to burn twice as bright before it's capped; `HSEye.params` raises the eye's gloss by it
+  (`gloss + (1 - gloss) * wet`: the Studio's `wetGloss`), so the white and the cornea are glassier. Its colour doesn't
+  change: wet isn't a tint.
+- **In a game**: `HSEye.set_wet(character, amount)` (her eyes' shaders and both tear lines; through her `HSEyePaint`
+  when she has one, so it's kept in each eye's record), `HSEyePaint.set_paint({"wet": 1.0})`, the eye picker's *Wet
+  eyes* slider (White). A cry is `set_wet` eased up over a few seconds.
+
+**Catchlights tall** (`kept_tall`, the Studio's `catchTall`): the catchlights that stay (§5v) taller than they're
+wide: the reflected ray's distance from each light's direction is taken with its height divided by this, so a round
+lamp at 1 becomes a tall window at 2.5 to 3.5. Both catchlights.
+
+**The eye look** `eyes/eyes_cute.tres` (written from the Studio's *Cute eye (wet)* card by `eyelooks_check.mjs
+--write`): its eyeball's settings on any character through an HSCharacterLook's Eye Look or `HSEyePaint`.
+
+**WETEYES** (`python tools/godot/wet_eyes_check.py`, `demo/wet_eyes.gd`): four made-up eyeballs at an eye's own size
+under one lamp, a dry one and a wet one each with a tear line as an export carries it, and two with a catchlight that
+stays, round and tall. Dry, the line adds 0.8 of light to the picture (the faint glint it always was); wet, 132 (173
+times), 79 of it in its corners' pools (47 along its middle; the dry line's corners have none), varying by 58% of its
+mean along the lid (glints, not a white line); with the lamp out neither shows (0.000); the white is as bright wet as dry (0.699 and 0.698) and takes
+the lamp's glint as brightly; a dry eye made wet by `HSEye.set_wet` glistens 92 times as much along its middle; the
+round catchlight is 22 by 21 pixels and the tall one 21 by 47. Counted: an eye that says nothing is dry; `set_wet`
+reaches the eye's shader and both tear lines and lowers its roughness (0.128 to 0.060); with a painter under her it
+goes through it; Catchlights tall reaches the shader; reset is dry again.
+
+Pictures: `docs/godot_sheets/2026-11-17_wet_eyes.jpg` (WETEYES's sheet) and `2026-11-17_cute_eye.jpg` (the Studio's
+*Cute eye (wet)* card on a new character, in the Studio and exported into Godot).
+
+**Not there**: tears that run (a drop down the cheek is the skin's wet layer, §5: `HSSkin`'s drips, not tied to this);
+a wet upper lid's edge (there's no strip there); the pools don't know the gaze (they're the lids', as they should be).
 
 ## 5d. Streets from the Blender bake (`street.gdshader`, `HSStreet`)
 

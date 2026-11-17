@@ -2,6 +2,100 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-11-17, cuter eyes (the user, with a picture of one eye, then their own tracing of it, then a fold to fix)
+
+- **"Create a new branch called Cuter-Eyes, And for our studio creator, recreate this exact eye shape, we currently lack
+  'asian' eye shapes, try get the exact curvature as the reference photo (photo was generated with chatgpt using a
+  polaroid prompt so its a bit blurry), try re-create the wet eye look too inside godot, make the eyes symmetrically
+  however the eye I gave you is only the right side eye at a front view (so it needs to angle that same way, notice how
+  this eye shape is more diagonal than our current horizontal ones), have a toggle button for this kind of eye called
+  cute-eye"**; then, with the picture traced in red by mouse: **"Here is a very rough tracing of the mono eyelid eye
+  shape, note for your one make it more smoother lines (i just drew with a mouse)"**; and, on the Studio's picture of
+  the first version with a red ring drawn beside and under the outer corner: **"can you fix the weird side sag in the
+  red circle"**.
+- **The picture** (102 by 45 pixels, kept out of git in `Saved/Eyes/ref/cute_eye.png`: it has to be sent again in a new
+  session): one eye, close and soft. A single-lidded eye set on a diagonal: its corner on the picture's left low and
+  pointed, with the lid's dark line carrying on down past it; its corner on the right high; the upper lid a tall round
+  arch that peaks past the middle; the lower lid dipping a little by the low corner and then running straight up to the
+  high one. A big, very dark brown iris the pupil melts into, its top under the lid; two tall catchlights near its left
+  and right edges; a cool lavender white, showing beside the iris toward the high corner and under it by the low one;
+  a bright wet blob of light where the lids meet at the high corner with small glints beside it; a bluish line low on
+  the cornea. **The tracing** is the opening as one closed leaf, its point at the lower left, the two lids meeting at
+  the upper right, and the upper lid's line carried on past that corner, down to the right.
+- **My readings** (to be overruled if wrong):
+  - **Which eye, which way.** "The right side eye at a front view" is the eye on the right of a face's picture (her
+    left eye): the nose is to the picture's left, the low pointed corner is the inner one and the high one the outer.
+    So the eye slants **up toward the temple** by 20.6 degrees, where ours slant 1 to 2. What says so beside the words:
+    the low corner has no pink flesh in it and comes to a point with a fold's line running on down (a single lid's
+    skin over the inner corner), the light is brightest on the picture's left (a flash on the bridge of the nose), the
+    iris sits toward that corner (eyes turned in at a close camera). Read the other way it would be a drooping eye
+    (the outer corner 20 degrees low), which the words "more diagonal" and "asian eye shapes" don't suggest. **If it's
+    the other eye, the fix is one sign** (the tilt, and the two profiles read from the other end): say so.
+  - **"Exact curvature"** is the opening's outline: where the lids meet the eye, as a front view shows it. The outline
+    is read from the picture (where the skin's redness ends) and the tracing, and smoothed as asked; it's kept as
+    numbers in `Content/Studio/Eyes/cute_outline.json`.
+  - **The toggle** is a switch in the Studio's eye settings, *Cute eye*: on, the eyes are this kind (both, as
+    mirrors); off, as they were. It sets what makes the kind: the opening, a single lid, an iris big enough to fill
+    it (the picture's is 0.58 of the opening's length: 36 degrees on our eyeball), wet.
+  - **"The wet eye look ... inside godot"**: the tear film as it shows in the picture, drawn by Godot from what the
+    character's export says: bright along the lower lid, pooled where the lids meet, glinting; a glassier white. And
+    the catchlights' shape (tall, a window's) and the line low on the cornea, which the look's card sets.
+- **Built on `Cuter-Eyes`** (from main; docs/CHARACTER_STUDIO.md §2o, docs/GODOT_LOOK.md §5ab):
+  - **A new shape key, Cute eye** (`tools/character/eyegraft.js`, `tools/eye_patch.py`: the same maths, our own
+    fields, no Blender): the inner corner narrowed to a point; each lid's edge turned by a profile along the opening
+    (17 numbers a lid), the skin near the lid going with it; the opening set on a diagonal by lifting the outer
+    corner and lowering the inner one straight up and down (20 degrees, about a point 4 mm toward the temple: the
+    outer corner rises 3.3 mm, the inner drops 5.5), so the opening sits lower on the eye: the upper lid rests on the
+    iris and the white shows under it, as in the picture. The numbers are **fitted** (`docs/research/cute_eye/fit.py`)
+    on a new character's eye: its outer corner 20.6 degrees higher (the picture's 20.6; without the key 2.2), the
+    points where the lids meet the eyeball 0.08 mm from the picture's outline (rms), 0.27 at most. EYEPATCH holds it
+    on MHR's base, with the lids still meeting when shut and nothing of them in the eyeball.
+  - **The side sag** (the fold the user ringed, from the outer corner down the side of the cheek) had three causes,
+    each measured as the angles between neighbouring triangles of the skin there and taken out: the first key turned
+    the whole eye region like a wheel, which pushed the skin under the outer corner sideways into a ridge (now a lift
+    straight up and down); the lids' profiles were followed by whole columns of skin above and below the eye, so
+    where a profile changes fast by a corner a crease ran down the cheek (now only skin near the lid's edge follows
+    it, and away from the edge a gentler profile that eases out toward the corners); and all of the lift was at the
+    outer corner, where there are 8 mm of skin above it (now shared with the inner corner, which has 18 mm under
+    it). Then the skin the key moves is smoothed (a single lid has no folds; Godot's light showed four or five
+    fine lines along the upper lid). The skin that shows is creased 2 degrees more than the plain eye's beside and
+    under the outer corner (it was 7 and more), 3 above it (it was 17).
+  - **The switch** (Skin, Eyes, the first row of the eye's shape): Cute eye 1, Crease -0.85 (a single lid), Inner
+    fold 0.45, the iris at least 36 degrees, Wet eyes 1; what those were is kept with the character and put back when
+    it's switched off. Every one is still a slider. The shape preset menu has *Cute eye* too.
+  - **Wet eyes** (a new eye setting, 0 to 1, carried by the export): the tear line wider, uneven and pooled into the
+    corners (the outer one most), the eye glassier. **In Godot** `tear.gdshader` gives each lamp's light back
+    whatever the angle, in small glints, most in the pools; nothing in the dark; `HSEye.set_wet(character, amount)`
+    and the eye picker's *Wet eyes* change it in a game. **Catchlights tall** (new): the catchlights that stay taller
+    than wide, a window's.
+  - **A card, Cute eye (wet)** (Face, Eye looks; `eyes/eyes_cute.tres` in Godot): the switch's shape with the
+    picture's eye: the dark iris, two tall catchlights, cool whites, a soft dark lash line with no
+    lashes below, a reddish-brown shadow carried down past the outer corner (the tracing's tail), a wet pink waterline.
+  - **Checks**: EYEPATCH (the outline, the mirror, the Studio's numbers these, the Studio's own code run in node
+    against the numpy code point by point), CUTEEYE (the switch in the Studio's page: 20.5 degrees, 0.24 mm from the
+    outline, the two eyes mirrors within 0.04 mm, off again, the card, saved), WETEYES (the wet look in Godot),
+    EYELOOKS (the card).
+  - **Its blink and its lashes** (found by the two checks an export's lids have, LASHFIT and EYELIDS, which both
+    failed on the first cute export; CHARACTER_STUDIO §2o has each with its numbers). The upper lid starts 10 to 13
+    degrees higher and travels further, so: a cute export keeps its blink at **sixteen in-between weights** where a
+    plain eye's has eight (lashes fitted at each state dipped under the lid between two: 1165 points at eighths, 40
+    at sixteenths; the file is 60 MB where it was 52); it has **no upper lashes on the lid's innermost fifth** (the
+    fold covers them on such an eye, and those 40 were all rooted within 3 mm of the corner; the dark lash line still
+    runs to it: the open eye looks the same). Two checks now say more exactly what they measure, for every
+    character: LASHFIT calls a point level with the skin's edge and beside it outside (it was called over or under
+    by rounding) and counts points beside the edge apart from points under the skin; EYELIDS takes a lid's lining
+    by the file's own list as well as by which way a triangle faces. A plain eye's export is made as it was (the
+    eyes v3 character made again passes both). On the cute character as last exported: no lash point under the skin
+    at any state the file holds and one between them, nothing of an eye in front of a lid at any stage of the blink.
+  - **Also fixed on the way**: `tools/character/eyelooks.mjs` (the tool that makes an eye look's card picture and a
+    character wearing it) still clicked the "v2female base" button, gone since heads became cards: it timed out on
+    main. It now sets the head card (a new character already starts on it).
+- **What took a second try** (docs/LESSONS.md): lifting only the lid bunched it into a ridge under its fold, and
+  squeezing the inner corner with the lids' own turn crumpled the skin beside it; the first fit was against an outline
+  5% too big (the corners move when they're seated on the eyeball again); the side sag (above): a third and a fourth;
+  a margin for "beside the skin's edge" put in the lash fit itself made the blink worse between its states and came
+  out again (only rounding is forgiven there).
+
 ## 2026-11-15, after the review: the dashboard's New game card (the user)
 
 - **"can you make sure the dashboard has a new game tab maybe s I dont have to manually run horror_game.py , just a

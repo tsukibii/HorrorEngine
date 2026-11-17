@@ -36,6 +36,7 @@ const CONTROLS := [
 	["limbalSoft", "Iris edge softness", 0.0, 1.0, 0.01], ["irisBright", "Iris brightness", 0.5, 2.5, 0.01], ["caustic", "Iris caustic", 0.0, 1.0, 0.01],
 	["veins", "Veins", 0.0, 1.0, 0.01], ["cornerPink", "Corner pink", 0.0, 1.0, 0.01], ["scleraShade", "White's rim shade", 0.0, 1.0, 0.01],
 	["whiteBright", "White brightness", 0.2, 1.2, 0.01], ["whiteWarm", "White warmth", -0.8, 0.8, 0.01], ["gloss", "Wet gloss", 0.0, 1.0, 0.01],
+	["wet", "Wet eyes", 0.0, 1.0, 0.01], ["catchTall", "Catchlights tall", 0.5, 4.0, 0.01],
 	["catchKeep", "Catchlights that stay", 0.0, 2.0, 0.01], ["catch1", "Catchlight", 0.0, 1.0, 0.01], ["catchSize", "Catchlight size", 0.02, 0.45, 0.005],
 	["catchX", "Catchlight across", -0.8, 0.8, 0.01], ["catchY", "Catchlight up", -0.8, 0.8, 0.01], ["catch2", "Second catchlight", 0.0, 1.0, 0.01],
 	["catch2Size", "Second's size", 0.2, 1.5, 0.01], ["catch2X", "Second across", -0.8, 0.8, 0.01], ["catch2Y", "Second up", -0.8, 0.8, 0.01],
@@ -46,7 +47,8 @@ const DEFAULTS := {"real": true, "iris": "#3b2618", "iris2": "#7a5a3a", "accent"
 		"scleraShade": 0.4, "socket": 0.35, "cornerPink": 0.35, "gloss": 0.9, "irisDepth": 0.2, "bulge": 1.0, "ior": 1.336, "caustic": 0.6, "irisBright": 1.3,
 		"limbusView": 0.5, "veins": 0.2, "patternAmt": 1.0, "burst": 0.55, "detail": 0.5, "pupilTurn": 0.0,
 		"catchKeep": 0.0, "catch1": 0.9, "catchSize": 0.17, "catchX": -0.35, "catchY": 0.4, "catch2": 0.5, "catch2Size": 0.6, "catch2X": 0.3, "catch2Y": -0.1,
-		"catchLine": 0.0, "catchLineY": -0.86, "catchRoom": 1.0, "catchLit": 6.0, "catchGlow": 0.0, "whiteBright": 0.58, "whiteWarm": 0.35}
+		"catchLine": 0.0, "catchLineY": -0.86, "catchRoom": 1.0, "catchLit": 6.0, "catchGlow": 0.0, "whiteBright": 0.58, "whiteWarm": 0.35,
+		"catchTall": 1.0, "wet": 0.0}
 ## what's in the picture: a change to one of these draws it again (anything else is the eye shader's own number)
 const PAINTED := ["iris", "iris2", "accent", "pupilColor", "sclera", "corner", "pattern", "pupilShape", "irisSize", "bulge", "pupil", "fibres", "limbal",
 		"limbalWidth", "limbalSoft", "scleraShade", "cornerPink", "veins", "patternAmt", "burst", "detail", "pupilTurn"]
@@ -238,6 +240,9 @@ func _apply(e: Dictionary) -> void:
 	var m: ShaderMaterial = e["material"]
 	var was: Dictionary = m.get_meta("hs_eye", {})
 	HSEye.apply(m, e["rec"], bool(was.get("wet", false)), was.get("over", {}))
+	# Wet eyes (GODOT_LOOK §5ab): the tear lines glisten by it too (both eyes' lines: tears aren't one eye's)
+	for t in HSEye.tears(get_parent()):
+		t.set_shader_parameter("wet", clampf(float(e["rec"].get("paint", {}).get("wet", 0.0)), 0.0, 1.0))
 	var s0: Dictionary = e["rec0"].get("shape", {})
 	var s: Dictionary = e["rec"].get("shape", {})
 	var same: bool = is_equal_approx(float(s0.get("rho", 0.5)), float(s.get("rho", 0.5))) and is_equal_approx(float(s0.get("rc", 0.65)), float(s.get("rc", 0.65)))
